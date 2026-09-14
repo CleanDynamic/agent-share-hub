@@ -19,7 +19,7 @@ interface ModelBlockData {
   [key: string]: unknown;
 }
 
-const MODEL_COLOR = '#A78BFA';
+const MODEL_COLOR = 'var(--cat-agents)';
 
 const providers: { value: Provider; label: string; icon: string }[] = [
   { value: 'openai', label: 'OpenAI', icon: '🤖' },
@@ -32,7 +32,7 @@ const providers: { value: Provider; label: string; icon: string }[] = [
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -92,14 +92,14 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
             className="inline-block w-2 h-2 rounded-full"
             style={{ background: MODEL_COLOR }}
           />
-          <Cpu size={12} className="text-white/60" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+          <Cpu size={12} className="text-muted-foreground" />
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Model
           </span>
           <div className="flex-1" />
           <button
             type="button"
-            className="text-white/40 hover:text-white/80 transition-colors"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreHorizontal size={14} />
@@ -107,9 +107,9 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
         </div>
 
         {/* Compact info */}
-        <div className="flex items-center gap-2 px-2 py-2 rounded-md bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center gap-2 px-2 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06]">
           <span className="text-base leading-none">{currentProvider?.icon}</span>
-          <span className="text-xs text-white/80 truncate">
+          <span className="text-xs text-muted-foreground truncate">
             {modelName || currentProvider?.label}
           </span>
         </div>
@@ -122,7 +122,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
               e.stopPropagation();
               setExpanded(true);
             }}
-            className="text-white/40 hover:text-white/80 transition-colors"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors"
             aria-label="Expand model block"
           >
             <ArrowUpRight size={14} />
@@ -131,14 +131,14 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
       </div>
 
       <Sheet open={expanded} onOpenChange={setExpanded}>
-        <SheetContent side="right" className="w-[420px] sm:max-w-[420px] bg-[rgba(20,20,28,0.95)] border-white/10 text-white">
+        <SheetContent side="right" className="w-[420px] sm:max-w-[420px] bg-[rgba(20,20,28,0.95)] border-border text-foreground">
           <SheetHeader>
-            <SheetTitle className="flex items-center gap-2 text-white">
+            <SheetTitle className="flex items-center gap-2 text-foreground">
               <span
                 className="inline-block w-2 h-2 rounded-full"
                 style={{ background: MODEL_COLOR }}
               />
-              <Cpu size={14} className="text-white/70" />
+              <Cpu size={14} className="text-muted-foreground" />
               <span>Model</span>
             </SheetTitle>
           </SheetHeader>
@@ -146,7 +146,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
           <div className="mt-6 space-y-4">
             {/* Provider */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Provider
               </label>
               <div className="relative">
@@ -155,17 +155,17 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   onClick={() => setShowProviderDropdown((v) => !v)}
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left flex items-center gap-2',
-                    'bg-white/[0.03] border border-white/[0.06]',
-                    'text-xs text-white/80',
-                    'hover:border-white/[0.12] transition-colors',
+                    'bg-foreground/[0.03] border border-border/[0.06]',
+                    'text-xs text-muted-foreground',
+                    'hover:border-border/[0.12] transition-colors',
                   )}
                 >
                   <span>{currentProvider?.icon}</span>
                   <span className="flex-1">{currentProvider?.label}</span>
-                  <ChevronDown size={12} className="text-white/50" />
+                  <ChevronDown size={12} className="text-muted-foreground" />
                 </button>
                 {showProviderDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-white/10 rounded-md shadow-lg overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-border rounded-md shadow-lg overflow-hidden">
                     {providers.map((p) => (
                       <button
                         key={p.value}
@@ -176,8 +176,8 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                         }}
                         className={cn(
                           'w-full px-3 py-1.5 text-left text-xs flex items-center gap-2',
-                          'hover:bg-white/[0.06] transition-colors',
-                          p.value === provider ? 'text-white' : 'text-white/60',
+                          'hover:bg-foreground/[0.06] transition-colors',
+                          p.value === provider ? 'text-foreground' : 'text-muted-foreground',
                         )}
                       >
                         <span>{p.icon}</span>
@@ -191,7 +191,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Model name */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Model name
               </label>
               <input
@@ -200,9 +200,9 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                 placeholder="e.g., gpt-4o, claude-3-opus"
                 className={cn(
                   'w-full px-3 py-2 rounded-md',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'text-xs text-white/80 placeholder:text-white/30',
-                  'outline-none focus:border-white/[0.12] transition-colors',
+                  'bg-foreground/[0.03] border border-border/[0.06]',
+                  'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                  'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
             </div>
@@ -210,7 +210,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
             {/* API endpoint (custom) */}
             {provider === 'custom' && (
               <div>
-                <label className="block text-[11px] font-medium text-white/50 mb-1">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1">
                   API endpoint
                 </label>
                 <input
@@ -219,9 +219,9 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   placeholder="https://api.example.com/v1/chat"
                   className={cn(
                     'w-full px-3 py-2 rounded-md',
-                    'bg-white/[0.03] border border-white/[0.06]',
-                    'text-xs text-white/80 placeholder:text-white/30',
-                    'outline-none focus:border-white/[0.12] transition-colors',
+                    'bg-foreground/[0.03] border border-border/[0.06]',
+                    'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                    'outline-none focus:border-border/[0.12] transition-colors',
                   )}
                 />
               </div>
@@ -229,7 +229,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Temperature */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Default temperature
               </label>
               <div className="flex items-center gap-3">
@@ -242,9 +242,9 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     patchProps({ defaultTemperature: parseFloat(e.target.value) })
                   }
-                  className="flex-1 h-1 bg-white/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#A78BFA]"
+                  className="flex-1 h-1 bg-foreground/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--cat-agents)]"
                 />
-                <span className="text-xs text-white/70 w-8 text-right tabular-nums">
+                <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">
                   {defaultTemperature.toFixed(1)}
                 </span>
               </div>
@@ -252,7 +252,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Max tokens */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Max tokens
               </label>
               <input
@@ -263,9 +263,9 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                 }
                 className={cn(
                   'w-full px-3 py-2 rounded-md',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'text-xs text-white/80',
-                  'outline-none focus:border-white/[0.12] transition-colors',
+                  'bg-foreground/[0.03] border border-border/[0.06]',
+                  'text-xs text-muted-foreground',
+                  'outline-none focus:border-border/[0.12] transition-colors',
                   '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
                 )}
               />
@@ -275,7 +275,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="px-3 py-1.5 text-xs text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] rounded-md transition-colors"
+                className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-foreground/[0.04] hover:bg-foreground/[0.08] rounded-md transition-colors"
               >
                 Collapse
               </button>

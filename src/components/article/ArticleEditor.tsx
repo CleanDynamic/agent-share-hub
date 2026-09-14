@@ -906,11 +906,11 @@ export function ArticleEditor({
           cursor: col-resize;
         }
         .tiptap-article .sh-match {
-          background: rgba(232, 87, 26, 0.25);
+          background: color-mix(in srgb, var(--action) 25%, transparent);
           border-radius: 2px;
         }
         .tiptap-article .sh-match-active {
-          background: rgba(232, 87, 26, 0.5);
+          background: color-mix(in srgb, var(--action) 50%, transparent);
         }
         .tiptap-article p.caption {
           font-size: 13px;
@@ -1005,17 +1005,17 @@ export function ArticleEditor({
             alignItems: 'center',
             gap: 8,
             padding: '0 4px',
-            borderBottom: '0.5px solid rgba(255, 255, 255, 0.14)',
+            borderBottom: '0.5px solid var(--line)',
             marginBottom: 8,
           }}
         >
-          <Target size={14} color="#F59E0B" strokeWidth={1.8} />
+          <Target size={14} color="var(--cat-breakage)" strokeWidth={1.8} />
           <span style={{
             flex: 1,
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
-            color: 'rgba(255,255,255,0.55)',
+            color: 'var(--text2)',
           }}>
             Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
           </span>
@@ -1026,10 +1026,10 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
-                color: '#F59E0B',
-                background: 'rgba(245,158,11,0.08)',
+                color: 'var(--cat-breakage)',
+                background: 'var(--cat-breakage-fill)',
                 padding: '2px 8px',
-                borderRadius: 100,
+                borderRadius: 'var(--r-chip)',
               }}
             >
               {missingBreakdown.stages} {missingBreakdown.stages === 1 ? 'stage' : 'stages'} · {missingBreakdown.blocks} {missingBreakdown.blocks === 1 ? 'block' : 'blocks'} marked as missing
@@ -1040,7 +1040,7 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.45)',
+                color: 'var(--text2)',
                 padding: '2px 8px',
               }}
             >
@@ -1062,7 +1062,7 @@ export function ArticleEditor({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
-              color: 'rgba(245,158,11,0.85)',
+              color: 'var(--cat-breakage)',
             }}
           >
             Learn more about bounties →
@@ -1110,12 +1110,12 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 fontWeight: 400,
-                color: 'rgba(255,255,255,0.40)',
+                color: 'var(--text2)',
                 lineHeight: 1.5,
                 padding: '0 24px',
               }}
             >
-              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255, 255, 255, 0.14)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
+              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'var(--recess)', padding: '1px 6px', borderRadius: 4, color: 'var(--text2)' }}>/</code>.
             </div>
           ) : null}
         </div>
@@ -1303,7 +1303,7 @@ export function ArticleEditor({
             style={{
               position: 'relative', zIndex: 1,
               background: 'rgba(14,14,20,0.98)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid var(--line)',
               borderRadius: 16,
               padding: '24px 26px',
               maxWidth: 420, width: '90%',
@@ -1313,14 +1313,14 @@ export function ArticleEditor({
           >
             <h3 style={{
               fontSize: 16, fontWeight: 700,
-              color: 'rgba(255,255,255,0.92)',
+              color: 'var(--text)',
               margin: '0 0 6px',
             }}>
               Name your draft
             </h3>
             <p style={{
               fontSize: 12,
-              color: 'rgba(255,255,255,0.50)',
+              color: 'var(--text2)',
               margin: '0 0 16px', lineHeight: 1.5,
             }}>
               Give this draft a name so you can find it again later.
@@ -1345,9 +1345,9 @@ export function ArticleEditor({
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.92)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
+                color: 'var(--text)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 outline: 'none',
@@ -1361,9 +1361,9 @@ export function ArticleEditor({
                 style={{
                   padding: '8px 14px', fontSize: 12, fontWeight: 600,
                   borderRadius: 8,
-                  background: 'rgba(255, 255, 255, 0.14)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: 'rgba(255,255,255,0.65)',
+                  background: 'var(--recess)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--text2)',
                   cursor: 'pointer',
                   fontFamily: 'Figtree, sans-serif',
                 }}
@@ -1379,7 +1379,7 @@ export function ArticleEditor({
                   borderRadius: 8,
                   background: 'hsl(18 79% 54% / 0.85)',
                   border: '1px solid hsl(18 79% 54% / 0.55)',
-                  color: '#fff',
+                  color: 'var(--text)',
                   cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.65 : 1,
                   fontFamily: 'Figtree, sans-serif',

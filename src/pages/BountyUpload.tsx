@@ -101,13 +101,13 @@ export default function BountyUpload() {
         {/* Header */}
         <div style={{
           ...type.cardTitle,
-            color: '#fff',
+            color: 'var(--text)',
           marginBottom: 4,
         }}>
           Post a Bounty
         </div>
         <div style={{
-          fontSize: 12, color: 'rgba(255,255,255,0.35)',
+          fontSize: 12, color: 'var(--text2)',
           marginBottom: 20,
         }}>
           Describe what you need. The community builds it.
@@ -119,7 +119,7 @@ export default function BountyUpload() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
               marginBottom: 4,
             }}>
               What do you need?
@@ -130,10 +130,10 @@ export default function BountyUpload() {
               placeholder="e.g. I need a prompt that rewrites my emails in my tone of voice..."
               rows={4}
               style={{
-                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                width: '100%', background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
-                fontSize: 14, color: '#fff', outline: 'none',
+                fontSize: 14, color: 'var(--text)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
@@ -141,7 +141,7 @@ export default function BountyUpload() {
 
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
               marginBottom: 4, marginTop: 8,
             }}>
               What type of solution are you looking for?
@@ -156,11 +156,11 @@ export default function BountyUpload() {
                     display: 'flex', alignItems: 'center', gap: 14,
                     padding: '12px 14px', borderRadius: 10, cursor: 'pointer',
                     background: need === n.value
-                      ? 'rgba(245,158,11,0.12)'
-                      : 'rgba(255,255,255,0.03)',
+                      ? 'color-mix(in srgb, var(--cat-breakage) 12%, transparent)'
+                      : 'var(--recess)',
                     border: `1px solid ${need === n.value
-                      ? 'rgba(245,158,11,0.40)'
-                      : 'rgba(255,255,255,0.07)'}`,
+                      ? 'color-mix(in srgb, var(--cat-breakage) 40%, transparent)'
+                      : 'var(--recess)'}`,
                     textAlign: 'left', width: '100%',
                     transition: 'all 0.15s',
                   }}
@@ -169,10 +169,10 @@ export default function BountyUpload() {
                   <div>
                     <div style={{
                       fontSize: 14, fontWeight: 600,
-                      color: need === n.value ? '#F59E0B' : '#fff',
+                      color: need === n.value ? 'var(--cat-breakage)' : 'var(--text)',
                     }}>{n.label}</div>
                     <div style={{
-                      fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                      fontSize: 12, color: 'var(--text2)',
                     }}>{n.desc}</div>
                   </div>
                 </button>
@@ -186,7 +186,7 @@ export default function BountyUpload() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
             }}>
               What are you building or trying to do?
             </div>
@@ -196,10 +196,10 @@ export default function BountyUpload() {
               placeholder="Give context. What tool are you using? What's the end goal? What have you tried?"
               rows={4}
               style={{
-                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                width: '100%', background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
-                fontSize: 14, color: '#fff', outline: 'none',
+                fontSize: 14, color: 'var(--text)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
@@ -207,7 +207,7 @@ export default function BountyUpload() {
 
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
             }}>
               How will you judge a winning solution?
             </div>
@@ -217,10 +217,10 @@ export default function BountyUpload() {
               placeholder="e.g. It should work with Claude, handle 3 different tones, and produce output under 200 words..."
               rows={3}
               style={{
-                width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                width: '100%', background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
-                fontSize: 14, color: '#fff', outline: 'none',
+                fontSize: 14, color: 'var(--text)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
@@ -228,7 +228,7 @@ export default function BountyUpload() {
 
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
             }}>
               Which AI tools are you working with?
             </div>
@@ -244,7 +244,7 @@ export default function BountyUpload() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
             }}>
               Bounty reward (£)
             </div>
@@ -252,7 +252,7 @@ export default function BountyUpload() {
               <span style={{
                 position: 'absolute', left: 14, top: '50%',
                 transform: 'translateY(-50%)',
-                fontSize: 16, color: '#F59E0B', fontWeight: 700,
+                fontSize: 16, color: 'var(--cat-breakage)', fontWeight: 700,
               }}>£</span>
               <input
                 type="number"
@@ -261,24 +261,24 @@ export default function BountyUpload() {
                 placeholder="50"
                 min="5"
                 style={{
-                  width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-                  border: '1px solid rgba(245,158,11,0.30)',
+                  width: '100%', background: 'var(--recess)',
+                  border: '1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)',
                   borderRadius: 10, padding: '14px 14px 14px 32px',
-                  fontSize: 22, fontWeight: 700, color: '#F59E0B',
+                  fontSize: 22, fontWeight: 700, color: 'var(--cat-breakage)',
                   outline: 'none', boxSizing: 'border-box',
                   fontFamily: 'Figtree, sans-serif',
                 }}
               />
             </div>
             <div style={{
-              fontSize: 12, color: 'rgba(255,255,255,0.30)',
+              fontSize: 12, color: 'var(--text2)',
             }}>
               You only pay when you accept a solution.
             </div>
 
             <div style={{
               fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+              letterSpacing: '0.10em', color: 'var(--text2)',
               marginTop: 8,
             }}>
               Deadline
@@ -293,14 +293,14 @@ export default function BountyUpload() {
                     flex: 1, padding: '8px 4px', borderRadius: 8,
                     fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     background: deadline === d
-                      ? 'rgba(245,158,11,0.15)'
-                      : 'rgba(255, 255, 255, 0.12)',
+                      ? 'color-mix(in srgb, var(--cat-breakage) 15%, transparent)'
+                      : 'var(--recess)',
                     border: `1px solid ${deadline === d
-                      ? 'rgba(245,158,11,0.40)'
-                      : 'rgba(255,255,255,0.08)'}`,
+                      ? 'color-mix(in srgb, var(--cat-breakage) 40%, transparent)'
+                      : 'var(--recess)'}`,
                     color: deadline === d
-                      ? '#F59E0B'
-                      : 'rgba(255,255,255,0.50)',
+                      ? 'var(--cat-breakage)'
+                      : 'var(--recess)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -308,7 +308,7 @@ export default function BountyUpload() {
                 </button>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+            <div style={{ fontSize: 11, color: 'var(--text2)' }}>
               {deadline === 0
                 ? 'No deadline — stays open until you close it'
                 : `Closes in ${deadline} days`}
@@ -323,7 +323,7 @@ export default function BountyUpload() {
         position: 'sticky', bottom: 0, marginTop: 'auto',
         background: 'rgba(8,8,12,0.95)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '1px solid var(--line)',
         padding: '12px 20px 16px 20px',
       }}>
         {/* Step dots */}
@@ -336,10 +336,10 @@ export default function BountyUpload() {
               width: s === step ? 20 : 6, height: 6,
               borderRadius: 3,
               background: s === step
-                ? '#F59E0B'
+                ? 'var(--cat-breakage)'
                 : s < step
-                  ? 'rgba(245,158,11,0.40)'
-                  : 'rgba(255,255,255,0.10)',
+                  ? 'color-mix(in srgb, var(--cat-breakage) 40%, transparent)'
+                  : 'var(--recess)',
               transition: 'all 0.2s',
             }} />
           ))}
@@ -358,16 +358,16 @@ export default function BountyUpload() {
               marginBottom: 10,
               padding: '10px 12px',
               borderRadius: 10,
-              background: 'rgba(232,87,26,0.06)',
-              border: '1px solid rgba(232,87,26,0.22)',
+              background: 'color-mix(in srgb, var(--action) 6%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--action) 22%, transparent)',
               fontSize: 12,
               fontWeight: 300,
               lineHeight: 1.5,
-              color: 'rgba(255,255,255,0.60)',
+              color: 'var(--text2)',
             }}
           >
             This form no longer posts bounties.{' '}
-            <Link to="/compose/new" style={{ color: '#E8571A', fontWeight: 500 }}>
+            <Link to="/compose/new" style={{ color: 'var(--action)', fontWeight: 500 }}>
               Open the build workspace →
             </Link>
           </div>
@@ -380,9 +380,9 @@ export default function BountyUpload() {
               onClick={() => setStep(s => s - 1)}
               style={{
                 padding: '10px 18px', borderRadius: 9999,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                color: 'rgba(255,255,255,0.65)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
+                color: 'var(--text2)',
                 fontSize: 13, cursor: 'pointer', fontFamily: 'Figtree',
               }}
             >
@@ -402,8 +402,8 @@ export default function BountyUpload() {
             }
             style={{
               flex: 1, padding: '10px 0', borderRadius: 9999,
-              background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-              border: 'none', color: '#fff',
+              background: 'linear-gradient(135deg, var(--cat-breakage), #D97706)',
+              border: 'none', color: 'var(--text)',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'Figtree', opacity: submitting ? 0.6 : 1,
             }}

@@ -13,7 +13,7 @@ interface HeadingBlockData {
   [key: string]: unknown;
 }
 
-const HEADING_COLOR = '#F59E0B';
+const HEADING_COLOR = 'var(--cat-narrative)';
 
 const levelStyles: Record<HeadingLevel, string> = {
   h1: 'text-3xl font-bold',
@@ -24,7 +24,7 @@ const levelStyles: Record<HeadingLevel, string> = {
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -74,8 +74,8 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
           className="inline-block w-2 h-2 rounded-full"
           style={{ background: HEADING_COLOR }}
         />
-        <HeadingIcon size={12} className="text-white/60" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+        <HeadingIcon size={12} className="text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Heading
         </span>
 
@@ -87,12 +87,12 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
               e.stopPropagation();
               setShowLevelPicker((v) => !v);
             }}
-            className="px-2 py-0.5 text-[10px] font-medium text-white/50 bg-white/[0.04] rounded hover:bg-white/[0.08] transition-colors"
+            className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-foreground/[0.04] rounded hover:bg-foreground/[0.08] transition-colors"
           >
             {level.toUpperCase()}
           </button>
           {showLevelPicker && (
-            <div className="absolute top-full left-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-white/10 rounded-md shadow-lg overflow-hidden min-w-[60px]">
+            <div className="absolute top-full left-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-border rounded-md shadow-lg overflow-hidden min-w-[60px]">
               {(['h1', 'h2', 'h3'] as HeadingLevel[]).map((l) => (
                 <button
                   key={l}
@@ -104,8 +104,8 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
                   }}
                   className={cn(
                     'w-full px-3 py-1 text-left text-[10px] font-medium',
-                    'hover:bg-white/[0.06] transition-colors',
-                    l === level ? 'text-white' : 'text-white/50',
+                    'hover:bg-foreground/[0.06] transition-colors',
+                    l === level ? 'text-foreground' : 'text-muted-foreground',
                   )}
                 >
                   {l.toUpperCase()}
@@ -118,7 +118,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
         <div className="flex-1" />
         <button
           type="button"
-          className="text-white/40 hover:text-white/80 transition-colors"
+          className="text-muted-foreground hover:text-muted-foreground transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={14} />
@@ -133,7 +133,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
         placeholder="Enter heading..."
         className={cn(
           'w-full bg-transparent outline-none',
-          'text-white placeholder:text-white/20',
+          'text-foreground placeholder:text-muted-foreground',
           levelStyles[level],
         )}
       />

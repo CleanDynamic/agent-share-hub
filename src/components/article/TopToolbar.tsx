@@ -59,18 +59,18 @@ const styles = {
     borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
   },
   divider: {
-    background: 'rgba(255, 255, 255, 0.14)',
+    background: 'var(--recess)',
   },
   iconButton: {
-    color: 'rgba(255,255,255,0.65)',
+    color: 'var(--text2)',
   },
   iconButtonHover: {
-    color: 'rgba(255,255,255,0.85)',
-    background: 'rgba(255, 255, 255, 0.12)',
+    color: 'var(--text)',
+    background: 'var(--recess)',
   },
   iconButtonActive: {
-    color: '#2EC4B6',
-    background: 'rgba(46,196,182,0.06)',
+    color: 'var(--evidence)',
+    background: 'color-mix(in srgb, var(--evidence) 6%, transparent)',
   },
   dropdown: {
     background: 'hsl(240 20% 8% / 0.95)',
@@ -341,7 +341,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: isHovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+            background: isHovered ? 'var(--recess)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
           onMouseEnter={() => setIsHovered(true)}
@@ -384,30 +384,30 @@ type PaletteEntry = { name: string; value: string | null };
 
 const TEXT_PALETTE: PaletteEntry[] = [
   { name: 'Default', value: null },
-  { name: 'Gray', value: '#9CA3AF' },
+  { name: 'Gray', value: 'var(--text2)' },
   { name: 'Brown', value: '#8B5E3C' },
-  { name: 'Orange', value: '#E8571A' },
+  { name: 'Orange', value: 'var(--action)' },
   { name: 'Yellow', value: '#F5C518' },
   { name: 'Green', value: '#2BB673' },
-  { name: 'Teal', value: '#2EC4B6' },
-  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Teal', value: 'var(--evidence)' },
+  { name: 'Blue', value: 'var(--cat-data)' },
   { name: 'Purple', value: '#A855F7' },
-  { name: 'Pink', value: '#EC4899' },
-  { name: 'Red', value: '#EF4444' },
+  { name: 'Pink', value: 'var(--cat-media)' },
+  { name: 'Red', value: 'var(--cat-breakage)' },
 ];
 
 const HIGHLIGHT_PALETTE: PaletteEntry[] = [
   { name: 'Default', value: null },
-  { name: 'Gray', value: '#9CA3AF55' },
-  { name: 'Brown', value: '#8B5E3C55' },
-  { name: 'Orange', value: '#E8571A55' },
-  { name: 'Yellow', value: '#F5C51855' },
-  { name: 'Green', value: '#2BB67355' },
-  { name: 'Teal', value: '#2EC4B655' },
-  { name: 'Blue', value: '#3B82F655' },
-  { name: 'Purple', value: '#A855F755' },
-  { name: 'Pink', value: '#EC489955' },
-  { name: 'Red', value: '#EF444455' },
+  { name: 'Gray', value: 'color-mix(in srgb, var(--text2) 33%, transparent)' },
+  { name: 'Brown', value: 'color-mix(in srgb, var(--cat-artefact) 33%, transparent)' },
+  { name: 'Orange', value: 'color-mix(in srgb, var(--action) 33%, transparent)' },
+  { name: 'Yellow', value: 'color-mix(in srgb, var(--lit) 33%, transparent)' },
+  { name: 'Green', value: 'color-mix(in srgb, var(--cat-configuration) 33%, transparent)' },
+  { name: 'Teal', value: 'color-mix(in srgb, var(--evidence) 33%, transparent)' },
+  { name: 'Blue', value: 'color-mix(in srgb, var(--cat-data) 33%, transparent)' },
+  { name: 'Purple', value: 'color-mix(in srgb, var(--cat-agents) 33%, transparent)' },
+  { name: 'Pink', value: 'color-mix(in srgb, var(--cat-media) 33%, transparent)' },
+  { name: 'Red', value: 'color-mix(in srgb, var(--cat-breakage) 33%, transparent)' },
 ];
 
 interface ColorPickerPopoverProps {
@@ -454,7 +454,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: hovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+            background: hovered ? 'var(--recess)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
         >

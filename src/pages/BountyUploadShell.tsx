@@ -89,7 +89,7 @@ export default function BountyUploadShell() {
           margin: "0 auto",
           padding: "60px 24px",
           textAlign: "center",
-          color: "rgba(255,255,255,0.55)",
+          color: "var(--text2)",
           fontSize: 13,
         }}
       >
@@ -108,9 +108,9 @@ export default function BountyUploadShell() {
                 fontWeight: 500,
                 padding: "7px 16px",
                 borderRadius: 100,
-                border: "1px solid rgba(232,87,26,0.35)",
-                background: "rgba(232,87,26,0.10)",
-                color: "#E8571A",
+                border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)",
+                background: "color-mix(in srgb, var(--action) 10%, transparent)",
+                color: "var(--action)",
                 textDecoration: "none",
               }}
             >

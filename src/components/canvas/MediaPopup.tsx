@@ -58,10 +58,10 @@ export function MediaPopup({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.15)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8,
-          color: '#fff',
+          color: 'var(--text)',
           cursor: 'pointer',
           zIndex: 1,
         }}
@@ -129,7 +129,7 @@ export function MediaPopup({
           <p
             style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.70)',
+              color: 'var(--text2)',
               fontFamily: 'Figtree, sans-serif',
               fontStyle: 'italic',
               margin: 0,

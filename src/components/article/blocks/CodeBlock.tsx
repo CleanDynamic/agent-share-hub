@@ -41,12 +41,12 @@ interface CodeBlockData {
   [key: string]: unknown;
 }
 
-const TYPE_COLOR = '#22C55E';
+const TYPE_COLOR = 'var(--cat-configuration)';
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -76,20 +76,20 @@ function ensureMonacoTheme() {
 function StatusDot({ status }: { status: BlockStatus }) {
   if (status === 'running') {
     return (
-      <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+      <span className="inline-block w-2 h-2 rounded-full bg-[var(--action)] animate-pulse" />
     );
   }
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-white">
+      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-foreground">
         <Check size={8} strokeWidth={3} />
       </span>
     );
   }
   if (status === 'error') {
-    return <span className="inline-block w-2 h-2 rounded-full bg-red-500" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-[var(--cat-breakage)]" />;
   }
-  return <span className="inline-block w-2 h-2 rounded-full bg-white/25" />;
+  return <span className="inline-block w-2 h-2 rounded-full bg-muted" />;
 }
 
 export function CodeBlockNode({ id, data, selected }: NodeProps) {
@@ -233,7 +233,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             ? `1px solid ${TYPE_COLOR}99`
             : expandedSelection
               ? `1px dashed ${TYPE_COLOR}73`
-              : '1px solid rgba(255,255,255,0.08)',
+              : '1px solid var(--line)',
           boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
         }}
       >
@@ -264,7 +264,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             className="inline-block w-1.5 h-1.5 rounded-full"
             style={{ background: TYPE_COLOR }}
           />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Code
           </span>
           <input
@@ -272,7 +272,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
 
           {/* Language dropdown */}
@@ -280,13 +280,13 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             <button
               type="button"
               onClick={() => setShowLangDropdown((v) => !v)}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-white/60 hover:text-white/85 hover:bg-white/[0.06] transition-colors"
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-muted-foreground hover:bg-foreground/[0.06] transition-colors"
             >
               {languageLabel}
               <ChevronDown size={10} />
             </button>
             {showLangDropdown && (
-              <div className="absolute top-full right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-20 min-w-[120px]">
+              <div className="absolute top-full right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-20 min-w-[120px]">
                 {SUPPORTED_LANGUAGES.map((l) => (
                   <button
                     key={l.value}
@@ -296,8 +296,8 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                       setShowLangDropdown(false);
                     }}
                     className={cn(
-                      'w-full px-2.5 py-1 text-left text-[11px] hover:bg-white/[0.06] transition-colors',
-                      l.value === language ? 'text-white' : 'text-white/60',
+                      'w-full px-2.5 py-1 text-left text-[11px] hover:bg-foreground/[0.06] transition-colors',
+                      l.value === language ? 'text-foreground' : 'text-muted-foreground',
                     )}
                   >
                     {l.label}
@@ -310,7 +310,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
           <StatusDot status={status} />
           <button
             type="button"
-            className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+            className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
             title="More"
             onClick={(e) => e.stopPropagation()}
           >
@@ -323,7 +323,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
           className="rounded-md overflow-hidden mb-2 nodrag"
           style={{
             background: 'rgba(0,0,0,0.25)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            border: '1px solid var(--line)',
             minHeight: 96,
           }}
           onClick={(e) => e.stopPropagation()}
@@ -356,14 +356,14 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               }}
             />
           ) : (
-            <div className="px-3 py-4 text-[11px] text-white/30">
+            <div className="px-3 py-4 text-[11px] text-muted-foreground">
               Click expand to write code…
             </div>
           )}
         </div>
 
         {/* Stats */}
-        <div className="text-[10px] text-white/40 mb-2 truncate">
+        <div className="text-[10px] text-muted-foreground mb-2 truncate">
           {code.split('\n').length} lines · {languageLabel}
           {output ? ' · output ready' : ''}
         </div>
@@ -378,14 +378,14 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                 selectThis();
                 handleRun();
               }}
-              className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-white"
+              className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-foreground"
               style={{ background: `${TYPE_COLOR}E6` }}
             >
               <Play size={10} className="fill-current" />
               Run
             </button>
           ) : (
-            <span className="text-[10px] text-white/30">
+            <span className="text-[10px] text-muted-foreground">
               Run unavailable for {languageLabel}
             </span>
           )}
@@ -396,7 +396,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               selectThis();
               setDrawerOpen(true);
             }}
-            className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
+            className="nodrag p-1 text-muted-foreground hover:text-muted-foreground rounded transition-colors"
             title="Expand"
           >
             <ArrowUpRight size={12} />
@@ -414,10 +414,10 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-white/10 text-white overflow-y-auto"
+          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-white/90 text-base">
+            <SheetTitle className="text-muted-foreground text-base">
               Code block
             </SheetTitle>
           </SheetHeader>
@@ -431,10 +431,10 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) => onNameChange(e.target.value)}
                   placeholder="Block name"
                   className={cn(
-                    'flex-1 px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                    'flex-1 px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-muted-foreground placeholder:text-muted-foreground outline-none transition-colors',
                     nameError
-                      ? 'border-red-500/50 focus:border-red-500/70'
-                      : 'border-white/[0.06] focus:border-white/[0.12]',
+                      ? 'border-[var(--cat-breakage)] focus:border-[var(--cat-breakage)]'
+                      : 'border-border/[0.06] focus:border-border/[0.12]',
                   )}
                 />
                 <select
@@ -442,17 +442,17 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     onLanguageChange(e.target.value as CodeLanguage)
                   }
-                  className="px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 outline-none focus:border-white/[0.12]"
+                  className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground outline-none focus:border-border/[0.12]"
                 >
                   {SUPPORTED_LANGUAGES.map((l) => (
-                    <option key={l.value} value={l.value} className="bg-[#16161e]">
+                    <option key={l.value} value={l.value} className="bg-[var(--recess)]">
                       {l.label}
                     </option>
                   ))}
                 </select>
               </div>
               {nameError && (
-                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+                <p className="mt-1 text-[10.5px] text-[var(--cat-breakage)]">{nameError}</p>
               )}
             </div>
 
@@ -461,7 +461,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               className="rounded-md overflow-hidden"
               style={{
                 background: 'rgba(0,0,0,0.35)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                border: '1px solid var(--line)',
               }}
             >
               <Editor
@@ -488,7 +488,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Inputs */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Inputs ({inputs.length})
               </label>
               {inputInfos.length > 0 ? (
@@ -501,8 +501,8 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   }}
                 />
               ) : (
-                <p className="text-[11px] text-white/35">
-                  No <code className="text-white/50">{`{{variable}}`}</code>{' '}
+                <p className="text-[11px] text-muted-foreground">
+                  No <code className="text-muted-foreground">{`{{variable}}`}</code>{' '}
                   references detected.
                 </p>
               )}
@@ -510,43 +510,43 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Outputs */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Output
               </label>
               <pre
                 className="text-[11px] leading-snug whitespace-pre-wrap break-words rounded-md p-3 max-h-48 overflow-auto"
                 style={{
                   background: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
-                  color: lastRun?.error ? '#fca5a5' : 'rgba(255,255,255,0.8)',
+                  border: '1px solid var(--line)',
+                  color: lastRun?.error ? '#fca5a5' : 'var(--text2)',
                   minHeight: 48,
                   fontFamily:
                     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 }}
               >
                 {output || (
-                  <span className="text-white/30">
+                  <span className="text-muted-foreground">
                     Run the code to see output here.
                   </span>
                 )}
               </pre>
               {lastRun?.timestamp && (
-                <p className="mt-1 text-[10px] text-white/35">
+                <p className="mt-1 text-[10px] text-muted-foreground">
                   Last run: {new Date(lastRun.timestamp).toLocaleString()}
                 </p>
               )}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-              <span className="text-[11px] text-white/40">
+            <div className="flex items-center justify-between pt-3 border-t border-border/[0.06]">
+              <span className="text-[11px] text-muted-foreground">
                 {code.split('\n').length} lines · {languageLabel}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
-                  className="px-3 py-1.5 text-[11px] font-medium text-white/50 hover:text-white/70 transition-colors"
+                  className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   Collapse
                 </button>
@@ -554,7 +554,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   type="button"
                   onClick={handleRun}
                   disabled={!runnable}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   style={{ background: `${TYPE_COLOR}E6` }}
                   title={runnable ? 'Run code' : 'Only JavaScript and Python can be run'}
                 >

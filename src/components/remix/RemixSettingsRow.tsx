@@ -38,7 +38,7 @@ function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
           width: 18,
           height: 18,
           borderRadius: '50%',
-          background: '#FFFFFF',
+          background: 'var(--text)',
           boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
           transition: 'left 160ms ease',
         }}
@@ -169,8 +169,8 @@ export default function RemixSettingsRow({
                     style={{
                       padding: '1px 7px',
                       borderRadius: tokens.pill,
-                      background: 'rgba(232,87,26,0.12)',
-                      border: '0.5px solid rgba(232,87,26,0.3)',
+                      background: 'color-mix(in srgb, var(--action) 12%, transparent)',
+                      border: '0.5px solid color-mix(in srgb, var(--action) 30%, transparent)',
                       color: tokens.orange,
                       fontSize: 10.5,
                       fontWeight: 600,

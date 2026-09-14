@@ -59,7 +59,7 @@ const itemButtonStyle = {
   borderRadius: 5,
   border: 'none',
   background: 'transparent',
-  color: 'rgba(255,255,255,0.65)',
+  color: 'var(--text2)',
   fontFamily: 'Figtree, sans-serif',
   fontSize: 11,
   fontWeight: 500,

@@ -2,11 +2,11 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { CalendarDays } from "lucide-react"
 
 const AVATAR_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  orange: { bg: "rgba(139, 69, 19, 0.15)", color: "#8B4513", border: "rgba(139, 69, 19, 0.3)" },
-  teal: { bg: "rgba(31, 122, 109, 0.15)", color: "#1F7A6D", border: "rgba(31, 122, 109, 0.3)" },
-  purple: { bg: "rgba(139, 92, 246, 0.15)", color: "#8B5CF6", border: "rgba(139, 92, 246, 0.3)" },
-  blue: { bg: "rgba(59, 130, 246, 0.15)", color: "#3B82F6", border: "rgba(59, 130, 246, 0.3)" },
-  green: { bg: "rgba(34, 197, 94, 0.15)", color: "#22C55E", border: "rgba(34, 197, 94, 0.3)" },
+  orange: { bg: "color-mix(in srgb, var(--action) 15%, transparent)", color: "var(--action)", border: "color-mix(in srgb, var(--action) 30%, transparent)" },
+  teal: { bg: "color-mix(in srgb, var(--evidence) 15%, transparent)", color: "var(--evidence)", border: "color-mix(in srgb, var(--evidence) 30%, transparent)" },
+  purple: { bg: "color-mix(in srgb, var(--cat-agents) 15%, transparent)", color: "var(--cat-agents)", border: "color-mix(in srgb, var(--cat-agents) 30%, transparent)" },
+  blue: { bg: "color-mix(in srgb, var(--cat-data) 15%, transparent)", color: "var(--cat-data)", border: "color-mix(in srgb, var(--cat-data) 30%, transparent)" },
+  green: { bg: "color-mix(in srgb, var(--cat-configuration) 15%, transparent)", color: "var(--cat-configuration)", border: "color-mix(in srgb, var(--cat-configuration) 30%, transparent)" },
 }
 
 export interface AccountData {
@@ -60,7 +60,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
         style={{
           background: "rgba(27, 27, 32, 0.95)",
           backdropFilter: "blur(40px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          border: "1px solid var(--line)",
         }}
         side="bottom"
         align="start"
@@ -93,8 +93,8 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
             <button
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
               style={{
-                background: "#8B4513",
-                color: "#ffffff",
+                background: "var(--action)",
+                color: "var(--text)",
               }}
               onClick={(e) => {
                 e.stopPropagation()
@@ -107,15 +107,15 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
 
           {/* Name and handle */}
           <div className="mt-3">
-            <div className="font-semibold text-white text-[15px] leading-tight">
+            <div className="font-semibold text-foreground text-[15px] leading-tight">
               {account.display_name}
             </div>
-            <div className="text-white/40 text-sm">@{account.username}</div>
+            <div className="text-muted-foreground text-sm">@{account.username}</div>
           </div>
 
           {/* Bio */}
           {account.bio && (
-            <p className="mt-2 text-sm text-white/60 leading-relaxed line-clamp-2">
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed line-clamp-2">
               {account.bio}
             </p>
           )}
@@ -123,21 +123,21 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
           {/* Stats */}
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-white text-sm">
+              <span className="font-semibold text-foreground text-sm">
                 {account.following_count ?? 0}
               </span>
-              <span className="text-white/40 text-sm">Following</span>
+              <span className="text-muted-foreground text-sm">Following</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-white text-sm">
+              <span className="font-semibold text-foreground text-sm">
                 {account.follower_count ?? 0}
               </span>
-              <span className="text-white/40 text-sm">Followers</span>
+              <span className="text-muted-foreground text-sm">Followers</span>
             </div>
           </div>
 
           {/* Joined date */}
-          <div className="flex items-center gap-1.5 mt-3 text-white/40">
+          <div className="flex items-center gap-1.5 mt-3 text-muted-foreground">
             <CalendarDays className="w-3.5 h-3.5" />
             <span className="text-xs">{formatJoinDate(account.joined_date)}</span>
           </div>

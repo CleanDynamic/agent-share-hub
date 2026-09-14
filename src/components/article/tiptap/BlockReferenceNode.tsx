@@ -15,18 +15,18 @@ import { useDocumentStore } from '@/lib/documentStore';
  */
 
 const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
-  text: 'rgba(255,255,255,0.50)',
-  heading: 'rgba(255,255,255,0.65)',
-  prompt: '#E8571A',
-  code: '#16A34A',
-  result: '#7C3AED',
-  agent: '#3B82F6',
-  model: '#06B6D4',
-  tool: '#F59E0B',
-  note: '#F5C518',
-  resource: '#A855F7',
-  workflow: '#EC4899',
-  compare: '#22D3EE',
+  text: 'var(--recess)',
+  heading: 'var(--recess)',
+  prompt: 'var(--action)',
+  code: 'var(--cat-configuration)',
+  result: 'var(--cat-agents)',
+  agent: 'var(--cat-data)',
+  model: 'var(--cat-data)',
+  tool: 'var(--cat-configuration)',
+  note: 'var(--cat-narrative)',
+  resource: 'var(--cat-artefact)',
+  workflow: 'var(--cat-media)',
+  compare: 'var(--cat-evidence)',
 };
 
 function getDotColor(type: string): string {
@@ -40,7 +40,7 @@ interface BlockRefAttrs {
   stageId: string;
 }
 
-const PULSE_COLOR = 'rgba(232,87,26,0.20)';
+const PULSE_COLOR = 'color-mix(in srgb, var(--action) 20%, transparent)';
 
 function pulseBlock(blockId: string) {
   const el =
@@ -124,20 +124,20 @@ export function BlockReferenceNode({ node, selected }: ReactNodeViewProps) {
             alignItems: 'center',
             gap: 4,
             verticalAlign: 'baseline',
-            background: 'rgba(239, 68, 68, 0.08)',
-            border: '1px solid rgba(239, 68, 68, 0.30)',
+            background: 'color-mix(in srgb, var(--cat-breakage) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)',
             borderRadius: 4,
             padding: '1px 8px',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 500,
             lineHeight: 1.4,
-            color: 'rgba(239, 68, 68, 0.85)',
+            color: 'color-mix(in srgb, var(--cat-breakage) 85%, transparent)',
             textDecoration: 'line-through',
             cursor: 'help',
             userSelect: 'none',
             whiteSpace: 'nowrap',
-            outline: selected ? '2px solid rgba(255,255,255,0.25)' : 'none',
+            outline: selected ? '2px solid var(--line)' : 'none',
           }}
         >
           <span
@@ -146,7 +146,7 @@ export function BlockReferenceNode({ node, selected }: ReactNodeViewProps) {
               width: 4,
               height: 4,
               borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.8)',
+              background: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)',
               flexShrink: 0,
               display: 'inline-block',
             }}
@@ -170,19 +170,19 @@ export function BlockReferenceNode({ node, selected }: ReactNodeViewProps) {
           alignItems: 'center',
           gap: 4,
           verticalAlign: 'baseline',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 4,
           padding: '1px 8px',
           fontFamily: 'Figtree, sans-serif',
           fontSize: 12,
           fontWeight: 500,
           lineHeight: 1.4,
-          color: 'rgba(255,255,255,0.85)',
+          color: 'var(--text)',
           cursor: 'pointer',
           userSelect: 'none',
           whiteSpace: 'nowrap',
-          outline: selected ? '2px solid rgba(255,255,255,0.25)' : 'none',
+          outline: selected ? '2px solid var(--line)' : 'none',
         }}
       >
         <span

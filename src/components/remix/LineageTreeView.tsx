@@ -65,8 +65,8 @@ function TreeRow({ node, depth, collapseDepth, isLast }: RowProps) {
           style={{
             padding: '8px 11px',
             borderRadius: tokens.cardRadius,
-            background: node.root ? 'rgba(232,87,26,0.10)' : tokens.card,
-            border: node.root ? '0.5px solid rgba(232,87,26,0.32)' : tokens.borderFaint,
+            background: node.root ? 'color-mix(in srgb, var(--action) 10%, transparent)' : tokens.card,
+            border: node.root ? '0.5px solid color-mix(in srgb, var(--action) 32%, transparent)' : tokens.borderFaint,
             marginTop: 6,
           }}
         >

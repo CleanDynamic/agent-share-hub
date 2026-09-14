@@ -132,7 +132,7 @@ export function ExecutionPanel({
       width: 380,
       background: 'rgba(10,10,16,0.99)',
       borderLeft:
-        '1px solid rgba(255,255,255,0.10)',
+        '1px solid var(--line)',
       zIndex: 300,
       display: 'flex', flexDirection: 'column',
       boxShadow: '-8px 0 32px rgba(0,0,0,0.40)',
@@ -141,20 +141,20 @@ export function ExecutionPanel({
       <div style={{
         padding: '16px 16px 12px 16px',
         borderBottom:
-          '1px solid rgba(255, 255, 255, 0.14)',
+          '1px solid var(--line)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
       }}>
         <div>
           <div style={{
             fontSize: 13, fontWeight: 700,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
           }}>
             Run Block
           </div>
           <div style={{
             fontSize: 11,
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text2)',
             marginTop: 2,
           }}>
             Test this block live
@@ -162,7 +162,7 @@ export function ExecutionPanel({
         </div>
         <button onClick={onClose} style={{
           background: 'none', border: 'none',
-          color: 'rgba(255,255,255,0.40)',
+          color: 'var(--text2)',
           cursor: 'pointer', fontSize: 18,
         }}>×</button>
       </div>
@@ -171,7 +171,7 @@ export function ExecutionPanel({
       <div style={{
         padding: '10px 16px',
         borderBottom:
-          '1px solid rgba(255, 255, 255, 0.14)',
+          '1px solid var(--line)',
         display: 'flex', gap: 6, flexWrap: 'wrap',
       }}>
         {MODELS.map(m => (
@@ -183,16 +183,16 @@ export function ExecutionPanel({
               fontSize: 11, cursor: 'pointer',
               background:
                 selectedModel.id === m.id
-                  ? 'rgba(139,69,19,0.15)'
-                  : 'rgba(255, 255, 255, 0.12)',
+                  ? 'color-mix(in srgb, var(--action) 15%, transparent)'
+                  : 'var(--recess)',
               border: `1px solid ${
                 selectedModel.id === m.id
-                  ? 'rgba(139,69,19,0.35)'
-                  : 'rgba(255,255,255,0.08)'
+                  ? 'color-mix(in srgb, var(--action) 35%, transparent)'
+                  : 'var(--recess)'
               }`,
               color: selectedModel.id === m.id
-                ? '#8B4513'
-                : 'rgba(255,255,255,0.45)',
+                ? 'var(--action)'
+                : 'var(--recess)',
               fontWeight:
                 selectedModel.id === m.id ? 700 : 400,
             }}
@@ -206,20 +206,20 @@ export function ExecutionPanel({
       <div style={{
         padding: '12px 16px',
         borderBottom:
-          '1px solid rgba(255,255,255,0.05)',
+          '1px solid var(--line)',
         maxHeight: 140, overflowY: 'auto',
       }}>
         <div style={{
           fontSize: 9, fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.10em',
-          color: 'rgba(255,255,255,0.25)',
+          color: 'var(--text2)',
           marginBottom: 6,
         }}>
           Prompt
         </div>
         <pre style={{
-          color: 'rgba(255,255,255,0.55)',
+          color: 'var(--text2)',
           whiteSpace: 'pre-wrap',
           margin: 0,
           ...type.data,
@@ -237,7 +237,7 @@ export function ExecutionPanel({
       }}>
         {!output && !error && !running && (
           <div style={{
-            color: 'rgba(255,255,255,0.20)',
+            color: 'var(--text2)',
             fontSize: 13, textAlign: 'center',
             marginTop: 40,
             fontStyle: 'italic',
@@ -248,10 +248,10 @@ export function ExecutionPanel({
 
         {error && (
           <div style={{
-            color: '#ef4444', fontSize: 12,
+            color: 'var(--cat-breakage)', fontSize: 12,
             lineHeight: 1.6,
-            background: 'rgba(239,68,68,0.08)',
-            border: '1px solid rgba(239,68,68,0.20)',
+            background: 'color-mix(in srgb, var(--cat-breakage) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)',
             borderRadius: 6, padding: '10px 12px',
           }}>
             {error}
@@ -264,14 +264,14 @@ export function ExecutionPanel({
               fontSize: 9, fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.10em',
-              color: 'rgba(34,197,94,0.70)',
+              color: 'color-mix(in srgb, var(--cat-configuration) 70%, transparent)',
               marginBottom: 8,
             }}>
               Output
             </div>
             <pre style={{
               fontSize: 13,
-              color: 'rgba(255,255,255,0.75)',
+              color: 'var(--text2)',
               lineHeight: 1.70,
               whiteSpace: 'pre-wrap',
               margin: 0,
@@ -282,7 +282,7 @@ export function ExecutionPanel({
             {!running && latency && (
               <div style={{
                 marginTop: 10, fontSize: 10,
-                color: 'rgba(255,255,255,0.25)',
+                color: 'var(--text2)',
                 display: 'flex', gap: 12,
               }}>
                 <span>{latency}ms</span>
@@ -300,7 +300,7 @@ export function ExecutionPanel({
       <div style={{
         padding: '12px 16px',
         borderTop:
-          '1px solid rgba(255, 255, 255, 0.14)',
+          '1px solid var(--line)',
         display: 'flex', gap: 8,
       }}>
         {running ? (
@@ -308,9 +308,9 @@ export function ExecutionPanel({
             onClick={handleStop}
             style={{
               flex: 1, padding: '9px',
-              background: 'rgba(239,68,68,0.15)',
-              border: '1px solid rgba(239,68,68,0.30)',
-              borderRadius: 8, color: '#ef4444',
+              background: 'color-mix(in srgb, var(--cat-breakage) 15%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)',
+              borderRadius: 8, color: 'var(--cat-breakage)',
               fontSize: 12, fontWeight: 700,
               cursor: 'pointer',
             }}
@@ -323,9 +323,9 @@ export function ExecutionPanel({
             disabled={!promptText.trim()}
             style={{
               flex: 1, padding: '9px',
-              background: '#22C55E',
+              background: 'var(--cat-configuration)',
               border: 'none', borderRadius: 8,
-              color: '#fff', fontSize: 12,
+              color: 'var(--text)', fontSize: 12,
               fontWeight: 700, cursor: 'pointer',
               opacity: promptText.trim() ? 1 : 0.5,
             }}
@@ -338,10 +338,10 @@ export function ExecutionPanel({
             onClick={() => onAcceptResult(output)}
             style={{
               padding: '9px 16px',
-              background: 'rgba(34,197,94,0.12)',
+              background: 'color-mix(in srgb, var(--cat-configuration) 12%, transparent)',
               border:
-                '1px solid rgba(34,197,94,0.30)',
-              borderRadius: 8, color: '#22C55E',
+                '1px solid color-mix(in srgb, var(--cat-configuration) 30%, transparent)',
+              borderRadius: 8, color: 'var(--cat-configuration)',
               fontSize: 12, fontWeight: 700,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}

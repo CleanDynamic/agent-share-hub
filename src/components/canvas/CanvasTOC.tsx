@@ -201,7 +201,7 @@ export function CanvasTOC({
         transition: 'width 0.20s ease',
         display: 'flex',
         flexDirection: 'column',
-        borderRight: '1px solid rgba(255,255,255,0.05)',
+        borderRight: '1px solid var(--line)',
         overflow: 'hidden',
         background: 'rgba(6,6,10,0.55)',
         backdropFilter: 'blur(16px)',
@@ -216,7 +216,7 @@ export function CanvasTOC({
             top: 16,
             right: open ? 8 : 6,
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 11,
             fontWeight: 700,
             fontFamily: 'Figtree, sans-serif',
@@ -243,14 +243,14 @@ export function CanvasTOC({
             {/* Header */}
             <div style={{
               padding: '0 12px 10px 12px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              borderBottom: '1px solid var(--line)',
               marginBottom: 8,
             }}>
               <div style={{
                 fontSize: 9, fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.14em',
-                color: 'rgba(255,255,255,0.22)',
+                color: 'var(--text2)',
               }}>
                 Contents
               </div>
@@ -264,7 +264,7 @@ export function CanvasTOC({
               <div style={{
                 padding: '20px 12px',
                 fontSize: 11,
-                color: 'rgba(255,255,255,0.18)',
+                color: 'var(--text2)',
                 fontStyle: 'italic',
                 lineHeight: 1.6,
               }}>
@@ -276,7 +276,7 @@ export function CanvasTOC({
             {mode === 'edit' && (
               <div style={{
                 padding: '12px 12px 0 12px',
-                borderTop: '1px solid rgba(255,255,255,0.05)',
+                borderTop: '1px solid var(--line)',
                 marginTop: 12,
               }}>
                 {!addingStage ? (
@@ -287,9 +287,9 @@ export function CanvasTOC({
                       width: '100%',
                       padding: '6px 0',
                       background: 'none',
-                      border: '1px dashed rgba(255,255,255,0.12)',
+                      border: '1px dashed var(--line)',
                       borderRadius: 6, fontSize: 11,
-                      color: 'rgba(255,255,255,0.30)',
+                      color: 'var(--text2)',
                       cursor: 'pointer',
                       fontFamily: 'Figtree, sans-serif',
                     }}
@@ -316,19 +316,19 @@ export function CanvasTOC({
                       placeholder="Stage name..."
                       style={{
                         width: '100%',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.12)',
+                        background: 'var(--recess)',
+                        border: '1px solid var(--line)',
                         borderRadius: 6,
                         padding: '6px 8px',
                         fontSize: 12,
-                        color: '#fff', outline: 'none',
+                        color: 'var(--text)', outline: 'none',
                         boxSizing: 'border-box',
                         fontFamily: 'Figtree, sans-serif',
                       }}
                     />
                     <div style={{
                       fontSize: 10, marginTop: 4,
-                      color: 'rgba(255,255,255,0.20)',
+                      color: 'var(--text2)',
                     }}>
                       Press Enter to create
                     </div>
@@ -351,7 +351,7 @@ export function CanvasTOC({
       ? stages.find(s => s.id === entry.id) : null;
     const stageColour = stageObj
       ? stageObj.colour.replace('0.06', '0.80')
-      : 'rgba(255,255,255,0.25)';
+      : 'var(--recess)';
 
     const isDropBefore = isStage
       && dropIndicator?.kind === 'stage'
@@ -378,7 +378,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: 0, right: 0, top: -1,
             height: 2,
-            background: '#8B4513',
+            background: 'var(--action)',
             zIndex: 5,
           }} />
         )}
@@ -394,7 +394,7 @@ export function CanvasTOC({
             transition: 'background 0.1s',
           }}
           onMouseEnter={e =>
-            ((e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.12)')
+            ((e.currentTarget as HTMLElement).style.background = 'var(--recess)')
           }
           onMouseLeave={e =>
             ((e.currentTarget as HTMLElement).style.background = 'transparent')
@@ -413,7 +413,7 @@ export function CanvasTOC({
               fontSize: 9, fontWeight: 700,
               color: isStage
                 ? stageColour
-                : 'rgba(255,255,255,0.25)',
+                : 'var(--recess)',
               flexShrink: 0,
               minWidth: 16,
               fontFamily: 'monospace',
@@ -441,12 +441,12 @@ export function CanvasTOC({
               }}
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(139,69,19,0.4)',
+                background: 'var(--recess)',
+                border: '1px solid color-mix(in srgb, var(--action) 40%, transparent)',
                 borderRadius: 4,
                 padding: '2px 4px',
                 fontSize: 11,
-                color: '#fff',
+                color: 'var(--text)',
                 outline: 'none',
                 fontFamily: 'Figtree, sans-serif',
                 minWidth: 0,
@@ -458,8 +458,8 @@ export function CanvasTOC({
                 fontSize: isStage ? 12 : 11,
                 fontWeight: isStage ? 700 : 400,
                 color: isStage
-                  ? 'rgba(255,255,255,0.75)'
-                  : 'rgba(255,255,255,0.45)',
+                  ? 'var(--text2)'
+                  : 'var(--text2)',
                 flex: 1,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -482,7 +482,7 @@ export function CanvasTOC({
           {isStage && entry.children.length > 0 && (
             <span style={{
               fontSize: 10,
-              color: 'rgba(255,255,255,0.20)',
+              color: 'var(--text2)',
               flexShrink: 0,
             }}>
               {isCollapsed ? '▸' : '▾'}
@@ -496,7 +496,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: 0, right: 0, bottom: -1,
             height: 2,
-            background: '#8B4513',
+            background: 'var(--action)',
             zIndex: 5,
           }} />
         )}
@@ -551,7 +551,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: baseIndent, right: 0, top: -1,
             height: 2,
-            background: '#8B4513',
+            background: 'var(--action)',
             zIndex: 5,
           }} />
         )}
@@ -567,7 +567,7 @@ export function CanvasTOC({
             position: 'relative',
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.12)';
+            (e.currentTarget as HTMLElement).style.background = 'var(--recess)';
             const controls = (e.currentTarget as HTMLElement).querySelector('.depth-controls') as HTMLElement;
             if (controls) controls.style.opacity = '1';
           }}
@@ -586,7 +586,7 @@ export function CanvasTOC({
           {entry.number && (
             <span style={{
               fontSize: 9, fontWeight: 700,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'var(--text2)',
               flexShrink: 0,
               minWidth: 28,
               fontFamily: 'monospace',
@@ -614,12 +614,12 @@ export function CanvasTOC({
               }}
               style={{
                 flex: 1,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(139,69,19,0.4)',
+                background: 'var(--recess)',
+                border: '1px solid color-mix(in srgb, var(--action) 40%, transparent)',
                 borderRadius: 4,
                 padding: '2px 4px',
                 fontSize: 11,
-                color: '#fff',
+                color: 'var(--text)',
                 outline: 'none',
                 fontFamily: 'Figtree, sans-serif',
                 minWidth: 0,
@@ -630,7 +630,7 @@ export function CanvasTOC({
               style={{
                 fontSize: 11,
                 fontWeight: 400,
-                color: 'rgba(255,255,255,0.45)',
+                color: 'var(--text2)',
                 flex: 1,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -673,7 +673,7 @@ export function CanvasTOC({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: depth === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.45)',
+                  color: depth === 0 ? 'var(--recess)' : 'var(--recess)',
                   cursor: depth === 0 ? 'not-allowed' : 'pointer',
                   fontSize: 11,
                   padding: '0 2px',
@@ -694,7 +694,7 @@ export function CanvasTOC({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: depth === 2 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.45)',
+                  color: depth === 2 ? 'var(--recess)' : 'var(--recess)',
                   cursor: depth === 2 ? 'not-allowed' : 'pointer',
                   fontSize: 11,
                   padding: '0 2px',
@@ -713,7 +713,7 @@ export function CanvasTOC({
             position: 'absolute',
             left: baseIndent, right: 0, bottom: -1,
             height: 2,
-            background: '#8B4513',
+            background: 'var(--action)',
             zIndex: 5,
           }} />
         )}

@@ -21,7 +21,7 @@ const contentOptions: Array<{
   {
     type: "blueprint",
     icon: Sparkles,
-    iconColor: "#E8571A",
+    iconColor: "var(--action)",
     title: "Blueprint",
     description:
       "An article with embedded visual workflows. Best for tutorials, recipes, and how-tos.",
@@ -29,7 +29,7 @@ const contentOptions: Array<{
   {
     type: "blog",
     icon: PenLine,
-    iconColor: "#2EC4B6",
+    iconColor: "var(--evidence)",
     title: "Blog",
     description:
       "Long-form writing with inline references to blueprints, stages, or blocks.",
@@ -37,7 +37,7 @@ const contentOptions: Array<{
   {
     type: "bounty",
     icon: Trophy,
-    iconColor: "#F59E0B",
+    iconColor: "var(--cat-breakage)",
     title: "Bounty",
     description:
       "Post a partial blueprint and ask the community to fill in the gaps.",
@@ -45,7 +45,7 @@ const contentOptions: Array<{
   {
     type: "meta-bounty",
     icon: Target,
-    iconColor: "#7C3AED",
+    iconColor: "var(--cat-agents)",
     title: "Meta-bounty",
     description:
       "Spawn multiple linked bounties under one umbrella problem.",
@@ -189,7 +189,7 @@ export function UploadTypePicker({
       backgroundColor: "rgba(40, 40, 52, 0.95)",
       backdropFilter: "blur(40px) saturate(160%)",
       WebkitBackdropFilter: "blur(40px) saturate(160%)",
-      border: "0.5px solid rgba(255, 255, 255, 0.14)",
+      border: "0.5px solid var(--line)",
       boxShadow: "0 24px 64px rgba(0, 0, 0, 0.50)",
       display: "flex",
       flexDirection: "column",
@@ -232,8 +232,8 @@ export function UploadTypePicker({
   const getCardStyle = (isHovered: boolean, isPressed: boolean): React.CSSProperties => ({
     backgroundColor: isHovered ? "rgba(68, 68, 84, 0.65)" : "rgba(68, 68, 84, 0.50)",
     border: isHovered
-      ? "0.5px solid rgba(232, 87, 26, 0.40)"
-      : "0.5px solid rgba(255, 255, 255, 0.10)",
+      ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
+      : "0.5px solid var(--line)",
     borderRadius: "12px",
     padding: "16px",
     cursor: "pointer",
@@ -267,7 +267,7 @@ export function UploadTypePicker({
               style={{
                 width: "36px",
                 height: "4px",
-                backgroundColor: "rgba(255, 255, 255, 0.30)",
+                backgroundColor: "var(--recess)",
                 borderRadius: "9999px",
               }}
             />
@@ -284,7 +284,7 @@ export function UploadTypePicker({
               fontFamily: "Figtree, sans-serif",
               fontSize: "16px",
               fontWeight: 600,
-              color: "rgba(255, 255, 255, 0.95)",
+              color: "var(--text)",
               margin: 0,
             }}
           >
@@ -304,7 +304,7 @@ export function UploadTypePicker({
                 borderRadius: "8px",
               }}
             >
-              <X size={16} style={{ color: "rgba(255, 255, 255, 0.60)" }} />
+              <X size={16} style={{ color: "var(--text2)" }} />
             </button>
           )}
         </div>
@@ -327,7 +327,7 @@ export function UploadTypePicker({
           style={{
             marginTop: "16px",
             paddingTop: "16px",
-            borderTop: "0.5px solid rgba(255, 255, 255, 0.10)",
+            borderTop: "0.5px solid var(--line)",
           }}
         >
           <span
@@ -335,7 +335,7 @@ export function UploadTypePicker({
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 400,
-              color: "rgba(255, 255, 255, 0.50)",
+              color: "var(--text2)",
             }}
           >
             Need help choosing?
@@ -346,7 +346,7 @@ export function UploadTypePicker({
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#E8571A",
+              color: "var(--action)",
               textDecoration: "none",
             }}
           >
@@ -402,7 +402,7 @@ function OptionCard({
     >
       <div className="flex items-start justify-between">
         <Icon size={isDesktop ? 28 : 22} style={{ color: option.iconColor }} />
-        <ChevronRight size={14} style={{ color: "rgba(255, 255, 255, 0.35)" }} />
+        <ChevronRight size={14} style={{ color: "var(--text2)" }} />
       </div>
 
       <div
@@ -411,7 +411,7 @@ function OptionCard({
           fontFamily: "Figtree, sans-serif",
           fontSize: isDesktop ? "14px" : "13px",
           fontWeight: 600,
-          color: "rgba(255, 255, 255, 0.95)",
+          color: "var(--text)",
           textAlign: "left",
         }}
       >
@@ -425,7 +425,7 @@ function OptionCard({
           fontSize: "12px",
           fontWeight: 400,
           lineHeight: 1.45,
-          color: "rgba(255, 255, 255, 0.60)",
+          color: "var(--text2)",
           textAlign: "left",
           display: "-webkit-box",
           WebkitLineClamp: 2,

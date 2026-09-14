@@ -13,40 +13,46 @@ interface NoteBlockData {
   [key: string]: unknown;
 }
 
+/* BG-P28. The four note colours keep their four IDENTITIES — an author who
+   made a note yellow still gets a distinct note — but each is now a measured
+   ground/ink pair from the part hues rather than a Post-it hex with a second,
+   lighter hex for its text. The pale inks (#FCD34D, #F9A8D4, #93C5FD, #86EFAC)
+   were the tell: they exist only because the ground beneath them was assumed
+   dark, and every one of them fails on the Exhibition room. */
 const colorStyles: Record<NoteColor, { bg: string; border: string; text: string }> = {
   yellow: {
-    bg: 'bg-[#F59E0B]/20',
-    border: 'border-[#F59E0B]/30',
-    text: 'text-[#FCD34D]',
+    bg: 'bg-[var(--cat-artefact-fill)]',
+    border: 'border-[var(--cat-artefact)]',
+    text: 'text-[var(--cat-artefact)]',
   },
   pink: {
-    bg: 'bg-[#EC4899]/20',
-    border: 'border-[#EC4899]/30',
-    text: 'text-[#F9A8D4]',
+    bg: 'bg-[var(--cat-media-fill)]',
+    border: 'border-[var(--cat-media)]',
+    text: 'text-[var(--cat-media)]',
   },
   blue: {
-    bg: 'bg-[#3B82F6]/20',
-    border: 'border-[#3B82F6]/30',
-    text: 'text-[#93C5FD]',
+    bg: 'bg-[var(--cat-data-fill)]',
+    border: 'border-[var(--cat-data)]',
+    text: 'text-[var(--cat-data)]',
   },
   green: {
-    bg: 'bg-[#22C55E]/20',
-    border: 'border-[#22C55E]/30',
-    text: 'text-[#86EFAC]',
+    bg: 'bg-[var(--cat-configuration-fill)]',
+    border: 'border-[var(--cat-configuration)]',
+    text: 'text-[var(--cat-configuration)]',
   },
 };
 
 const dotColors: Record<NoteColor, string> = {
-  yellow: 'bg-[#F59E0B]',
-  pink: 'bg-[#EC4899]',
-  blue: 'bg-[#3B82F6]',
-  green: 'bg-[#22C55E]',
+  yellow: 'bg-[var(--cat-artefact)]',
+  pink: 'bg-[var(--cat-media)]',
+  blue: 'bg-[var(--cat-data)]',
+  green: 'bg-[var(--cat-configuration)]',
 };
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -92,7 +98,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
         'group relative rounded-xl border backdrop-blur-md shadow-lg w-[260px]',
         styles.bg,
         styles.border,
-        selected && 'ring-2 ring-white/30',
+        selected && 'ring-2 ring-border',
       )}
       style={{
         padding: 12,
@@ -106,8 +112,8 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
 
       {/* Header Row */}
       <div className="flex items-center gap-2 mb-2">
-        <StickyNote size={12} className="text-white/70" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+        <StickyNote size={12} className="text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Note
         </span>
 
@@ -120,12 +126,12 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
               setShowColorPicker((v) => !v);
             }}
             className={cn(
-              'w-4 h-4 rounded-full border border-white/20',
+              'w-4 h-4 rounded-full border border-border',
               dotColors[color],
             )}
           />
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 z-10 flex gap-1.5 p-2 bg-[rgba(22,22,30,0.95)] border border-white/10 rounded-md shadow-lg">
+            <div className="absolute top-full left-0 mt-1 z-10 flex gap-1.5 p-2 bg-[rgba(22,22,30,0.95)] border border-border rounded-md shadow-lg">
               {(['yellow', 'pink', 'blue', 'green'] as NoteColor[]).map((c) => (
                 <button
                   key={c}
@@ -139,7 +145,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
                     'w-5 h-5 rounded-full transition-transform hover:scale-110',
                     dotColors[c],
                     c === color &&
-                      'ring-2 ring-white/50 ring-offset-1 ring-offset-[rgba(22,22,30,0.95)]',
+                      'ring-2 ring-border ring-offset-1 ring-offset-[rgba(22,22,30,0.95)]',
                   )}
                 />
               ))}
@@ -150,7 +156,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
         <div className="flex-1" />
         <button
           type="button"
-          className="text-white/40 hover:text-white/80 transition-colors"
+          className="text-muted-foreground hover:text-muted-foreground transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={14} />
@@ -166,7 +172,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
         className={cn(
           'w-full h-[80px] bg-transparent outline-none resize-none',
           'text-sm leading-relaxed font-medium',
-          'placeholder:text-white/20',
+          'placeholder:text-muted-foreground',
           styles.text,
         )}
       />

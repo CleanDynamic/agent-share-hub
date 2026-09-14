@@ -41,7 +41,7 @@ export function UploadSectionToggle({
       className="w-full"
       style={{
         background: "rgba(22,22,30,0.40)",
-        border: `0.5px solid rgba(255,255,255,${hover || open ? 0.18 : 0.10})`,
+        border: `1px solid ${hover || open ? 'var(--text2)' : 'var(--line)'}`,
         borderRadius: "10px",
         overflow: "hidden",
         transition: "border-color 160ms ease-out",
@@ -67,7 +67,7 @@ export function UploadSectionToggle({
               fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 500,
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
             }}
           >
             {label}
@@ -78,7 +78,7 @@ export function UploadSectionToggle({
                 width: 6,
                 height: 6,
                 borderRadius: 999,
-                background: "#2EC4B6",
+                background: "var(--evidence)",
                 display: "inline-block",
               }}
             />
@@ -90,7 +90,7 @@ export function UploadSectionToggle({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 fontWeight: 400,
-                color: "rgba(255,255,255,0.40)",
+                color: "var(--text2)",
                 marginLeft: 4,
                 maxWidth: 360,
               }}
@@ -101,7 +101,7 @@ export function UploadSectionToggle({
         </div>
         <ChevronDown
           size={16}
-          color="rgba(255,255,255,0.55)"
+          color="var(--text2)"
           style={{
             transition: "transform 160ms ease-out",
             transform: open ? "rotate(180deg)" : "rotate(0deg)",

@@ -39,17 +39,17 @@ interface PopoverState {
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  prompt: '#8B5CF6',
-  code: '#22C55E',
-  text: 'rgba(255,255,255,0.6)',
-  result: '#3B82F6',
-  agent: '#E8571A',
-  tool: '#06B6D4',
-  model: '#EC4899',
-  workflow: '#F59E0B',
-  heading: '#FBBF24',
-  resource: '#14B8A6',
-  note: '#A78BFA',
+  prompt: 'var(--cat-agents)',
+  code: 'var(--cat-configuration)',
+  text: 'var(--recess)',
+  result: 'var(--cat-data)',
+  agent: 'var(--action)',
+  tool: 'var(--cat-data)',
+  model: 'var(--cat-media)',
+  workflow: 'var(--cat-configuration)',
+  heading: 'var(--cat-narrative)',
+  resource: 'var(--evidence)',
+  note: 'var(--cat-agents)',
 };
 
 export function useVariableAutocomplete({
@@ -190,12 +190,12 @@ export function useVariableAutocomplete({
         top: state.top,
         left: state.left,
         background: 'rgba(22,22,30,0.98)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid var(--line)',
         backdropFilter: 'blur(8px)',
       }}
     >
       {filtered.length === 0 ? (
-        <div className="px-3 py-2 text-[11px] text-white/40">
+        <div className="px-3 py-2 text-[11px] text-muted-foreground">
           No named blocks{state.query ? ` match "${state.query}"` : ''}.
         </div>
       ) : (
@@ -213,19 +213,19 @@ export function useVariableAutocomplete({
             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11.5px] transition-colors"
             style={{
               background:
-                i === state.highlight ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
-              color: 'rgba(255,255,255,0.85)',
+                i === state.highlight ? 'var(--recess)' : 'transparent',
+              color: 'var(--text)',
             }}
           >
             <span
               className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{
                 background:
-                  TYPE_COLOR[b.type] ?? 'rgba(255,255,255,0.4)',
+                  TYPE_COLOR[b.type] ?? 'var(--recess)',
               }}
             />
             <span className="truncate">{b.name}</span>
-            <span className="ml-auto text-[10px] uppercase tracking-wider text-white/35">
+            <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
               {b.type}
             </span>
           </button>

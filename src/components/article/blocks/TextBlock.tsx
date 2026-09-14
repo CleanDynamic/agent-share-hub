@@ -20,7 +20,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
-const TYPE_COLOR = 'rgba(255,255,255,0.60)';
+const TYPE_COLOR = 'var(--text2)';
 
 interface TextBlockData {
   blockId: string;
@@ -31,7 +31,7 @@ interface TextBlockData {
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -151,11 +151,11 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
           width: 260,
           minHeight: 80,
           border: selected
-            ? '1px solid rgba(255,255,255,0.45)'
+            ? '1px solid var(--line)'
             : expandedSelection
-              ? '1px dashed rgba(255,255,255,0.30)'
-              : '1px solid rgba(255,255,255,0.08)',
-          boxShadow: selected ? '0 0 0 2px rgba(255,255,255,0.12)' : 'none',
+              ? '1px dashed var(--line)'
+              : '1px solid var(--line)',
+          boxShadow: selected ? '0 0 0 2px var(--line)' : 'none',
         }}
       >
         <Handle
@@ -185,7 +185,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
             className="inline-block w-1.5 h-1.5 rounded-full"
             style={{ background: TYPE_COLOR }}
           />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Text
           </span>
           <input
@@ -193,11 +193,11 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <button
             type="button"
-            className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+            className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
             title="More"
             onClick={(e) => e.stopPropagation()}
           >
@@ -210,7 +210,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
               selectThis();
               setDrawerOpen(true);
             }}
-            className="nodrag p-0.5 text-white/40 hover:text-white/80"
+            className="nodrag p-0.5 text-muted-foreground hover:text-muted-foreground"
             title="Expand"
           >
             <ArrowUpRight size={12} />
@@ -221,8 +221,8 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="nodrag rounded-md px-2 py-1.5"
           style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
           }}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -245,10 +245,10 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-white/10 text-white overflow-y-auto"
+          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-white/90 text-base">
+            <SheetTitle className="text-muted-foreground text-base">
               Text block
             </SheetTitle>
           </SheetHeader>
@@ -258,14 +258,14 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Block name"
-              className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
             />
 
             <div
               className="rounded-md p-3"
               style={{
                 background: 'rgba(0,0,0,0.25)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                border: '1px solid var(--line)',
                 minHeight: 240,
               }}
             >
@@ -277,7 +277,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
               />
             </div>
 
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px] text-muted-foreground">
               Tip: Cmd/Ctrl + B for bold, I for italic, U for underline. Paste
               a URL onto selected text to link it.
             </p>

@@ -26,7 +26,7 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
         onClick={e => e.stopPropagation()}
         style={{
           background: 'rgba(10,10,16,0.98)',
-          border: '1px solid rgba(255,255,255,0.12)',
+          border: '1px solid var(--line)',
           borderRadius: 14,
           padding: 24,
           maxWidth: 380,
@@ -38,15 +38,15 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <AlertTriangle size={20} color="#F59E0B" />
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
+          <AlertTriangle size={20} color="var(--cat-breakage)" />
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
             Clear entire canvas?
           </span>
         </div>
 
         <p style={{
           fontSize: 12,
-          color: 'rgba(255,255,255,0.50)',
+          color: 'var(--text2)',
           margin: 0,
           lineHeight: 1.5,
         }}>
@@ -61,10 +61,10 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
               padding: '8px 16px',
               fontSize: 12,
               fontWeight: 500,
-              background: 'rgba(255, 255, 255, 0.14)',
+              background: 'var(--recess)',
               border: 'none',
               borderRadius: 8,
-              color: 'rgba(255,255,255,0.60)',
+              color: 'var(--text2)',
               cursor: 'pointer',
             }}
           >
@@ -80,10 +80,10 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
               padding: '8px 16px',
               fontSize: 12,
               fontWeight: 700,
-              background: 'rgba(239,68,68,0.85)',
+              background: 'color-mix(in srgb, var(--cat-breakage) 85%, transparent)',
               border: 'none',
               borderRadius: 8,
-              color: '#fff',
+              color: 'var(--text)',
               cursor: 'pointer',
             }}
           >

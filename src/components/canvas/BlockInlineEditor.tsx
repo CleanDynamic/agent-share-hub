@@ -55,7 +55,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 10, fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.10em',
-            color: 'rgba(255,255,255,0.45)',
+            color: 'var(--text2)',
             marginBottom: 4,
           }}
         >
@@ -68,11 +68,11 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           placeholder="YouTube, Vimeo, or direct video URL"
           style={{
             width: '100%',
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 6, outline: 'none',
             fontSize: 13,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             padding: '8px 10px',
             fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box',
@@ -87,7 +87,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 10, fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.10em',
-            color: 'rgba(255,255,255,0.45)',
+            color: 'var(--text2)',
             marginBottom: 4,
           }}
         >
@@ -131,7 +131,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             }}
           />
           <div style={{
-            fontSize: 10, color: 'rgba(255,255,255,0.45)',
+            fontSize: 10, color: 'var(--text2)',
             padding: '4px 8px',
             fontFamily: 'Figtree, sans-serif',
           }}>
@@ -147,7 +147,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 10, fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.10em',
-            color: 'rgba(255,255,255,0.45)',
+            color: 'var(--text2)',
             marginBottom: 4,
           }}
         >
@@ -160,11 +160,11 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           placeholder="Short description…"
           style={{
             width: '100%',
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 6, outline: 'none',
             fontSize: 13,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             padding: '8px 10px',
             fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box',
@@ -192,10 +192,10 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             width: '100%',
             ...type.cardTitle,
 
-            color: 'rgba(255,255,255,0.88)',
+            color: 'var(--text)',
             background: 'transparent',
             border: 'none', outline: 'none',
-            borderBottom: '1px solid rgba(255,255,255,0.10)',
+            borderBottom: '1px solid var(--line)',
             padding: '4px 0 10px 0',
             marginBottom: 14,
             boxSizing: 'border-box',
@@ -238,7 +238,7 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             borderLeft: '3px solid #FBBF24',
             borderRadius: 6, outline: 'none',
             fontSize: 13, fontStyle: 'italic',
-            color: 'rgba(255,255,255,0.80)',
+            color: 'var(--text2)',
             lineHeight: 1.6, resize: 'vertical',
             fontFamily: 'Figtree, sans-serif',
             minHeight: 100, padding: 10,
@@ -268,9 +268,9 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
           placeholder="Enter content..."
           style={{
             width: '100%', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid var(--line)',
             borderRadius: 6, outline: 'none', fontSize: 14,
-            color: 'rgba(255,255,255,0.70)',
+            color: 'var(--text2)',
             lineHeight: 1.65, resize: 'vertical',
             fontFamily: 'Figtree, sans-serif',
             minHeight: 100, padding: 10,

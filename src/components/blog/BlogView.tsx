@@ -188,8 +188,8 @@ export function BlogView({ item }: BlogViewProps) {
               style={{
                 width: 28,
                 height: 28,
-                background: "rgba(255, 255, 255, 0.14)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
+                background: "var(--recess)",
+                border: "0.5px solid var(--line)",
               }}
             >
               {creator?.avatar_url ? (
@@ -201,7 +201,7 @@ export function BlogView({ item }: BlogViewProps) {
               ) : (
                 <span
                   style={{
-                    color: "rgba(255,255,255,0.55)",
+                    color: "var(--text2)",
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 600,
@@ -217,7 +217,7 @@ export function BlogView({ item }: BlogViewProps) {
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                 }}
               >
                 {authorName}
@@ -227,7 +227,7 @@ export function BlogView({ item }: BlogViewProps) {
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 400,
-                  color: "rgba(255,255,255,0.45)",
+                  color: "var(--text2)",
                 }}
               >
                 {authorHandle}
@@ -246,7 +246,7 @@ export function BlogView({ item }: BlogViewProps) {
           style={{
             ...type.sectionHead,
 
-            color: "rgba(255,255,255,0.96)",
+            color: "var(--text)",
             margin: 0,
           }}
         >
@@ -261,7 +261,7 @@ export function BlogView({ item }: BlogViewProps) {
               fontSize: 18,
               fontStyle: "italic",
               fontWeight: 400,
-              color: "rgba(255,255,255,0.60)",
+              color: "var(--text2)",
               margin: "12px 0 0 0",
               lineHeight: 1.4,
             }}
@@ -284,9 +284,9 @@ export function BlogView({ item }: BlogViewProps) {
                 key={t}
                 className="px-2.5 py-1 rounded-full"
                 style={{
-                  background: "rgba(46,196,182,0.08)",
-                  border: "0.5px solid rgba(46,196,182,0.20)",
-                  color: "rgba(46,196,182,0.95)",
+                  background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
+                  border: "0.5px solid color-mix(in srgb, var(--evidence) 20%, transparent)",
+                  color: "color-mix(in srgb, var(--evidence) 95%, transparent)",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
@@ -303,7 +303,7 @@ export function BlogView({ item }: BlogViewProps) {
           className="mt-10 flex items-center gap-3"
           style={{
             paddingTop: 16,
-            borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
+            borderTop: "0.5px solid var(--line)",
           }}
         >
           <EngagementButton
@@ -333,7 +333,7 @@ export function BlogView({ item }: BlogViewProps) {
             className="mt-10 p-5 rounded-xl flex items-start gap-4"
             style={{
               background: "rgba(22,22,30,0.40)",
-              border: "0.5px solid rgba(255, 255, 255, 0.14)",
+              border: "0.5px solid var(--line)",
             }}
           >
             <div
@@ -341,8 +341,8 @@ export function BlogView({ item }: BlogViewProps) {
               style={{
                 width: 48,
                 height: 48,
-                background: "rgba(255, 255, 255, 0.14)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
+                background: "var(--recess)",
+                border: "0.5px solid var(--line)",
               }}
             >
               {creator.avatar_url ? (
@@ -354,7 +354,7 @@ export function BlogView({ item }: BlogViewProps) {
               ) : (
                 <span
                   style={{
-                    color: "rgba(255,255,255,0.55)",
+                    color: "var(--text2)",
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 18,
                     fontWeight: 600,
@@ -375,7 +375,7 @@ export function BlogView({ item }: BlogViewProps) {
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                 }}
               >
                 {authorName}
@@ -386,7 +386,7 @@ export function BlogView({ item }: BlogViewProps) {
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 400,
-                    color: "rgba(255,255,255,0.45)",
+                    color: "var(--text2)",
                     marginLeft: 6,
                   }}
                 >
@@ -399,7 +399,7 @@ export function BlogView({ item }: BlogViewProps) {
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 13,
                     fontWeight: 400,
-                    color: "rgba(255,255,255,0.65)",
+                    color: "var(--text2)",
                     lineHeight: 1.55,
                     margin: "6px 0 0 0",
                   }}
@@ -422,7 +422,7 @@ export function BlogView({ item }: BlogViewProps) {
           font-family: Figtree, sans-serif;
           font-size: 16px;
           line-height: 1.85;
-          color: rgba(255,255,255,0.86);
+          color: var(--text);
           outline: none;
         }
         .blog-view-prose .ProseMirror > * + * { margin-top: 1.1em; }
@@ -430,7 +430,7 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror h2 {
           font-family: ${BODONI};
           font-weight: 700;
-          color: rgba(255,255,255,0.94);
+          color: var(--text);
           line-height: 1.25;
         }
         .blog-view-prose .ProseMirror h1 { font-size: 28px; margin-top: 1.6em; }
@@ -439,30 +439,30 @@ export function BlogView({ item }: BlogViewProps) {
           font-family: Figtree, sans-serif;
           font-size: 16px;
           font-weight: 600;
-          color: rgba(255,255,255,0.92);
+          color: var(--text);
           margin-top: 1.2em;
         }
         .blog-view-prose .ProseMirror a {
-          color: rgba(46,196,182,0.95);
+          color: color-mix(in srgb, var(--evidence) 95%, transparent);
           text-decoration: underline;
           text-underline-offset: 2px;
         }
         .blog-view-prose .ProseMirror blockquote {
-          border-left: 3px solid rgba(46,196,182,0.45);
+          border-left: 3px solid color-mix(in srgb, var(--evidence) 45%, transparent);
           padding-left: 14px;
-          color: rgba(255,255,255,0.72);
+          color: var(--text2);
           font-style: italic;
         }
         .blog-view-prose .ProseMirror code {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: 13px;
-          background: rgba(255, 255, 255, 0.14);
+          background: var(--recess);
           padding: 1px 5px;
           border-radius: 4px;
         }
         .blog-view-prose .ProseMirror pre {
           background: rgba(15,15,22,0.7);
-          border: 0.5px solid rgba(255, 255, 255, 0.14);
+          border: 0.5px solid var(--line);
           border-radius: 8px;
           padding: 14px 16px;
           overflow-x: auto;
@@ -501,11 +501,11 @@ function EngagementButton({
       aria-label={label}
       className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full transition-colors"
       style={{
-        background: active ? "rgba(232,87,26,0.10)" : "rgba(255,255,255,0.03)",
+        background: active ? "color-mix(in srgb, var(--action) 10%, transparent)" : "var(--recess)",
         border: active
-          ? "0.5px solid rgba(232,87,26,0.40)"
-          : "0.5px solid rgba(255,255,255,0.08)",
-        color: active ? "#E8571A" : "rgba(255,255,255,0.75)",
+          ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
+          : "0.5px solid var(--line)",
+        color: active ? "var(--action)" : "var(--text2)",
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         fontWeight: 500,

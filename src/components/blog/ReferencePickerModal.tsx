@@ -79,7 +79,7 @@ const styles = {
     backgroundColor: "rgba(16,16,24,0.96)",
     backdropFilter: "blur(24px)",
     WebkitBackdropFilter: "blur(24px)",
-    border: "0.5px solid rgba(255,255,255,0.10)",
+    border: "0.5px solid var(--line)",
     borderRadius: 12,
     boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
     display: "flex",
@@ -92,15 +92,15 @@ const styles = {
     display: "flex",
     alignItems: "center",
     padding: "0 14px",
-    borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+    borderBottom: "0.5px solid var(--line)",
     gap: 8,
   },
-  headerIcon: { color: "#2EC4B6", width: 14, height: 14 },
+  headerIcon: { color: "var(--evidence)", width: 14, height: 14 },
   headerTitle: {
     fontFamily: "Figtree, sans-serif",
     fontSize: 14,
     fontWeight: 600,
-    color: "rgba(255,255,255,0.92)",
+    color: "var(--text)",
     flex: 1,
   },
   closeButton: {
@@ -112,7 +112,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 4,
-    color: "rgba(255,255,255,0.5)",
+    color: "var(--text2)",
     transition: "color 0.15s, background 0.15s",
   },
   tabsContainer: {
@@ -120,7 +120,7 @@ const styles = {
     minHeight: 40,
     display: "flex",
     alignItems: "stretch",
-    borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+    borderBottom: "0.5px solid var(--line)",
     padding: "0 14px",
   },
   tab: {
@@ -138,7 +138,7 @@ const styles = {
     padding: 0,
     gap: 1,
   },
-  tabActive: { borderBottomColor: "#E8571A" },
+  tabActive: { borderBottomColor: "var(--action)" },
   tabContent: { display: "flex", alignItems: "center", gap: 5 },
   tabIcon: { width: 12, height: 12 },
   tabLabel: {
@@ -150,7 +150,7 @@ const styles = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 9,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.30)",
+    color: "var(--text2)",
   },
   searchContainer: {
     height: 44,
@@ -158,13 +158,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     padding: "8px 14px",
-    borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+    borderBottom: "0.5px solid var(--line)",
     gap: 10,
   },
   searchIcon: {
     width: 14,
     height: 14,
-    color: "rgba(255,255,255,0.40)",
+    color: "var(--text2)",
     flexShrink: 0,
   },
   searchInput: {
@@ -175,7 +175,7 @@ const styles = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.92)",
+    color: "var(--text)",
   },
   resultsList: {
     flex: 1,
@@ -194,10 +194,10 @@ const styles = {
     borderLeft: "2px solid transparent",
     marginLeft: -2,
   },
-  resultItemHover: { backgroundColor: "rgba(255, 255, 255, 0.12)" },
+  resultItemHover: { backgroundColor: "var(--recess)" },
   resultItemActive: {
-    borderLeftColor: "#E8571A",
-    backgroundColor: "rgba(232,87,26,0.06)",
+    borderLeftColor: "var(--action)",
+    backgroundColor: "color-mix(in srgb, var(--action) 6%, transparent)",
   },
   avatar: {
     width: 24,
@@ -205,7 +205,7 @@ const styles = {
     borderRadius: "50%",
     objectFit: "cover" as const,
     flexShrink: 0,
-    background: "rgba(255,255,255,0.08)",
+    background: "var(--recess)",
   },
   resultCenter: {
     flex: 1,
@@ -218,7 +218,7 @@ const styles = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 12,
     fontWeight: 500,
-    color: "rgba(255,255,255,0.85)",
+    color: "var(--text)",
     whiteSpace: "nowrap" as const,
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -227,7 +227,7 @@ const styles = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.45)",
+    color: "var(--text2)",
     whiteSpace: "nowrap" as const,
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -242,8 +242,8 @@ const styles = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 9,
     fontWeight: 500,
-    color: "rgba(255,255,255,0.55)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    color: "var(--text2)",
+    backgroundColor: "var(--recess)",
     padding: "2px 6px",
     borderRadius: 4,
     textTransform: "capitalize" as const,
@@ -253,14 +253,14 @@ const styles = {
   stageIcon: {
     width: 14,
     height: 14,
-    color: "rgba(46,196,182,0.85)",
+    color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
     flexShrink: 0,
   },
   statsText: {
     fontFamily: "Figtree, sans-serif",
     fontSize: 10,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.40)",
+    color: "var(--text2)",
     whiteSpace: "nowrap" as const,
   },
   blockDot: {
@@ -275,7 +275,7 @@ const styles = {
     fontWeight: 600,
     textTransform: "uppercase" as const,
     letterSpacing: "0.06em",
-    color: "rgba(255,255,255,0.55)",
+    color: "var(--text2)",
   },
   emptyState: {
     display: "flex",
@@ -285,18 +285,18 @@ const styles = {
     padding: "40px 20px",
     gap: 8,
   },
-  emptyIcon: { width: 48, height: 48, color: "rgba(255,255,255,0.20)" },
+  emptyIcon: { width: 48, height: 48, color: "var(--text2)" },
   emptyTitle: {
     fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 500,
-    color: "rgba(255,255,255,0.60)",
+    color: "var(--text2)",
   },
   emptyDescription: {
     fontFamily: "Figtree, sans-serif",
     fontSize: 12,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.35)",
+    color: "var(--text2)",
     textAlign: "center" as const,
   },
   footer: {
@@ -305,13 +305,13 @@ const styles = {
     display: "flex",
     alignItems: "center",
     padding: "6px 14px",
-    borderTop: "0.5px solid rgba(255,255,255,0.10)",
+    borderTop: "0.5px solid var(--line)",
   },
   footerText: {
     fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 400,
-    color: "rgba(255,255,255,0.40)",
+    color: "var(--text2)",
   },
   loadingContainer: {
     display: "flex",
@@ -322,10 +322,10 @@ const styles = {
   spinner: {
     width: 20,
     height: 20,
-    color: "rgba(255,255,255,0.40)",
+    color: "var(--text2)",
     animation: "spin 1s linear infinite",
   },
-  untitled: { fontStyle: "italic" as const, color: "rgba(255,255,255,0.45)" },
+  untitled: { fontStyle: "italic" as const, color: "var(--text2)" },
 };
 
 const tabConfig: Array<{
@@ -456,8 +456,8 @@ export function ReferencePickerModal({
         @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
         .ref-picker-scrollbar::-webkit-scrollbar { width: 6px; }
         .ref-picker-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .ref-picker-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-        .ref-picker-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+        .ref-picker-scrollbar::-webkit-scrollbar-thumb { background: var(--recess); border-radius: 3px; }
+        .ref-picker-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--recess); }
       `}</style>
 
       <div style={modalStyle} onMouseDown={(e) => e.stopPropagation()}>
@@ -495,8 +495,8 @@ export function ReferencePickerModal({
                     style={{
                       ...styles.tabIcon,
                       color: isActive
-                        ? "rgba(255,255,255,0.92)"
-                        : "rgba(255,255,255,0.55)",
+                        ? "var(--text)"
+                        : "var(--text2)",
                     }}
                     strokeWidth={2}
                   />
@@ -504,8 +504,8 @@ export function ReferencePickerModal({
                     style={{
                       ...styles.tabLabel,
                       color: isActive
-                        ? "rgba(255,255,255,0.92)"
-                        : "rgba(255,255,255,0.55)",
+                        ? "var(--text)"
+                        : "var(--text2)",
                     }}
                   >
                     {tab.label}

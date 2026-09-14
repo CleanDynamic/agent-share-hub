@@ -30,21 +30,21 @@ const BLOCK_TYPE_ICONS: Record<string, any> = {
 };
 
 const QUICK_BLOCK_TYPES = [
-  { type: 'text', label: 'Text', accent: 'rgba(255,255,255,0.50)', desc: 'Plain text or notes' },
-  { type: 'prompt', label: 'Prompt', accent: '#8B4513', desc: 'AI prompt' },
-  { type: 'code', label: 'Code', accent: '#3B82F6', desc: 'Code snippet' },
-  { type: 'result', label: 'Result', accent: '#22C55E', desc: 'Output' },
-  { type: 'image', label: 'Image', accent: '#F59E0B', desc: 'Visual' },
-  { type: 'agent_config', label: 'Agent', accent: '#7C3AED', desc: 'AI agent config' },
-  { type: 'workflow', label: 'Workflow', accent: '#1F7A6D', desc: 'Multi-step process' },
-  { type: 'comparison', label: 'Compare', accent: '#EC4899', desc: 'Side-by-side' },
-  { type: 'tool_setup', label: 'Tool', accent: '#06B6D4', desc: 'Tool setup' },
-  { type: 'model_params', label: 'Model', accent: '#A78BFA', desc: 'Model config' },
-  { type: 'tutorial_step', label: 'Tutorial', accent: '#8B4513', desc: 'Step-by-step' },
-  { type: 'section_heading', label: 'Heading', accent: 'rgba(255,255,255,0.40)', desc: 'Section divider' },
+  { type: 'text', label: 'Text', accent: 'var(--recess)', desc: 'Plain text or notes' },
+  { type: 'prompt', label: 'Prompt', accent: 'var(--action)', desc: 'AI prompt' },
+  { type: 'code', label: 'Code', accent: 'var(--cat-data)', desc: 'Code snippet' },
+  { type: 'result', label: 'Result', accent: 'var(--cat-configuration)', desc: 'Output' },
+  { type: 'image', label: 'Image', accent: 'var(--cat-media)', desc: 'Visual' },
+  { type: 'agent_config', label: 'Agent', accent: 'var(--cat-agents)', desc: 'AI agent config' },
+  { type: 'workflow', label: 'Workflow', accent: 'var(--evidence)', desc: 'Multi-step process' },
+  { type: 'comparison', label: 'Compare', accent: 'var(--cat-media)', desc: 'Side-by-side' },
+  { type: 'tool_setup', label: 'Tool', accent: 'var(--cat-data)', desc: 'Tool setup' },
+  { type: 'model_params', label: 'Model', accent: 'var(--cat-agents)', desc: 'Model config' },
+  { type: 'tutorial_step', label: 'Tutorial', accent: 'var(--action)', desc: 'Step-by-step' },
+  { type: 'section_heading', label: 'Heading', accent: 'var(--recess)', desc: 'Section divider' },
   { type: 'resource', label: 'Resource', accent: '#64748B', desc: 'Link / reference' },
   { type: 'sticky_note', label: 'Note', accent: '#FBBF24', desc: 'Sticky note comment' },
-  { type: 'video', label: 'Video', accent: '#EC4899', desc: 'Video embed' },
+  { type: 'video', label: 'Video', accent: 'var(--cat-media)', desc: 'Video embed' },
 ];
 
 interface CanvasToolbarProps {
@@ -120,10 +120,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
   const navBtn = (id: string): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 28, height: 28,
-    background: hoveredBtn === id ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
+    background: hoveredBtn === id ? 'var(--recess)' : 'transparent',
     border: 'none',
     borderRadius: 6,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'var(--text2)',
     cursor: 'pointer',
     transition: 'all 0.15s',
   });
@@ -134,7 +134,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     background: 'transparent',
     border: 'none',
     borderRadius: 6,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'var(--text2)',
     opacity: 0.3,
     cursor: 'not-allowed',
   };
@@ -155,7 +155,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             transform: 'translateX(-50%)',
             background: 'rgba(16,16,24,0.95)',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: '1px solid var(--line)',
             borderRadius: 12,
             padding: 12,
             width: 420,
@@ -180,10 +180,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 fontWeight: 400,
                 fontFamily: 'Figtree, sans-serif',
                 padding: '10px 14px',
-                background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 8,
-                color: 'rgba(255,255,255,0.80)',
+                color: 'var(--text2)',
                 outline: 'none',
                 boxSizing: 'border-box' as const,
               }}
@@ -223,11 +223,11 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       borderRadius: 8,
                       fontSize: 12,
                       cursor: 'pointer',
-                      background: isHovered ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
+                      background: isHovered ? 'var(--recess)' : 'var(--recess)',
                       border: isHovered
                         ? `1px solid ${accentColor}26`
-                        : '1px solid rgba(255,255,255,0.05)',
-                      color: 'rgba(255,255,255,0.70)',
+                        : '1px solid var(--line)',
+                      color: 'var(--text2)',
                       fontWeight: 500,
                       fontFamily: 'Figtree, sans-serif',
                       transition: 'all 0.15s ease',
@@ -248,7 +248,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       <div style={{
                         fontSize: 11,
                         fontWeight: 400,
-                        color: 'rgba(255,255,255,0.35)',
+                        color: 'var(--text2)',
                         marginTop: 2,
                       }}>{bt.desc}</div>
                     </div>
@@ -261,7 +261,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                   textAlign: 'center',
                   padding: 16,
                   fontSize: 12,
-                  color: 'rgba(255,255,255,0.25)',
+                  color: 'var(--text2)',
                   fontFamily: 'Figtree, sans-serif',
                 }}>
                   No blocks match "{blockSearch}"
@@ -284,7 +284,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         zIndex: 100,
         background: 'rgba(16,16,24,0.80)',
         backdropFilter: 'blur(16px)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '1px solid var(--line)',
         borderRadius: 0,
         padding: '6px 16px',
       }}>
@@ -336,10 +336,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             padding: '6px 14px',
-            background: hoveredBtn === 'addblock' ? 'rgba(255,255,255,0.10)' : 'rgba(255, 255, 255, 0.14)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: hoveredBtn === 'addblock' ? 'var(--recess)' : 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 6,
-            color: 'rgba(255,255,255,0.70)',
+            color: 'var(--text2)',
             fontSize: 12, fontWeight: 500,
             fontFamily: 'Figtree, sans-serif',
             cursor: 'pointer',
@@ -370,7 +370,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             <Minus size={12} />
           </button>
           <span style={{
-            fontSize: 10, color: 'rgba(255,255,255,0.40)',
+            fontSize: 10, color: 'var(--text2)',
             fontWeight: 600, minWidth: 32, textAlign: 'center',
             fontFamily: 'Figtree, sans-serif',
           }}>
@@ -408,7 +408,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 <span style={{
                   position: 'absolute', top: 2, right: 2,
                   width: 6, height: 6, borderRadius: '50%',
-                  background: 'rgba(245,158,11,0.8)',
+                  background: 'var(--cat-breakage)',
                 }} />
               )}
             </button>
@@ -421,7 +421,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             style={{
               background: 'rgba(16,16,24,0.95)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid var(--line)',
               borderRadius: 10,
               padding: 6,
               minWidth: 180,
@@ -456,7 +456,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               {/* Divider */}
               <div style={{
                 height: 1,
-                background: 'rgba(255, 255, 255, 0.12)',
+                background: 'var(--recess)',
                 margin: '4px 0',
               }} />
 
@@ -491,7 +491,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 <>
                   <div style={{
                     height: 1,
-                    background: 'rgba(255, 255, 255, 0.12)',
+                    background: 'var(--recess)',
                     margin: '4px 0',
                   }} />
 
@@ -503,7 +503,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                     }}>
                       <span style={{
                         fontSize: 11, fontWeight: 500,
-                        color: 'rgba(239,68,68,0.80)',
+                        color: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)',
                         fontFamily: 'Figtree, sans-serif',
                         flex: 1,
                       }}>
@@ -517,10 +517,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                         }}
                         style={{
                           padding: '3px 10px', fontSize: 11, fontWeight: 600,
-                          background: 'rgba(239,68,68,0.15)',
-                          border: '1px solid rgba(239,68,68,0.30)',
+                          background: 'color-mix(in srgb, var(--cat-breakage) 15%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)',
                           borderRadius: 6,
-                          color: 'rgba(239,68,68,0.90)',
+                          color: 'color-mix(in srgb, var(--cat-breakage) 90%, transparent)',
                           cursor: 'pointer',
                           fontFamily: 'Figtree, sans-serif',
                         }}
@@ -532,10 +532,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                         onClick={() => setClearConfirm(false)}
                         style={{
                           padding: '3px 10px', fontSize: 11, fontWeight: 500,
-                          background: 'rgba(255, 255, 255, 0.14)',
-                          border: '1px solid rgba(255,255,255,0.10)',
+                          background: 'var(--recess)',
+                          border: '1px solid var(--line)',
                           borderRadius: 6,
-                          color: 'rgba(255,255,255,0.50)',
+                          color: 'var(--text2)',
                           cursor: 'pointer',
                           fontFamily: 'Figtree, sans-serif',
                         }}
@@ -551,7 +551,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       onMouseLeave={() => setHoveredMenu(null)}
                       style={{
                         ...menuItem(hoveredMenu === 'clear'),
-                        color: 'rgba(239,68,68,0.80)',
+                        color: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)',
                       }}
                     >
                       <Trash2 size={14} style={{ opacity: 0.7 }} />
@@ -579,10 +579,10 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '6px 14px',
-              background: hoveredBtn === 'save' ? 'rgba(255, 255, 255, 0.14)' : 'transparent',
-              border: '1px solid rgba(255,255,255,0.10)',
+              background: hoveredBtn === 'save' ? 'var(--recess)' : 'transparent',
+              border: '1px solid var(--line)',
               borderRadius: 6,
-              color: 'rgba(255,255,255,0.60)',
+              color: 'var(--text2)',
               fontSize: 12, fontWeight: 500,
               fontFamily: 'Figtree, sans-serif',
               cursor: saving ? 'not-allowed' : 'pointer',
@@ -605,11 +605,11 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '6px 18px',
               background: submitting
-                ? 'rgba(232,87,26,0.4)'
-                : 'linear-gradient(135deg, #E8571A 0%, #D4470F 100%)',
+                ? 'color-mix(in srgb, var(--action) 40%, transparent)'
+                : 'linear-gradient(135deg, var(--action) 0%, var(--action) 100%)',
               border: 'none',
               borderRadius: 6,
-              color: '#FFFFFF',
+              color: 'var(--text)',
               fontSize: 12, fontWeight: 600,
               fontFamily: 'Figtree, sans-serif',
               cursor: submitting ? 'not-allowed' : 'pointer',
@@ -636,8 +636,8 @@ function menuItem(hovered: boolean): React.CSSProperties {
     fontSize: 12,
     fontWeight: 500,
     fontFamily: 'Figtree, sans-serif',
-    color: 'rgba(255,255,255,0.55)',
-    background: hovered ? 'rgba(255,255,255,0.05)' : 'none',
+    color: 'var(--text2)',
+    background: hovered ? 'var(--recess)' : 'none',
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
@@ -651,7 +651,7 @@ function Divider() {
   return (
     <div style={{
       width: 1, height: 20,
-      background: 'rgba(255, 255, 255, 0.14)',
+      background: 'var(--recess)',
       margin: '0 4px',
       flexShrink: 0,
     }} />

@@ -604,12 +604,12 @@ export function useCanvasDocument(
 
 // ── Stage colour palette ──────────────────────────
 const STAGE_COLOURS = [
-  'rgba(232,87,26,0.06)',
-  'rgba(46,196,182,0.06)',
-  'rgba(124,58,237,0.06)',
-  'rgba(59,130,246,0.06)',
-  'rgba(245,158,11,0.06)',
-  'rgba(34,197,94,0.06)',
+  'color-mix(in srgb, var(--action) 6%, transparent)',
+  'color-mix(in srgb, var(--evidence) 6%, transparent)',
+  'color-mix(in srgb, var(--cat-agents) 6%, transparent)',
+  'color-mix(in srgb, var(--cat-data) 6%, transparent)',
+  'color-mix(in srgb, var(--cat-breakage) 6%, transparent)',
+  'color-mix(in srgb, var(--cat-configuration) 6%, transparent)',
 ];
 
 // ── DB adapters ───────────────────────────────────
@@ -664,6 +664,6 @@ function adaptDbStage(row: any): CanvasStage {
     estimatedMinutes: row.estimated_minutes ?? null,
     difficulty: row.difficulty ?? null,
     blockIds: row.block_ids ?? [],
-    colour: row.colour ?? 'rgba(232,87,26,0.06)',
+    colour: row.colour ?? 'color-mix(in srgb, var(--action) 6%, transparent)',
   };
 }

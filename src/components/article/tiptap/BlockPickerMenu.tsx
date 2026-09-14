@@ -2,18 +2,18 @@ import * as React from 'react';
 import { useDocumentStore } from '@/lib/documentStore';
 
 const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
-  text: 'rgba(255,255,255,0.50)',
-  heading: 'rgba(255,255,255,0.65)',
-  prompt: '#E8571A',
-  code: '#16A34A',
-  result: '#7C3AED',
-  agent: '#3B82F6',
-  model: '#06B6D4',
-  tool: '#F59E0B',
-  note: '#F5C518',
-  resource: '#A855F7',
-  workflow: '#EC4899',
-  compare: '#22D3EE',
+  text: 'var(--recess)',
+  heading: 'var(--recess)',
+  prompt: 'var(--action)',
+  code: 'var(--cat-configuration)',
+  result: 'var(--cat-agents)',
+  agent: 'var(--cat-data)',
+  model: 'var(--cat-data)',
+  tool: 'var(--cat-configuration)',
+  note: 'var(--cat-narrative)',
+  resource: 'var(--cat-artefact)',
+  workflow: 'var(--cat-media)',
+  compare: 'var(--cat-evidence)',
 };
 
 export interface BlockPickerItem {

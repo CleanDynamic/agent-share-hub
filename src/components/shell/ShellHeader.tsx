@@ -43,8 +43,8 @@ export type ShellHeaderProps = {
 };
 
 const FONT = "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-const ORANGE = "#E8571A";
-const ORANGE_GRADIENT = "linear-gradient(135deg, #E8571A 0%, #C44514 100%)";
+const ORANGE = "var(--action)";
+const ORANGE_GRADIENT = "linear-gradient(135deg, var(--action) 0%, #C44514 100%)";
 
 export function ShellHeader({
   onBack,
@@ -89,9 +89,9 @@ export function ShellHeader({
                 height: 32,
                 padding: "8px 12px",
                 borderRadius: 8,
-                background: "rgba(255,255,255,0.04)",
+                background: "var(--recess)",
                 border: "none",
-                color: "rgba(255,255,255,0.70)",
+                color: "var(--text2)",
                 fontFamily: FONT,
                 fontSize: 13,
                 fontWeight: 500,
@@ -99,12 +99,12 @@ export function ShellHeader({
                 transition: "color 0.15s, background 0.15s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = "rgba(255,255,255,0.95)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                e.currentTarget.style.color = "var(--text)";
+                e.currentTarget.style.background = "var(--recess)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = "rgba(255,255,255,0.70)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.color = "var(--text2)";
+                e.currentTarget.style.background = "var(--recess)";
               }}
             >
               <ChevronLeft size={16} />
@@ -135,7 +135,7 @@ export function ShellHeader({
                 borderRadius: 8,
                 background: ORANGE_GRADIENT,
                 border: "none",
-                color: "#fff",
+                color: "var(--text)",
                 fontFamily: FONT,
                 fontSize: 13,
                 fontWeight: 600,
@@ -168,7 +168,7 @@ export function ShellHeader({
             fontFamily: FONT,
             fontSize: 18,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.95)",
+            color: "var(--text)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -187,7 +187,7 @@ export function ShellHeader({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            borderBottom: "1px solid var(--line)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 24, height: "100%" }}>
@@ -211,7 +211,7 @@ export function ShellHeader({
                       fontFamily: FONT,
                       fontSize: 13,
                       fontWeight: 500,
-                      color: isActive ? ORANGE : "rgba(255,255,255,0.55)",
+                      color: isActive ? ORANGE : "var(--recess)",
                       cursor: "pointer",
                       transition: "color 0.15s",
                     }}
@@ -224,8 +224,8 @@ export function ShellHeader({
                           fontWeight: 600,
                           padding: "1px 6px",
                           borderRadius: 999,
-                          background: "rgba(255,255,255,0.08)",
-                          color: "rgba(255,255,255,0.75)",
+                          background: "var(--recess)",
+                          color: "var(--text2)",
                         }}
                       >
                         {t.count}
@@ -257,8 +257,8 @@ export function ShellHeader({
                 background: "transparent",
                 border: "none",
                 color: secondaryAction.disabled
-                  ? "rgba(255,255,255,0.30)"
-                  : "rgba(255,255,255,0.65)",
+                  ? "var(--text2)"
+                  : "var(--text2)",
                 fontFamily: FONT,
                 fontSize: 12,
                 fontWeight: 500,

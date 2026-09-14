@@ -216,18 +216,18 @@ export function CoverImageField({
   // visual states
   const borderStyle =
     isDragging
-      ? "0.5px solid #E8571A"
+      ? "0.5px solid var(--action)"
       : isHovering && !value
-        ? "0.5px solid rgba(255,255,255,0.18)"
+        ? "0.5px solid var(--line)"
         : value
-          ? "0.5px solid rgba(255,255,255,0.10)"
-          : "0.5px dashed rgba(255,255,255,0.14)";
+          ? "0.5px solid var(--line)"
+          : "0.5px dashed var(--line)";
 
   const bgStyle = isDragging
-    ? "rgba(232,87,26,0.08)"
+    ? "color-mix(in srgb, var(--action) 8%, transparent)"
     : isHovering && !value
-      ? "rgba(255,255,255,0.06)"
-      : "rgba(255,255,255,0.02)";
+      ? "var(--recess)"
+      : "var(--recess)";
 
   return (
     <>
@@ -278,11 +278,11 @@ export function CoverImageField({
           setReframeDragging(false);
         }}
         onPointerCancel={() => setReframeDragging(false)}
-        className="relative overflow-hidden outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+        className="relative overflow-hidden outline-none focus-visible:ring-1 focus-visible:ring-border"
         style={{
           height: "180px",
           width: "100%",
-          border: reframing ? "0.5px solid #E8571A" : borderStyle,
+          border: reframing ? "0.5px solid var(--action)" : borderStyle,
           background: bgStyle,
           borderRadius: "8px",
           cursor: reframing
@@ -296,13 +296,13 @@ export function CoverImageField({
         {/* Empty state */}
         {!previewSrc && !uploading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
-            <ImagePlus size={32} color="rgba(255,255,255,0.45)" />
+            <ImagePlus size={32} color="var(--text2)" />
             <div
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "13px",
                 fontWeight: 400,
-                color: "rgba(255,255,255,0.55)",
+                color: "var(--text2)",
               }}
             >
               Drag an image here, or
@@ -317,9 +317,9 @@ export function CoverImageField({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
                 fontWeight: 500,
-                color: "rgba(255,255,255,0.85)",
-                background: "rgba(255,255,255,0.04)",
-                border: "0.5px solid rgba(255,255,255,0.18)",
+                color: "var(--text)",
+                background: "var(--recess)",
+                border: "0.5px solid var(--line)",
                 padding: "6px 14px",
                 borderRadius: "100px",
                 cursor: "pointer",
@@ -364,10 +364,10 @@ export function CoverImageField({
               preserveAspectRatio="none"
               viewBox="0 0 3 3"
             >
-              <line x1="1" y1="0" x2="1" y2="3" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
-              <line x1="2" y1="0" x2="2" y2="3" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
-              <line x1="0" y1="1" x2="3" y2="1" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
-              <line x1="0" y1="2" x2="3" y2="2" stroke="rgba(255,255,255,0.35)" strokeWidth="0.012" />
+              <line x1="1" y1="0" x2="1" y2="3" stroke="var(--text2)" strokeWidth="0.012" />
+              <line x1="2" y1="0" x2="2" y2="3" stroke="var(--text2)" strokeWidth="0.012" />
+              <line x1="0" y1="1" x2="3" y2="1" stroke="var(--text2)" strokeWidth="0.012" />
+              <line x1="0" y1="2" x2="3" y2="2" stroke="var(--text2)" strokeWidth="0.012" />
             </svg>
 
             {/* Focal reticle */}
@@ -381,8 +381,8 @@ export function CoverImageField({
                 marginLeft: "-11px",
                 marginTop: "-11px",
                 borderRadius: "100px",
-                border: "1.5px solid #E8571A",
-                background: "rgba(232,87,26,0.22)",
+                border: "1.5px solid var(--action)",
+                background: "color-mix(in srgb, var(--action) 22%, transparent)",
                 boxShadow: "0 0 0 1px rgba(0,0,0,0.45)",
                 transition: reframeDragging ? "none" : "left 120ms ease, top 120ms ease",
               }}
@@ -405,9 +405,9 @@ export function CoverImageField({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "var(--text)",
                   background: "transparent",
-                  border: "0.5px solid rgba(255,255,255,0.18)",
+                  border: "0.5px solid var(--line)",
                   padding: "6px 14px",
                   borderRadius: "100px",
                   cursor: "pointer",
@@ -422,8 +422,8 @@ export function CoverImageField({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 600,
-                  color: "#FFFFFF",
-                  background: "#E8571A",
+                  color: "var(--text)",
+                  background: "var(--action)",
                   border: "none",
                   padding: "7px 14px",
                   borderRadius: "100px",
@@ -445,16 +445,16 @@ export function CoverImageField({
               background: "rgba(8,8,12,0.65)",
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",
-              border: "0.5px solid rgba(255,255,255,0.14)",
+              border: "0.5px solid var(--line)",
               borderRadius: "100px",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <ToolbarIconButton label="Reframe" onClick={enterReframe}>
-              <Move size={14} color="rgba(255,255,255,0.85)" />
+              <Move size={14} color="var(--text)" />
             </ToolbarIconButton>
             <ToolbarIconButton label="Replace" onClick={onReplaceClick}>
-              <RefreshCw size={14} color="rgba(255,255,255,0.85)" />
+              <RefreshCw size={14} color="var(--text)" />
             </ToolbarIconButton>
             <ToolbarIconButton
               label="Remove"
@@ -475,7 +475,7 @@ export function CoverImageField({
             fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
             fontWeight: 500,
-            color: "#F87171",
+            color: "var(--cat-breakage)",
           }}
         >
           {error}
@@ -510,16 +510,16 @@ function ToolbarIconButton({
         width: "26px",
         height: "26px",
         borderRadius: "100px",
-        background: hover ? "rgba(255,255,255,0.10)" : "transparent",
+        background: hover ? "var(--recess)" : "transparent",
         border: "none",
         cursor: "pointer",
-        color: destructive && hover ? "#F87171" : "rgba(255,255,255,0.85)",
+        color: destructive && hover ? "var(--cat-breakage)" : "var(--text)",
         transition: "background 120ms ease, color 120ms ease",
       }}
     >
       {React.isValidElement(children) && destructive
         ? React.cloneElement(children as React.ReactElement<any>, {
-            color: hover ? "#F87171" : "rgba(255,255,255,0.85)",
+            color: hover ? "var(--cat-breakage)" : "var(--text)",
           })
         : children}
     </button>
@@ -540,7 +540,7 @@ function CircularProgress({ value }: { value: number }) {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="rgba(255,255,255,0.15)"
+        stroke="var(--text2)"
         strokeWidth={stroke}
       />
       <circle
@@ -548,7 +548,7 @@ function CircularProgress({ value }: { value: number }) {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#E8571A"
+        stroke="var(--action)"
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeDasharray={circ}

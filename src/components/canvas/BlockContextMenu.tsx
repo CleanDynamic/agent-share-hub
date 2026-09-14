@@ -40,7 +40,7 @@ export function BlockContextMenu({
     padding: '6px 12px',
     fontSize: 11,
     cursor: 'pointer',
-    color: 'rgba(255,255,255,0.75)',
+    color: 'var(--text2)',
     background: 'none',
     border: 'none',
     textAlign: 'left',
@@ -59,7 +59,7 @@ export function BlockContextMenu({
     top: y,
     left: x,
     background: 'rgba(10,10,16,0.98)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    border: '1px solid var(--line)',
     borderRadius: 10,
     padding: 6,
     boxShadow: '0 8px 32px rgba(0,0,0,0.60)',
@@ -85,7 +85,7 @@ export function BlockContextMenu({
         <button
           type="button"
           style={menuItemStyle}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--recess)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
           <span>Move to Stage</span>
@@ -100,7 +100,7 @@ export function BlockContextMenu({
               left: '100%',
               marginLeft: 4,
               background: 'rgba(10,10,16,0.98)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid var(--line)',
               borderRadius: 10,
               padding: 6,
               boxShadow: '0 8px 32px rgba(0,0,0,0.60)',
@@ -118,7 +118,7 @@ export function BlockContextMenu({
                   onMoveToStage(stage.id);
                   onClose();
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--recess)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 style={menuItemStyle}
               >
@@ -135,12 +135,12 @@ export function BlockContextMenu({
               left: '100%',
               marginLeft: 4,
               background: 'rgba(10,10,16,0.98)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid var(--line)',
               borderRadius: 10,
               padding: '8px 12px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.60)',
               fontSize: 11,
-              color: 'rgba(255,255,255,0.40)',
+              color: 'var(--text2)',
               fontStyle: 'italic',
               whiteSpace: 'nowrap',
             }}
@@ -157,7 +157,7 @@ export function BlockContextMenu({
           onRemoveFromStage();
           onClose();
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--recess)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         style={menuItemStyle}
       >
@@ -167,7 +167,7 @@ export function BlockContextMenu({
       {/* Divider */}
       <div style={{
         height: 1,
-        background: 'rgba(255,255,255,0.08)',
+        background: 'var(--recess)',
         margin: '3px 0',
       }} />
 
@@ -178,11 +178,11 @@ export function BlockContextMenu({
           onDelete();
           onClose();
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.10)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in srgb, var(--cat-breakage) 10%, transparent)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         style={{
           ...menuItemStyle,
-          color: 'rgba(239,68,68,0.70)',
+          color: 'color-mix(in srgb, var(--cat-breakage) 70%, transparent)',
         }}
       >
         Delete

@@ -13,18 +13,18 @@ import { queryBlocks } from '@/lib/discover/queryBlocks';
 import { supabase } from '@/integrations/supabase/client';
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
-  prompt: '#E8571A',
-  output: '#2EC4B6',
-  text: '#9CA3AF',
-  image: '#F59E0B',
-  code: '#A78BFA',
-  data: '#60A5FA',
-  decision: '#F472B6',
+  prompt: 'var(--action)',
+  output: 'var(--evidence)',
+  text: 'var(--text2)',
+  image: 'var(--cat-breakage)',
+  code: 'var(--cat-agents)',
+  data: 'var(--cat-data)',
+  decision: 'var(--cat-media)',
   variable: '#34D399',
 };
 
 function colorFor(type: string): string {
-  return BLOCK_TYPE_COLORS[type?.toLowerCase()] ?? '#9CA3AF';
+  return BLOCK_TYPE_COLORS[type?.toLowerCase()] ?? 'var(--text2)';
 }
 
 function fmtCount(n: number | null | undefined): string {

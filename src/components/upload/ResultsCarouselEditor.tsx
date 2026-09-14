@@ -160,7 +160,7 @@ export function ResultsCarouselEditor({
         minWidth: 140,
         padding: 4,
         background: "rgba(20,20,24,0.96)",
-        border: "0.5px solid rgba(255,255,255,0.10)",
+        border: "0.5px solid var(--line)",
         borderRadius: 8,
         boxShadow: "0 8px 24px rgba(0,0,0,0.40)",
       }}
@@ -187,17 +187,17 @@ export function ResultsCarouselEditor({
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text)",
             textAlign: "left",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+            e.currentTarget.style.background = "var(--recess)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "transparent";
           }}
         >
-          <Icon size={14} color="rgba(255,255,255,0.65)" />
+          <Icon size={14} color="var(--text2)" />
           {label}
         </button>
       ))}
@@ -205,7 +205,7 @@ export function ResultsCarouselEditor({
   );
 
   return (
-    <div style={{ width: "100%", color: "rgba(255,255,255,0.85)" }}>
+    <div style={{ width: "100%", color: "var(--text)" }}>
       {/* Hidden file inputs */}
       <input
         ref={photoInputRef}
@@ -248,7 +248,7 @@ export function ResultsCarouselEditor({
             fontSize: 12,
             fontWeight: 500,
             letterSpacing: "0.04em",
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           <Images size={12} />
@@ -260,7 +260,7 @@ export function ResultsCarouselEditor({
             style={{
               display: "flex",
               alignItems: "center",
-              border: "0.5px solid rgba(255,255,255,0.10)",
+              border: "0.5px solid var(--line)",
               borderRadius: 6,
             }}
           >
@@ -281,7 +281,7 @@ export function ResultsCarouselEditor({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontWeight: 500,
-                color: isAtCapacity ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.85)",
+                color: isAtCapacity ? "var(--text2)" : "var(--text)",
                 opacity: isAtCapacity ? 0.5 : 1,
               }}
             >
@@ -298,10 +298,10 @@ export function ResultsCarouselEditor({
                 padding: "4px 6px",
                 background: "transparent",
                 border: "none",
-                borderLeft: "0.5px solid rgba(255,255,255,0.10)",
+                borderLeft: "0.5px solid var(--line)",
                 borderRadius: "0 6px 6px 0",
                 cursor: isAtCapacity ? "not-allowed" : "pointer",
-                color: isAtCapacity ? "rgba(255,255,255,0.30)" : "rgba(255,255,255,0.85)",
+                color: isAtCapacity ? "var(--text2)" : "var(--text)",
                 opacity: isAtCapacity ? 0.5 : 1,
               }}
             >
@@ -326,20 +326,20 @@ export function ResultsCarouselEditor({
             justifyContent: "center",
             gap: 12,
             padding: 24,
-            background: isDraggingOver ? "rgba(46,196,182,0.06)" : "rgba(255,255,255,0.02)",
+            background: isDraggingOver ? "color-mix(in srgb, var(--evidence) 6%, transparent)" : "var(--recess)",
             border: `1px dashed ${
-              isDraggingOver ? "rgba(46,196,182,0.5)" : "rgba(255,255,255,0.10)"
+              isDraggingOver ? "color-mix(in srgb, var(--evidence) 50%, transparent)" : "var(--recess)"
             }`,
             borderRadius: 8,
             transition: "all 150ms ease",
           }}
         >
-          <Images size={28} color="rgba(255,255,255,0.30)" />
+          <Images size={28} color="var(--text2)" />
           <div
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
-              color: "rgba(255,255,255,0.50)",
+              color: "var(--text2)",
             }}
           >
             {isDraggingOver
@@ -362,13 +362,13 @@ export function ResultsCarouselEditor({
                   gap: 6,
                   padding: "6px 14px",
                   background: "transparent",
-                  border: "0.5px solid rgba(255,255,255,0.10)",
+                  border: "0.5px solid var(--line)",
                   borderRadius: 6,
                   cursor: "pointer",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "var(--text)",
                 }}
               >
                 <Icon size={12} />
@@ -394,8 +394,8 @@ export function ResultsCarouselEditor({
               borderRadius: 8,
               overflow: "hidden",
               border: isDraggingOver
-                ? "1px solid rgba(46,196,182,0.5)"
-                : "0.5px solid rgba(255,255,255,0.08)",
+                ? "1px solid color-mix(in srgb, var(--evidence) 50%, transparent)"
+                : "0.5px solid var(--line)",
             }}
           >
             <div style={{ position: "absolute", inset: 0 }}>
@@ -417,7 +417,7 @@ export function ResultsCarouselEditor({
                     >
                       <Loader2
                         size={28}
-                        style={{ color: "#2EC4B6", animation: "spin 1s linear infinite" }}
+                        style={{ color: "var(--evidence)", animation: "spin 1s linear infinite" }}
                       />
                       <div style={{ fontSize: 12, color: "white" }}>
                         {activeSlide.uploadProgress}%
@@ -466,8 +466,8 @@ export function ResultsCarouselEditor({
                           fontWeight: 400,
                           fontStyle: activeSlide.text ? "normal" : "italic",
                           color: activeSlide.text
-                            ? "rgba(255,255,255,0.85)"
-                            : "rgba(255,255,255,0.30)",
+                            ? "var(--text)"
+                            : "var(--text2)",
                           textAlign: "center",
                           lineHeight: 1.6,
                         }}
@@ -587,15 +587,15 @@ export function ResultsCarouselEditor({
                   fontWeight: 400,
                   fontStyle: "italic",
                   color: activeSlide.caption
-                    ? "rgba(255,255,255,0.85)"
-                    : "rgba(255,255,255,0.30)",
+                    ? "var(--text)"
+                    : "var(--text2)",
                 }}
               />
               <span
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
-                  color: "rgba(255,255,255,0.30)",
+                  color: "var(--text2)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -626,8 +626,8 @@ export function ResultsCarouselEditor({
                     borderRadius: "50%",
                     background:
                       index === activeSlideIndex
-                        ? "rgba(255,255,255,0.85)"
-                        : "rgba(255,255,255,0.20)",
+                        ? "var(--text)"
+                        : "var(--recess)",
                     border: "none",
                     padding: 0,
                     cursor: "pointer",
@@ -670,7 +670,7 @@ export function ResultsCarouselEditor({
                   cursor: "pointer",
                   border:
                     index === activeSlideIndex
-                      ? "1px solid #E8571A"
+                      ? "1px solid var(--action)"
                       : "1px solid transparent",
                   opacity: draggedThumbnailId === slide.id ? 0.5 : 1,
                   transition: "opacity 0.2s ease",
@@ -709,7 +709,7 @@ export function ResultsCarouselEditor({
                     style={{
                       width: "100%",
                       height: "100%",
-                      background: "rgba(46,196,182,0.15)",
+                      background: "color-mix(in srgb, var(--evidence) 15%, transparent)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -720,7 +720,7 @@ export function ResultsCarouselEditor({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 9,
                         fontWeight: 500,
-                        color: "rgba(255,255,255,0.85)",
+                        color: "var(--text)",
                       }}
                     >
                       Written
@@ -740,7 +740,7 @@ export function ResultsCarouselEditor({
                   >
                     <Loader2
                       size={14}
-                      style={{ color: "#2EC4B6", animation: "spin 1s linear infinite" }}
+                      style={{ color: "var(--evidence)", animation: "spin 1s linear infinite" }}
                     />
                   </div>
                 )}
@@ -783,15 +783,15 @@ export function ResultsCarouselEditor({
                     height: 40,
                     flexShrink: 0,
                     borderRadius: 4,
-                    background: "rgba(255,255,255,0.05)",
-                    border: "0.5px dashed rgba(255,255,255,0.20)",
+                    background: "var(--recess)",
+                    border: "0.5px dashed var(--line)",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Plus size={18} color="rgba(255,255,255,0.50)" />
+                  <Plus size={18} color="var(--text2)" />
                 </button>
               </div>
             )}

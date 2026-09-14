@@ -1,12 +1,12 @@
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
 
-const TEAL = '#2EC4B6';
+const TEAL = 'var(--evidence)';
 
 const toastOpts = {
   style: {
-    background: 'rgba(46,196,182,0.12)',
-    border: '0.5px solid rgba(46,196,182,0.35)',
+    background: 'color-mix(in srgb, var(--evidence) 12%, transparent)',
+    border: '0.5px solid color-mix(in srgb, var(--evidence) 35%, transparent)',
     color: TEAL,
   },
 } as const;

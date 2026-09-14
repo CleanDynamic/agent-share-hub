@@ -112,15 +112,15 @@ function MiniPreview({ template }: { template: StageTemplate }) {
 
   const idMap = new Map(template.blocks.map((b) => [b.name, b]));
   const colorFor: Record<string, string> = {
-    text: 'rgba(255,255,255,0.5)',
-    prompt: '#8B5CF6',
-    code: '#22C55E',
-    result: '#F59E0B',
-    agent: '#3B82F6',
-    tool: '#EC4899',
-    model: '#06B6D4',
-    compare: '#A855F7',
-    resource: '#10B981',
+    text: 'var(--recess)',
+    prompt: 'var(--cat-agents)',
+    code: 'var(--cat-configuration)',
+    result: 'var(--cat-evidence)',
+    agent: 'var(--cat-data)',
+    tool: 'var(--cat-media)',
+    model: 'var(--cat-data)',
+    compare: 'var(--cat-evidence)',
+    resource: 'var(--cat-configuration)',
   };
 
   return (
@@ -141,7 +141,7 @@ function MiniPreview({ template }: { template: StageTemplate }) {
           <line
             key={i}
             x1={ax} y1={ay} x2={bx} y2={by}
-            stroke="rgba(255,255,255,0.25)"
+            stroke="var(--text2)"
             strokeWidth={2}
           />
         );
@@ -155,7 +155,7 @@ function MiniPreview({ template }: { template: StageTemplate }) {
           height={b.height}
           rx={8}
           fill="rgba(20,20,28,0.85)"
-          stroke={colorFor[b.type] ?? 'rgba(255,255,255,0.4)'}
+          stroke={colorFor[b.type] ?? 'var(--recess)'}
           strokeWidth={2}
         />
       ))}

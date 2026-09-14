@@ -59,23 +59,23 @@ const POST_TYPE_DISPLAY: Record<string, {
   blueprintLabel: string;
 }> = {
   build: {
-    label: 'Build', emoji: '🔨', color: '#8B4513',
-    bg: 'rgba(139,69,19,0.12)', border: 'rgba(139,69,19,0.25)',
+    label: 'Build', emoji: '🔨', color: 'var(--action)',
+    bg: 'color-mix(in srgb, var(--action) 12%, transparent)', border: 'color-mix(in srgb, var(--action) 25%, transparent)',
     blueprintLabel: 'The Blueprint',
   },
   technique: {
-    label: 'Technique', emoji: '⚡', color: '#1F7A6D',
-    bg: 'rgba(31,122,109,0.12)', border: 'rgba(31,122,109,0.25)',
+    label: 'Technique', emoji: '⚡', color: 'var(--evidence)',
+    bg: 'color-mix(in srgb, var(--evidence) 12%, transparent)', border: 'color-mix(in srgb, var(--evidence) 25%, transparent)',
     blueprintLabel: 'The Technique',
   },
   discovery: {
-    label: 'Discovery', emoji: '🔍', color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.25)',
+    label: 'Discovery', emoji: '🔍', color: 'var(--cat-agents)',
+    bg: 'color-mix(in srgb, var(--cat-agents) 12%, transparent)', border: 'color-mix(in srgb, var(--cat-agents) 25%, transparent)',
     blueprintLabel: 'Evidence',
   },
   discussion: {
-    label: 'Blog', emoji: '💬', color: '#3B82F6',
-    bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.25)',
+    label: 'Blog', emoji: '💬', color: 'var(--cat-data)',
+    bg: 'color-mix(in srgb, var(--cat-data) 12%, transparent)', border: 'color-mix(in srgb, var(--cat-data) 25%, transparent)',
     blueprintLabel: 'Context',
   },
 };
@@ -1576,9 +1576,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             // If no stage is selected, create a new one
             if (!targetStageId) {
               const STAGE_COLOURS = [
-                'rgba(232,87,26,0.06)', 'rgba(46,196,182,0.06)',
-                'rgba(124,58,237,0.06)', 'rgba(59,130,246,0.06)',
-                'rgba(245,158,11,0.06)', 'rgba(34,197,94,0.06)',
+                'color-mix(in srgb, var(--action) 6%, transparent)', 'color-mix(in srgb, var(--evidence) 6%, transparent)',
+                'color-mix(in srgb, var(--cat-agents) 6%, transparent)', 'color-mix(in srgb, var(--cat-data) 6%, transparent)',
+                'color-mix(in srgb, var(--cat-breakage) 6%, transparent)', 'color-mix(in srgb, var(--cat-configuration) 6%, transparent)',
               ];
               targetStageId = crypto.randomUUID();
               const stageNum = canvasDoc.stages.length + 1;
@@ -1671,7 +1671,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             {
               value: 'blueprint',
               title: 'Blueprints',
-              accent: '#8B4513',
+              accent: 'var(--action)',
               description: 'Share step-by-step AI agent processes and workflows on a visual canvas.',
               bullets: [
                 'Build — construct and document a new process',
@@ -1688,7 +1688,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             {
               value: 'blog',
               title: 'Blogs',
-              accent: '#3B82F6',
+              accent: 'var(--cat-data)',
               description: 'Write articles, tutorials, and thought pieces about AI agents.',
               bullets: [
                 'Long-form articles and guides',
@@ -1705,7 +1705,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             {
               value: 'bounty',
               title: 'Bounties',
-              accent: '#22C55E',
+              accent: 'var(--cat-configuration)',
               description: 'Post challenges for the community to solve, with rewards.',
               bullets: [
                 'Request specific AI agent builds',
@@ -1737,14 +1737,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   fontSize: 11, fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.12em',
-                  color: 'rgba(255,255,255,0.28)',
+                  color: 'var(--text2)',
                   marginBottom: 8,
                 }}>
                   What are you sharing?
                 </div>
                 <div style={{
                   ...type.cardTitle,
-                  color: 'rgba(255,255,255,0.88)',
+                  color: 'var(--text)',
                 }}>
                   Start a post
                 </div>
@@ -1769,8 +1769,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       alignItems: 'flex-start',
                       padding: 24,
                       borderRadius: 12,
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--recess)',
+                      border: '1px solid var(--line)',
                       borderLeft: `3px solid ${card.accent}`,
                       cursor: 'pointer',
                       transition: 'all 0.15s',
@@ -1782,8 +1782,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       (e.currentTarget as HTMLElement).style.borderLeft = `3px solid ${card.accent}`;
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                      (e.currentTarget as HTMLElement).style.background = 'var(--recess)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)';
                       (e.currentTarget as HTMLElement).style.borderLeft = `3px solid ${card.accent}`;
                     }}
                   >
@@ -1796,7 +1796,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     </div>
                     <div style={{
                       fontSize: 13,
-                      color: 'rgba(255,255,255,0.45)',
+                      color: 'var(--text2)',
                       lineHeight: 1.5,
                       marginBottom: 12,
                     }}>
@@ -1808,7 +1808,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                           key={i}
                           style={{
                             fontSize: 12,
-                            color: 'rgba(255,255,255,0.35)',
+                            color: 'var(--text2)',
                             paddingLeft: 12,
                             lineHeight: 1.5,
                           }}
@@ -1845,17 +1845,17 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       fontWeight: 500,
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderBottom: '1px solid var(--line)',
                       borderRadius: 0,
                       padding: '12px 0',
-                      color: 'rgba(255,255,255,0.90)',
+                      color: 'var(--text)',
                       outline: 'none',
                     }}
-                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255, 255, 255, 0.14)'}
+                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
                   />
                 </FormControl>
-                <FormDescription style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', textAlign: 'right' }}>{field.value.length}/100</FormDescription>
+                <FormDescription style={{ fontSize: 11, color: 'var(--text2)', textAlign: 'right' }}>{field.value.length}/100</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -1875,16 +1875,16 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <label
                   className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
                   style={{
-                    border: '1.5px dashed rgba(255,255,255,0.10)',
+                    border: '1.5px dashed var(--line)',
                     borderRadius: 12,
                     height: 140,
                     background: 'transparent',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--recess)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
                 >
-                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
+                  <ImagePlus style={{ width: 22, height: 22, color: 'var(--text2)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -1976,14 +1976,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       fontWeight: 500,
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderBottom: '1px solid var(--line)',
                       borderRadius: 0,
                       padding: '12px 0',
-                      color: 'rgba(255,255,255,0.90)',
+                      color: 'var(--text)',
                       outline: 'none',
                     }}
-                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255,255,255,0.16)'}
-                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'rgba(255, 255, 255, 0.14)'}
+                    onFocus={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
+                    onBlur={e => (e.target as HTMLInputElement).style.borderBottomColor = 'var(--line)'}
                   />
                 </FormControl>
                 <FormMessage />
@@ -2005,16 +2005,16 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <label
                   className="flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
                   style={{
-                    border: '1.5px dashed rgba(255,255,255,0.10)',
+                    border: '1.5px dashed var(--line)',
                     borderRadius: 12,
                     height: 140,
                     background: 'transparent',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.20)'; (e.currentTarget as HTMLLabelElement).style.background = 'rgba(255,255,255,0.01)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'rgba(255,255,255,0.10)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--recess)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
                 >
-                  <ImagePlus style={{ width: 22, height: 22, color: 'rgba(255,255,255,0.28)' }} />
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
+                  <ImagePlus style={{ width: 22, height: 22, color: 'var(--text2)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -2114,7 +2114,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               {customTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {customTags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}>
+                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "var(--recess)", color: "#9999AA" }}>
                       #{tag}
                       <button type="button" onClick={() => setCustomTags(customTags.filter((t) => t !== tag))} className="ml-0.5 hover:text-foreground transition-colors">×</button>
                     </span>
@@ -2138,7 +2138,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       onClick={() => setBountyTipGbp(amt)}
                       className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                         bountyTipGbp === amt
-                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          ? "bg-[var(--cat-artefact-fill)] text-[var(--cat-artefact)] border-[var(--cat-artefact)]"
                           : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
                       }`}
                     >
@@ -2239,18 +2239,18 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   padding: '4px 12px', borderRadius: 9999, fontSize: 11,
                   fontWeight: 600, cursor: 'pointer',
                   background: isProjectMode
-                    ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
+                    ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
                   border: `1px solid ${isProjectMode
-                    ? 'rgba(139,69,19,0.35)' : 'rgba(255,255,255,0.09)'}`,
+                    ? 'color-mix(in srgb, var(--action) 35%, transparent)' : 'var(--recess)'}`,
                   color: isProjectMode
-                    ? '#8B4513' : 'rgba(255,255,255,0.35)',
+                    ? 'var(--action)' : 'var(--text2)',
                   transition: 'all 0.15s',
                 }}
               >
                 {isProjectMode ? 'Project mode ON' : 'Make this a Project'}
               </button>
               {isProjectMode && (
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text2)' }}>
                   Groups multiple posts together
                 </span>
               )}
@@ -2280,11 +2280,19 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               const ptConfig = POST_TYPE_DISPLAY[postType] ?? POST_TYPE_DISPLAY.build;
               const typeInfo = getPrimaryTypeLabel(postType);
               const diff = form.watch('difficulty');
+              /* BG-P28. DIFFICULTY CARRIES NO COLOUR. BG-P05 retired the
+                 three difficulty badges — difficulty is not a part category
+                 and the nine hues mean something else — and left
+                 DIFFICULTY_COLORS in content-types.ts as four identical
+                 --text2 entries. This local copy was missed and still ran a
+                 green/amber/red traffic light, which is both the retired
+                 pattern and a use of amber as type. Every level is the same
+                 uncoloured label now, as it is everywhere else. */
               const diffColors: Record<string,string> = {
-                Beginner: '#22C55E',
-                Intermediate: '#F59E0B',
-                Advanced: '#EF4444',
-                Any: '#9CA3AF',
+                Beginner: 'var(--text2)',
+                Intermediate: 'var(--text2)',
+                Advanced: 'var(--text2)',
+                Any: 'var(--text2)',
               };
               const cycleDiff = () => {
                 const order = ['Beginner','Intermediate','Advanced','Any'];
@@ -2323,17 +2331,17 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       {typeInfo.sub && (
                         <span style={{
                           fontSize: 9,
-                          color: 'rgba(255,255,255,0.35)',
+                          color: 'var(--text2)',
                           textTransform: 'uppercase',
                           letterSpacing: '0.06em',
-                          borderLeft: '1px solid rgba(255,255,255,0.15)',
+                          borderLeft: '1px solid var(--line)',
                           paddingLeft: 6, marginLeft: 2,
                         }}>
                           {typeInfo.sub}
                         </span>
                       )}
                       <span style={{
-                        fontSize: 9, color: 'rgba(255,255,255,0.30)',
+                        fontSize: 9, color: 'var(--text2)',
                         marginLeft: 2,
                       }}>↕</span>
                     </button>
@@ -2350,9 +2358,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
                           cursor: 'pointer',
-                          background: diff ? `${diffColors[diff] ?? '#9CA3AF'}22` : 'rgba(255, 255, 255, 0.12)',
-                          border: `1px solid ${diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.10)'}40`,
-                          color: diff ? (diffColors[diff] ?? '#9CA3AF') : 'rgba(255,255,255,0.45)',
+                          background: diff ? `${diffColors[diff] ?? 'var(--text2)'}22` : 'var(--recess)',
+                          border: `1px solid ${diff ? (diffColors[diff] ?? 'var(--text2)') : 'var(--recess)'}40`,
+                          color: diff ? (diffColors[diff] ?? 'var(--text2)') : 'var(--text2)',
                         }}
                       >
                         {diff || 'Set difficulty'}
@@ -2366,18 +2374,18 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                         padding: '3px 12px', borderRadius: 9999, fontSize: 10,
                         fontWeight: 700, textTransform: 'uppercase',
                         letterSpacing: '0.08em',
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px dashed rgba(255,255,255,0.12)',
-                        color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                        background: 'var(--recess)',
+                        border: '1px dashed var(--line)',
+                        color: 'var(--text2)', cursor: 'pointer',
                         transition: 'all 0.15s',
                       }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.25)';
-                          (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.65)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--text2)';
                         }}
                         onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
-                          (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.40)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--text2)';
                         }}
                       >
                         Add cover
@@ -2403,8 +2411,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '2px 4px 2px 8px', borderRadius: 9999,
-                        background: 'rgba(255, 255, 255, 0.12)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'var(--recess)',
+                        border: '1px solid var(--line)',
                       }}>
                         <img
                           src={coverImagePreview}
@@ -2414,14 +2422,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                             borderRadius: '50%',
                           }}
                         />
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.55)' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text2)' }}>
                           Cover
                         </span>
                         <button
                           type="button"
                           onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); }}
                           style={{
-                            fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                            fontSize: 12, color: 'var(--text2)',
                             background: 'none', border: 'none', cursor: 'pointer',
                             padding: '0 6px',
                           }}
@@ -2446,21 +2454,21 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       width: '100%',
                       ...type.cardTitle,
 
-                      color: 'rgba(255,255,255,0.95)',
+                      color: 'var(--text)',
                       background: 'transparent',
                       border: 'none',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderBottom: '1px solid var(--line)',
                       outline: 'none',
                       padding: '4px 0 10px 0',
                       marginBottom: 16,
 
                       boxSizing: 'border-box' as const,
                     }}
-                    onFocus={e => (e.target.style.borderBottomColor = 'rgba(255,255,255,0.15)')}
-                    onBlur={e => (e.target.style.borderBottomColor = 'rgba(255, 255, 255, 0.14)')}
+                    onFocus={e => (e.target.style.borderBottomColor = 'var(--line)')}
+                    onBlur={e => (e.target.style.borderBottomColor = 'var(--line)')}
                   />
                   {form.formState.errors.title && (
-                    <div style={{ fontSize: 12, color: '#EF4444', marginTop: -12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--cat-breakage)', marginTop: -12, marginBottom: 12 }}>
                       {form.formState.errors.title.message}
                     </div>
                   )}
@@ -2474,7 +2482,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     style={{
                       width: '100%',
                       fontSize: 15, fontWeight: 400,
-                      color: 'rgba(255,255,255,0.65)',
+                      color: 'var(--text2)',
                       lineHeight: 1.75,
                       background: 'transparent',
                       border: 'none', outline: 'none',
@@ -2485,7 +2493,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     }}
                   />
                   <div style={{
-                    fontSize: 10, color: 'rgba(255,255,255,0.20)',
+                    fontSize: 10, color: 'var(--text2)',
                     textAlign: 'right' as const, marginBottom: 18,
                   }}>
                     {(form.watch('description') ?? '').length} / 500
@@ -2499,20 +2507,20 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     }}>
                       <div style={{
                         height: 1, flex: 1,
-                        background: 'rgba(255, 255, 255, 0.14)',
+                        background: 'var(--recess)',
                       }} />
                       <div style={{
                         fontSize: 10, fontWeight: 700,
                         textTransform: 'uppercase' as const,
                         letterSpacing: '0.12em',
-                        color: 'rgba(255,255,255,0.25)',
+                        color: 'var(--text2)',
                         padding: '0 8px', flexShrink: 0,
                       }}>
                         {ptConfig.blueprintLabel}
                       </div>
                       <div style={{
                         height: 1, flex: 1,
-                        background: 'rgba(255, 255, 255, 0.14)',
+                        background: 'var(--recess)',
                       }} />
                     </div>
                   )}
@@ -2543,25 +2551,25 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   label: 'Outcome',
                   placeholder: 'Outcome: What will readers be able to do after following this?',
                   emoji: '🎯',
-                  color: '#8B4513',
+                  color: 'var(--action)',
                 },
                 technique: {
                   label: 'The Claim',
                   placeholder: 'The Claim: What does this technique actually achieve?',
                   emoji: '⚡',
-                  color: '#1F7A6D',
+                  color: 'var(--evidence)',
                 },
                 discovery: {
                   label: 'The Finding',
                   placeholder: 'The Finding: State what you discovered as clearly as you can.',
                   emoji: '🔍',
-                  color: '#7C3AED',
+                  color: 'var(--cat-agents)',
                 },
                 discussion: {
                   label: "What you're looking for",
                   placeholder: "What you're looking for: What kind of responses do you want?",
                   emoji: '💬',
-                  color: '#3B82F6',
+                  color: 'var(--cat-data)',
                 },
               };
               const cfg = WTE_CONFIG[postType] ?? WTE_CONFIG.build;
@@ -2574,7 +2582,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   }}>
                     <div style={{
                       height: 1, flex: 1,
-                      background: 'rgba(255, 255, 255, 0.14)',
+                      background: 'var(--recess)',
                     }} />
                     <div style={{
                       fontSize: 10, fontWeight: 700,
@@ -2588,7 +2596,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     </div>
                     <div style={{
                       height: 1, flex: 1,
-                      background: 'rgba(255, 255, 255, 0.14)',
+                      background: 'var(--recess)',
                     }} />
                   </div>
 
@@ -2603,14 +2611,14 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       border: `1px solid ${cfg.color}20`,
                       borderLeft: `3px solid ${cfg.color}50`,
                       borderRadius: 8, padding: '12px 14px',
-                      fontSize: 14, color: 'rgba(255,255,255,0.72)',
+                      fontSize: 14, color: 'var(--text2)',
                       outline: 'none', resize: 'vertical' as const,
                       fontFamily: 'Figtree, sans-serif',
                       lineHeight: 1.65, boxSizing: 'border-box' as const,
                     }}
                   />
                   <div style={{
-                    fontSize: 10, color: 'rgba(255,255,255,0.20)',
+                    fontSize: 10, color: 'var(--text2)',
                     textAlign: 'right' as const, marginTop: 4,
                   }}>
                     {(form.watch('what_to_expect') ?? '').length} / 2000
@@ -2631,23 +2639,23 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   background: 'none', border: 'none',
                   cursor: 'pointer',
                   padding: '10px 0',
-                  borderTop: '1px solid rgba(255,255,255,0.05)',
+                  borderTop: '1px solid var(--line)',
                 }}
               >
                 <span style={{
                   fontSize: 10, fontWeight: 700,
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.12em',
-                  color: 'rgba(255,255,255,0.25)',
+                  color: 'var(--text2)',
                 }}>
                   Details
                 </span>
                 <div style={{
                   flex: 1, height: 1,
-                  background: 'rgba(255,255,255,0.05)',
+                  background: 'var(--recess)',
                 }} />
                 <span style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.25)',
+                  fontSize: 12, color: 'var(--text2)',
                 }}>
                   {detailsOpen ? '▴' : '▾'}
                 </span>
@@ -2660,7 +2668,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2668,7 +2676,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   Works with
                 </div>
                 <div style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.35)',
+                  fontSize: 12, color: 'var(--text2)',
                   marginBottom: 12,
                 }}>
                   Which tools have you tested this with?
@@ -2684,7 +2692,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2704,7 +2712,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2738,7 +2746,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <span
                         key={tag}
                         className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
-                        style={{ backgroundColor: "#1E1E2A", color: "#9999AA" }}
+                        style={{ backgroundColor: "var(--recess)", color: "#9999AA" }}
                       >
                         #{tag}
                         <button
@@ -2758,7 +2766,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2818,7 +2826,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2870,7 +2878,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2887,7 +2895,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2901,7 +2909,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               <div>
                 <div style={{
                   fontSize: 11, fontWeight: 600,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.10em',
                   marginBottom: 12,
@@ -2911,17 +2919,17 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 {!showGithubImport ? (
                   <button type="button" onClick={() => setShowGithubImport(true)}
                     className="text-xs hover:underline flex items-center gap-1"
-                    style={{ color: 'rgba(255,255,255,0.45)' }}>
+                    style={{ color: 'var(--text2)' }}>
                     📥 Import from GitHub README
                   </button>
                 ) : (
                   <div style={{
-                    border: '1px solid rgba(255, 255, 255, 0.14)',
+                    border: '1px solid var(--line)',
                     borderRadius: 12,
                     padding: 16,
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--recess)',
                   }} className="space-y-3">
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>Paste a GitHub repo URL. We'll fetch the README and pre-fill your blocks.</p>
+                    <p style={{ fontSize: 12, color: 'var(--text2)' }}>Paste a GitHub repo URL. We'll fetch the README and pre-fill your blocks.</p>
                     <div className="flex gap-2">
                       <Input
                         value={githubUrl}
@@ -2953,7 +2961,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       </Button>
                     </div>
                     <button type="button" onClick={() => { setShowGithubImport(false); setGithubUrl(""); }}
-                      className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Cancel</button>
+                      className="text-xs" style={{ color: 'var(--text2)' }}>Cancel</button>
                   </div>
                 )}
               </div>
@@ -2969,7 +2977,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               bottom: 0,
               background: 'rgba(8,8,12,0.95)',
               backdropFilter: 'blur(20px)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+              borderTop: '1px solid var(--line)',
               padding: '12px 0 16px 0',
               marginTop: 24,
               zIndex: 10,
@@ -2984,7 +2992,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               }}>
                 <div style={{
                   fontSize: 11,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                 }}>
                   {savingDraft ? (
                     <span>Saving…</span>
@@ -3002,9 +3010,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     style={{
                       padding: '8px 16px', borderRadius: 8,
                       fontSize: 12, cursor: 'pointer',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.10)',
-                      color: 'rgba(255,255,255,0.55)',
+                      background: 'var(--recess)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--text2)',
                       fontFamily: 'Figtree',
                     }}
                   >
@@ -3018,8 +3026,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       fontSize: 12, fontWeight: 700,
                       cursor: submitting ? 'default' : 'pointer',
                       background: submitting
-                        ? 'rgba(139,69,19,0.40)' : '#8B4513',
-                      border: 'none', color: '#fff',
+                        ? 'color-mix(in srgb, var(--action) 40%, transparent)' : 'var(--action)',
+                      border: 'none', color: 'var(--text)',
                       fontFamily: 'Figtree',
                     }}
                   >
@@ -3047,35 +3055,35 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
           <div onClick={handleExitCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(4px)' }} />
           <div style={{
             position: 'relative', zIndex: 1, background: 'rgba(14,14,20,0.98)',
-            border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
+            border: '1px solid var(--line)', borderRadius: 16,
             padding: '28px 32px', maxWidth: 400, width: '90%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
           }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.90)', margin: '0 0 8px' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
               Save before leaving?
             </h3>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: '0 0 24px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, color: 'var(--text2)', margin: '0 0 24px', lineHeight: 1.5 }}>
               You have unsaved changes. Would you like to save this as a draft?
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={handleExitDiscard} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 600, borderRadius: 8,
-                background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)',
-                color: 'rgba(239,68,68,0.80)', cursor: 'pointer',
+                background: 'color-mix(in srgb, var(--cat-breakage) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cat-breakage) 25%, transparent)',
+                color: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)', cursor: 'pointer',
               }}>
                 Discard
               </button>
               <button onClick={handleExitCancel} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 600, borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.14)', border: '1px solid rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+                background: 'var(--recess)', border: '1px solid var(--line)',
+                color: 'var(--text2)', cursor: 'pointer',
               }}>
                 Cancel
               </button>
               <button onClick={handleExitSave} style={{
                 padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 8,
-                background: 'rgba(139,69,19,0.85)', border: '1px solid rgba(139,69,19,0.50)',
-                color: '#fff', cursor: 'pointer',
+                background: 'color-mix(in srgb, var(--action) 85%, transparent)', border: '1px solid color-mix(in srgb, var(--action) 50%, transparent)',
+                color: 'var(--text)', cursor: 'pointer',
               }}>
                 Save Draft
               </button>

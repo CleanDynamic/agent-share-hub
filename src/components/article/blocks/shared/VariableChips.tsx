@@ -11,9 +11,9 @@ import * as React from 'react';
 import type { VariableInfo } from '@/lib/variables';
 
 const DOT_COLOR: Record<VariableInfo['status'], string> = {
-  resolved: '#22C55E',
-  no_output: '#F59E0B',
-  missing: '#EF4444',
+  resolved: 'var(--cat-configuration)',
+  no_output: 'var(--cat-breakage)',
+  missing: 'var(--cat-breakage)',
 };
 
 const TOOLTIP: Record<VariableInfo['status'], string> = {
@@ -37,10 +37,10 @@ export function VariableChips({ variables, onChipClick }: VariableChipsProps) {
           type="button"
           title={TOOLTIP[v.status]}
           onClick={() => onChipClick?.(v)}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full text-white/80 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full text-muted-foreground hover:text-foreground transition-colors"
           style={{
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
           }}
         >
           <span

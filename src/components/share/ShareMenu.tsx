@@ -55,7 +55,7 @@ export interface ShareMenuProps {
 
 type View = "main" | "message" | "library";
 
-const TEAL = "#2EC4B6";
+const TEAL = "var(--evidence)";
 
 const menuItemStyle: React.CSSProperties = {
   height: 36,
@@ -70,37 +70,37 @@ const menuItemStyle: React.CSSProperties = {
 const iconStyle: React.CSSProperties = {
   width: 14,
   height: 14,
-  color: "rgba(255,255,255,0.65)",
+  color: "var(--text2)",
   flexShrink: 0,
 };
 const labelStyle: React.CSSProperties = {
   fontFamily: "Figtree, sans-serif",
   fontSize: 13,
   fontWeight: 500,
-  color: "rgba(255,255,255,0.92)",
+  color: "var(--text)",
   flex: 1,
 };
 const hintStyle: React.CSSProperties = {
   fontFamily: "Figtree, sans-serif",
   fontSize: 10,
   fontWeight: 500,
-  color: "rgba(255,255,255,0.30)",
+  color: "var(--text2)",
 };
 const searchInputStyle: React.CSSProperties = {
   height: 28,
   width: "100%",
-  background: "rgba(255, 255, 255, 0.12)",
-  border: "0.5px solid rgba(255,255,255,0.10)",
+  background: "var(--recess)",
+  border: "0.5px solid var(--line)",
   borderRadius: 6,
   padding: "0 10px 0 32px",
   fontFamily: "Figtree, sans-serif",
   fontSize: 12,
-  color: "rgba(255,255,255,0.92)",
+  color: "var(--text)",
   outline: "none",
 };
 
 function rowBg(active: boolean) {
-  return active ? "rgba(255, 255, 255, 0.14)" : "transparent";
+  return active ? "var(--recess)" : "transparent";
 }
 
 const ShareMenu: React.FC<ShareMenuProps> = ({
@@ -360,7 +360,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
           border: "none",
           padding: 4,
           cursor: "pointer",
-          color: "rgba(255,255,255,0.65)",
+          color: "var(--text2)",
           display: "flex",
           alignItems: "center",
         }}
@@ -374,7 +374,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
           fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
-          color: "rgba(255,255,255,0.45)",
+          color: "var(--text2)",
         }}
       >
         {label}
@@ -395,7 +395,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
           left: 14,
           top: "50%",
           transform: "translateY(-60%)",
-          color: "rgba(255,255,255,0.40)",
+          color: "var(--text2)",
           pointerEvents: "none",
         }}
       />
@@ -420,7 +420,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
             style={{
               padding: "10px 12px",
               fontSize: 12,
-              color: "rgba(255,255,255,0.40)",
+              color: "var(--text2)",
             }}
           >
             No recent threads
@@ -440,9 +440,9 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
                 borderRadius: "50%",
                 background: t.avatarUrl
                   ? `url(${t.avatarUrl}) center/cover`
-                  : "rgba(255,255,255,0.10)",
+                  : "var(--recess)",
                 flexShrink: 0,
-                border: "0.5px solid rgba(255,255,255,0.10)",
+                border: "0.5px solid var(--line)",
               }}
             />
             <span style={labelStyle}>{t.displayName}</span>
@@ -451,7 +451,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
       </div>
       <div
         style={{
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+          borderTop: "0.5px solid var(--line)",
           marginTop: 4,
           paddingTop: 4,
         }}
@@ -488,7 +488,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
             style={{
               padding: "10px 12px",
               fontSize: 12,
-              color: "rgba(255,255,255,0.40)",
+              color: "var(--text2)",
             }}
           >
             No collections yet
@@ -521,7 +521,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
       </div>
       <div
         style={{
-          borderTop: "0.5px solid rgba(255,255,255,0.08)",
+          borderTop: "0.5px solid var(--line)",
           marginTop: 4,
           paddingTop: 4,
         }}
@@ -547,7 +547,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
                 borderRadius: 6,
                 background: TEAL,
                 border: "none",
-                color: "#fff",
+                color: "var(--text)",
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -585,7 +585,7 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
         background: "rgba(16,16,24,0.96)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        border: "0.5px solid rgba(255,255,255,0.10)",
+        border: "0.5px solid var(--line)",
         borderRadius: 10,
         boxShadow: "0 12px 32px rgba(0,0,0,0.7)",
         width: 260,

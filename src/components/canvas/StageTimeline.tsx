@@ -20,13 +20,13 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
         {blocks.map(block => (
           <div key={block.id} style={{
             background: 'rgba(14,14,20,0.60)',
-            border: '1px solid rgba(255, 255, 255, 0.14)',
+            border: '1px solid var(--line)',
             borderRadius: 10,
             padding: 16,
           }}>
             {block.subheading && (
               <div style={{
-                color: 'rgba(255,255,255,0.85)',
+                color: 'var(--text)',
                 marginBottom: 10,
                 ...type.cardTitle,
               }}>
@@ -51,7 +51,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
         position: 'absolute',
         left: 14, top: 0, bottom: 0,
         width: 2,
-        background: 'linear-gradient(to bottom, rgba(139,69,19,0.4), rgba(139,69,19,0.08))',
+        background: 'linear-gradient(to bottom, color-mix(in srgb, var(--action) 40%, transparent), color-mix(in srgb, var(--action) 8%, transparent))',
         borderRadius: 1,
       }} />
 
@@ -71,7 +71,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               left: -32 + 8, top: 4,
               width: 14, height: 14,
               borderRadius: '50%',
-              background: '#8B4513',
+              background: 'var(--action)',
               border: '3px solid rgba(6,6,10,1)',
               zIndex: 2,
             }} />
@@ -83,9 +83,9 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               }}>
                 <span style={{
                   fontSize: 10, fontWeight: 700,
-                  color: '#8B4513',
-                  background: 'rgba(139,69,19,0.12)',
-                  border: '1px solid rgba(139,69,19,0.25)',
+                  color: 'var(--action)',
+                  background: 'color-mix(in srgb, var(--action) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--action) 25%, transparent)',
                   borderRadius: 4,
                   padding: '2px 8px',
                   textTransform: 'uppercase',
@@ -94,13 +94,13 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                   Stage {stage.stageNumber}
                 </span>
                 {stage.estimatedMinutes && (
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text2)' }}>
                     ~{stage.estimatedMinutes} min
                   </span>
                 )}
               </div>
               <h3 style={{
-                color: 'rgba(255,255,255,0.90)',
+                color: 'var(--text)',
                 ...type.cardTitle,
                 margin: '6px 0 0',
               }}>
@@ -108,7 +108,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               </h3>
               {stage.description && (
                 <p style={{
-                  fontSize: 13, color: 'rgba(255,255,255,0.40)',
+                  fontSize: 13, color: 'var(--text2)',
                   margin: '4px 0 0', lineHeight: 1.5,
                 }}>
                   {stage.description}
@@ -121,7 +121,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               {stageBlocks.map(block => (
                 <div key={block.id} style={{
                   background: 'rgba(14,14,20,0.60)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  border: '1px solid var(--line)',
                   borderRadius: 10,
                   padding: 16,
                   position: 'relative',
@@ -129,7 +129,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                   {block.subheading && (
                     <div style={{
                       fontSize: 13, fontWeight: 600,
-                      color: 'rgba(255,255,255,0.80)',
+                      color: 'var(--text2)',
                       marginBottom: 8,
                     }}>
                       {block.subheading}
@@ -142,8 +142,8 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                     <div title={block.creatorAnnotation} style={{
                       position: 'absolute', top: 8, right: 8,
                       width: 18, height: 18,
-                      background: 'rgba(245,158,11,0.20)',
-                      border: '1px solid rgba(245,158,11,0.40)',
+                      background: 'var(--cat-breakage-fill)',
+                      border: '1px solid var(--cat-breakage)',
                       borderRadius: 3,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 10, cursor: 'help',
@@ -166,7 +166,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
             left: -32 + 8, top: 4,
             width: 14, height: 14,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.20)',
+            background: 'var(--recess)',
             border: '3px solid rgba(6,6,10,1)',
             zIndex: 2,
           }} />
@@ -174,14 +174,14 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
             {ungrouped.map(block => (
               <div key={block.id} style={{
                 background: 'rgba(14,14,20,0.60)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                border: '1px solid var(--line)',
                 borderRadius: 10,
                 padding: 16,
               }}>
                 {block.subheading && (
                   <div style={{
                     fontSize: 13, fontWeight: 600,
-                    color: 'rgba(255,255,255,0.80)',
+                    color: 'var(--text2)',
                     marginBottom: 8,
                   }}>
                     {block.subheading}

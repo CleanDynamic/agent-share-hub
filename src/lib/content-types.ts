@@ -1,40 +1,48 @@
 // ─── POST TYPES (the social object — what the post IS) ───
+//
+// BG-P28. The four hues here were the old brand's, fixed in both themes, and
+// they are spent as a chip's ink AND its ground on every surface that renders
+// a post type. They resolve into part hues by what each kind is: a build is a
+// made thing (artefact), a technique is a method you follow (instruction), a
+// discovery is something observed (evidence), a discussion is words about it
+// (narrative). Each `bg` and `border` becomes the measured fill that pairs with
+// its own hue, rather than a 15%/30% mix nobody checked.
 
 export const POST_TYPES = [
   {
     value: 'build',
     label: 'Build',
     description: 'Something you made — a tool, agent, workflow, or system',
-    color: '#8B4513',
-    bg: 'rgba(139,69,19,0.15)',
-    border: 'rgba(139,69,19,0.30)',
+    color: 'var(--cat-artefact)',
+    bg: 'var(--cat-artefact-fill)',
+    border: 'var(--cat-artefact)',
     emoji: '🔨',
   },
   {
     value: 'technique',
     label: 'Technique',
     description: 'A specific method or approach you have tested and proven',
-    color: '#1F7A6D',
-    bg: 'rgba(31,122,109,0.15)',
-    border: 'rgba(31,122,109,0.30)',
+    color: 'var(--cat-instruction)',
+    bg: 'var(--cat-instruction-fill)',
+    border: 'var(--cat-instruction)',
     emoji: '⚡',
   },
   {
     value: 'discovery',
     label: 'Discovery',
     description: 'Something you found — a behaviour, result, or tool',
-    color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.15)',
-    border: 'rgba(124,58,237,0.30)',
+    color: 'var(--cat-evidence)',
+    bg: 'var(--cat-evidence-fill)',
+    border: 'var(--cat-evidence)',
     emoji: '🔍',
   },
   {
     value: 'discussion',
     label: 'Discussion',
     description: 'A question, debate, challenge, or open thought',
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,0.15)',
-    border: 'rgba(245,158,11,0.30)',
+    color: 'var(--cat-narrative)',
+    bg: 'var(--cat-narrative-fill)',
+    border: 'var(--cat-narrative)',
     emoji: '💬',
   },
 ] as const;

@@ -127,7 +127,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
       isActive: () => false,
       action: () => {
         // Highlight mark not loaded — use execCommand as fallback
-        document.execCommand('hiliteColor', false, 'rgba(232,87,26,0.2)');
+        document.execCommand('hiliteColor', false, 'color-mix(in srgb, var(--action) 20%, transparent)');
       },
     },
     ...(onAddComment
@@ -157,7 +157,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
         gap: 2,
         background: 'rgba(16,16,24,0.95)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.10)',
+        border: '1px solid var(--line)',
         borderRadius: 8,
         padding: '4px 8px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
@@ -190,13 +190,13 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
               borderRadius: 4,
               border: 'none',
               background: active
-                ? 'rgba(255,255,255,0.08)'
+                ? 'var(--recess)'
                 : hovered
-                  ? 'rgba(255,255,255,0.05)'
+                  ? 'var(--recess)'
                   : 'transparent',
               color: active
-                ? 'rgba(255,255,255,0.90)'
-                : 'rgba(255,255,255,0.70)',
+                ? 'var(--text)'
+                : 'var(--text2)',
               cursor: 'pointer',
               transition: 'all 100ms',
               padding: 0,
