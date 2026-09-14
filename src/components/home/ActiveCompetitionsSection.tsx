@@ -177,7 +177,7 @@ export function ActiveCompetitionsSection() {
             style={{
               fontSize: 14,
               fontWeight: 700,
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
               letterSpacing: "0.02em",
             }}
           >
@@ -191,8 +191,8 @@ export function ActiveCompetitionsSection() {
               className="animate-pulse"
               style={{
                 height: 88,
-                background: "rgba(22,22,30,0.30)",
-                border: "1px solid rgba(255, 255, 255, 0.14)",
+                background: "var(--recess)",
+                border: "1px solid var(--line)",
                 borderRadius: 12,
               }}
             />
@@ -211,7 +211,7 @@ export function ActiveCompetitionsSection() {
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text)",
             letterSpacing: "0.02em",
           }}
         >
@@ -222,7 +222,7 @@ export function ActiveCompetitionsSection() {
           style={{
             fontSize: 12,
             fontWeight: 500,
-            color: "#E8571A",
+            color: "var(--action)",
             textDecoration: "none",
           }}
         >

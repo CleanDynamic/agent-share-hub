@@ -56,30 +56,30 @@ interface BountyCompetitionHeaderProps {
 function getStatusConfig(status: BountyStatus) {
   switch (status) {
     case "open":
-      return { label: "OPEN", bg: "rgba(245,158,11,0.15)", color: "#F59E0B" };
+      return { label: "OPEN", bg: "color-mix(in srgb, var(--cat-breakage) 15%, transparent)", color: "var(--cat-breakage)" };
     case "closed":
-      return { label: "CLOSED", bg: "rgba(156,163,175,0.15)", color: "#9CA3AF" };
+      return { label: "CLOSED", bg: "color-mix(in srgb, var(--text2) 15%, transparent)", color: "var(--text2)" };
     case "solved":
-      return { label: "SOLVED", bg: "rgba(46,196,182,0.15)", color: "#2EC4B6" };
+      return { label: "SOLVED", bg: "color-mix(in srgb, var(--evidence) 15%, transparent)", color: "var(--evidence)" };
     case "partially_solved":
-      return { label: "PARTIALLY SOLVED", bg: "rgba(6,182,212,0.15)", color: "#06B6D4" };
+      return { label: "PARTIALLY SOLVED", bg: "color-mix(in srgb, var(--cat-data) 15%, transparent)", color: "var(--cat-data)" };
     default:
-      return { label: "UNKNOWN", bg: "rgba(156,163,175,0.15)", color: "#9CA3AF" };
+      return { label: "UNKNOWN", bg: "color-mix(in srgb, var(--text2) 15%, transparent)", color: "var(--text2)" };
   }
 }
 
 function getDeadlineState(deadline: Date | null) {
-  if (!deadline) return { type: "open_ended" as const, color: "rgba(255,255,255,0.65)" };
+  if (!deadline) return { type: "open_ended" as const, color: "var(--text2)" };
   const now = new Date();
   const diff = deadline.getTime() - now.getTime();
   const daysRemaining = diff / (1000 * 60 * 60 * 24);
   if (diff < 0) {
     const daysAgo = Math.abs(Math.floor(daysRemaining));
-    return { type: "past" as const, daysAgo, color: "rgba(239,68,68,0.65)" };
+    return { type: "past" as const, daysAgo, color: "color-mix(in srgb, var(--cat-breakage) 65%, transparent)" };
   }
-  if (daysRemaining < 1) return { type: "urgent" as const, color: "#EF4444" };
-  if (daysRemaining <= 7) return { type: "warning" as const, color: "#F59E0B" };
-  return { type: "normal" as const, color: "rgba(255,255,255,0.92)" };
+  if (daysRemaining < 1) return { type: "urgent" as const, color: "var(--cat-breakage)" };
+  if (daysRemaining <= 7) return { type: "warning" as const, color: "var(--cat-breakage)" };
+  return { type: "normal" as const, color: "var(--text)" };
 }
 
 function formatTimeRemaining(deadline: Date | null): string {
@@ -123,11 +123,11 @@ function CounterPill({ icon, text }: { icon: React.ReactNode; text: string }) {
         gap: 6,
         padding: "4px 10px",
         borderRadius: 999,
-        background: "rgba(255, 255, 255, 0.12)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--recess)",
+        border: "1px solid var(--line)",
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
-        color: "rgba(255,255,255,0.75)",
+        color: "var(--text2)",
       }}
     >
       {icon}
@@ -148,7 +148,7 @@ function RewardDisplay({
   const baseStyle: React.CSSProperties = {
     ...sectionHead,
 
-    color: "#F59E0B",
+    color: "var(--cat-breakage)",
 
   };
   switch (type) {
@@ -157,10 +157,10 @@ function RewardDisplay({
     case "token":
       return <div style={baseStyle}>{amount ?? 0} {currency || "USDC"}</div>;
     case "kudos":
-      return <div style={{ ...baseStyle, color: "#2EC4B6", fontSize: 22 }}>Community recognition</div>;
+      return <div style={{ ...baseStyle, color: "var(--evidence)", fontSize: 22 }}>Community recognition</div>;
     case "none":
     default:
-      return <div style={{ ...baseStyle, color: "rgba(255,255,255,0.7)", fontSize: 18, fontWeight: 500 }}>No reward — knowledge is the prize</div>;
+      return <div style={{ ...baseStyle, color: "var(--text2)", fontSize: 18, fontWeight: 500 }}>No reward — knowledge is the prize</div>;
   }
 }
 
@@ -198,8 +198,8 @@ export function BountyCompetitionHeader({
   }, [bounty.slotsSolved, bounty.slotsTotal, bounty.createdAt]);
 
   const containerStyle: React.CSSProperties = {
-    background: "linear-gradient(180deg, rgba(245,158,11,0.06) 0%, rgba(7,7,13,0.4) 100%)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "var(--recess)",
+    border: "1px solid var(--line)",
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
@@ -212,7 +212,7 @@ export function BountyCompetitionHeader({
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: "0.08em",
-    color: "rgba(255,255,255,0.45)",
+    color: "var(--text2)",
     textTransform: "uppercase",
     marginBottom: 6,
   };
@@ -223,9 +223,9 @@ export function BountyCompetitionHeader({
     gap: 8,
     padding: "10px 18px",
     borderRadius: 10,
-    border: "1px solid rgba(245,158,11,0.4)",
-    background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-    color: "#25252F",
+    border: "1px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)",
+    background: "var(--action)",
+    color: "var(--bg)",
     fontFamily: "Figtree, sans-serif",
     fontSize: 14,
     fontWeight: 600,
@@ -238,9 +238,9 @@ export function BountyCompetitionHeader({
     gap: 8,
     padding: "10px 16px",
     borderRadius: 10,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.03)",
-    color: "rgba(255,255,255,0.85)",
+    border: "1px solid var(--line)",
+    background: "var(--recess)",
+    color: "var(--text)",
     fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 500,
@@ -253,12 +253,12 @@ export function BountyCompetitionHeader({
         {/* TOP ROW */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <Trophy size={16} color="#F59E0B" />
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#F59E0B" }}>BOUNTY</span>
+            <Trophy size={16} color="var(--cat-breakage)" />
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "var(--cat-breakage)" }}>BOUNTY</span>
             <span style={{ padding: "3px 8px", borderRadius: 6, background: statusConfig.bg, color: statusConfig.color, fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em" }}>
               {statusConfig.label}
             </span>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "var(--text2)" }}>
               BOUNTY #{bounty.sequentialId}
             </span>
           </div>
@@ -270,7 +270,7 @@ export function BountyCompetitionHeader({
         </div>
 
         {/* TITLE */}
-        <h1 style={{ ...sectionHead,   color: "rgba(255,255,255,0.96)",  margin: "0 0 12px 0" }}>
+        <h1 style={{ ...sectionHead,   color: "var(--text)",  margin: "0 0 12px 0" }}>
           {bounty.title}
         </h1>
 
@@ -281,7 +281,7 @@ export function BountyCompetitionHeader({
               fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               lineHeight: 1.6,
-              color: "rgba(255,255,255,0.72)",
+              color: "var(--text2)",
               maxHeight: isDescriptionExpanded ? "none" : 80,
               overflow: "hidden",
               position: "relative",
@@ -296,7 +296,7 @@ export function BountyCompetitionHeader({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 13,
                 fontWeight: 500,
-                color: "#F59E0B",
+                color: "var(--cat-breakage)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -310,7 +310,7 @@ export function BountyCompetitionHeader({
         </div>
 
         {/* REWARD + DEADLINE */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20, padding: "16px 0", borderTop: "1px solid rgba(255, 255, 255, 0.14)", borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20, padding: "16px 0", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
           <div>
             <div style={labelStyle}>Reward</div>
             <RewardDisplay type={bounty.rewardType} amount={bounty.rewardAmount} currency={bounty.rewardCurrency} />
@@ -324,7 +324,7 @@ export function BountyCompetitionHeader({
               </span>
             </div>
             {bounty.deadline && deadlineState.type !== "past" && deadlineState.type !== "open_ended" && (
-              <div style={{ marginTop: 8, height: 4, background: "rgba(255, 255, 255, 0.14)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ marginTop: 8, height: 4, background: "var(--recess)", borderRadius: 2, overflow: "hidden" }}>
                 <div style={{ width: `${timeProgress}%`, height: "100%", background: deadlineState.color as string, transition: "width 1s ease-out" }} />
               </div>
             )}
@@ -344,7 +344,7 @@ export function BountyCompetitionHeader({
                 Discussion ({bounty.commentCount})
               </button>
               {bounty.status === "solved" && (
-                <button onClick={onPromoteToBlueprint} style={{ ...secondaryBtnStyle, borderColor: "rgba(46,196,182,0.4)", color: "#2EC4B6" }}>
+                <button onClick={onPromoteToBlueprint} style={{ ...secondaryBtnStyle, borderColor: "color-mix(in srgb, var(--evidence) 40%, transparent)", color: "var(--evidence)" }}>
                   <Sparkles size={14} />
                   Promote to blueprint
                 </button>
@@ -386,15 +386,15 @@ export function BountyCompetitionHeader({
         <div>
           {(bounty.status === "open" || bounty.status === "partially_solved") && (
             <>
-              <div style={{ height: 6, background: "rgba(255, 255, 255, 0.14)", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
-                <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, #2EC4B6, #06B6D4)", transition: "width 0.6s ease-out" }} />
+              <div style={{ height: 6, background: "var(--recess)", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
+                <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, var(--evidence), var(--cat-data))", transition: "width 0.6s ease-out" }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
                   {bounty.slotsSolved} of {bounty.slotsTotal} slots solved
                 </span>
                 {estimatedDaysToComplete !== null && (
-                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
                     ~{estimatedDaysToComplete} day{estimatedDaysToComplete !== 1 ? "s" : ""} at current pace
                   </span>
                 )}
@@ -402,12 +402,12 @@ export function BountyCompetitionHeader({
             </>
           )}
           {bounty.status === "closed" && (
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--text2)" }}>
               Closed without resolution. {bounty.slotsTotal - bounty.slotsSolved} of {bounty.slotsTotal} slots remained unsolved.
             </div>
           )}
           {bounty.status === "solved" && bounty.solvedAt && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Figtree, sans-serif", fontSize: 13, color: "#2EC4B6" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--evidence)" }}>
               <Award size={14} />
               Solved on {bounty.solvedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} by {bounty.slotsSolved} contributor{bounty.slotsSolved !== 1 ? "s" : ""}
             </div>

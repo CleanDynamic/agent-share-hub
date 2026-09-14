@@ -136,7 +136,7 @@ export function MetaBountyCreationFlow({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.6)",
+        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         backdropFilter: "blur(8px)",
         zIndex: 1000,
         display: "flex",
@@ -152,10 +152,10 @@ export function MetaBountyCreationFlow({
           maxWidth: "calc(100vw - 32px)",
           maxHeight: "calc(100vh - 64px)",
           background:
-            "linear-gradient(180deg, rgba(30, 30, 35, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+            "var(--recess)",
+          border: "1px solid var(--line)",
           borderRadius: "16px",
-          boxShadow: "0 24px 48px rgba(0, 0, 0, 0.4)",
+          boxShadow: "0 24px 48px color-mix(in srgb, var(--porthole) 62%, transparent)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -168,7 +168,7 @@ export function MetaBountyCreationFlow({
             justifyContent: "space-between",
             alignItems: "center",
             padding: "16px 24px",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.14)",
+            borderBottom: "1px solid var(--line)",
           }}
         >
           <div style={{ display: "flex", gap: 8 }}>
@@ -181,10 +181,10 @@ export function MetaBountyCreationFlow({
                   borderRadius: 4,
                   background:
                     step === currentStep
-                      ? "#F97316"
+                      ? "var(--action)"
                       : step < currentStep
-                        ? "rgba(249,115,22,0.4)"
-                        : "rgba(255,255,255,0.1)",
+                        ? "color-mix(in srgb, var(--action) 40%, transparent)"
+                        : "var(--recess)",
                   transition: "all 0.2s",
                 }}
               />
@@ -196,7 +196,7 @@ export function MetaBountyCreationFlow({
               background: "transparent",
               border: "none",
               cursor: "pointer",
-              color: "rgba(255,255,255,0.6)",
+              color: "var(--text2)",
               padding: 4,
               display: "flex",
             }}
@@ -215,7 +215,7 @@ export function MetaBountyCreationFlow({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.95)",
+                  color: "var(--text)",
                   margin: "0 0 8px 0",
                 }}
               >
@@ -225,7 +225,7 @@ export function MetaBountyCreationFlow({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.6)",
+                  color: "var(--text2)",
                   margin: "0 0 20px 0",
                   lineHeight: 1.5,
                 }}
@@ -241,7 +241,7 @@ export function MetaBountyCreationFlow({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
-                    color: "rgba(255,255,255,0.7)",
+                    color: "var(--text2)",
                     display: "block",
                     marginBottom: 6,
                   }}
@@ -256,12 +256,12 @@ export function MetaBountyCreationFlow({
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    background: "rgba(255, 255, 255, 0.12)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     borderRadius: 8,
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
-                    color: "rgba(255,255,255,0.9)",
+                    color: "var(--text)",
                     outline: "none",
                   }}
                 />
@@ -273,7 +273,7 @@ export function MetaBountyCreationFlow({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
-                    color: "rgba(255,255,255,0.7)",
+                    color: "var(--text2)",
                     display: "block",
                     marginBottom: 6,
                   }}
@@ -290,12 +290,12 @@ export function MetaBountyCreationFlow({
                   style={{
                     width: "100%",
                     padding: "12px 14px",
-                    background: "rgba(255, 255, 255, 0.12)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     borderRadius: 8,
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
-                    color: "rgba(255,255,255,0.9)",
+                    color: "var(--text)",
                     outline: "none",
                     resize: "vertical",
                     minHeight: 100,
@@ -309,7 +309,7 @@ export function MetaBountyCreationFlow({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 12,
                     fontWeight: 500,
-                    color: "rgba(255,255,255,0.7)",
+                    color: "var(--text2)",
                     display: "block",
                     marginBottom: 8,
                   }}
@@ -326,20 +326,20 @@ export function MetaBountyCreationFlow({
                         style={{
                           padding: "6px 12px",
                           background: isSelected
-                            ? "rgba(249,115,22,0.2)"
-                            : "rgba(255, 255, 255, 0.12)",
+                            ? "color-mix(in srgb, var(--action) 20%, transparent)"
+                            : "var(--recess)",
                           border: `1px solid ${
                             isSelected
-                              ? "rgba(249,115,22,0.4)"
-                              : "rgba(255,255,255,0.1)"
+                              ? "color-mix(in srgb, var(--action) 40%, transparent)"
+                              : "var(--recess)"
                           }`,
                           borderRadius: 100,
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 12,
                           fontWeight: 500,
                           color: isSelected
-                            ? "#F97316"
-                            : "rgba(255,255,255,0.7)",
+                            ? "var(--action)"
+                            : "var(--text2)",
                           cursor: "pointer",
                         }}
                       >
@@ -360,7 +360,7 @@ export function MetaBountyCreationFlow({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.95)",
+                  color: "var(--text)",
                   margin: "0 0 8px 0",
                 }}
               >
@@ -370,7 +370,7 @@ export function MetaBountyCreationFlow({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.6)",
+                  color: "var(--text2)",
                   margin: "0 0 20px 0",
                 }}
               >
@@ -383,8 +383,8 @@ export function MetaBountyCreationFlow({
                   <div
                     key={subBounty.id}
                     style={{
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "var(--recess)",
+                      border: "1px solid var(--line)",
                       borderRadius: 10,
                       padding: 16,
                     }}
@@ -402,7 +402,7 @@ export function MetaBountyCreationFlow({
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "rgba(255,255,255,0.5)",
+                          color: "var(--text2)",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                         }}
@@ -424,7 +424,7 @@ export function MetaBountyCreationFlow({
                             style={{
                               width: 14,
                               height: 14,
-                              color: "rgba(255,100,100,0.7)",
+                              color: "var(--cat-breakage)",
                             }}
                           />
                         </button>
@@ -443,12 +443,12 @@ export function MetaBountyCreationFlow({
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        background: "rgba(255, 255, 255, 0.12)",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        background: "var(--recess)",
+                        border: "1px solid var(--line)",
                         borderRadius: 6,
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
-                        color: "rgba(255,255,255,0.9)",
+                        color: "var(--text)",
                         outline: "none",
                         marginBottom: 10,
                       }}
@@ -466,12 +466,12 @@ export function MetaBountyCreationFlow({
                       style={{
                         width: "100%",
                         padding: "10px 12px",
-                        background: "rgba(255, 255, 255, 0.12)",
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        background: "var(--recess)",
+                        border: "1px solid var(--line)",
                         borderRadius: 6,
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
-                        color: "rgba(255,255,255,0.9)",
+                        color: "var(--text)",
                         outline: "none",
                         resize: "none",
                         marginBottom: 4,
@@ -481,7 +481,7 @@ export function MetaBountyCreationFlow({
                       style={{
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 10,
-                        color: "rgba(255,255,255,0.4)",
+                        color: "var(--text2)",
                         textAlign: "right",
                         marginBottom: 10,
                       }}
@@ -503,12 +503,12 @@ export function MetaBountyCreationFlow({
                           style={{
                             width: "100%",
                             padding: "10px 12px",
-                            background: "rgba(255, 255, 255, 0.12)",
-                            border: "1px solid rgba(255,255,255,0.1)",
+                            background: "var(--recess)",
+                            border: "1px solid var(--line)",
                             borderRadius: 6,
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
-                            color: "rgba(255,255,255,0.9)",
+                            color: "var(--text)",
                             outline: "none",
                           }}
                         />
@@ -523,12 +523,12 @@ export function MetaBountyCreationFlow({
                         style={{
                           width: 90,
                           padding: "10px 12px",
-                          background: "rgba(255, 255, 255, 0.12)",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          background: "var(--recess)",
+                          border: "1px solid var(--line)",
                           borderRadius: 6,
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
-                          color: "rgba(255,255,255,0.9)",
+                          color: "var(--text)",
                           outline: "none",
                           cursor: "pointer",
                         }}
@@ -550,13 +550,13 @@ export function MetaBountyCreationFlow({
                       justifyContent: "center",
                       gap: 6,
                       padding: 12,
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px dashed rgba(255,255,255,0.15)",
+                      background: "var(--recess)",
+                      border: "1px dashed var(--line)",
                       borderRadius: 8,
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 13,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "var(--text2)",
                       cursor: "pointer",
                     }}
                   >
@@ -576,7 +576,7 @@ export function MetaBountyCreationFlow({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.95)",
+                  color: "var(--text)",
                   margin: "0 0 8px 0",
                 }}
               >
@@ -586,7 +586,7 @@ export function MetaBountyCreationFlow({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.6)",
+                  color: "var(--text2)",
                   margin: "0 0 20px 0",
                 }}
               >
@@ -600,7 +600,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.7)",
+                      color: "var(--text2)",
                       display: "block",
                       marginBottom: 6,
                     }}
@@ -617,12 +617,12 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.12)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "var(--recess)",
+                      border: "1px solid var(--line)",
                       borderRadius: 8,
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                       outline: "none",
                     }}
                   />
@@ -634,7 +634,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.7)",
+                      color: "var(--text2)",
                       display: "block",
                       marginBottom: 6,
                     }}
@@ -658,12 +658,12 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.12)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "var(--recess)",
+                      border: "1px solid var(--line)",
                       borderRadius: 8,
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                       outline: "none",
                     }}
                   />
@@ -675,7 +675,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.7)",
+                      color: "var(--text2)",
                       display: "block",
                       marginBottom: 6,
                     }}
@@ -696,12 +696,12 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.12)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "var(--recess)",
+                      border: "1px solid var(--line)",
                       borderRadius: 8,
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                       outline: "none",
                     }}
                   />
@@ -720,7 +720,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 13,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.8)",
+                      color: "var(--text2)",
                     }}
                   >
                     Allow anonymous pledges?
@@ -737,8 +737,8 @@ export function MetaBountyCreationFlow({
                       height: 24,
                       borderRadius: 12,
                       background: formState.anonymousPledgesAllowed
-                        ? "#F97316"
-                        : "rgba(255,255,255,0.15)",
+                        ? "var(--action)"
+                        : "var(--recess)",
                       border: "none",
                       cursor: "pointer",
                       position: "relative",
@@ -754,7 +754,7 @@ export function MetaBountyCreationFlow({
                         top: 3,
                         left: formState.anonymousPledgesAllowed ? 23 : 3,
                         transition: "left 0.2s ease",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        boxShadow: "0 1px 3px color-mix(in srgb, var(--porthole) 62%, transparent)",
                       }}
                     />
                   </button>
@@ -766,7 +766,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.7)",
+                      color: "var(--text2)",
                       display: "block",
                       marginBottom: 6,
                     }}
@@ -782,12 +782,12 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: "100%",
                       padding: "12px 14px",
-                      background: "rgba(255, 255, 255, 0.12)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: "var(--recess)",
+                      border: "1px solid var(--line)",
                       borderRadius: 8,
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                       outline: "none",
                       colorScheme: "dark",
                     }}
@@ -805,7 +805,7 @@ export function MetaBountyCreationFlow({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 20,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.95)",
+                  color: "var(--text)",
                   margin: "0 0 8px 0",
                 }}
               >
@@ -815,7 +815,7 @@ export function MetaBountyCreationFlow({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.6)",
+                  color: "var(--text2)",
                   margin: "0 0 20px 0",
                 }}
               >
@@ -825,8 +825,8 @@ export function MetaBountyCreationFlow({
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div
                   style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     borderRadius: 10,
                     padding: 16,
                   }}
@@ -836,7 +836,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                       margin: "0 0 8px 0",
                     }}
                   >
@@ -846,7 +846,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "var(--text2)",
                       margin: 0,
                       lineHeight: 1.5,
                     }}
@@ -867,12 +867,12 @@ export function MetaBountyCreationFlow({
                           key={tag}
                           style={{
                             padding: "3px 8px",
-                            background: "rgba(249,115,22,0.15)",
+                            background: "color-mix(in srgb, var(--action) 15%, transparent)",
                             borderRadius: 4,
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 10,
                             fontWeight: 500,
-                            color: "#F97316",
+                            color: "var(--action)",
                           }}
                         >
                           {tag}
@@ -884,8 +884,8 @@ export function MetaBountyCreationFlow({
 
                 <div
                   style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     borderRadius: 10,
                     padding: 16,
                   }}
@@ -895,7 +895,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--text2)",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                       marginBottom: 12,
@@ -919,7 +919,7 @@ export function MetaBountyCreationFlow({
                           style={{
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
-                            color: "rgba(255,255,255,0.8)",
+                            color: "var(--text2)",
                           }}
                         >
                           {i + 1}. {sb.title || "Untitled"}
@@ -929,7 +929,7 @@ export function MetaBountyCreationFlow({
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 12,
                             fontWeight: 500,
-                            color: "rgba(255,255,255,0.6)",
+                            color: "var(--text2)",
                           }}
                         >
                           {formatCurrency(sb.targetReward)}
@@ -939,7 +939,7 @@ export function MetaBountyCreationFlow({
                   </div>
                   <div
                     style={{
-                      borderTop: "1px solid rgba(255,255,255,0.08)",
+                      borderTop: "1px solid var(--line)",
                       marginTop: 12,
                       paddingTop: 12,
                       display: "flex",
@@ -952,7 +952,7 @@ export function MetaBountyCreationFlow({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         fontWeight: 600,
-                        color: "rgba(255,255,255,0.9)",
+                        color: "var(--text)",
                       }}
                     >
                       Total pool size
@@ -962,7 +962,7 @@ export function MetaBountyCreationFlow({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 16,
                         fontWeight: 700,
-                        color: "#F97316",
+                        color: "var(--action)",
                       }}
                     >
                       {formatCurrency(totalPoolSize)}
@@ -972,8 +972,8 @@ export function MetaBountyCreationFlow({
 
                 <div
                   style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     borderRadius: 10,
                     padding: 16,
                   }}
@@ -983,7 +983,7 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--text2)",
                       textTransform: "uppercase",
                       letterSpacing: "0.05em",
                       marginBottom: 12,
@@ -1003,7 +1003,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
-                          color: "rgba(255,255,255,0.5)",
+                          color: "var(--text2)",
                           marginBottom: 2,
                         }}
                       >
@@ -1013,7 +1013,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
-                          color: "rgba(255,255,255,0.9)",
+                          color: "var(--text)",
                         }}
                       >
                         {formatCurrency(formState.minPledge)}
@@ -1024,7 +1024,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
-                          color: "rgba(255,255,255,0.5)",
+                          color: "var(--text2)",
                           marginBottom: 2,
                         }}
                       >
@@ -1034,7 +1034,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
-                          color: "rgba(255,255,255,0.9)",
+                          color: "var(--text)",
                         }}
                       >
                         {formState.spawnThreshold}%
@@ -1045,7 +1045,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
-                          color: "rgba(255,255,255,0.5)",
+                          color: "var(--text2)",
                           marginBottom: 2,
                         }}
                       >
@@ -1055,7 +1055,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
-                          color: "rgba(255,255,255,0.9)",
+                          color: "var(--text)",
                         }}
                       >
                         {formState.anonymousPledgesAllowed
@@ -1068,7 +1068,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 10,
-                          color: "rgba(255,255,255,0.5)",
+                          color: "var(--text2)",
                           marginBottom: 2,
                         }}
                       >
@@ -1078,7 +1078,7 @@ export function MetaBountyCreationFlow({
                         style={{
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
-                          color: "rgba(255,255,255,0.9)",
+                          color: "var(--text)",
                         }}
                       >
                         {formState.fundingDeadline
@@ -1102,7 +1102,7 @@ export function MetaBountyCreationFlow({
             justifyContent: "space-between",
             alignItems: "center",
             padding: "16px 24px",
-            borderTop: "1px solid rgba(255, 255, 255, 0.14)",
+            borderTop: "1px solid var(--line)",
           }}
         >
           <button
@@ -1111,15 +1111,15 @@ export function MetaBountyCreationFlow({
             style={{
               padding: "10px 20px",
               background: "transparent",
-              border: "1px solid rgba(255,255,255,0.15)",
+              border: "1px solid var(--line)",
               borderRadius: 8,
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 500,
               color:
                 currentStep === 1
-                  ? "rgba(255,255,255,0.3)"
-                  : "rgba(255,255,255,0.8)",
+                  ? "var(--recess)"
+                  : "var(--text)",
               cursor: currentStep === 1 ? "not-allowed" : "pointer",
             }}
           >
@@ -1133,8 +1133,8 @@ export function MetaBountyCreationFlow({
               style={{
                 padding: "10px 24px",
                 background: stepBlocked
-                  ? "rgba(249,115,22,0.3)"
-                  : "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
+                  ? "color-mix(in srgb, var(--action) 30%, transparent)"
+                  : "var(--action)",
                 border: "none",
                 borderRadius: 8,
                 fontFamily: "Figtree, sans-serif",
@@ -1153,8 +1153,8 @@ export function MetaBountyCreationFlow({
               style={{
                 padding: "12px 32px",
                 background: isPublishing
-                  ? "rgba(249,115,22,0.5)"
-                  : "linear-gradient(135deg, #F97316 0%, #EA580C 100%)",
+                  ? "color-mix(in srgb, var(--action) 50%, transparent)"
+                  : "var(--action)",
                 border: "none",
                 borderRadius: 8,
                 fontFamily: "Figtree, sans-serif",
@@ -1173,7 +1173,7 @@ export function MetaBountyCreationFlow({
                     style={{
                       width: 14,
                       height: 14,
-                      border: "2px solid rgba(255,255,255,0.3)",
+                      border: "2px solid var(--line)",
                       borderTopColor: "white",
                       borderRadius: "50%",
                       animation: "mbcf-spin 0.8s linear infinite",

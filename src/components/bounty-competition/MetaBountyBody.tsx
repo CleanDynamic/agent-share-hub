@@ -25,7 +25,7 @@ export function MetaBountyBody({ meta, viewerId, onPledged }: Props) {
           fontFamily: "Figtree, sans-serif",
           fontSize: 16,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.92)",
+          color: "var(--text)",
           margin: "0 0 4px 0",
         }}
       >
@@ -81,8 +81,8 @@ function SubBountyRow({
   return (
     <div
       style={{
-        background: "rgba(124,58,237,0.04)",
-        border: "1px solid rgba(124,58,237,0.18)",
+        background: "color-mix(in srgb, var(--action) 4%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--action) 18%, transparent)",
         borderRadius: 12,
         padding: 16,
       }}
@@ -103,7 +103,7 @@ function SubBountyRow({
               fontWeight: 600,
               letterSpacing: "0.05em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.45)",
+              color: "var(--text2)",
               marginBottom: 4,
             }}
           >
@@ -112,8 +112,8 @@ function SubBountyRow({
               <span
                 style={{
                   marginLeft: 8,
-                  background: "rgba(34,197,94,0.16)",
-                  color: "#22C55E",
+                  background: "color-mix(in srgb, var(--cat-configuration) 16%, transparent)",
+                  color: "var(--cat-configuration)",
                   padding: "1px 6px",
                   borderRadius: 4,
                   fontSize: 9,
@@ -128,7 +128,7 @@ function SubBountyRow({
               fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.92)",
+              color: "var(--text)",
               margin: "0 0 4px 0",
             }}
           >
@@ -139,7 +139,7 @@ function SubBountyRow({
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
-                color: "rgba(255,255,255,0.55)",
+                color: "var(--text2)",
                 margin: 0,
                 lineHeight: 1.5,
               }}
@@ -152,9 +152,9 @@ function SubBountyRow({
           <button
             onClick={() => onOpenSpawned(sub.spawnedBountyId!)}
             style={{
-              background: "rgba(34,197,94,0.15)",
-              color: "#22C55E",
-              border: "1px solid rgba(34,197,94,0.3)",
+              background: "color-mix(in srgb, var(--cat-configuration) 15%, transparent)",
+              color: "var(--cat-configuration)",
+              border: "1px solid color-mix(in srgb, var(--cat-configuration) 30%, transparent)",
               borderRadius: 8,
               padding: "8px 14px",
               fontFamily: "Figtree, sans-serif",
@@ -173,7 +173,7 @@ function SubBountyRow({
           <button
             onClick={onPledge}
             style={{
-              background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+              background: "var(--action)",
               color: "white",
               border: "none",
               borderRadius: 8,
@@ -197,13 +197,13 @@ function SubBountyRow({
             justifyContent: "space-between",
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
-            color: "rgba(255,255,255,0.6)",
+            color: "var(--text2)",
             marginBottom: 4,
           }}
         >
           <span>
             ${sub.pledgedAmount.toFixed(0)} / ${sub.targetAmount.toFixed(0)}{" "}
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>
+            <span style={{ color: "var(--text2)" }}>
               · spawns at ${thresholdAmount.toFixed(0)}
             </span>
           </span>
@@ -212,8 +212,8 @@ function SubBountyRow({
         <div
           style={{
             height: 6,
-            background: "rgba(124,58,237,0.08)",
-            borderRadius: 3,
+            background: "var(--recess)",
+            borderRadius: "var(--r-chip)",
             overflow: "hidden",
           }}
         >
@@ -221,9 +221,8 @@ function SubBountyRow({
             style={{
               height: "100%",
               width: `${progress}%`,
-              background:
-                "linear-gradient(90deg, #7C3AED 0%, #A78BFA 100%)",
-              borderRadius: 3,
+              background: "var(--evidence)",
+              borderRadius: "var(--r-chip)",
               transition: "width 0.3s ease",
             }}
           />
@@ -293,7 +292,7 @@ function PledgeModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.6)",
+        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         backdropFilter: "blur(8px)",
         zIndex: 1000,
         display: "flex",
@@ -308,8 +307,8 @@ function PledgeModal({
           width: 420,
           maxWidth: "100%",
           background:
-            "linear-gradient(180deg, rgba(30,30,35,0.95), rgba(20,20,25,0.98))",
-          border: "1px solid rgba(124,58,237,0.3)",
+            "var(--recess)",
+          border: "1px solid color-mix(in srgb, var(--action) 30%, transparent)",
           borderRadius: 16,
           padding: 24,
         }}
@@ -327,7 +326,7 @@ function PledgeModal({
               fontFamily: "Figtree, sans-serif",
               fontSize: 16,
               fontWeight: 700,
-              color: "rgba(255,255,255,0.95)",
+              color: "var(--text)",
               margin: 0,
             }}
           >
@@ -338,7 +337,7 @@ function PledgeModal({
             style={{
               background: "transparent",
               border: "none",
-              color: "rgba(255,255,255,0.6)",
+              color: "var(--text2)",
               cursor: "pointer",
               padding: 4,
               display: "flex",
@@ -354,7 +353,7 @@ function PledgeModal({
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.6)",
+              color: "var(--text2)",
               display: "block",
               marginBottom: 6,
             }}
@@ -370,12 +369,12 @@ function PledgeModal({
               style={{
                 flex: 1,
                 padding: "10px 12px",
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--recess)",
+                border: "1px solid var(--line)",
                 borderRadius: 8,
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
-                color: "rgba(255,255,255,0.9)",
+                color: "var(--text)",
                 outline: "none",
               }}
             />
@@ -385,12 +384,12 @@ function PledgeModal({
               style={{
                 width: 100,
                 padding: "10px 12px",
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--recess)",
+                border: "1px solid var(--line)",
                 borderRadius: 8,
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
-                color: "rgba(255,255,255,0.9)",
+                color: "var(--text)",
                 outline: "none",
               }}
             >
@@ -410,7 +409,7 @@ function PledgeModal({
             gap: 8,
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
-            color: "rgba(255,255,255,0.75)",
+            color: "var(--text2)",
             marginBottom: 20,
             cursor: "pointer",
           }}
@@ -430,8 +429,8 @@ function PledgeModal({
             width: "100%",
             padding: "12px",
             background: submitting
-              ? "rgba(124,58,237,0.5)"
-              : "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+              ? "color-mix(in srgb, var(--action) 50%, transparent)"
+              : "var(--action)",
             color: "white",
             border: "none",
             borderRadius: 8,
