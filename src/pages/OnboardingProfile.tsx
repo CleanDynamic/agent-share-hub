@@ -8,6 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, X } from "lucide-react";
 import { checkUsernameAvailability } from "@/lib/auth/checkUsernameAvailability";
+import { fieldMessageStyle } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { cardTitle, FIGTREE } from "@/lib/theme/type";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -128,14 +133,31 @@ export default function OnboardingProfile() {
 
   if (loading) return null;
 
+  /* Checking is `--text2`, available is `--evidence`, taken is
+     `--cat-breakage` — the same three the auth cards use for pending, success
+     and failure, so the mark means the same thing on both sides of signing in.
+     `text-green-500` and `text-destructive` were a Tailwind green and shadcn's
+     own red: neither follows the theme, and neither was measured. */
   const usernameIcon =
     usernameStatus === "checking" ? (
-      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      <Loader2 className="h-4 w-4 animate-spin" style={{ color: t.text2 }} />
     ) : usernameStatus === "available" ? (
-      <Check className="h-4 w-4 text-green-500" />
+      <Check className="h-4 w-4" style={{ color: t.evidence }} />
     ) : usernameStatus === "taken" || usernameStatus === "invalid" ? (
-      <X className="h-4 w-4 text-destructive" />
+      <X className="h-4 w-4" style={{ color: t.catBreakage }} />
     ) : null;
+
+  /* The same surface as the auth card: the reader arrives here straight off it
+     and the OAuth path makes this the FIRST buildgallery page some people see
+     with content on it. */
+  const panelStyle = {
+    background: t.glass,
+    borderWidth: 1,
+    borderStyle: "solid" as const,
+    borderColor: t.glassBorder,
+    borderRadius: r.panel,
+    ...elevation.raised,
+  };
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
@@ -145,10 +167,20 @@ export default function OnboardingProfile() {
         path="/onboarding/profile"
         noIndex
       />
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-foreground">Finish your profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pick a display name and username so people can find you.
+      <div className="w-full max-w-md p-6 sm:p-8" style={panelStyle}>
+        <h1 style={{ ...cardTitle, color: t.text }}>Finish your profile</h1>
+        <p
+          className="mt-1"
+          style={{
+            fontFamily: FIGTREE,
+            fontSize: "13px",
+            fontWeight: 400,
+            lineHeight: 1.55,
+            color: t.text2,
+          }}
+        >
+          Pick a display name and username so people can find you. Both can be
+          changed later from your profile.
         </p>
 
         <div className="mt-6 space-y-4">
@@ -178,22 +210,29 @@ export default function OnboardingProfile() {
                 <span className="absolute right-3 top-1/2 -translate-y-1/2">{usernameIcon}</span>
               )}
             </div>
+            {/* Beneath the field it is about, never only a toast. */}
             {usernameStatus === "invalid" && (
-              <p className="text-xs text-destructive">
+              <p role="alert" style={fieldMessageStyle}>
                 Username must be at least 3 characters.
               </p>
             )}
             {usernameStatus === "taken" && (
-              <p className="text-xs text-destructive">
+              <p role="alert" style={fieldMessageStyle}>
                 That username is taken. {usernameHint}
               </p>
             )}
             {usernameStatus === "available" && (
-              <p className="text-xs text-green-500">Username available</p>
+              <p style={{ ...fieldMessageStyle, color: t.evidence }}>
+                Username available
+              </p>
             )}
           </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" style={fieldMessageStyle}>
+              {error}
+            </p>
+          )}
 
           <Button
             onClick={handleSave}

@@ -12,6 +12,8 @@ import {
 import { AuthEmailSuccessCard } from "@/components/auth/AuthEmailSuccessCard";
 import { AuthEmailErrorCard } from "@/components/auth/AuthEmailErrorCard";
 import { resolvePostAuthRoute } from "@/lib/auth/postAuthRoute";
+import { t } from "@/lib/theme/tokens";
+import { cardTitle, FIGTREE } from "@/lib/theme/type";
 
 const RESEND_COOLDOWN_SECONDS = 45;
 
@@ -150,31 +152,26 @@ export default function VerifyEmail() {
 
   if (mode === "verifying") {
     content = (
+      /* Pending is `--text2`: nothing has succeeded and nothing has failed. */
       <div className="flex flex-col items-center text-center">
         <Loader2
           className="animate-spin"
-          style={{ width: "56px", height: "56px", color: "#E8571A" }}
+          style={{ width: "56px", height: "56px", color: t.text2 }}
         />
-        <h2
-          style={{
-            marginTop: "20px",
-            fontFamily: "Figtree, sans-serif",
-            fontSize: "16px",
-            fontWeight: 600,
-            color: "rgba(255, 255, 255, 0.92)",
-          }}
-        >
+        <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
           Verifying your email…
         </h2>
         <p
           style={{
             marginTop: "6px",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: FIGTREE,
             fontSize: "13px",
-            color: "rgba(255, 255, 255, 0.60)",
+            lineHeight: 1.55,
+            color: t.text2,
           }}
         >
-          Just a moment.
+          We&apos;re checking the link you opened. This page updates on its own
+          in a moment.
         </p>
       </div>
     );
