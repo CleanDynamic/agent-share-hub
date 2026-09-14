@@ -104,13 +104,17 @@ export function AuthInput({
     }
   `;
 
+  /* The four declarations this always had, with the colour on a token. `display`
+     and `alignItems` are deliberately NOT added: the validation icon is a
+     static span whose box this prompt has no reason to change, and adding a
+     layout property to an existing element is the thing the review rules
+     forbid. The reveal below is the one control whose box does move, and it
+     moves for a stated accessibility reason. */
   const iconStyle = {
     position: "absolute" as const,
     right: "14px",
     color: t.text2,
     cursor: showPasswordToggle ? "pointer" : "default",
-    display: "flex",
-    alignItems: "center",
   };
 
   /* THE REVEAL'S TARGET, AND WHY IT COSTS NOTHING. The eye was an 18px icon
@@ -126,6 +130,8 @@ export function AuthInput({
     padding: "13px",
     background: "none",
     border: "none",
+    display: "flex",
+    alignItems: "center",
     justifyContent: "center",
   };
 
