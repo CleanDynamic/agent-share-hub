@@ -18,6 +18,8 @@ import {
 } from "@/components/notifications/NotificationCard";
 import { ShellHeader } from "@/components/shell/ShellHeader";
 import { t as tok, tokenAlpha, tokenVar, type TokenName } from "@/lib/theme/tokens";
+import { r } from "@/lib/theme/radius";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 50;
 
@@ -371,15 +373,34 @@ export default function NotificationsPage() {
 
       {/* List */}
       {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "48px 0",
-            color: tok.text2,
-          }}
-        >
-          <Loader2 size={18} className="animate-spin" />
+        /* BG-P26. Skeleton rows at the real row shape — badge, two lines of
+           text, a timestamp — so the stream does not jump when the rows land.
+           A spinner says "wait"; a skeleton says what is coming. */
+        <div aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="mb-2 flex gap-3 px-4 py-3"
+              style={{
+                borderRadius: r["r-control"],
+                border: `0.5px solid ${tok.line}`,
+                borderLeft: "2px solid transparent",
+              }}
+            >
+              <Skeleton style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                <Skeleton
+                  style={{
+                    width: ["64%", "48%", "72%", "56%", "44%", "68%"][i],
+                    height: 11,
+                    borderRadius: r["r-chip"],
+                  }}
+                />
+                <Skeleton style={{ width: "86%", height: 9, borderRadius: r["r-chip"] }} />
+                <Skeleton style={{ width: 52, height: 9, borderRadius: r["r-chip"] }} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : showEmpty ? (
         filter === "unread" ? (

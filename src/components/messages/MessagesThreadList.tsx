@@ -38,6 +38,7 @@ import { r } from "@/lib/theme/radius";
 import { categoryFill } from "@/lib/theme/category";
 import { data as dataType, label as labelType, tabular } from "@/lib/theme/type";
 import { uiTransition } from "@/lib/theme/controls";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ThreadType = "direct" | "group" | "bounty" | "blueprint";
 type ContentType = "blueprint" | "stage" | "block";
@@ -71,6 +72,46 @@ interface MessagesThreadListProps {
   onCompose: () => void;
   counts: { primary: number; requests: number };
   width?: number;
+  /**
+   * BG-P26. True while the first page of threads is still in flight.
+   *
+   * Without it the list showed "No conversations yet" during the load, which is
+   * a different claim from "still loading" and the wrong one: a visitor with
+   * twenty threads was told they had none, for as long as the query took.
+   */
+  loading?: boolean;
+}
+
+/**
+ * The loading state: five rows at the real row height, so the list does not
+ * jump when the threads land. A skeleton rather than a spinner — a spinner says
+ * "wait", a skeleton says what is coming.
+ */
+function ThreadListSkeleton() {
+  return (
+    <div aria-busy="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="flex w-full items-center gap-2"
+          style={{ height: 72, padding: "10px 14px" }}
+        >
+          <Skeleton style={{ width: 32, height: 32, borderRadius: "50%" }} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <Skeleton
+              style={{
+                // Varying widths, so five rows do not read as a striped block.
+                width: `${["62%", "48%", "70%", "54%", "44%"][i]}`,
+                height: 11,
+                borderRadius: r["r-chip"],
+              }}
+            />
+            <Skeleton style={{ width: "84%", height: 9, borderRadius: r["r-chip"] }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function TypePill({ type }: { type: ThreadType }) {
@@ -336,6 +377,7 @@ export function MessagesThreadList({
   onCompose,
   counts,
   width = 320,
+  loading = false,
 }: MessagesThreadListProps) {
   // Pinned-first sort (parent already filtered/searched server-side)
   const sortedThreads = React.useMemo(() => {
@@ -479,7 +521,9 @@ export function MessagesThreadList({
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
-        {sortedThreads.length === 0 ? (
+        {loading && sortedThreads.length === 0 ? (
+          <ThreadListSkeleton />
+        ) : sortedThreads.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             {threads.length === 0 && !query ? (
               <>

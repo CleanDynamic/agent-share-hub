@@ -19,6 +19,7 @@ import { r } from "@/lib/theme/radius";
 import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
 import { TypingIndicator } from "@/components/dm/TypingIndicator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -1200,17 +1201,50 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       >
         {loadingOlder && (
           <div className="flex justify-center py-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="h-4 w-4 animate-spin" style={{ color: t.text2 }} />
           </div>
         )}
         {messagesLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          /* BG-P26. Skeleton bubbles rather than a spinner, alternating sides
+             and at the real radius, so the thread does not jump when the
+             messages land. */
+          <div className="flex flex-col justify-end gap-3 py-4" aria-busy="true">
+            {[
+              { mine: false, w: "58%" },
+              { mine: false, w: "42%" },
+              { mine: true, w: "50%" },
+              { mine: false, w: "64%" },
+              { mine: true, w: "36%" },
+            ].map((row, i) => (
+              <div
+                key={i}
+                className="flex"
+                style={{ justifyContent: row.mine ? "flex-end" : "flex-start" }}
+              >
+                <Skeleton
+                  style={{
+                    width: row.w,
+                    maxWidth: "75%",
+                    height: 38,
+                    borderRadius: row.mine
+                      ? `${r["r-control"]} ${r["r-control"]} 0 ${r["r-control"]}`
+                      : `${r["r-control"]} ${r["r-control"]} ${r["r-control"]} 0`,
+                  }}
+                />
+              </div>
+            ))}
           </div>
         ) : !messages || messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {enquiryRef ? `Reply to the enquiry about "${enquiryRef}"` : "Start the conversation"}
-          </p>
+          <div className="flex flex-col items-center gap-2 text-center py-8">
+            <p className="text-sm" style={{ color: t.text }}>
+              {enquiryRef ? `Reply to the enquiry about "${enquiryRef}"` : "No messages yet"}
+            </p>
+            {!enquiryRef && (
+              <p className="text-xs" style={{ color: t.text2, maxWidth: 260 }}>
+                Say something to start this conversation.
+              </p>
+            )}
+          </div>
         ) : (
           messages.map((msg: any, idx: number) => renderMessage(msg, idx, messages))
         )}
