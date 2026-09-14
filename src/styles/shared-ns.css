@@ -41,6 +41,20 @@
    Only colour declarations changed. Every structural property — the layout,
    the breakpoint behaviour, the !important overrides the mobile drawer needs —
    is exactly as it was.
+
+   BG-P29 AUDITED AND FOUND NOTHING LEFT TO DO HERE. That prompt owns the
+   codebase-wide sweep BG-P17's note above was waiting for, and one of its
+   tasks was these four rules. They were already done — BG-P28 repainted them,
+   and the Explore rail's stylesheet went in BG-P13 — so the prompt's finding
+   is that the job is finished rather than that it performed it.
+
+   What it added instead is the assertion that was missing. A finished sweep
+   with nothing holding it in place is one edit away from being unfinished
+   again, so `src/lib/theme/ns-classes.test.ts` now scans this file and the
+   rail's for a raw hex or a hardcoded rgba() and fails on either. Neither
+   stylesheet is allowlisted anywhere: these rules exist precisely because a
+   live surface depends on them and no component can see them, so a raw value
+   here is always a regression and never a considered exception.
 ──────────────────────────────────────────────── */
 
 /* ── Back button ── */
