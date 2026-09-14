@@ -106,7 +106,7 @@ export function InspectorDocument({
             padding: "0 12px",
             fontSize: 13,
             fontWeight: 500,
-            color: title ? "rgba(255, 255, 255, 0.92)" : "rgba(255, 255, 255, 0.30)",
+            color: title ? "var(--text)" : "var(--text2)",
             fontStyle: title ? "normal" : "italic",
             outline: "none",
           }}
@@ -126,7 +126,7 @@ export function InspectorDocument({
             borderRadius: PANEL_INPUT_RADIUS,
             padding: "10px 12px",
             fontSize: 13,
-            color: "rgba(255, 255, 255, 0.72)",
+            color: "var(--text2)",
             outline: "none",
             resize: "none",
             lineHeight: 1.4,
@@ -168,7 +168,7 @@ export function InspectorDocument({
                 style={{
                   fontSize: 12,
                   fontWeight: 400,
-                  color: "rgba(255, 255, 255, 0.55)",
+                  color: "var(--text2)",
                 }}
               >
                 Cover image
@@ -185,7 +185,7 @@ export function InspectorDocument({
                 backgroundColor: "transparent",
                 border: "none",
                 cursor: "pointer",
-                color: "rgba(255, 255, 255, 0.45)",
+                color: "var(--text2)",
               }}
             >
               <X size={14} />
@@ -200,7 +200,7 @@ export function InspectorDocument({
             style={{
               height: 48,
               backgroundColor: "transparent",
-              border: `1px dashed ${isHoveringCover ? "rgba(255, 255, 255, 0.20)" : "rgba(255, 255, 255, 0.12)"}`,
+              border: `1px dashed ${isHoveringCover ? "var(--recess)" : "var(--recess)"}`,
               borderRadius: 8,
               padding: "0 12px",
               gap: 8,
@@ -210,13 +210,13 @@ export function InspectorDocument({
           >
             <ImagePlus
               size={16}
-              style={{ color: "rgba(255, 255, 255, 0.45)" }}
+              style={{ color: "var(--text2)" }}
             />
             <span
               style={{
                 fontSize: 12,
                 fontWeight: 400,
-                color: isHoveringCover ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.55)",
+                color: isHoveringCover ? "var(--text2)" : "var(--text2)",
               }}
             >
               Add cover image
@@ -289,7 +289,7 @@ export function InspectorDocument({
           <span
             style={{
               fontSize: 13,
-              color: "rgba(255, 255, 255, 0.30)",
+              color: "var(--text2)",
               marginRight: 4,
             }}
           >
@@ -305,7 +305,7 @@ export function InspectorDocument({
               backgroundColor: "transparent",
               border: "none",
               fontSize: 13,
-              color: "rgba(255, 255, 255, 0.92)",
+              color: "var(--text)",
               outline: "none",
             }}
           />
@@ -330,7 +330,7 @@ export function InspectorDocument({
             <span
               style={{
                 fontSize: 13,
-                color: "rgba(255, 255, 255, 0.92)",
+                color: "var(--text)",
                 textTransform: "capitalize",
               }}
             >
@@ -339,7 +339,7 @@ export function InspectorDocument({
             <ChevronDown
               size={14}
               style={{
-                color: "rgba(255, 255, 255, 0.5)",
+                color: "var(--text2)",
                 transform: isSelectOpen ? "rotate(180deg)" : "rotate(0deg)",
                 transition: "transform 150ms ease",
               }}
@@ -353,8 +353,8 @@ export function InspectorDocument({
                 top: "calc(100% + 4px)",
                 left: 0,
                 right: 0,
-                backgroundColor: 'hsl(var(--background) / 0.98)',
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backgroundColor: 'var(--bg)',
+                border: "1px solid var(--line)",
                 borderRadius: PANEL_INPUT_RADIUS,
                 padding: 4,
                 zIndex: 10,
@@ -374,13 +374,13 @@ export function InspectorDocument({
                     padding: "0 8px",
                     backgroundColor:
                       visibility === option
-                        ? "rgba(255, 255, 255, 0.08)"
+                        ? "var(--recess)"
                         : "transparent",
                     border: "none",
                     borderRadius: 4,
                     cursor: "pointer",
                     fontSize: 13,
-                    color: "rgba(255, 255, 255, 0.92)",
+                    color: "var(--text)",
                     textTransform: "capitalize",
                   }}
                 >
@@ -413,7 +413,7 @@ export function InspectorDocument({
           <span
             style={{
               fontSize: 12,
-              color: "rgba(255, 255, 255, 0.6)",
+              color: "var(--text2)",
               textTransform: "capitalize",
             }}
           >
@@ -432,18 +432,18 @@ export function InspectorDocument({
             width: "100%",
             height: 36,
             background: publishDisabled
-              ? "rgba(255, 255, 255, 0.1)"
+              ? "var(--recess)"
               : isHoveringPublish
-                ? "linear-gradient(135deg, #D4470F 0%, #B23A0C 100%)"
-                : "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
+                ? "linear-gradient(135deg, var(--action) 0%, #B23A0C 100%)"
+                : "linear-gradient(135deg, var(--action) 0%, var(--action) 100%)",
             border: "none",
             borderRadius: 8,
             cursor: publishDisabled ? "not-allowed" : "pointer",
             fontSize: 13,
             fontWeight: 600,
             color: publishDisabled
-              ? "rgba(255, 255, 255, 0.4)"
-              : "rgba(255, 255, 255, 1)",
+              ? "var(--text2)"
+              : "var(--text)",
             opacity: publishDisabled ? 0.6 : 1,
             transition: "background 150ms ease",
           }}
@@ -471,7 +471,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
         style={{
           fontSize: 10,
           fontWeight: 500,
-          color: "rgba(255, 255, 255, 0.40)",
+          color: "var(--text2)",
           textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}
@@ -482,7 +482,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
         style={{
           fontSize: 18,
           fontWeight: 600,
-          color: "rgba(255, 255, 255, 0.92)",
+          color: "var(--text)",
         }}
       >
         {value}

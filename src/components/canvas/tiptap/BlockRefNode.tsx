@@ -14,10 +14,10 @@ import { useCallback } from 'react';
 
 // Block type → dot colour (mirrors canvas block colour palette)
 const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
-  text: 'rgba(255,255,255,0.50)',
-  prompt: '#E8571A',
-  code: '#16A34A',
-  result: '#7C3AED',
+  text: 'var(--recess)',
+  prompt: 'var(--action)',
+  code: 'var(--cat-configuration)',
+  result: 'var(--cat-agents)',
 };
 
 function getDotColor(type: string): string {
@@ -39,7 +39,7 @@ function highlightShadow(dotColor: string): string {
   if (rgbaMatch) {
     return `0 0 0 2px rgba(${rgbaMatch[1]},${rgbaMatch[2]},${rgbaMatch[3]},0.4)`;
   }
-  return `0 0 0 2px rgba(255,255,255,0.4)`;
+  return `0 0 0 2px var(--line)`;
 }
 
 interface BlockRefAttrs {
@@ -105,15 +105,15 @@ export function BlockRefNode({ node }: ReactNodeViewProps) {
           alignItems: 'center',
           gap: 6,
           verticalAlign: 'baseline',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 4,
           padding: '1px 8px',
           fontFamily: 'Figtree, sans-serif',
           fontSize: 12,
           fontWeight: 500,
           lineHeight: 1.4,
-          color: 'rgba(255,255,255,0.82)',
+          color: 'var(--text)',
           cursor: 'pointer',
           userSelect: 'none',
           whiteSpace: 'nowrap',

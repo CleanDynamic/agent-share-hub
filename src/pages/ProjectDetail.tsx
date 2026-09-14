@@ -45,7 +45,7 @@ function WhatToExpectSection({ blocks, fallbackText }: { blocks: any[] | null; f
   return (
     <div className="mb-4">
       <h2 className="text-base font-semibold text-foreground mb-2.5">What to Expect</h2>
-      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "rgba(46,196,182,0.04)", borderLeft: "2px solid rgba(46,196,182,0.3)" }}>
+      <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "color-mix(in srgb, var(--evidence) 4%, transparent)", borderLeft: "2px solid color-mix(in srgb, var(--evidence) 30%, transparent)" }}>
         {blocks && blocks.length > 0 ? (
           blocks.sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)).map((block: any, idx: number) => (
             <WteBlock key={block.id || idx} block={block} />
@@ -120,10 +120,10 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
 
   if (hasPackage) {
     return (
-      <div className="rounded-xl border border-emerald-500/40 bg-card p-5 mb-4">
+      <div className="rounded-xl border border-[var(--evidence)] bg-card p-5 mb-4">
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-          <span className="text-sm font-semibold text-emerald-400">You own this project ✓</span>
+          <CheckCircle2 className="h-5 w-5 text-[var(--evidence)]" />
+          <span className="text-sm font-semibold text-[var(--evidence)]">You own this project ✓</span>
         </div>
         <p className="text-xs text-muted-foreground mt-1">All blueprints unlocked</p>
       </div>
@@ -139,7 +139,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
             <p className="text-base font-semibold text-foreground">Unlock everything — £{pkgPrice.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground mt-1">
               Get instant access to all {paidCount} paid blueprint{paidCount !== 1 ? "s" : ""}.
-              {saving > 0 && <> Save <span className="text-emerald-400 font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>}
+              {saving > 0 && <> Save <span className="text-[var(--evidence)] font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>}
             </p>
           </div>
         </div>
@@ -340,7 +340,7 @@ const ProjectDetail = () => {
 
         {/* 3. Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-2.5">
-          <Badge variant="outline" className="text-[10px] font-medium bg-blue-500/15 text-blue-400 border-blue-500/30">Project</Badge>
+          <Badge variant="outline" className="text-[10px] font-medium bg-[var(--cat-data-fill)] text-[var(--cat-data)] border-[var(--cat-data)]">Project</Badge>
           <Badge variant="outline" className={`text-[10px] font-medium ${difficultyColor(projectDifficulty)}`}>{projectDifficulty}</Badge>
           {(project as any).package_price_enabled && (
             <Badge variant="outline" className="text-[10px] font-medium bg-primary/15 text-primary border-primary/30">
@@ -447,7 +447,7 @@ const ProjectDetail = () => {
 
                     return (
                       <div key={comp.id} className="relative">
-                        <div className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-white z-10" style={{ backgroundColor: "hsl(var(--primary))" }}>
+                        <div className="absolute -left-8 top-4 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold text-foreground z-10" style={{ backgroundColor: "hsl(var(--primary))" }}>
                           {comp.position}
                         </div>
 

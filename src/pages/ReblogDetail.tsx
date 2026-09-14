@@ -105,13 +105,13 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
   }, [slug, mode]);
 
   if (loading) {
-    return <div className="p-8 text-center text-white/50">Loading…</div>;
+    return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
   }
   if (notFound || !row) {
     return (
-      <div className="p-8 text-center text-white/60">
+      <div className="p-8 text-center text-muted-foreground">
         <p>Reblog not found.</p>
-        <Link to="/" className="text-emerald-400 underline mt-2 inline-block">
+        <Link to="/" className="text-[var(--evidence)] underline mt-2 inline-block">
           Go home
         </Link>
       </div>
@@ -127,15 +127,15 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
         <SeoHead title="Reblog thread" description="" path={`/b/${row.slug}/thread`} />
         <button
           onClick={() => navigate(`/b/${row.slug}`)}
-          className="flex items-center gap-1 text-sm text-white/60 hover:text-white mb-4"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft size={14} /> Back to reblog
         </button>
-        <h1 className="text-xl font-semibold text-white mb-4">Thread</h1>
+        <h1 className="text-xl font-semibold text-foreground mb-4">Thread</h1>
 
         {original && (
           <div className="mb-4">
-            <div className="text-xs uppercase tracking-wider text-white/40 mb-1">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
               Original post
             </div>
             <EmbeddedOriginalCard
@@ -158,7 +158,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
           </div>
         )}
 
-        <ol className="space-y-3 border-l border-white/10 pl-4">
+        <ol className="space-y-3 border-l border-border pl-4">
           {thread.map((r) => {
             const u = r.reblogger ?? {};
             const isCurrent = r.id === row.id;
@@ -167,29 +167,29 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
                 key={r.id}
                 className={`rounded-xl p-3 border ${
                   isCurrent
-                    ? "border-emerald-400/40 bg-emerald-400/[0.04]"
-                    : "border-white/8 bg-white/[0.03]"
+                    ? "border-[var(--evidence)] bg-[var(--cat-evidence-fill)]"
+                    : "border-border bg-muted"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <img
                     src={u.avatar_url || ""}
                     alt=""
-                    className="w-6 h-6 rounded-full bg-white/10"
+                    className="w-6 h-6 rounded-full bg-muted"
                   />
-                  <span className="text-xs font-semibold text-white">
+                  <span className="text-xs font-semibold text-foreground">
                     {u.display_name || u.username || "Unknown"}
                   </span>
-                  <span className="text-xs text-white/40">{timeAgo(r.created_at)}</span>
+                  <span className="text-xs text-muted-foreground">{timeAgo(r.created_at)}</span>
                   {isCurrent && (
-                    <span className="text-[10px] uppercase text-emerald-400 ml-auto">
+                    <span className="text-[10px] uppercase text-[var(--evidence)] ml-auto">
                       You are here
                     </span>
                   )}
                 </div>
                 {r.text && (
                   <button
-                    className="text-sm text-white/85 text-left whitespace-pre-wrap"
+                    className="text-sm text-foreground text-left whitespace-pre-wrap"
                     onClick={() => !isCurrent && navigate(`/b/${r.slug}`)}
                   >
                     {r.text}
@@ -232,34 +232,34 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
         <img
           src={reblogger.avatar_url || ""}
           alt=""
-          className="w-11 h-11 rounded-full bg-white/10 object-cover cursor-pointer"
+          className="w-11 h-11 rounded-full bg-muted object-cover cursor-pointer"
           onClick={() => navigate(`/profile/${reblogger.username ?? row.reblogger_id}`)}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-1.5">
-            <span className="font-semibold text-white">
+            <span className="font-semibold text-foreground">
               {reblogger.display_name || reblogger.username || "Unknown"}
             </span>
-            <span className="text-sm text-white/50">@{reblogger.username || "unknown"}</span>
+            <span className="text-sm text-muted-foreground">@{reblogger.username || "unknown"}</span>
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span
               className="inline-flex items-center gap-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
               style={{
                 padding: "2px 8px",
-                color: "#34d399",
-                background: "rgba(52, 211, 153, 0.12)",
+                color: "var(--evidence)",
+                background: "color-mix(in srgb, var(--evidence) 12%, transparent)",
               }}
             >
               <Repeat2 size={10} /> {row.excerpt_text ? "Quote" : "Reblog"}
             </span>
-            <span className="text-xs text-white/40">{timeAgo(row.created_at)}</span>
+            <span className="text-xs text-muted-foreground">{timeAgo(row.created_at)}</span>
           </div>
         </div>
         <button
           onClick={handleExportPdf}
           disabled={exporting}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/80 transition-colors disabled:opacity-60"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-muted text-xs text-foreground transition-colors disabled:opacity-60"
           title="Export this reblog as an AI-friendly PDF"
         >
           {exporting ? <Loader2 size={12} className="animate-spin" /> : <FileDown size={12} />}
@@ -270,7 +270,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
       {row.parent_reblog_id && (
         <Link
           to={`/b/${row.slug}/thread`}
-          className="block mb-3 text-sm text-emerald-400 hover:underline"
+          className="block mb-3 text-sm text-[var(--evidence)] hover:underline"
         >
           ↳ View thread
         </Link>
@@ -278,7 +278,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
 
       {row.text && (
         <p
-          className="text-white/90 whitespace-pre-wrap mb-4"
+          className="text-foreground whitespace-pre-wrap mb-4"
           style={{ fontSize: 18, lineHeight: 1.55 }}
         >
           {row.text}
@@ -286,7 +286,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
       )}
 
       {row.media_url && (
-        <div className="rounded-xl overflow-hidden border border-white/8 mb-4">
+        <div className="rounded-xl overflow-hidden border border-border mb-4">
           {row.media_kind === "image" ? (
             <img src={row.media_url} alt="" className="w-full h-auto block" />
           ) : (
@@ -358,14 +358,14 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
             onClick={() => navigate(`/b/${original.slug}`)}
           />
         ) : (
-          <div className="rounded-xl border border-white/8 bg-white/[0.04] p-4 text-sm text-white/40 text-center">
+          <div className="rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground text-center">
             Original post is no longer available
           </div>
         )}
       </div>
 
       {/* Re-use the feed card's engagement row by mounting the adapter here too. */}
-      <div className="border-t border-white/10 pt-4">
+      <div className="border-t border-border pt-4">
         <FeedReblogAdapter row={feedRow} variant="feed" />
       </div>
     </div>

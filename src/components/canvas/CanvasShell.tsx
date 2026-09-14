@@ -696,7 +696,7 @@ export function CanvasShell(props: CanvasShellProps) {
       display: 'flex',
       height: '100%',
       overflow: 'hidden',
-      background: 'hsl(var(--glass-panel-surface) / 0.04)',
+      background: 'var(--glass-2)',
       position: 'relative',
     }}>
 
@@ -762,7 +762,7 @@ export function CanvasShell(props: CanvasShellProps) {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '6px 12px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+            borderBottom: '1px solid var(--line)',
             flexShrink: 0,
             overflow: 'hidden',
             position: 'relative',
@@ -777,10 +777,10 @@ export function CanvasShell(props: CanvasShellProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'rgba(10,10,16,0.90)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
                   borderRadius: 6,
-                  color: 'rgba(255,255,255,0.40)',
+                  color: 'var(--text2)',
                   cursor: 'pointer',
                   flexShrink: 0,
                 }}
@@ -805,8 +805,8 @@ export function CanvasShell(props: CanvasShellProps) {
                   style={{
                     padding: '4px 12px', fontSize: 11, fontWeight: 600,
                     borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: !activeStageTab ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
-                    color: !activeStageTab ? '#8B4513' : 'rgba(255,255,255,0.40)',
+                    background: !activeStageTab ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
+                    color: !activeStageTab ? 'var(--action)' : 'var(--text2)',
                     transition: 'all 0.15s',
                     flexShrink: 0,
                   }}
@@ -820,8 +820,8 @@ export function CanvasShell(props: CanvasShellProps) {
                     style={{
                       padding: '4px 12px', fontSize: 11, fontWeight: 600,
                       borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: activeStageTab === s.id ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.12)',
-                      color: activeStageTab === s.id ? '#8B4513' : 'rgba(255,255,255,0.40)',
+                      background: activeStageTab === s.id ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
+                      color: activeStageTab === s.id ? 'var(--action)' : 'var(--recess)',
                       transition: 'all 0.15s',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -834,7 +834,7 @@ export function CanvasShell(props: CanvasShellProps) {
                   onClick={() => doc.addStage(`Stage ${doc.stages.length + 1}`)}
                   style={{
                     padding: '4px 8px', fontSize: 11, border: 'none', cursor: 'pointer',
-                    background: 'none', color: 'rgba(255,255,255,0.25)',
+                    background: 'none', color: 'var(--text2)',
                     flexShrink: 0,
                   }}
                 >
@@ -878,10 +878,10 @@ export function CanvasShell(props: CanvasShellProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: 'rgba(10,10,16,0.90)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
                   borderRadius: 6,
-                  color: 'rgba(255,255,255,0.40)',
+                  color: 'var(--text2)',
                   cursor: 'pointer',
                   flexShrink: 0,
                 }}
@@ -897,10 +897,10 @@ export function CanvasShell(props: CanvasShellProps) {
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', padding: '60px 20px', gap: 8,
-            color: 'rgba(255,255,255,0.30)', fontSize: 13,
+            color: 'var(--text2)', fontSize: 13,
           }}>
             <div>No blocks in this stage yet</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)' }}>
+            <div style={{ fontSize: 11, color: 'var(--text2)' }}>
               Add a block from the toolbar or assign existing blocks to this stage
             </div>
           </div>
@@ -1028,8 +1028,8 @@ export function CanvasShell(props: CanvasShellProps) {
                 top: Math.min(marqueeStart.y, marqueeEnd.y),
                 width: Math.abs(marqueeEnd.x - marqueeStart.x),
                 height: Math.abs(marqueeEnd.y - marqueeStart.y),
-                border: '1px solid rgba(139,69,19,0.6)',
-                background: 'rgba(139,69,19,0.08)',
+                border: '1px solid color-mix(in srgb, var(--action) 60%, transparent)',
+                background: 'color-mix(in srgb, var(--action) 8%, transparent)',
                 pointerEvents: 'none',
                 zIndex: 50,
               }}
@@ -1098,9 +1098,9 @@ export function CanvasShell(props: CanvasShellProps) {
           top: 16,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'rgba(34,197,94,0.15)',
-          border: '1px solid rgba(34,197,94,0.3)',
-          color: '#22C55E',
+          background: 'color-mix(in srgb, var(--cat-configuration) 15%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--cat-configuration) 30%, transparent)',
+          color: 'var(--cat-configuration)',
           fontSize: 12,
           borderRadius: 8,
           padding: '8px 16px',

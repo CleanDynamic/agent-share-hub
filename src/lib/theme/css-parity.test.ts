@@ -4,15 +4,17 @@
 // TypeScript says — a value edited in one place and not the other is the whole
 // failure mode of mirroring a token set into a stylesheet.
 //
-// Three groups now share those blocks: the colour tokens (BG-P01), the radius
-// scale (BG-P04) and the elevation shadows (BG-P04). Radius is theme-
-// independent and therefore identical in both; the other two are not.
+// Four groups now share those blocks: the colour tokens (BG-P01), the radius
+// scale (BG-P04), the elevation shadows (BG-P04) and the shadcn bridge
+// (BG-P28). Radius is theme-independent and therefore identical in both; the
+// other three are not.
 
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { TOKEN_NAMES, exhibition, dusk } from "./semantics";
 import { RADIUS, RADIUS_NAMES } from "./radius";
 import { ELEVATION_TOKENS, duskElevation, exhibitionElevation } from "./elevation";
+import { SHADCN_NAMES, duskShadcn, exhibitionShadcn } from "./shadcn";
 
 const css = readFileSync("src/index.css", "utf-8");
 const block = (sel: string) => {
@@ -31,7 +33,12 @@ const parse = (sel: string) => {
 };
 
 /** Every custom property a theme block is expected to declare. */
-const DECLARED = [...TOKEN_NAMES, ...RADIUS_NAMES, ...ELEVATION_TOKENS].sort();
+const DECLARED = [
+  ...TOKEN_NAMES,
+  ...RADIUS_NAMES,
+  ...ELEVATION_TOKENS,
+  ...SHADCN_NAMES,
+].sort();
 
 describe("index.css mirrors semantics.ts", () => {
   it("exhibition (bare :root and [data-theme=exhibition])", () => {
@@ -43,6 +50,33 @@ describe("index.css mirrors semantics.ts", () => {
     const got = parse(':root[data-theme="dusk"]');
     expect(Object.keys(got).sort()).toEqual(DECLARED);
     for (const n of TOKEN_NAMES) expect([n, got[n]]).toEqual([n, dusk[n]]);
+  });
+});
+
+describe("index.css mirrors shadcn.ts", () => {
+  /* The bridge exists so that a class name means the same thing an inline
+     token does. If a name here drifts from the module, every utility spending
+     it drifts with it and nothing else in the suite would notice. */
+  it("exhibition declares the whole bridge", () => {
+    const got = parse(':root,\n:root[data-theme="exhibition"]');
+    for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, exhibitionShadcn[n]]);
+  });
+
+  it("dusk declares the whole bridge", () => {
+    const got = parse(':root[data-theme="dusk"]');
+    for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, duskShadcn[n]]);
+  });
+
+  it("gives the two rooms different values", () => {
+    // Being fixed across both themes is the bug this replaced: one set of
+    // values declared once, painting Exhibition in the dark shell's colours.
+    // The two rings are the exception and are meant to be: the theme's focus
+    // ring is ONE definition, 2px --lit, identical in both rooms, and --lit is
+    // the one token that does not change value between them.
+    expect(SHADCN_NAMES.filter((n) => exhibitionShadcn[n] === duskShadcn[n])).toEqual([
+      "ring",
+      "sidebar-ring",
+    ]);
   });
 });
 

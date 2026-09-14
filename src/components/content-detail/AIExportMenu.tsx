@@ -55,16 +55,16 @@ const humanFormats: MenuItem[] = [
 const aiFormats: MenuItem[] = [
   {
     format: "ai-pdf",
-    icon: <Sparkles size={14} style={{ color: "#2EC4B6" }} />,
+    icon: <Sparkles size={14} style={{ color: "var(--evidence)" }} />,
     label: "AI-PDF",
     helper: "Upload to ChatGPT, Claude, or any AI agent. Includes structured component list.",
     isTeal: true,
     isNew: true,
   },
-  { format: "json", icon: <Braces size={14} style={{ color: "#2EC4B6" }} />, label: "JSON", helper: "Full schema, machine-readable", isTeal: true },
+  { format: "json", icon: <Braces size={14} style={{ color: "var(--evidence)" }} />, label: "JSON", helper: "Full schema, machine-readable", isTeal: true },
   {
     format: "copy-json",
-    icon: <ClipboardCopy size={14} style={{ color: "#2EC4B6" }} />,
+    icon: <ClipboardCopy size={14} style={{ color: "var(--evidence)" }} />,
     label: "Copy as JSON",
     helper: "To clipboard for ChatGPT or Claude",
     isTeal: true,
@@ -132,12 +132,12 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
         top: position.top,
         left: position.left,
         width: 320,
-        background: "rgba(16, 16, 24, 0.96)",
+        background: "var(--recess)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        border: "0.5px solid rgba(255, 255, 255, 0.10)",
+        border: "0.5px solid var(--line)",
         borderRadius: 10,
-        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.7)",
+        boxShadow: "var(--elev-raised)",
         padding: 4,
         zIndex: 9999,
         fontFamily: "Figtree, -apple-system, BlinkMacSystemFont, sans-serif",
@@ -145,16 +145,16 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
     >
       <div
         className="flex items-center justify-between"
-        style={{ height: 44, padding: "12px 14px", borderBottom: "0.5px solid rgba(255, 255, 255, 0.10)" }}
+        style={{ height: 44, padding: "12px 14px", borderBottom: "0.5px solid var(--line)" }}
       >
         <div className="flex items-center gap-2">
-          <Download size={14} style={{ color: "rgba(255, 255, 255, 0.92)" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255, 255, 255, 0.92)" }}>Download or copy</span>
+          <Download size={14} style={{ color: "var(--text)" }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>Download or copy</span>
         </div>
         <button
           onClick={onClose}
           className="flex items-center justify-center"
-          style={{ width: 20, height: 20, borderRadius: 4, background: "transparent", border: "none", cursor: "pointer", color: "rgba(255, 255, 255, 0.40)" }}
+          style={{ width: 20, height: 20, borderRadius: 4, background: "transparent", border: "none", cursor: "pointer", color: "var(--text2)" }}
           aria-label="Close export menu"
         >
           <X size={12} />
@@ -162,7 +162,7 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
       </div>
 
       <div style={{ padding: "4px 0" }}>
-        <div style={{ padding: "8px 14px 4px", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(255, 255, 255, 0.40)" }}>
+        <div style={{ padding: "8px 14px 4px", fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text2)" }}>
           FOR HUMANS
         </div>
         {humanFormats.map((item) => (
@@ -170,8 +170,8 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
         ))}
       </div>
 
-      <div style={{ borderTop: "0.5px solid rgba(255, 255, 255, 0.10)", padding: "8px 14px" }}>
-        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(46, 196, 182, 0.65)" }}>
+      <div style={{ borderTop: "0.5px solid var(--line)", padding: "8px 14px" }}>
+        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--evidence) 65%, transparent)" }}>
           FOR AI AGENTS & CHATBOTS
         </span>
       </div>
@@ -182,8 +182,8 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
         ))}
       </div>
 
-      <div style={{ height: 32, borderTop: "0.5px solid rgba(255, 255, 255, 0.10)", padding: "8px 14px", display: "flex", alignItems: "center" }}>
-        <span style={{ fontSize: 10, fontWeight: 400, fontStyle: "italic", color: "rgba(255, 255, 255, 0.40)" }}>
+      <div style={{ height: 32, borderTop: "0.5px solid var(--line)", padding: "8px 14px", display: "flex", alignItems: "center" }}>
+        <span style={{ fontSize: 10, fontWeight: 400, fontStyle: "italic", color: "var(--text2)" }}>
           All formats include attribution to the author.
         </span>
       </div>
@@ -217,25 +217,25 @@ function MenuItemRow({
         margin: "0 4px",
         width: "calc(100% - 8px)",
         borderRadius: 6,
-        background: isHovered && !disabled ? "rgba(255, 255, 255, 0.12)" : "transparent",
-        border: item.isEmphasized ? "0.5px solid rgba(46, 196, 182, 0.20)" : "0.5px solid transparent",
+        background: isHovered && !disabled ? "var(--recess)" : "transparent",
+        border: item.isEmphasized ? "0.5px solid color-mix(in srgb, var(--evidence) 20%, transparent)" : "0.5px solid transparent",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled && !busy ? 0.5 : 1,
         transition: "background 0.15s ease",
       }}
     >
-      <span className="flex items-center justify-center shrink-0" style={{ width: 20, color: item.isTeal ? "#2EC4B6" : "rgba(255, 255, 255, 0.60)" }}>
+      <span className="flex items-center justify-center shrink-0" style={{ width: 20, color: item.isTeal ? "var(--evidence)" : "var(--text2)" }}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : item.icon}
       </span>
       <div className="flex items-center gap-2 min-w-0 ml-2">
-        <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255, 255, 255, 0.92)", whiteSpace: "nowrap" }}>{item.label}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text)", whiteSpace: "nowrap" }}>{item.label}</span>
         {item.isNew && (
-          <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 5px", borderRadius: 4, background: "#2EC4B6", color: "#000", letterSpacing: "0.02em" }}>
+          <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 5px", borderRadius: 4, background: "var(--cat-evidence-fill)", color: "var(--cat-evidence)", letterSpacing: "0.02em" }}>
             NEW
           </span>
         )}
         {item.helper && (
-          <span className="truncate" style={{ fontSize: 10, fontWeight: 400, color: "rgba(255, 255, 255, 0.40)" }}>
+          <span className="truncate" style={{ fontSize: 10, fontWeight: 400, color: "var(--text2)" }}>
             {item.helper}
           </span>
         )}

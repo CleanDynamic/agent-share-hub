@@ -68,7 +68,7 @@ const DEFAULT_THREADS: CommentThread[] = [
     timestamp: 'Yesterday',
     anchorKind: 'Block',
     anchorLabel: 'Results summary',
-    anchorColor: 'hsl(262 83% 58%)',
+    anchorColor: 'var(--cat-agents)',
     body: 'Resolved after tightening the final summary copy and reducing duplication across the stage.',
     replyCount: 1,
     resolved: true,
@@ -112,8 +112,8 @@ function Avatar({ name, avatarUrl }: CurrentUser) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'hsl(var(--foreground) / 0.08)',
-        color: 'hsl(var(--foreground) / 0.72)',
+        backgroundColor: 'var(--recess)',
+        color: 'var(--text2)',
         fontSize: 9,
         fontWeight: 600,
       }}
@@ -202,8 +202,8 @@ export function CommentsTool({
               onClick={() => handleFilterChange(value)}
               style={{
                 border: 'none',
-                backgroundColor: active ? 'hsl(var(--foreground) / 0.06)' : 'transparent',
-                color: active ? 'hsl(var(--foreground) / 0.92)' : 'hsl(var(--foreground) / 0.5)',
+                backgroundColor: active ? 'var(--recess)' : 'transparent',
+                color: active ? 'var(--text)' : 'var(--text2)',
                 fontSize: 10,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -271,7 +271,7 @@ export function CommentsTool({
                     style={{
                       fontSize: 11,
                       fontWeight: 500,
-                      color: 'hsl(var(--foreground) / 0.9)',
+                      color: 'var(--text)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -283,7 +283,7 @@ export function CommentsTool({
                     style={{
                       fontSize: 10,
                       fontWeight: 400,
-                      color: 'hsl(var(--foreground) / 0.35)',
+                      color: 'var(--text2)',
                       flexShrink: 0,
                     }}
                   >
@@ -301,8 +301,8 @@ export function CommentsTool({
                     width: 16,
                     height: 16,
                     borderRadius: 4,
-                    border: `0.5px solid ${thread.resolved ? 'hsl(var(--primary) / 0.35)' : 'hsl(var(--foreground) / 0.18)'}`,
-                    backgroundColor: thread.resolved ? 'hsl(var(--primary) / 0.18)' : 'transparent',
+                    border: `0.5px solid ${thread.resolved ? 'var(--action)' : 'var(--line)'}`,
+                    backgroundColor: thread.resolved ? 'var(--action)' : 'transparent',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -330,8 +330,8 @@ export function CommentsTool({
                     padding: '1px 6px',
                     border: 'none',
                     borderRadius: 4,
-                    backgroundColor: 'hsl(var(--foreground) / 0.03)',
-                    color: 'hsl(var(--foreground) / 0.72)',
+                    backgroundColor: 'var(--recess)',
+                    color: 'var(--text2)',
                     cursor: 'pointer',
                   }}
                 >
@@ -364,7 +364,7 @@ export function CommentsTool({
                   fontSize: 11,
                   fontWeight: 400,
                   lineHeight: 1.5,
-                  color: 'hsl(var(--foreground) / 0.8)',
+                  color: 'var(--text)',
                   display: '-webkit-box',
                   WebkitLineClamp: 3,
                   WebkitBoxOrient: 'vertical',
@@ -378,7 +378,7 @@ export function CommentsTool({
                 style={{
                   fontSize: 10,
                   fontWeight: 500,
-                  color: 'hsl(var(--foreground) / 0.45)',
+                  color: 'var(--text2)',
                 }}
               >
                 {thread.replyCount} {thread.replyCount === 1 ? 'reply' : 'replies'}
@@ -421,7 +421,7 @@ export function CommentsTool({
              backgroundColor: PANEL_INPUT_BACKGROUND,
             fontSize: 11,
             fontWeight: 400,
-            color: 'hsl(var(--foreground) / 0.85)',
+            color: 'var(--text)',
             outline: 'none',
             boxShadow: 'none',
           }}
@@ -438,7 +438,7 @@ export function CommentsTool({
             backgroundColor: 'transparent',
             color: draft.trim()
               ? 'hsl(var(--secondary))'
-              : 'hsl(var(--foreground) / 0.3)',
+              : 'var(--text2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

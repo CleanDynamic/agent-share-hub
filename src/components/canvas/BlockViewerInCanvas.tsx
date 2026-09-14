@@ -21,14 +21,14 @@ const COPYABLE_TYPES = new Set([
 ]);
 
 const BLOCK_ACCENT: Record<string, string> = {
-  prompt: '#8B4513',
-  code: '#3B82F6',
-  result: '#22C55E',
-  agent_config: '#7C3AED',
-  workflow: '#1F7A6D',
-  tool_setup: '#06B6D4',
-  model_params: '#A78BFA',
-  comparison: '#EC4899',
+  prompt: 'var(--action)',
+  code: 'var(--cat-data)',
+  result: 'var(--cat-configuration)',
+  agent_config: 'var(--cat-agents)',
+  workflow: 'var(--evidence)',
+  tool_setup: 'var(--cat-data)',
+  model_params: 'var(--cat-agents)',
+  comparison: 'var(--cat-media)',
 };
 
 export function BlockViewerInCanvas({
@@ -51,7 +51,7 @@ export function BlockViewerInCanvas({
           <h3 style={{
             ...type.cardTitle,
 
-            color: 'rgba(255,255,255,0.90)',
+            color: 'var(--text)',
             margin: '0 0 10px 0',
           }}>
             {block.subheading}
@@ -69,7 +69,7 @@ export function BlockViewerInCanvas({
               cursor: 'zoom-in',
               borderRadius: 8,
               overflow: 'hidden',
-              background: 'rgba(0,0,0,0.25)',
+              background: 'var(--recess)',
             }}
           >
             <img
@@ -88,9 +88,9 @@ export function BlockViewerInCanvas({
           <div style={{
             height: '100%', minHeight: 120,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '1px dashed rgba(255,255,255,0.10)',
+            border: '1px dashed var(--line)',
             borderRadius: 8,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text2)',
             fontSize: 12, fontStyle: 'italic',
           }}>
             No image
@@ -121,7 +121,7 @@ export function BlockViewerInCanvas({
           <h3 style={{
             ...type.cardTitle,
 
-            color: 'rgba(255,255,255,0.90)',
+            color: 'var(--text)',
             margin: '0 0 10px 0',
           }}>
             {block.subheading}
@@ -140,7 +140,7 @@ export function BlockViewerInCanvas({
               cursor: 'zoom-in',
               borderRadius: 8,
               overflow: 'hidden',
-              background: 'rgba(0,0,0,0.55)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
             }}
           >
             {thumbSrc ? (
@@ -174,7 +174,7 @@ export function BlockViewerInCanvas({
               <div style={{
                 width: '100%', height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'rgba(255,255,255,0.45)',
+                color: 'var(--text2)',
                 fontSize: 11, fontFamily: 'Figtree, sans-serif',
               }}>
                 Video
@@ -187,8 +187,8 @@ export function BlockViewerInCanvas({
               transform: 'translate(-50%, -50%)',
               width: 56, height: 56,
               borderRadius: '50%',
-              background: 'rgba(0,0,0,0.65)',
-              border: '2px solid rgba(255,255,255,0.85)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
+              border: '2px solid var(--line)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               pointerEvents: 'none',
             }}>
@@ -196,7 +196,7 @@ export function BlockViewerInCanvas({
                 width: 0, height: 0,
                 borderTop: '10px solid transparent',
                 borderBottom: '10px solid transparent',
-                borderLeft: '16px solid rgba(255,255,255,0.90)',
+                borderLeft: '16px solid var(--line)',
                 marginLeft: 4,
               }} />
             </div>
@@ -205,9 +205,9 @@ export function BlockViewerInCanvas({
           <div style={{
             height: '100%', minHeight: 120,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '1px dashed rgba(255,255,255,0.10)',
+            border: '1px dashed var(--line)',
             borderRadius: 8,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text2)',
             fontSize: 12, fontStyle: 'italic',
           }}>
             No video
@@ -269,7 +269,7 @@ export function BlockViewerInCanvas({
         <h3 style={{
           ...type.cardTitle,
 
-          color: 'rgba(255,255,255,0.90)',
+          color: 'var(--text)',
           margin: '0 0 12px 0',
         }}>
           {block.subheading}
@@ -287,14 +287,14 @@ export function BlockViewerInCanvas({
             fontSize: 10, padding: '3px 10px',
             borderRadius: 5,
             background: copied
-              ? 'rgba(34,197,94,0.15)'
-              : 'rgba(255, 255, 255, 0.14)',
+              ? 'color-mix(in srgb, var(--cat-configuration) 15%, transparent)'
+              : 'var(--recess)',
             border: `1px solid ${copied
-              ? 'rgba(34,197,94,0.35)'
-              : 'rgba(255,255,255,0.10)'}`,
+              ? 'color-mix(in srgb, var(--cat-configuration) 35%, transparent)'
+              : 'var(--recess)'}`,
             color: copied
-              ? '#22C55E'
-              : 'rgba(255,255,255,0.45)',
+              ? 'var(--cat-configuration)'
+              : 'var(--text2)',
             cursor: 'pointer',
             fontFamily: 'Figtree, sans-serif',
             fontWeight: 600,
@@ -309,16 +309,16 @@ export function BlockViewerInCanvas({
       {/* Prompt blocks — orange left border box */}
       {block.type === 'prompt' && (
         <div style={{
-          background: 'rgba(0,0,0,0.30)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderLeft: '3px solid rgba(139,69,19,0.55)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
+          borderLeft: '3px solid color-mix(in srgb, var(--action) 55%, transparent)',
           borderRadius: 8, padding: '12px 14px',
           paddingRight: 52, // space for copy btn
         }}>
           <pre style={{
             ...type.cardTitle,
 
-            color: 'rgba(255,255,255,0.82)',
+            color: 'var(--text)',
              whiteSpace: 'pre-wrap',
             wordBreak: 'break-word', margin: 0,
           }}>
@@ -330,9 +330,9 @@ export function BlockViewerInCanvas({
       {/* Code blocks — blue left border + monospace */}
       {block.type === 'code' && (
         <div style={{
-          background: 'rgba(0,0,0,0.40)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderLeft: '3px solid rgba(59,130,246,0.55)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
+          border: '1px solid var(--line)',
+          borderLeft: '3px solid color-mix(in srgb, var(--cat-data) 55%, transparent)',
           borderRadius: 8, padding: '12px 14px',
           paddingRight: 52,
         }}>
@@ -341,7 +341,7 @@ export function BlockViewerInCanvas({
               fontSize: 9, fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.10em',
-              color: 'rgba(59,130,246,0.70)',
+              color: 'color-mix(in srgb, var(--cat-data) 70%, transparent)',
               marginBottom: 8,
             }}>
               {block.codeLanguage}
@@ -350,7 +350,7 @@ export function BlockViewerInCanvas({
           <pre style={{
             fontFamily: 'Courier New, monospace',
             fontSize: 13,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             lineHeight: 1.65, whiteSpace: 'pre-wrap',
             wordBreak: 'break-all', margin: 0,
           }}>
@@ -387,7 +387,7 @@ export function BlockViewerInCanvas({
         block.type === 'long_text') && (
         <p style={{
           fontSize: 15, fontWeight: 400,
-          color: 'rgba(255,255,255,0.72)',
+          color: 'var(--text2)',
           lineHeight: 1.75, margin: 0,
           fontFamily: 'Figtree, sans-serif',
           paddingRight: 52,

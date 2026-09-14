@@ -18,12 +18,12 @@ interface WorkflowBlockData {
   [key: string]: unknown;
 }
 
-const TYPE_COLOR = '#14B8A6';
+const TYPE_COLOR = 'var(--evidence)';
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -104,7 +104,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
         width: 300,
         border: selected
           ? `1px solid ${TYPE_COLOR}99`
-          : '1px solid rgba(255,255,255,0.08)',
+          : '1px solid var(--line)',
         boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
       }}
     >
@@ -135,16 +135,16 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
           className="inline-block w-1.5 h-1.5 rounded-full"
           style={{ background: TYPE_COLOR }}
         />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Workflow
         </span>
         <div className="flex-1" />
-        <span className="text-[10px] text-white/40 nodrag">
+        <span className="text-[10px] text-muted-foreground nodrag">
           {completedCount}/{steps.length} complete
         </span>
         <button
           type="button"
-          className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+          className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={12} />
@@ -163,8 +163,8 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
               className={cn(
                 'rounded-md border transition-colors nodrag',
                 isCurrent
-                  ? 'border-white/15 bg-white/[0.04]'
-                  : 'border-white/[0.06] bg-white/[0.02]',
+                  ? 'border-border bg-foreground/[0.04]'
+                  : 'border-border/[0.06] bg-foreground/[0.02]',
               )}
               onClick={(e) => e.stopPropagation()}
             >
@@ -181,8 +181,8 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                   className={cn(
                     'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0',
                     step.completed
-                      ? 'text-white'
-                      : 'bg-white/[0.06] text-white/60',
+                      ? 'text-foreground'
+                      : 'bg-foreground/[0.06] text-muted-foreground',
                   )}
                   style={
                     step.completed
@@ -208,11 +208,11 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-white/85 border-b border-white/15"
+                    className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-foreground border-b border-border"
                   />
                 ) : (
                   <span
-                    className="flex-1 min-w-0 text-[12px] text-white/85 truncate"
+                    className="flex-1 min-w-0 text-[12px] text-foreground truncate"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setEditingTitleId(step.id);
@@ -228,7 +228,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                     e.stopPropagation();
                     removeStep(step.id);
                   }}
-                  className="p-0.5 text-white/30 hover:text-white/70 transition-colors"
+                  className="p-0.5 text-muted-foreground hover:text-muted-foreground transition-colors"
                   title="Remove step"
                 >
                   <X size={11} />
@@ -237,7 +237,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                 <ChevronDown
                   size={12}
                   className={cn(
-                    'text-white/40 transition-transform',
+                    'text-muted-foreground transition-transform',
                     isExpanded && 'rotate-180',
                   )}
                 />
@@ -245,7 +245,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
 
               {/* Step body */}
               {isExpanded && (
-                <div className="px-2 pb-2 pt-0 space-y-2 border-t border-white/[0.06]">
+                <div className="px-2 pb-2 pt-0 space-y-2 border-t border-border/[0.06]">
                   <textarea
                     value={step.body ?? ''}
                     onChange={(e) =>
@@ -254,9 +254,9 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                     placeholder="Describe this step..."
                     className={cn(
                       'w-full min-h-[48px] p-2 mt-2 rounded-md resize-none',
-                      'bg-white/[0.02] border border-white/[0.04]',
-                      'text-[11px] text-white/70 placeholder:text-white/25',
-                      'outline-none focus:border-white/[0.10] transition-colors',
+                      'bg-foreground/[0.02] border border-border/[0.04]',
+                      'text-[11px] text-foreground placeholder:text-muted-foreground',
+                      'outline-none focus:border-border/[0.10] transition-colors',
                     )}
                   />
 
@@ -273,8 +273,8 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                       className={cn(
                         'w-4 h-4 rounded border flex items-center justify-center transition-colors',
                         step.completed
-                          ? 'border-transparent text-white'
-                          : 'border-white/20 bg-transparent',
+                          ? 'border-transparent text-foreground'
+                          : 'border-border bg-transparent',
                       )}
                       style={
                         step.completed
@@ -284,7 +284,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                     >
                       {step.completed && <Check size={10} strokeWidth={3} />}
                     </span>
-                    <span className="text-[11px] text-white/60">Mark complete</span>
+                    <span className="text-[11px] text-muted-foreground">Mark complete</span>
                   </label>
                 </div>
               )}
@@ -301,7 +301,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
             e.stopPropagation();
             addStep();
           }}
-          className="nodrag w-full py-3 mt-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-white/10 hover:border-white/20 hover:bg-white/[0.02] text-[11px] text-white/40 hover:text-white/70 transition-colors"
+          className="nodrag w-full py-3 mt-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border hover:border-border hover:bg-foreground/[0.02] text-[11px] text-muted-foreground hover:text-muted-foreground transition-colors"
         >
           <Plus size={12} />
           Add first step
@@ -313,7 +313,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
             e.stopPropagation();
             addStep();
           }}
-          className="nodrag mt-2 flex items-center gap-1 px-2 py-1 rounded text-[10.5px] font-medium text-white/50 hover:text-white/85 hover:bg-white/[0.04] transition-colors"
+          className="nodrag mt-2 flex items-center gap-1 px-2 py-1 rounded text-[10.5px] font-medium text-muted-foreground hover:text-muted-foreground hover:bg-foreground/[0.04] transition-colors"
         >
           <Plus size={11} />
           Add step

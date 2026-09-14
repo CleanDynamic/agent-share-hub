@@ -59,7 +59,7 @@ const itemButtonStyle = {
   borderRadius: 5,
   border: 'none',
   background: 'transparent',
-  color: 'rgba(255,255,255,0.65)',
+  color: 'var(--text2)',
   fontFamily: 'Figtree, sans-serif',
   fontSize: 11,
   fontWeight: 500,
@@ -122,28 +122,28 @@ export function StatusBar({
         return {
           icon: LoaderCircle,
           label: 'Saving',
-          color: 'hsl(45 93% 63%)',
+          color: 'var(--cat-artefact)',
           spin: true,
         };
       case 'offline':
         return {
           icon: CloudOff,
           label: 'Offline',
-          color: 'hsl(var(--foreground) / 0.58)',
+          color: 'var(--text2)',
           spin: false,
         };
       case 'error':
         return {
           icon: CircleAlert,
           label: 'Save error',
-          color: 'hsl(12 76% 61%)',
+          color: 'var(--cat-breakage)',
           spin: false,
         };
       default:
         return {
           icon: Check,
           label: 'Saved',
-          color: 'hsl(142 58% 55%)',
+          color: 'var(--cat-configuration)',
           spin: false,
         };
     }
@@ -162,8 +162,12 @@ export function StatusBar({
         gap: 12,
         minHeight: 28,
         padding: '4px 8px',
-        borderTop: '0.5px solid hsl(var(--foreground) / 0.06)',
-        background: 'hsl(240 20% 8% / 0.72)',
+        borderTop: '1px solid var(--line)',
+        /* --line IS A HAIRLINE, NOT A SURFACE. Used as this bar's ground it put
+           --text2 at 4.03:1 and the saved indicator at 4.06:1, both under the
+           text floor. --recess is the token for a surface the page is cut
+           into, and --text2 measures 4.55:1 on it. */
+        background: 'var(--recess)',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
       }}
@@ -219,10 +223,10 @@ export function StatusBar({
 
         {showSecondary ? (
           <div style={{ ...itemButtonStyle, cursor: 'default' }}>
-            <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'hsl(12 76% 61%)' }} />
+            <AlertTriangle size={12} strokeWidth={1.8} style={{ color: 'var(--cat-breakage)' }} />
             <span>{errors}</span>
-            <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
-            <Bell size={12} strokeWidth={1.8} style={{ color: 'hsl(45 93% 63%)' }} />
+            <span style={{ color: 'var(--text2)' }}>·</span>
+            <Bell size={12} strokeWidth={1.8} style={{ color: 'var(--cat-artefact)' }} />
             <span>{warnings}</span>
           </div>
         ) : null}
@@ -231,7 +235,7 @@ export function StatusBar({
           <span>{wordCount} words</span>
           {showSecondary ? (
             <>
-              <span style={{ color: 'hsl(var(--foreground) / 0.42)' }}>·</span>
+              <span style={{ color: 'var(--text2)' }}>·</span>
               <span>{readingMinutes} min</span>
             </>
           ) : null}
@@ -259,7 +263,7 @@ export function StatusBar({
           style={{
             ...itemButtonStyle,
             cursor: onCommentsClick ? 'pointer' : 'default',
-            color: unresolvedComments > 0 ? 'hsl(18 79% 70%)' : itemButtonStyle.color,
+            color: unresolvedComments > 0 ? 'var(--action)' : itemButtonStyle.color,
           }}
           aria-label={`${unresolvedComments} unresolved comments`}
           title={`${unresolvedComments} unresolved comment${unresolvedComments === 1 ? '' : 's'}`}
@@ -289,20 +293,20 @@ export function StatusBar({
               side="top"
               sideOffset={6}
               style={{
-                background: 'hsl(240 20% 8% / 0.95)',
-                border: '0.5px solid hsl(var(--foreground) / 0.08)',
-                boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+                background: 'var(--cat-data)',
+                border: '0.5px solid var(--line)',
+                boxShadow: '0 10px 30px var(--recess)',
                 borderRadius: 8,
                 minWidth: 188,
               }}
             >
-              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'var(--text2)' }}>
                 Words: {wordCount}
               </DropdownMenuItem>
-              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'var(--text2)' }}>
                 Characters: {characterCount}
               </DropdownMenuItem>
-              <DropdownMenuItem inset style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+              <DropdownMenuItem inset style={{ fontSize: 11, color: 'var(--text2)' }}>
                 Read time: {readingMinutes} min
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -337,9 +341,9 @@ export function StatusBar({
               side="top"
               sideOffset={6}
               style={{
-                background: 'hsl(240 20% 8% / 0.95)',
-                border: '0.5px solid hsl(var(--foreground) / 0.08)',
-                boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+                background: 'var(--cat-data)',
+                border: '0.5px solid var(--line)',
+                boxShadow: '0 10px 30px var(--text)',
                 borderRadius: 8,
                 minWidth: 92,
               }}
@@ -349,7 +353,7 @@ export function StatusBar({
                   key={z}
                   inset
                   onClick={() => handleZoomChange(z)}
-                  style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}
+                  style={{ fontSize: 11, color: 'var(--text2)' }}
                 >
                   {z}%
                 </DropdownMenuItem>
@@ -372,8 +376,8 @@ export function StatusBar({
             onClick={() => setNotifications((current) => !current)}
             style={{
               ...itemButtonStyle,
-              background: notifications ? 'hsl(var(--foreground) / 0.12)' : 'transparent',
-              color: notifications ? 'hsl(var(--foreground) / 0.9)' : itemButtonStyle.color,
+              background: notifications ? 'var(--recess)' : 'transparent',
+              color: notifications ? 'var(--text)' : itemButtonStyle.color,
             }}
             aria-label="Notifications"
           >
@@ -392,27 +396,27 @@ export function StatusBar({
             side="top"
             sideOffset={6}
             style={{
-              background: 'hsl(240 20% 8% / 0.95)',
-              border: '0.5px solid hsl(var(--foreground) / 0.08)',
-              boxShadow: '0 10px 30px hsl(240 10% 2% / 0.45)',
+              background: 'var(--cat-data)',
+              border: '0.5px solid var(--line)',
+              boxShadow: '0 10px 30px var(--text)',
               borderRadius: 8,
               minWidth: 184,
             }}
           >
-            <DropdownMenuItem inset onClick={onMoreTemplates} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+            <DropdownMenuItem inset onClick={onMoreTemplates} style={{ fontSize: 11, color: 'var(--text2)' }}>
               Templates
             </DropdownMenuItem>
-            <DropdownMenuItem inset onClick={onMoreGrammarCheck} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+            <DropdownMenuItem inset onClick={onMoreGrammarCheck} style={{ fontSize: 11, color: 'var(--text2)' }}>
               Grammar Check
             </DropdownMenuItem>
-            <DropdownMenuItem inset onClick={onMoreHistory} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+            <DropdownMenuItem inset onClick={onMoreHistory} style={{ fontSize: 11, color: 'var(--text2)' }}>
               History
             </DropdownMenuItem>
-            <DropdownMenuItem inset onClick={onMoreNotes} style={{ fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+            <DropdownMenuItem inset onClick={onMoreNotes} style={{ fontSize: 11, color: 'var(--text2)' }}>
               Notes
             </DropdownMenuItem>
-            <DropdownMenuSeparator style={{ background: 'hsl(var(--foreground) / 0.06)' }} />
-            <DropdownMenuItem inset onClick={onMoreClearAll} style={{ fontSize: 11, color: 'hsl(12 76% 61%)' }}>
+            <DropdownMenuSeparator style={{ background: 'var(--recess)' }} />
+            <DropdownMenuItem inset onClick={onMoreClearAll} style={{ fontSize: 11, color: 'var(--cat-breakage)' }}>
               Clear All
             </DropdownMenuItem>
           </DropdownMenuContent>

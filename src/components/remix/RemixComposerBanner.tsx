@@ -20,8 +20,8 @@ export default function RemixComposerBanner({
       style={{
         padding: '11px 13px',
         borderRadius: tokens.cardRadius,
-        background: 'rgba(232,87,26,0.10)',
-        border: '0.5px solid rgba(232,87,26,0.34)',
+        background: 'color-mix(in srgb, var(--action) 10%, transparent)',
+        border: '0.5px solid color-mix(in srgb, var(--action) 34%, transparent)',
         borderLeft: `3px solid ${tokens.orange}`,
       }}
     >
@@ -31,7 +31,7 @@ export default function RemixComposerBanner({
           width: 30,
           height: 30,
           borderRadius: 8,
-          background: 'rgba(232,87,26,0.16)',
+          background: 'color-mix(in srgb, var(--action) 16%, transparent)',
           flexShrink: 0,
         }}
       >

@@ -1505,7 +1505,7 @@ export default function ContentDetail() {
         onPledged={() => void refetchMeta()}
       />
     ) : (
-      <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.20)", fontSize: 13 }}>
+      <div style={{ padding: 40, textAlign: "center", color: "var(--text2)", fontSize: 13 }}>
         Loading meta-bounty…
       </div>
     );
@@ -1536,7 +1536,7 @@ export default function ContentDetail() {
       );
     } else if (canvasDoc.loading) {
       bodyNode = (
-        <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.20)", fontSize: 13 }}>
+        <div style={{ padding: 40, textAlign: "center", color: "var(--text2)", fontSize: 13 }}>
           Loading…
         </div>
       );
@@ -1771,7 +1771,7 @@ export default function ContentDetail() {
             style={{
               transition: "box-shadow 600ms ease-out",
               boxShadow: solvedPulse
-                ? "0 0 0 2px rgba(46,196,182,0.55), 0 0 32px rgba(46,196,182,0.35)"
+                ? "0 0 0 2px color-mix(in srgb, var(--evidence) 55%, transparent), 0 0 32px color-mix(in srgb, var(--evidence) 35%, transparent)"
                 : "none",
               borderRadius: 12,
             }}
@@ -1796,7 +1796,7 @@ export default function ContentDetail() {
               <div className="mt-3 flex justify-end">
                 <button
                   onClick={handlePromoteToBlueprint}
-                  className="px-3 py-1.5 rounded text-xs font-semibold border border-teal-500/40 text-teal-300 hover:bg-teal-500/10"
+                  className="px-3 py-1.5 rounded text-xs font-semibold border border-[var(--evidence)] text-[var(--evidence)] hover:bg-[var(--cat-evidence-fill)]"
                 >
                   Promote to blueprint
                 </button>
@@ -2367,19 +2367,19 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
     <div
       onClick={() => navigate(`/content/${parentId}`)}
       style={{
-        background: "rgba(124,58,237,0.08)",
-        border: "1px solid rgba(124,58,237,0.25)",
+        background: "color-mix(in srgb, var(--cat-agents) 8%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--cat-agents) 25%, transparent)",
         borderRadius: 8,
         padding: "8px 12px",
         marginBottom: 16,
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
-        color: "rgba(255,255,255,0.75)",
+        color: "var(--text)",
         cursor: "pointer",
       }}
     >
       Spawned from meta-bounty:{" "}
-      <span style={{ color: "#A78BFA", fontWeight: 600 }}>{data.title}</span>
+      <span style={{ color: "var(--cat-agents)", fontWeight: 600 }}>{data.title}</span>
     </div>
   );
 }

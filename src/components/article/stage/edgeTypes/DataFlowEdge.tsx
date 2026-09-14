@@ -22,12 +22,12 @@ import { eventBus } from '@/lib/eventBus';
 import type { ConnectionType } from '@/types/document';
 
 const COLOR: Record<ConnectionType, string> = {
-  feeds_into: '#2EC4B6',
-  alternative_to: 'rgba(255,255,255,0.4)',
-  depends_on: '#E8571A',
-  contradicts: '#EF4444',
-  references: 'rgba(255,255,255,0.5)',
-  custom: '#FFFFFF',
+  feeds_into: 'var(--evidence)',
+  alternative_to: 'var(--recess)',
+  depends_on: 'var(--action)',
+  contradicts: 'var(--cat-breakage)',
+  references: 'var(--recess)',
+  custom: 'var(--text)',
 };
 
 interface StyleSpec {
@@ -105,7 +105,7 @@ export function DataFlowEdge(props: EdgeProps) {
   }, [id]);
 
   const pathId = `edge-path-${id}`;
-  const sweepColor = type === 'feeds_into' ? '#2EC4B6' : style.stroke;
+  const sweepColor = type === 'feeds_into' ? 'var(--evidence)' : style.stroke;
 
   return (
     <>
@@ -189,8 +189,8 @@ export function DataFlowEdge(props: EdgeProps) {
               fontSize: 10,
               padding: '2px 6px',
               borderRadius: 4,
-              background: 'rgba(20,20,28,0.9)',
-              color: 'rgba(255,255,255,0.85)',
+              background: 'var(--bg)',
+              color: 'var(--text)',
               border: `1px solid ${style.stroke}`,
             }}
             className="nodrag nopan"

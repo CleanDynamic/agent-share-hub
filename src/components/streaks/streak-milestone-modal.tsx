@@ -31,7 +31,7 @@ export default function StreakMilestoneModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(20,20,28,0.6)" }}
+      style={{ background: "var(--recess)" }}
       role="dialog"
       aria-modal="true"
       aria-label={`${milestone} day streak milestone`}
@@ -79,8 +79,8 @@ export default function StreakMilestoneModal({
             width: 76,
             height: 76,
             borderRadius: RADIUS.pill,
-            background: "rgba(245,158,11,0.14)",
-            border: "0.5px solid rgba(245,158,11,0.4)",
+            background: "color-mix(in srgb, var(--lit) 14%, transparent)",
+            border: "1px solid var(--lit)",
             color: COLORS.streakAmber,
             marginBottom: 18,
           }}
@@ -136,7 +136,7 @@ export default function StreakMilestoneModal({
               borderRadius: RADIUS.pill,
               background: ORANGE_GRADIENT,
               border: "none",
-              color: "#fff",
+              color: "var(--text)",
               fontSize: 14,
               fontWeight: 600,
               cursor: "pointer",

@@ -170,31 +170,32 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm animate-in fade-in"
+        className="fixed inset-0 z-[80] backdrop-blur-sm animate-in fade-in"
+        style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}
       />
 
       {/* Panel */}
       <aside
         className="fixed right-0 top-0 z-[81] h-full w-full max-w-[480px] flex flex-col animate-in slide-in-from-right duration-200"
         style={{
-          backgroundColor: "rgba(15,15,20,0.96)",
+          backgroundColor: "var(--bg)",
           backdropFilter: "blur(24px)",
-          borderLeft: "1px solid rgba(255,255,255,0.08)",
+          borderLeft: "1px solid var(--line)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 h-14 shrink-0"
-          style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}
+          style={{ borderBottom: "1px solid var(--line)" }}
         >
           <div className="flex items-center gap-2">
-            <Settings size={14} style={{ color: "rgba(255,255,255,0.6)" }} />
+            <Settings size={14} style={{ color: "var(--text2)" }} />
             <span
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.92)",
+                color: "var(--text)",
               }}
             >
               Bounty management
@@ -202,22 +203,22 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded hover:bg-muted transition-colors"
             aria-label="Close"
           >
-            <X size={14} style={{ color: "rgba(255,255,255,0.6)" }} />
+            <X size={14} style={{ color: "var(--text2)" }} />
           </button>
         </div>
 
         {!isAuthor ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-            <Lock size={28} style={{ color: "rgba(255,255,255,0.4)" }} />
+            <Lock size={28} style={{ color: "var(--text2)" }} />
             <span
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.85)",
+                color: "var(--text)",
               }}
             >
               Access denied
@@ -226,7 +227,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
-                color: "rgba(255,255,255,0.55)",
+                color: "var(--text)",
               }}
             >
               Only the bounty author can manage this bounty.
@@ -239,8 +240,8 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
               <div
                 className="flex items-center justify-between px-5 py-2.5 shrink-0"
                 style={{
-                  backgroundColor: "rgba(245,158,11,0.10)",
-                  borderBottom: "1px solid rgba(245,158,11,0.20)",
+                  backgroundColor: "color-mix(in srgb, var(--cat-breakage) 10%, transparent)",
+                  borderBottom: "1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)",
                 }}
               >
                 <span
@@ -248,7 +249,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "#F59E0B",
+                    color: "var(--cat-breakage)",
                   }}
                 >
                   {unreviewed} submission{unreviewed > 1 ? "s" : ""} need your
@@ -261,7 +262,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "#F59E0B",
+                    color: "var(--cat-breakage)",
                     textDecoration: "underline",
                   }}
                 >
@@ -273,7 +274,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
             {/* Tab strip */}
             <div
               className="flex h-11 items-center gap-5 px-5 shrink-0"
-              style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.14)" }}
+              style={{ borderBottom: "1px solid var(--line)" }}
             >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -285,8 +286,8 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                     className="relative flex h-full items-center gap-1.5 transition-colors"
                     style={{
                       color: isActive
-                        ? "rgba(255,255,255,0.92)"
-                        : "rgba(255,255,255,0.50)",
+                        ? "var(--text)"
+                        : "var(--text2)",
                     }}
                   >
                     <Icon size={13} />
@@ -302,7 +303,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
                     {isActive && (
                       <span
                         className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t"
-                        style={{ backgroundColor: "#3B82F6" }}
+                        style={{ backgroundColor: "var(--cat-data)" }}
                       />
                     )}
                   </button>
@@ -383,14 +384,14 @@ function StatCell({
   return (
     <div
       className="rounded-lg p-3 flex flex-col gap-1"
-      style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+      style={{ backgroundColor: "var(--recess)" }}
     >
       <span
         style={{
           fontFamily: "Figtree, sans-serif",
           fontSize: "20px",
           fontWeight: 700,
-          color: "rgba(255,255,255,0.95)",
+          color: "var(--text)",
           lineHeight: 1.1,
         }}
       >
@@ -399,13 +400,13 @@ function StatCell({
       {showBar && barValue !== undefined && (
         <div
           className="h-1 rounded-full overflow-hidden"
-          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+          style={{ backgroundColor: "var(--recess)" }}
         >
           <div
             className="h-full rounded-full"
             style={{
               width: `${Math.max(0, Math.min(100, barValue))}%`,
-              backgroundColor: "#3B82F6",
+              backgroundColor: "var(--cat-data)",
             }}
           />
         </div>
@@ -415,7 +416,7 @@ function StatCell({
           fontFamily: "Figtree, sans-serif",
           fontSize: "11px",
           fontWeight: 500,
-          color: "rgba(255,255,255,0.7)",
+          color: "var(--text2)",
         }}
       >
         {label}
@@ -425,7 +426,7 @@ function StatCell({
           fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
           fontWeight: 400,
-          color: "rgba(255,255,255,0.45)",
+          color: "var(--text2)",
         }}
       >
         {subline}
@@ -500,7 +501,7 @@ function OverviewTab({
               <div
                 key={sub.id}
                 className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+                style={{ backgroundColor: "var(--recess)" }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar src={sub.solverAvatar} alt={sub.solverHandle} />
@@ -511,7 +512,7 @@ function OverviewTab({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: "12px",
                         fontWeight: 500,
-                        color: "rgba(255,255,255,0.9)",
+                        color: "var(--text)",
                       }}
                     >
                       {sub.title}
@@ -520,7 +521,7 @@ function OverviewTab({
                       style={{
                         fontFamily: "Figtree, sans-serif",
                         fontSize: "11px",
-                        color: "rgba(255,255,255,0.5)",
+                        color: "var(--text)",
                       }}
                     >
                       @{sub.solverHandle} · {sub.voteCount} votes
@@ -546,7 +547,7 @@ function OverviewTab({
               <div
                 key={u.userId}
                 className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+                style={{ backgroundColor: "var(--recess)" }}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar src={u.avatar} alt={u.handle} />
@@ -555,7 +556,7 @@ function OverviewTab({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: "12px",
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.9)",
+                      color: "var(--text)",
                     }}
                   >
                     @{u.handle}
@@ -564,7 +565,7 @@ function OverviewTab({
                     style={{
                       fontFamily: "Figtree, sans-serif",
                       fontSize: "11px",
-                      color: "rgba(255,255,255,0.5)",
+                      color: "var(--text)",
                     }}
                   >
                     {u.commentCount} comments
@@ -596,7 +597,7 @@ function OverviewTab({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
                   fontWeight: 500,
-                  color: "#3B82F6",
+                  color: "var(--cat-data)",
                 }}
               >
                 Show more
@@ -620,13 +621,13 @@ function ActivityRow({ event }: { event: ManageActivityEvent }) {
 
   return (
     <div className="flex items-center gap-2.5 py-1.5">
-      <Icon size={12} style={{ color: "rgba(255,255,255,0.45)" }} />
+      <Icon size={12} style={{ color: "var(--text2)" }} />
       <span
         className="flex-1 truncate"
         style={{
           fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
-          color: "rgba(255,255,255,0.78)",
+          color: "var(--text2)",
         }}
       >
         {event.text}
@@ -635,7 +636,7 @@ function ActivityRow({ event }: { event: ManageActivityEvent }) {
         style={{
           fontFamily: "Figtree, sans-serif",
           fontSize: "10px",
-          color: "rgba(255,255,255,0.4)",
+          color: "var(--text2)",
         }}
       >
         {event.timestamp}
@@ -677,17 +678,17 @@ function SubmissionsTab({
         <span
           className="w-3.5 h-3.5 rounded border flex items-center justify-center"
           style={{
-            borderColor: "rgba(255,255,255,0.25)",
-            backgroundColor: showRejected ? "#3B82F6" : "transparent",
+            borderColor: "var(--line)",
+            backgroundColor: showRejected ? "var(--cat-data)" : "transparent",
           }}
         >
-          {showRejected && <Check size={10} className="text-white" />}
+          {showRejected && <Check size={10} className="text-foreground" />}
         </span>
         <span
           style={{
             fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
-            color: "rgba(255,255,255,0.6)",
+            color: "var(--text2)",
           }}
         >
           Show rejected
@@ -708,7 +709,7 @@ function SubmissionsTab({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: "12px",
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "var(--text)",
                 }}
               >
                 {slot.slotName}
@@ -717,7 +718,7 @@ function SubmissionsTab({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: "11px",
-                  color: "rgba(255,255,255,0.45)",
+                  color: "var(--text2)",
                 }}
               >
                 {filtered.length} submission{filtered.length !== 1 ? "s" : ""}
@@ -755,7 +756,7 @@ function SlotTypeIcon({ type }: { type: string }) {
     writing: MessageSquare,
   };
   const Icon = iconMap[type] || FileText;
-  return <Icon size={12} style={{ color: "rgba(255,255,255,0.5)" }} />;
+  return <Icon size={12} style={{ color: "var(--text2)" }} />;
 }
 
 function SubmissionRow({
@@ -778,17 +779,17 @@ function SubmissionRow({
   onToggleOverflow: () => void;
 }) {
   const statusColors: Record<string, { bg: string; text: string }> = {
-    submitted: { bg: "rgba(59,130,246,0.15)", text: "#3B82F6" },
-    accepted: { bg: "rgba(34,197,94,0.15)", text: "#22C55E" },
-    withdrawn: { bg: "rgba(156,163,175,0.15)", text: "#9CA3AF" },
-    rejected: { bg: "rgba(239,68,68,0.15)", text: "#EF4444" },
+    submitted: { bg: "color-mix(in srgb, var(--cat-data) 15%, transparent)", text: "var(--cat-data)" },
+    accepted: { bg: "color-mix(in srgb, var(--cat-configuration) 15%, transparent)", text: "var(--cat-configuration)" },
+    withdrawn: { bg: "color-mix(in srgb, var(--text2) 15%, transparent)", text: "var(--text2)" },
+    rejected: { bg: "color-mix(in srgb, var(--cat-breakage) 15%, transparent)", text: "var(--cat-breakage)" },
   };
   const colors = statusColors[submission.status] || statusColors.submitted;
 
   return (
     <div
       className="flex items-center justify-between gap-3 rounded-lg p-2.5"
-      style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+      style={{ backgroundColor: "var(--recess)" }}
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <Avatar src={submission.solverAvatar} alt={submission.solverHandle} />
@@ -799,7 +800,7 @@ function SubmissionRow({
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
-              color: "rgba(255,255,255,0.9)",
+              color: "var(--text)",
             }}
           >
             @{submission.solverHandle}
@@ -809,7 +810,7 @@ function SubmissionRow({
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
-                color: "rgba(255,255,255,0.5)",
+                color: "var(--text2)",
               }}
             >
               {submission.voteCount} votes
@@ -837,11 +838,11 @@ function SubmissionRow({
             onClick={onAccept}
             className="rounded px-2 py-1 transition-colors hover:opacity-90"
             style={{
-              backgroundColor: "rgba(34,197,94,0.18)",
+              backgroundColor: "color-mix(in srgb, var(--cat-configuration) 18%, transparent)",
               fontFamily: "Figtree, sans-serif",
               fontSize: "11px",
               fontWeight: 600,
-              color: "#22C55E",
+              color: "var(--cat-configuration)",
             }}
           >
             Accept
@@ -849,28 +850,28 @@ function SubmissionRow({
         )}
         <button
           onClick={onPreview}
-          className="p-1.5 rounded hover:bg-white/10 transition-colors"
+          className="p-1.5 rounded hover:bg-muted transition-colors"
           aria-label="Quick view"
         >
-          <Eye size={13} style={{ color: "rgba(255,255,255,0.6)" }} />
+          <Eye size={13} style={{ color: "var(--text2)" }} />
         </button>
         <div className="relative">
           <button
             onClick={onToggleOverflow}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded hover:bg-muted transition-colors"
             aria-label="More actions"
           >
             <MoreHorizontal
               size={13}
-              style={{ color: "rgba(255,255,255,0.6)" }}
+              style={{ color: "var(--text2)" }}
             />
           </button>
           {isOverflowOpen && (
             <div
               className="absolute right-0 top-full mt-1 z-10 min-w-[140px] rounded-lg overflow-hidden shadow-xl"
               style={{
-                backgroundColor: "rgba(20,20,28,0.98)",
-                border: "1px solid rgba(255,255,255,0.10)",
+                backgroundColor: "var(--recess)",
+                border: "1px solid var(--line)",
               }}
             >
               {submission.status === "submitted" && (
@@ -922,18 +923,18 @@ function OverflowItem({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 w-full px-3 py-2 transition-colors hover:bg-white/8"
+      className="flex items-center gap-2 w-full px-3 py-2 transition-colors hover:bg-muted"
     >
       <Icon
         size={12}
-        style={{ color: destructive ? "#EF4444" : "rgba(255,255,255,0.7)" }}
+        style={{ color: destructive ? "var(--cat-breakage)" : "var(--text2)" }}
       />
       <span
         style={{
           fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 500,
-          color: destructive ? "#EF4444" : "rgba(255,255,255,0.85)",
+          color: destructive ? "var(--cat-breakage)" : "var(--text)",
         }}
       >
         {label}
@@ -980,14 +981,14 @@ function SettingsTab({
       <SettingsField label="Reward">
         <div
           className="flex items-center justify-between rounded-lg px-3 py-2"
-          style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+          style={{ backgroundColor: "var(--recess)" }}
         >
           <span
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: "13px",
               fontWeight: 600,
-              color: "rgba(255,255,255,0.92)",
+              color: "var(--text)",
             }}
           >
             ${bounty.reward.toLocaleString()}
@@ -996,7 +997,7 @@ function SettingsTab({
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: "10px",
-              color: "rgba(255,255,255,0.4)",
+              color: "var(--text2)",
             }}
           >
             Read-only
@@ -1008,26 +1009,26 @@ function SettingsTab({
         <div className="relative">
           <button
             onClick={() => setExtendDropdownOpen(!extendDropdownOpen)}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/10"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.14)" }}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-muted"
+            style={{ backgroundColor: "var(--recess)" }}
           >
             <span
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
-                color: "rgba(255,255,255,0.8)",
+                color: "var(--text2)",
               }}
             >
               Extend by...
             </span>
-            <ChevronDown size={13} style={{ color: "rgba(255,255,255,0.5)" }} />
+            <ChevronDown size={13} style={{ color: "var(--text2)" }} />
           </button>
           {extendDropdownOpen && (
             <div
               className="absolute left-0 right-0 top-full mt-1 z-10 rounded-lg overflow-hidden flex flex-col"
               style={{
-                backgroundColor: "rgba(20,20,28,0.98)",
-                border: "1px solid rgba(255,255,255,0.10)",
+                backgroundColor: "var(--recess)",
+                border: "1px solid var(--line)",
               }}
             >
               {deadlineExtensions.map((ext) => (
@@ -1037,11 +1038,11 @@ function SettingsTab({
                     onExtendDeadline(ext.value);
                     setExtendDropdownOpen(false);
                   }}
-                  className="px-3 py-2 text-left transition-colors hover:bg-white/10"
+                  className="px-3 py-2 text-left transition-colors hover:bg-muted"
                   style={{
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "12px",
-                    color: "rgba(255,255,255,0.8)",
+                    color: "var(--text2)",
                   }}
                 >
                   {ext.label}
@@ -1057,12 +1058,12 @@ function SettingsTab({
           value={acceptanceCriteria}
           onChange={(e) => onAcceptanceCriteriaChange(e.target.value)}
           rows={4}
-          className="w-full resize-none rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-white/20"
+          className="w-full resize-none rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-border"
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.14)",
+            backgroundColor: "var(--recess)",
             fontFamily: "Figtree, sans-serif",
             fontSize: "12px",
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text)",
           }}
         />
       </SettingsField>
@@ -1073,7 +1074,7 @@ function SettingsTab({
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
-              color: "rgba(255,255,255,0.6)",
+              color: "var(--text2)",
             }}
           >
             {bounty.isPaused
@@ -1087,19 +1088,19 @@ function SettingsTab({
             className="flex items-center gap-1.5 rounded px-2.5 py-1 transition-colors"
             style={{
               backgroundColor: bounty.isPaused
-                ? "rgba(34,197,94,0.15)"
-                : "rgba(245,158,11,0.15)",
+                ? "color-mix(in srgb, var(--cat-configuration) 15%, transparent)"
+                : "color-mix(in srgb, var(--cat-breakage) 15%, transparent)",
             }}
           >
             {bounty.isPaused ? (
               <>
-                <Play size={12} style={{ color: "#22C55E" }} />
+                <Play size={12} style={{ color: "var(--cat-configuration)" }} />
                 <span
                   style={{
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "#22C55E",
+                    color: "var(--cat-configuration)",
                   }}
                 >
                   Resume
@@ -1107,13 +1108,13 @@ function SettingsTab({
               </>
             ) : (
               <>
-                <Pause size={12} style={{ color: "#F59E0B" }} />
+                <Pause size={12} style={{ color: "var(--cat-breakage)" }} />
                 <span
                   style={{
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "#F59E0B",
+                    color: "var(--cat-breakage)",
                   }}
                 >
                   Pause
@@ -1125,22 +1126,22 @@ function SettingsTab({
       </SettingsField>
 
       <div
-        style={{ height: "1px", backgroundColor: "rgba(255,255,255,0.08)" }}
+        style={{ height: "1px", backgroundColor: "var(--recess)" }}
       />
 
       {bounty.status === "solved" && (
         <button
           onClick={onPromoteToBlueprint}
           className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 transition-colors hover:opacity-90"
-          style={{ backgroundColor: "rgba(34,197,94,0.15)" }}
+          style={{ backgroundColor: "color-mix(in srgb, var(--cat-configuration) 15%, transparent)" }}
         >
-          <Sparkles size={14} style={{ color: "#22C55E" }} />
+          <Sparkles size={14} style={{ color: "var(--cat-configuration)" }} />
           <span
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#22C55E",
+              color: "var(--cat-configuration)",
             }}
           >
             Promote to blueprint
@@ -1152,15 +1153,15 @@ function SettingsTab({
         <button
           onClick={() => setShowCloseConfirm(true)}
           className="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 transition-colors hover:opacity-90"
-          style={{ backgroundColor: "rgba(239,68,68,0.12)" }}
+          style={{ backgroundColor: "color-mix(in srgb, var(--cat-breakage) 12%, transparent)" }}
         >
-          <AlertTriangle size={14} style={{ color: "#EF4444" }} />
+          <AlertTriangle size={14} style={{ color: "var(--cat-breakage)" }} />
           <span
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#EF4444",
+              color: "var(--cat-breakage)",
             }}
           >
             Close bounty without solving
@@ -1170,8 +1171,8 @@ function SettingsTab({
         <div
           className="flex flex-col gap-3 rounded-lg p-3"
           style={{
-            backgroundColor: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.20)",
+            backgroundColor: "color-mix(in srgb, var(--cat-breakage) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)",
           }}
         >
           <span
@@ -1179,7 +1180,7 @@ function SettingsTab({
               fontFamily: "Figtree, sans-serif",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#EF4444",
+              color: "var(--cat-breakage)",
             }}
           >
             Are you sure? This action cannot be undone.
@@ -1187,13 +1188,13 @@ function SettingsTab({
           <div className="flex gap-2">
             <button
               onClick={() => setShowCloseConfirm(false)}
-              className="flex-1 rounded-lg py-2 transition-colors hover:bg-white/10"
+              className="flex-1 rounded-lg py-2 transition-colors hover:bg-muted"
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.14)",
+                backgroundColor: "var(--recess)",
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 500,
-                color: "rgba(255,255,255,0.7)",
+                color: "var(--text2)",
               }}
             >
               Cancel
@@ -1202,7 +1203,7 @@ function SettingsTab({
               onClick={onCloseBounty}
               className="flex-1 rounded-lg py-2 transition-colors hover:opacity-90"
               style={{
-                backgroundColor: "#EF4444",
+                backgroundColor: "var(--cat-breakage)",
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "11px",
                 fontWeight: 500,
@@ -1234,7 +1235,7 @@ function SettingsField({
           fontWeight: 600,
           letterSpacing: "0.04em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.5)",
+          color: "var(--text2)",
         }}
       >
         {label}
@@ -1258,7 +1259,7 @@ function Section({
           fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 600,
-          color: "rgba(255,255,255,0.85)",
+          color: "var(--text)",
         }}
       >
         {title}
@@ -1272,13 +1273,13 @@ function EmptyState({ text }: { text: string }) {
   return (
     <div
       className="flex items-center justify-center rounded-lg py-6"
-      style={{ backgroundColor: "rgba(255,255,255,0.02)" }}
+      style={{ backgroundColor: "var(--recess)" }}
     >
       <span
         style={{
           fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
-          color: "rgba(255,255,255,0.4)",
+          color: "var(--text2)",
         }}
       >
         {text}
@@ -1297,12 +1298,12 @@ function GhostButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center rounded px-2 py-1 transition-colors hover:bg-white/10"
+      className="flex items-center rounded px-2 py-1 transition-colors hover:bg-muted"
       style={{
         fontFamily: "Figtree, sans-serif",
         fontSize: "11px",
         fontWeight: 500,
-        color: "rgba(255,255,255,0.7)",
+        color: "var(--text2)",
       }}
     >
       {children}
@@ -1315,7 +1316,7 @@ function Avatar({ src, alt }: { src: string; alt: string }) {
   return (
     <div
       className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0"
-      style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+      style={{ backgroundColor: "var(--recess)" }}
     >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -1326,7 +1327,7 @@ function Avatar({ src, alt }: { src: string; alt: string }) {
             fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 600,
-            color: "rgba(255,255,255,0.7)",
+            color: "var(--text2)",
           }}
         >
           {initial}

@@ -21,9 +21,9 @@ const POST_TYPE_STYLES: Record<
   "blueprint" | "blog" | "bounty",
   { label: string; color: string; bg: string }
 > = {
-  blueprint: { label: "BLUEPRINT", color: "#E8571A", bg: "rgba(232,87,26,0.14)" },
-  blog:      { label: "BLOG",      color: "#3B82F6", bg: "rgba(59,130,246,0.14)" },
-  bounty:    { label: "BOUNTY",    color: "#22C55E", bg: "rgba(34,197,94,0.14)" },
+  blueprint: { label: "BLUEPRINT", color: "var(--action)", bg: "color-mix(in srgb, var(--action) 14%, transparent)" },
+  blog:      { label: "BLOG",      color: "var(--cat-data)", bg: "color-mix(in srgb, var(--cat-data) 14%, transparent)" },
+  bounty:    { label: "BOUNTY",    color: "var(--cat-configuration)", bg: "color-mix(in srgb, var(--cat-configuration) 14%, transparent)" },
 };
 
 export function CompactUploadHeader({
@@ -73,14 +73,14 @@ export function CompactUploadHeader({
           <span style={{
             fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600,
             letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
-            padding: "3px 10px", borderRadius: "100px",
+            padding: "3px 10px", borderRadius: 'var(--r-chip)',
           }}>
             {typeStyle.label}
           </span>
           {mode && (
             <span style={{
               fontFamily: "Figtree, sans-serif", fontSize: "11px",
-              fontWeight: 500, color: "rgba(255,255,255,0.40)",
+              fontWeight: 500, color: "var(--text2)",
             }}>{mode}</span>
           )}
         </div>
@@ -115,15 +115,15 @@ export function CompactUploadHeader({
             style={{
               height: "44px", padding: "8px 12px",
               background: "transparent", border: "none",
-              borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+              borderBottom: "0.5px solid var(--line)",
               fontFamily: "Figtree, sans-serif", fontSize: "22px",
-              fontWeight: 700, color: "rgba(255,255,255,0.95)",
+              fontWeight: 700, color: "var(--text)",
             }}
           />
           <style>{`
             .compact-upload-title::placeholder {
               font-family: Figtree, sans-serif; font-size: 22px;
-              font-weight: 500; color: rgba(255,255,255,0.20);
+              font-weight: 500; color: var(--text2);
             }
           `}</style>
 
@@ -143,18 +143,18 @@ export function CompactUploadHeader({
                 padding: "8px 12px", paddingBottom: "20px",
                 background: "transparent", border: "none",
                 fontFamily: "Figtree, sans-serif", fontSize: "13px",
-                fontWeight: 400, color: "rgba(255,255,255,0.85)",
+                fontWeight: 400, color: "var(--text)",
               }}
             />
             <style>{`
               .compact-upload-desc::placeholder {
                 font-family: Figtree, sans-serif; font-size: 13px;
-                font-weight: 400; color: rgba(255,255,255,0.30);
+                font-weight: 400; color: var(--text2);
               }
             `}</style>
             <span className="absolute bottom-1 right-3" style={{
               fontFamily: "Figtree, sans-serif", fontSize: "10px",
-              fontWeight: 400, color: "rgba(255,255,255,0.30)",
+              fontWeight: 400, color: "var(--text2)",
             }}>
               {description.length} / {maxDescriptionLength}
             </span>
@@ -188,30 +188,30 @@ export function CompactUploadHeader({
           className="w-full max-w-[720px] flex items-center justify-between"
           style={{
             height: "36px", padding: "8px 24px",
-            background: "rgba(8,8,12,0.92)",
+            background: "var(--bg)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
-            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+            borderBottom: "0.5px solid var(--line)",
           }}
         >
           <div className="flex items-center gap-2 cursor-pointer" onClick={scrollToTop}>
             <span style={{
               fontFamily: "Figtree, sans-serif", fontSize: "9px", fontWeight: 600,
               letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
-              padding: "2px 8px", borderRadius: "100px",
+              padding: "2px 8px", borderRadius: 'var(--r-chip)',
             }}>
               {typeStyle.label}
             </span>
             <span className="truncate max-w-[400px]" style={{
               fontFamily: "Figtree, sans-serif", fontSize: "12px",
-              fontWeight: 500, color: "rgba(255,255,255,0.85)",
+              fontWeight: 500, color: "var(--text)",
             }}>
               {title || "Untitled"}
             </span>
           </div>
           <button onClick={scrollToTop} className="outline-none" style={{
             fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 500,
-            color: "rgba(46,196,182,0.85)", background: "transparent",
+            color: "color-mix(in srgb, var(--evidence) 85%, transparent)", background: "transparent",
             border: "none", cursor: "pointer",
           }}>
             Edit

@@ -70,7 +70,7 @@ export function VersionHistory({
       <div
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.50)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           zIndex: 200,
         }}
         onClick={onClose}
@@ -79,9 +79,9 @@ export function VersionHistory({
         position: 'fixed',
         right: 0, top: 0, bottom: 0,
         width: 320,
-        background: 'rgba(10,10,16,0.99)',
+        background: 'var(--bg)',
         borderLeft:
-          '1px solid rgba(255,255,255,0.10)',
+          '1px solid var(--line)',
         zIndex: 201,
         display: 'flex', flexDirection: 'column',
       }}>
@@ -89,19 +89,19 @@ export function VersionHistory({
         <div style={{
           padding: '20px 20px 14px 20px',
           borderBottom:
-            '1px solid rgba(255, 255, 255, 0.14)',
+            '1px solid var(--line)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <div style={{
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             ...type.cardTitle,
           }}>
             Version History
           </div>
           <button onClick={onClose} style={{
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.40)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 18,
           }}>×</button>
         </div>
@@ -110,7 +110,7 @@ export function VersionHistory({
         <div style={{
           padding: '12px 16px',
           borderBottom:
-            '1px solid rgba(255, 255, 255, 0.14)',
+            '1px solid var(--line)',
         }}>
           <div style={{
             display: 'flex', gap: 6,
@@ -123,11 +123,11 @@ export function VersionHistory({
               placeholder={`v${currentVersion + 1}`}
               style={{
                 flex: 1, padding: '6px 10px',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'var(--recess)',
                 border:
-                  '1px solid rgba(255,255,255,0.10)',
+                  '1px solid var(--line)',
                 borderRadius: 6, fontSize: 12,
-                color: '#fff', outline: 'none',
+                color: 'var(--text)', outline: 'none',
                 fontFamily: 'Figtree, sans-serif',
               }}
             />
@@ -136,9 +136,9 @@ export function VersionHistory({
               disabled={saving}
               style={{
                 padding: '6px 14px',
-                background: '#8B4513',
+                background: 'var(--action)',
                 border: 'none', borderRadius: 6,
-                color: '#fff', fontSize: 12,
+                color: 'var(--text)', fontSize: 12,
                 fontWeight: 700, cursor: 'pointer',
                 opacity: saving ? 0.6 : 1,
                 fontFamily: 'Figtree, sans-serif',
@@ -158,7 +158,7 @@ export function VersionHistory({
               padding: '30px 20px',
               textAlign: 'center',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'var(--text2)',
             }}>
               No saved versions yet.
               Save a snapshot to begin.
@@ -175,11 +175,11 @@ export function VersionHistory({
                 style={{
                   padding: '12px 16px',
                   borderBottom:
-                    '1px solid rgba(255, 255, 255, 0.12)',
+                    '1px solid var(--line)',
                   cursor: 'pointer',
                   background:
                     selected?.id === v.id
-                      ? 'rgba(139,69,19,0.08)'
+                      ? 'color-mix(in srgb, var(--action) 8%, transparent)'
                       : 'transparent',
                   transition: 'background 0.1s',
                 }}
@@ -192,14 +192,14 @@ export function VersionHistory({
                   <div style={{
                     fontSize: 13, fontWeight: 600,
                     color: selected?.id === v.id
-                      ? '#8B4513'
-                      : 'rgba(255,255,255,0.75)',
+                      ? 'var(--action)'
+                      : 'var(--recess)',
                   }}>
                     {v.label}
                   </div>
                   <div style={{
                     fontSize: 10,
-                    color: 'rgba(255,255,255,0.25)',
+                    color: 'var(--text2)',
                   }}>
                     {formatDistanceToNow(
                       new Date(v.createdAt),
@@ -210,7 +210,7 @@ export function VersionHistory({
 
                 <div style={{
                   fontSize: 11, marginTop: 2,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                 }}>
                   {v.snapshot?.blocks?.length ?? 0}
                   {' '}blocks ·{' '}
@@ -232,11 +232,11 @@ export function VersionHistory({
                       marginTop: 8,
                       padding: '5px 14px',
                       background:
-                        'rgba(139,69,19,0.15)',
+                        'color-mix(in srgb, var(--action) 15%, transparent)',
                       border:
-                        '1px solid rgba(139,69,19,0.35)',
+                        '1px solid color-mix(in srgb, var(--action) 35%, transparent)',
                       borderRadius: 6,
-                      color: '#8B4513',
+                      color: 'var(--action)',
                       fontSize: 11, fontWeight: 700,
                       cursor: 'pointer',
                       fontFamily: 'Figtree, sans-serif',

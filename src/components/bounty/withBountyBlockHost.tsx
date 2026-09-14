@@ -42,7 +42,7 @@ export function withBountyBlockHost<P extends NodeProps>(
               alignItems: 'center',
               justifyContent: 'center',
               padding: 6,
-              background: 'rgba(15,15,20,0.55)',
+              background: "var(--recess)",
               backdropFilter: 'blur(2px)',
               borderRadius: 8,
               pointerEvents: 'auto',

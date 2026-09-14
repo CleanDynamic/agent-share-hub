@@ -40,24 +40,24 @@ export function InlineSolutionMarker({
             alignItems: "center",
             justifyContent: "space-between",
             padding: "6px 12px",
-            background: "rgba(46,196,182,0.06)",
-            border: "0.5px solid rgba(46,196,182,0.20)",
+            background: "color-mix(in srgb, var(--evidence) 6%, transparent)",
+            border: "0.5px solid color-mix(in srgb, var(--evidence) 20%, transparent)",
             borderRadius: "6px 6px 0 0",
             borderBottom: "none",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <UserCheck size={12} color="#2EC4B6" />
+            <UserCheck size={12} color="var(--evidence)" />
             <span
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: 500,
-                color: "rgba(255,255,255,0.75)",
+                color: "var(--text)",
               }}
             >
               Solved by{" "}
-              <span style={{ color: "#2EC4B6", fontWeight: 600 }}>
+              <span style={{ color: "var(--evidence)", fontWeight: 600 }}>
                 @{solver.handle}
               </span>
             </span>
@@ -67,7 +67,7 @@ export function InlineSolutionMarker({
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
-                color: "rgba(255,255,255,0.40)",
+                color: "var(--text2)",
               }}
             >
               Accepted {acceptedAt}
@@ -78,7 +78,7 @@ export function InlineSolutionMarker({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 500,
-                color: "#2EC4B6",
+                color: "var(--evidence)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -93,7 +93,7 @@ export function InlineSolutionMarker({
         {/* Stage content with teal left border */}
         <div
           style={{
-            borderLeft: "2px solid rgba(46,196,182,0.40)",
+            borderLeft: "2px solid color-mix(in srgb, var(--evidence) 40%, transparent)",
             borderRadius: "0 0 6px 6px",
             paddingLeft: 4,
           }}
@@ -121,12 +121,12 @@ export function InlineSolutionMarker({
             width: 18,
             height: 18,
             borderRadius: "50%",
-            background: "rgba(46,196,182,0.20)",
-            border: "0.5px solid rgba(46,196,182,0.40)",
+            background: "color-mix(in srgb, var(--evidence) 20%, transparent)",
+            border: "0.5px solid color-mix(in srgb, var(--evidence) 40%, transparent)",
             cursor: "help",
           }}
         >
-          <UserCheck size={10} color="#2EC4B6" />
+          <UserCheck size={10} color="var(--evidence)" />
         </div>
 
         {showTooltip && (
@@ -138,20 +138,20 @@ export function InlineSolutionMarker({
               minWidth: 180,
               padding: 8,
               borderRadius: 6,
-              background: "rgba(15,15,20,0.96)",
-              border: "0.5px solid rgba(46,196,182,0.30)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.40)",
+              background: "var(--bg)",
+              border: "0.5px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
+              boxShadow: "var(--elev-raised)",
               zIndex: 10,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <UserCheck size={11} color="#2EC4B6" />
+              <UserCheck size={11} color="var(--evidence)" />
               <span
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "var(--text)",
                 }}
               >
                 Solved by @{solver.handle}
@@ -163,7 +163,7 @@ export function InlineSolutionMarker({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 500,
-                color: "#2EC4B6",
+                color: "var(--evidence)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
@@ -180,7 +180,7 @@ export function InlineSolutionMarker({
       <div
         style={{
           borderRadius: 6,
-          boxShadow: "inset 0 0 0 1px rgba(46,196,182,0.25)",
+          boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--evidence) 25%, transparent)",
         }}
       >
         {children}

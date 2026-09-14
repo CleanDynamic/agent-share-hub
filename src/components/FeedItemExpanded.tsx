@@ -31,7 +31,7 @@ export function FeedItemExpanded({ contentId, description, whatToExpect, whatToE
       {/* Section B — What to Expect */}
       {wteText && (
         <div style={{ marginTop: description ? 10 : 0 }}>
-          <p className="text-xs font-medium mb-0.5" style={{ color: "#1F7A6D" }}>What to Expect</p>
+          <p className="text-xs font-medium mb-0.5" style={{ color: "var(--evidence)" }}>What to Expect</p>
           <p className="text-xs text-muted-foreground line-clamp-4">{wteText}</p>
         </div>
       )}
@@ -55,7 +55,7 @@ export function FeedItemExpanded({ contentId, description, whatToExpect, whatToE
       <Link
         to={`/content/${contentId}`}
         className="text-xs font-medium hover:underline block"
-        style={{ color: "#1F7A6D" }}
+        style={{ color: "var(--evidence)" }}
         onClick={(e) => e.stopPropagation()}
       >
         Read full post →

@@ -25,9 +25,9 @@ const BAR_HEIGHT = 40;
 const inputStyle: React.CSSProperties = {
   height: 26,
   borderRadius: 6,
-  border: '1px solid hsl(var(--foreground) / 0.1)',
-  background: 'hsl(var(--foreground) / 0.04)',
-  color: 'hsl(var(--foreground) / 0.95)',
+  border: '1px solid var(--line)',
+  background: 'var(--recess)',
+  color: 'var(--text)',
   padding: '0 8px',
   fontSize: 12,
   outline: 'none',
@@ -64,11 +64,11 @@ function IconBtn({ active, disabled, title, onClick, children }: IconBtnProps) {
         opacity: disabled ? 0.4 : 1,
         border: 'none',
         background: active
-          ? 'hsl(var(--foreground) / 0.14)'
+          ? 'var(--recess)'
           : hover
-            ? 'hsl(var(--foreground) / 0.08)'
+            ? 'var(--text2)'
             : 'transparent',
-        color: active ? 'hsl(18 79% 60%)' : 'hsl(var(--foreground) / 0.75)',
+        color: active ? 'var(--action)' : 'var(--text)',
         padding: 0,
       }}
     >
@@ -101,9 +101,9 @@ function TextBtn({
         height: 26,
         padding: '0 8px',
         borderRadius: 6,
-        border: '1px solid hsl(var(--foreground) / 0.1)',
-        background: hover ? 'hsl(var(--foreground) / 0.1)' : 'hsl(var(--foreground) / 0.06)',
-        color: 'hsl(var(--foreground) / 0.9)',
+        border: '1px solid var(--line)',
+        background: hover ? 'var(--recess)' : 'var(--recess)',
+        color: 'var(--text)',
         fontSize: 11,
         fontWeight: 500,
         fontFamily: 'Figtree, sans-serif',
@@ -252,10 +252,10 @@ export function FindReplaceBar({
       aria-label="Find and replace"
       style={{
         height: showReplace ? BAR_HEIGHT * 2 : BAR_HEIGHT,
-        background: 'hsl(240 20% 8% / 0.85)',
+        background: 'var(--cat-data)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
+        borderBottom: '1px solid var(--line)',
         padding: '6px 10px',
         display: 'flex',
         flexDirection: 'column',
@@ -284,7 +284,7 @@ export function FindReplaceBar({
             justifyContent: 'center',
             border: 'none',
             background: 'transparent',
-            color: 'hsl(var(--foreground) / 0.6)',
+            color: 'var(--text2)',
             cursor: 'pointer',
             padding: 0,
             transform: showReplace ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -306,7 +306,7 @@ export function FindReplaceBar({
         <span
           style={{
             fontSize: 11,
-            color: 'hsl(var(--foreground) / 0.55)',
+            color: 'var(--text2)',
             minWidth: 60,
             textAlign: 'right',
             whiteSpace: 'nowrap',
@@ -322,7 +322,7 @@ export function FindReplaceBar({
           <ChevronDown size={14} />
         </IconBtn>
 
-        <div style={{ width: 1, height: 18, background: 'hsl(var(--foreground) / 0.08)', margin: '0 2px' }} />
+        <div style={{ width: 1, height: 18, background: 'var(--recess)', margin: '0 2px' }} />
 
         <IconBtn
           title="Match case"
@@ -350,9 +350,9 @@ export function FindReplaceBar({
               height: 22,
               padding: '0 8px',
               borderRadius: 999,
-              border: '1px solid hsl(18 79% 60% / 0.35)',
-              background: 'hsl(18 79% 60% / 0.12)',
-              color: 'hsl(18 79% 70%)',
+              border: '1px solid var(--action)',
+              background: 'var(--action)',
+              color: 'var(--action)',
               fontSize: 10,
               fontWeight: 500,
               cursor: 'pointer',

@@ -58,10 +58,10 @@ export default function PostXpFootnote({
           minWidth: 268,
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
-          border: `0.5px solid rgba(232,87,26,0.40)`,
+          border: `0.5px solid color-mix(in srgb, var(--action) 40%, transparent)`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 14px 36px rgba(0,0,0,0.40), 0 0 0 1px rgba(232,87,26,0.10)",
+          boxShadow: "0 14px 36px rgba(0,0,0,0.40), 0 0 0 1px color-mix(in srgb, var(--action) 10%, transparent)",
         }}
       >
         <span
@@ -71,10 +71,10 @@ export default function PostXpFootnote({
             height: 36,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            boxShadow: "0 3px 14px rgba(232,87,26,0.45)",
+            boxShadow: "0 3px 14px color-mix(in srgb, var(--action) 45%, transparent)",
           }}
         >
-          <Sparkles size={18} color="#fff" />
+          <Sparkles size={18} color="var(--text)" />
         </span>
 
         <div className="min-w-0 flex-1">

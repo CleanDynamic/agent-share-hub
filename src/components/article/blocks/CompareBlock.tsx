@@ -11,12 +11,12 @@ interface CompareBlockData {
   [key: string]: unknown;
 }
 
-const COMPARE_COLOR = '#EC4899';
+const COMPARE_COLOR = 'var(--cat-media)';
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -36,12 +36,12 @@ function DropZone({
         'flex-1 min-h-[80px] rounded-md border border-dashed',
         'flex items-center justify-center px-2 py-3',
         isEmpty
-          ? 'border-white/15 bg-white/[0.02]'
+          ? 'border-border bg-foreground/[0.02]'
           : 'border-transparent bg-transparent',
       )}
     >
       {children ?? (
-        <span className="text-[11px] text-white/40">{placeholder}</span>
+        <span className="text-[11px] text-muted-foreground">{placeholder}</span>
       )}
     </div>
   );
@@ -93,19 +93,19 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
           className="inline-block w-2 h-2 rounded-full"
           style={{ background: COMPARE_COLOR }}
         />
-        <Columns2 size={12} className="text-white/60" />
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+        <Columns2 size={12} className="text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Compare
         </span>
         <div className="flex-1" />
         <button
           type="button"
-          className="text-white/40 hover:text-white/80 transition-colors"
+          className="text-muted-foreground hover:text-muted-foreground transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal size={14} />
         </button>
-        <GripVertical size={14} className="text-white/30" />
+        <GripVertical size={14} className="text-muted-foreground" />
       </div>
 
       {/* Column header inputs */}
@@ -116,21 +116,21 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'flex-1 px-2 py-1 rounded-md text-center',
-            'bg-[#EC4899]/10 border border-[#EC4899]/20',
-            'text-[11px] font-semibold text-[#EC4899]',
-            'outline-none focus:border-[#EC4899]/40 transition-colors',
+            'bg-[var(--cat-media)]/10 border border-[var(--cat-media)]/20',
+            'text-[11px] font-semibold text-[var(--cat-media)]',
+            'outline-none focus:border-[var(--cat-media)]/40 transition-colors',
           )}
         />
-        <div className="w-px h-4 bg-white/10" />
+        <div className="w-px h-4 bg-muted" />
         <input
           value={columnBLabel}
           onChange={(e) => patchProps({ columnBLabel: e.target.value })}
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'flex-1 px-2 py-1 rounded-md text-center',
-            'bg-[#EC4899]/10 border border-[#EC4899]/20',
-            'text-[11px] font-semibold text-[#EC4899]',
-            'outline-none focus:border-[#EC4899]/40 transition-colors',
+            'bg-[var(--cat-media)]/10 border border-[var(--cat-media)]/20',
+            'text-[11px] font-semibold text-[var(--cat-media)]',
+            'outline-none focus:border-[var(--cat-media)]/40 transition-colors',
           )}
         />
       </div>
@@ -145,13 +145,13 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
             placeholder="Drop block here"
             className={cn(
               'w-full min-h-[80px] resize-none rounded-md',
-              'bg-white/[0.02] border border-dashed border-white/15',
-              'text-[11px] text-white/80 placeholder:text-white/40',
-              'px-2 py-2 outline-none focus:border-white/30 transition-colors',
+              'bg-foreground/[0.02] border border-dashed border-border',
+              'text-[11px] text-foreground placeholder:text-muted-foreground',
+              'px-2 py-2 outline-none focus:border-border transition-colors',
             )}
           />
         </div>
-        <div className="w-px bg-white/10 self-stretch" />
+        <div className="w-px bg-muted self-stretch" />
         <div className="flex-1">
           <textarea
             value={columnBContent}
@@ -160,9 +160,9 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
             placeholder="Drop block here"
             className={cn(
               'w-full min-h-[80px] resize-none rounded-md',
-              'bg-white/[0.02] border border-dashed border-white/15',
-              'text-[11px] text-white/80 placeholder:text-white/40',
-              'px-2 py-2 outline-none focus:border-white/30 transition-colors',
+              'bg-foreground/[0.02] border border-dashed border-border',
+              'text-[11px] text-foreground placeholder:text-muted-foreground',
+              'px-2 py-2 outline-none focus:border-border transition-colors',
             )}
           />
         </div>

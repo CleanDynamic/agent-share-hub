@@ -102,9 +102,11 @@ function formatCount(n: number): string {
 }
 
 const TYPE_COLOR: Record<PostMeta["postType"], string> = {
-  blueprint: "#E8571A",
-  blog: "#2EC4B6",
-  bounty: "#F59E0B",
+  blueprint: "var(--action)",
+  blog: "var(--evidence)",
+  /* A bounty post is a GAP, and the gap hue is the one the markers and the
+     solve surfaces already use. Amber cannot carry a pill label at all. */
+  bounty: "var(--cat-breakage)",
 };
 
 function PostTypePill({
@@ -147,9 +149,9 @@ function PostTypePill({
             fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 700,
-            color: "#2EC4B6",
-            background: "rgba(46,196,182,0.14)",
-            border: "1px solid rgba(46,196,182,0.30)",
+            color: "var(--evidence)",
+            background: "color-mix(in srgb, var(--evidence) 14%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
             padding: "3px 8px",
             borderRadius: 4,
           }}
@@ -162,7 +164,7 @@ function PostTypePill({
           style={{
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
           }}
         >
           Open · {bountyMeta.slotsFilled} of {bountyMeta.slotsTotal} slots
@@ -174,29 +176,29 @@ function PostTypePill({
 
 function MetaSeparator() {
   return (
-    <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+    <span style={{ color: "var(--text2)" }}>·</span>
   );
 }
 
 function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
-  const color = TYPE_COLOR[post.postType] ?? "#888";
+  const color = TYPE_COLOR[post.postType] ?? "var(--text2)";
   return (
     <a
       href={`/content/${post.slug || post.id}`}
       style={{
         display: "block",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--recess)",
+        border: "1px solid var(--line)",
         borderRadius: 12,
         overflow: "hidden",
         textDecoration: "none",
         transition: "border-color 120ms ease",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+        e.currentTarget.style.borderColor = "var(--line)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
+        e.currentTarget.style.borderColor = "var(--line)";
       }}
     >
       {post.coverUrl && (
@@ -226,7 +228,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.88)",
+            color: "var(--text)",
             marginBottom: 8,
             lineHeight: 1.35,
             display: "-webkit-box",
@@ -244,7 +246,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
             gap: 6,
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           {post.author.avatarUrl && (
@@ -356,9 +358,9 @@ export function ContentDetailShell({
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 16px",
-          background: "rgba(7,7,13,0.72)",
+          background: "var(--glass)",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          borderBottom: "1px solid var(--line)",
         }}
       >
         <button
@@ -369,7 +371,7 @@ export function ContentDetailShell({
             gap: 6,
             background: "none",
             border: "none",
-            color: "rgba(255,255,255,0.65)",
+            color: "var(--text2)",
             fontSize: 13,
             fontFamily: "Figtree, sans-serif",
             cursor: "pointer",
@@ -385,7 +387,7 @@ export function ContentDetailShell({
             fontFamily: FIGTREE,
             fontSize: 13,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text)",
             opacity: showStickyTitle ? 1 : 0,
             transition: "opacity 200ms ease",
             padding: "0 24px",
@@ -402,7 +404,7 @@ export function ContentDetailShell({
               width: 80,
               height: 3,
               borderRadius: 2,
-              background: "rgba(255, 255, 255, 0.14)",
+              background: "var(--recess)",
               overflow: "hidden",
             }}
             aria-label="Reading progress"
@@ -421,7 +423,7 @@ export function ContentDetailShell({
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.55)",
+              color: "var(--text2)",
               cursor: "pointer",
               padding: 4,
             }}
@@ -437,7 +439,7 @@ export function ContentDetailShell({
         {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
           <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)", fontFamily: "Figtree, sans-serif" }}>
+          <span style={{ fontSize: 12, color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}>
             {formatRelativeTime(post.publishedAt)}
           </span>
         </div>
@@ -448,7 +450,7 @@ export function ContentDetailShell({
               borderRadius: 12,
               overflow: "hidden",
               marginBottom: 24,
-              border: "1px solid rgba(255, 255, 255, 0.14)",
+              border: "1px solid var(--line)",
             }}
           >
             <img
@@ -465,7 +467,7 @@ export function ContentDetailShell({
             fontFamily: titleFont,
             fontSize: isBlog ? 36 : 32,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.95)",
+            color: "var(--text)",
             lineHeight: 1.2,
             margin: "0 0 16px",
           }}
@@ -479,7 +481,7 @@ export function ContentDetailShell({
               style={{
                 ...descStyle,
                 fontSize: 16,
-                color: "rgba(255,255,255,0.70)",
+                color: "var(--text2)",
                 lineHeight: 1.55,
                 margin: 0,
                 display: descriptionExpanded ? "block" : "-webkit-box",
@@ -538,16 +540,16 @@ export function ContentDetailShell({
             <img
               src={author.avatarUrl}
               alt={author.displayName}
-              style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)" }}
+              style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--line)" }}
             />
             <div style={{ textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.90)" }}>
+                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
                   {author.displayName}
                 </span>
-                {author.isVerified && <BadgeCheck size={14} color="#2EC4B6" />}
+                {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
               </div>
-              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
                 @{author.handle}
               </span>
             </div>
@@ -559,10 +561,10 @@ export function ContentDetailShell({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontWeight: 500,
-                color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
-                backgroundColor: isFollowing ? "rgba(255, 255, 255, 0.14)" : "rgba(232,87,26,0.14)",
+                color: isFollowing ? "var(--text2)" : "var(--action)",
+                backgroundColor: isFollowing ? "var(--recess)" : "color-mix(in srgb, var(--action) 14%, transparent)",
                 border: "none",
-                borderRadius: 100,
+                borderRadius: 'var(--r-control)',
                 padding: "6px 14px",
                 cursor: "pointer",
               }}
@@ -582,7 +584,7 @@ export function ContentDetailShell({
               marginBottom: 16,
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
-              color: "rgba(255,255,255,0.50)",
+              color: "var(--text2)",
               fontStyle: "italic",
             }}
           >
@@ -600,10 +602,10 @@ export function ContentDetailShell({
             gap: 8,
             paddingTop: 16,
             paddingBottom: 24,
-            borderTop: "1px solid rgba(255,255,255,0.05)",
+            borderTop: "1px solid var(--line)",
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
           }}
         >
           <span>{post.readingMinutes} min read</span>
@@ -614,13 +616,13 @@ export function ContentDetailShell({
           {post.tags.slice(0, 5).map((t, i) => (
             <React.Fragment key={t + i}>
               <MetaSeparator />
-              <span style={{ color: "rgba(255,255,255,0.45)" }}>#{t}</span>
+              <span style={{ color: "var(--text2)" }}>#{t}</span>
             </React.Fragment>
           ))}
           {post.tags.length > 5 && (
             <>
               <MetaSeparator />
-              <span style={{ color: "rgba(255,255,255,0.40)" }}>+{post.tags.length - 5}</span>
+              <span style={{ color: "var(--text2)" }}>+{post.tags.length - 5}</span>
             </>
           )}
           {post.postType === "blueprint" && post.stageCount != null && (
@@ -660,8 +662,8 @@ export function ContentDetailShell({
         <div
           onClick={() => setAuthorCardExpanded(!authorCardExpanded)}
           style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255, 255, 255, 0.14)",
+            background: "var(--recess)",
+            border: "1px solid var(--line)",
             borderRadius: 12,
             padding: 16,
             cursor: "pointer",
@@ -676,18 +678,18 @@ export function ContentDetailShell({
               />
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
                     {author.displayName}
                   </span>
-                  {author.isVerified && <BadgeCheck size={14} color="#2EC4B6" />}
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>Lv.{author.level}</span>
+                  {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
+                  <span style={{ fontSize: 11, color: "var(--text2)" }}>Lv.{author.level}</span>
                   {author.isTrustedSolver && (
                     <span
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: "#2EC4B6",
-                        background: "rgba(46,196,182,0.12)",
+                        color: "var(--evidence)",
+                        background: "color-mix(in srgb, var(--evidence) 12%, transparent)",
                         padding: "2px 6px",
                         borderRadius: 4,
                       }}
@@ -696,7 +698,7 @@ export function ContentDetailShell({
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.50)" }}>@{author.handle}</div>
+                <div style={{ fontSize: 12, color: "var(--text2)" }}>@{author.handle}</div>
               </div>
             </div>
             {!isOwnPost && (
@@ -709,10 +711,10 @@ export function ContentDetailShell({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
-                  color: isFollowing ? "rgba(255,255,255,0.60)" : "#E8571A",
-                  backgroundColor: isFollowing ? "rgba(255, 255, 255, 0.14)" : "rgba(232,87,26,0.14)",
+                  color: isFollowing ? "var(--text2)" : "var(--action)",
+                  backgroundColor: isFollowing ? "var(--recess)" : "color-mix(in srgb, var(--action) 14%, transparent)",
                   border: "none",
-                  borderRadius: 100,
+                  borderRadius: 'var(--r-control)',
                   padding: "6px 14px",
                   cursor: "pointer",
                 }}
@@ -722,11 +724,11 @@ export function ContentDetailShell({
             )}
           </div>
           {authorCardExpanded && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.70)", lineHeight: 1.5, margin: "0 0 8px" }}>
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+              <p style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5, margin: "0 0 8px" }}>
                 {author.customBio || author.derivedBio}
               </p>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", display: "flex", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--text2)", display: "flex", gap: 8 }}>
                 <span>{author.stats.blueprintCount} blueprints</span>
                 <span>·</span>
                 <span>{formatCount(author.stats.followerCount)} followers</span>
@@ -742,10 +744,10 @@ export function ContentDetailShell({
       {relatedPosts.length > 0 && (
         <div style={{ maxWidth: 960, margin: "32px auto 0", padding: "0 24px" }}>
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)", margin: 0 }}>
+            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>
               Related {post.postType === "bounty" ? "bounties" : post.postType === "blog" ? "blogs" : "blueprints"}
             </h3>
-            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.45)", margin: "4px 0 0" }}>
+            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>
               From similar topics or referencing this content
             </p>
           </div>
@@ -764,13 +766,13 @@ export function ContentDetailShell({
       )}
 
       {/* FOOTER */}
-      <div style={{ maxWidth: 960, margin: "48px auto 0", padding: "32px 24px 64px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div style={{ maxWidth: 960, margin: "48px auto 0", padding: "32px 24px 64px", borderTop: "1px solid var(--line)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
           <div>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "rgba(255,255,255,0.88)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
               Want to publish on buildgallery?
             </div>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.50)" }}>
+            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--text2)" }}>
               Share your blueprints, blogs, and bounties with the community.
             </div>
           </div>
@@ -783,7 +785,7 @@ export function ContentDetailShell({
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
-              color: "#E8571A",
+              color: "var(--action)",
               textDecoration: "none",
             }}
           >
@@ -791,7 +793,7 @@ export function ContentDetailShell({
             <ChevronRight size={14} />
           </a>
         </div>
-        <div style={{ display: "flex", gap: 16, fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+        <div style={{ display: "flex", gap: 16, fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
           <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0 }}>
             Report this post
           </button>

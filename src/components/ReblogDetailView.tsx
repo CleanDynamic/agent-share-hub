@@ -58,8 +58,8 @@ function QuotedPostCardLarge({ originalId }: { originalId: string }) {
 
   return (
     <div
-      className="rounded-xl border border-white/10 bg-white/3 px-4 py-3.5 mb-5"
-      style={{ borderLeft: "3px solid rgba(255,255,255,0.20)" }}
+      className="rounded-xl border border-border bg-muted px-4 py-3.5 mb-5"
+      style={{ borderLeft: "3px solid var(--line)" }}
     >
       <div className="flex items-center gap-2 mb-1.5">
         <div className="h-6 w-6 rounded-full bg-primary/30 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
@@ -75,7 +75,7 @@ function QuotedPostCardLarge({ originalId }: { originalId: string }) {
           </Badge>
         )}
       </div>
-      <p className="text-[16px] font-bold text-white line-clamp-2 mb-1">{original.title}</p>
+      <p className="text-[16px] font-bold text-foreground line-clamp-2 mb-1">{original.title}</p>
       {original.description && (
         <p className="text-[13px] text-muted-foreground line-clamp-1 mb-2">{original.description}</p>
       )}
@@ -88,7 +88,7 @@ function QuotedPostCardLarge({ originalId }: { originalId: string }) {
         <button
           onClick={() => navigate(`/content/${originalId}`)}
           className="text-[12px] font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
-          style={{ color: "#1F7A6D" }}
+          style={{ color: "var(--evidence)" }}
         >
           View original post <ExternalLink className="h-3 w-3" />
         </button>
@@ -115,8 +115,8 @@ function DetailThreadBlock({ block, index }: { block: any; index: number }) {
   return (
     <div className="flex gap-4 mb-4">
       <div className="flex flex-col items-center shrink-0 w-6">
-        <span className="text-[14px] text-[#1F7A6D] font-medium">{label}</span>
-        {index < 19 && <div className="w-[1px] flex-1 bg-[#1F7A6D]/25 mt-1" />}
+        <span className="text-[14px] text-[var(--evidence)] font-medium">{label}</span>
+        {index < 19 && <div className="w-[1px] flex-1 bg-[var(--evidence)] mt-1" />}
       </div>
       <div className="flex-1 pb-1 min-w-0">
         {block.block_type === "image" && block.image_url ? (
@@ -127,7 +127,7 @@ function DetailThreadBlock({ block, index }: { block: any; index: number }) {
             style={{ maxHeight: 320 }}
           />
         ) : block.block_type === "file" ? (
-          <div className="flex items-center gap-2 text-[13px] text-muted-foreground bg-white/5 rounded-lg px-3 py-2.5 border border-white/8">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground bg-muted rounded-lg px-3 py-2.5 border border-border">
             <span>📎 {block.file_name || "File"}</span>
             {block.file_size_bytes && (
               <span className="text-[11px] text-muted-foreground/60">
@@ -164,9 +164,9 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
   const postCategory: string = (item as any).post_category || "blueprint";
 
   const categoryColors: Record<string, string> = {
-    blog: "bg-[#F472B6]/15 text-[#F472B6] border-[#F472B6]/25",
+    blog: "bg-[var(--cat-media)] text-[var(--cat-media)] border-[var(--cat-media)]/25",
     blueprint: "bg-primary/20 text-primary border-primary/25",
-    bounty: "bg-[#374151]/20 text-[#9CA3AF] border-[#374151]/25",
+    bounty: "bg-[var(--text2)]/20 text-[var(--text2)] border-[var(--text2)]/25",
   };
 
   // Fetch thread blocks
@@ -237,8 +237,8 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
     <div className="pb-16">
       {/* Reblog indicator */}
       <div className="flex items-center gap-1.5 mb-3">
-        <Repeat2 className="h-4 w-4" style={{ color: "#1F7A6D" }} />
-        <span className="text-[13px] font-semibold" style={{ color: "#1F7A6D" }}>Reblog</span>
+        <Repeat2 className="h-4 w-4" style={{ color: "var(--evidence)" }} />
+        <span className="text-[13px] font-semibold" style={{ color: "var(--evidence)" }}>Reblog</span>
       </div>
 
       {/* Reblogger header */}
@@ -253,7 +253,7 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
             <Link to={`/creator/${creator?.username}`} className="text-[18px] font-bold text-foreground hover:underline">
               {creator?.display_name || creator?.username}
             </Link>
-            <span className="text-[14px]" style={{ color: "#1F7A6D" }}>@{creator?.username}</span>
+            <span className="text-[14px]" style={{ color: "var(--evidence)" }}>@{creator?.username}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-[14px] text-muted-foreground">{timeAgo(item.created_at)}</span>
           </div>
@@ -280,26 +280,26 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
 
       {/* Reblog title (if set) */}
       {item.title && (
-        <h1 className="text-[24px] font-bold text-white mb-4 leading-tight">{item.title}</h1>
+        <h1 className="text-[24px] font-bold text-foreground mb-4 leading-tight">{item.title}</h1>
       )}
 
       {/* Quoted original post card */}
       {reblogOfId && <QuotedPostCardLarge originalId={reblogOfId} />}
 
       {/* Action box */}
-      <div className="flex items-center gap-3 mb-5 py-3 px-4 rounded-xl bg-white/3 border border-white/8 flex-wrap">
+      <div className="flex items-center gap-3 mb-5 py-3 px-4 rounded-xl bg-muted border border-border flex-wrap">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Eye className="h-4 w-4" />{formatNum(item.view_count ?? 0)}
         </div>
-        <span className="text-white/20">·</span>
+        <span className="text-muted-foreground">·</span>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Download className="h-4 w-4" />{formatNum(item.download_count ?? 0)}
         </div>
-        <span className="text-white/20">·</span>
+        <span className="text-muted-foreground">·</span>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageSquare className="h-4 w-4" />{item.comment_count ?? 0}
         </div>
-        <span className="text-white/20">·</span>
+        <span className="text-muted-foreground">·</span>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Repeat2 className="h-4 w-4" />{formatNum(reblogCount ?? 0)}
         </div>
@@ -313,8 +313,8 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
               onClick={() => setReblogOpen(true)}
               className="text-[12px] font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:opacity-80"
               style={{
-                color: userHasReblogged ? "#1F7A6D" : "#1F7A6D",
-                borderColor: userHasReblogged ? "#1F7A6D" : "rgba(31,122,109,0.4)",
+                color: userHasReblogged ? "var(--evidence)" : "var(--evidence)",
+                borderColor: userHasReblogged ? "var(--evidence)" : "color-mix(in srgb, var(--evidence) 40%, transparent)",
               }}
             >
               ↺ Reblog this
@@ -324,7 +324,7 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/8 mb-5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      <div className="flex border-b border-border mb-5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -365,7 +365,7 @@ export function ReblogDetailView({ item }: ReblogDetailViewProps) {
       {activeTab === "comments" && <CommentsSection contentId={item.id} contentTitle={item.title} commentCount={(item as any).comment_count ?? 0} isEligible={true} />}
 
       {/* Creator card */}
-      <div className="mt-8 p-4 rounded-xl bg-white/3 border border-white/8">
+      <div className="mt-8 p-4 rounded-xl bg-muted border border-border">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Reblogged by</p>
         <div className="flex items-center gap-3">
           <Link to={`/creator/${creator?.username}`}>

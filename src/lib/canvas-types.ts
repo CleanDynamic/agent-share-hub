@@ -71,30 +71,36 @@ export interface CanvasBlock {
 }
 
 // ─── Arrow type metadata ──────────────────────────
+/* BG-P28. Ten hand-mixed hues, none measured and several (#2E5A88, #5B3A7A,
+   #7A3050) dark enough to vanish against the Dusk ground. They resolve into
+   part hues by the relationship each arrow names, so an edge on the canvas and
+   a chip in the part list mean the same thing by the same colour. The three
+   already written as white alphas become --text2, and the dash patterns — the
+   half of this meta that is not colour — are untouched. */
 export const ARROW_TYPE_META: Record<
   ArrowType,
   { label: string; color: string; dash: string }
 > = {
   produces:   { label: 'produces',
-    color: '#8B4513', dash: 'none' },
+    color: 'var(--cat-artefact)', dash: 'none' },
   requires:   { label: 'requires',
-    color: '#2E5A88', dash: '6,3' },
+    color: 'var(--cat-configuration)', dash: '6,3' },
   references: { label: 'references',
-    color: 'rgba(255,255,255,0.30)', dash: '4,4' },
+    color: 'var(--text2)', dash: '4,4' },
   compares:   { label: 'compares',
-    color: '#5B3A7A', dash: 'none' },
+    color: 'var(--cat-evidence)', dash: 'none' },
   validates:  { label: 'validates',
-    color: '#2D6B4F', dash: '8,3' },
+    color: 'var(--cat-evidence)', dash: '8,3' },
   branches:   { label: 'branches',
-    color: '#8B6914', dash: 'none' },
+    color: 'var(--cat-agents)', dash: 'none' },
   follows:    { label: 'follows',
-    color: 'rgba(255,255,255,0.20)', dash: '2,4' },
+    color: 'var(--text2)', dash: '2,4' },
   overrides:  { label: 'overrides',
-    color: '#7A3050', dash: 'none' },
+    color: 'var(--cat-breakage)', dash: 'none' },
   explains:   { label: 'explains',
-    color: '#1F7A6D', dash: '6,3' },
+    color: 'var(--cat-narrative)', dash: '6,3' },
   custom:     { label: 'custom',
-    color: 'rgba(255,255,255,0.35)', dash: '4,4' },
+    color: 'var(--text2)', dash: '4,4' },
 };
 
 // ─── Canvas layout mode ───────────────────────────

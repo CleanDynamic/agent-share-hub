@@ -52,7 +52,7 @@ const models = [
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -61,20 +61,20 @@ const PORT_STYLE: React.CSSProperties = {
 function StatusDot({ status }: { status: BlockStatus }) {
   if (status === 'running') {
     return (
-      <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+      <span className="inline-block w-2 h-2 rounded-full bg-[var(--action)] animate-pulse" />
     );
   }
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-white">
+      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-foreground">
         <Check size={8} strokeWidth={3} />
       </span>
     );
   }
   if (status === 'error') {
-    return <span className="inline-block w-2 h-2 rounded-full bg-red-500" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-[var(--cat-breakage)]" />;
   }
-  return <span className="inline-block w-2 h-2 rounded-full bg-white/25" />;
+  return <span className="inline-block w-2 h-2 rounded-full bg-muted" />;
 }
 
 export function PromptBlockNode({ id, data, selected }: NodeProps) {
@@ -315,16 +315,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           position: 'relative',
           transition: 'width 200ms ease, height 200ms ease',
           border: selected
-            ? '1px solid rgba(232,87,26,0.6)'
+            ? '1px solid color-mix(in srgb, var(--action) 60%, transparent)'
             : isExpanded
-              ? '1px solid rgba(232,87,26,0.45)'
+              ? '1px solid color-mix(in srgb, var(--action) 45%, transparent)'
               : expandedSelection
-                ? '1px dashed rgba(232,87,26,0.45)'
-                : '1px solid rgba(255,255,255,0.08)',
+                ? '1px dashed color-mix(in srgb, var(--action) 45%, transparent)'
+                : '1px solid var(--line)',
           boxShadow: isExpanded
-            ? '0 12px 40px rgba(0,0,0,0.45), 0 0 0 2px rgba(232,87,26,0.18)'
+            ? '0 12px 40px rgba(0,0,0,0.45), 0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent)'
             : selected
-              ? '0 0 0 2px rgba(232,87,26,0.18)'
+              ? '0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent)'
               : 'none',
         }}
       >
@@ -354,9 +354,9 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
         <div className="flex items-center gap-1.5 mb-2">
           <span
             className="inline-block w-1.5 h-1.5 rounded-full"
-            style={{ background: '#8B5CF6' }}
+            style={{ background: 'var(--cat-agents)' }}
           />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Prompt
           </span>
           <input
@@ -365,7 +365,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <StatusDot status={status} />
           <button
@@ -374,7 +374,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               e.stopPropagation();
               toggleExpandedBlockId(blockId);
             }}
-            className="nodrag p-0.5 text-white/40 hover:text-white/80"
+            className="nodrag p-0.5 text-muted-foreground hover:text-muted-foreground"
             title={isExpanded ? 'Collapse' : 'Expand'}
             aria-label={isExpanded ? 'Collapse block' : 'Expand block'}
           >
@@ -386,7 +386,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               e.stopPropagation();
             }}
             onDoubleClick={(e) => e.stopPropagation()}
-            className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+            className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
             title="More"
           >
             <MoreHorizontal size={12} />
@@ -404,7 +404,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   e.stopPropagation();
                   setSystemPromptOpen((v) => !v);
                 }}
-                className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-white/50 hover:text-white/70 transition-colors mb-1.5"
+                className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors mb-1.5"
               >
                 <ChevronDown
                   size={12}
@@ -426,14 +426,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   }}
                   onKeyDown={systemAutocomplete.onKeyDown}
                   placeholder="Enter system prompt..."
-                  className="nodrag w-full h-16 p-2 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-[11.5px] text-white/75 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                  className="nodrag w-full h-16 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[11.5px] text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
                 />
               )}
             </div>
 
             {/* Prompt */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Prompt
               </label>
               <textarea
@@ -446,14 +446,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 }}
                 onKeyDown={promptAutocomplete.onKeyDown}
                 placeholder="Enter your prompt... Type {{ to insert a block reference."
-                className="nodrag w-full h-28 p-2 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-[12px] text-white/85 placeholder:text-white/30 leading-relaxed outline-none focus:border-white/[0.12] transition-colors"
+                className="nodrag w-full h-28 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[12px] text-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
             {/* Variables */}
             {variableInfos.length > 0 && (
               <div>
-                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                   Variables detected
                 </label>
                 <VariableChips
@@ -470,7 +470,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             {/* Model + temp + tokens */}
             <div className="grid grid-cols-3 gap-2">
               <div className="relative">
-                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                <label className="block text-[10.5px] font-medium text-muted-foreground mb-1">
                   Model
                 </label>
                 <button
@@ -479,12 +479,12 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                     e.stopPropagation();
                     setShowModelDropdown((v) => !v);
                   }}
-                  className="nodrag w-full px-2 py-1.5 rounded-md text-left bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/75 hover:border-white/[0.12] transition-colors"
+                  className="nodrag w-full px-2 py-1.5 rounded-md text-left bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-foreground hover:border-border/[0.12] transition-colors"
                 >
                   {models.find((m) => m.value === model)?.label}
                 </button>
                 {showModelDropdown && (
-                  <div className="nodrag absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-20">
+                  <div className="nodrag absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-20">
                     {models.map((m) => (
                       <button
                         key={m.value}
@@ -495,8 +495,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                           setShowModelDropdown(false);
                         }}
                         className={cn(
-                          'w-full px-2 py-1 text-left text-[11px] hover:bg-white/[0.06] transition-colors',
-                          m.value === model ? 'text-white' : 'text-white/60',
+                          'w-full px-2 py-1 text-left text-[11px] hover:bg-foreground/[0.06] transition-colors',
+                          m.value === model ? 'text-foreground' : 'text-muted-foreground',
                         )}
                       >
                         {m.label}
@@ -507,7 +507,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               </div>
 
               <div>
-                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                <label className="block text-[10.5px] font-medium text-muted-foreground mb-1">
                   Temperature
                 </label>
                 <div className="flex items-center gap-1.5">
@@ -521,16 +521,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                     onChange={(e) =>
                       onTemperatureChange(parseFloat(e.target.value))
                     }
-                    className="nodrag flex-1 h-1 bg-white/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#E8571A]"
+                    className="nodrag flex-1 h-1 bg-foreground/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--action)]"
                   />
-                  <span className="text-[10px] text-white/55 w-6 text-right">
+                  <span className="text-[10px] text-muted-foreground w-6 text-right">
                     {temperature.toFixed(1)}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10.5px] font-medium text-white/50 mb-1">
+                <label className="block text-[10.5px] font-medium text-muted-foreground mb-1">
                   Max tokens
                 </label>
                 <input
@@ -540,14 +540,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     onMaxTokensChange(parseInt(e.target.value, 10) || 0)
                   }
-                  className="nodrag w-full px-2 py-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] text-[11px] text-white/75 outline-none focus:border-white/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="nodrag w-full px-2 py-1.5 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-foreground outline-none focus:border-border/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-              <span className="text-[10.5px] text-white/40">
+            <div className="flex items-center justify-between pt-2 border-t border-border/[0.06]">
+              <span className="text-[10.5px] text-muted-foreground">
                 {tokenCount} tokens estimated
               </span>
               <button
@@ -557,8 +557,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   selectThis();
                   handleRun();
                 }}
-                className="nodrag flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full text-white"
-                style={{ background: 'rgba(232,87,26,0.9)' }}
+                className="nodrag flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-full text-foreground"
+                style={{ background: 'color-mix(in srgb, var(--action) 90%, transparent)' }}
               >
                 <Play className="w-3 h-3 fill-current" />
                 Run
@@ -572,20 +572,20 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               onDoubleClick={onBodyDoubleClick}
               className="rounded-md p-2 mb-2"
               style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 minHeight: 56,
               }}
             >
-              <p className="text-[11px] leading-snug text-white/70 line-clamp-3">
+              <p className="text-[11px] leading-snug text-muted-foreground line-clamp-3">
                 {promptText || (
-                  <span className="text-white/30">Enter your prompt...</span>
+                  <span className="text-muted-foreground">Enter your prompt...</span>
                 )}
               </p>
             </div>
 
             {/* Stats */}
-            <div className="text-[10px] text-white/40 mb-2">
+            <div className="text-[10px] text-muted-foreground mb-2">
               {tokenCount} tokens · {models.find((m) => m.value === model)?.label}
             </div>
 
@@ -598,8 +598,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   selectThis();
                   handleRun();
                 }}
-                className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-white"
-                style={{ background: 'rgba(232,87,26,0.9)' }}
+                className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-foreground"
+                style={{ background: 'color-mix(in srgb, var(--action) 90%, transparent)' }}
               >
                 <Play size={10} className="fill-current" />
                 Run
@@ -611,7 +611,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   selectThis();
                   setDrawerOpen(true);
                 }}
-                className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
+                className="nodrag p-1 text-muted-foreground hover:text-muted-foreground rounded transition-colors"
                 title="Open in side drawer"
               >
                 <ArrowUpRight size={12} />
@@ -631,10 +631,10 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-white/10 text-white overflow-y-auto"
+          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-white/90 text-base">
+            <SheetTitle className="text-foreground text-base">
               Prompt block
             </SheetTitle>
           </SheetHeader>
@@ -642,7 +642,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           <div className="mt-4 space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Name
               </label>
               <input
@@ -650,14 +650,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Block name"
                 className={cn(
-                  'w-full px-3 py-2 rounded-md bg-white/[0.03] border text-sm text-white/80 placeholder:text-white/30 outline-none transition-colors',
+                  'w-full px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors',
                   nameError
-                    ? 'border-red-500/50 focus:border-red-500/70'
-                    : 'border-white/[0.06] focus:border-white/[0.12]',
+                    ? 'border-[var(--cat-breakage)] focus:border-[var(--cat-breakage)]'
+                    : 'border-border/[0.06] focus:border-border/[0.12]',
                 )}
               />
               {nameError && (
-                <p className="mt-1 text-[10.5px] text-red-400">{nameError}</p>
+                <p className="mt-1 text-[10.5px] text-[var(--cat-breakage)]">{nameError}</p>
               )}
             </div>
 
@@ -666,7 +666,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               <button
                 type="button"
                 onClick={() => setSystemPromptOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-white/50 hover:text-white/70 transition-colors mb-2"
+                className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors mb-2"
               >
                 <ChevronDown
                   size={12}
@@ -688,14 +688,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   onKeyDown={systemAutocomplete.onKeyDown}
                   onClick={systemAutocomplete.onInput}
                   placeholder="Enter system prompt..."
-                  className="w-full h-20 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                  className="w-full h-20 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
                 />
               )}
             </div>
 
             {/* Prompt */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Prompt
               </label>
               <textarea
@@ -708,14 +708,14 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 onKeyDown={promptAutocomplete.onKeyDown}
                 onClick={promptAutocomplete.onInput}
                 placeholder="Enter your prompt... Type {{ to insert a block reference."
-                className="w-full h-40 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 leading-relaxed outline-none focus:border-white/[0.12] transition-colors"
+                className="w-full h-40 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
             {/* Variables */}
             {variableInfos.length > 0 && (
               <div>
-                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                   Variables detected
                 </label>
                 <VariableChips
@@ -732,18 +732,18 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             {/* Model + temp + tokens */}
             <div className="grid grid-cols-3 gap-3">
               <div className="relative">
-                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                   Model
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowModelDropdown((v) => !v)}
-                  className="w-full px-3 py-2 rounded-md text-left bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 hover:border-white/[0.12] transition-colors"
+                  className="w-full px-3 py-2 rounded-md text-left bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground hover:border-border/[0.12] transition-colors"
                 >
                   {models.find((m) => m.value === model)?.label}
                 </button>
                 {showModelDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-10">
+                  <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10">
                     {models.map((m) => (
                       <button
                         key={m.value}
@@ -753,8 +753,8 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                           setShowModelDropdown(false);
                         }}
                         className={cn(
-                          'w-full px-3 py-1.5 text-left text-xs hover:bg-white/[0.06] transition-colors',
-                          m.value === model ? 'text-white' : 'text-white/60',
+                          'w-full px-3 py-1.5 text-left text-xs hover:bg-foreground/[0.06] transition-colors',
+                          m.value === model ? 'text-foreground' : 'text-muted-foreground',
                         )}
                       >
                         {m.label}
@@ -765,7 +765,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                   Temperature
                 </label>
                 <div className="flex items-center gap-2">
@@ -778,16 +778,16 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                     onChange={(e) =>
                       onTemperatureChange(parseFloat(e.target.value))
                     }
-                    className="flex-1 h-1 bg-white/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#E8571A]"
+                    className="flex-1 h-1 bg-foreground/[0.06] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--action)]"
                   />
-                  <span className="text-[10px] text-white/50 w-6 text-right">
+                  <span className="text-[10px] text-muted-foreground w-6 text-right">
                     {temperature.toFixed(1)}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                   Max tokens
                 </label>
                 <input
@@ -796,29 +796,29 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     onMaxTokensChange(parseInt(e.target.value, 10) || 0)
                   }
-                  className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 outline-none focus:border-white/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground outline-none focus:border-border/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-              <span className="text-[11px] text-white/40">
+            <div className="flex items-center justify-between pt-3 border-t border-border/[0.06]">
+              <span className="text-[11px] text-muted-foreground">
                 {tokenCount} tokens estimated
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
-                  className="px-3 py-1.5 text-[11px] font-medium text-white/50 hover:text-white/70 transition-colors"
+                  className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors"
                 >
                   Collapse
                 </button>
                 <button
                   type="button"
                   onClick={handleRun}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-white hover:bg-[#E8571A] transition-colors"
-                  style={{ background: 'rgba(232,87,26,0.9)' }}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-foreground hover:bg-[var(--action)] transition-colors"
+                  style={{ background: 'color-mix(in srgb, var(--action) 90%, transparent)' }}
                 >
                   <Play className="w-3 h-3 fill-current" />
                   Run

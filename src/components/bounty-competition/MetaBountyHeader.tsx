@@ -39,8 +39,8 @@ export function MetaBountyHeader({ meta }: Props) {
     <div
       style={{
         background:
-          "linear-gradient(135deg, rgba(124,58,237,0.08), rgba(124,58,237,0.02))",
-        border: "1px solid rgba(124,58,237,0.25)",
+          "var(--action)",
+        border: "1px solid color-mix(in srgb, var(--action) 25%, transparent)",
         borderRadius: 16,
         padding: "20px 22px",
         marginBottom: 16,
@@ -54,14 +54,14 @@ export function MetaBountyHeader({ meta }: Props) {
           marginBottom: 10,
         }}
       >
-        <Layers size={16} color="#7C3AED" />
+        <Layers size={16} color="var(--action)" />
         <span
           style={{
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.1em",
-            color: "#7C3AED",
+            color: "var(--action)",
           }}
         >
           META BOUNTY
@@ -73,7 +73,7 @@ export function MetaBountyHeader({ meta }: Props) {
           fontFamily: "Figtree, sans-serif",
           fontSize: 24,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.95)",
+          color: "var(--text)",
           margin: "0 0 8px 0",
           lineHeight: 1.3,
         }}
@@ -85,7 +85,7 @@ export function MetaBountyHeader({ meta }: Props) {
           style={{
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
-            color: "rgba(255,255,255,0.65)",
+            color: "var(--text2)",
             margin: "0 0 16px 0",
             lineHeight: 1.5,
           }}
@@ -100,7 +100,7 @@ export function MetaBountyHeader({ meta }: Props) {
           gap: 24,
           flexWrap: "wrap",
           paddingTop: 12,
-          borderTop: "1px solid rgba(124,58,237,0.15)",
+          borderTop: "1px solid color-mix(in srgb, var(--action) 15%, transparent)",
         }}
       >
         <Stat
@@ -152,7 +152,7 @@ function Stat({
           fontWeight: 600,
           letterSpacing: "0.05em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.5)",
+          color: "var(--text2)",
           marginBottom: 4,
         }}
       >
@@ -164,7 +164,7 @@ function Stat({
           fontFamily: "Figtree, sans-serif",
           fontSize: accent ? 18 : 14,
           fontWeight: accent ? 700 : 600,
-          color: accent ? "#7C3AED" : "rgba(255,255,255,0.9)",
+          color: accent ? "var(--action)" : "var(--text)",
         }}
       >
         {value}

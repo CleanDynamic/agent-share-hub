@@ -45,7 +45,7 @@ export default function WelcomeXpModal({
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ fontFamily: tokens.fontSans, background: "rgba(15,15,20,0.62)" }}
+      style={{ fontFamily: tokens.fontSans, background: "var(--recess)" }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -138,10 +138,10 @@ export default function WelcomeXpModal({
             padding: "13px 16px",
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            color: "#fff",
+            color: "var(--text)",
             fontSize: 14.5,
             fontWeight: 600,
-            boxShadow: "0 6px 20px rgba(232,87,26,0.40)",
+            boxShadow: "0 6px 20px color-mix(in srgb, var(--action) 40%, transparent)",
           }}
         >
           Start your quest

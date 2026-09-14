@@ -78,9 +78,9 @@ const STAGE_MODE_ORDER: readonly WorkspaceToolId[] = [
 ];
 
 const TYPE_DOT_COLOR: Record<string, string> = {
-  block: '#E8571A',
+  block: 'var(--action)',
   stage: '#55E0D2',
-  arrow: '#F59E0B',
+  arrow: 'var(--cat-narrative)',
 };
 
 function useSelectionLabel(): { label: string | null; kind: string | null } {
@@ -194,8 +194,8 @@ export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } 
           gap: 6,
           padding: '0 12px',
           fontSize: 11,
-          color: 'rgba(255,255,255,0.60)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+          color: 'var(--text2)',
+          borderBottom: '1px solid var(--line)',
         }}
       >
         {selectionLabel && (
@@ -207,7 +207,7 @@ export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } 
                 borderRadius: '50%',
                 background:
                   (selectionKind && TYPE_DOT_COLOR[selectionKind]) ??
-                  'rgba(255,255,255,0.40)',
+                  'var(--recess)',
                 flexShrink: 0,
               }}
             />
@@ -226,7 +226,7 @@ export function WorkspaceShell({ showNavTab = false }: { showNavTab?: boolean } 
           alignItems: 'center',
           gap: 4,
           padding: '0 8px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+          borderBottom: '1px solid var(--line)',
           flexShrink: 0,
         }}
       >
@@ -266,8 +266,8 @@ interface WorkspaceTabButtonProps {
 function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTabButtonProps) {
   const Icon = tool.icon;
   const iconColor = active
-    ? '#2EC4B6'
-    : 'rgba(255,255,255,0.65)';
+    ? 'var(--evidence)'
+    : 'var(--recess)';
 
   return (
     <Tooltip>
@@ -282,8 +282,8 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
             height: 40,
             borderRadius: 5,
             border: 'none',
-            background: active ? 'rgba(46,196,182,0.06)' : 'transparent',
-            borderBottom: active ? '2px solid #2EC4B6' : '2px solid transparent',
+            background: active ? 'color-mix(in srgb, var(--evidence) 6%, transparent)' : 'transparent',
+            borderBottom: active ? '2px solid var(--evidence)' : '2px solid transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -293,15 +293,15 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
           }}
           onMouseEnter={(e) => {
             if (active) return;
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.background = 'var(--recess)';
             const svg = e.currentTarget.querySelector('svg');
-            if (svg) svg.style.color = 'rgba(255,255,255,0.85)';
+            if (svg) svg.style.color = 'var(--text)';
           }}
           onMouseLeave={(e) => {
             if (active) return;
             e.currentTarget.style.background = 'transparent';
             const svg = e.currentTarget.querySelector('svg');
-            if (svg) svg.style.color = 'rgba(255,255,255,0.65)';
+            if (svg) svg.style.color = 'var(--text2)';
           }}
         >
           <Icon
@@ -387,7 +387,7 @@ function NavTool() {
         return (
           <div key={r.key}>
             {r.divider && idx > 0 && (
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '6px 4px' }} />
+              <div style={{ height: 1, background: 'var(--recess)', margin: '6px 4px' }} />
             )}
             <button
               type="button"
@@ -401,17 +401,17 @@ function NavTool() {
                 borderRadius: 8,
                 border: 'none',
                 background: 'transparent',
-                color: 'rgba(255,255,255,0.75)',
+                color: 'var(--text2)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'background 120ms ease',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--recess)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <Icon size={15} style={{ color: 'rgba(255,255,255,0.55)', flexShrink: 0 }} />
+              <Icon size={15} style={{ color: 'var(--text2)', flexShrink: 0 }} />
               <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.label}
               </span>
@@ -422,8 +422,8 @@ function NavTool() {
                     height: 18,
                     padding: '0 5px',
                     borderRadius: 9,
-                    background: r.key === 'drafts' ? 'rgba(255,255,255,0.14)' : '#8B4513',
-                    color: r.key === 'drafts' ? 'rgba(255,255,255,0.65)' : '#fff',
+                    background: r.key === 'drafts' ? 'var(--recess)' : 'var(--action)',
+                    color: r.key === 'drafts' ? 'var(--recess)' : 'var(--text)',
                     fontSize: 10,
                     fontWeight: 700,
                     display: 'flex',

@@ -83,15 +83,43 @@ import {
   TEXT_MUTED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
-  VOID,
   bodyText,
   cardGlass,
-  hexToRgba,
   labelText,
   panelGlass,
   titleText,
 } from "@/components/build/tokens";
+import { categoryFill } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
+import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
+import { data as dataText, tabular } from "@/lib/theme/type";
 import { reproductionLabel, solverHandle } from "./bountyDisplay";
+
+/** The inset ground a control or a field is cut into. */
+const RECESS = tok.recess;
+
+/* THE MEASURED EVIDENCE PAIR, used for both halves or neither. Every mark on
+   this panel that says "this answer is carried by evidence" — the accepted
+   badge, the rebuild block, the reproduction count — takes its ground and its
+   ink from here, so none of them is a pairing struck by eye. */
+const EVIDENCE = categoryFill("evidence");
+
+/**
+ * The primary action, in one place.
+ *
+ * THE PAIR IS `--action` / `--on-action`, MEASURED (5.65:1 on Exhibition,
+ * 6.35:1 on Dusk). What stood here was `--bg` on `--evidence`, which is a
+ * pairing nobody measured and which also spent the evidence hue on a button:
+ * evidence on this panel means "somebody ran this and said what happened", and
+ * a submit button has earned none of it. Every `data-visual-slot="btn-primary"`
+ * in this file takes this, so the one primary per view is one definition too.
+ */
+const primaryControl: CSSProperties = {
+  color: tok.onAction,
+  background: tok.action,
+  border: `1px solid ${tok.action}`,
+  fontWeight: 600,
+};
 
 /** The copy that has to survive a rewrite, held where it can be read at once. */
 const HEADING = "Offer a solution";
@@ -135,11 +163,11 @@ const controlBase: CSSProperties = {
   fontFamily: "inherit",
   fontSize: 12,
   padding: "8px 14px",
-  borderRadius: 8,
+  borderRadius: r.control,
   cursor: "pointer",
   whiteSpace: "nowrap",
   border: `1px solid ${HAIRLINE}`,
-  background: "rgba(255,255,255,0.025)",
+  background: RECESS,
   color: TEXT_SECONDARY,
 };
 
@@ -148,9 +176,9 @@ const textareaStyle: CSSProperties = {
   fontFamily: "inherit",
   width: "100%",
   padding: "8px 10px",
-  borderRadius: 8,
-  background: "rgba(255,255,255,0.025)",
-  border: "1px solid rgba(255,255,255,0.06)",
+  borderRadius: r.control,
+  background: RECESS,
+  border: `1px solid ${HAIRLINE}`,
   color: TEXT_PRIMARY,
   outline: "none",
   resize: "vertical",
@@ -420,7 +448,7 @@ export function SolvePanel({
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,
-                  borderLeft: `2px solid ${hexToRgba(TEAL, 0.5)}`,
+                  borderLeft: `2px solid ${tokenAlpha("evidence", 0.5)}`,
                 }}
               >
                 <p style={{ ...bodyText, margin: 0, color: TEXT_PRIMARY }}>
@@ -456,10 +484,7 @@ export function SolvePanel({
                       onClick={() => submitRebuild.mutate()}
                       style={{
                         ...controlBase,
-                        color: VOID,
-                        background: TEAL,
-                        border: `1px solid ${TEAL}`,
-                        fontWeight: 600,
+                        ...primaryControl,
                         cursor: busy ? "not-allowed" : "pointer",
                         opacity: busy ? 0.6 : 1,
                       }}
@@ -483,10 +508,7 @@ export function SolvePanel({
                     onClick={() => startRebuild.mutate()}
                     style={{
                       ...controlBase,
-                      color: VOID,
-                      background: TEAL,
-                      border: `1px solid ${TEAL}`,
-                      fontWeight: 600,
+                      ...primaryControl,
                       cursor: busy ? "not-allowed" : "pointer",
                       opacity: busy ? 0.6 : 1,
                     }}
@@ -572,10 +594,7 @@ export function SolvePanel({
                   onClick={() => submit.mutate()}
                   style={{
                     ...controlBase,
-                    color: VOID,
-                    background: TEAL,
-                    border: `1px solid ${TEAL}`,
-                    fontWeight: 600,
+                    ...primaryControl,
                     cursor: busy ? "not-allowed" : "pointer",
                     opacity: busy ? 0.6 : 1,
                   }}
@@ -665,7 +684,7 @@ function SolutionBuildLine({ build }: { build: SolutionBuild }) {
         style={{
           ...labelText,
           fontSize: 12,
-          color: TEAL,
+          color: tok.text,
           textDecoration: "none",
           minWidth: 0,
           overflow: "hidden",
@@ -677,10 +696,22 @@ function SolutionBuildLine({ build }: { build: SolutionBuild }) {
       <span
         data-testid="solution-build-repros"
         style={{
-          ...labelText,
-          fontSize: 10.5,
-          color: build.reproduction_count > 0 ? TEAL : TEXT_MUTED,
-          fontVariantNumeric: "tabular-nums",
+          ...dataText,
+          ...tabular,
+          fontSize: 12,
+          /* Reproduced at least once, and the count becomes a filled tag on the
+             measured evidence pair — the plaque's treatment, and the reason a
+             reader ranks this row above the one with more votes. Never
+             reproduced stays bare `--text2`, which is the plaque's third state
+             and not a failure. */
+          ...(build.reproduction_count > 0
+            ? {
+                color: EVIDENCE.color,
+                background: EVIDENCE.background,
+                padding: "1px 6px",
+                borderRadius: r.chip,
+              }
+            : { color: TEXT_MUTED }),
         }}
       >
         {reproductionLabel(build.reproduction_count)}
@@ -756,12 +787,12 @@ function SolutionRow({
         {accepted ? (
           <span
             style={{
-              ...labelText,
-              fontSize: 10.5,
-              color: TEAL,
+              ...dataText,
+              fontSize: 11,
+              color: EVIDENCE.color,
               padding: "1px 6px",
-              borderRadius: 4,
-              background: hexToRgba(TEAL, 0.1),
+              borderRadius: r.chip,
+              background: EVIDENCE.background,
             }}
           >
             ACCEPTED
@@ -777,10 +808,15 @@ function SolutionRow({
             ...controlBase,
             marginLeft: "auto",
             padding: "2px 9px",
-            fontSize: 11,
-            color: solution.myVote ? TEAL : TEXT_SECONDARY,
-            background: solution.myVote ? hexToRgba(TEAL, 0.12) : "transparent",
-            border: `1px solid ${solution.myVote ? hexToRgba(TEAL, 0.3) : HAIRLINE}`,
+            ...dataText,
+            ...tabular,
+            fontSize: 12,
+            /* A cast vote is the reader's own state, so it is carried by the
+               border and the ink rather than by a second filled block — the
+               filled blocks on this row belong to evidence. */
+            color: solution.myVote ? tok.action : TEXT_SECONDARY,
+            background: "transparent",
+            border: `1px solid ${solution.myVote ? tok.action : HAIRLINE}`,
           }}
         >
           ▲ {solution.vote_count}
@@ -801,12 +837,12 @@ function SolutionRow({
             flexDirection: "column",
             gap: 4,
             padding: "8px 10px",
-            borderRadius: 8,
-            border: `1px solid ${hexToRgba(TEAL, 0.22)}`,
-            background: hexToRgba(TEAL, 0.06),
+            borderRadius: r.control,
+            border: `1px solid ${tokenAlpha("cat-evidence", 0.34)}`,
+            background: EVIDENCE.background,
           }}
         >
-          <span style={{ ...labelText, fontSize: 10.5, color: TEAL, textTransform: "uppercase" }}>
+          <span style={{ ...dataText, fontSize: 11, color: EVIDENCE.color, textTransform: "uppercase" }}>
             Solved in a rebuild
           </span>
           <SolutionBuildLine build={solution.solutionBuild} />
@@ -853,10 +889,7 @@ function SolutionRow({
                 onClick={onAccept}
                 style={{
                   ...controlBase,
-                  color: VOID,
-                  background: TEAL,
-                  border: `1px solid ${TEAL}`,
-                  fontWeight: 600,
+                  ...primaryControl,
                   cursor: busy ? "not-allowed" : "pointer",
                   opacity: busy ? 0.6 : 1,
                 }}
@@ -874,7 +907,11 @@ function SolutionRow({
               type="button"
               data-testid="solution-accept"
               onClick={onAsk}
-              style={{ ...controlBase, color: TEAL, border: `1px solid ${hexToRgba(TEAL, 0.3)}` }}
+              /* THE ONE PRIMARY ON THIS VIEW. Everything else an author can do
+                 to a solution is a vote or a link; accepting is the decision
+                 the panel exists to collect, so it carries the action fill and
+                 nothing beside it does. */
+              style={{ ...controlBase, ...primaryControl }}
             >
               Accept
             </button>

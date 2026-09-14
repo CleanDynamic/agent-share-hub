@@ -39,8 +39,8 @@ function Avatar({ comment }: { comment: DocumentComment }) {
         width: 24,
         height: 24,
         borderRadius: '50%',
-        background: 'hsl(18 79% 54% / 0.25)',
-        color: 'hsl(18 79% 75%)',
+        background: 'var(--action)',
+        color: 'var(--action)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -92,10 +92,10 @@ export function CommentThreadCard({
         top: position.top,
         left: position.left,
         width: 300,
-        background: 'hsl(240 20% 9% / 0.96)',
-        border: '0.5px solid hsl(var(--foreground) / 0.12)',
+        background: 'var(--bg)',
+        border: '0.5px solid var(--line)',
         borderRadius: 10,
-        boxShadow: '0 16px 40px hsl(240 10% 2% / 0.55)',
+        boxShadow: '0 16px 40px var(--line)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
         zIndex: 9999,
@@ -111,10 +111,10 @@ export function CommentThreadCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '8px 10px',
-          borderBottom: '0.5px solid hsl(var(--foreground) / 0.06)',
+          borderBottom: '0.5px solid var(--line)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'hsl(var(--foreground) / 0.7)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text2)' }}>
           <MessageCircle size={12} strokeWidth={1.8} />
           <span>
             {isNew ? 'New comment' : `${thread!.comments.length} ${thread!.comments.length === 1 ? 'reply' : 'replies'}`}
@@ -125,8 +125,8 @@ export function CommentThreadCard({
                 marginLeft: 6,
                 padding: '1px 6px',
                 borderRadius: 4,
-                background: 'hsl(142 58% 55% / 0.18)',
-                color: 'hsl(142 58% 70%)',
+                background: 'var(--cat-configuration)',
+                color: 'var(--cat-configuration)',
                 fontSize: 10,
               }}
             >
@@ -146,7 +146,7 @@ export function CommentThreadCard({
                 padding: 4,
                 borderRadius: 4,
                 cursor: 'pointer',
-                color: 'hsl(var(--foreground) / 0.62)',
+                color: 'var(--text2)',
               }}
             >
               <Check size={13} strokeWidth={2} />
@@ -162,7 +162,7 @@ export function CommentThreadCard({
               padding: 4,
               borderRadius: 4,
               cursor: 'pointer',
-              color: 'hsl(var(--foreground) / 0.62)',
+              color: 'var(--text2)',
             }}
           >
             <X size={13} strokeWidth={2} />
@@ -178,10 +178,10 @@ export function CommentThreadCard({
               <Avatar comment={c} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground) / 0.92)' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
                     {c.author?.display_name || c.author?.username || 'Unknown'}
                   </span>
-                  <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.5)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text2)' }}>
                     {formatTime(c.created_at)}
                   </span>
                   {c.author_id === currentUserId && onDelete && (
@@ -194,7 +194,7 @@ export function CommentThreadCard({
                         border: 'none',
                         padding: 0,
                         cursor: 'pointer',
-                        color: 'hsl(var(--foreground) / 0.4)',
+                        color: 'var(--text2)',
                         fontSize: 10,
                       }}
                     >
@@ -205,7 +205,7 @@ export function CommentThreadCard({
                 <div
                   style={{
                     fontSize: 12,
-                    color: 'hsl(var(--foreground) / 0.85)',
+                    color: 'var(--text)',
                     marginTop: 2,
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
@@ -223,7 +223,7 @@ export function CommentThreadCard({
       <div
         style={{
           padding: '8px 10px',
-          borderTop: isNew ? 'none' : '0.5px solid hsl(var(--foreground) / 0.06)',
+          borderTop: isNew ? 'none' : '0.5px solid var(--line)',
           display: 'flex',
           gap: 6,
           alignItems: 'flex-end',
@@ -248,10 +248,10 @@ export function CommentThreadCard({
           style={{
             flex: 1,
             resize: 'none',
-            background: 'hsl(240 20% 6% / 0.6)',
-            border: '0.5px solid hsl(var(--foreground) / 0.08)',
+            background: 'var(--cat-data)',
+            border: '0.5px solid var(--line)',
             borderRadius: 6,
-            color: 'hsl(var(--foreground) / 0.92)',
+            color: 'var(--text)',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             padding: '6px 8px',
@@ -269,9 +269,9 @@ export function CommentThreadCard({
             width: 28,
             height: 28,
             borderRadius: 6,
-            border: '0.5px solid hsl(18 79% 54% / 0.4)',
-            background: draft.trim() ? 'hsl(18 79% 54% / 0.18)' : 'transparent',
-            color: 'hsl(18 79% 70%)',
+            border: '0.5px solid var(--action)',
+            background: draft.trim() ? 'var(--action)' : 'transparent',
+            color: 'var(--action)',
             cursor: draft.trim() && !busy ? 'pointer' : 'not-allowed',
             opacity: draft.trim() && !busy ? 1 : 0.5,
           }}

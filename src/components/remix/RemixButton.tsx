@@ -31,15 +31,15 @@ export default function RemixButton({
           padding: compact ? 9 : '9px 16px',
           borderRadius: tokens.pill,
           background: tokens.orangeGradient,
-          color: '#FFFFFF',
-          border: '0.5px solid rgba(255,255,255,0.18)',
+          color: 'var(--text)',
+          border: '0.5px solid var(--line)',
           fontSize: 14,
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           transform: hover && !disabled ? 'translateY(-1px)' : 'translateY(0)',
           boxShadow: hover && !disabled
-            ? '0 8px 22px rgba(232,87,26,0.42)'
-            : '0 2px 10px rgba(232,87,26,0.28)',
+            ? '0 8px 22px color-mix(in srgb, var(--action) 42%, transparent)'
+            : '0 2px 10px color-mix(in srgb, var(--action) 28%, transparent)',
           transition: 'transform 140ms ease, box-shadow 140ms ease',
         }}
       >

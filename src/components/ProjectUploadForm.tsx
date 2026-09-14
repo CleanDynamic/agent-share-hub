@@ -185,7 +185,7 @@ function BlueprintSlotCard({
 
   if (slot.collapsed) {
     return (
-      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#8B4513" }}>
+      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "var(--action)" }}>
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-bold text-primary">{index + 1}</span>
@@ -205,12 +205,12 @@ function BlueprintSlotCard({
   }
 
   return (
-    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#8B4513" }}>
+    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "var(--action)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-          <span className="text-sm font-bold" style={{ color: "#8B4513" }}>Blueprint {index + 1}</span>
+          <span className="text-sm font-bold" style={{ color: "var(--action)" }}>Blueprint {index + 1}</span>
           <span className="text-[10px] text-muted-foreground">New</span>
         </div>
         <div className="flex items-center gap-1">
@@ -387,10 +387,10 @@ function LinkedBlueprintSlotCard({
 
   if (slot.collapsed) {
     return (
-      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#1F7A6D" }}>
+      <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "var(--evidence)" }}>
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm font-bold" style={{ color: "#1F7A6D" }}>{index + 1}</span>
+            <span className="text-sm font-bold" style={{ color: "var(--evidence)" }}>{index + 1}</span>
             <span className="text-sm text-foreground truncate">{slot.title}</span>
             <Badge variant="outline" className="text-[10px] shrink-0">{displayContentType(slot.contentType)}</Badge>
           </div>
@@ -406,12 +406,12 @@ function LinkedBlueprintSlotCard({
   }
 
   return (
-    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "#1F7A6D" }}>
+    <div className="border border-border rounded-xl bg-card overflow-hidden" style={{ borderLeftWidth: 2, borderLeftColor: "var(--evidence)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-          <span className="text-sm font-bold" style={{ color: "#1F7A6D" }}>{index + 1}</span>
+          <span className="text-sm font-bold" style={{ color: "var(--evidence)" }}>{index + 1}</span>
           <span className="text-[10px] text-muted-foreground">Existing Blueprint</span>
         </div>
         <div className="flex items-center gap-1">
@@ -807,9 +807,9 @@ export function ProjectUploadForm() {
           <h3 className="text-base font-bold text-foreground">Your Blueprints</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Add the blueprints that make up this project. Each blueprint is a step.</p>
           <p className="text-[11px] text-muted-foreground mt-1">
-            <span className="inline-block w-2 h-2 rounded-sm mr-1" style={{ backgroundColor: "#8B4513" }} /> New blueprint
+            <span className="inline-block w-2 h-2 rounded-sm mr-1" style={{ backgroundColor: "var(--action)" }} /> New blueprint
             {" "}
-            <span className="inline-block w-2 h-2 rounded-sm mr-1 ml-2" style={{ backgroundColor: "#1F7A6D" }} /> Existing blueprint
+            <span className="inline-block w-2 h-2 rounded-sm mr-1 ml-2" style={{ backgroundColor: "var(--evidence)" }} /> Existing blueprint
           </p>
         </div>
 
@@ -887,7 +887,7 @@ export function ProjectUploadForm() {
                 className="bg-background border-border rounded-xl w-32 text-sm" />
             </div>
             {saving > 0 && (
-              <p className="text-xs text-emerald-400">Saves users £{saving.toFixed(2)} vs buying individually</p>
+              <p className="text-xs text-[var(--cat-configuration)]">Saves users £{saving.toFixed(2)} vs buying individually</p>
             )}
           </div>
         )}

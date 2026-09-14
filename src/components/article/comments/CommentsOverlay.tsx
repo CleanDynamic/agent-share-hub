@@ -125,12 +125,12 @@ export function CommentsOverlay({
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'hsl(18 79% 54% / 0.18)',
-            border: '0.5px solid hsl(18 79% 54% / 0.45)',
-            color: 'hsl(18 79% 75%)',
+            background: 'var(--action)',
+            border: '0.5px solid var(--action)',
+            color: 'var(--action)',
             cursor: 'pointer',
             zIndex: 50,
-            boxShadow: '0 2px 6px hsl(240 10% 2% / 0.4)',
+            boxShadow: '0 2px 6px var(--elev-raised)',
           }}
         >
           <MessageCircle size={11} strokeWidth={2} />

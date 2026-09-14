@@ -109,7 +109,7 @@ function ToolsUseCasesRow({ item }: { item: any }) {
   const displayTopics = topics.slice(0, 2);
   const extraTopics = topics.length - 2;
 
-  const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]";
+  const pillClass = "text-[10px] px-1.5 py-0.5 rounded bg-[var(--cat-data)] text-[var(--text2)]";
   const topicPillClass = "text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70";
 
   return (
@@ -263,7 +263,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>
         {rank != null && (
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#8B4513', minWidth: 32, flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--action)', minWidth: 32, flexShrink: 0 }}>
             {String(rank).padStart(2, "0")}
           </span>
         )}
@@ -276,13 +276,13 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           to={`/creator/${profile?.username}`}
           onClick={stop}
           className="hover:underline truncate"
-          style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}
+          style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}
         >
           {profile?.display_name || profile?.username || "Unknown"}
         </Link>
-        <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
-        <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
-        <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
+        <span className="truncate" style={{ fontSize: 12, color: 'var(--text2)' }}>@{profile?.username}</span>
+        <span style={{ color: 'var(--text2)' }}>·</span>
+        <span className="shrink-0" style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(item.created_at)}</span>
         <div className="ml-auto shrink-0" onClick={stop}>
           <BookmarkButton contentId={item.id} />
         </div>
@@ -303,7 +303,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
           <>
             <span className="text-[10px] text-muted-foreground/60">🖥️ Local</span>
             {(item as any).model_parameters && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[hsl(240,14%,13%)] text-[hsl(240,7%,60%)]">
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--cat-data)] text-[var(--text2)]">
                 {(item as any).model_parameters}
               </span>
             )}
@@ -316,11 +316,11 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       </div>
 
       {/* LINE 3 — Title */}
-      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+      <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
 
       {/* LINE 3.5 — Hook subtitle (blogs only) */}
       {isBlog && item.description && (
-        <p className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4, fontStyle: 'italic' }}>{item.description}</p>
+        <p className="truncate" style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4, fontStyle: 'italic' }}>{item.description}</p>
       )}
 
       {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
@@ -354,11 +354,11 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         return (
           <div
             className="flex items-center justify-between"
-            style={{ marginTop: 0, paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}
+            style={{ marginTop: 0, paddingTop: 14, borderTop: '1px solid var(--line)' }}
           >
             <div
               className="flex items-center flex-nowrap overflow-x-auto"
-              style={{ gap: 16, scrollbarWidth: 'none', fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}
+              style={{ gap: 16, scrollbarWidth: 'none', fontSize: 12, fontWeight: 400, color: 'var(--text2)' }}
             >
               <span className="inline-flex items-center gap-1 shrink-0"><Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}</span>
               {!isBlog && (
@@ -378,9 +378,9 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                   <button
                     onClick={(e) => { stop(e); setShareOpen(true); }}
                     className="inline-flex items-center gap-1 shrink-0 transition-colors"
-                    style={{ color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.70)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)'}
+                    style={{ color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
                   >
                     <SendIcon style={{ width: 15, height: 15 }} />
                   </button>
@@ -393,13 +393,13 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
                       openReblogForThis();
                     }}
                     className="inline-flex items-center gap-1 shrink-0 transition-colors"
-                    style={{ minHeight: 44, color: userHasReblogged ? "#16A34A" : 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 5 }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(22, 163, 74, 0.08)"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.70)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)'; }}
+                    style={{ minHeight: 44, color: userHasReblogged ? "var(--cat-configuration)" : 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 5 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "color-mix(in srgb, var(--cat-configuration) 8%, transparent)"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; if (!userHasReblogged) (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'; }}
                     title={user && item.creator_id === user.id ? "Reblog your own post" : (userHasReblogged ? "You reblogged this" : "Reblog")}
                   >
-                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "#16A34A" : "currentColor" }} />
-                    {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "#16A34A" : undefined }}>{formatNum(reblogCount ?? 0)}</span>}
+                    <Repeat2 style={{ width: 15, height: 15, color: userHasReblogged ? "var(--cat-configuration)" : "currentColor" }} />
+                    {(reblogCount ?? 0) > 0 && <span style={{ color: userHasReblogged ? "var(--cat-configuration)" : undefined }}>{formatNum(reblogCount ?? 0)}</span>}
                   </button>
                   )}
                 </>

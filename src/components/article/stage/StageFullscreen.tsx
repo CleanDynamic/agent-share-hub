@@ -64,7 +64,7 @@ export function StageFullscreen({ stageId, onClose }: StageFullscreenProps) {
             display: 'flex',
             alignItems: 'center',
             background: 'transparent',
-            borderBottom: '0.5px solid rgba(255, 255, 255, 0.14)',
+            borderBottom: '0.5px solid var(--line)',
           }}
         >
           <BackButton onClick={onClose} />
@@ -99,10 +99,10 @@ function BackButton({ onClick }: { onClick: () => void }) {
         alignItems: 'center',
         gap: 6,
         padding: '6px 10px',
-        background: hover ? 'rgba(255,255,255,0.08)' : 'rgba(255, 255, 255, 0.12)',
-        border: '0.5px solid rgba(255, 255, 255, 0.14)',
+        background: hover ? 'var(--recess)' : 'var(--recess)',
+        border: '0.5px solid var(--line)',
         borderRadius: 6,
-        color: 'rgba(255,255,255,0.75)',
+        color: 'var(--text)',
         fontFamily: 'Figtree, sans-serif',
         fontSize: 12,
         fontWeight: 500,
@@ -154,7 +154,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
         justifyContent: 'flex-end',
         alignItems: 'center',
         background: 'transparent',
-        borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '0.5px solid var(--line)',
       }}
     >
       {/* Zoom group */}
@@ -168,7 +168,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
           fontFamily: 'Figtree, sans-serif',
           fontSize: 11,
           fontWeight: 500,
-          color: 'rgba(255,255,255,0.70)',
+          color: 'var(--text2)',
           fontVariantNumeric: 'tabular-nums',
           padding: '0 4px',
           userSelect: 'none',
@@ -206,7 +206,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
           width: 20,
           height: 20,
           marginLeft: 6,
-          color: 'rgba(255,255,255,0.30)',
+          color: 'var(--text2)',
           cursor: 'help',
         }}
       >
@@ -224,7 +224,7 @@ function Divider() {
         display: 'inline-block',
         width: 1,
         height: 16,
-        background: 'rgba(255, 255, 255, 0.14)',
+        background: 'var(--recess)',
         margin: '0 8px',
       }}
     />
@@ -240,9 +240,9 @@ interface IconBtnProps {
 
 function IconBtn({ onClick, title, active = false, children }: IconBtnProps) {
   const [hover, setHover] = useState(false);
-  const baseColor = active ? '#E8571A' : 'rgba(255,255,255,0.70)';
-  const activeBg = 'rgba(232,87,26,0.10)';
-  const hoverBg = 'rgba(255, 255, 255, 0.14)';
+  const baseColor = active ? 'var(--action)' : 'var(--recess)';
+  const activeBg = 'color-mix(in srgb, var(--action) 10%, transparent)';
+  const hoverBg = 'var(--recess)';
   const bg = active ? activeBg : hover ? hoverBg : 'transparent';
   return (
     <button

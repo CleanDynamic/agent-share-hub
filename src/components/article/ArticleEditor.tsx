@@ -754,8 +754,8 @@ export function ArticleEditor({
         .tiptap-article {
           width: 100%;
           min-height: 300px;
-          background: ${focusMode === 'focus' ? 'hsl(var(--foreground) / 0.015)' : 'transparent'};
-          border: ${focusMode === 'focus' ? `0.5px solid ${editorFocused ? 'hsl(var(--foreground) / 0.08)' : 'hsl(var(--foreground) / 0.05)'}` : '0.5px solid transparent'};
+          background: ${focusMode === 'focus' ? 'var(--text2)' : 'transparent'};
+          border: ${focusMode === 'focus' ? `0.5px solid ${editorFocused ? 'var(--text2)' : 'var(--text2)'}` : '0.5px solid transparent'};
           border-radius: 8px;
           transition: border-color 200ms ease, background 200ms ease;
           box-sizing: border-box;
@@ -764,25 +764,25 @@ export function ArticleEditor({
           font-family: 'Figtree', sans-serif;
           font-size: ${isBlog ? 16 : 15}px;
           line-height: ${isBlog ? 1.85 : 1.5};
-          color: hsl(var(--foreground) / 0.92);
+          color: var(--text);
           padding: 12px 12px 28px 12px;
           min-height: 300px;
           outline: none;
-          caret-color: hsl(18 79% 54%);
+          caret-color: var(--action);
           box-sizing: border-box;
         }
         .tiptap-article .ProseMirror-focused {
-          caret-color: hsl(18 79% 54%);
+          caret-color: var(--action);
         }
         .tiptap-article .ProseMirror::selection,
         .tiptap-article .ProseMirror *::selection {
-          background: hsl(18 79% 54% / 0.2);
+          background: var(--action);
         }
         .tiptap-article h1 {
           font-family: ${isBlog ? BODONI : FIGTREE};
           font-size: ${isBlog ? 28 : 28}px;
           font-weight: 700;
-          color: hsl(var(--foreground) / 0.95);
+          color: var(--text);
           margin: 40px 0 12px;
           line-height: 1.3;
         }
@@ -790,7 +790,7 @@ export function ArticleEditor({
           font-family: ${isBlog ? BODONI : FIGTREE};
           font-size: 22px;
           font-weight: 600;
-          color: hsl(var(--foreground) / 0.92);
+          color: var(--text);
           margin: 32px 0 10px;
           line-height: 1.35;
         }
@@ -798,7 +798,7 @@ export function ArticleEditor({
           font-family: 'Figtree', sans-serif;
           font-size: 18px;
           font-weight: 600;
-          color: hsl(var(--foreground) / 0.9);
+          color: var(--text);
           margin: 24px 0 8px;
           line-height: 1.4;
         }
@@ -806,17 +806,17 @@ export function ArticleEditor({
           margin: 0;
         }
         .tiptap-article blockquote {
-          border-left: 2px solid hsl(18 79% 54% / 0.4);
+          border-left: 2px solid var(--action);
           padding-left: 20px;
-          color: hsl(var(--foreground) / 0.65);
+          color: var(--text2);
           font-style: italic;
           font-size: ${isBlog ? 17 : 'inherit'};
           font-family: ${isBlog ? FIGTREE : 'inherit'};
           margin: 18px 0;
         }
         .tiptap-article pre {
-          background: hsl(var(--foreground) / 0.03);
-          border: 0.5px solid hsl(var(--foreground) / 0.08);
+          background: var(--recess);
+          border: 0.5px solid var(--line);
           border-radius: 8px;
           padding: 14px 16px;
           overflow-x: auto;
@@ -824,15 +824,15 @@ export function ArticleEditor({
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
           font-size: 13px;
           line-height: 1.5;
-          color: hsl(var(--foreground) / 0.78);
+          color: var(--text);
         }
         .tiptap-article code {
-          background: hsl(var(--foreground) / 0.06);
+          background: var(--recess);
           border-radius: 3px;
           padding: 1px 5px;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
           font-size: 13px;
-          color: hsl(var(--foreground) / 0.85);
+          color: var(--text);
         }
         .tiptap-article pre code {
           background: none;
@@ -850,14 +850,14 @@ export function ArticleEditor({
         }
         .tiptap-article hr {
           border: none;
-          border-top: 0.5px solid hsl(var(--foreground) / 0.08);
+          border-top: 0.5px solid var(--line);
           margin: 20px 0;
         }
         .tiptap-article .ProseMirror p.is-editor-empty:first-child::before,
         .tiptap-article .ProseMirror .is-editor-empty:first-child::before {
           content: 'Tell your story...';
           float: left;
-          color: hsl(var(--foreground) / 0.2);
+          color: var(--text2);
           pointer-events: none;
           height: 0;
           font-style: italic;
@@ -866,7 +866,7 @@ export function ArticleEditor({
           font-weight: 400;
         }
         .tiptap-article .ProseMirror-gapcursor:after {
-          border-top-color: hsl(18 79% 54%);
+          border-top-color: var(--action);
           animation: articleCaretBlink 1.2s step-end infinite;
         }
         .tiptap-article table.tiptap-table {
@@ -878,14 +878,14 @@ export function ArticleEditor({
         }
         .tiptap-article table.tiptap-table td,
         .tiptap-article table.tiptap-table th {
-          border: 1px solid hsl(var(--foreground) / 0.15);
+          border: 1px solid var(--line);
           padding: 6px 8px;
           vertical-align: top;
           position: relative;
           min-width: 60px;
         }
         .tiptap-article table.tiptap-table th {
-          background: hsl(var(--foreground) / 0.06);
+          background: var(--recess);
           font-weight: 600;
           text-align: left;
         }
@@ -906,33 +906,33 @@ export function ArticleEditor({
           cursor: col-resize;
         }
         .tiptap-article .sh-match {
-          background: rgba(232, 87, 26, 0.25);
+          background: color-mix(in srgb, var(--action) 25%, transparent);
           border-radius: 2px;
         }
         .tiptap-article .sh-match-active {
-          background: rgba(232, 87, 26, 0.5);
+          background: color-mix(in srgb, var(--action) 50%, transparent);
         }
         .tiptap-article p.caption {
           font-size: 13px;
-          color: hsl(var(--foreground) / 0.55);
+          color: var(--text2);
           font-style: italic;
           text-align: center;
           margin: 4px 0 16px;
         }
         .tiptap-article blockquote[data-callout="true"] {
-          background: hsl(var(--secondary) / 0.08);
+          background: color-mix(in srgb, var(--action) 8%, transparent);
           border-left: 3px solid hsl(var(--secondary));
           padding: 12px 16px;
           border-radius: 6px;
           margin: 16px 0;
           font-style: normal;
-          color: hsl(var(--foreground) / 0.85);
+          color: var(--text);
         }
         .tiptap-article ul,
         .tiptap-article ol {
           padding-left: 1.5rem;
           margin: 0;
-          color: hsl(var(--foreground) / 0.85);
+          color: var(--text);
         }
         .tiptap-article ul {
           list-style: disc;
@@ -972,7 +972,7 @@ export function ArticleEditor({
           flex: 1;
         }
         .tiptap-article ul[data-type="taskList"] li[data-checked="true"] > div {
-          color: hsl(var(--foreground) / 0.45);
+          color: var(--text2);
           text-decoration: line-through;
         }
         .tiptap-article .video-embed {
@@ -982,7 +982,7 @@ export function ArticleEditor({
           margin: 16px 0;
           border-radius: 8px;
           overflow: hidden;
-          background: hsl(var(--foreground) / 0.05);
+          background: var(--recess);
         }
         .tiptap-article .video-embed iframe,
         .tiptap-article .video-embed video {
@@ -1005,17 +1005,17 @@ export function ArticleEditor({
             alignItems: 'center',
             gap: 8,
             padding: '0 4px',
-            borderBottom: '0.5px solid rgba(255, 255, 255, 0.14)',
+            borderBottom: '0.5px solid var(--line)',
             marginBottom: 8,
           }}
         >
-          <Target size={14} color="#F59E0B" strokeWidth={1.8} />
+          <Target size={14} color="var(--cat-breakage)" strokeWidth={1.8} />
           <span style={{
             flex: 1,
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
-            color: 'rgba(255,255,255,0.55)',
+            color: 'var(--text2)',
           }}>
             Mark stages or blocks as &lsquo;missing&rsquo; to ask for help. Solvers reply once you publish.
           </span>
@@ -1026,10 +1026,10 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
-                color: '#F59E0B',
-                background: 'rgba(245,158,11,0.08)',
+                color: 'var(--cat-breakage)',
+                background: 'var(--cat-breakage-fill)',
                 padding: '2px 8px',
-                borderRadius: 100,
+                borderRadius: 'var(--r-chip)',
               }}
             >
               {missingBreakdown.stages} {missingBreakdown.stages === 1 ? 'stage' : 'stages'} · {missingBreakdown.blocks} {missingBreakdown.blocks === 1 ? 'block' : 'blocks'} marked as missing
@@ -1040,7 +1040,7 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.45)',
+                color: 'var(--text2)',
                 padding: '2px 8px',
               }}
             >
@@ -1062,7 +1062,7 @@ export function ArticleEditor({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
-              color: 'rgba(245,158,11,0.85)',
+              color: 'var(--cat-breakage)',
             }}
           >
             Learn more about bounties →
@@ -1110,12 +1110,12 @@ export function ArticleEditor({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 fontWeight: 400,
-                color: 'rgba(255,255,255,0.40)',
+                color: 'var(--text2)',
                 lineHeight: 1.5,
                 padding: '0 24px',
               }}
             >
-              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'rgba(255, 255, 255, 0.14)', padding: '1px 6px', borderRadius: 4, color: 'rgba(255,255,255,0.65)' }}>/</code>.
+              Bounties usually start with 1–3 stages where you outline what you have, then mark the gaps. Try inserting a stage with <code style={{ fontFamily: 'inherit', background: 'var(--recess)', padding: '1px 6px', borderRadius: 4, color: 'var(--text2)' }}>/</code>.
             </div>
           ) : null}
         </div>
@@ -1190,9 +1190,12 @@ export function ArticleEditor({
                   height: 30,
                   padding: '0 12px',
                   borderRadius: 6,
-                  border: '0.5px solid hsl(18 79% 54% / 0.35)',
-                  background: 'hsl(18 79% 54% / 0.10)',
-                  color: 'hsl(var(--foreground) / 0.92)',
+                  border: '0.5px solid var(--action)',
+                  background: 'var(--action)',
+                  /* The action fill's label is --on-action, which is the half
+                     of that pair that was measured with it (5.65:1 / 6.35:1).
+                     --text on it is 2.73:1. */
+                  color: 'var(--on-action)',
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 12,
                   fontWeight: 500,
@@ -1215,9 +1218,9 @@ export function ArticleEditor({
                 height: 30,
                 padding: '0 12px',
                 borderRadius: 6,
-                border: '0.5px solid hsl(var(--foreground) / 0.1)',
+                border: '0.5px solid var(--line)',
                 background: 'transparent',
-                color: 'hsl(var(--foreground) / 0.62)',
+                color: 'var(--text2)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
                 fontWeight: 500,
@@ -1241,10 +1244,10 @@ export function ArticleEditor({
                 height: 30,
                 padding: '0 14px',
                 borderRadius: 6,
-                border: '0.5px solid hsl(var(--secondary) / 0.35)',
-                background: 'hsl(var(--secondary) / 0.14)',
-                color: 'hsl(var(--foreground) / 0.96)',
-                boxShadow: '0 8px 24px hsl(var(--secondary) / 0.12)',
+                border: '0.5px solid color-mix(in srgb, var(--action) 35%, transparent)',
+                background: 'color-mix(in srgb, var(--action) 14%, transparent)',
+                color: 'var(--text)',
+                boxShadow: 'var(--elev-raised)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
                 fontWeight: 600,
@@ -1291,7 +1294,7 @@ export function ArticleEditor({
             onClick={() => setSaveDialogOpen(false)}
             style={{
               position: 'absolute', inset: 0,
-              background: 'rgba(0,0,0,0.60)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
               backdropFilter: 'blur(4px)',
               WebkitBackdropFilter: 'blur(4px)',
             }}
@@ -1302,8 +1305,8 @@ export function ArticleEditor({
             aria-label="Name your draft"
             style={{
               position: 'relative', zIndex: 1,
-              background: 'rgba(14,14,20,0.98)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--bg)',
+              border: '1px solid var(--line)',
               borderRadius: 16,
               padding: '24px 26px',
               maxWidth: 420, width: '90%',
@@ -1313,14 +1316,14 @@ export function ArticleEditor({
           >
             <h3 style={{
               fontSize: 16, fontWeight: 700,
-              color: 'rgba(255,255,255,0.92)',
+              color: 'var(--text)',
               margin: '0 0 6px',
             }}>
               Name your draft
             </h3>
             <p style={{
               fontSize: 12,
-              color: 'rgba(255,255,255,0.50)',
+              color: 'var(--text2)',
               margin: '0 0 16px', lineHeight: 1.5,
             }}>
               Give this draft a name so you can find it again later.
@@ -1345,9 +1348,9 @@ export function ArticleEditor({
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.12)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                color: 'rgba(255,255,255,0.92)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
+                color: 'var(--text)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 13,
                 outline: 'none',
@@ -1361,9 +1364,9 @@ export function ArticleEditor({
                 style={{
                   padding: '8px 14px', fontSize: 12, fontWeight: 600,
                   borderRadius: 8,
-                  background: 'rgba(255, 255, 255, 0.14)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  color: 'rgba(255,255,255,0.65)',
+                  background: 'var(--recess)',
+                  border: '1px solid var(--line)',
+                  color: 'var(--text2)',
                   cursor: 'pointer',
                   fontFamily: 'Figtree, sans-serif',
                 }}
@@ -1377,9 +1380,9 @@ export function ArticleEditor({
                 style={{
                   padding: '8px 16px', fontSize: 12, fontWeight: 700,
                   borderRadius: 8,
-                  background: 'hsl(18 79% 54% / 0.85)',
-                  border: '1px solid hsl(18 79% 54% / 0.55)',
-                  color: '#fff',
+                  background: 'var(--action)',
+                  border: '1px solid var(--action)',
+                  color: 'var(--text)',
                   cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.65 : 1,
                   fontFamily: 'Figtree, sans-serif',

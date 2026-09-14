@@ -478,7 +478,7 @@ const Admin = () => {
                       <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
                           onClick={() => approveMutation.mutate(item.id)}
                           disabled={approveMutation.isPending}
                         >
@@ -524,13 +524,13 @@ const Admin = () => {
                           <p className="text-sm font-semibold text-foreground truncate">{listing.title}</p>
                           <Badge
                             variant="outline"
-                            className={`text-[10px] ${listing.is_active ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-muted text-muted-foreground border-border"}`}
+                            className={`text-[10px] ${listing.is_active ? "bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]" : "bg-muted text-muted-foreground border-border"}`}
                           >
                             {listing.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          by @{creator?.username || "unknown"} · <span className="font-semibold text-orange-400">£{Number(listing.price_gbp ?? 0).toFixed(2)}</span>
+                          by @{creator?.username || "unknown"} · <span className="font-semibold text-[var(--cat-artefact)]">£{Number(listing.price_gbp ?? 0).toFixed(2)}</span>
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -595,7 +595,7 @@ const Admin = () => {
                           {tool.is_official && (
                             <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Official</Badge>
                           )}
-                          <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Approved</Badge>
+                          <Badge variant="outline" className="text-[10px] bg-[var(--cat-evidence-fill)] text-[var(--cat-evidence)] border-[var(--cat-evidence)]">Approved</Badge>
                         </div>
                         {tool.description && <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>}
                         <p className="text-xs text-muted-foreground mt-1">{tool.category}</p>
@@ -665,7 +665,7 @@ const Admin = () => {
                           )}
                         </div>
                         <div className="flex gap-2 shrink-0">
-                          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => approveProjectMutation.mutate(proj.id)} disabled={approveProjectMutation.isPending}>
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8" onClick={() => approveProjectMutation.mutate(proj.id)} disabled={approveProjectMutation.isPending}>
                             {approveProjectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
                             Approve
                           </Button>
@@ -765,7 +765,7 @@ const Admin = () => {
                       <div className="flex gap-2 shrink-0">
                         <Button
                           size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
                           onClick={() => approvePathMutation.mutate(path.id)}
                           disabled={approvePathMutation.isPending}
                         >
@@ -839,7 +839,7 @@ function ToolCard({
         <div className="flex gap-2 shrink-0">
           <Button
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
             onClick={onApprove}
             disabled={approving}
           >
@@ -989,7 +989,7 @@ function CuratorsTab() {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8" onClick={() => approveMutation.mutate(app)} disabled={approveMutation.isPending}>
+                  <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8" onClick={() => approveMutation.mutate(app)} disabled={approveMutation.isPending}>
                     {approveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />} Approve
                   </Button>
                   <Button size="sm" variant="outline" className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10" onClick={() => rejectMutation.mutate(app)} disabled={rejectMutation.isPending}>

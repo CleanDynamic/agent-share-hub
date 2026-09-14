@@ -92,7 +92,7 @@ export function ShareTrigger({
         background: "transparent",
         border: "none",
         cursor: "pointer",
-        color: "rgba(255,255,255,0.55)",
+        color: "var(--text2)",
         ...style,
       }}
     >

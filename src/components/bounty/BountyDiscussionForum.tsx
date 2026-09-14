@@ -125,10 +125,10 @@ function Dropdown<T extends string>({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-foreground/75 hover:bg-white/5"
+        className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs text-foreground/75 hover:bg-muted"
         style={{
-          background: "rgba(255, 255, 255, 0.12)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          background: "var(--recess)",
+          border: "0.5px solid var(--line)",
           fontFamily: "Figtree, sans-serif",
         }}
       >
@@ -147,15 +147,15 @@ function Dropdown<T extends string>({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className="block w-full text-left px-3 py-2 text-xs hover:bg-white/5"
+              className="block w-full text-left px-3 py-2 text-xs hover:bg-muted"
               style={{
                 fontFamily: "Figtree, sans-serif",
                 color:
                   opt.value === value
-                    ? "rgba(46,196,182,1)"
-                    : "rgba(255,255,255,0.75)",
+                    ? "var(--evidence)"
+                    : "var(--text2)",
                 background:
-                  opt.value === value ? "rgba(46,196,182,0.08)" : "transparent",
+                  opt.value === value ? "color-mix(in srgb, var(--evidence) 8%, transparent)" : "transparent",
               }}
             >
               {opt.label}
@@ -193,10 +193,10 @@ function Composer({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full text-left px-4 py-3 rounded-md text-xs text-muted-foreground hover:bg-white/5"
+        className="w-full text-left px-4 py-3 rounded-md text-xs text-muted-foreground hover:bg-muted"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          background: "var(--recess)",
+          border: "0.5px solid var(--line)",
           fontFamily: "Figtree, sans-serif",
         }}
       >
@@ -209,8 +209,8 @@ function Composer({
     <div
       className="rounded-md p-3 flex flex-col"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255,255,255,0.10)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
       }}
     >
       <textarea
@@ -225,13 +225,13 @@ function Composer({
           minHeight: 80,
         }}
       />
-      <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5">
+      <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={tagAuthor}
             onChange={(e) => setTagAuthor(e.target.checked)}
-            style={{ width: 14, height: 14, accentColor: "#F59E0B" }}
+            style={{ width: 14, height: 14, accentColor: "var(--action)" }}
           />
           <span
             className="text-[11px] text-muted-foreground"
@@ -256,10 +256,12 @@ function Composer({
             type="button"
             onClick={handlePost}
             disabled={!text.trim()}
-            className="px-4 py-1.5 rounded-md text-xs font-semibold text-black disabled:opacity-40"
+            className="px-4 py-1.5 text-xs font-semibold disabled:opacity-40"
             style={{
-              background: "#F59E0B",
-              fontFamily: "Figtree, sans-serif",
+              background: "var(--action)",
+              color: "var(--on-action)",
+              borderRadius: "var(--r-control)",
+              fontFamily: FIGTREE,
             }}
           >
             Post
@@ -295,21 +297,21 @@ function ReactionPill({
       onClick={onClick}
       className="flex items-center gap-1 px-2 py-1 rounded transition-colors"
       style={{
-        background: hasReacted ? "rgba(46,196,182,0.12)" : "rgba(255, 255, 255, 0.12)",
+        background: hasReacted ? "color-mix(in srgb, var(--evidence) 12%, transparent)" : "var(--recess)",
         border: hasReacted
-          ? "0.5px solid rgba(46,196,182,0.3)"
+          ? "0.5px solid color-mix(in srgb, var(--evidence) 30%, transparent)"
           : "0.5px solid transparent",
       }}
     >
       <Icon
         size={12}
-        color={hasReacted ? "rgba(46,196,182,1)" : "rgba(255,255,255,0.45)"}
+        color={hasReacted ? "var(--evidence)" : "var(--recess)"}
       />
       <span
         className="text-[11px]"
         style={{
           fontFamily: "Figtree, sans-serif",
-          color: hasReacted ? "rgba(46,196,182,1)" : "rgba(255,255,255,0.55)",
+          color: hasReacted ? "var(--evidence)" : "var(--text2)",
         }}
       >
         {count}
@@ -320,13 +322,18 @@ function ReactionPill({
 
 // ─── Role Pill ───────────────────────────────────────────────────────────
 function RolePill({ role }: { role: "author" | "solver" }) {
+  /* BOTH MARKS ARE EVIDENCE MARKS. The author wrote the ask and the accepted
+     solver answered it; both are the record saying who someone is on this
+     thread, so both take `--evidence` and are told apart by FILL rather than
+     by hue — the theme's tier ladder, and the reason the author pill is no
+     longer amber (which cannot carry text on the Exhibition ground at all). */
   const cfg =
     role === "author"
-      ? { bg: "rgba(245,158,11,0.15)", color: "#F59E0B", text: "Bounty author" }
-      : { bg: "rgba(46,196,182,0.15)", color: "#2EC4B6", text: "Accepted solver" };
+      ? { bg: "transparent", color: "var(--evidence)", text: "Bounty author" }
+      : { bg: "var(--cat-evidence-fill)", color: "var(--cat-evidence)", text: "Accepted solver" };
   return (
     <span
-      className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+      className="px-2 py-0.5 text-[10px] font-medium"
       style={{
         background: cfg.bg,
         color: cfg.color,
@@ -340,11 +347,11 @@ function RolePill({ role }: { role: "author" | "solver" }) {
 
 function InlineReferenceChip({ reference }: { reference: InlineReference }) {
   const colors: Record<string, string> = {
-    blueprint: "#8B5CF6",
-    stage: "#3B82F6",
-    block: "#10B981",
+    blueprint: "var(--cat-agents)",
+    stage: "var(--cat-data)",
+    block: "var(--cat-configuration)",
   };
-  const c = colors[reference.type] ?? "#8B5CF6";
+  const c = colors[reference.type] ?? "var(--cat-agents)";
   return (
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded mx-1"
@@ -356,7 +363,7 @@ function InlineReferenceChip({ reference }: { reference: InlineReference }) {
       }}
     >
       <span style={{ color: c, fontWeight: 500 }}>{reference.type}:</span>
-      <span style={{ color: "rgba(255,255,255,0.85)" }}>{reference.title}</span>
+      <span style={{ color: "var(--text)" }}>{reference.title}</span>
     </span>
   );
 }
@@ -413,15 +420,19 @@ function CommentCard({
         className="relative"
         style={{
           padding: "12px 0",
-          borderBottom: isRoot ? "0.5px solid rgba(255, 255, 255, 0.12)" : "none",
-          background: flash ? "rgba(46,196,182,0.08)" : "transparent",
+          borderBottom: isRoot ? "0.5px solid var(--line)" : "none",
+          /* A comment that just landed, and one you have not read, are both
+             ATTENTION rather than evidence: --action carries them, and the
+             evidence hue stays reserved for the two role marks below, which
+             are claims about who someone is. */
+          background: flash ? "color-mix(in srgb, var(--action) 8%, transparent)" : "transparent",
           transition: "background 600ms ease-out",
         }}
       >
         {comment.isUnread && (
           <div
             className="absolute left-0 top-0 bottom-0"
-            style={{ width: 3, background: "#2EC4B6", borderRadius: 2 }}
+            style={{ width: 3, background: "var(--action)", borderRadius: 2 }}
           />
         )}
 
@@ -432,7 +443,7 @@ function CommentCard({
               style={{
                 width: avatarSize,
                 height: avatarSize,
-                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+                background: "linear-gradient(135deg, var(--cat-agents) 0%, var(--cat-agents) 100%)",
               }}
             >
               {comment.author.avatarUrl ? (
@@ -443,7 +454,7 @@ function CommentCard({
                 />
               ) : (
                 <span
-                  className="text-white"
+                  className="text-foreground"
                   style={{
                     fontFamily: "Figtree, sans-serif",
                     fontSize: avatarSize * 0.4,
@@ -467,7 +478,7 @@ function CommentCard({
               @{comment.author.handle}
             </span>
             {comment.author.isTrustedSolver && (
-              <ShieldCheck size={10} color="#2EC4B6" />
+              <ShieldCheck size={10} color="var(--evidence)" />
             )}
             {isAuthor && <RolePill role="author" />}
             {isSolver && !isAuthor && <RolePill role="solver" />}
@@ -482,7 +493,7 @@ function CommentCard({
             <button
               type="button"
               onClick={() => onMore(comment.id)}
-              className="p-1 rounded hover:bg-white/5 text-muted-foreground"
+              className="p-1 rounded hover:bg-muted text-muted-foreground"
             >
               <MoreHorizontal size={14} />
             </button>
@@ -513,7 +524,7 @@ function CommentCard({
             <button
               type="button"
               onClick={() => setShowReactionPicker((v) => !v)}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-muted-foreground hover:bg-white/5"
+              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-muted-foreground hover:bg-muted"
             >
               <Plus size={12} />
               React
@@ -532,9 +543,9 @@ function CommentCard({
                         onReact(comment.id, t);
                         setShowReactionPicker(false);
                       }}
-                      className="p-2 rounded hover:bg-white/10"
+                      className="p-2 rounded hover:bg-muted"
                     >
-                      <Icon size={14} color="rgba(255,255,255,0.65)" />
+                      <Icon size={14} color="var(--text2)" />
                     </button>
                   );
                 })}
@@ -544,8 +555,8 @@ function CommentCard({
           <button
             type="button"
             onClick={() => setShowReplyInput((v) => !v)}
-            className="text-[11px] font-medium px-2 py-1 rounded hover:bg-white/5"
-            style={{ color: "rgba(46,196,182,0.85)", fontFamily: "Figtree, sans-serif" }}
+            className="text-[11px] font-medium px-2 py-1 rounded hover:bg-muted"
+            style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)", fontFamily: "Figtree, sans-serif" }}
           >
             Reply
           </button>
@@ -560,8 +571,8 @@ function CommentCard({
               placeholder="Write a reply..."
               className="flex-1 px-3 py-2 rounded-md outline-none text-[12px] text-foreground/90"
               style={{
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
+                background: "var(--recess)",
+                border: "0.5px solid var(--line)",
                 fontFamily: "Figtree, sans-serif",
               }}
               onKeyDown={(e) => {
@@ -575,8 +586,13 @@ function CommentCard({
               type="button"
               onClick={handleReply}
               disabled={!replyText.trim()}
-              className="px-3 py-2 rounded-md text-[11px] font-semibold text-black disabled:opacity-40"
-              style={{ background: "#F59E0B", fontFamily: "Figtree, sans-serif" }}
+              className="px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
+              style={{
+                background: "var(--action)",
+                color: "var(--on-action)",
+                borderRadius: "var(--r-control)",
+                fontFamily: FIGTREE,
+              }}
             >
               Reply
             </button>
@@ -604,7 +620,7 @@ function EmptyState() {
   return (
     <div
       className="rounded-md border border-dashed border-border/60 p-10 text-center"
-      style={{ background: "rgba(255,255,255,0.02)" }}
+      style={{ background: "var(--recess)" }}
     >
       <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-3" />
       <div
@@ -663,7 +679,7 @@ export function BountyDiscussionForum({
             className="flex items-center gap-2 text-lg font-semibold text-foreground"
             style={{ ...type.cardTitle,}}
           >
-            <MessageSquare className="w-5 h-5" color="#2EC4B6" />
+            <MessageSquare className="w-5 h-5" color="var(--evidence)" />
             Discussion
           </h2>
           <p

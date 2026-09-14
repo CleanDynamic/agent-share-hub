@@ -86,12 +86,12 @@ export interface BountySolutionsSectionProps {
 }
 
 const blockTypeColors: Record<string, string> = {
-  prompt: "#F59E0B",
-  code: "#3B82F6",
-  data: "#10B981",
-  model: "#8B5CF6",
-  output: "#EC4899",
-  default: "#6B7280",
+  prompt: "var(--cat-instruction)",
+  code: "var(--cat-data)",
+  data: "var(--cat-configuration)",
+  model: "var(--cat-agents)",
+  output: "var(--cat-media)",
+  default: "var(--text2)",
 };
 
 function formatRelativeTime(iso: string): string {
@@ -138,7 +138,7 @@ function Dropdown({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:bg-white/5"
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:bg-muted"
       >
         <span>
           {label}: <span className="text-foreground/80">{selected?.label}</span>
@@ -155,8 +155,8 @@ function Dropdown({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className={`block w-full text-left px-3 py-2 text-xs rounded hover:bg-white/5 ${
-                value === opt.value ? "text-amber-400" : "text-foreground/80"
+              className={`block w-full text-left px-3 py-2 text-xs rounded hover:bg-muted ${
+                value === opt.value ? "text-[var(--cat-artefact)]" : "text-foreground/80"
               }`}
             >
               {opt.label}
@@ -201,7 +201,7 @@ function OverflowMenu({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="p-1 rounded hover:bg-white/5 text-muted-foreground"
+        className="p-1 rounded hover:bg-muted text-muted-foreground"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
@@ -210,21 +210,21 @@ function OverflowMenu({
           <button
             type="button"
             onClick={() => { onShare(); setOpen(false); }}
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-white/5 text-foreground/80"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-muted text-foreground/80"
           >
             <LinkIcon className="w-3 h-3" /> Copy link to solution
           </button>
           <button
             type="button"
             onClick={() => { onSave(); setOpen(false); }}
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-white/5 text-foreground/80"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-muted text-foreground/80"
           >
             <Bookmark className="w-3 h-3" /> Save to Library
           </button>
           <button
             type="button"
             onClick={() => { onReport(); setOpen(false); }}
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-white/5 text-foreground/80"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs rounded hover:bg-muted text-foreground/80"
           >
             <Flag className="w-3 h-3" /> Report solution
           </button>
@@ -234,7 +234,7 @@ function OverflowMenu({
               <button
                 type="button"
                 onClick={() => { onAccept(); setOpen(false); }}
-                className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs font-medium rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-300"
+                className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs font-medium rounded bg-[var(--cat-evidence-fill)] hover:bg-[var(--cat-evidence-fill)] text-[var(--evidence)]"
               >
                 <Check className="w-3 h-3" /> Accept this solution
               </button>
@@ -264,14 +264,14 @@ function StageMiniMap({ nodes }: { nodes: Array<{ x: number; y: number; type: st
   const sy = maxY > minY ? (H - P * 2) / (maxY - minY) : 1;
   const s = Math.min(sx, sy, 1);
   return (
-    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="rounded bg-white/[0.02]">
+    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} className="rounded bg-muted">
       {nodes.slice(0, -1).map((n, i) => {
         const next = nodes[i + 1];
         const x1 = P + (n.x - minX) * s + 4;
         const y1 = P + (n.y - minY) * s + 4;
         const x2 = P + (next.x - minX) * s + 4;
         const y2 = P + (next.y - minY) * s + 4;
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />;
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text2)" strokeWidth={1} />;
       })}
       {nodes.map((n, i) => {
         const x = P + (n.x - minX) * s;
@@ -325,10 +325,10 @@ function InlineCommentThread({
   };
 
   return (
-    <div className="mt-3 rounded-md border border-border/60 bg-white/[0.02] p-3">
+    <div className="mt-3 rounded-md border border-border/60 bg-muted p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-foreground/80">Comments</span>
-        <button onClick={onClose} className="p-1 rounded hover:bg-white/5 text-muted-foreground">
+        <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground">
           <X className="w-3 h-3" />
         </button>
       </div>
@@ -362,13 +362,13 @@ function InlineCommentThread({
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Add a comment..."
-            className="w-full bg-white/[0.04] border border-border/60 rounded p-2 text-xs text-foreground/90 min-h-[60px] resize-none"
+            className="w-full bg-muted border border-border/60 rounded p-2 text-xs text-foreground/90 min-h-[60px] resize-none"
           />
           <div className="flex justify-end mt-2">
             <button
               onClick={submit}
               disabled={!text.trim() || submitting}
-              className="px-3 py-1 rounded bg-amber-500 text-black text-xs font-semibold disabled:opacity-40"
+              className="px-3 py-1 rounded bg-[var(--action)] text-primary-foreground text-xs font-semibold disabled:opacity-40"
             >
               {submitting ? "Posting…" : "Post"}
             </button>
@@ -431,12 +431,12 @@ function SolutionCard({
       id={`solution-${solution.id}`}
       className={`rounded-lg p-4 transition-colors ${
         isAccepted
-          ? "border border-teal-500/40 bg-teal-500/[0.04]"
-          : "border border-border/40 bg-white/[0.02] hover:border-border"
+          ? "border border-[var(--evidence)] bg-[var(--evidence)]/[0.04]"
+          : "border border-border/40 bg-muted hover:border-border"
       } relative`}
     >
       {isAccepted && (
-        <span className="absolute top-2.5 right-3 text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300">
+        <span className="absolute top-2.5 right-3 text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full bg-[var(--cat-evidence-fill)] text-[var(--evidence)]">
           Accepted
         </span>
       )}
@@ -453,7 +453,7 @@ function SolutionCard({
         </span>
         <span className="text-[11px] text-muted-foreground">@{solution.solverUser.handle}</span>
         {solution.solverUser.isTrustedSolver && (
-          <span className="flex items-center gap-1 text-[10px] text-teal-300/80">
+          <span className="flex items-center gap-1 text-[10px] text-[var(--evidence)]">
             <ShieldCheck className="w-3 h-3" /> Trusted
           </span>
         )}
@@ -461,7 +461,7 @@ function SolutionCard({
           {formatRelativeTime(solution.createdAt)}
         </span>
         {solution.isOwnSolution && (
-          <span className="text-[10px] text-amber-300/80 px-1.5 py-0.5 rounded bg-amber-500/10">You</span>
+          <span className="text-[10px] text-[var(--cat-artefact)] px-1.5 py-0.5 rounded bg-[var(--cat-artefact-fill)]">You</span>
         )}
       </div>
 
@@ -472,7 +472,7 @@ function SolutionCard({
           {noteTrunc && !showNoteFull && (
             <button
               onClick={() => setShowNoteFull(true)}
-              className="mt-1 text-[11px] text-amber-400 hover:text-amber-300"
+              className="mt-1 text-[11px] text-[var(--cat-artefact)] hover:text-[var(--cat-artefact)]"
             >
               Read more →
             </button>
@@ -501,12 +501,12 @@ function SolutionCard({
           </>
         )}
         {solution.contentPreview.type === "prompt" && solution.contentPreview.text && (
-          <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-foreground/85 line-clamp-3 whitespace-pre-wrap">
+          <div className="rounded border border-[var(--cat-artefact)] bg-[var(--cat-artefact-fill)] p-2 text-xs text-foreground/85 line-clamp-3 whitespace-pre-wrap">
             {solution.contentPreview.text}
           </div>
         )}
         {solution.contentPreview.type === "code" && solution.contentPreview.text && (
-          <pre className="rounded border border-blue-500/30 bg-blue-500/5 p-2 text-[11px] text-foreground/85 overflow-x-auto max-h-32">
+          <pre className="rounded border border-[var(--cat-data)] bg-[var(--cat-data-fill)] p-2 text-[11px] text-foreground/85 overflow-x-auto max-h-32">
             <code>{solution.contentPreview.text}</code>
           </pre>
         )}
@@ -519,7 +519,7 @@ function SolutionCard({
 
       {/* Expanded */}
       {isExpanded && (
-        <div className="mb-3 rounded border border-border/60 bg-white/[0.02] p-3">
+        <div className="mb-3 rounded border border-border/60 bg-muted p-3">
           {renderExpandedContent ? (
             renderExpandedContent(solution, slot)
           ) : (
@@ -556,8 +556,8 @@ function SolutionCard({
         <div className="flex items-center gap-1">
           <button
             onClick={onVote}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-white/5 ${
-              solution.hasVoted ? "text-amber-400" : "text-muted-foreground"
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-muted ${
+              solution.hasVoted ? "text-[var(--cat-artefact)]" : "text-muted-foreground"
             }`}
           >
             <ArrowBigUp className={`w-4 h-4 ${solution.hasVoted ? "fill-current" : ""}`} />
@@ -565,8 +565,8 @@ function SolutionCard({
           </button>
           <button
             onClick={onIWouldImplement}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-white/5 ${
-              solution.hasIWouldImplement ? "text-teal-300" : "text-muted-foreground"
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-muted ${
+              solution.hasIWouldImplement ? "text-[var(--evidence)]" : "text-muted-foreground"
             }`}
             title="I'd implement this"
           >
@@ -575,7 +575,7 @@ function SolutionCard({
           </button>
           <button
             onClick={() => setShowComments((v) => !v)}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:bg-white/5"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:bg-muted"
           >
             <MessageSquare className="w-4 h-4" />
             {localCommentCount}
@@ -585,7 +585,7 @@ function SolutionCard({
         <div className="flex items-center gap-1">
           <button
             onClick={onToggleExpand}
-            className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-white/5"
+            className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
           >
             {isExpanded ? "Collapse ↑" : "Expand →"}
           </button>
@@ -607,14 +607,14 @@ function SolutionCard({
 // ─── Empty per-slot state ───────────────────────────────────────────────
 function SlotEmptyState({ onSubmitFirstSolution }: { onSubmitFirstSolution: () => void }) {
   return (
-    <div className="rounded-lg border border-dashed border-border/60 bg-white/[0.02] p-6 text-center">
+    <div className="rounded-lg border border-dashed border-border/60 bg-muted p-6 text-center">
       <Puzzle className="w-5 h-5 mx-auto text-muted-foreground mb-2" />
       <div className="text-xs text-muted-foreground mb-3">
         No solutions submitted yet for this slot
       </div>
       <button
         onClick={onSubmitFirstSolution}
-        className="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-black text-xs font-semibold"
+        className="px-3 py-1.5 rounded bg-[var(--action)] hover:bg-[var(--action)] text-primary-foreground text-xs font-semibold"
       >
         Be the first to submit
       </button>
@@ -678,7 +678,7 @@ export function BountySolutionsSection({
       <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            <Target className="w-5 h-5 text-amber-400" />
+            <Target className="w-5 h-5 text-[var(--cat-artefact)]" />
             Solutions
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
@@ -698,7 +698,7 @@ export function BountySolutionsSection({
       </div>
 
       {!hasAny ? (
-        <div className="rounded-lg border border-dashed border-border/60 bg-white/[0.02] p-10 text-center">
+        <div className="rounded-lg border border-dashed border-border/60 bg-muted p-10 text-center">
           <Target className="w-6 h-6 mx-auto text-muted-foreground mb-3" />
           <div className="text-sm text-foreground/80 mb-4">
             This bounty hasn't been solved yet
@@ -706,7 +706,7 @@ export function BountySolutionsSection({
           {slots.length > 0 && (
             <button
               onClick={() => onSubmitFirstSolution(slots[0].id)}
-              className="px-4 py-2 rounded bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold"
+              className="px-4 py-2 rounded bg-[var(--action)] hover:bg-[var(--action)] text-primary-foreground text-sm font-semibold"
             >
               Submit the first solution
             </button>
@@ -721,9 +721,9 @@ export function BountySolutionsSection({
                 <div className="mb-3">
                   <div className="flex items-center gap-2">
                     {slot.kind === "stage" ? (
-                      <Target className="w-4 h-4 text-teal-300" />
+                      <Target className="w-4 h-4 text-[var(--evidence)]" />
                     ) : (
-                      <Puzzle className="w-4 h-4 text-blue-300" />
+                      <Puzzle className="w-4 h-4 text-[var(--cat-data)]" />
                     )}
                     <span className="text-sm font-medium text-foreground/90">{slot.name}</span>
                     <span className="text-[11px] text-muted-foreground">[{list.length}]</span>

@@ -16,22 +16,22 @@ import type { Block, BlockType } from '@/types/document';
 
 // ─── Accent colors (must mirror BlockLibraryTool's BLOCKS palette) ──
 export const BLOCK_TYPE_ACCENT: Record<BlockType, string> = {
-  text:     'rgba(255,255,255,0.60)',
-  heading:  'rgba(255,255,255,0.50)',
-  note:     '#F59E0B',
-  quote:    'rgba(255,255,255,0.60)',
-  prompt:   '#E8571A',
-  agent:    '#7C3AED',
-  model:    '#A78BFA',
-  result:   '#7C3AED',
-  code:     '#22C55E',
-  image:    'rgba(255,255,255,0.60)',
-  video:    'rgba(255,255,255,0.60)',
-  resource: '#06B6D4',
-  tutorial: '#2EC4B6',
-  tool:     '#3B82F6',
-  workflow: '#3B82F6',
-  compare:  '#EC4899',
+  text:     'var(--recess)',
+  heading:  'var(--recess)',
+  note:     'var(--cat-narrative)',
+  quote:    'var(--recess)',
+  prompt:   'var(--action)',
+  agent:    'var(--cat-agents)',
+  model:    'var(--cat-agents)',
+  result:   'var(--cat-agents)',
+  code:     'var(--cat-configuration)',
+  image:    'var(--recess)',
+  video:    'var(--recess)',
+  resource: 'var(--cat-data)',
+  tutorial: 'var(--evidence)',
+  tool:     'var(--cat-data)',
+  workflow: 'var(--cat-data)',
+  compare:  'var(--cat-media)',
 };
 
 const DEFAULT_BLOCK_WIDTH = 220;

@@ -26,14 +26,14 @@ function renderRichText(text: string): React.ReactNode[] {
     if (!part) return null;
     if (part.startsWith("@")) {
       return (
-        <span key={i} style={{ color: "#E8571A", fontWeight: 500 }}>
+        <span key={i} style={{ color: "var(--action)", fontWeight: 500 }}>
           {part}
         </span>
       );
     }
     if (part.startsWith("#")) {
       return (
-        <span key={i} style={{ color: "rgba(46,196,182,0.9)", fontWeight: 500 }}>
+        <span key={i} style={{ color: "color-mix(in srgb, var(--evidence) 90%, transparent)", fontWeight: 500 }}>
           {part}
         </span>
       );
@@ -45,7 +45,7 @@ function renderRichText(text: string): React.ReactNode[] {
           href={part}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#E8571A", textDecoration: "underline" }}
+          style={{ color: "var(--action)", textDecoration: "underline" }}
         >
           {part}
         </a>
@@ -56,7 +56,7 @@ function renderRichText(text: string): React.ReactNode[] {
         <code
           key={i}
           style={{
-            background: "rgba(255,255,255,0.08)",
+            background: "var(--recess)",
             borderRadius: 3,
             padding: "1px 4px",
             fontSize: 12,
@@ -101,8 +101,8 @@ function ReplyComposer({
   return (
     <div
       style={{
-        background: "rgba(68,68,84,0.30)",
-        border: "0.5px solid rgba(255,255,255,0.08)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "10px 12px",
         marginBottom: 8,
@@ -117,7 +117,7 @@ function ReplyComposer({
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
           }}
         >
           Replying to @{parentHandle}
@@ -129,10 +129,10 @@ function ReplyComposer({
             width: 18,
             height: 18,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--recess)",
             border: "none",
             cursor: "pointer",
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
           aria-label="Cancel reply"
         >
@@ -151,11 +151,11 @@ function ReplyComposer({
         rows={2}
         style={{
           width: "100%",
-          background: "rgba(82,82,100,0.60)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          background: "var(--recess)",
+          border: "0.5px solid var(--line)",
           borderRadius: 8,
           padding: "8px 10px",
-          color: "rgba(255,255,255,0.92)",
+          color: "var(--text)",
           fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           lineHeight: 1.55,
@@ -176,8 +176,8 @@ function ReplyComposer({
             borderRadius: 6,
             border: "none",
             cursor: text.trim() ? "pointer" : "default",
-            background: text.trim() ? "#E8571A" : "rgba(232,87,26,0.3)",
-            color: text.trim() ? "#fff" : "rgba(255,255,255,0.4)",
+            background: text.trim() ? "var(--action)" : "color-mix(in srgb, var(--action) 30%, transparent)",
+            color: text.trim() ? "var(--text)" : "var(--text2)",
             transition: "background 150ms ease",
           }}
         >
@@ -199,8 +199,8 @@ function ThreadLine() {
         top: -4,
         bottom: "50%",
         width: 14,
-        borderLeft: "1px solid rgba(255,255,255,0.10)",
-        borderBottom: "1px solid rgba(255,255,255,0.10)",
+        borderLeft: "1px solid var(--line)",
+        borderBottom: "1px solid var(--line)",
         borderBottomLeftRadius: 8,
       }}
     />
@@ -253,7 +253,7 @@ function RepliesList(props: {
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -349,8 +349,8 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           {level > 0 && <ThreadLine />}
           <div
             style={{
-              background: "rgba(68,68,84,0.25)",
-              border: "0.5px solid rgba(255,255,255,0.05)",
+              background: "var(--recess)",
+              border: "0.5px solid var(--line)",
               borderRadius: 10,
               padding: "12px 14px",
               marginBottom: 8,
@@ -361,7 +361,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontStyle: "italic",
-                color: "rgba(255,255,255,0.35)",
+                color: "var(--text2)",
               }}
             >
               [Comment deleted]
@@ -407,7 +407,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 500,
-              color: "#E8571A",
+              color: "var(--action)",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -422,10 +422,10 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           ref={cardRef}
           className={isNewReply ? "ns-comment-new-reply" : ""}
           style={{
-            background: "rgba(68,68,84,0.40)",
+            background: "var(--recess)",
             border: isHighlighted
-              ? "1px solid rgba(232,87,26,0.85)"
-              : "0.5px solid rgba(255,255,255,0.08)",
+              ? "1px solid color-mix(in srgb, var(--action) 85%, transparent)"
+              : "0.5px solid var(--line)",
             borderRadius: 10,
             padding: "12px 14px",
             marginBottom: 8,
@@ -456,7 +456,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   width: 24,
                   height: 24,
                   borderRadius: "50%",
-                  background: "rgba(255,255,255,0.08)",
+                  background: "var(--recess)",
                   flexShrink: 0,
                 }}
               />
@@ -466,7 +466,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.92)",
+                color: "var(--text)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -476,7 +476,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
-                color: "rgba(255,255,255,0.40)",
+                color: "var(--text2)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -488,8 +488,8 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 9,
                   fontWeight: 600,
-                  background: "rgba(245,158,11,0.15)",
-                  color: "rgba(245,158,11,0.9)",
+                  background: "var(--cat-breakage-fill)",
+                  color: "var(--cat-breakage)",
                   padding: "2px 6px",
                   borderRadius: 4,
                 }}
@@ -501,7 +501,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
-                color: "rgba(255,255,255,0.40)",
+                color: "var(--text2)",
                 marginLeft: "auto",
               }}
             >
@@ -532,11 +532,11 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   rows={3}
                   style={{
                     width: "100%",
-                    background: "rgba(82,82,100,0.60)",
-                    border: "0.5px solid rgba(255,255,255,0.08)",
+                    background: "var(--recess)",
+                    border: "0.5px solid var(--line)",
                     borderRadius: 8,
                     padding: "8px 10px",
-                    color: "rgba(255,255,255,0.92)",
+                    color: "var(--text)",
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 13,
                     lineHeight: 1.55,
@@ -552,7 +552,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.55)",
+                      color: "var(--text2)",
                       background: "none",
                       border: "none",
                       cursor: "pointer",
@@ -579,12 +579,12 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                           : "default",
                       background:
                         editText.trim() && editText.trim() !== comment.text
-                          ? "#E8571A"
-                          : "rgba(232,87,26,0.3)",
+                          ? "var(--action)"
+                          : "color-mix(in srgb, var(--action) 30%, transparent)",
                       color:
                         editText.trim() && editText.trim() !== comment.text
-                          ? "#fff"
-                          : "rgba(255,255,255,0.4)",
+                          ? "var(--text)"
+                          : "var(--text2)",
                     }}
                   >
                     Save
@@ -599,7 +599,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 13,
                     lineHeight: 1.55,
-                    color: "rgba(255,255,255,0.85)",
+                    color: "var(--text)",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     display: textClamped ? "-webkit-box" : "block",
@@ -617,7 +617,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 500,
-                      color: "rgba(255,255,255,0.55)",
+                      color: "var(--text2)",
                       background: "none",
                       border: "none",
                       cursor: "pointer",
@@ -644,14 +644,14 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 border: "none",
                 cursor: "pointer",
                 padding: 0,
-                color: comment.hasLiked ? "#EF4444" : "rgba(255,255,255,0.45)",
+                color: comment.hasLiked ? "var(--cat-breakage)" : "var(--text2)",
                 transition: "color 150ms ease",
               }}
               aria-label={comment.hasLiked ? "Unlike" : "Like"}
             >
               <Heart
                 size={13}
-                fill={comment.hasLiked ? "#EF4444" : "none"}
+                fill={comment.hasLiked ? "var(--cat-breakage)" : "none"}
               />
               <span style={{ fontSize: 11, fontFamily: "Figtree, sans-serif" }}>
                 {comment.likeCount > 0 ? comment.likeCount : ""}
@@ -666,7 +666,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 border: "none",
                 cursor: "pointer",
                 padding: 0,
-                color: "rgba(255,255,255,0.45)",
+                color: "var(--text2)",
               }}
               aria-label="Reply"
             >
@@ -685,7 +685,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 cursor: "pointer",
                 padding: 0,
                 marginLeft: "auto",
-                color: "rgba(255,255,255,0.30)",
+                color: "var(--text2)",
               }}
               aria-label="More options"
             >

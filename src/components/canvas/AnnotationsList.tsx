@@ -24,14 +24,14 @@ export function AnnotationsList({
     <>
       <div style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.40)', zIndex: 200,
+        background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', zIndex: 200,
       }} onClick={onClose} />
       <div style={{
         position: 'fixed',
         left: 220, top: 60,
         width: 300, maxHeight: '70vh',
-        background: 'rgba(10,10,16,0.99)',
-        border: '1px solid rgba(245,158,11,0.20)',
+        background: 'var(--bg)',
+        border: '1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)',
         borderRadius: 12, zIndex: 201,
         overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
@@ -40,19 +40,19 @@ export function AnnotationsList({
         <div style={{
           padding: '14px 16px 10px 16px',
           borderBottom:
-            '1px solid rgba(255, 255, 255, 0.14)',
+            '1px solid var(--line)',
           display: 'flex', alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <div style={{
             fontSize: 13, fontWeight: 700,
-            color: 'rgba(245,158,11,0.80)',
+            color: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)',
           }}>
             Your Notes
             {annotated.length > 0 && (
               <span style={{
                 marginLeft: 6, fontSize: 11,
-                color: 'rgba(255,255,255,0.30)',
+                color: 'var(--text2)',
                 fontWeight: 400,
               }}>
                 ({annotated.length})
@@ -61,7 +61,7 @@ export function AnnotationsList({
           </div>
           <button onClick={onClose} style={{
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 16,
           }}>×</button>
         </div>
@@ -74,7 +74,7 @@ export function AnnotationsList({
             <div style={{
               padding: '24px 16px',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.22)',
+              color: 'var(--text2)',
               textAlign: 'center',
             }}>
               No notes yet. Click a block and
@@ -87,7 +87,7 @@ export function AnnotationsList({
                 style={{
                   padding: '10px 16px',
                   borderBottom:
-                    '1px solid rgba(255, 255, 255, 0.12)',
+                    '1px solid var(--line)',
                   cursor: 'pointer',
                 }}
                 onClick={() =>
@@ -97,7 +97,7 @@ export function AnnotationsList({
                 <div style={{
                   fontSize: 10, fontWeight: 700,
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   letterSpacing: '0.08em',
                   marginBottom: 4,
                   display: 'flex', gap: 6,
@@ -107,7 +107,7 @@ export function AnnotationsList({
                   </span>
                   {block.stageIndex && (
                     <span style={{
-                      color: '#8B4513',
+                      color: 'var(--action)',
                     }}>
                       {block.stageIndex}
                     </span>
@@ -115,7 +115,7 @@ export function AnnotationsList({
                 </div>
                 <div style={{
                   fontSize: 12,
-                  color: 'rgba(255,255,255,0.60)',
+                  color: 'var(--text2)',
                   lineHeight: 1.55,
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -126,7 +126,7 @@ export function AnnotationsList({
                 </div>
                 <div style={{
                   fontSize: 10, marginTop: 4,
-                  color: 'rgba(255,255,255,0.20)',
+                  color: 'var(--text2)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',

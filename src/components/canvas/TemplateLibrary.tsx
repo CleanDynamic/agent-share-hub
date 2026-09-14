@@ -104,7 +104,7 @@ export function TemplateLibrary({
         toEdge: a.toEdge,
         label: meta?.label ?? a.arrowType,
         arrowType: a.arrowType as any,
-        color: meta?.color ?? '#8B4513',
+        color: meta?.color ?? 'var(--action)',
       };
     });
 
@@ -118,7 +118,7 @@ export function TemplateLibrary({
       <div
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.60)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           zIndex: 200,
         }}
         onClick={onClose}
@@ -129,9 +129,9 @@ export function TemplateLibrary({
         position: 'fixed',
         right: 0, top: 0, bottom: 0,
         width: 360,
-        background: 'rgba(10,10,16,0.99)',
+        background: 'var(--bg)',
         borderLeft:
-          '1px solid rgba(255,255,255,0.10)',
+          '1px solid var(--line)',
         zIndex: 201,
         display: 'flex',
         flexDirection: 'column',
@@ -141,21 +141,21 @@ export function TemplateLibrary({
         <div style={{
           padding: '20px 20px 14px 20px',
           borderBottom:
-            '1px solid rgba(255, 255, 255, 0.14)',
+            '1px solid var(--line)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <div>
             <div style={{
-              color: 'rgba(255,255,255,0.88)',
+              color: 'var(--text)',
               ...type.cardTitle,
             }}>
               Templates
             </div>
             <div style={{
               fontSize: 11,
-              color: 'rgba(255,255,255,0.30)',
+              color: 'var(--text2)',
               marginTop: 2,
             }}>
               Drop pre-built block arrangements
@@ -163,7 +163,7 @@ export function TemplateLibrary({
           </div>
           <button onClick={onClose} style={{
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.40)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 18,
           }}>×</button>
         </div>
@@ -172,7 +172,7 @@ export function TemplateLibrary({
         <div style={{
           display: 'flex', gap: 0,
           borderBottom:
-            '1px solid rgba(255, 255, 255, 0.14)',
+            '1px solid var(--line)',
           overflowX: 'auto',
           padding: '0 20px',
         }}>
@@ -186,11 +186,11 @@ export function TemplateLibrary({
                 border: 'none',
                 borderBottom:
                   activeCategory === cat
-                    ? '2px solid #8B4513'
+                    ? '2px solid var(--action)'
                     : '2px solid transparent',
                 color: activeCategory === cat
-                  ? '#fff'
-                  : 'rgba(255,255,255,0.35)',
+                  ? 'var(--text)'
+                  : 'var(--recess)',
                 fontSize: 12, cursor: 'pointer',
                 fontWeight: activeCategory === cat
                   ? 600 : 400,
@@ -226,19 +226,19 @@ export function TemplateLibrary({
                   setHoveredTemplate(null)}
                 style={{
                   border: hoveredTemplate === template.id
-                    ? '1px solid rgba(139,69,19,0.35)'
-                    : '1px solid rgba(255,255,255,0.07)',
+                    ? '1px solid color-mix(in srgb, var(--action) 35%, transparent)'
+                    : '1px solid var(--line)',
                   borderRadius: 10,
                   padding: '14px',
                   background:
                     hoveredTemplate === template.id
-                      ? 'rgba(139,69,19,0.06)'
-                      : 'rgba(255,255,255,0.02)',
+                      ? 'color-mix(in srgb, var(--action) 6%, transparent)'
+                      : 'var(--recess)',
                   transition: 'all 0.15s',
                 }}
               >
                 <div style={{
-                  color: 'rgba(255,255,255,0.88)',
+                  color: 'var(--text)',
                   marginBottom: 4,
                   ...type.cardTitle,
                 }}>
@@ -246,7 +246,7 @@ export function TemplateLibrary({
                 </div>
                 <div style={{
                   fontSize: 11,
-                  color: 'rgba(255,255,255,0.40)',
+                  color: 'var(--text2)',
                   lineHeight: 1.55, marginBottom: 10,
                 }}>
                   {template.description}
@@ -275,14 +275,14 @@ export function TemplateLibrary({
                           borderRadius: 5,
                           cursor: 'pointer',
                           background: active
-                            ? 'rgba(139,69,19,0.15)'
-                            : 'rgba(255,255,255,0.03)',
+                            ? 'color-mix(in srgb, var(--action) 15%, transparent)'
+                            : 'var(--recess)',
                           border: active
-                            ? '1px solid rgba(139,69,19,0.4)'
-                            : '1px solid rgba(255,255,255,0.08)',
+                            ? '1px solid color-mix(in srgb, var(--action) 40%, transparent)'
+                            : '1px solid var(--line)',
                           color: active
-                            ? '#8B4513'
-                            : 'rgba(255,255,255,0.45)',
+                            ? 'var(--action)'
+                            : 'var(--text2)',
                           transition: 'all 0.12s',
                         }}
                       >
@@ -306,10 +306,10 @@ export function TemplateLibrary({
                         fontSize: 9, padding: '2px 7px',
                         borderRadius: 4,
                         background:
-                          'rgba(255, 255, 255, 0.12)',
+                          'var(--recess)',
                         border:
-                          '1px solid rgba(255,255,255,0.08)',
-                        color: 'rgba(255,255,255,0.40)',
+                          '1px solid var(--line)',
+                        color: 'var(--text2)',
                         fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
@@ -322,10 +322,10 @@ export function TemplateLibrary({
                     <span style={{
                       fontSize: 9, padding: '2px 7px',
                       borderRadius: 4,
-                      background: 'rgba(255, 255, 255, 0.12)',
+                      background: 'var(--recess)',
                       border:
-                        '1px solid rgba(255,255,255,0.08)',
-                      color: 'rgba(255,255,255,0.40)',
+                        '1px solid var(--line)',
+                      color: 'var(--text2)',
                       fontWeight: 600,
                     }}>
                       +{preview.blocks.length - 8} more
@@ -336,10 +336,10 @@ export function TemplateLibrary({
                       fontSize: 9, padding: '2px 7px',
                       borderRadius: 4,
                       background:
-                        'rgba(139,69,19,0.08)',
+                        'color-mix(in srgb, var(--action) 8%, transparent)',
                       border:
-                        '1px solid rgba(139,69,19,0.20)',
-                      color: '#8B4513',
+                        '1px solid color-mix(in srgb, var(--action) 20%, transparent)',
+                      color: 'var(--action)',
                       fontWeight: 600,
                     }}>
                       {preview.arrows.length} arrows
@@ -358,9 +358,9 @@ export function TemplateLibrary({
                     fontWeight: 700,
                     borderRadius: 6,
                     cursor: 'pointer',
-                    background: 'rgba(139,69,19,0.85)',
-                    border: '1px solid rgba(139,69,19,0.5)',
-                    color: '#fff',
+                    background: 'color-mix(in srgb, var(--action) 85%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--action) 50%, transparent)',
+                    color: 'var(--text)',
                     transition: 'all 0.12s',
                   }}
                 >

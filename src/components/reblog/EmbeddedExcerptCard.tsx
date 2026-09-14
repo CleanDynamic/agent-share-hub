@@ -34,7 +34,7 @@ const POST_TYPE_STYLES: Record<
   SourcePost["postType"],
   { bg: string; text: string; label: string }
 > = {
-  blueprint: { bg: "rgba(232, 87, 26, 0.18)", text: "#E8571A", label: "Blueprint" },
+  blueprint: { bg: "color-mix(in srgb, var(--action) 18%, transparent)", text: "var(--action)", label: "Blueprint" },
   blog: { bg: "rgba(45, 185, 160, 0.18)", text: "#2DB9A0", label: "Blog" },
   bounty: { bg: "rgba(234, 179, 8, 0.18)", text: "#EAB308", label: "Bounty" },
 };
@@ -72,16 +72,16 @@ export function EmbeddedExcerptCard({
         className="flex items-start gap-3 rounded-xl"
         style={{
           padding: "14px 16px",
-          background: "rgba(82, 82, 100, 0.25)",
-          border: "0.5px solid rgba(255,255,255,0.08)",
+          background: "var(--recess)",
+          border: "0.5px solid var(--line)",
         }}
       >
-        <FileX size={16} style={{ color: "rgba(255,255,255,0.4)", marginTop: 2 }} />
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}>
+        <FileX size={16} style={{ color: "var(--text2)", marginTop: 2 }} />
+        <div style={{ fontSize: 13, color: "var(--text2)", lineHeight: 1.5 }}>
           <div
             style={{
               fontStyle: "italic",
-              color: "rgba(255,255,255,0.7)",
+              color: "var(--text2)",
               marginBottom: 4,
             }}
           >
@@ -111,8 +111,8 @@ export function EmbeddedExcerptCard({
       }}
       className="group"
       style={{
-        background: "rgba(82, 82, 100, 0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.10)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "14px 16px",
         cursor: onClick ? "pointer" : "default",
@@ -133,7 +133,7 @@ export function EmbeddedExcerptCard({
               width: 22,
               height: 22,
               borderRadius: "50%",
-              background: "rgba(255,255,255,0.10)",
+              background: "var(--recess)",
             }}
           />
         )}
@@ -141,12 +141,12 @@ export function EmbeddedExcerptCard({
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
           }}
         >
           {sourcePost.authorDisplayName}
         </span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+        <span style={{ fontSize: 12, color: "var(--text2)" }}>
           @{sourcePost.authorHandle}
         </span>
         <span
@@ -163,7 +163,7 @@ export function EmbeddedExcerptCard({
           {pill.label.toUpperCase()}
         </span>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.40)" }}>
+        <span style={{ fontSize: 11, color: "var(--text2)" }}>
           {formatTimestamp(sourcePost.publishedAt)}
         </span>
       </div>
@@ -171,7 +171,7 @@ export function EmbeddedExcerptCard({
       {/* Quote block */}
       <div
         style={{
-          borderLeft: "2px solid #E8571A",
+          borderLeft: "2px solid var(--action)",
           paddingLeft: 12,
           marginBottom: 10,
         }}
@@ -181,7 +181,7 @@ export function EmbeddedExcerptCard({
             ...type.cardTitle,
             fontStyle: "italic",
 
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
             whiteSpace: "pre-wrap",
           }}
         >
@@ -201,7 +201,7 @@ export function EmbeddedExcerptCard({
               padding: 0,
               fontSize: 12,
               fontWeight: 500,
-              color: "#E8571A",
+              color: "var(--action)",
               cursor: "pointer",
             }}
           >
@@ -233,7 +233,7 @@ export function EmbeddedExcerptCard({
         <span
           style={{
             fontSize: 12,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
             flex: 1,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -241,11 +241,11 @@ export function EmbeddedExcerptCard({
           }}
         >
           From:{" "}
-          <span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
+          <span style={{ color: "var(--text)", fontWeight: 500 }}>
             {sourcePost.title}
           </span>
           {excerpt.sourceBlockTypeLabel && (
-            <span style={{ color: "rgba(255,255,255,0.40)" }}>
+            <span style={{ color: "var(--text2)" }}>
               {` in ${excerpt.sourceBlockTypeLabel}`}
             </span>
           )}

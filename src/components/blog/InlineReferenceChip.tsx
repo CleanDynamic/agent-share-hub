@@ -43,15 +43,15 @@ export function InlineReferenceChip({
         className="inline-flex items-center gap-1 align-baseline rounded cursor-default"
         style={{
           padding: "1px 7px 1px 6px",
-          backgroundColor: "rgba(239,68,68,0.06)",
-          border: "0.5px solid rgba(239,68,68,0.20)",
+          backgroundColor: "color-mix(in srgb, var(--cat-breakage) 6%, transparent)",
+          border: "0.5px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)",
         }}
         title="Original content was deleted"
       >
-        <AlertCircle size={11} style={{ color: "#ef4444", flexShrink: 0 }} />
+        <AlertCircle size={11} style={{ color: "var(--cat-breakage)", flexShrink: 0 }} />
         <span
           className="font-medium line-through"
-          style={{ fontSize: "13px", color: "rgba(255,255,255,0.50)" }}
+          style={{ fontSize: "13px", color: "var(--text2)" }}
         >
           [Reference unavailable]
         </span>
@@ -63,21 +63,21 @@ export function InlineReferenceChip({
     switch (type) {
       case "blueprint":
         return {
-          background: "rgba(232,87,26,0.10)",
-          border: "rgba(232,87,26,0.20)",
-          iconColor: "#E8571A",
+          background: "color-mix(in srgb, var(--action) 10%, transparent)",
+          border: "color-mix(in srgb, var(--action) 20%, transparent)",
+          iconColor: "var(--action)",
         };
       case "stage":
         return {
-          background: "rgba(46,196,182,0.10)",
-          border: "rgba(46,196,182,0.20)",
-          iconColor: "#2EC4B6",
+          background: "color-mix(in srgb, var(--evidence) 10%, transparent)",
+          border: "color-mix(in srgb, var(--evidence) 20%, transparent)",
+          iconColor: "var(--evidence)",
         };
       case "block":
         return {
-          background: "rgba(255,255,255,0.05)",
-          border: "rgba(255,255,255,0.10)",
-          iconColor: subColor || "#ffffff",
+          background: "var(--recess)",
+          border: "var(--line)",
+          iconColor: subColor || "var(--text)",
         };
     }
   })();
@@ -128,18 +128,18 @@ export function InlineReferenceChip({
       {renderIcon()}
       <span
         className="font-medium group-hover:underline"
-        style={{ fontSize: "13px", color: "rgba(255,255,255,0.92)" }}
+        style={{ fontSize: "13px", color: "var(--text)" }}
       >
         {truncatedLabel}
       </span>
       {!isAccessible && (
-        <Lock size={9} style={{ color: "rgba(255,255,255,0.40)", flexShrink: 0 }} />
+        <Lock size={9} style={{ color: "var(--text2)", flexShrink: 0 }} />
       )}
       <ArrowUpRight
         size={9}
         className="transition-colors flex-shrink-0"
         style={{
-          color: hovered ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.40)",
+          color: hovered ? "var(--text2)" : "var(--text2)",
         }}
       />
     </span>

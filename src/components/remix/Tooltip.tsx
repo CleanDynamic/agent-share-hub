@@ -27,7 +27,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
           transition: 'opacity 140ms ease, transform 140ms ease',
           padding: '6px 10px',
           borderRadius: 8,
-          background: 'rgba(20,20,28,0.92)',
+          background: 'var(--bg)',
           border: tokens.borderSoft,
           color: tokens.text,
           backdropFilter: tokens.glass,

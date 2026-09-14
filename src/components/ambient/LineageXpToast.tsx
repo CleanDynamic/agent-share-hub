@@ -36,8 +36,8 @@ export default function LineageXpToast({
           width: 34,
           height: 34,
           borderRadius: 9,
-          background: 'rgba(232,87,26,0.16)',
-          border: '0.5px solid rgba(232,87,26,0.4)',
+          background: 'color-mix(in srgb, var(--action) 16%, transparent)',
+          border: '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)',
           flexShrink: 0,
         }}
       >

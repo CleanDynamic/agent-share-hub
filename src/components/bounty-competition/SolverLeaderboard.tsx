@@ -1,7 +1,6 @@
 import * as React from "react";
 import {
   Trophy,
-  Hexagon,
   Award,
   ChevronDown,
   Send,
@@ -10,7 +9,23 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { categoryFill } from "@/lib/theme/category";
+import { GLASS_BLUR } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
+import {
+  body as bodyText,
+  data as dataText,
+  eyebrow as eyebrowText,
+  label as labelText,
+  tabular,
+  FIGTREE,
+} from "@/lib/theme/type";
+
+/** The measured evidence pair, spent on the marks that mean "verified". */
+const EVIDENCE = categoryFill("evidence");
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
@@ -68,23 +83,59 @@ const sortOptions = [
 ];
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
+/**
+ * The rank mark.
+ *
+ * NO MEDALS. Gold, silver and bronze were three invented hues in a system whose
+ * nine hues are spoken for, and two of them (#D1D5DB at 1.3:1, #B45309 at
+ * 3.4:1) could not carry a numeral on the Exhibition ground anyway. The theme
+ * ranks tiers by WEIGHT AND FILL instead, three steps only, and the top three
+ * take that ladder:
+ *
+ *   1st  `--lit` fill with `--on-lit` on it — amber as LIGHT, which is the one
+ *        way it is legal to spend, never as the numeral's own colour.
+ *   2nd  `--recess` fill, the middle step.
+ *   3rd  outline, the common step, so third still reads as a place.
+ *   4th+ a bare numeral in `--text2` and no mark at all.
+ *
+ * The hexagon went with the medals: the shape language was dropped, and a
+ * six-sided plate is decorative geometry. The mark is a chip like every other
+ * small square-ish thing on the platform.
+ */
 function RankIndicator({ rank }: { rank: number }) {
   if (rank <= 3) {
-    const colorMap: Record<number, { bg: string; border: string; text: string }> = {
-      1: { bg: "rgba(245,158,11,0.20)", border: "rgba(245,158,11,0.55)", text: "#F59E0B" },
-      2: { bg: "rgba(209,213,219,0.20)", border: "rgba(209,213,219,0.55)", text: "#D1D5DB" },
-      3: { bg: "rgba(180,83,9,0.20)", border: "rgba(180,83,9,0.55)", text: "#B45309" },
+    const step: Record<number, CSSProperties> = {
+      1: { background: tok.lit, color: tok.onLit, border: `1px solid ${tok.lit}` },
+      2: { background: tok.recess, color: tok.text, border: `1px solid ${tok.line}` },
+      3: { background: "transparent", color: tok.text, border: `1px solid ${tok.line}` },
     };
-    const c = colorMap[rank];
     return (
-      <div style={{ position: "relative", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Hexagon size={28} strokeWidth={1.5} style={{ position: "absolute", inset: 0, color: c.border, fill: c.bg }} />
-        <span style={{ position: "relative", fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 700, color: c.text }}>{rank}</span>
-      </div>
+      <span
+        data-leaderboard-rank={rank}
+        style={{
+          ...dataText,
+          ...tabular,
+          fontSize: 12,
+          fontWeight: 500,
+          width: 28,
+          height: 28,
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: r.chip,
+          ...step[rank],
+        }}
+      >
+        {rank}
+      </span>
     );
   }
   return (
-    <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.45)", width: 28, textAlign: "center" }}>
+    <span
+      data-leaderboard-rank={rank}
+      style={{ ...dataText, ...tabular, fontSize: 12, color: tok.text2, width: 28, textAlign: "center" }}
+    >
       #{rank}
     </span>
   );
@@ -98,13 +149,13 @@ function TrustedSolverBadge() {
         alignItems: "center",
         gap: 3,
         padding: "1px 6px",
-        borderRadius: 4,
-        background: "rgba(46,196,182,0.12)",
-        border: "1px solid rgba(46,196,182,0.30)",
-        color: "#2EC4B6",
-        fontFamily: "Figtree, sans-serif",
-        fontSize: 9,
-        fontWeight: 600,
+        borderRadius: r.chip,
+        background: EVIDENCE.background,
+        border: "1px solid transparent",
+        color: EVIDENCE.color,
+        ...dataText,
+        fontSize: 11,
+        fontWeight: 500,
         letterSpacing: "0.04em",
         textTransform: "uppercase",
       }}
@@ -125,10 +176,9 @@ function LiveDot() {
         right: -1,
         width: 9,
         height: 9,
-        borderRadius: "50%",
-        background: "#2EC4B6",
-        border: "2px solid #25252F",
-        boxShadow: "0 0 6px rgba(46,196,182,0.7)",
+        borderRadius: r.full,
+        background: tok.evidence,
+        border: `2px solid ${tok.bg}`,
       }}
     />
   );
@@ -146,7 +196,10 @@ function ContributorRow({
   isHighlighted: boolean;
 }) {
   const rowHeight = variant === "desktop" ? 60 : 56;
-  const baseBg = isHighlighted ? "rgba(46,196,182,0.12)" : "transparent";
+  /* The reader's own row is marked with the action tint, not the evidence one:
+     evidence on this platform means a reproduction, and "this is you" is not
+     one. */
+  const baseBg = isHighlighted ? tokenAlpha("action", 0.12) : tok.recess;
 
   return (
     <div
@@ -159,16 +212,16 @@ function ContributorRow({
         height: rowHeight,
         cursor: "pointer",
         backgroundColor: baseBg,
-        borderRadius: 8,
+        borderRadius: r.control,
         transition: "background-color 600ms ease, transform 400ms ease",
         minWidth: variant === "narrow" ? 240 : undefined,
-        boxShadow: isHighlighted ? "0 0 0 1px rgba(46,196,182,0.35)" : "none",
+        boxShadow: isHighlighted ? `0 0 0 1px ${tok.action}` : "none",
       }}
       onMouseEnter={(e) => {
-        if (!isHighlighted) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+        if (!isHighlighted) e.currentTarget.style.backgroundColor = tokenAlpha("action", 0.06);
       }}
       onMouseLeave={(e) => {
-        if (!isHighlighted) e.currentTarget.style.backgroundColor = "transparent";
+        if (!isHighlighted) e.currentTarget.style.backgroundColor = tok.recess;
       }}
     >
       <RankIndicator rank={contributor.rank} />
@@ -183,21 +236,21 @@ function ContributorRow({
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ ...labelText, fontWeight: 600, color: tok.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {contributor.user.displayName}
           </span>
           {contributor.user.isTrustedSolver && <TrustedSolverBadge />}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, ...dataText, fontSize: 12, color: tok.text2 }}>
           <span>@{contributor.user.handle}</span>
         </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+        <span style={{ ...dataText, ...tabular, fontSize: 13, fontWeight: 500, color: tok.text }}>
           {contributor.voteCount} votes
         </span>
-        <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
+        <span style={{ ...dataText, ...tabular, fontSize: 12, color: tok.text2 }}>
           {contributor.submissionCount} solution{contributor.submissionCount !== 1 ? "s" : ""}
         </span>
       </div>
@@ -208,25 +261,24 @@ function ContributorRow({
 function EmptyState({ onCTA }: { onCTA: () => void }) {
   return (
     <div style={{ padding: "32px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }}>
-      <Trophy size={28} color="rgba(245,158,11,0.45)" />
-      <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+      <Trophy size={28} color={tok.text2} />
+      <span style={{ ...bodyText, fontSize: 13, color: tok.text2 }}>
         No solutions submitted yet
       </span>
       <button
         onClick={onCTA}
         style={{
           padding: "6px 12px",
-          borderRadius: 6,
-          border: "1px solid rgba(245,158,11,0.35)",
+          borderRadius: r.control,
+          border: `1px solid ${tok.action}`,
           background: "transparent",
-          color: "#F59E0B",
-          fontFamily: "Figtree, sans-serif",
-          fontSize: 11,
+          color: tok.action,
+          ...labelText,
           fontWeight: 600,
           cursor: "pointer",
           transition: "background-color 150ms ease",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(245,158,11,0.10)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = tokenAlpha("action", 0.1); }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
       >
         Be the first to climb the board
@@ -237,29 +289,29 @@ function EmptyState({ onCTA }: { onCTA: () => void }) {
 
 function ActivityItem({ event }: { event: ActivityEvent }) {
   const icon =
-    event.type === "submitted" ? <Send size={11} color="rgba(245,158,11,0.85)" /> :
-    event.type === "voted" ? <ThumbsUp size={11} color="rgba(46,196,182,0.85)" /> :
-    event.type === "accepted" ? <Check size={11} color="rgba(46,196,182,0.95)" /> :
-    <Clock size={11} color="rgba(255,255,255,0.45)" />;
+    event.type === "submitted" ? <Send size={11} color={tok.text2} /> :
+    event.type === "voted" ? <ThumbsUp size={11} color={tok.text2} /> :
+    event.type === "accepted" ? <Check size={11} color={tok.evidence} /> :
+    <Clock size={11} color={tok.text2} />;
 
   let message: React.ReactNode = null;
   if (event.type === "submitted") {
     message = (
       <>
-        <span style={{ color: "rgba(255,255,255,0.70)" }}>@{event.handle}</span> submitted to slot{" "}
-        <span style={{ color: "rgba(255,255,255,0.70)" }}>{event.slotName}</span>
+        <span style={{ color: tok.text }}>@{event.handle}</span> submitted to slot{" "}
+        <span style={{ color: tok.text }}>{event.slotName}</span>
       </>
     );
   } else if (event.type === "voted") {
     message = (
       <>
-        <span style={{ color: "rgba(255,255,255,0.70)" }}>@{event.handle}</span> received {event.voteCount} votes
+        <span style={{ color: tok.text }}>@{event.handle}</span> received {event.voteCount} votes
       </>
     );
   } else if (event.type === "accepted") {
     message = (
       <>
-        <span style={{ color: "rgba(255,255,255,0.70)" }}>@{event.handle}</span>
+        <span style={{ color: tok.text }}>@{event.handle}</span>
         {`'`}s solution was accepted
       </>
     );
@@ -268,7 +320,7 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "4px 0" }}>
       <span style={{ marginTop: 2 }}>{icon}</span>
-      <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+      <span style={{ ...dataText, fontSize: 12, color: tok.text2, lineHeight: 1.4 }}>
         {message} · {event.timeAgo}
       </span>
     </div>
@@ -290,17 +342,17 @@ export function SolverLeaderboard({
   const currentSortLabel = sortOptions.find((opt) => opt.value === sort)?.label || "Most votes";
 
   const panelStyle: React.CSSProperties = {
-    backgroundColor: "rgba(22,22,30,0.40)",
-    border: "0.5px solid rgba(255, 255, 255, 0.14)",
-    borderRadius: 10,
-    backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
+    backgroundColor: tok.glass,
+    border: `1px solid ${tok.glassBorder}`,
+    borderRadius: r.panel,
+    backdropFilter: GLASS_BLUR,
+    WebkitBackdropFilter: GLASS_BLUR,
   };
 
   const headerStyle: React.CSSProperties = {
     height: 44,
     padding: "0 12px",
-    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+    borderBottom: `1px solid ${tok.line}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -312,12 +364,12 @@ export function SolverLeaderboard({
         {/* Header */}
         <div style={headerStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Trophy size={14} color="#F59E0B" />
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", letterSpacing: "0.02em" }}>
+            <Trophy size={14} color={tok.text2} />
+            <span style={{ ...labelText, color: tok.text, letterSpacing: "0.02em" }}>
               Top contributors
             </span>
             {isLive && (
-              <span title="Live" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#2EC4B6", boxShadow: "0 0 6px rgba(46,196,182,0.8)" }} />
+              <span title="Live" style={{ display: "inline-block", width: 6, height: 6, borderRadius: r.full, background: tok.evidence }} />
             )}
           </div>
 
@@ -331,9 +383,9 @@ export function SolverLeaderboard({
                   padding: "4px 8px",
                   borderRadius: 6,
                   background: "transparent",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "rgba(255,255,255,0.65)",
-                  fontFamily: "Figtree, sans-serif",
+                  border: `1px solid ${tok.line}`,
+                  color: tok.text2,
+                  fontFamily: FIGTREE,
                   fontSize: 11,
                   cursor: "pointer",
                 }}
@@ -371,8 +423,8 @@ export function SolverLeaderboard({
 
         {/* Activity feed */}
         {recentActivity.length > 0 && (
-          <div style={{ padding: "12px 16px", borderTop: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.40)", marginBottom: 8 }}>
+          <div style={{ padding: "12px 16px", borderTop: `1px solid ${tok.line}` }}>
+            <div style={{ ...eyebrowText, color: tok.text2, marginBottom: 8 }}>
               Activity feed
             </div>
             {recentActivity.slice(0, 5).map((ev) => (
@@ -382,7 +434,7 @@ export function SolverLeaderboard({
         )}
 
         {/* View all */}
-        <div style={{ padding: "10px 16px", borderTop: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
+        <div style={{ padding: "10px 16px", borderTop: `1px solid ${tok.line}` }}>
           <button
             onClick={onViewAll}
             style={{
@@ -391,15 +443,15 @@ export function SolverLeaderboard({
               gap: 4,
               background: "transparent",
               border: "none",
-              color: "rgba(46,196,182,0.85)",
-              fontFamily: "Figtree, sans-serif",
+              color: tok.action,
+              fontFamily: FIGTREE,
               fontSize: 12,
               fontWeight: 500,
               cursor: "pointer",
               padding: 0,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(46,196,182,1)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(46,196,182,0.85)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = tok.text; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = tok.action; }}
           >
             View all contributors
             <ArrowRight size={12} />
@@ -414,12 +466,12 @@ export function SolverLeaderboard({
     <div style={panelStyle}>
       <div style={headerStyle}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Trophy size={14} color="#F59E0B" />
-          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+          <Trophy size={14} color={tok.text2} />
+          <span style={{ ...labelText, color: tok.text }}>
             Top contributors
           </span>
           {isLive && (
-            <span title="Live" style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#2EC4B6", boxShadow: "0 0 6px rgba(46,196,182,0.8)" }} />
+            <span title="Live" style={{ display: "inline-block", width: 6, height: 6, borderRadius: r.full, background: tok.evidence }} />
           )}
         </div>
         <button
@@ -430,10 +482,9 @@ export function SolverLeaderboard({
             gap: 4,
             background: "transparent",
             border: "none",
-            color: "rgba(46,196,182,0.85)",
-            fontFamily: "Figtree, sans-serif",
-            fontSize: 11,
-            fontWeight: 500,
+            color: tok.action,
+            ...labelText,
+            fontSize: 12,
             cursor: "pointer",
             padding: 0,
           }}

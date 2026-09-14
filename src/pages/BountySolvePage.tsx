@@ -15,6 +15,10 @@ import {
   deleteSolutionDraft,
 } from "@/lib/bounty-solver";
 import type { Solution, SlotKind } from "@/lib/bounty-solver/types";
+import { fieldStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t as tok } from "@/lib/theme/tokens";
+import { eyebrow, label as labelText, FIGTREE, DM_MONO } from "@/lib/theme/type";
 
 interface SlotInfo {
   kind: SlotKind;
@@ -327,7 +331,7 @@ function BlockSolveEditor({ slot, payload, onChange }: SolverEditorProps) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <div style={{ ...eyebrow, color: tok.text2 }}>
         Block type: {blockType}
       </div>
       <input
@@ -352,7 +356,7 @@ function BlockSolveEditor({ slot, payload, onChange }: SolverEditorProps) {
               blockType === "code" ? update({ code: e.target.value }) : update({ body: e.target.value })
             }
             placeholder={blockType === "code" ? "Paste code…" : "Write your prompt…"}
-            style={{ ...textareaStyle, fontFamily: "ui-monospace, SFMono-Regular, monospace" }}
+            style={{ ...textareaStyle, fontFamily: DM_MONO }}
           />
         </>
       ) : (
@@ -401,12 +405,12 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
 
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      <div style={{ ...eyebrow, color: tok.text2 }}>
         Stage solution — add blocks in order
       </div>
 
       {blocks.length === 0 && (
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)", padding: "16px 0" }}>
+        <div style={{ ...labelText, fontStyle: "italic", color: tok.text2, padding: "16px 0" }}>
           No blocks yet. Click "Add block" to begin building this stage.
         </div>
       )}
@@ -415,9 +419,9 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
         <div
           key={b.id}
           style={{
-            background: "rgba(255,255,255,0.02)",
-            border: "0.5px solid rgba(255,255,255,0.08)",
-            borderRadius: 8,
+            background: tok.recess,
+            border: `1px solid ${tok.line}`,
+            borderRadius: r.chip,
             padding: 12,
             display: "flex",
             flexDirection: "column",
@@ -425,7 +429,7 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+            <span style={{ ...eyebrow, color: tok.text2 }}>
               Block {i + 1}
             </span>
             <select
@@ -443,7 +447,7 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
             <div style={{ flex: 1 }} />
             <button onClick={() => move(b.id, -1)} disabled={i === 0} style={miniBtn}>↑</button>
             <button onClick={() => move(b.id, 1)} disabled={i === blocks.length - 1} style={miniBtn}>↓</button>
-            <button onClick={() => removeBlock(b.id)} style={{ ...miniBtn, color: "rgba(239,68,68,0.85)" }}>
+            <button onClick={() => removeBlock(b.id)} style={{ ...miniBtn, color: tok.catBreakage }}>
               Remove
             </button>
           </div>
@@ -466,14 +470,12 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
         onClick={addBlock}
         style={{
           alignSelf: "flex-start",
-          fontFamily: "Figtree, sans-serif",
-          fontSize: 12,
-          fontWeight: 600,
+          ...labelText,
           padding: "6px 14px",
-          borderRadius: 6,
-          border: "0.5px solid rgba(46,196,182,0.40)",
-          background: "rgba(46,196,182,0.10)",
-          color: "#2EC4B6",
+          borderRadius: r.control,
+          border: `1px solid ${tok.line}`,
+          background: tok.glass,
+          color: tok.text,
           cursor: "pointer",
         }}
       >
@@ -483,39 +485,32 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
   );
 }
 
+/* The solver's fields are BG-P07's fields: `fieldStyle()` is the inset well
+   every input on the platform now sits in, so the solution form and the
+   composer that produced the build are the same object. Only the sizing the
+   solve page already had is layered on top of it. */
 const inputStyle: React.CSSProperties = {
+  ...fieldStyle(),
   width: "100%",
   padding: "8px 10px",
-  borderRadius: 6,
-  border: "0.5px solid rgba(255,255,255,0.10)",
-  background: "rgba(255,255,255,0.03)",
-  color: "rgba(255,255,255,0.90)",
-  fontFamily: "Figtree, sans-serif",
+  fontFamily: FIGTREE,
   fontSize: 13,
   outline: "none",
 };
 
 const textareaStyle: React.CSSProperties = {
-  width: "100%",
+  ...inputStyle,
   minHeight: 100,
-  padding: "8px 10px",
-  borderRadius: 6,
-  border: "0.5px solid rgba(255,255,255,0.10)",
-  background: "rgba(255,255,255,0.03)",
-  color: "rgba(255,255,255,0.90)",
-  fontFamily: "Figtree, sans-serif",
-  fontSize: 13,
-  outline: "none",
   resize: "vertical",
 };
 
 const miniBtn: React.CSSProperties = {
-  fontFamily: "Figtree, sans-serif",
+  fontFamily: FIGTREE,
   fontSize: 11,
   padding: "4px 8px",
-  borderRadius: 4,
-  border: "0.5px solid rgba(255,255,255,0.10)",
+  borderRadius: r.chip,
+  border: `1px solid ${tok.line}`,
   background: "transparent",
-  color: "rgba(255,255,255,0.75)",
+  color: tok.text2,
   cursor: "pointer",
 };

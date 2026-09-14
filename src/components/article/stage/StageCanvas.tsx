@@ -412,7 +412,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1}
-          color="rgba(255, 255, 255, 0.14)"
+          color="var(--text2)"
         />
         {showMiniMap ? (
           <MiniMap
@@ -420,8 +420,8 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
             zoomable
             maskColor="rgba(15,15,20,0.6)"
             style={{
-              background: 'rgba(20,20,28,0.85)',
-              border: '0.5px solid rgba(255,255,255,0.08)',
+              background: 'var(--recess)',
+              border: '0.5px solid var(--line)',
               borderRadius: 6,
             }}
           />
@@ -436,9 +436,9 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
             top: ghost.screenY,
             width: 220,
             height: 120,
-            border: `1px dashed ${BLOCK_TYPE_ACCENT[ghost.type] ?? 'rgba(255,255,255,0.5)'}`,
+            border: `1px dashed ${BLOCK_TYPE_ACCENT[ghost.type] ?? 'var(--recess)'}`,
             borderRadius: 8,
-            background: 'rgba(255,255,255,0.02)',
+            background: 'var(--recess)',
             opacity: 0.4,
             pointerEvents: 'none',
             zIndex: 10,

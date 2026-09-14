@@ -35,19 +35,19 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
         sideOffset={6}
         className="p-3 w-auto"
         style={{
-          background: 'hsl(240 20% 8% / 0.98)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
+          background: 'var(--bg)',
+          border: '1px solid var(--line)',
           borderRadius: 10,
-          boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
+          boxShadow: '0 8px 24px var(--line)',
           fontFamily: 'Figtree, sans-serif',
-          color: 'hsl(var(--foreground) / 0.9)',
+          color: 'var(--text)',
         }}
       >
         <div
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: 'hsl(var(--foreground) / 0.6)',
+            color: 'var(--text2)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             marginBottom: 8,
@@ -83,9 +83,9 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
                   padding: 0,
                   cursor: 'pointer',
                   background: active
-                    ? 'hsl(var(--foreground) / 0.25)'
-                    : 'hsl(var(--foreground) / 0.05)',
-                  border: '1px solid hsl(var(--foreground) / 0.12)',
+                    ? 'var(--recess)'
+                    : 'var(--text2)',
+                  border: '1px solid var(--line)',
                 }}
                 aria-label={`${r}×${c}`}
               />
@@ -101,9 +101,9 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
             width: '100%',
             height: 28,
             borderRadius: 6,
-            border: '1px solid hsl(var(--foreground) / 0.12)',
-            background: 'hsl(var(--foreground) / 0.06)',
-            color: 'hsl(var(--foreground) / 0.9)',
+            border: '1px solid var(--line)',
+            background: 'var(--recess)',
+            color: 'var(--text)',
             fontSize: 11,
             fontFamily: 'Figtree, sans-serif',
             cursor: hover.r > 0 ? 'pointer' : 'not-allowed',

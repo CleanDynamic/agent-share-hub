@@ -41,16 +41,19 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
       }}
       className="cursor-pointer rounded-xl p-5 transition-all"
       style={{
-        background: "rgba(22, 22, 30, 0.30)",
-        border: "0.5px solid rgba(255, 255, 255, 0.05)",
+        background: "var(--glass)",
+        border: "0.5px solid var(--line)",
       }}
+      /* The hover step is the BORDER, not a second ground. --glass-hi is the
+         top-edge highlight token rather than a surface, and using it here put
+         --text2 at 4:1 on Dusk — under the text floor. Lifting the hairline to
+         --text2 keeps the card's own ground legal in both rooms and still
+         reads as "this row is live". */
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(22, 22, 30, 0.50)";
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.10)";
+        e.currentTarget.style.borderColor = "var(--text2)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(22, 22, 30, 0.30)";
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.05)";
+        e.currentTarget.style.borderColor = "var(--line)";
       }}
     >
       <div className="flex items-start justify-between gap-3">
@@ -58,8 +61,8 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
           <span
             className="rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
             style={{
-              background: "rgba(232,87,26,0.10)",
-              color: "#E8571A",
+              background: "color-mix(in srgb, var(--action) 10%, transparent)",
+              color: "var(--action)",
             }}
           >
             {blueprint.contentType}
@@ -67,7 +70,7 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
           {blueprint.difficulty && (
             <span
               className="text-[11px]"
-              style={{ color: "rgba(255,255,255,0.45)" }}
+              style={{ color: "var(--text2)" }}
             >
               {blueprint.difficulty}
             </span>
@@ -86,7 +89,7 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
           />
           <button
             className="flex items-center gap-1 text-[11px] font-medium transition-colors"
-            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none" }}
+            style={{ color: "var(--text2)", background: "transparent", border: "none" }}
             onClick={(e) => {
               e.stopPropagation();
               onClick?.();
@@ -100,14 +103,14 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
 
       <h3
         className="mt-3 text-[15px] font-semibold leading-snug"
-        style={{ color: "rgba(255,255,255,0.95)" }}
+        style={{ color: "var(--text)" }}
       >
         {blueprint.title}
       </h3>
 
       <p
         className="mt-1.5 text-[13px] leading-relaxed line-clamp-2"
-        style={{ color: "rgba(255,255,255,0.65)" }}
+        style={{ color: "var(--text2)" }}
       >
         {blueprint.description}
       </p>
@@ -119,9 +122,9 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
               key={tool}
               className="rounded px-2 py-0.5 text-[10px] font-medium"
               style={{
-                background: "rgba(255, 255, 255, 0.12)",
-                color: "rgba(255,255,255,0.65)",
-                border: "0.5px solid rgba(255, 255, 255, 0.14)",
+                background: "var(--recess)",
+                color: "var(--text2)",
+                border: "0.5px solid var(--line)",
               }}
             >
               {tool}
@@ -132,7 +135,7 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
 
       <div
         className="mt-3 flex items-center gap-4 text-[11px]"
-        style={{ color: "rgba(255,255,255,0.45)" }}
+        style={{ color: "var(--text2)" }}
       >
         <span>by @{blueprint.authorHandle}</span>
         {typeof blueprint.rating === "number" && (

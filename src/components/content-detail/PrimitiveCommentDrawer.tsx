@@ -139,13 +139,13 @@ function AnchorIndicator({
     gap: 6,
     padding: "4px 8px",
     borderRadius: 4,
-    background: "rgba(255, 255, 255, 0.14)",
+    background: "var(--recess)",
   };
   const textStyle: React.CSSProperties = {
     fontFamily: "Figtree, sans-serif",
     fontSize: 11,
     fontWeight: 500,
-    color: "rgba(255,255,255,0.85)",
+    color: "var(--text)",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -158,7 +158,7 @@ function AnchorIndicator({
       <div style={pillStyle}>
         <span style={{ width: 8, height: 8, borderRadius: 2, background: p.blockColor }} />
         <span style={textStyle}>Block: {p.name}</span>
-        <span style={{ ...textStyle, color: "rgba(255,255,255,0.40)" }}>{p.blockType}</span>
+        <span style={{ ...textStyle, color: "var(--text2)" }}>{p.blockType}</span>
       </div>
     );
   }
@@ -166,7 +166,7 @@ function AnchorIndicator({
     const p = anchorPreview as StageAnchorPreview;
     return (
       <div style={pillStyle}>
-        <LayoutGrid size={11} color="rgba(255,255,255,0.65)" />
+        <LayoutGrid size={11} color="var(--text2)" />
         <span style={textStyle}>Stage: {p.name}</span>
       </div>
     );
@@ -175,7 +175,7 @@ function AnchorIndicator({
     const p = anchorPreview as PostAnchorPreview;
     return (
       <div style={pillStyle}>
-        <FileText size={11} color="rgba(255,255,255,0.65)" />
+        <FileText size={11} color="var(--text2)" />
         <span style={textStyle}>Post: {p.title}</span>
       </div>
     );
@@ -184,7 +184,7 @@ function AnchorIndicator({
     const p = anchorPreview as SlideAnchorPreview;
     return (
       <div style={pillStyle}>
-        <ImageIcon size={11} color="rgba(255,255,255,0.65)" />
+        <ImageIcon size={11} color="var(--text2)" />
         <span style={textStyle}>
           Slide: {p.current} of {p.total}
         </span>
@@ -194,7 +194,7 @@ function AnchorIndicator({
   const p = anchorPreview as SolutionAnchorPreview;
   return (
     <div style={pillStyle}>
-      <Target size={11} color="rgba(245,158,11,0.85)" />
+      <Target size={11} color="var(--cat-breakage)" />
       <span style={textStyle}>Solution by @{p.solverHandle}</span>
     </div>
   );
@@ -213,7 +213,7 @@ function AnchorPreviewStrip({
 }) {
   const containerStyle: React.CSSProperties = {
     padding: "12px 18px",
-    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+    borderBottom: "0.5px solid var(--line)",
     position: "relative",
   };
   const toggleStyle: React.CSSProperties = {
@@ -224,7 +224,7 @@ function AnchorPreviewStrip({
     border: "none",
     cursor: "pointer",
     padding: 4,
-    color: "rgba(255,255,255,0.5)",
+    color: "var(--text2)",
   };
 
   if (isCollapsed) {
@@ -241,7 +241,7 @@ function AnchorPreviewStrip({
   if (anchorType === "block") {
     const p = anchorPreview as BlockAnchorPreview;
     body = (
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.45, maxHeight: 60, overflow: "hidden" }}>
+      <div style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.45, maxHeight: 60, overflow: "hidden" }}>
         {p.contentPreview}
       </div>
     );
@@ -249,14 +249,14 @@ function AnchorPreviewStrip({
     body = (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4 }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} style={{ height: 24, borderRadius: 3, background: "rgba(255,255,255,0.05)" }} />
+          <div key={i} style={{ height: 24, borderRadius: 3, background: "var(--recess)" }} />
         ))}
       </div>
     );
   } else if (anchorType === "post") {
     const p = anchorPreview as PostAnchorPreview;
     body = (
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontWeight: 500 }}>{p.title}</div>
+      <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500 }}>{p.title}</div>
     );
   } else if (anchorType === "slide") {
     const p = anchorPreview as SlideAnchorPreview;
@@ -267,7 +267,7 @@ function AnchorPreviewStrip({
         style={{ width: "100%", maxHeight: 80, objectFit: "cover", borderRadius: 4 }}
       />
     ) : (
-      <div style={{ height: 60, borderRadius: 4, background: "rgba(255,255,255,0.05)" }} />
+      <div style={{ height: 60, borderRadius: 4, background: "var(--recess)" }} />
     );
   } else {
     const p = anchorPreview as SolutionAnchorPreview;
@@ -277,10 +277,10 @@ function AnchorPreviewStrip({
           <img src={p.solverAvatarUrl} alt="" style={{ width: 22, height: 22, borderRadius: "50%" }} />
         )}
         <div>
-          <div style={{ fontSize: 11, color: "rgba(245,158,11,0.85)", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "var(--cat-breakage)", fontWeight: 500 }}>
             @{p.solverHandle}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: "var(--text2)", marginTop: 2 }}>
             {p.contentPreview}
           </div>
         </div>
@@ -300,8 +300,8 @@ function AnchorPreviewStrip({
 
 function RolePill({ role }: { role: "author" | "trusted_solver" }) {
   const map = {
-    author: { bg: "rgba(245,158,11,0.15)", text: "rgba(245,158,11,0.9)", label: "Author" },
-    trusted_solver: { bg: "rgba(20,184,166,0.15)", text: "rgba(20,184,166,0.9)", label: "Trusted Solver" },
+    author: { bg: "var(--cat-breakage-fill)", text: "var(--cat-breakage)", label: "Author" },
+    trusted_solver: { bg: "var(--cat-evidence-fill)", text: "var(--cat-evidence)", label: "Trusted Solver" },
   };
   const c = map[role];
   return (
@@ -341,9 +341,9 @@ function ReactionButton({
         gap: 4,
         padding: "2px 6px",
         borderRadius: 10,
-        background: "rgba(255, 255, 255, 0.12)",
-        border: "1px solid rgba(255, 255, 255, 0.14)",
-        color: "rgba(255,255,255,0.65)",
+        background: "var(--recess)",
+        border: "1px solid var(--line)",
+        color: "var(--text2)",
         fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         cursor: "pointer",
@@ -403,7 +403,7 @@ function CommentCard({
       style={{
         paddingLeft: depth > 0 ? 24 : 0,
         paddingBottom: depth === 0 ? 12 : 8,
-        borderBottom: depth === 0 ? "0.5px solid rgba(255, 255, 255, 0.14)" : "none",
+        borderBottom: depth === 0 ? "0.5px solid var(--line)" : "none",
         marginBottom: depth === 0 ? 12 : 0,
         animation: comment.isNew ? "tealFlash 1s ease-out" : undefined,
       }}
@@ -421,17 +421,17 @@ function CommentCard({
               width: avatarSize,
               height: avatarSize,
               borderRadius: "50%",
-              background: "rgba(255,255,255,0.08)",
+              background: "var(--recess)",
               flexShrink: 0,
             }}
           />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
               {comment.author.displayName}
             </span>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "var(--text2)" }}>
               @{comment.author.handle}
             </span>
             {comment.author.role && <RolePill role={comment.author.role} />}
@@ -440,7 +440,7 @@ function CommentCard({
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
-              color: "rgba(255,255,255,0.78)",
+              color: "var(--text)",
               lineHeight: 1.5,
               margin: "6px 0",
               whiteSpace: "pre-wrap",
@@ -467,7 +467,7 @@ function CommentCard({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
-                  color: "rgba(46,196,182,0.85)",
+                  color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -477,7 +477,7 @@ function CommentCard({
                 Reply
               </button>
             )}
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "rgba(255,255,255,0.40)" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "var(--text2)" }}>
               {formatTimestamp(comment.timestamp)}
             </span>
             <button
@@ -487,7 +487,7 @@ function CommentCard({
                 border: "none",
                 cursor: "pointer",
                 padding: 2,
-                color: "rgba(255,255,255,0.4)",
+                color: "var(--text2)",
               }}
               aria-label="More"
             >
@@ -504,10 +504,10 @@ function CommentCard({
                   width: "100%",
                   minHeight: 60,
                   padding: 10,
-                  background: "rgba(255, 255, 255, 0.12)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "var(--recess)",
+                  border: "1px solid var(--line)",
                   borderRadius: 6,
-                  color: "rgba(255,255,255,0.9)",
+                  color: "var(--text)",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   resize: "vertical",
@@ -524,7 +524,7 @@ function CommentCard({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
-                    color: "rgba(255,255,255,0.5)",
+                    color: "var(--text2)",
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
@@ -539,8 +539,8 @@ function CommentCard({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
                     fontWeight: 500,
-                    color: "#fff",
-                    background: "rgba(249,115,22,0.9)",
+                    color: "var(--text)",
+                    background: "color-mix(in srgb, var(--action) 90%, transparent)",
                     border: "none",
                     borderRadius: 4,
                     cursor: "pointer",
@@ -573,7 +573,7 @@ function CommentCard({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: 500,
-                color: "rgba(46,196,182,0.85)",
+                color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -601,11 +601,11 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
   };
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>
-      <MessageCircleOff size={48} style={{ color: "rgba(255,255,255,0.20)", marginBottom: 16 }} />
-      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)", margin: "0 0 4px" }}>
+      <MessageCircleOff size={48} style={{ color: "var(--text2)", marginBottom: 16 }} />
+      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 500, color: "var(--text2)", margin: "0 0 4px" }}>
         No comments yet on this {labels[anchorType]}
       </p>
-      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
+      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)", margin: 0 }}>
         Be the first to comment
       </p>
     </div>
@@ -643,17 +643,17 @@ function Composer({
     border: "none",
     borderRadius: 4,
     cursor: "pointer",
-    color: "rgba(255,255,255,0.5)",
+    color: "var(--text2)",
   };
 
   return (
-    <div style={{ padding: "12px 18px", borderTop: "0.5px solid rgba(255,255,255,0.1)", background: "rgba(16,16,24,0.98)" }}>
+    <div style={{ padding: "12px 18px", borderTop: "0.5px solid var(--line)", background: "var(--bg)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 8 }}>
         <button style={tbStyle} title="Bold"><Bold size={14} /></button>
         <button style={tbStyle} title="Italic"><Italic size={14} /></button>
         <button style={tbStyle} title="Code"><Code size={14} /></button>
         <button style={tbStyle} title="Link"><LinkIcon size={14} /></button>
-        <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.1)", margin: "0 6px" }} />
+        <div style={{ width: 1, height: 16, background: "var(--recess)", margin: "0 6px" }} />
         <button style={tbStyle} title="Mention"><AtSign size={14} /></button>
       </div>
       <textarea
@@ -666,10 +666,10 @@ function Composer({
           minHeight: 80,
           maxHeight: 160,
           padding: 12,
-          background: "rgba(255, 255, 255, 0.12)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          background: "var(--recess)",
+          border: "1px solid var(--line)",
           borderRadius: 6,
-          color: "rgba(255,255,255,0.9)",
+          color: "var(--text)",
           fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           lineHeight: 1.5,
@@ -689,8 +689,8 @@ function Composer({
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 500,
-            color: "#fff",
-            background: text.trim() ? "rgba(249,115,22,0.95)" : "rgba(249,115,22,0.4)",
+            color: "var(--text)",
+            background: text.trim() ? "color-mix(in srgb, var(--action) 95%, transparent)" : "color-mix(in srgb, var(--action) 40%, transparent)",
             border: "none",
             borderRadius: 6,
             cursor: text.trim() ? "pointer" : "not-allowed",
@@ -725,7 +725,7 @@ function SortDropdown({
           fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 500,
-          color: "rgba(255,255,255,0.5)",
+          color: "var(--text2)",
           background: "transparent",
           border: "none",
           cursor: "pointer",
@@ -745,8 +745,8 @@ function SortDropdown({
             top: "100%",
             right: 0,
             marginTop: 4,
-            background: "rgba(24,24,32,0.98)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "var(--recess)",
+            border: "1px solid var(--line)",
             borderRadius: 6,
             padding: 4,
             zIndex: 10,
@@ -767,7 +767,7 @@ function SortDropdown({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: value === opt ? 500 : 400,
-                color: value === opt ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
+                color: value === opt ? "var(--text)" : "var(--recess)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -793,7 +793,7 @@ const menuItemStyle: React.CSSProperties = {
   textAlign: "left",
   fontFamily: "Figtree, sans-serif",
   fontSize: 12,
-  color: "rgba(255,255,255,0.85)",
+  color: "var(--text)",
   background: "transparent",
   border: "none",
   cursor: "pointer",
@@ -990,7 +990,7 @@ export function PrimitiveCommentDrawer({
     <>
       <div
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 998 }}
+        style={{ position: "fixed", inset: 0, background: "color-mix(in srgb, var(--porthole) 62%, transparent)", zIndex: 998 }}
       />
       <div
         className="ns-comment-drawer"
@@ -1001,10 +1001,10 @@ export function PrimitiveCommentDrawer({
           height: "100vh",
           width: "100%",
           maxWidth: 380,
-          background: "rgba(16,16,24,0.96)",
+          background: "var(--bg)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
-          borderLeft: "0.5px solid rgba(255,255,255,0.10)",
+          borderLeft: "0.5px solid var(--line)",
           zIndex: 999,
           display: "flex",
           flexDirection: "column",
@@ -1016,7 +1016,7 @@ export function PrimitiveCommentDrawer({
           style={{
             height: 60,
             padding: "14px 18px",
-            borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+            borderBottom: "0.5px solid var(--line)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1031,7 +1031,7 @@ export function PrimitiveCommentDrawer({
               border: "none",
               cursor: "pointer",
               padding: 4,
-              color: "rgba(255,255,255,0.6)",
+              color: "var(--text2)",
             }}
             aria-label="Close drawer"
           >
@@ -1056,8 +1056,8 @@ export function PrimitiveCommentDrawer({
                 style={{
                   width: 20,
                   height: 20,
-                  border: "2px solid rgba(255,255,255,0.1)",
-                  borderTopColor: "rgba(46,196,182,0.8)",
+                  border: "2px solid var(--line)",
+                  borderTopColor: "color-mix(in srgb, var(--evidence) 80%, transparent)",
                   borderRadius: "50%",
                   animation: "spin 1s linear infinite",
                 }}
@@ -1102,11 +1102,11 @@ export function PrimitiveCommentDrawer({
               left: Math.max(8, menu.x),
               zIndex: 1000,
               minWidth: 160,
-              background: "rgba(24,24,32,0.98)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              background: "var(--recess)",
+              border: "1px solid var(--line)",
               borderRadius: 8,
               padding: 4,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+              boxShadow: "0 10px 30px color-mix(in srgb, var(--porthole) 62%, transparent)",
             }}
           >
             {menuTarget.canEdit && (
@@ -1124,7 +1124,7 @@ export function PrimitiveCommentDrawer({
                     catch (e) { console.warn("[drawer] delete failed", e); }
                   }
                 }}
-                style={{ ...menuItemStyle, color: "rgba(239,68,68,0.9)" }}
+                style={{ ...menuItemStyle, color: "color-mix(in srgb, var(--cat-breakage) 90%, transparent)" }}
               >Delete</button>
             )}
             {menuTarget.canReport && (
@@ -1146,12 +1146,12 @@ export function PrimitiveCommentDrawer({
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes tealFlash {
-          0% { background: rgba(46,196,182,0.15); }
+          0% { background: color-mix(in srgb, var(--evidence) 15%, transparent); }
           100% { background: transparent; }
         }
         @keyframes ns-deep-link-pulse {
-          0% { box-shadow: 0 0 0 0 rgba(232,87,26,0.55); }
-          100% { box-shadow: 0 0 0 8px rgba(232,87,26,0); }
+          0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action) 55%, transparent); }
+          100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--action) 0%, transparent); }
         }
         .ns-comment-new-reply {
           animation: ns-deep-link-pulse 600ms ease-out;

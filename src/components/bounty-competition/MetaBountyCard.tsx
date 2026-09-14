@@ -42,8 +42,8 @@ export function MetaBountyCard({
     <div
       onClick={onClick}
       style={{
-        background: "rgba(124, 58, 237, 0.04)",
-        border: "0.5px solid rgba(124, 58, 237, 0.20)",
+        background: "color-mix(in srgb, var(--action) 4%, transparent)",
+        border: "0.5px solid color-mix(in srgb, var(--action) 20%, transparent)",
         borderRadius: "10px",
         padding: "14px 16px",
         width: "100%",
@@ -57,15 +57,15 @@ export function MetaBountyCard({
           position: "absolute",
           top: "14px",
           right: "16px",
-          background: "rgba(124, 58, 237, 0.14)",
-          color: "#7C3AED",
+          background: "color-mix(in srgb, var(--action) 14%, transparent)",
+          color: "var(--action)",
           fontFamily: "Figtree, sans-serif",
           fontSize: "9px",
           fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           padding: "2px 8px",
-          borderRadius: "100px",
+          borderRadius: 'var(--r-chip)',
         }}
       >
         META
@@ -80,7 +80,7 @@ export function MetaBountyCard({
       >
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <Layers
-            style={{ width: "14px", height: "14px", color: "#7C3AED" }}
+            style={{ width: "14px", height: "14px", color: "var(--action)" }}
           />
           <span
             style={{
@@ -89,7 +89,7 @@ export function MetaBountyCard({
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#7C3AED",
+              color: "var(--action)",
             }}
           >
             META BOUNTY
@@ -100,7 +100,7 @@ export function MetaBountyCard({
             fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 400,
-            color: "rgba(255, 255, 255, 0.5)",
+            color: "var(--text2)",
             marginRight: "60px",
           }}
         >
@@ -114,7 +114,7 @@ export function MetaBountyCard({
           fontFamily: "Figtree, sans-serif",
           fontSize: "16px",
           fontWeight: 700,
-          color: "rgba(255, 255, 255, 0.95)",
+          color: "var(--text)",
           margin: "8px 0",
           display: "-webkit-box",
           WebkitLineClamp: 2,
@@ -131,7 +131,7 @@ export function MetaBountyCard({
           fontFamily: "Figtree, sans-serif",
           fontSize: "12px",
           fontWeight: 400,
-          color: "rgba(255, 255, 255, 0.65)",
+          color: "var(--text2)",
           display: "-webkit-box",
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
@@ -164,7 +164,7 @@ export function MetaBountyCard({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "rgba(255, 255, 255, 0.8)",
+                    color: "var(--text)",
                   }}
                 >
                   Solve {index + 1}: {subBounty.title}
@@ -174,7 +174,7 @@ export function MetaBountyCard({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "10px",
                     fontWeight: 400,
-                    color: "rgba(255, 255, 255, 0.5)",
+                    color: "var(--text2)",
                   }}
                 >
                   {formatCurrency(subBounty.pledged)} /{" "}
@@ -184,8 +184,8 @@ export function MetaBountyCard({
               <div
                 style={{
                   height: "4px",
-                  background: "rgba(124, 58, 237, 0.06)",
-                  borderRadius: "2px",
+                  background: "var(--recess)",
+                  borderRadius: "var(--r-chip)",
                   overflow: "hidden",
                 }}
               >
@@ -193,8 +193,8 @@ export function MetaBountyCard({
                   style={{
                     height: "100%",
                     width: `${progress}%`,
-                    background: "rgba(124, 58, 237, 0.40)",
-                    borderRadius: "2px",
+                    background: "var(--evidence)",
+                    borderRadius: "var(--r-chip)",
                     transition: "width 0.3s ease",
                   }}
                 />
@@ -218,7 +218,7 @@ export function MetaBountyCard({
             onPledge?.();
           }}
           style={{
-            background: "linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)",
+            background: "var(--action)",
             color: "white",
             fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
@@ -238,7 +238,7 @@ export function MetaBountyCard({
           }}
           style={{
             background: "transparent",
-            color: "rgba(255, 255, 255, 0.7)",
+            color: "var(--text2)",
             fontFamily: "Figtree, sans-serif",
             fontSize: "11px",
             fontWeight: 500,

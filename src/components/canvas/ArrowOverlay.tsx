@@ -169,7 +169,7 @@ export function ArrowOverlay({
         >
           <path
             d="M 0 0 L 10 5 L 0 10 z"
-            fill="rgba(139,69,19,0.60)"
+            fill="color-mix(in srgb, var(--action) 60%, transparent)"
           />
         </marker>
       </defs>
@@ -345,7 +345,7 @@ export function ArrowOverlay({
           <path
             d={drawingPathStr}
             fill="none"
-            stroke="rgba(139,69,19,0.60)"
+            stroke="color-mix(in srgb, var(--action) 60%, transparent)"
             strokeWidth={2}
             strokeDasharray="6,4"
             markerEnd="url(#arrow-drawing)"
@@ -358,7 +358,7 @@ export function ArrowOverlay({
               cx={wp.x}
               cy={wp.y}
               r={4}
-              fill="#8B4513"
+              fill="var(--action)"
               stroke="rgba(6,6,10,0.90)"
               strokeWidth={2}
               pointerEvents="none"
@@ -382,9 +382,9 @@ export function ArrowOverlay({
           >
             <div
               style={{
-                background: 'rgba(10,10,16,0.98)',
+                background: 'var(--bg)',
                 border:
-                  '1px solid rgba(255,255,255,0.12)',
+                  '1px solid var(--line)',
                 borderRadius: 10,
                 padding: 10,
                 boxShadow:
@@ -395,7 +395,7 @@ export function ArrowOverlay({
                 fontSize: 9, fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.10em',
-                color: 'rgba(255,255,255,0.25)',
+                color: 'var(--text2)',
                 marginBottom: 8,
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -409,7 +409,7 @@ export function ArrowOverlay({
                   }}
                   style={{
                     background: 'none', border: 'none',
-                    color: 'rgba(239,68,68,0.70)',
+                    color: 'color-mix(in srgb, var(--cat-breakage) 70%, transparent)',
                     cursor: 'pointer', fontSize: 10,
                   }}
                 >
@@ -440,13 +440,13 @@ export function ArrowOverlay({
                         cursor: 'pointer',
                         background: isActive
                           ? `${m.color}20`
-                          : 'rgba(255, 255, 255, 0.12)',
+                          : 'var(--recess)',
                         border: `1px solid ${isActive
                           ? m.color
-                          : 'rgba(255,255,255,0.08)'}`,
+                          : 'var(--text2)'}`,
                         color: isActive
                           ? m.color
-                          : 'rgba(255,255,255,0.45)',
+                          : 'var(--text2)',
                         fontWeight: isActive ? 700 : 400,
                       }}
                     >
@@ -469,11 +469,11 @@ export function ArrowOverlay({
                 style={{
                   marginTop: 8,
                   width: '100%',
-                  background: 'rgba(255,255,255,0.08)',
-                  color: '#fff',
+                  background: 'var(--recess)',
+                  color: 'var(--text)',
                   fontSize: 11,
                   fontFamily: 'Figtree, sans-serif',
-                  border: '1px solid rgba(255,255,255,0.10)',
+                  border: '1px solid var(--line)',
                   borderRadius: 6,
                   padding: '6px 8px',
                   resize: 'none',

@@ -89,13 +89,45 @@ export default function BountyUploadShell() {
           margin: "0 auto",
           padding: "60px 24px",
           textAlign: "center",
-          color: "rgba(255,255,255,0.55)",
+          color: "var(--text2)",
           fontSize: 13,
         }}
       >
         {retired ? (
-          <div data-visual-slot="legacy-bounty-retired" data-testid="legacy-bounty-retired">
-            <p style={{ fontSize: 13, fontWeight: 300, lineHeight: 1.6 }}>
+          /* THE BOUNTY RETIREMENT NOTICE, AS INFORMATION (BG-P28). It reads
+             the same way the legacy upload banner does now, and for the same
+             reason: nothing here has gone wrong. Bounty creation moved into
+             the composer and a draft already open still opens here, so the
+             panel sits on --recess with --cat-artefact on a left edge rather
+             than wearing the accent like a warning. The link loses
+             borderRadius: 100 — the capsule rule was dropped — and the body
+             line goes from fontWeight 300 to 400, which is the theme's floor
+             for anything under 18px. */
+          <div
+            data-visual-slot="legacy-bounty-retired"
+            data-testid="legacy-bounty-retired"
+            style={{
+              textAlign: "left",
+              padding: "12px 16px",
+              borderRadius: "var(--r-control)",
+              background: "var(--recess)",
+              border: "1px solid var(--line)",
+              borderLeft: "3px solid var(--cat-artefact)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                color: "var(--cat-artefact)",
+                marginBottom: 3,
+              }}
+            >
+              Previous bounty tool
+            </p>
+            <p style={{ fontSize: 13, fontWeight: 400, lineHeight: 1.6, color: "var(--text2)" }}>
               This editor no longer starts new bounties. A bounty draft you
               already have open still opens here from your drafts.
             </p>
@@ -107,10 +139,10 @@ export default function BountyUploadShell() {
                 fontSize: 12,
                 fontWeight: 500,
                 padding: "7px 16px",
-                borderRadius: 100,
-                border: "1px solid rgba(232,87,26,0.35)",
-                background: "rgba(232,87,26,0.10)",
-                color: "#E8571A",
+                borderRadius: "var(--r-control)",
+                border: "1px solid var(--line)",
+                background: "var(--glass)",
+                color: "var(--text)",
                 textDecoration: "none",
               }}
             >

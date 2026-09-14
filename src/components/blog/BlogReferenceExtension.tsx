@@ -138,8 +138,8 @@ function ChipNodeView({ node, editor, getPos }: NodeViewProps) {
             top: menu.y,
             left: menu.x,
             zIndex: 9999,
-            background: "rgba(16,16,24,0.96)",
-            border: "0.5px solid rgba(255,255,255,0.12)",
+            background: "var(--bg)",
+            border: "0.5px solid var(--line)",
             borderRadius: 8,
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
@@ -182,10 +182,10 @@ function ContextMenuItem({
         cursor: "pointer",
         padding: "7px 10px",
         borderRadius: 4,
-        color: danger ? "#ef4444" : "rgba(255,255,255,0.85)",
+        color: danger ? "var(--cat-breakage)" : "var(--text)",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255, 255, 255, 0.14)";
+        e.currentTarget.style.background = "var(--recess)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";

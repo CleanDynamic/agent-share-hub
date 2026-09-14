@@ -19,6 +19,19 @@ import type { ReactNode } from "react";
    src/lib/bounty-legacy/flags.ts, so the line names where the ask lives now
    rather than inviting the creator to finish here. The blueprint and blog
    routes keep the original single-line copy, because they still create.
+
+   BG-P28 REPAINTS IT AS INFORMATION, NOT AS AN ERROR. The banner was #E8571A —
+   the old primary accent — at 6% on a 22% border, which on a light room reads
+   as a warning strip across the top of a working editor. Nothing here is
+   wrong: the tool saves, the tool publishes, and the notice is telling the
+   creator where the replacement lives. So it sits on --recess like any other
+   informational panel and marks itself with --cat-artefact, the part hue for a
+   produced thing, at 6.41:1 on Exhibition and 7.65:1 on Dusk — carried on a
+   left edge, which is where this codebase already puts an informational mark.
+   The link's borderRadius: 100 went with it: the capsule rule was dropped and
+   a pill is off-brand, so it takes --r-control like every other button here.
+   The two body lines were fontWeight: 300 at 13px, under the theme's 400 floor
+   for anything below 18px; they are 400 now.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
@@ -33,9 +46,10 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
         gap: 12,
         margin: "12px 24px 0 24px",
         padding: "12px 16px",
-        borderRadius: 12,
-        background: "rgba(232,87,26,0.06)",
-        border: "1px solid rgba(232,87,26,0.22)",
+        borderRadius: "var(--r-control)",
+        background: "var(--recess)",
+        border: "1px solid var(--line)",
+        borderLeft: "3px solid var(--cat-artefact)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
@@ -45,12 +59,12 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
             fontWeight: 500,
             letterSpacing: "0.04em",
             textTransform: "uppercase",
-            color: "#E8571A",
+            color: "var(--cat-artefact)",
           }}
         >
           Previous publishing tool
         </p>
-        <p style={{ fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.60)" }}>
+        <p style={{ fontSize: 13, fontWeight: 400, color: "var(--text2)" }}>
           Blueprints are now built in the build workspace. This editor still
           saves and publishes — finish anything you have in progress here.
         </p>
@@ -58,7 +72,7 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
             editors still create, and telling their creators about a retirement
             that is not theirs would be noise. */}
         {bounty && (
-          <p style={{ fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.60)" }}>
+          <p style={{ fontSize: 13, fontWeight: 400, color: "var(--text2)" }}>
             Bounties are now part of publishing a build — mark a part unsolved
             in the composer.
           </p>
@@ -72,10 +86,10 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
           fontSize: 12,
           fontWeight: 500,
           padding: "7px 16px",
-          borderRadius: 100,
-          border: "1px solid rgba(232,87,26,0.35)",
-          background: "rgba(232,87,26,0.10)",
-          color: "#E8571A",
+          borderRadius: "var(--r-control)",
+          border: "1px solid var(--line)",
+          background: "var(--glass)",
+          color: "var(--text)",
           textDecoration: "none",
           whiteSpace: "nowrap",
         }}

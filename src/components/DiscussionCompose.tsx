@@ -37,7 +37,7 @@ export function DiscussionCompose({
           fontSize: 18, lineHeight: 1,
         }}>💬</span>
         <span style={{
-          color: 'rgba(255,255,255,0.70)',
+          color: 'var(--text2)',
           ...type.cardTitle,
         }}>
           Start a Discussion
@@ -55,12 +55,12 @@ export function DiscussionCompose({
           {/* Avatar */}
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(59,130,246,0.20)',
-            border: '1px solid rgba(59,130,246,0.35)',
+            background: 'color-mix(in srgb, var(--cat-data) 20%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--cat-data) 35%, transparent)',
             display: 'flex', alignItems: 'center',
             justifyContent: 'center', flexShrink: 0,
             fontSize: 13, fontWeight: 700,
-            color: '#3B82F6',
+            color: 'var(--cat-data)',
           }}>
             ST
           </div>
@@ -80,7 +80,7 @@ export function DiscussionCompose({
                 border: 'none',
                 outline: 'none',
 
-                color: 'rgba(255,255,255,0.88)',
+                color: 'var(--text)',
 
                 resize: 'none',
                 ...type.cardTitle,
@@ -104,16 +104,16 @@ export function DiscussionCompose({
             }}>
               <div style={{
                 width: 2, flex: 1, minHeight: 16,
-                background: 'rgba(59,130,246,0.20)',
+                background: 'color-mix(in srgb, var(--cat-data) 20%, transparent)',
               }} />
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center', flexShrink: 0,
                 fontSize: 13, fontWeight: 700,
-                color: 'rgba(255,255,255,0.30)',
+                color: 'var(--text2)',
                 marginTop: 4,
               }}>
                 ST
@@ -135,7 +135,7 @@ export function DiscussionCompose({
                   background: 'transparent',
                   border: 'none', outline: 'none',
                   fontSize: 14,
-                  color: 'rgba(255,255,255,0.75)',
+                  color: 'var(--text)',
                   lineHeight: 1.65, resize: 'none',
                   fontFamily: 'Figtree, sans-serif',
                   minHeight: 60, overflow: 'hidden',
@@ -147,7 +147,7 @@ export function DiscussionCompose({
                   type="button"
                   onClick={() => setThreads(threads.filter((_,j) => j !== i))}
                   style={{
-                    fontSize: 11, color: 'rgba(255,255,255,0.25)',
+                    fontSize: 11, color: 'var(--text2)',
                     background: 'none', border: 'none',
                     cursor: 'pointer', padding: 0,
                   }}
@@ -169,14 +169,14 @@ export function DiscussionCompose({
             alignItems: 'center' }}>
             <div style={{
               width: 2, height: 16,
-              background: 'rgba(59,130,246,0.20)',
+              background: 'color-mix(in srgb, var(--cat-data) 20%, transparent)',
             }} />
           </div>
           <button
             type="button"
             onClick={() => setThreads([...threads, ''])}
             style={{
-              fontSize: 13, color: 'rgba(59,130,246,0.60)',
+              fontSize: 13, color: 'color-mix(in srgb, var(--cat-data) 60%, transparent)',
               background: 'none', border: 'none',
               cursor: 'pointer', padding: '4px 0',
               fontFamily: 'Figtree',
@@ -189,7 +189,7 @@ export function DiscussionCompose({
 
       {/* Bottom bar */}
       <div style={{
-        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '1px solid var(--line)',
         paddingTop: 12, marginTop: 12,
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
@@ -197,11 +197,15 @@ export function DiscussionCompose({
         {/* Char counter */}
         <div style={{
           fontSize: 12,
+          /* The counter warns in breakage red, leans on --text at the elbow,
+             and is otherwise ordinary secondary type. Amber stood at the
+             middle step and cannot: it is 3.01:1 on the Exhibition ground and
+             the theme forbids it as type outright. */
           color: isOverLimit
-            ? '#EF4444'
+            ? 'var(--cat-breakage)'
             : charsLeft < 50
-              ? '#F59E0B'
-              : 'rgba(255,255,255,0.25)',
+              ? 'var(--text)'
+              : 'var(--text2)',
         }}>
           {charsLeft}
         </div>
@@ -212,10 +216,10 @@ export function DiscussionCompose({
           onClick={onPost}
           disabled={!mainText.trim() || isOverLimit || submitting}
           style={{
-            padding: '8px 22px', borderRadius: 9999,
+            padding: '8px 22px', borderRadius: 'var(--r-control)',
             background: mainText.trim() && !isOverLimit
-              ? '#3B82F6' : 'rgba(59,130,246,0.25)',
-            border: 'none', color: '#fff',
+              ? 'var(--cat-data)' : 'color-mix(in srgb, var(--cat-data) 25%, transparent)',
+            border: 'none', color: 'var(--text)',
             fontSize: 13, fontWeight: 700,
             cursor: mainText.trim() && !isOverLimit
               ? 'pointer' : 'default',

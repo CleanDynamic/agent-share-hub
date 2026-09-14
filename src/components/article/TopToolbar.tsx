@@ -53,37 +53,37 @@ import {
 
 const styles = {
   toolbar: {
-    background: 'hsl(240 20% 8% / 0.8)',
+    background: 'var(--recess)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    borderBottom: '1px solid hsl(var(--foreground) / 0.06)',
+    borderBottom: '1px solid var(--line)',
   },
   divider: {
-    background: 'rgba(255, 255, 255, 0.14)',
+    background: 'var(--recess)',
   },
   iconButton: {
-    color: 'rgba(255,255,255,0.65)',
+    color: 'var(--text2)',
   },
   iconButtonHover: {
-    color: 'rgba(255,255,255,0.85)',
-    background: 'rgba(255, 255, 255, 0.12)',
+    color: 'var(--text)',
+    background: 'var(--recess)',
   },
   iconButtonActive: {
-    color: '#2EC4B6',
-    background: 'rgba(46,196,182,0.06)',
+    color: 'var(--evidence)',
+    background: 'color-mix(in srgb, var(--evidence) 6%, transparent)',
   },
   dropdown: {
-    background: 'hsl(240 20% 8% / 0.95)',
-    border: '1px solid hsl(var(--foreground) / 0.08)',
-    boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
+    background: 'var(--cat-data)',
+    border: '1px solid var(--line)',
+    boxShadow: '0 8px 24px var(--line)',
     borderRadius: '8px',
   },
   dropdownItem: {
-    color: 'hsl(var(--foreground) / 0.7)',
+    color: 'var(--text2)',
   },
   dropdownItemHover: {
-    color: 'hsl(var(--foreground) / 0.95)',
-    background: 'hsl(var(--foreground) / 0.06)',
+    color: 'var(--text)',
+    background: 'var(--recess)',
   },
 } as const;
 
@@ -159,9 +159,9 @@ function ToolbarButton({
       <TooltipContent
         side="bottom"
         style={{
-          background: 'hsl(240 20% 8% / 0.98)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
-          color: 'hsl(var(--foreground) / 0.92)',
+          background: 'var(--cat-data)',
+          border: '1px solid var(--line)',
+          color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
           fontFamily: 'Figtree, sans-serif',
@@ -170,7 +170,7 @@ function ToolbarButton({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 500 }}>{label}</span>
           {shortcut ? (
-            <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.45)' }}>{shortcut}</span>
+            <span style={{ fontSize: 10, color: 'var(--text2)' }}>{shortcut}</span>
           ) : null}
         </div>
       </TooltipContent>
@@ -201,7 +201,7 @@ function DropdownItem({
         borderRadius: 5,
         border: 'none',
         background: isHovered ? styles.dropdownItemHover.background : 'transparent',
-        color: isSelected ? 'hsl(var(--foreground) / 0.95)' : styles.dropdownItem.color,
+        color: isSelected ? 'var(--text)' : styles.dropdownItem.color,
         display: 'flex',
         alignItems: 'center',
         padding: '0 8px',
@@ -303,9 +303,9 @@ function ToolbarDropdown({
       <TooltipContent
         side="bottom"
         style={{
-          background: 'hsl(240 20% 8% / 0.98)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
-          color: 'hsl(var(--foreground) / 0.92)',
+          background: 'var(--cat-data)',
+          border: '1px solid var(--line)',
+          color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
           fontFamily: 'Figtree, sans-serif',
@@ -314,7 +314,7 @@ function ToolbarDropdown({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 500 }}>{label}</span>
           {shortcut ? (
-            <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.45)' }}>{shortcut}</span>
+            <span style={{ fontSize: 10, color: 'var(--text2)' }}>{shortcut}</span>
           ) : null}
         </div>
       </TooltipContent>
@@ -341,7 +341,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: isHovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+            background: isHovered ? 'var(--recess)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
           onMouseEnter={() => setIsHovered(true)}
@@ -353,7 +353,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
               height: 14,
               borderRadius: 999,
               background: color,
-              boxShadow: 'inset 0 0 0 1px hsl(var(--foreground) / 0.15)',
+              boxShadow: 'inset 0 0 0 1px var(--text2)',
             }}
           />
         </button>
@@ -361,9 +361,9 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
       <TooltipContent
         side="bottom"
         style={{
-          background: 'hsl(240 20% 8% / 0.98)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
-          color: 'hsl(var(--foreground) / 0.92)',
+          background: 'var(--bg)',
+          border: '1px solid var(--line)',
+          color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
           fontFamily: 'Figtree, sans-serif',
@@ -372,7 +372,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 500 }}>{label}</span>
           {shortcut ? (
-            <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.45)' }}>{shortcut}</span>
+            <span style={{ fontSize: 10, color: 'var(--text2)' }}>{shortcut}</span>
           ) : null}
         </div>
       </TooltipContent>
@@ -384,30 +384,30 @@ type PaletteEntry = { name: string; value: string | null };
 
 const TEXT_PALETTE: PaletteEntry[] = [
   { name: 'Default', value: null },
-  { name: 'Gray', value: '#9CA3AF' },
+  { name: 'Gray', value: 'var(--text2)' },
   { name: 'Brown', value: '#8B5E3C' },
-  { name: 'Orange', value: '#E8571A' },
+  { name: 'Orange', value: 'var(--action)' },
   { name: 'Yellow', value: '#F5C518' },
   { name: 'Green', value: '#2BB673' },
-  { name: 'Teal', value: '#2EC4B6' },
-  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Teal', value: 'var(--evidence)' },
+  { name: 'Blue', value: 'var(--cat-data)' },
   { name: 'Purple', value: '#A855F7' },
-  { name: 'Pink', value: '#EC4899' },
-  { name: 'Red', value: '#EF4444' },
+  { name: 'Pink', value: 'var(--cat-media)' },
+  { name: 'Red', value: 'var(--cat-breakage)' },
 ];
 
 const HIGHLIGHT_PALETTE: PaletteEntry[] = [
   { name: 'Default', value: null },
-  { name: 'Gray', value: '#9CA3AF55' },
-  { name: 'Brown', value: '#8B5E3C55' },
-  { name: 'Orange', value: '#E8571A55' },
-  { name: 'Yellow', value: '#F5C51855' },
-  { name: 'Green', value: '#2BB67355' },
-  { name: 'Teal', value: '#2EC4B655' },
-  { name: 'Blue', value: '#3B82F655' },
-  { name: 'Purple', value: '#A855F755' },
-  { name: 'Pink', value: '#EC489955' },
-  { name: 'Red', value: '#EF444455' },
+  { name: 'Gray', value: 'color-mix(in srgb, var(--text2) 33%, transparent)' },
+  { name: 'Brown', value: 'color-mix(in srgb, var(--cat-artefact) 33%, transparent)' },
+  { name: 'Orange', value: 'color-mix(in srgb, var(--action) 33%, transparent)' },
+  { name: 'Yellow', value: 'color-mix(in srgb, var(--lit) 33%, transparent)' },
+  { name: 'Green', value: 'color-mix(in srgb, var(--cat-configuration) 33%, transparent)' },
+  { name: 'Teal', value: 'color-mix(in srgb, var(--evidence) 33%, transparent)' },
+  { name: 'Blue', value: 'color-mix(in srgb, var(--cat-data) 33%, transparent)' },
+  { name: 'Purple', value: 'color-mix(in srgb, var(--cat-agents) 33%, transparent)' },
+  { name: 'Pink', value: 'color-mix(in srgb, var(--cat-media) 33%, transparent)' },
+  { name: 'Red', value: 'color-mix(in srgb, var(--cat-breakage) 33%, transparent)' },
 ];
 
 interface ColorPickerPopoverProps {
@@ -454,7 +454,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            background: hovered ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+            background: hovered ? 'var(--recess)' : 'transparent',
             transition: 'all 120ms ease-out',
           }}
         >
@@ -464,7 +464,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               height: 14,
               borderRadius: 999,
               background: triggerColor,
-              boxShadow: 'inset 0 0 0 1px hsl(var(--foreground) / 0.15)',
+              boxShadow: 'inset 0 0 0 1px var(--text2)',
             }}
           />
         </button>
@@ -474,19 +474,19 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
         sideOffset={6}
         className="p-3 w-auto"
         style={{
-          background: 'hsl(240 20% 8% / 0.98)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
+          background: 'var(--bg)',
+          border: '1px solid var(--line)',
           borderRadius: 10,
-          boxShadow: '0 8px 24px hsl(240 10% 2% / 0.5)',
+          boxShadow: '0 8px 24px var(--text)',
           fontFamily: 'Figtree, sans-serif',
-          color: 'hsl(var(--foreground) / 0.9)',
+          color: 'var(--text)',
         }}
       >
         <div
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: 'hsl(var(--foreground) / 0.6)',
+            color: 'var(--text2)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             marginBottom: 8,
@@ -525,8 +525,8 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
                   cursor: 'pointer',
                   background: swatchBg,
                   border: isDefault
-                    ? '1px dashed hsl(var(--foreground) / 0.3)'
-                    : '1px solid hsl(var(--foreground) / 0.15)',
+                    ? '1px dashed var(--line)'
+                    : '1px solid var(--text2)',
                   position: 'relative',
                 }}
               >
@@ -539,7 +539,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 9,
-                      color: 'hsl(var(--foreground) / 0.5)',
+                      color: 'var(--text2)',
                     }}
                   >
                     A
@@ -562,7 +562,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             borderRadius: 6,
             border: 'none',
             background: 'transparent',
-            color: 'hsl(var(--foreground) / 0.7)',
+            color: 'var(--text2)',
             fontSize: 11,
             fontFamily: 'Figtree, sans-serif',
             cursor: 'pointer',
@@ -572,7 +572,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background =
-              'hsl(var(--foreground) / 0.06)';
+              'var(--recess)';
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
@@ -596,9 +596,9 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               flex: 1,
               height: 26,
               borderRadius: 6,
-              border: '1px solid hsl(var(--foreground) / 0.1)',
-              background: 'hsl(var(--foreground) / 0.03)',
-              color: 'hsl(var(--foreground) / 0.9)',
+              border: '1px solid var(--line)',
+              background: 'var(--recess)',
+              color: 'var(--text)',
               padding: '0 8px',
               fontSize: 11,
               fontFamily: 'Figtree, sans-serif',
@@ -612,9 +612,9 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               height: 26,
               padding: '0 10px',
               borderRadius: 6,
-              border: '1px solid hsl(var(--foreground) / 0.1)',
-              background: 'hsl(var(--foreground) / 0.06)',
-              color: 'hsl(var(--foreground) / 0.9)',
+              border: '1px solid var(--line)',
+              background: 'var(--recess)',
+              color: 'var(--text)',
               fontSize: 11,
               fontFamily: 'Figtree, sans-serif',
               cursor: 'pointer',
@@ -890,7 +890,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
               triggerLabel="Text color"
               triggerColor={
                 (editor?.getAttributes('textStyle')?.color as string) ||
-                'hsl(var(--foreground) / 0.9)'
+                'var(--text)'
               }
               onApply={(color) => {
                 if (!editor) return;
@@ -903,7 +903,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
               triggerLabel="Highlight color"
               triggerColor={
                 (editor?.getAttributes('highlight')?.color as string) ||
-                'hsl(45 93% 63% / 0.3)'
+                'var(--cat-artefact)'
               }
               onApply={(color) => {
                 if (!editor) return;
@@ -968,7 +968,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                     width: 28, height: 28, borderRadius: 6,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', border: 'none', background: 'transparent',
-                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                    color: 'var(--text2)', padding: 0,
                   }}
                 >
                   <Image size={14} strokeWidth={1.8} />
@@ -979,14 +979,18 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 sideOffset={6}
                 className="p-3 w-72"
                 style={{
-                  background: 'hsl(240 20% 8% / 0.98)',
-                  border: '1px solid hsl(var(--foreground) / 0.08)',
-                  borderRadius: 10,
+                  /* A popover is a RAISED surface, so it takes an opaque
+                     ground and the theme's raised elevation. --line is a
+                     hairline token and was never a surface. */
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 'var(--r-panel)',
+                  boxShadow: 'var(--elev-raised)',
                   fontFamily: 'Figtree, sans-serif',
-                  color: 'hsl(var(--foreground) / 0.9)',
+                  color: 'var(--text)',
                 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Insert image
                 </div>
                 <input
@@ -995,19 +999,19 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
                   placeholder="Image URL"
                   autoFocus
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 6, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', padding: '0 8px', fontSize: 12, marginBottom: 6, outline: 'none', boxSizing: 'border-box' }}
                 />
                 <input
                   value={imageAlt}
                   onChange={(e) => setImageAlt(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertImage(); } }}
                   placeholder="Alt text (optional)"
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
                 />
                 <button
                   type="button"
                   onClick={insertImage}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
                 >
                   Insert
                 </button>
@@ -1023,7 +1027,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                     width: 28, height: 28, borderRadius: 6,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', border: 'none', background: 'transparent',
-                    color: 'hsl(var(--foreground) / 0.7)', padding: 0,
+                    color: 'var(--text2)', padding: 0,
                   }}
                 >
                   <Video size={14} strokeWidth={1.8} />
@@ -1034,14 +1038,14 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 sideOffset={6}
                 className="p-3 w-72"
                 style={{
-                  background: 'hsl(240 20% 8% / 0.98)',
-                  border: '1px solid hsl(var(--foreground) / 0.08)',
+                  background: 'var(--cat-data)',
+                  border: '1px solid var(--line)',
                   borderRadius: 10,
                   fontFamily: 'Figtree, sans-serif',
-                  color: 'hsl(var(--foreground) / 0.9)',
+                  color: 'var(--text)',
                 }}
               >
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground) / 0.6)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
                   Insert video
                 </div>
                 <input
@@ -1050,12 +1054,12 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); insertVideo(); } }}
                   placeholder="YouTube, Vimeo, or .mp4 URL"
                   autoFocus
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.03)', color: 'hsl(var(--foreground) / 0.9)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', padding: '0 8px', fontSize: 12, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
                 />
                 <button
                   type="button"
                   onClick={insertVideo}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid hsl(var(--foreground) / 0.1)', background: 'hsl(var(--foreground) / 0.06)', color: 'hsl(var(--foreground) / 0.9)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
                 >
                   Insert
                 </button>

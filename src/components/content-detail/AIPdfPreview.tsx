@@ -70,6 +70,14 @@ export interface AIPdfPreviewProps {
 }
 
 // ─── Styles (light theme, fixed for OCR reliability) ─────────
+//
+// BG-P28 LEAVES THIS FILE ON RAW HEX, DELIBERATELY. Everything else on these
+// routes is repainted onto the theme, and this is the one surface that must
+// not be: it is an A4 page rendered for PDF export, not a UI surface. A
+// document that followed <html data-theme> would export white-on-dark from
+// Dusk, which is unreadable on paper and is exactly what "fixed for OCR
+// reliability" above was guarding against. The page stays white with black
+// ink in both rooms, like any other printed artefact.
 const s = {
   page: {
     width: "210mm",

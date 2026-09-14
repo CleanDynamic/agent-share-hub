@@ -56,19 +56,19 @@ interface StageThumbnailProps {
 }
 
 // Block-type colour palette (full hex; opacity applied at render time)
-const NEUTRAL = 'rgba(255,255,255,0.40)';
+const NEUTRAL = 'var(--recess)';
 const blockTypeColor: Record<string, string> = {
-  prompt: '#E8571A',
-  code: '#22C55E',
-  result: '#7C3AED',
-  agent: '#7C3AED',
-  tool: '#3B82F6',
-  model: '#A78BFA',
-  workflow: '#3B82F6',
-  compare: '#EC4899',
-  tutorial: '#2EC4B6',
-  resource: '#06B6D4',
-  note: '#F59E0B',
+  prompt: 'var(--action)',
+  code: 'var(--cat-configuration)',
+  result: 'var(--cat-agents)',
+  agent: 'var(--cat-agents)',
+  tool: 'var(--cat-data)',
+  model: 'var(--cat-agents)',
+  workflow: 'var(--cat-data)',
+  compare: 'var(--cat-media)',
+  tutorial: 'var(--evidence)',
+  resource: 'var(--cat-data)',
+  note: 'var(--cat-narrative)',
   text: NEUTRAL,
   heading: NEUTRAL,
   image: NEUTRAL,
@@ -185,8 +185,8 @@ export function StageThumbnail({
       style={{
         width: '100%',
         margin: '24px 0',
-        background: 'rgba(255,255,255,0.02)',
-        border: `0.5px solid ${hovered ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.08)'}`,
+        background: 'var(--recess)',
+        border: `0.5px solid ${hovered ? 'var(--recess)' : 'var(--recess)'}`,
         borderRadius: 10,
         overflow: 'hidden',
         cursor: 'pointer',
@@ -210,8 +210,8 @@ export function StageThumbnail({
             width: 20,
             height: 20,
             borderRadius: '50%',
-            background: isBounty && isMissing ? 'rgba(245,158,11,0.18)' : 'rgba(232,87,26,0.14)',
-            color: isBounty && isMissing ? '#F59E0B' : '#E8571A',
+            background: isBounty && isMissing ? 'color-mix(in srgb, var(--cat-breakage) 18%, transparent)' : 'color-mix(in srgb, var(--action) 14%, transparent)',
+            color: isBounty && isMissing ? 'var(--cat-breakage)' : 'var(--action)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -240,13 +240,13 @@ export function StageThumbnail({
               minWidth: 0,
               background: 'transparent',
               border: 'none',
-              borderBottom: '1px solid rgba(255,255,255,0.20)',
+              borderBottom: '1px solid var(--line)',
               outline: 'none',
               padding: '2px 0',
               fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 600,
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text)',
             }}
           />
         ) : (
@@ -267,7 +267,7 @@ export function StageThumbnail({
               fontSize: 13,
               fontWeight: stageName ? 600 : 500,
               fontStyle: stageName ? 'normal' : 'italic',
-              color: stageName ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.30)',
+              color: stageName ? 'var(--text)' : 'var(--text2)',
               cursor: 'text',
             }}
           >
@@ -280,12 +280,12 @@ export function StageThumbnail({
           style={{
             flexShrink: 0,
             padding: '2px 8px',
-            background: 'rgba(255, 255, 255, 0.12)',
-            borderRadius: 100,
+            background: 'var(--recess)',
+            borderRadius: 'var(--r-chip)',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 11,
             fontWeight: 500,
-            color: 'rgba(255,255,255,0.45)',
+            color: 'var(--text2)',
             lineHeight: 1.4,
           }}
         >
@@ -312,16 +312,16 @@ export function StageThumbnail({
             background: 'transparent',
             border: 'none',
             borderRadius: 4,
-            color: 'rgba(255,255,255,0.40)',
+            color: 'var(--text2)',
             cursor: 'pointer',
             transition: 'color 120ms ease, background 120ms ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.14)';
+            e.currentTarget.style.color = 'var(--text)';
+            e.currentTarget.style.background = 'var(--recess)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.40)';
+            e.currentTarget.style.color = 'var(--text2)';
             e.currentTarget.style.background = 'transparent';
           }}
         >
@@ -342,7 +342,7 @@ export function StageThumbnail({
 
       {/* Body — when bounty + missing, replace preview/strip/list with MissingStageBadge */}
       {isBounty && isMissing ? (
-        <div style={{ padding: 12, borderTop: '0.5px solid rgba(245,158,11,0.18)' }}>
+        <div style={{ padding: 12, borderTop: '0.5px solid color-mix(in srgb, var(--cat-breakage) 18%, transparent)' }}>
           <MissingStageBadge description={missingDescription} slotId={stageId} />
         </div>
       ) : (
@@ -358,7 +358,7 @@ export function StageThumbnail({
               position: 'relative',
               height: 28,
               padding: '4px 12px',
-              borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
+              borderTop: '0.5px solid var(--line)',
               display: 'flex',
               alignItems: 'center',
             }}
@@ -369,7 +369,7 @@ export function StageThumbnail({
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 11,
                   fontWeight: 400,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                 }}
               >
                 Empty stage
@@ -431,7 +431,7 @@ export function StageThumbnail({
             <div
               style={{
                 padding: '8px 12px',
-                borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
+                borderTop: '0.5px solid var(--line)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '4px 6px',
@@ -468,13 +468,13 @@ function BlockLabelPill({ dotColor, label }: BlockLabelPillProps) {
         alignItems: 'center',
         gap: 6,
         padding: '2px 8px',
-        background: hover ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.025)',
-        border: '0.5px solid rgba(255, 255, 255, 0.14)',
+        background: hover ? 'var(--recess)' : 'var(--recess)',
+        border: '0.5px solid var(--line)',
         borderRadius: 4,
         fontFamily: 'Figtree, sans-serif',
         fontSize: 11,
         fontWeight: 400,
-        color: 'rgba(255,255,255,0.70)',
+        color: 'var(--text2)',
         lineHeight: 1.4,
         maxWidth: '100%',
         transition: 'background 120ms ease',
@@ -506,12 +506,12 @@ function BlockLabelPill({ dotColor, label }: BlockLabelPillProps) {
 // ─── Spatial mini-map preview ──────────────────────────────────────────────
 
 const CONNECTION_COLORS: Record<string, string> = {
-  feeds_into: '#2EC4B6',
-  references: 'rgba(255,255,255,0.45)',
-  depends_on: '#E8571A',
-  contradicts: '#EF4444',
-  alternative_to: '#A78BFA',
-  custom: 'rgba(255,255,255,0.45)',
+  feeds_into: 'var(--evidence)',
+  references: 'var(--recess)',
+  depends_on: 'var(--action)',
+  contradicts: 'var(--cat-breakage)',
+  alternative_to: 'var(--cat-agents)',
+  custom: 'var(--recess)',
 };
 
 interface SpatialPreviewProps {
@@ -559,10 +559,10 @@ function SpatialPreviewImpl({ blocks, connections }: SpatialPreviewProps) {
       style={{
         height: 80,
         margin: '6px 12px',
-        background: 'rgba(255,255,255,0.015)',
+        background: 'var(--recess)',
         borderRadius: 6,
         overflow: 'hidden',
-        borderTop: '0.5px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '0.5px solid var(--line)',
       }}
     >
       <svg
@@ -583,7 +583,7 @@ function SpatialPreviewImpl({ blocks, connections }: SpatialPreviewProps) {
           const ty = to.y + to.h / 2;
           const stroke =
             CONNECTION_COLORS[c.connection_type ?? 'references'] ??
-            'rgba(255,255,255,0.45)';
+            'var(--text2)';
           return (
             <polyline
               key={c.id ?? `c-${idx}`}

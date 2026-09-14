@@ -96,22 +96,22 @@ function buildEntries(
         block.type === 'prompt'
           ? 'hsl(var(--secondary))'
           : block.type === 'code'
-            ? 'hsl(142 71% 45%)'
+            ? 'var(--cat-configuration)'
             : block.type === 'result' || block.type === 'agent'
-              ? 'hsl(262 83% 58%)'
+              ? 'var(--cat-agents)'
               : block.type === 'tool' || block.type === 'workflow'
-                ? 'hsl(217 91% 60%)'
+                ? 'var(--cat-data)'
                 : block.type === 'model'
-                  ? 'hsl(263 89% 78%)'
+                  ? 'var(--cat-agents)'
                   : block.type === 'compare'
-                    ? 'hsl(330 81% 60%)'
+                    ? 'var(--cat-media)'
                     : block.type === 'tutorial'
                       ? 'hsl(var(--primary))'
                       : block.type === 'resource'
-                        ? 'hsl(190 95% 39%)'
+                        ? 'var(--cat-evidence)'
                         : block.type === 'note'
-                          ? 'hsl(38 92% 50%)'
-                          : 'hsl(var(--foreground) / 0.6)';
+                          ? 'var(--action)'
+                          : 'var(--text2)';
 
       output.push({
         id: block.id,
@@ -172,7 +172,7 @@ export function OutlineTool({
           borderBottom: PANEL_DIVIDER,
           fontSize: 10,
           fontWeight: 500,
-          color: 'hsl(var(--foreground) / 0.4)',
+          color: 'var(--text2)',
         }}
       >
         {wordCount} words · {minToRead} min read
@@ -213,26 +213,26 @@ export function OutlineTool({
                 paddingLeft: isStage ? 8 : 10 + indent,
                 borderRadius: isStage ? 6 : 4,
                 border: isStage
-                   ? '0.5px solid hsl(var(--primary) / 0.2)'
+                   ? '0.5px solid var(--action)'
                   : 'none',
                 borderLeft: isActive
                   ? '2px solid hsl(var(--secondary))'
                   : isStage
-                    ? '0.5px solid hsl(var(--primary) / 0.2)'
+                    ? '0.5px solid var(--action)'
                     : '2px solid transparent',
                 backgroundColor: isStage
                    ? PANEL_CARD_BACKGROUND
                    : 'transparent',
                 color: isActive
-                  ? 'hsl(var(--foreground) / 0.95)'
-                  : 'hsl(var(--foreground) / 0.55)',
+                  ? 'var(--text)'
+                  : 'var(--text2)',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'background-color 120ms ease, color 120ms ease, border-color 120ms ease',
               }}
               onMouseEnter={(e) => {
                 if (isStage) return;
-                e.currentTarget.style.backgroundColor = 'hsl(var(--foreground) / 0.04)';
+                e.currentTarget.style.backgroundColor = 'var(--recess)';
               }}
               onMouseLeave={(e) => {
                 if (isStage) return;
@@ -254,7 +254,7 @@ export function OutlineTool({
                       width: 2,
                       height: 2,
                       borderRadius: 999,
-                      backgroundColor: 'hsl(var(--foreground) / 0.4)',
+                      backgroundColor: 'var(--recess)',
                       flexShrink: 0,
                     }}
                   />
@@ -266,7 +266,7 @@ export function OutlineTool({
                       width: 6,
                       height: 6,
                       borderRadius: 999,
-                      backgroundColor: entry.color ?? 'hsl(var(--foreground) / 0.6)',
+                      backgroundColor: entry.color ?? 'var(--recess)',
                       flexShrink: 0,
                     }}
                   />
@@ -281,9 +281,9 @@ export function OutlineTool({
                     fontSize: isStage ? 12 : headingLevel === 1 ? 13 : headingLevel === 2 ? 12 : entry.kind === 'block' ? 10 : 11,
                     fontWeight: isStage ? 600 : headingLevel === 1 ? 600 : headingLevel === 2 ? 500 : entry.kind === 'block' ? 500 : 400,
                     color: isActive
-                      ? 'hsl(var(--foreground) / 0.95)'
+                      ? 'var(--text)'
                       : entry.kind === 'block'
-                        ? 'hsl(var(--foreground) / 0.6)'
+                        ? 'var(--text2)'
                         : 'inherit',
                   }}
                 >
@@ -297,7 +297,7 @@ export function OutlineTool({
                     flexShrink: 0,
                     fontSize: 10,
                     fontWeight: 400,
-                    color: 'hsl(var(--foreground) / 0.35)',
+                    color: 'var(--text2)',
                   }}
                 >
                   {entry.blockCount} blocks
@@ -320,7 +320,7 @@ export function OutlineTool({
            borderTop: PANEL_DIVIDER,
         }}
       >
-        <span style={{ fontSize: 10, color: 'hsl(var(--foreground) / 0.35)' }}>
+        <span style={{ fontSize: 10, color: 'var(--text2)' }}>
           {stageCount} stages · {blockCount} blocks
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -332,7 +332,7 @@ export function OutlineTool({
               background: 'transparent',
               padding: 0,
               fontSize: 10,
-              color: 'hsl(var(--foreground) / 0.45)',
+              color: 'var(--text2)',
               cursor: 'pointer',
             }}
           >
@@ -346,7 +346,7 @@ export function OutlineTool({
               background: 'transparent',
               padding: 0,
               fontSize: 10,
-              color: 'hsl(var(--foreground) / 0.45)',
+              color: 'var(--text2)',
               cursor: 'pointer',
             }}
           >

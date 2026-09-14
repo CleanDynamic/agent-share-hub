@@ -664,7 +664,7 @@ const DiscoverLegacy = () => {
                 }}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${bountiesOnly ? "bg-primary" : "bg-muted"}`}
               >
-                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${bountiesOnly ? "translate-x-4" : "translate-x-1"}`} />
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-foreground transition-transform ${bountiesOnly ? "translate-x-4" : "translate-x-1"}`} />
               </button>
             </div>
             {bountiesOnly && (
@@ -859,7 +859,7 @@ const DiscoverLegacy = () => {
       />
       <div className="mx-auto max-w-5xl">
         {/* Page heading */}
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.90)', marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 20 }}>
           {bountyParam === 'open' ? '🎯 Open Bounties'
             : bountyParam === 'solved' ? '✅ Solved Bounties'
             : postTypeParam ? ((POST_TYPES.find(p => p.value === postTypeParam)?.label ?? 'Discover') + 's')
@@ -869,7 +869,7 @@ const DiscoverLegacy = () => {
         {/* Tab bar — teal active for Browse context */}
         <div
           className="flex items-center gap-1 flex-wrap"
-          style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}
+          style={{ paddingBottom: 12, borderBottom: '1px solid var(--line)', marginBottom: 20 }}
         >
           {([
             { value: "blueprints" as BrowseTab, label: "Blueprints" },
@@ -887,8 +887,8 @@ const DiscoverLegacy = () => {
                 padding: '6px 16px',
                 borderRadius: 100,
                 border: 'none',
-                background: browseTab === tab.value ? 'rgba(31,122,109,0.08)' : 'transparent',
-                color: browseTab === tab.value ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
+                background: browseTab === tab.value ? 'color-mix(in srgb, var(--evidence) 8%, transparent)' : 'transparent',
+                color: browseTab === tab.value ? 'var(--evidence)' : 'var(--recess)',
                 cursor: 'pointer',
               }}
             >
@@ -903,7 +903,7 @@ const DiscoverLegacy = () => {
         <div className="relative mb-3">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2"
-            style={{ width: 16, height: 16, color: 'rgba(255,255,255,0.28)' }}
+            style={{ width: 16, height: 16, color: 'var(--text2)' }}
           />
           <Input
             placeholder={searchPlaceholder}
@@ -913,17 +913,17 @@ const DiscoverLegacy = () => {
             style={{
               paddingLeft: 40,
               height: 40,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--recess)',
+              border: '1px solid var(--line)',
               borderRadius: 10,
               fontSize: 13,
               fontWeight: 300,
-              color: 'rgba(255,255,255,0.90)',
+              color: 'var(--text)',
               outline: 'none',
               transition: 'border-color 200ms',
             }}
-            onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.16)'}
-            onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.08)'}
+            onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'var(--line)'}
+            onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'var(--line)'}
           />
         </div>
 
@@ -939,9 +939,9 @@ const DiscoverLegacy = () => {
                 fontWeight: 500,
                 padding: '4px 10px',
                 borderRadius: 100,
-                border: '1px solid ' + (sortMode === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255, 255, 255, 0.14)'),
-                background: sortMode === opt.value ? 'rgba(31,122,109,0.10)' : 'transparent',
-                color: sortMode === opt.value ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
+                border: '1px solid ' + (sortMode === opt.value ? 'color-mix(in srgb, var(--evidence) 30%, transparent)' : 'var(--recess)'),
+                background: sortMode === opt.value ? 'color-mix(in srgb, var(--evidence) 10%, transparent)' : 'transparent',
+                color: sortMode === opt.value ? 'var(--evidence)' : 'var(--recess)',
                 cursor: 'pointer',
               }}
             >
@@ -962,9 +962,9 @@ const DiscoverLegacy = () => {
                 fontWeight: 500,
                 padding: '4px 12px',
                 borderRadius: 100,
-                border: '1px solid ' + (timePeriod === opt.value ? 'rgba(31,122,109,0.3)' : 'rgba(255, 255, 255, 0.14)'),
-                background: timePeriod === opt.value ? 'rgba(31,122,109,0.10)' : 'transparent',
-                color: timePeriod === opt.value ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
+                border: '1px solid ' + (timePeriod === opt.value ? 'color-mix(in srgb, var(--evidence) 30%, transparent)' : 'var(--recess)'),
+                background: timePeriod === opt.value ? 'color-mix(in srgb, var(--evidence) 10%, transparent)' : 'transparent',
+                color: timePeriod === opt.value ? 'var(--evidence)' : 'var(--recess)',
                 cursor: 'pointer',
               }}
             >
@@ -984,13 +984,13 @@ const DiscoverLegacy = () => {
                 fontWeight: 500,
                 padding: '6px 14px',
                 borderRadius: 100,
-                border: '1px solid rgba(255,255,255,0.10)',
+                border: '1px solid var(--line)',
                 background: 'transparent',
-                color: 'rgba(255,255,255,0.60)',
+                color: 'var(--text2)',
                 cursor: 'pointer',
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.20)'}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)'}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)'}
             >
               <SlidersHorizontal style={{ width: 13, height: 13 }} />
               Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
@@ -998,14 +998,14 @@ const DiscoverLegacy = () => {
             {activeFilterCount > 0 && (
               <span
                 className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full flex items-center justify-center font-medium"
-                style={{ background: '#1F7A6D', color: '#25252F', fontSize: 10 }}
+                style={{ background: 'var(--evidence)', color: 'var(--bg)', fontSize: 10 }}
               >
                 {activeFilterCount}
               </span>
             )}
           </div>
           {!isLoading && (
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            <p style={{ fontSize: 12, color: 'var(--text2)' }}>
               {resultCount} result{resultCount !== 1 ? "s" : ""}
             </p>
           )}

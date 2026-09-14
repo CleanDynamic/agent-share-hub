@@ -118,7 +118,13 @@ function BountyResponseComposerImpl({ bountyContentId, bountyTitle, bountyCreato
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      {/* The theme's one scrim, struck from --porthole so it belongs to the
+          room rather than to black. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}
+        onClick={onClose}
+      />
 
       {/* Sheet/Modal */}
       <div
@@ -226,7 +232,7 @@ function BountyResponseComposerImpl({ bountyContentId, bountyTitle, bountyCreato
           {/* SECTION 2 — How it fixes */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">How this fixes it <span className="text-red-400">*</span></Label>
+              <Label className="text-sm font-semibold">How this fixes it <span className="text-[var(--cat-breakage)]">*</span></Label>
               <span className="text-[10px] text-muted-foreground">{howItFixes.length}/280</span>
             </div>
             <Textarea
@@ -267,7 +273,7 @@ function BountyResponseComposerImpl({ bountyContentId, bountyTitle, bountyCreato
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
             className="w-full h-11 rounded-xl text-sm font-semibold"
-            style={{ background: canSubmit ? "#8B4513" : undefined }}
+            style={{ background: canSubmit ? "var(--action)" : undefined }}
           >
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Submitting…</> : "Submit Blueprint"}
           </Button>

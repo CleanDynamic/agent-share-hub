@@ -29,7 +29,7 @@ interface AgentBlockData {
   [key: string]: unknown;
 }
 
-const AGENT_COLOR = '#7C3AED';
+const AGENT_COLOR = 'var(--cat-agents)';
 
 const models = [
   { value: 'gpt-4o', label: 'GPT-4o' },
@@ -52,7 +52,7 @@ const memoryOptions: MemoryStrategy[] = ['none', 'short', 'long'];
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -60,19 +60,19 @@ const PORT_STYLE: React.CSSProperties = {
 
 function StatusDot({ status }: { status: BlockStatus }) {
   if (status === 'running') {
-    return <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-[var(--action)] animate-pulse" />;
   }
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-white">
+      <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-foreground">
         <Check size={8} strokeWidth={3} />
       </span>
     );
   }
   if (status === 'error') {
-    return <span className="inline-block w-2 h-2 rounded-full bg-red-500" />;
+    return <span className="inline-block w-2 h-2 rounded-full bg-[var(--cat-breakage)]" />;
   }
-  return <span className="inline-block w-2 h-2 rounded-full bg-white/25" />;
+  return <span className="inline-block w-2 h-2 rounded-full bg-muted" />;
 }
 
 export function AgentBlockNode({ id, data, selected }: NodeProps) {
@@ -159,12 +159,12 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         className={cn('group relative rounded-lg p-2.5 backdrop-blur-md transition-all')}
         style={{
           width: 240,
-          background: 'rgba(20,20,28,0.85)',
+          background: 'var(--recess)',
           border: selected
             ? `1px solid ${AGENT_COLOR}99`
             : expandedSelection
               ? `1px dashed ${AGENT_COLOR}73`
-              : '1px solid rgba(255,255,255,0.08)',
+              : '1px solid var(--line)',
           boxShadow: selected ? `0 0 0 2px ${AGENT_COLOR}2E` : 'none',
         }}
       >
@@ -177,7 +177,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         {/* Header */}
         <div className="flex items-center gap-1.5 mb-2">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: AGENT_COLOR }} />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Agent
           </span>
           <input
@@ -185,13 +185,13 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <StatusDot status={status} />
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+            className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
             title="More"
           >
             <MoreHorizontal size={12} />
@@ -202,25 +202,25 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="rounded-md p-2 mb-2 flex items-start gap-2"
           style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             minHeight: 56,
           }}
         >
-          <Bot size={14} className="text-white/40 mt-0.5 flex-shrink-0" />
-          <p className="text-[11px] leading-snug text-white/70 line-clamp-3">
-            {role || <span className="text-white/30">Describe what this agent does...</span>}
+          <Bot size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+          <p className="text-[11px] leading-snug text-muted-foreground line-clamp-3">
+            {role || <span className="text-muted-foreground">Describe what this agent does...</span>}
           </p>
         </div>
 
         {/* Stats */}
-        <div className="text-[10px] text-white/40 mb-2 flex items-center gap-2">
+        <div className="text-[10px] text-muted-foreground mb-2 flex items-center gap-2">
           <span>{modelLabel}</span>
-          <span className="text-white/20">·</span>
+          <span className="text-muted-foreground">·</span>
           <span>
             {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
           </span>
-          <span className="text-white/20">·</span>
+          <span className="text-muted-foreground">·</span>
           <span>memory: {memoryStrategy}</span>
         </div>
 
@@ -233,7 +233,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
               selectThis();
               handleRun();
             }}
-            className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-white"
+            className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-foreground"
             style={{ background: `${AGENT_COLOR}E6` }}
           >
             <Play size={10} className="fill-current" />
@@ -246,7 +246,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
               selectThis();
               setDrawerOpen(true);
             }}
-            className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
+            className="nodrag p-1 text-muted-foreground hover:text-muted-foreground rounded transition-colors"
             title="Expand"
           >
             <ArrowUpRight size={12} />
@@ -264,10 +264,10 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-white/10 text-white overflow-y-auto"
+          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-white/90 text-base flex items-center gap-2">
+            <SheetTitle className="text-foreground text-base flex items-center gap-2">
               <Bot size={14} style={{ color: AGENT_COLOR }} />
               Agent block
             </SheetTitle>
@@ -276,41 +276,41 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
           <div className="mt-4 space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">Name</label>
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">Name</label>
               <input
                 value={name}
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Agent name"
-                className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
             {/* Role */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Role description
               </label>
               <textarea
                 value={role}
                 onChange={(e) => onRoleChange(e.target.value)}
                 placeholder="Describe what this agent does..."
-                className="w-full h-16 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                className="w-full h-16 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
             {/* Model */}
             <div className="relative">
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">Model</label>
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">Model</label>
               <button
                 type="button"
                 onClick={() => setShowModelDropdown((v) => !v)}
-                className="w-full px-3 py-2 rounded-md text-left flex items-center justify-between bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 hover:border-white/[0.12] transition-colors"
+                className="w-full px-3 py-2 rounded-md text-left flex items-center justify-between bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground hover:border-border/[0.12] transition-colors"
               >
                 {modelLabel}
-                <ChevronDown size={12} className="text-white/40" />
+                <ChevronDown size={12} className="text-muted-foreground" />
               </button>
               {showModelDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10">
                   {models.map((m) => (
                     <button
                       key={m.value}
@@ -320,8 +320,8 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                         setShowModelDropdown(false);
                       }}
                       className={cn(
-                        'w-full px-3 py-1.5 text-left text-xs hover:bg-white/[0.06] transition-colors',
-                        m.value === model ? 'text-white' : 'text-white/60',
+                        'w-full px-3 py-1.5 text-left text-xs hover:bg-foreground/[0.06] transition-colors',
+                        m.value === model ? 'text-foreground' : 'text-muted-foreground',
                       )}
                     >
                       {m.label}
@@ -333,24 +333,24 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Tools */}
             <div className="relative">
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">Tools</label>
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">Tools</label>
               <button
                 type="button"
                 onClick={() => setShowToolsDropdown((v) => !v)}
-                className="w-full px-3 py-2 rounded-md text-left flex items-center justify-between bg-white/[0.03] border border-white/[0.06] text-xs text-white/70 hover:border-white/[0.12] transition-colors"
+                className="w-full px-3 py-2 rounded-md text-left flex items-center justify-between bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground hover:border-border/[0.12] transition-colors"
               >
                 {tools.length > 0 ? `${tools.length} tools selected` : 'Select tools...'}
-                <ChevronDown size={12} className="text-white/40" />
+                <ChevronDown size={12} className="text-muted-foreground" />
               </button>
               {showToolsDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-white/[0.08] rounded-md z-10 max-h-[160px] overflow-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10 max-h-[160px] overflow-auto">
                   {availableTools.map((tool) => (
                     <button
                       key={tool.value}
                       type="button"
                       onClick={() => toggleTool(tool.value)}
                       className={cn(
-                        'w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-white/[0.06] transition-colors',
+                        'w-full px-3 py-1.5 text-left text-xs flex items-center gap-2 hover:bg-foreground/[0.06] transition-colors',
                         tools.includes(tool.value) ? 'text-white' : 'text-white/60',
                       )}
                     >
@@ -366,7 +366,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                         }}
                       >
                         {tools.includes(tool.value) && (
-                          <Check size={8} strokeWidth={3} className="text-white" />
+                          <Check size={8} strokeWidth={3} className="text-foreground" />
                         )}
                       </div>
                       {tool.label}
@@ -391,7 +391,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
 
             {/* Memory strategy */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Memory strategy
               </label>
               <div className="flex gap-2">
@@ -405,8 +405,8 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                       className={cn(
                         'flex-1 px-3 py-2 rounded-md text-xs font-medium transition-colors border',
                         active
-                          ? 'text-white'
-                          : 'bg-white/[0.03] text-white/55 border-white/[0.06] hover:border-white/[0.12]',
+                          ? 'text-foreground'
+                          : 'bg-foreground/[0.03] text-muted-foreground border-border/[0.06] hover:border-border/[0.12]',
                       )}
                       style={
                         active
@@ -427,30 +427,30 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
 
             {/* System prompt */}
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 System prompt
               </label>
               <textarea
                 value={systemPrompt}
                 onChange={(e) => onSystemPromptChange(e.target.value)}
                 placeholder="Enter system prompt..."
-                className="w-full h-32 p-3 rounded-md resize-none bg-white/[0.03] border border-white/[0.06] text-xs text-white/75 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+                className="w-full h-32 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.06]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/[0.06]">
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="px-3 py-1.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
+                className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors"
               >
                 Collapse
               </button>
               <button
                 type="button"
                 onClick={handleRun}
-                className="flex items-center gap-2 px-4 py-2 text-white text-xs font-semibold rounded-full transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-foreground text-xs font-semibold rounded-full transition-colors"
                 style={{ background: `${AGENT_COLOR}E6` }}
               >
                 <Play size={12} className="fill-current" />

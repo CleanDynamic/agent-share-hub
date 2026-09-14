@@ -11,9 +11,12 @@ import { useLegacyMeTooCount } from "@/lib/bounty/legacyMeToo";
 
 function bountyStatusColor(status: string): { bg: string; border: string; text: string; emoji: string } {
   switch (status) {
-    case "claimed": return { bg: "rgba(217,119,6,0.12)", border: "#F59E0B", text: "#F59E0B", emoji: "🟡" };
-    case "solved":  return { bg: "rgba(22,163,74,0.12)",  border: "#22C55E", text: "#22C55E", emoji: "🟢" };
-    default:        return { bg: "rgba(220,38,38,0.12)",  border: "#EF4444", text: "#EF4444", emoji: "🔴" };
+    /* Claimed is work in progress, and the part category for a produced
+       thing is artefact — 6.41:1 on Exhibition and 7.65:1 on Dusk. Amber was
+       the old paint for it and cannot carry the label at all. */
+    case "claimed": return { bg: "color-mix(in srgb, var(--cat-artefact) 12%, transparent)", border: "var(--cat-artefact)", text: "var(--cat-artefact)", emoji: "🟡" };
+    case "solved":  return { bg: "color-mix(in srgb, var(--cat-configuration) 12%, transparent)",  border: "var(--cat-configuration)", text: "var(--cat-configuration)", emoji: "🟢" };
+    default:        return { bg: "color-mix(in srgb, var(--cat-breakage) 12%, transparent)",  border: "var(--cat-breakage)", text: "var(--cat-breakage)", emoji: "🔴" };
   }
 }
 
@@ -79,7 +82,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       >
         <span style={{ color: sc.text }}>{sc.emoji} BOUNTY · {status.toUpperCase()}</span>
         {tipGbp && tipGbp > 0 && (
-          <span className="text-amber-400 font-semibold">💰 £{tipGbp}</span>
+          <span className="text-[var(--cat-artefact)] font-semibold">💰 £{tipGbp}</span>
         )}
       </div>
 
@@ -96,13 +99,13 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
             to={`/creator/${profile?.username}`}
             onClick={stop}
             className="hover:underline truncate"
-            style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.90)' }}
+            style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}
           >
             {profile?.display_name || profile?.username || "Unknown"}
           </Link>
-          <span className="truncate" style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>@{profile?.username}</span>
-          <span style={{ color: 'rgba(255,255,255,0.20)' }}>·</span>
-          <span className="shrink-0" style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)' }}>{timeAgo(item.created_at)}</span>
+          <span className="truncate" style={{ fontSize: 12, color: 'var(--text2)' }}>@{profile?.username}</span>
+          <span style={{ color: 'var(--text2)' }}>·</span>
+          <span className="shrink-0" style={{ fontSize: 12, color: 'var(--text2)' }}>{timeAgo(item.created_at)}</span>
           <div className="ml-auto shrink-0" onClick={stop}>
             <BookmarkButton contentId={item.id} />
           </div>
@@ -121,25 +124,25 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         </div>
 
         {/* ROW 3 — Title */}
-        <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.90)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
+        <p className="line-clamp-2" style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, marginTop: 10 }}>{item.title}</p>
 
         {/* ROW 4 — The Gap Preview */}
         {gap && (
           <div
             className="text-[11px] leading-snug truncate px-2.5 py-1.5 rounded-md"
             style={{
-              background: "rgba(31,122,109,0.04)",
-              borderLeft: "2px solid rgba(31,122,109,0.3)",
+              background: "color-mix(in srgb, var(--evidence) 4%, transparent)",
+              borderLeft: "2px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
             }}
           >
-            <span className="text-[#1F7A6D] opacity-70 uppercase tracking-wider mr-1">Needs:</span>
+            <span className="text-[var(--evidence)] opacity-70 uppercase tracking-wider mr-1">Needs:</span>
             <span className="text-muted-foreground">{gap}</span>
           </div>
         )}
 
         {/* ROW 5 — Stats */}
-        <div className="flex items-center justify-between" style={{ paddingTop: 14, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
-          <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.35)' }}>
+        <div className="flex items-center justify-between" style={{ paddingTop: 14, borderTop: '1px solid var(--line)' }}>
+          <div className="flex items-center" style={{ gap: 16, fontSize: 12, fontWeight: 400, color: 'var(--text2)' }}>
             <span className="flex items-center gap-1">
               <Eye style={{ width: 15, height: 15 }} />{formatNum(item.view_count ?? 0)}
             </span>
@@ -154,7 +157,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
             to={`/content/${item.id}?tab=responses`}
             onClick={stop}
             className="text-xs font-medium hover:underline"
-            style={{ color: "#1F7A6D" }}
+            style={{ color: "var(--evidence)" }}
           >
             Respond ↗
           </Link>

@@ -19,12 +19,12 @@ interface ToolBlockData {
   [key: string]: unknown;
 }
 
-const TYPE_COLOR = '#F97316';
+const TYPE_COLOR = 'var(--action)';
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
   height: 8,
-  background: '#2EC4B6',
+  background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
   transition: 'opacity 150ms ease',
@@ -97,7 +97,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
           width: 260,
           border: selected
             ? `1px solid ${TYPE_COLOR}99`
-            : '1px solid rgba(255,255,255,0.08)',
+            : '1px solid var(--line)',
           boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
         }}
       >
@@ -128,7 +128,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
             className="inline-block w-1.5 h-1.5 rounded-full"
             style={{ background: TYPE_COLOR }}
           />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Tool
           </span>
           <input
@@ -136,11 +136,11 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-white/70 placeholder:text-white/30 outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <button
             type="button"
-            className="p-0.5 text-white/40 hover:text-white/80 nodrag"
+            className="p-0.5 text-muted-foreground hover:text-muted-foreground nodrag"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreHorizontal size={12} />
@@ -151,17 +151,17 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="flex items-center gap-2 px-2 py-2 mb-2 rounded-md"
           style={{
-            background: 'rgba(0,0,0,0.25)',
-            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
           }}
         >
           <Wrench size={12} style={{ color: TYPE_COLOR }} />
-          <span className="text-[11px] text-white/70 truncate flex-1">
+          <span className="text-[11px] text-muted-foreground truncate flex-1">
             {description || 'No description'}
           </span>
         </div>
 
-        <div className="text-[10px] text-white/40 mb-2 truncate">
+        <div className="text-[10px] text-muted-foreground mb-2 truncate">
           {paramCount} parameter{paramCount !== 1 ? 's' : ''}
           {implementationRef ? ` · ${implementationRef}` : ''}
         </div>
@@ -175,7 +175,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
               selectThis();
               setDrawerOpen(true);
             }}
-            className="nodrag p-1 text-white/45 hover:text-white/85 rounded transition-colors"
+            className="nodrag p-1 text-muted-foreground hover:text-muted-foreground rounded transition-colors"
             title="Expand"
           >
             <ArrowUpRight size={12} />
@@ -193,10 +193,10 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-white/10 text-white overflow-y-auto"
+          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-white/90 text-base">Tool block</SheetTitle>
+            <SheetTitle className="text-foreground text-base">Tool block</SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-4">
@@ -204,11 +204,11 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Tool name"
-              className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-sm text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
             />
 
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Description
               </label>
               <textarea
@@ -217,9 +217,9 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 placeholder="What does this tool do?"
                 className={cn(
                   'w-full h-20 p-3 rounded-md resize-none',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'text-xs text-white/70 placeholder:text-white/30',
-                  'outline-none focus:border-white/[0.12] transition-colors',
+                  'bg-foreground/[0.03] border border-border/[0.06]',
+                  'text-xs text-foreground placeholder:text-muted-foreground',
+                  'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
             </div>
@@ -233,8 +233,8 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                   className={cn(
                     'px-2 py-1 text-[11px] font-medium rounded transition-colors',
                     activeTab === 'params'
-                      ? 'bg-white/[0.08] text-white'
-                      : 'text-white/40 hover:text-white/60',
+                      ? 'bg-foreground/[0.08] text-foreground'
+                      : 'text-muted-foreground hover:text-muted-foreground',
                   )}
                 >
                   Parameters
@@ -245,8 +245,8 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                   className={cn(
                     'px-2 py-1 text-[11px] font-medium rounded transition-colors',
                     activeTab === 'return'
-                      ? 'bg-white/[0.08] text-white'
-                      : 'text-white/40 hover:text-white/60',
+                      ? 'bg-foreground/[0.08] text-foreground'
+                      : 'text-muted-foreground hover:text-muted-foreground',
                   )}
                 >
                   Return Schema
@@ -263,15 +263,15 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 placeholder={`{\n  "type": "object",\n  "properties": {\n    ...\n  }\n}`}
                 className={cn(
                   'w-full h-48 p-3 rounded-md resize-none font-mono',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'text-[11px] text-white/70 placeholder:text-white/30',
-                  'outline-none focus:border-white/[0.12] transition-colors',
+                  'bg-foreground/[0.03] border border-border/[0.06]',
+                  'text-[11px] text-foreground placeholder:text-muted-foreground',
+                  'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+              <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
                 Implementation reference
               </label>
               <input
@@ -281,9 +281,9 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 placeholder="e.g., /api/tools/my-tool or function:myTool"
                 className={cn(
                   'w-full px-3 py-2 rounded-md font-mono',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'text-xs text-white/70 placeholder:text-white/30',
-                  'outline-none focus:border-white/[0.12] transition-colors',
+                  'bg-foreground/[0.03] border border-border/[0.06]',
+                  'text-xs text-foreground placeholder:text-muted-foreground',
+                  'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
             </div>

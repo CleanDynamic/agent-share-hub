@@ -79,22 +79,22 @@ export function SolutionSubmissionShell({
         className="sticky top-0 z-20 flex items-center gap-4"
         style={{
           height: 76,
-          background: "rgba(245,158,11,0.06)",
-          borderBottom: "0.5px solid rgba(245,158,11,0.20)",
+          background: "color-mix(in srgb, var(--cat-breakage) 6%, transparent)",
+          borderBottom: "1px solid color-mix(in srgb, var(--cat-breakage) 26%, transparent)",
           padding: "12px 24px",
         }}
       >
-        <Target size={14} style={{ color: "#F59E0B", flexShrink: 0 }} />
+        <Target size={14} style={{ color: "var(--cat-breakage)", flexShrink: 0 }} />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1 truncate">
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "#F59E0B" }}>
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--cat-breakage)" }}>
               Solving:
             </span>
-            <span className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+            <span className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
               {bounty.title}
             </span>
           </div>
-          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)" }}>
+          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)" }}>
             {slotLabel} · Open · {bountyMeta.solutionCount} solution{bountyMeta.solutionCount !== 1 ? "s" : ""} submitted
           </span>
         </div>
@@ -102,7 +102,7 @@ export function SolutionSubmissionShell({
           href={`/b/${bounty.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "#F59E0B", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+          style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "var(--cat-breakage)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
         >
           View full bounty →
         </a>
@@ -115,38 +115,43 @@ export function SolutionSubmissionShell({
           style={{
             marginTop: 16,
             marginBottom: 16,
-            background: "rgba(22,22,30,0.40)",
-            border: "0.5px solid rgba(245,158,11,0.20)",
-            borderRadius: 8,
+            /* THE GROUND IS THE HUE'S OWN MEASURED FILL, not --recess.
+               --cat-breakage on --recess is 4.47:1 on Exhibition and 4.31:1 on
+               Dusk — both just under the 4.5 text floor — and the theme says
+               reuse a legal pairing before reaching for anything else. This is
+               that pairing: 5.88:1 and 4.66:1. */
+            background: "var(--cat-breakage-fill)",
+            border: "1px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)",
+            borderRadius: "var(--r-control)",
             padding: "12px 16px",
             overflow: "hidden",
             transition: "max-height 0.2s ease-out",
           }}
         >
           <div className="flex items-center cursor-pointer" onClick={onToggleAcceptance} style={{ gap: 8 }}>
-            <CheckCircle size={12} style={{ color: "#F59E0B", flexShrink: 0 }} />
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#F59E0B", flex: 1 }}>
+            <CheckCircle size={12} style={{ color: "var(--cat-breakage)", flexShrink: 0 }} />
+            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--cat-breakage)", flex: 1 }}>
               Acceptance criteria
             </span>
             {isAcceptanceExpanded ? (
-              <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.55)" }} />
+              <ChevronUp size={12} style={{ color: "var(--text2)" }} />
             ) : (
-              <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.55)" }} />
+              <ChevronDown size={12} style={{ color: "var(--text2)" }} />
             )}
           </div>
 
           {!isAcceptanceExpanded && (
-            <p className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.65)", marginTop: 6, marginBottom: 0 }}>
+            <p className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 400, color: "var(--text2)", marginTop: 6, marginBottom: 0 }}>
               {criteriaPreview}
             </p>
           )}
 
           {isAcceptanceExpanded && (
             <>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "var(--text)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
                 {bountyMeta.acceptanceCriteria}
               </p>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: 0 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)", margin: 0 }}>
                 Reward: ${bountyMeta.rewardAmount} {bountyMeta.rewardCurrency} · Deadline {bountyMeta.deadline}
               </p>
             </>
@@ -155,13 +160,13 @@ export function SolutionSubmissionShell({
 
         {/* TITLE */}
         <div style={{ height: 32, padding: "0 0 8px 0" }}>
-          <h2 style={{ fontFamily: "Figtree, sans-serif", fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: 0 }}>
+          <h2 style={{ fontFamily: "Figtree, sans-serif", fontSize: 18, fontWeight: 600, color: "var(--text)", margin: 0 }}>
             {solutionTitle}
           </h2>
         </div>
 
         {/* SOLVER NOTE */}
-        <div style={{ background: "rgba(22,22,30,0.40)", border: "0.5px solid rgba(255, 255, 255, 0.14)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+        <div style={{ background: "var(--recess)", border: "0.5px solid var(--line)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
           <textarea
             value={solverNote}
             onChange={(e) => {
@@ -180,10 +185,10 @@ export function SolutionSubmissionShell({
               fontSize: 13,
               fontWeight: 400,
               fontStyle: "italic",
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
             }}
           />
-          <div className="flex justify-end" style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.40)", marginTop: 4 }}>
+          <div className="flex justify-end" style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)", marginTop: 4 }}>
             {solverNote.length} / 500
           </div>
         </div>
@@ -192,14 +197,14 @@ export function SolutionSubmissionShell({
         <div
           style={{
             minHeight: 380,
-            border: "0.5px dashed rgba(255,255,255,0.10)",
+            border: "0.5px dashed var(--line)",
             borderRadius: 8,
             overflow: "hidden",
           }}
         >
           {children ?? (
             <div className="flex items-center justify-center" style={{ height: 380 }}>
-              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "rgba(255,255,255,0.40)" }}>
+              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "var(--text2)" }}>
                 Editor mounts here in solve mode
               </span>
             </div>
@@ -212,9 +217,9 @@ export function SolutionSubmissionShell({
         className="fixed bottom-0 left-0 right-0 flex items-center justify-between z-20"
         style={{
           height: 60,
-          background: "rgba(8,8,12,0.92)",
+          background: "var(--bg)",
           backdropFilter: "blur(24px)",
-          borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
+          borderTop: "0.5px solid var(--line)",
           padding: "12px 24px",
         }}
       >
@@ -222,13 +227,13 @@ export function SolutionSubmissionShell({
           <div className="flex items-center gap-3">
             <button
               onClick={onSaveDraft}
-              style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
+              style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
             >
               Save draft
             </button>
             <button
               onClick={() => setShowDiscardModal(true)}
-              style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "rgba(239,68,68,0.65)", background: "transparent", border: "none", cursor: "pointer" }}
+              style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "color-mix(in srgb, var(--cat-breakage) 65%, transparent)", background: "transparent", border: "none", cursor: "pointer" }}
             >
               Discard
             </button>
@@ -244,8 +249,8 @@ export function SolutionSubmissionShell({
               padding: "8px 18px",
               borderRadius: 6,
               border: "none",
-              background: "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
-              color: "#ffffff",
+              background: "linear-gradient(135deg, var(--action) 0%, var(--action) 100%)",
+              color: "var(--text)",
               cursor: canSubmit && !isSubmitting ? "pointer" : "not-allowed",
               opacity: canSubmit && !isSubmitting ? 1 : 0.4,
             }}
@@ -257,18 +262,18 @@ export function SolutionSubmissionShell({
 
       {/* DISCARD MODAL */}
       {showDiscardModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.70)" }}>
-          <div style={{ width: 380, background: "rgba(22,22,30,1)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.10)", padding: 24 }}>
-            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)", margin: "0 0 8px 0" }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}>
+          <div style={{ width: 380, background: "var(--recess)", borderRadius: 12, border: "0.5px solid var(--line)", padding: 24 }}>
+            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)", margin: "0 0 8px 0" }}>
               Discard solution draft?
             </h3>
-            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.55)", margin: "0 0 20px 0" }}>
+            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "var(--text2)", margin: "0 0 20px 0" }}>
               Your draft will be permanently deleted.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDiscardModal(false)}
-                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid rgba(255,255,255,0.10)", background: "transparent", color: "rgba(255,255,255,0.85)", cursor: "pointer" }}
+                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -277,7 +282,7 @@ export function SolutionSubmissionShell({
                   setShowDiscardModal(false);
                   onDiscard();
                 }}
-                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.85)", color: "#ffffff", cursor: "pointer" }}
+                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)", color: "var(--text)", cursor: "pointer" }}
               >
                 Discard
               </button>

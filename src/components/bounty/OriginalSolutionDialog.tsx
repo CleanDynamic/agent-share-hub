@@ -37,7 +37,7 @@ export function OriginalSolutionDialog({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.65)",
+        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         zIndex: 100,
         display: "flex",
         alignItems: "center",
@@ -50,8 +50,8 @@ export function OriginalSolutionDialog({
         style={{
           width: "min(1080px, 100%)",
           maxHeight: "82vh",
-          background: "#0F0F14",
-          border: "0.5px solid rgba(255,255,255,0.10)",
+          background: "var(--bg)",
+          border: "0.5px solid var(--line)",
           borderRadius: 12,
           display: "flex",
           flexDirection: "column",
@@ -64,7 +64,7 @@ export function OriginalSolutionDialog({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            borderBottom: "0.5px solid rgba(255,255,255,0.08)",
+            borderBottom: "0.5px solid var(--line)",
           }}
         >
           <div
@@ -72,7 +72,7 @@ export function OriginalSolutionDialog({
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
             }}
           >
             Original solution · {slotKind} · {slotId.slice(0, 8)}
@@ -82,7 +82,7 @@ export function OriginalSolutionDialog({
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.55)",
+              color: "var(--text)",
               cursor: "pointer",
             }}
           >
@@ -105,7 +105,7 @@ function Pane({ title, json }: { title: string; json: string }) {
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        borderRight: "0.5px solid rgba(255,255,255,0.08)",
+        borderRight: "0.5px solid var(--line)",
       }}
     >
       <div
@@ -114,10 +114,10 @@ function Pane({ title, json }: { title: string; json: string }) {
           fontFamily: "Figtree, sans-serif",
           fontSize: 11,
           fontWeight: 600,
-          color: "rgba(46,196,182,0.85)",
+          color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
           letterSpacing: "0.04em",
           textTransform: "uppercase",
-          borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
+          borderBottom: "0.5px solid var(--line)",
         }}
       >
         {title}
@@ -130,8 +130,8 @@ function Pane({ title, json }: { title: string; json: string }) {
           overflow: "auto",
           fontFamily: "ui-monospace, SFMono-Regular, monospace",
           fontSize: 11,
-          color: "rgba(255,255,255,0.80)",
-          background: "rgba(255,255,255,0.02)",
+          color: "var(--text2)",
+          background: "var(--recess)",
         }}
       >
         {json}

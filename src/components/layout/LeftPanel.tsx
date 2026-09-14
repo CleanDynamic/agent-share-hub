@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { FIGTREE } from "@/lib/theme/type";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, LayoutGrid, Upload, Library, User, MoreHorizontal, LogOut, Bell, MessageCircle, BarChart3, FilePenLine, Target,
@@ -77,13 +78,13 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
     <div className="flex flex-col">
       {/* Wordmark */}
       <div className={`px-6 pt-7 pb-5 ${collapsed ? "flex justify-center" : ""}`}>
-        <Link to="/" className={collapsed ? "text-xl font-light text-[#8B4513]" : "block"}>
+        <Link to="/" className={collapsed ? "text-xl font-light text-[var(--action)]" : "block"}>
           {collapsed ? (
             "N"
           ) : (
             <>
-              <span className="text-2xl font-light text-[#8B4513] tracking-tighter uppercase">NeoScale AI</span>
-              <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-0.5 uppercase">The Digital Alchemist</p>
+              <span className="text-2xl font-light text-[var(--action)] tracking-tighter uppercase">NeoScale AI</span>
+              <p className="text-[10px] text-muted-foreground tracking-[0.2em] mt-0.5 uppercase">The Digital Alchemist</p>
             </>
           )}
         </Link>
@@ -96,7 +97,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
           return (
             <div key={item.to}>
               {item.divider && idx > 0 && (
-                <div className="my-2 border-t" style={{ borderColor: "#1E1E2A" }} />
+                <div className="my-2 border-t" style={{ borderColor: "var(--line)" }} />
               )}
               <Link
                 to={item.to}
@@ -104,21 +105,22 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   collapsed ? "justify-center px-0" : "px-4"
                 } h-12 text-sm`}
                 style={isActive
-                  ? { color: 'var(--orange)', borderLeft: '2px solid var(--orange)', background: 'rgba(139,69,19,0.08)' }
-                  : { color: 'var(--text-muted)' }
+                  ? { color: 'var(--action)', borderLeft: '2px solid var(--action)', background: 'color-mix(in srgb, var(--action) 8%, transparent)' }
+                  : { color: 'var(--text2)' }
                 }
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--recess)'; }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
                 <item.icon className="h-[22px] w-[22px] shrink-0 transition-colors" />
                 {!collapsed && <span>{item.label}</span>}
                 {item.badge && item.to === "/messages" && (
                   <span
-                    className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex items-center justify-center rounded-full text-white`}
+                    className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex items-center justify-center rounded-full`}
                     style={{
                       height: 16, minWidth: 16, padding: '0 4px',
-                      background: '#E8571A',
-                      fontFamily: 'Inter, system-ui, sans-serif',
+                      background: 'var(--action)',
+                      color: 'var(--on-action)',
+                      fontFamily: FIGTREE,
                       fontSize: 9, fontWeight: 600, lineHeight: 1,
                     }}
                   >
@@ -126,7 +128,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   </span>
                 )}
                 {item.badge && item.to !== "/messages" && (
-                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-[#353439] text-slate-400" : "bg-[#8B4513] text-white"} px-1.5 text-[11px] font-bold`}>
+                  <span className={`${collapsed ? "absolute -top-0.5 -right-0.5" : "ml-auto"} flex h-5 min-w-[20px] items-center justify-center rounded-full ${item.to === "/drafts" ? "bg-muted text-muted-foreground" : "bg-[var(--action)] text-[var(--on-action)]"} px-1.5 text-[11px] font-bold`}>
                     {item.badge}
                   </span>
                 )}
@@ -140,7 +142,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
       </nav>
 
       {/* Bottom user section */}
-      <div className="mt-3 px-4 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="mt-3 px-4 py-4" style={{ borderTop: "1px solid var(--line)" }}>
         {isLoggedIn ? (
           <div className="relative" ref={menuRef}>
             <button
@@ -162,7 +164,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
               )}
             </button>
             {menuOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/5 p-1 shadow-lg" style={{ background: "rgba(8,8,12,0.95)" }}>
+              <div className="absolute bottom-full left-0 mb-1 w-full rounded-xl border border-white/5 p-1 shadow-lg" style={{ background: "var(--bg)" }}>
                 <button
                   onClick={handleSignOut}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400"
@@ -190,7 +192,7 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   data-visual-slot="btn-primary"
                   style={{
                     background: '#111',
-                    border: '1px solid rgba(255,255,255,0.10)',
+                    border: '1px solid var(--line)',
                     borderRadius: 'var(--radius-btn)',
                     color: '#fff',
                     fontWeight: 600,

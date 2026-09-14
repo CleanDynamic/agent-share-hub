@@ -30,3 +30,8 @@ dist-ssr
 # Playwright run output
 test-results
 playwright-report
+
+# Verification scaffolding: throwaway scripts a session writes beside the repo
+# (a Playwright config override, a colour-audit probe). Never part of a build.
+*.tmp.mjs
+*.tmp.ts

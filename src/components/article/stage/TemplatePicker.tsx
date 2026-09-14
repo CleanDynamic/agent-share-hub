@@ -112,15 +112,15 @@ function MiniPreview({ template }: { template: StageTemplate }) {
 
   const idMap = new Map(template.blocks.map((b) => [b.name, b]));
   const colorFor: Record<string, string> = {
-    text: 'rgba(255,255,255,0.5)',
-    prompt: '#8B5CF6',
-    code: '#22C55E',
-    result: '#F59E0B',
-    agent: '#3B82F6',
-    tool: '#EC4899',
-    model: '#06B6D4',
-    compare: '#A855F7',
-    resource: '#10B981',
+    text: 'var(--recess)',
+    prompt: 'var(--cat-agents)',
+    code: 'var(--cat-configuration)',
+    result: 'var(--cat-evidence)',
+    agent: 'var(--cat-data)',
+    tool: 'var(--cat-media)',
+    model: 'var(--cat-data)',
+    compare: 'var(--cat-evidence)',
+    resource: 'var(--cat-configuration)',
   };
 
   return (
@@ -141,7 +141,7 @@ function MiniPreview({ template }: { template: StageTemplate }) {
           <line
             key={i}
             x1={ax} y1={ay} x2={bx} y2={by}
-            stroke="rgba(255,255,255,0.25)"
+            stroke="var(--text2)"
             strokeWidth={2}
           />
         );
@@ -155,7 +155,7 @@ function MiniPreview({ template }: { template: StageTemplate }) {
           height={b.height}
           rx={8}
           fill="rgba(20,20,28,0.85)"
-          stroke={colorFor[b.type] ?? 'rgba(255,255,255,0.4)'}
+          stroke={colorFor[b.type] ?? 'var(--recess)'}
           strokeWidth={2}
         />
       ))}
@@ -197,9 +197,9 @@ export function TemplatePicker({
       <DialogContent
         className="max-w-4xl p-0 overflow-hidden"
         style={{
-          background: 'hsl(240 20% 8% / 0.96)',
+          background: 'var(--bg)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid hsl(var(--foreground) / 0.08)',
+          border: '1px solid var(--line)',
         }}
       >
         <DialogHeader className="px-6 pt-6 pb-3">
@@ -235,7 +235,7 @@ export function TemplatePicker({
                 type="button"
                 onClick={() => handlePick(null)}
                 className="text-left rounded-lg border border-dashed border-foreground/15 hover:border-foreground/30 transition-colors p-3 flex flex-col gap-2 min-h-[180px]"
-                style={{ background: 'rgba(20,20,28,0.4)' }}
+                style={{ background: 'var(--recess)' }}
               >
                 <div className="h-20 rounded-md flex items-center justify-center text-foreground/40 text-2xl">
                   ＋
@@ -251,11 +251,11 @@ export function TemplatePicker({
                 type="button"
                 onClick={() => handlePick(t)}
                 className="text-left rounded-lg border border-foreground/10 hover:border-foreground/25 transition-colors p-3 flex flex-col gap-2 min-h-[180px]"
-                style={{ background: 'rgba(20,20,28,0.55)' }}
+                style={{ background: 'var(--recess)' }}
               >
                 <div
                   className="h-20 rounded-md overflow-hidden flex items-center justify-center"
-                  style={{ background: 'rgba(10,10,14,0.6)' }}
+                  style={{ background: 'var(--recess)' }}
                 >
                   <MiniPreview template={t} />
                 </div>

@@ -70,9 +70,9 @@ export interface ReblogComposeSheetProps {
 }
 
 const POST_TYPE_COLOURS: Record<string, string> = {
-  Blueprint: "#E8571A",
-  Blog: "#2EC4B6",
-  Bounty: "#F59E0B",
+  Blueprint: "var(--action)",
+  Blog: "var(--evidence)",
+  Bounty: "var(--cat-breakage)",
 }
 
 function Avatar({
@@ -105,7 +105,7 @@ function Avatar({
             fontFamily: "Figtree, sans-serif",
             fontSize: size * 0.42,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.75)",
+            color: "var(--text)",
             lineHeight: 1,
           }}
         >
@@ -159,13 +159,13 @@ function PostButton({
       disabled={disabled || isPosting}
       onClick={onClick}
       style={{
-        background: "linear-gradient(135deg, #16A34A 0%, #15803D 100%)",
+        background: "linear-gradient(135deg, var(--cat-configuration) 0%, #15803D 100%)",
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
         fontFamily: "Figtree, sans-serif",
         fontSize: 13,
         fontWeight: 600,
-        color: "#fff",
+        color: "var(--text)",
         padding: "8px 18px",
         borderRadius: 8,
         border: "none",
@@ -179,13 +179,13 @@ function PostButton({
 }
 
 function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
-  const typeColour = POST_TYPE_COLOURS[post.postType] ?? "#E8571A"
+  const typeColour = POST_TYPE_COLOURS[post.postType] ?? "var(--action)"
 
   return (
     <div
       style={{
-        background: "rgba(82, 82, 100, 0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.10)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "12px 14px",
         marginTop: 16,
@@ -207,7 +207,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.85)",
+            color: "var(--text)",
           }}
         >
           {post.authorDisplayName}
@@ -217,7 +217,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 400,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           {post.authorHandle}
@@ -230,7 +230,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "#fff",
+            color: "var(--text)",
             background: typeColour,
             padding: "2px 6px",
             borderRadius: 4,
@@ -249,7 +249,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 10,
                 fontWeight: 400,
-                color: "rgba(255,255,255,0.40)",
+                color: "var(--text2)",
               }}
             >
               {timeAgo(post.publishedAt)}
@@ -272,7 +272,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
               fontFamily: "Figtree, sans-serif",
               fontSize: 10,
               fontWeight: 400,
-              color: "rgba(255,255,255,0.40)",
+              color: "var(--text2)",
             }}
           >
             {timeAgo(post.publishedAt)}
@@ -285,7 +285,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
           fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           fontWeight: 600,
-          color: "rgba(255,255,255,0.92)",
+          color: "var(--text)",
           marginTop: 6,
           marginBottom: 0,
           lineHeight: 1.4,
@@ -304,7 +304,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 400,
-            color: "rgba(255,255,255,0.65)",
+            color: "var(--text2)",
             marginTop: 2,
             marginBottom: 0,
             lineHeight: 1.4,
@@ -398,14 +398,14 @@ export default function ReblogComposeSheet({
     dragStartY.current = null
   }, [dragOffsetY, onClose])
 
-  let counterColour = "rgba(255,255,255,0.40)"
-  if (charCount >= 500) counterColour = "#EF4444"
-  else if (charCount >= 400) counterColour = "#F59E0B"
+  let counterColour = "var(--recess)"
+  if (charCount >= 500) counterColour = "var(--cat-breakage)"
+  else if (charCount >= 400) counterColour = "var(--text)"
 
   if (!isOpen) return null
 
   const sheetBackground = "rgba(40, 40, 52, 0.95)"
-  const sheetBorder = "0.5px solid rgba(255,255,255,0.14)"
+  const sheetBorder = "0.5px solid var(--line)"
   const sheetBackdropFilter = "blur(40px) saturate(160%)"
 
   if (variant === "desktop") {
@@ -413,7 +413,7 @@ export default function ReblogComposeSheet({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{
-          background: "rgba(0,0,0,0.55)",
+          background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           backdropFilter: "blur(8px)",
           opacity: visible ? 1 : 0,
           transition: "opacity 200ms ease",
@@ -477,7 +477,7 @@ export default function ReblogComposeSheet({
     <div
       className="fixed inset-0 z-50"
       style={{
-        background: "rgba(0,0,0,0.55)",
+        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         backdropFilter: "blur(8px)",
         opacity: visible ? 1 : 0,
         transition: "opacity 280ms cubic-bezier(0.16,1,0.3,1)",
@@ -514,8 +514,8 @@ export default function ReblogComposeSheet({
             style={{
               width: 36,
               height: 4,
-              borderRadius: 9999,
-              background: "rgba(255,255,255,0.30)",
+              borderRadius: 'var(--r-control)',
+              background: "var(--recess)",
             }}
           />
         </div>
@@ -571,7 +571,7 @@ function Header({
       style={{
         height: 52,
         padding: "12px 18px",
-        borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+        borderBottom: "0.5px solid var(--line)",
       }}
     >
       <button
@@ -580,7 +580,7 @@ function Header({
           fontFamily: "Figtree, sans-serif",
           fontSize: 13,
           fontWeight: 500,
-          color: "rgba(255,255,255,0.65)",
+          color: "var(--text2)",
           background: "none",
           border: "none",
           cursor: "pointer",
@@ -593,7 +593,7 @@ function Header({
       <div className="flex items-center gap-1.5">
         <Repeat2
           size={15}
-          style={{ color: "#16A34A" }}
+          style={{ color: "var(--cat-configuration)" }}
           strokeWidth={2.2}
         />
         <span
@@ -601,7 +601,7 @@ function Header({
             fontFamily: "Figtree, sans-serif",
             fontSize: 14,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.95)",
+            color: "var(--text)",
           }}
         >
           Reblog
@@ -657,7 +657,7 @@ function ComposeBody({
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
           }}
         >
           {currentUser.displayName}
@@ -667,7 +667,7 @@ function ComposeBody({
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
             fontWeight: 400,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           {currentUser.handle}
@@ -689,7 +689,7 @@ function ComposeBody({
             fontFamily: "Figtree, sans-serif",
             fontSize: 14,
             fontWeight: 400,
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
             background: "transparent",
             border: "none",
             outline: "none",
@@ -702,7 +702,7 @@ function ComposeBody({
             transition: "background 150ms ease",
           }}
           onFocus={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+            e.currentTarget.style.background = "var(--recess)"
             e.currentTarget.style.borderRadius = "8px"
             e.currentTarget.style.padding = "8px"
           }}
@@ -735,7 +735,7 @@ function ComposeBody({
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.55)",
+              color: "var(--text2)",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -744,7 +744,7 @@ function ComposeBody({
               transition: "background 150ms ease",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "rgba(255,255,255,0.04)")
+              (e.currentTarget.style.background = "var(--recess)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.background = "none")
@@ -760,7 +760,7 @@ function ComposeBody({
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.55)",
+              color: "var(--text2)",
               background: "none",
               border: "none",
               cursor: "pointer",
@@ -769,7 +769,7 @@ function ComposeBody({
               transition: "background 150ms ease",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "rgba(255,255,255,0.04)")
+              (e.currentTarget.style.background = "var(--recess)")
             }
             onMouseLeave={(e) =>
               (e.currentTarget.style.background = "none")
@@ -801,7 +801,7 @@ function ComposeBody({
                 maxHeight: 280,
                 borderRadius: 12,
                 overflow: "hidden",
-                background: "rgba(0,0,0,0.40)",
+                background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 aspectRatio: "16/9",
               }}
             >
@@ -820,10 +820,10 @@ function ComposeBody({
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  background: "rgba(0,0,0,0.50)",
+                  background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 }}
               >
-                <Play size={22} style={{ color: "#fff", marginLeft: 2 }} />
+                <Play size={22} style={{ color: "var(--text)", marginLeft: 2 }} />
               </div>
             </div>
           )}
@@ -837,13 +837,13 @@ function ComposeBody({
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "rgba(0,0,0,0.60)",
+              background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               border: "none",
               cursor: "pointer",
               padding: 0,
             }}
           >
-            <X size={14} style={{ color: "#fff" }} />
+            <X size={14} style={{ color: "var(--text)" }} />
           </button>
         </div>
       )}
@@ -891,17 +891,17 @@ function ActionBar({
       style={{
         height: 60,
         padding: "12px 18px",
-        borderTop: "0.5px solid rgba(255,255,255,0.10)",
+        borderTop: "0.5px solid var(--line)",
       }}
     >
       <div className="flex items-center gap-1">
-        <Globe size={12} style={{ color: "rgba(255,255,255,0.45)" }} />
+        <Globe size={12} style={{ color: "var(--text2)" }} />
         <span
           style={{
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           Public

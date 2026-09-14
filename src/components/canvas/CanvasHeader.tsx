@@ -45,7 +45,7 @@ function CollapsibleSection({
           display: 'flex', alignItems: 'center', gap: 6,
           width: '100%', padding: '8px 0',
           background: 'none', border: 'none', cursor: 'pointer',
-          color: 'rgba(255,255,255,0.45)', fontSize: 12,
+          color: 'var(--text2)', fontSize: 12,
           fontWeight: 500,
           letterSpacing: '0.04em',
           fontFamily: 'Figtree, sans-serif',
@@ -55,7 +55,7 @@ function CollapsibleSection({
         <ChevronRight
           size={12}
           style={{
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text2)',
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 200ms',
             flexShrink: 0,
@@ -65,7 +65,7 @@ function CollapsibleSection({
         {required && isEmpty && (
           <span style={{
             width: 4, height: 4, borderRadius: '50%',
-            background: '#E8571A', flexShrink: 0,
+            background: 'var(--action)', flexShrink: 0,
             marginLeft: 6,
           }} />
         )}
@@ -105,24 +105,24 @@ export function CanvasHeader({
     color: string; bg: string; border: string
   }> = {
     build: {
-      color: '#8B4513',
-      bg: 'rgba(139,69,19,0.12)',
-      border: 'rgba(139,69,19,0.25)',
+      color: 'var(--action)',
+      bg: 'color-mix(in srgb, var(--action) 12%, transparent)',
+      border: 'color-mix(in srgb, var(--action) 25%, transparent)',
     },
     technique: {
-      color: '#1F7A6D',
-      bg: 'rgba(31,122,109,0.12)',
-      border: 'rgba(31,122,109,0.25)',
+      color: 'var(--evidence)',
+      bg: 'color-mix(in srgb, var(--evidence) 12%, transparent)',
+      border: 'color-mix(in srgb, var(--evidence) 25%, transparent)',
     },
     discovery: {
-      color: '#7C3AED',
-      bg: 'rgba(124,58,237,0.12)',
-      border: 'rgba(124,58,237,0.25)',
+      color: 'var(--cat-agents)',
+      bg: 'color-mix(in srgb, var(--cat-agents) 12%, transparent)',
+      border: 'color-mix(in srgb, var(--cat-agents) 25%, transparent)',
     },
     discussion: {
-      color: '#3B82F6',
-      bg: 'rgba(59,130,246,0.12)',
-      border: 'rgba(59,130,246,0.25)',
+      color: 'var(--cat-data)',
+      bg: 'color-mix(in srgb, var(--cat-data) 12%, transparent)',
+      border: 'color-mix(in srgb, var(--cat-data) 25%, transparent)',
     },
   };
   const tc = typeColors[postType] ?? typeColors.build;
@@ -134,7 +134,7 @@ export function CanvasHeader({
     return (
       <div style={{
         padding: '16px 16px 12px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: '1px solid var(--line)',
       }}>
         {coverPreview && (
           <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden' }}>
@@ -144,28 +144,28 @@ export function CanvasHeader({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 9999,
+            padding: '3px 12px', borderRadius: 'var(--r-chip)',
             background: tc.bg, border: `1px solid ${tc.border}`,
           }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: tc.color, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               {typeInfo.label}
             </span>
             {typeInfo.sub && (
-              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 6, marginLeft: 2 }}>
+              <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'uppercase', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
                 {typeInfo.sub}
               </span>
             )}
           </div>
           {difficulty && (
-            <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.50)' }}>
+            <div style={{ padding: '3px 10px', borderRadius: 'var(--r-chip)', background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
               {difficulty}
             </div>
           )}
         </div>
-        <h1 style={{ ...type.cardTitle,   color: 'rgba(255,255,255,0.95)', margin: '0 0 12px 0',  }}>
+        <h1 style={{ ...type.cardTitle,   color: 'var(--text)', margin: '0 0 12px 0',  }}>
           {title || 'Untitled'}
         </h1>
-        <p style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.62)', lineHeight: 1.70, margin: 0, fontFamily: 'Figtree, sans-serif' }}>
+        <p style={{ fontSize: 14, fontWeight: 400, color: 'var(--text2)', lineHeight: 1.70, margin: 0, fontFamily: 'Figtree, sans-serif' }}>
           {description}
         </p>
       </div>
@@ -176,7 +176,7 @@ export function CanvasHeader({
   return (
     <div style={{
       padding: '8px 16px 4px 16px',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      borderBottom: '1px solid var(--line)',
     }}>
       {/* Badges row — always visible */}
       <div style={{
@@ -187,7 +187,7 @@ export function CanvasHeader({
           onClick={onPostTypeClick}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '3px 12px', borderRadius: 9999,
+            padding: '3px 12px', borderRadius: 'var(--r-chip)',
             background: tc.bg, border: `1px solid ${tc.border}`,
             cursor: 'pointer',
           }}
@@ -196,15 +196,15 @@ export function CanvasHeader({
             {typeInfo.label}
           </span>
           {typeInfo.sub && (
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: 6, marginLeft: 2 }}>
+            <span style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'uppercase', borderLeft: '1px solid var(--line)', paddingLeft: 6, marginLeft: 2 }}>
               {typeInfo.sub}
             </span>
           )}
-          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>↕</span>
+          <span style={{ fontSize: 9, color: 'var(--text2)' }}>↕</span>
         </div>
 
         {difficulty && (
-          <div style={{ padding: '3px 10px', borderRadius: 9999, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.50)' }}>
+          <div style={{ padding: '3px 10px', borderRadius: 'var(--r-chip)', background: 'var(--recess)', border: '1px solid var(--line)', fontSize: 10, fontWeight: 500, color: 'var(--text2)' }}>
             {difficulty}
           </div>
         )}
@@ -213,10 +213,10 @@ export function CanvasHeader({
         {!coverPreview ? (
           <label style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
-            padding: '3px 10px', borderRadius: 9999, fontSize: 10,
-            cursor: 'pointer', background: 'rgba(255,255,255,0.03)',
-            border: '1px dashed rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.35)',
+            padding: '3px 10px', borderRadius: 'var(--r-chip)', fontSize: 10,
+            cursor: 'pointer', background: 'var(--recess)',
+            border: '1px dashed var(--line)',
+            color: 'var(--text2)',
           }}>
             + Cover
             <input type="file" accept="image/*,video/*" style={{ display: 'none' }}
@@ -258,9 +258,9 @@ export function CanvasHeader({
             width: '100%',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 15, fontWeight: 400,
-            color: 'rgba(255,255,255,0.90)',
-            background: 'rgba(255,255,255,0.02)',
-            border: `1px solid ${titleFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255, 255, 255, 0.14)'}`,
+            color: 'var(--text)',
+            background: 'var(--recess)',
+            border: `1px solid ${titleFocused ? 'var(--recess)' : 'var(--recess)'}`,
             borderRadius: 8,
             outline: 'none',
             padding: '12px 16px',
@@ -289,10 +289,10 @@ export function CanvasHeader({
           maxLength={500}
           style={{
             width: '100%', fontSize: 15, fontWeight: 400,
-            color: 'rgba(255,255,255,0.90)',
+            color: 'var(--text)',
             lineHeight: 1.4,
-            background: 'rgba(255,255,255,0.02)',
-            border: `1px solid ${descFocused ? 'rgba(255,255,255,0.15)' : 'rgba(255, 255, 255, 0.14)'}`,
+            background: 'var(--recess)',
+            border: `1px solid ${descFocused ? 'var(--recess)' : 'var(--recess)'}`,
             borderRadius: 8,
             outline: 'none',
             resize: 'none',
@@ -303,7 +303,7 @@ export function CanvasHeader({
             transition: 'border-color 200ms',
           }}
         />
-        <div style={{ fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.25)', textAlign: 'right', fontFamily: 'Figtree, sans-serif', marginTop: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', textAlign: 'right', fontFamily: 'Figtree, sans-serif', marginTop: 4 }}>
           {description.length} / 500
         </div>
       </CollapsibleSection>
@@ -360,9 +360,9 @@ function EvidenceEditor({
               padding: '4px 12px', borderRadius: 6, fontSize: 11,
               height: 28,
               cursor: 'pointer',
-              background: mediaType === t.value ? 'rgba(232,87,26,0.10)' : 'transparent',
-              border: `1px solid ${mediaType === t.value ? 'rgba(232,87,26,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              color: mediaType === t.value ? '#E8571A' : 'rgba(255,255,255,0.45)',
+              background: mediaType === t.value ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'transparent',
+              border: `1px solid ${mediaType === t.value ? 'color-mix(in srgb, var(--action) 30%, transparent)' : 'var(--recess)'}`,
+              color: mediaType === t.value ? 'var(--action)' : 'var(--recess)',
               fontFamily: 'Figtree, sans-serif',
               transition: 'all 200ms',
             }}
@@ -379,7 +379,7 @@ function EvidenceEditor({
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, paddingBottom: 4 }}>
               {mediaPreviews.map((p, i) => (
                 <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                  <img src={p} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <img src={p} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
                   <button type="button"
                     onClick={() => {
                       const nf = [...mediaFiles]; nf.splice(i, 1);
@@ -389,8 +389,8 @@ function EvidenceEditor({
                     style={{
                       position: 'absolute', top: -4, right: -4,
                       width: 16, height: 16, borderRadius: '50%',
-                      background: 'rgba(0,0,0,0.70)', border: 'none',
-                      color: '#fff', fontSize: 10, cursor: 'pointer',
+                      background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', border: 'none',
+                      color: 'var(--text)', fontSize: 10, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >×</button>
@@ -402,9 +402,9 @@ function EvidenceEditor({
             <label style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '4px 10px', borderRadius: 6, fontSize: 11,
-              cursor: 'pointer', background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px dashed rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.40)',
+              cursor: 'pointer', background: 'var(--recess)',
+              border: '1px dashed var(--line)',
+              color: 'var(--text2)',
             }}>
               + Add photos
               <input type="file" accept="image/*" multiple style={{ display: 'none' }}
@@ -426,20 +426,20 @@ function EvidenceEditor({
         <div style={{ marginBottom: 8 }}>
           {mediaPreviews.length > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <video src={mediaPreviews[0]} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)' }}>Video added</span>
+              <video src={mediaPreviews[0]} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
+              <span style={{ fontSize: 11, color: 'var(--text2)' }}>Video added</span>
               <button type="button"
                 onClick={() => onMediaFilesChange?.([], [])}
-                style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontSize: 11, color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer' }}
               >Remove</button>
             </div>
           ) : (
             <label style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '4px 10px', borderRadius: 6, fontSize: 11,
-              cursor: 'pointer', background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px dashed rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.40)',
+              cursor: 'pointer', background: 'var(--recess)',
+              border: '1px dashed var(--line)',
+              color: 'var(--text2)',
             }}>
               + Upload video
               <input type="file" accept="video/*" style={{ display: 'none' }}
@@ -464,7 +464,7 @@ function EvidenceEditor({
         rows={2}
         style={{
           width: '100%', fontSize: 12,
-          color: 'rgba(255,255,255,0.60)',
+          color: 'var(--text2)',
           lineHeight: 1.60, background: 'transparent',
           border: 'none', outline: 'none',
           resize: 'none', padding: 0,
@@ -472,7 +472,7 @@ function EvidenceEditor({
           boxSizing: 'border-box',
         }}
       />
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', textAlign: 'right' }}>
+      <div style={{ fontSize: 10, color: 'var(--text2)', textAlign: 'right' }}>
         {caption.length} / 500
       </div>
     </div>

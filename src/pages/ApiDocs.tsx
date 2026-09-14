@@ -45,7 +45,7 @@ export default function ApiDocs() {
 
       <div className="mb-6 p-4 rounded-xl border border-border bg-card">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Base URL</h2>
-        <code className="text-sm text-primary break-all">{BASE_URL}</code>
+        <code className="text-sm text-foreground break-all">{BASE_URL}</code>
       </div>
 
       <div className="space-y-8">
@@ -64,7 +64,7 @@ export default function ApiDocs() {
                   <div className="space-y-1">
                     {ep.params.map((p) => (
                       <div key={p.name} className="flex gap-3 text-xs">
-                        <code className="text-primary font-medium min-w-[80px]">{p.name}</code>
+                        <code className="text-foreground font-medium min-w-[80px]">{p.name}</code>
                         <span className="text-muted-foreground/60">{p.type}</span>
                         <span className="text-muted-foreground">{p.desc}</span>
                       </div>

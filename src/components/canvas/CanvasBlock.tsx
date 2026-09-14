@@ -103,15 +103,15 @@ export function CanvasBlock({
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
-    prompt: '#8B4513', code: '#2E5A88', result: '#2D6B4F',
-    agent_config: '#5B3A7A', workflow: '#1F7A6D', comparison: '#7A3050',
+    prompt: 'var(--action)', code: '#2E5A88', result: '#2D6B4F',
+    agent_config: '#5B3A7A', workflow: 'var(--evidence)', comparison: '#7A3050',
     image: '#8B6914', tutorial_step: '#6B3A2A',
-    section_heading: 'rgba(255,255,255,0.20)', text: 'rgba(255,255,255,0.15)',
-    long_text: 'rgba(255,255,255,0.15)', tool_setup: '#1A5E6B',
+    section_heading: 'var(--recess)', text: 'var(--recess)',
+    long_text: 'var(--recess)', tool_setup: '#1A5E6B',
     model_params: '#5A4F7A', resource: '#4A5568',
     sticky_note: '#7A6B2A', video: '#6B2A4A',
   };
-  const accent = BLOCK_ACCENT[block.type] ?? 'rgba(255,255,255,0.15)';
+  const accent = BLOCK_ACCENT[block.type] ?? 'var(--recess)';
 
   const toggleStickyCollapsed = () => {
     if (!isStickyNote) return;
@@ -213,8 +213,8 @@ export function CanvasBlock({
 
   // Selection ring style
   const selectionBorder = selected
-    ? '2px solid rgba(59,130,246,0.70)'
-    : hovered ? '1px solid rgba(255,255,255,0.16)' : '1px solid rgba(255, 255, 255, 0.14)';
+    ? '2px solid color-mix(in srgb, var(--cat-data) 70%, transparent)'
+    : hovered ? '1px solid var(--line)' : '1px solid var(--line)';
 
   return (
     <>
@@ -291,7 +291,7 @@ export function CanvasBlock({
                 : hovered ? '0 4px 12px rgba(0,0,0,0.30)' : 'none',
               fontStyle: 'italic',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.65)',
+              color: 'var(--text2)',
               lineHeight: 1.5,
               fontFamily: 'Figtree, sans-serif',
               whiteSpace: 'pre-wrap',
@@ -356,7 +356,7 @@ export function CanvasBlock({
                 style={{
                   position: 'absolute', bottom: 2, right: 2,
                   display: 'flex', alignItems: 'center', gap: 2,
-                  background: 'rgba(10,10,16,0.90)',
+                  background: 'var(--bg)',
                   border: '1px solid rgba(251,191,36,0.20)',
                   borderRadius: 4, padding: '1px 3px',
                   zIndex: 30,
@@ -371,9 +371,9 @@ export function CanvasBlock({
                   }}
                   onMouseLeave={() => setDeleteConfirm(false)}
                   style={{
-                    background: deleteConfirm ? 'rgba(239,68,68,0.15)' : 'none',
+                    background: deleteConfirm ? 'color-mix(in srgb, var(--cat-breakage) 15%, transparent)' : 'none',
                     border: 'none',
-                    color: deleteConfirm ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.35)',
+                    color: deleteConfirm ? 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)' : 'var(--text2)',
                     cursor: 'pointer', fontSize: 9, padding: '0 3px', borderRadius: 3,
                   }}
                 >
@@ -384,7 +384,7 @@ export function CanvasBlock({
                   onClick={e => { e.stopPropagation(); setEditModalOpen(true); }}
                   style={{
                     background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     cursor: 'pointer', fontSize: 9, padding: '0 3px',
                   }}
                 >
@@ -395,7 +395,7 @@ export function CanvasBlock({
                   onClick={e => { e.stopPropagation(); onArrowDrawStart('right'); }}
                   style={{
                     background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     cursor: 'pointer', fontSize: 9, padding: '0 3px',
                   }}
                 >
@@ -430,7 +430,7 @@ export function CanvasBlock({
                 width: 20, height: 20, borderRadius: 4,
                 background: accent, flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'rgba(255,255,255,0.9)', fontSize: 11,
+                color: 'var(--text)', fontSize: 11,
               }}>
                 {icon}
               </div>
@@ -438,10 +438,10 @@ export function CanvasBlock({
               {/* Type chip */}
               <div style={{
                 fontSize: 10, fontWeight: 500,
-                color: 'rgba(255,255,255,0.55)',
-                background: 'rgba(255, 255, 255, 0.14)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 100, padding: '1px 8px',
+                color: 'var(--text2)',
+                background: 'var(--recess)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--r-chip)', padding: '1px 8px',
               }}>
                 {typeLabel}
               </div>
@@ -456,7 +456,7 @@ export function CanvasBlock({
                 style={{
                   flexShrink: 0, width: 16, height: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'grab', color: hovered ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)',
+                  cursor: 'grab', color: hovered ? 'var(--text2)' : 'var(--text2)',
                   borderRadius: 3,
                 }}
               >
@@ -467,13 +467,13 @@ export function CanvasBlock({
             {/* Card body */}
             <div style={{ flex: 1, padding: '2px 10px 6px', minHeight: 0, overflow: 'hidden' }}>
               {block.subheading && (
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.80)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
                   {block.subheading}
                 </div>
               )}
               {block.textContent && (
                 <div style={{
-                  fontSize: 11, color: 'rgba(255,255,255,0.40)',
+                  fontSize: 11, color: 'var(--text2)',
                   lineHeight: 1.4,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>
@@ -489,8 +489,8 @@ export function CanvasBlock({
                 style={{
                   position: 'absolute', bottom: 4, right: 4,
                   display: 'flex', alignItems: 'center', gap: 2,
-                  background: 'rgba(10,10,16,0.95)',
-                  border: '1px solid rgba(255,255,255,0.10)',
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
                   borderRadius: 5, padding: '2px 4px',
                   zIndex: 30,
                 }}
@@ -503,9 +503,9 @@ export function CanvasBlock({
                   }}
                   onMouseLeave={() => setDeleteConfirm(false)}
                   style={{
-                    background: deleteConfirm ? 'rgba(239,68,68,0.15)' : 'none',
-                    border: deleteConfirm ? '1px solid rgba(239,68,68,0.3)' : 'none',
-                    color: deleteConfirm ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.35)',
+                    background: deleteConfirm ? 'color-mix(in srgb, var(--cat-breakage) 15%, transparent)' : 'none',
+                    border: deleteConfirm ? '1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)' : 'none',
+                    color: deleteConfirm ? 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)' : 'var(--text2)',
                     cursor: 'pointer', fontSize: 10, padding: '1px 4px', borderRadius: 3,
                   }}
                 >
@@ -517,7 +517,7 @@ export function CanvasBlock({
                   onClick={e => { e.stopPropagation(); setEditModalOpen(true); }}
                   style={{
                     background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     cursor: 'pointer', fontSize: 10, padding: '1px 4px',
                   }}
                 >
@@ -529,7 +529,7 @@ export function CanvasBlock({
                   onClick={e => { e.stopPropagation(); onArrowDrawStart('right'); }}
                   style={{
                     background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     cursor: 'pointer', fontSize: 10, padding: '1px 4px',
                   }}
                 >
@@ -540,25 +540,25 @@ export function CanvasBlock({
                   <div style={{ position: 'relative' }}>
                     <button
                       onClick={e => { e.stopPropagation(); setStagePickerOpen(o => !o); }}
-                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 10, padding: '1px 4px' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 10, padding: '1px 4px' }}
                     >
                       {block.stageId ? 'S' : '+S'}
                     </button>
                     {stagePickerOpen && (
                       <div style={{
                         position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
-                        background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.12)',
+                        background: 'var(--bg)', border: '1px solid var(--line)',
                         borderRadius: 6, padding: '4px 0', minWidth: 120, zIndex: 50,
                         boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
                       }}>
                         <button onClick={() => { onAssignStage(block.id, null); setStagePickerOpen(false); }}
-                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: 'rgba(255,255,255,0.40)', cursor: 'pointer' }}>
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: 'var(--text2)', cursor: 'pointer' }}>
                           No stage
                         </button>
                         {stages.map(s => (
                           <button key={s.id}
                             onClick={() => { onAssignStage(block.id, s.id); setStagePickerOpen(false); }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? '#3B82F6' : 'rgba(255,255,255,0.60)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? 'var(--cat-data)' : 'var(--recess)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
                             {s.stageNumber}. {s.title}
                           </button>
                         ))}
@@ -569,7 +569,7 @@ export function CanvasBlock({
 
                 {(block.type === 'prompt' || block.type === 'code') && (
                   <button onClick={e => { e.stopPropagation(); setExecutionOpen(true); }}
-                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 3, padding: '1px 5px', color: '#22C55E', fontSize: 9, fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ background: 'color-mix(in srgb, var(--cat-configuration) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cat-configuration) 25%, transparent)', borderRadius: 3, padding: '1px 5px', color: 'var(--cat-configuration)', fontSize: 9, fontWeight: 700, cursor: 'pointer' }}>
                     Run
                   </button>
                 )}
@@ -593,7 +593,7 @@ export function CanvasBlock({
           <div style={{
             height: '100%',
             background: block.type === 'section_heading' ? 'transparent' : 'rgba(20,20,28,0.75)',
-            border: block.type === 'section_heading' ? 'none' : '1px solid rgba(255,255,255,0.10)',
+            border: block.type === 'section_heading' ? 'none' : '1px solid var(--line)',
             borderRadius: 10, overflow: 'hidden',
             backdropFilter: 'blur(4px)',
             position: 'relative',
@@ -601,7 +601,7 @@ export function CanvasBlock({
             {showAnnotations && block.creatorAnnotation && (
               <div title={block.creatorAnnotation} style={{
                 position: 'absolute', top: 8, right: 8, width: 18, height: 18,
-                background: 'rgba(245,158,11,0.20)', border: '1px solid rgba(245,158,11,0.40)',
+                background: 'color-mix(in srgb, var(--cat-breakage) 20%, transparent)', border: '1px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)',
                 borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 10, cursor: 'help', zIndex: 2,
               }}>✎</div>
@@ -609,7 +609,7 @@ export function CanvasBlock({
 
             <div style={{ padding: 12, overflowY: 'auto', maxHeight: '100%', boxSizing: 'border-box' }}>
               {block.type === 'section_heading' ? (
-                <h2 style={{ ...type.cardTitle,   color: 'rgba(255,255,255,0.90)', margin: 0 }}>
+                <h2 style={{ ...type.cardTitle,   color: 'var(--text)', margin: 0 }}>
                   {block.textContent}
                 </h2>
               ) : (
@@ -620,10 +620,10 @@ export function CanvasBlock({
             {block.isLocked && block.lockType === 'blur' && (
               <div style={{
                 position: 'absolute', inset: 0, backdropFilter: 'blur(8px)',
-                background: 'rgba(6,6,10,0.60)', display: 'flex', alignItems: 'center',
+                background: 'var(--recess)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', borderRadius: 10,
               }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.50)' }}>Download to unlock</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Download to unlock</div>
               </div>
             )}
           </div>
@@ -634,17 +634,17 @@ export function CanvasBlock({
           <>
             <div onMouseDown={handleResizeRight} style={{
               position: 'absolute', right: -2, top: '20%', height: '60%', width: 5,
-              cursor: 'ew-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ew-resize', background: 'color-mix(in srgb, var(--cat-data) 60%, transparent)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={handleResizeBottom} style={{
               position: 'absolute', bottom: -2, left: '20%', width: '60%', height: 5,
-              cursor: 'ns-resize', background: 'rgba(59,130,246,0.60)', borderRadius: 2, zIndex: 25,
+              cursor: 'ns-resize', background: 'color-mix(in srgb, var(--cat-data) 60%, transparent)', borderRadius: 2, zIndex: 25,
               opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
             }} />
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
-              cursor: 'se-resize', background: '#3B82F6', borderRadius: '50%', zIndex: 26,
+              cursor: 'se-resize', background: 'var(--cat-data)', borderRadius: '50%', zIndex: 26,
               border: '2px solid rgba(6,6,10,0.80)',
               opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
             }} />
@@ -655,7 +655,7 @@ export function CanvasBlock({
         {mode === 'edit' && isArrowDrawing && (
           <div style={{
             position: 'absolute', inset: -2,
-            border: '2px dashed rgba(59,130,246,0.40)',
+            border: '2px dashed color-mix(in srgb, var(--cat-data) 40%, transparent)',
             borderRadius: 10, pointerEvents: 'none', zIndex: 26,
           }} />
         )}
@@ -667,8 +667,8 @@ export function CanvasBlock({
             const isMagnetized = magnetizedEdge === edge;
             const size = isHoveredSnap || isMagnetized ? 12 : 8;
             const bg = isHoveredSnap || isMagnetized
-              ? '#3B82F6'
-              : 'rgba(59,130,246,0.5)';
+              ? 'var(--cat-data)'
+              : 'color-mix(in srgb, var(--cat-data) 50%, transparent)';
 
             // All snap points positioned with left/top + translate(-50%,-50%)
             const posStyle: React.CSSProperties =
@@ -702,7 +702,7 @@ export function CanvasBlock({
                   height: size,
                   borderRadius: '50%',
                   background: bg,
-                  border: '2px solid #3B82F6',
+                  border: '2px solid var(--cat-data)',
                   zIndex: 30,
                   cursor: 'crosshair',
                   transition: 'width 0.1s, height 0.1s, background 0.1s',

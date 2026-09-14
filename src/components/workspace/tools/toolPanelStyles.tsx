@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
-export const PANEL_DIVIDER = '0.5px solid hsl(var(--foreground) / 0.06)';
-export const PANEL_CARD_BACKGROUND = 'hsl(var(--foreground) / 0.025)';
-export const PANEL_INPUT_BACKGROUND = 'hsl(240 14% 14% / 0.5)';
-export const PANEL_INPUT_BORDER = '0.5px solid hsl(var(--foreground) / 0.08)';
+export const PANEL_DIVIDER = '0.5px solid var(--line)';
+export const PANEL_CARD_BACKGROUND = 'var(--recess)';
+export const PANEL_INPUT_BACKGROUND = 'var(--recess)';
+export const PANEL_INPUT_BORDER = '0.5px solid var(--line)';
 export const PANEL_INPUT_RADIUS = 6;
 
 export const SECTION_LABEL_STYLE: CSSProperties = {
@@ -13,14 +13,14 @@ export const SECTION_LABEL_STYLE: CSSProperties = {
   fontWeight: 600,
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
-  color: 'hsl(var(--foreground) / 0.35)',
+  color: 'var(--text2)',
 };
 
 export const TOOL_HEADER_TITLE_STYLE: CSSProperties = {
   fontFamily: 'Figtree, sans-serif',
   fontSize: 12,
   fontWeight: 600,
-  color: 'hsl(var(--foreground) / 0.85)',
+  color: 'var(--text)',
 };
 
 interface EmptyPanelStateProps {
@@ -50,14 +50,14 @@ export function EmptyPanelState({
         padding: '0 20px',
       }}
     >
-      <Icon size={64} style={{ color: 'hsl(var(--foreground) / 0.25)' }} />
+      <Icon size={64} style={{ color: 'var(--text2)' }} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div
           style={{
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 500,
-            color: 'hsl(var(--foreground) / 0.86)',
+            color: 'var(--text)',
           }}
         >
           {title}
@@ -68,7 +68,7 @@ export function EmptyPanelState({
             fontSize: 11,
             fontWeight: 400,
             lineHeight: 1.45,
-            color: 'hsl(var(--foreground) / 0.46)',
+            color: 'var(--text2)',
           }}
         >
           {description}
