@@ -162,8 +162,12 @@ export function StatusBar({
         gap: 12,
         minHeight: 28,
         padding: '4px 8px',
-        borderTop: '0.5px solid var(--line)',
-        background: 'var(--line)',
+        borderTop: '1px solid var(--line)',
+        /* --line IS A HAIRLINE, NOT A SURFACE. Used as this bar's ground it put
+           --text2 at 4.03:1 and the saved indicator at 4.06:1, both under the
+           text floor. --recess is the token for a surface the page is cut
+           into, and --text2 measures 4.55:1 on it. */
+        background: 'var(--recess)',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
       }}

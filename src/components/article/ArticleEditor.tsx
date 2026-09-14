@@ -1192,7 +1192,10 @@ export function ArticleEditor({
                   borderRadius: 6,
                   border: '0.5px solid var(--action)',
                   background: 'var(--action)',
-                  color: 'var(--text)',
+                  /* The action fill's label is --on-action, which is the half
+                     of that pair that was measured with it (5.65:1 / 6.35:1).
+                     --text on it is 2.73:1. */
+                  color: 'var(--on-action)',
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 12,
                   fontWeight: 500,

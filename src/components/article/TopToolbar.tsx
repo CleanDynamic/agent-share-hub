@@ -979,9 +979,13 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 sideOffset={6}
                 className="p-3 w-72"
                 style={{
-                  background: 'var(--line)',
+                  /* A popover is a RAISED surface, so it takes an opaque
+                     ground and the theme's raised elevation. --line is a
+                     hairline token and was never a surface. */
+                  background: 'var(--bg)',
                   border: '1px solid var(--line)',
-                  borderRadius: 10,
+                  borderRadius: 'var(--r-panel)',
+                  boxShadow: 'var(--elev-raised)',
                   fontFamily: 'Figtree, sans-serif',
                   color: 'var(--text)',
                 }}
