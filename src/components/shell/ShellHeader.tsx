@@ -225,7 +225,7 @@ export function ShellHeader({
                           padding: "1px 6px",
                           borderRadius: 999,
                           background: "var(--recess)",
-                          color: "var(--text2)",
+                          color: "var(--text)",
                         }}
                       >
                         {t.count}

@@ -146,7 +146,7 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
             className={cn(
               'w-full min-h-[80px] resize-none rounded-md',
               'bg-foreground/[0.02] border border-dashed border-border',
-              'text-[11px] text-muted-foreground placeholder:text-muted-foreground',
+              'text-[11px] text-foreground placeholder:text-muted-foreground',
               'px-2 py-2 outline-none focus:border-border transition-colors',
             )}
           />
@@ -161,7 +161,7 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
             className={cn(
               'w-full min-h-[80px] resize-none rounded-md',
               'bg-foreground/[0.02] border border-dashed border-border',
-              'text-[11px] text-muted-foreground placeholder:text-muted-foreground',
+              'text-[11px] text-foreground placeholder:text-muted-foreground',
               'px-2 py-2 outline-none focus:border-border transition-colors',
             )}
           />

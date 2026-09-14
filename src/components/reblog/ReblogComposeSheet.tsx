@@ -105,7 +105,7 @@ function Avatar({
             fontFamily: "Figtree, sans-serif",
             fontSize: size * 0.42,
             fontWeight: 600,
-            color: "var(--text2)",
+            color: "var(--text)",
             lineHeight: 1,
           }}
         >

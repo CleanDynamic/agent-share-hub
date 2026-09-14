@@ -82,7 +82,7 @@ export function OriginalSolutionDialog({
             style={{
               background: "none",
               border: "none",
-              color: "var(--text2)",
+              color: "var(--text)",
               cursor: "pointer",
             }}
           >

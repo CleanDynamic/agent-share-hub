@@ -135,7 +135,7 @@ export function DiscussionCompose({
                   background: 'transparent',
                   border: 'none', outline: 'none',
                   fontSize: 14,
-                  color: 'var(--text2)',
+                  color: 'var(--text)',
                   lineHeight: 1.65, resize: 'none',
                   fontFamily: 'Figtree, sans-serif',
                   minHeight: 60, overflow: 'hidden',

@@ -189,7 +189,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
                 </div>
                 {r.text && (
                   <button
-                    className="text-sm text-muted-foreground text-left whitespace-pre-wrap"
+                    className="text-sm text-foreground text-left whitespace-pre-wrap"
                     onClick={() => !isCurrent && navigate(`/b/${r.slug}`)}
                   >
                     {r.text}
@@ -259,7 +259,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
         <button
           onClick={handleExportPdf}
           disabled={exporting}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-muted text-xs text-muted-foreground transition-colors disabled:opacity-60"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted hover:bg-muted text-xs text-foreground transition-colors disabled:opacity-60"
           title="Export this reblog as an AI-friendly PDF"
         >
           {exporting ? <Loader2 size={12} className="animate-spin" /> : <FileDown size={12} />}
@@ -278,7 +278,7 @@ export default function ReblogDetail({ mode = "detail" }: ReblogDetailProps) {
 
       {row.text && (
         <p
-          className="text-muted-foreground whitespace-pre-wrap mb-4"
+          className="text-foreground whitespace-pre-wrap mb-4"
           style={{ fontSize: 18, lineHeight: 1.55 }}
         >
           {row.text}

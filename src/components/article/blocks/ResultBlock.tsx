@@ -395,7 +395,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
 
     if (activeTab === 'markdown') {
       return markdownContent ? (
-        <div className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-hidden">
+        <div className="text-[11px] text-foreground whitespace-pre-wrap leading-relaxed max-h-[120px] overflow-hidden">
           {markdownContent.length > 200
             ? markdownContent.slice(0, 200) + '…'
             : markdownContent}
@@ -474,7 +474,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <StatusDot status={status} />
           <button
@@ -559,7 +559,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
           className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-muted-foreground text-base">Result block</SheetTitle>
+            <SheetTitle className="text-foreground text-base">Result block</SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-4">
@@ -567,7 +567,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Block name"
-              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
+              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
             />
 
             <div className="flex items-center gap-1">
@@ -589,7 +589,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
                   value={markdownContent}
                   onChange={(e) => patchProps({ markdownContent: e.target.value })}
                   placeholder="Markdown output…"
-                  className="w-full min-h-[180px] bg-transparent outline-none text-sm text-muted-foreground placeholder:text-muted-foreground resize-none"
+                  className="w-full min-h-[180px] bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground resize-none"
                 />
               )}
               {activeTab === 'json' && (
@@ -603,7 +603,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
                     }
                   }}
                   placeholder='{"key": "value"}'
-                  className="w-full min-h-[180px] bg-transparent outline-none text-xs font-mono text-muted-foreground placeholder:text-muted-foreground resize-none"
+                  className="w-full min-h-[180px] bg-transparent outline-none text-xs font-mono text-foreground placeholder:text-muted-foreground resize-none"
                 />
               )}
               {activeTab === 'raw' && (
@@ -611,7 +611,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
                   value={rawContent}
                   onChange={(e) => patchProps({ rawContent: e.target.value })}
                   placeholder="Raw output…"
-                  className="w-full min-h-[180px] bg-transparent outline-none text-xs font-mono text-muted-foreground placeholder:text-muted-foreground resize-none"
+                  className="w-full min-h-[180px] bg-transparent outline-none text-xs font-mono text-foreground placeholder:text-muted-foreground resize-none"
                 />
               )}
             </div>
@@ -621,7 +621,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
                 value={sourceName}
                 onChange={(e) => patchProps({ sourceName: e.target.value })}
                 placeholder="Source name"
-                className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12]"
+                className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12]"
               />
               <select
                 value={sourceType}
@@ -630,7 +630,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
                     sourceType: e.target.value as 'prompt' | 'code' | 'agent',
                   })
                 }
-                className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground outline-none focus:border-border/[0.12]"
+                className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground outline-none focus:border-border/[0.12]"
               >
                 <option value="prompt" className="bg-[var(--recess)]">Prompt</option>
                 <option value="code" className="bg-[var(--recess)]">Code</option>

@@ -402,7 +402,7 @@ export function MetaBountyCreationFlow({
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "var(--text2)",
+                          color: "var(--text)",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                         }}
@@ -919,7 +919,7 @@ export function MetaBountyCreationFlow({
                           style={{
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
-                            color: "var(--text2)",
+                            color: "var(--text)",
                           }}
                         >
                           {i + 1}. {sb.title || "Untitled"}

@@ -109,7 +109,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
         {/* Compact info */}
         <div className="flex items-center gap-2 px-2 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06]">
           <span className="text-base leading-none">{currentProvider?.icon}</span>
-          <span className="text-xs text-muted-foreground truncate">
+          <span className="text-xs text-foreground truncate">
             {modelName || currentProvider?.label}
           </span>
         </div>
@@ -156,7 +156,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left flex items-center gap-2',
                     'bg-foreground/[0.03] border border-border/[0.06]',
-                    'text-xs text-muted-foreground',
+                    'text-xs text-foreground',
                     'hover:border-border/[0.12] transition-colors',
                   )}
                 >
@@ -201,7 +201,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                 className={cn(
                   'w-full px-3 py-2 rounded-md',
                   'bg-foreground/[0.03] border border-border/[0.06]',
-                  'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                  'text-xs text-foreground placeholder:text-muted-foreground',
                   'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
@@ -220,7 +220,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   className={cn(
                     'w-full px-3 py-2 rounded-md',
                     'bg-foreground/[0.03] border border-border/[0.06]',
-                    'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                    'text-xs text-foreground placeholder:text-muted-foreground',
                     'outline-none focus:border-border/[0.12] transition-colors',
                   )}
                 />
@@ -264,7 +264,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                 className={cn(
                   'w-full px-3 py-2 rounded-md',
                   'bg-foreground/[0.03] border border-border/[0.06]',
-                  'text-xs text-muted-foreground',
+                  'text-xs text-foreground',
                   'outline-none focus:border-border/[0.12] transition-colors',
                   '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
                 )}

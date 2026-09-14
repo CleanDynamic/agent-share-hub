@@ -164,7 +164,7 @@ export function MetaBountyCard({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "var(--text2)",
+                    color: "var(--text)",
                   }}
                 >
                   Solve {index + 1}: {subBounty.title}

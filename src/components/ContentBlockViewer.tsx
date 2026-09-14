@@ -514,11 +514,11 @@ export function RenderBlockContent({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>A</div>
-          <p style={{ fontSize: 13, color: 'var(--text2)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
+          <p style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
         </div>
         <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>B</div>
-          <p style={{ fontSize: 13, color: 'var(--text2)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
+          <p style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
         </div>
       </div>
     );
@@ -587,7 +587,7 @@ export function RenderBlockContent({
         {imageDescription && (
           <p style={{
             fontSize: 12,
-            color: 'var(--text2)',
+            color: 'var(--text)',
             fontStyle: 'italic',
             marginTop: 6, marginBottom: 0,
             lineHeight: 1.5,
@@ -649,7 +649,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
             background: 'var(--recess)',
             border: '1px solid var(--line)',
-            color: 'var(--text2)',
+            color: 'var(--text)',
           }}>
             {block.prompt_model}
           </span>
@@ -762,7 +762,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
           background: 'color-mix(in srgb, var(--action) 8%, transparent)',
           border: '1px solid color-mix(in srgb, var(--action) 20%, transparent)',
           borderRadius: 8, fontSize: 13,
-          color: 'var(--text2)',
+          color: 'var(--text)',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',

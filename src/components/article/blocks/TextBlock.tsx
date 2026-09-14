@@ -193,7 +193,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <button
             type="button"
@@ -248,7 +248,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
           className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-muted-foreground text-base">
+            <SheetTitle className="text-foreground text-base">
               Text block
             </SheetTitle>
           </SheetHeader>
@@ -258,7 +258,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Block name"
-              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
+              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
             />
 
             <div

@@ -40,7 +40,7 @@ export function BlockContextMenu({
     padding: '6px 12px',
     fontSize: 11,
     cursor: 'pointer',
-    color: 'var(--text2)',
+    color: 'var(--text)',
     background: 'none',
     border: 'none',
     textAlign: 'left',

@@ -227,7 +227,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: "12px",
-                color: "var(--text2)",
+                color: "var(--text)",
               }}
             >
               Only the bounty author can manage this bounty.
@@ -521,7 +521,7 @@ function OverviewTab({
                       style={{
                         fontFamily: "Figtree, sans-serif",
                         fontSize: "11px",
-                        color: "var(--text2)",
+                        color: "var(--text)",
                       }}
                     >
                       @{sub.solverHandle} · {sub.voteCount} votes
@@ -565,7 +565,7 @@ function OverviewTab({
                     style={{
                       fontFamily: "Figtree, sans-serif",
                       fontSize: "11px",
-                      color: "var(--text2)",
+                      color: "var(--text)",
                     }}
                   >
                     {u.commentCount} comments

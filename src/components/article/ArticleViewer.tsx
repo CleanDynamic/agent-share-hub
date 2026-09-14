@@ -171,7 +171,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
         .tiptap-article-view blockquote {
           border-left: 2px solid color-mix(in srgb, var(--action) 40%, transparent);
           padding-left: 16px;
-          color: var(--text2);
+          color: var(--text);
           font-style: italic;
           margin: 16px 0;
         }

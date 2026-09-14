@@ -127,7 +127,7 @@ function CounterPill({ icon, text }: { icon: React.ReactNode; text: string }) {
         border: "1px solid var(--line)",
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
-        color: "var(--text2)",
+        color: "var(--text)",
       }}
     >
       {icon}

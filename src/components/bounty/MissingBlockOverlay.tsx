@@ -65,7 +65,7 @@ export function MissingBlockOverlay({
           fontFamily: 'Figtree, sans-serif',
           fontSize: 11,
           fontWeight: 600,
-          color: 'var(--text2)',
+          color: 'var(--text)',
         }}
       >
         Solve this

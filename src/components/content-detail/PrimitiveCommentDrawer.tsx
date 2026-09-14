@@ -440,7 +440,7 @@ function CommentCard({
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
-              color: "var(--text2)",
+              color: "var(--text)",
               lineHeight: 1.5,
               margin: "6px 0",
               whiteSpace: "pre-wrap",

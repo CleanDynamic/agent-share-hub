@@ -467,7 +467,7 @@ export function CanvasBlock({
             {/* Card body */}
             <div style={{ flex: 1, padding: '2px 10px 6px', minHeight: 0, overflow: 'hidden' }}>
               {block.subheading && (
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
                   {block.subheading}
                 </div>
               )}

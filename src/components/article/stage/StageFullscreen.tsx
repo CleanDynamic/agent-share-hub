@@ -102,7 +102,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         background: hover ? 'var(--recess)' : 'var(--recess)',
         border: '0.5px solid var(--line)',
         borderRadius: 6,
-        color: 'var(--text2)',
+        color: 'var(--text)',
         fontFamily: 'Figtree, sans-serif',
         fontSize: 12,
         fontWeight: 500,

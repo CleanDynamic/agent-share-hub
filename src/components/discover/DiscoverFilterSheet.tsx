@@ -256,7 +256,7 @@ function TagInput({
                 textAlign: 'left',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
-                color: 'var(--text2)',
+                color: 'var(--text)',
                 background: 'transparent',
                 border: 'none',
                 padding: '8px 12px',

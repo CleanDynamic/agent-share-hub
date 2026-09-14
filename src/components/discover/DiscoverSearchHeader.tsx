@@ -104,7 +104,7 @@ export function DiscoverSearchHeader({
                   transition: 'color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = 'var(--text2)'
+                  if (!isActive) e.currentTarget.style.color = 'var(--text)'
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.color = 'var(--text2)'
@@ -118,7 +118,7 @@ export function DiscoverSearchHeader({
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 10,
                   fontWeight: 400,
-                  color: 'var(--text2)',
+                  color: 'var(--text)',
                   marginTop: 2,
                 }}
               >
@@ -173,7 +173,7 @@ export function DiscoverSearchHeader({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               fontWeight: 500,
-              color: 'var(--text2)',
+              color: 'var(--text)',
               border: '1px solid var(--line)',
               padding: '1px 5px',
               borderRadius: 4,
@@ -197,7 +197,7 @@ export function DiscoverSearchHeader({
             cursor: 'pointer',
           }}
         >
-          <SlidersHorizontal size={14} style={{ color: 'var(--text2)' }} />
+          <SlidersHorizontal size={14} style={{ color: 'var(--text)' }} />
           <span
             style={{
               fontFamily: 'Figtree, sans-serif',

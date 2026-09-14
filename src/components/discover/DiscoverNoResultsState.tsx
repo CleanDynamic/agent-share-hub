@@ -35,7 +35,7 @@ export function DiscoverNoResultsState({
           <button
             onClick={onClearFilters}
             className="rounded-lg px-4 py-2 text-xs font-medium transition-colors"
-            style={{ color: "var(--text2)", background: "transparent" }}
+            style={{ color: "var(--text)", background: "transparent" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--recess)";
             }}

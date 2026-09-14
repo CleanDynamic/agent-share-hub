@@ -208,11 +208,11 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-muted-foreground border-b border-border"
+                    className="flex-1 min-w-0 bg-transparent outline-none text-[12px] text-foreground border-b border-border"
                   />
                 ) : (
                   <span
-                    className="flex-1 min-w-0 text-[12px] text-muted-foreground truncate"
+                    className="flex-1 min-w-0 text-[12px] text-foreground truncate"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
                       setEditingTitleId(step.id);
@@ -255,7 +255,7 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
                     className={cn(
                       'w-full min-h-[48px] p-2 mt-2 rounded-md resize-none',
                       'bg-foreground/[0.02] border border-border/[0.04]',
-                      'text-[11px] text-muted-foreground placeholder:text-muted-foreground',
+                      'text-[11px] text-foreground placeholder:text-muted-foreground',
                       'outline-none focus:border-border/[0.10] transition-colors',
                     )}
                   />

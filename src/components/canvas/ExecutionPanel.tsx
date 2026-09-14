@@ -271,7 +271,7 @@ export function ExecutionPanel({
             </div>
             <pre style={{
               fontSize: 13,
-              color: 'var(--text2)',
+              color: 'var(--text)',
               lineHeight: 1.70,
               whiteSpace: 'pre-wrap',
               margin: 0,

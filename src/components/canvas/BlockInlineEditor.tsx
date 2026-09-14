@@ -55,7 +55,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 10, fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.10em',
-            color: 'var(--text2)',
+            color: 'var(--text)',
             marginBottom: 4,
           }}
         >

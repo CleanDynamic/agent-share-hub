@@ -272,7 +272,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
 
           {/* Language dropdown */}
@@ -417,7 +417,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
           className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-muted-foreground text-base">
+            <SheetTitle className="text-foreground text-base">
               Code block
             </SheetTitle>
           </SheetHeader>
@@ -431,7 +431,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) => onNameChange(e.target.value)}
                   placeholder="Block name"
                   className={cn(
-                    'flex-1 px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-muted-foreground placeholder:text-muted-foreground outline-none transition-colors',
+                    'flex-1 px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors',
                     nameError
                       ? 'border-[var(--cat-breakage)] focus:border-[var(--cat-breakage)]'
                       : 'border-border/[0.06] focus:border-border/[0.12]',
@@ -442,7 +442,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     onLanguageChange(e.target.value as CodeLanguage)
                   }
-                  className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground outline-none focus:border-border/[0.12]"
+                  className="px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground outline-none focus:border-border/[0.12]"
                 >
                   {SUPPORTED_LANGUAGES.map((l) => (
                     <option key={l.value} value={l.value} className="bg-[var(--recess)]">
@@ -518,7 +518,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                 style={{
                   background: 'rgba(0,0,0,0.35)',
                   border: '1px solid var(--line)',
-                  color: lastRun?.error ? '#fca5a5' : 'var(--text2)',
+                  color: lastRun?.error ? '#fca5a5' : 'var(--text)',
                   minHeight: 48,
                   fontFamily:
                     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',

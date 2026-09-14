@@ -183,7 +183,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 borderRadius: 8,
-                color: 'var(--text2)',
+                color: 'var(--text)',
                 outline: 'none',
                 boxSizing: 'border-box' as const,
               }}

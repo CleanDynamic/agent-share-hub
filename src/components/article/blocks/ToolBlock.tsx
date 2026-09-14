@@ -136,7 +136,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
             onChange={(e) => onNameChange(e.target.value)}
             onClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <button
             type="button"
@@ -196,7 +196,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
           className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-muted-foreground text-base">Tool block</SheetTitle>
+            <SheetTitle className="text-foreground text-base">Tool block</SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-4">
@@ -204,7 +204,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               placeholder="Tool name"
-              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
+              className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
             />
 
             <div>
@@ -218,7 +218,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 className={cn(
                   'w-full h-20 p-3 rounded-md resize-none',
                   'bg-foreground/[0.03] border border-border/[0.06]',
-                  'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                  'text-xs text-foreground placeholder:text-muted-foreground',
                   'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
@@ -264,7 +264,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 className={cn(
                   'w-full h-48 p-3 rounded-md resize-none font-mono',
                   'bg-foreground/[0.03] border border-border/[0.06]',
-                  'text-[11px] text-muted-foreground placeholder:text-muted-foreground',
+                  'text-[11px] text-foreground placeholder:text-muted-foreground',
                   'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />
@@ -282,7 +282,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
                 className={cn(
                   'w-full px-3 py-2 rounded-md font-mono',
                   'bg-foreground/[0.03] border border-border/[0.06]',
-                  'text-xs text-muted-foreground placeholder:text-muted-foreground',
+                  'text-xs text-foreground placeholder:text-muted-foreground',
                   'outline-none focus:border-border/[0.12] transition-colors',
                 )}
               />

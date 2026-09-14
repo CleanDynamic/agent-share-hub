@@ -103,7 +103,7 @@ function SubBountyRow({
               fontWeight: 600,
               letterSpacing: "0.05em",
               textTransform: "uppercase",
-              color: "var(--text2)",
+              color: "var(--text)",
               marginBottom: 4,
             }}
           >

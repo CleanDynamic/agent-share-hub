@@ -365,7 +365,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={(e) => e.stopPropagation()}
             placeholder="Name"
-            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-muted-foreground placeholder:text-muted-foreground outline-none nodrag"
+            className="flex-1 min-w-0 bg-transparent text-[10px] font-medium text-foreground placeholder:text-muted-foreground outline-none nodrag"
           />
           <StatusDot status={status} />
           <button
@@ -426,7 +426,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   }}
                   onKeyDown={systemAutocomplete.onKeyDown}
                   placeholder="Enter system prompt..."
-                  className="nodrag w-full h-16 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[11.5px] text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
+                  className="nodrag w-full h-16 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[11.5px] text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
                 />
               )}
             </div>
@@ -446,7 +446,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 }}
                 onKeyDown={promptAutocomplete.onKeyDown}
                 placeholder="Enter your prompt... Type {{ to insert a block reference."
-                className="nodrag w-full h-28 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[12px] text-muted-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
+                className="nodrag w-full h-28 p-2 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-[12px] text-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 
@@ -479,7 +479,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                     e.stopPropagation();
                     setShowModelDropdown((v) => !v);
                   }}
-                  className="nodrag w-full px-2 py-1.5 rounded-md text-left bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-muted-foreground hover:border-border/[0.12] transition-colors"
+                  className="nodrag w-full px-2 py-1.5 rounded-md text-left bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-foreground hover:border-border/[0.12] transition-colors"
                 >
                   {models.find((m) => m.value === model)?.label}
                 </button>
@@ -540,7 +540,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   onChange={(e) =>
                     onMaxTokensChange(parseInt(e.target.value, 10) || 0)
                   }
-                  className="nodrag w-full px-2 py-1.5 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-muted-foreground outline-none focus:border-border/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="nodrag w-full px-2 py-1.5 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-[11px] text-foreground outline-none focus:border-border/[0.12] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
@@ -634,7 +634,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle className="text-muted-foreground text-base">
+            <SheetTitle className="text-foreground text-base">
               Prompt block
             </SheetTitle>
           </SheetHeader>
@@ -650,7 +650,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 onChange={(e) => onNameChange(e.target.value)}
                 placeholder="Block name"
                 className={cn(
-                  'w-full px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-muted-foreground placeholder:text-muted-foreground outline-none transition-colors',
+                  'w-full px-3 py-2 rounded-md bg-foreground/[0.03] border text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors',
                   nameError
                     ? 'border-[var(--cat-breakage)] focus:border-[var(--cat-breakage)]'
                     : 'border-border/[0.06] focus:border-border/[0.12]',
@@ -688,7 +688,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   onKeyDown={systemAutocomplete.onKeyDown}
                   onClick={systemAutocomplete.onInput}
                   placeholder="Enter system prompt..."
-                  className="w-full h-20 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
+                  className="w-full h-20 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
                 />
               )}
             </div>
@@ -708,7 +708,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 onKeyDown={promptAutocomplete.onKeyDown}
                 onClick={promptAutocomplete.onInput}
                 placeholder="Enter your prompt... Type {{ to insert a block reference."
-                className="w-full h-40 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-sm text-muted-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
+                className="w-full h-40 p-3 rounded-md resize-none bg-foreground/[0.03] border border-border/[0.06] text-sm text-foreground placeholder:text-muted-foreground leading-relaxed outline-none focus:border-border/[0.12] transition-colors"
               />
             </div>
 

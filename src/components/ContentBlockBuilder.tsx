@@ -1000,7 +1000,7 @@ const PromptBlockEditor = ({ block, update, index }: {
           width: '100%', background: 'var(--recess)',
           border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: 'var(--text2)', outline: 'none',
+          color: 'var(--text)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree, sans-serif',
           lineHeight: 1.6, boxSizing: 'border-box',
         }} />
@@ -1179,7 +1179,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
                 width: '100%', background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 borderRadius: 6, padding: '6px 8px', fontSize: 12,
-                color: 'var(--text2)', outline: 'none',
+                color: 'var(--text)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Courier New, monospace',
                 boxSizing: 'border-box',
               }} />
@@ -1909,7 +1909,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
             >
               <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{bt.emoji}</span>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
                   {bt.label}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text2)', marginTop: 1 }}>

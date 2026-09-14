@@ -53,7 +53,7 @@ export function InlineSolutionMarker({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: 500,
-                color: "var(--text2)",
+                color: "var(--text)",
               }}
             >
               Solved by{" "}

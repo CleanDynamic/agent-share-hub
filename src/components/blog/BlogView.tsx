@@ -505,7 +505,7 @@ function EngagementButton({
         border: active
           ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
           : "0.5px solid var(--line)",
-        color: active ? "var(--action)" : "var(--text2)",
+        color: active ? "var(--action)" : "var(--text)",
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         fontWeight: 500,

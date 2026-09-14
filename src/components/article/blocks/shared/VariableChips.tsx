@@ -37,7 +37,7 @@ export function VariableChips({ variables, onChipClick }: VariableChipsProps) {
           type="button"
           title={TOOLTIP[v.status]}
           onClick={() => onChipClick?.(v)}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full text-foreground hover:text-foreground transition-colors"
           style={{
             background: 'var(--recess)',
             border: '1px solid var(--line)',

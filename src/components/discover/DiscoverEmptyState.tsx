@@ -38,7 +38,7 @@ export function DiscoverEmptyState({ onSuggestionClick }: DiscoverEmptyStateProp
             className="rounded-full px-3.5 py-2 text-xs font-medium transition-colors"
             style={{
               border: "0.5px solid var(--line)",
-              color: "var(--text2)",
+              color: "var(--text)",
               background: "transparent",
             }}
             onMouseEnter={(e) => {

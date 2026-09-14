@@ -317,7 +317,7 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
             style={{
               background: "var(--recess)",
               border: "0.5px solid var(--line)",
-              color: "var(--text2)",
+              color: "var(--text)",
             }}
           >
             <span

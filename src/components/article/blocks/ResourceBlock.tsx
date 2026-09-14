@@ -163,7 +163,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
           value={url}
           onChange={(e) => patchProps({ url: e.target.value })}
           placeholder="Paste URL..."
-          className="flex-1 min-w-0 bg-transparent outline-none text-xs text-muted-foreground placeholder:text-muted-foreground"
+          className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground"
           onBlur={() => url && handleFetch()}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && url) {
@@ -227,7 +227,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
               )}
               <div className="flex-1 min-w-0">
                 {title && (
-                  <div className="text-[11px] font-medium text-muted-foreground line-clamp-2 leading-tight">
+                  <div className="text-[11px] font-medium text-foreground line-clamp-2 leading-tight">
                     {title}
                   </div>
                 )}
@@ -257,7 +257,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
         className={cn(
           'nodrag w-full h-12 p-2 rounded-md resize-none',
           'bg-foreground/[0.02] border border-border/[0.04]',
-          'text-[11px] text-muted-foreground placeholder:text-muted-foreground',
+          'text-[11px] text-foreground placeholder:text-muted-foreground',
           'outline-none focus:border-border/[0.08] transition-colors',
         )}
       />

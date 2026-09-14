@@ -129,7 +129,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                   {block.subheading && (
                     <div style={{
                       fontSize: 13, fontWeight: 600,
-                      color: 'var(--text2)',
+                      color: 'var(--text)',
                       marginBottom: 8,
                     }}>
                       {block.subheading}
@@ -181,7 +181,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
                 {block.subheading && (
                   <div style={{
                     fontSize: 13, fontWeight: 600,
-                    color: 'var(--text2)',
+                    color: 'var(--text)',
                     marginBottom: 8,
                   }}>
                     {block.subheading}

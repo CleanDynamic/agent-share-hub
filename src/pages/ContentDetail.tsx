@@ -2374,7 +2374,7 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
         marginBottom: 16,
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
-        color: "var(--text2)",
+        color: "var(--text)",
         cursor: "pointer",
       }}
     >
