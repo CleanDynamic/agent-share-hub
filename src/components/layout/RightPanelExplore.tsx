@@ -50,7 +50,7 @@ export function RightPanelExplore() {
             onClick={() => navigate('/browse?bounties=open')}
           >
             <span style={{ fontSize: 16 }}>🎯</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#F59E0B' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--cat-artefact)' }}>
               Open Bounties
             </span>
           </div>
@@ -61,7 +61,7 @@ export function RightPanelExplore() {
           >
             <span style={{ fontSize: 16 }}>✅</span>
             <span style={{ fontSize: 13, fontWeight: 600,
-              color: 'rgba(255,255,255,0.50)' }}>
+              color: 'var(--text2)' }}>
               Solved Bounties
             </span>
           </div>
@@ -88,7 +88,7 @@ export function RightPanelExplore() {
             className="flex items-center justify-center h-9 w-full text-sm font-semibold"
             data-visual-slot="btn-secondary"
             style={{
-              background: 'rgba(255,255,255,0.05)',
+              background: 'var(--recess)',
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-btn)',
               color: 'var(--legacy-text)',
@@ -102,7 +102,7 @@ export function RightPanelExplore() {
             data-visual-slot="btn-primary"
             style={{
               background: '#111',
-              border: '1px solid rgba(255,255,255,0.10)',
+              border: '1px solid var(--line)',
               borderRadius: 'var(--radius-btn)',
               color: '#fff',
               fontWeight: 600,
@@ -188,7 +188,7 @@ function SearchSection() {
         />
       </div>
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-white/5 shadow-xl" style={{ background: "rgba(8,8,12,0.95)", backdropFilter: "blur(40px)" }}>
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-xl border border-white/5 shadow-xl" style={{ background: "var(--bg)", backdropFilter: "blur(40px)" }}>
           {loading && <p className="p-3 text-xs text-slate-500">Searching…</p>}
           {noResults && <p className="p-3 text-xs text-slate-500">No results for "{query}"</p>}
           {users.length > 0 && (

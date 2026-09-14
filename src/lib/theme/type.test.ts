@@ -229,12 +229,14 @@ describe("the retired faces", () => {
   // Acceptance: neither family may appear in a network request on any route.
   // Both were loaded by name, so if the name is gone from the source and from
   // index.html, nothing can request them.
-  // LeftPanel is on the do-not-touch list for this phase — it is one of the
-  // externally-supplied shell components — so its one Inter reference is left
-  // as it is and exempted here rather than quietly edited. It renders in the
-  // system fallback until the prompt that owns that surface repoints it; the
-  // fix is one token. Nothing else may be added to this list.
-  const EXEMPT = ["src/components/layout/LeftPanel.tsx"];
+  // THE LIST IS EMPTY NOW (BG-P28). LeftPanel held the last exemption: it is
+  // one of the externally-supplied shell components, so an earlier prompt left
+  // its one Inter reference alone rather than quietly editing it. BG-P28 had
+  // to touch that file anyway — it was still painting the wordmark in the old
+  // brand's #8B4513 on every route in the app, which this prompt's acceptance
+  // rules out — and repointing the face at the same time was the one-token fix
+  // the note predicted. Nothing may be added to this list.
+  const EXEMPT: string[] = [];
 
   it("are named nowhere in the source", () => {
     const offenders = sourceFiles()
