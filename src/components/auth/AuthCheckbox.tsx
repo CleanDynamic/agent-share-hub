@@ -35,7 +35,11 @@ export function AuthCheckbox({ checked, onChange, label, id }: AuthCheckboxProps
     <label
       htmlFor={id}
       className="flex items-center cursor-pointer"
-      style={{ gap: "10px" }}
+      /* 6px top and bottom takes the label — which IS the target, since the box
+         is 16px and the input is sr-only — from 18px tall to 30, clear of the
+         24px WCAG 2.5.8 floor. The row it sits in grows by 12px once; nothing
+         moves sideways. */
+      style={{ gap: "10px", padding: "6px 0" }}
     >
       <div style={{ position: "relative" }}>
         <input

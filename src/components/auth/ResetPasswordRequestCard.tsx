@@ -93,6 +93,8 @@ export function ResetPasswordRequestCard({
         <Link
           to="/login"
           style={{
+            display: "inline-block",
+            padding: "6px 0",
             color: t.action,
             textDecoration: "underline",
             textUnderlineOffset: "4px",

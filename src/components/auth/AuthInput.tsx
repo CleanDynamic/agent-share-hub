@@ -113,6 +113,22 @@ export function AuthInput({
     alignItems: "center",
   };
 
+  /* THE REVEAL'S TARGET, AND WHY IT COSTS NOTHING. The eye was an 18px icon
+     with no padding: an 18×18 tap target, well under the 44px floor
+     `critique-affordance` sets for touch. The padding takes it to 44×44 and
+     `right` comes back by the same amount, so the icon sits on exactly the
+     pixel it always did — and the field is 48px tall, so a 44px control inside
+     it moves no box. Nothing structural changes; the target that was there all
+     along is simply the size of a thumb. */
+  const revealStyle = {
+    ...iconStyle,
+    right: "1px",
+    padding: "13px",
+    background: "none",
+    border: "none",
+    justifyContent: "center",
+  };
+
   const helperStyle = {
     fontFamily: FIGTREE,
     fontSize: "11px",
@@ -168,9 +184,14 @@ export function AuthInput({
           {showPasswordToggle && (
             <button
               type="button"
-              style={{ ...iconStyle, background: "none", border: "none", padding: 0 }}
+              style={revealStyle}
               onClick={() => setShowPassword(!showPassword)}
-              tabIndex={-1}
+              aria-pressed={showPassword}
+              /* `tabIndex={-1}` stood here, which put the ONLY control that can
+                 reveal a password outside the tab order — a keyboard-only
+                 reader could not operate it at all (WCAG 2.1.1). It is a tab
+                 stop now, between the field and whatever follows it; nothing
+                 about the field, the form or its submission moves. */
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

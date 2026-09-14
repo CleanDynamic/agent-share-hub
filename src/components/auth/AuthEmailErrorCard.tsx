@@ -79,10 +79,10 @@ export function AuthEmailErrorCard({
       <button
         onClick={onBackToSignIn}
         style={{
-          marginTop: "12px",
+          marginTop: "6px",
           background: "none",
           border: "none",
-          padding: 0,
+          padding: "6px 0",
           fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 500,

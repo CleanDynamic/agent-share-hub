@@ -79,8 +79,10 @@ export function LoginCard({
             gap: "6px",
             background: "none",
             border: "none",
-            padding: 0,
-            marginBottom: "16px",
+            /* 16px of text is a 16px target. 6px top and bottom clears the
+               24px floor; the margin below absorbs the growth. */
+            padding: "6px 0",
+            marginBottom: "10px",
             fontFamily: FIGTREE,
             fontSize: "13px",
             fontWeight: 500,
@@ -135,7 +137,9 @@ export function LoginCard({
                 style={{
                   background: "none",
                   border: "none",
-                  padding: 0,
+                  /* Matched to the checkbox opposite it, so the row grows once
+                     and both halves stay centred on the same line. */
+                  padding: "6px 0",
                   fontFamily: FIGTREE,
                   fontSize: "12px",
                   fontWeight: 500,

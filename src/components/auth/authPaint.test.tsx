@@ -26,6 +26,7 @@ import { AuthShell } from "./AuthShell";
 import { OAuthButtons } from "./OAuthButtons";
 import { PasswordStrengthMeter, type PasswordStrength } from "./PasswordStrengthMeter";
 import { ThemeProvider, THEME_STORAGE_KEY } from "@/contexts/ThemeContext";
+import { BODONI, DISPLAY_MIN_PX } from "@/lib/theme/type";
 import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 /** AuthShell reads the resolved theme for its wash, so it needs the provider. */
@@ -63,15 +64,20 @@ describe("AuthShell", () => {
     );
   });
 
-  it("sets the wordmark in Bodoni Moda at 28, clear of the display floor", () => {
+  /* THE FACE COMES FROM THE CONSTANT, NOT FROM A STRING. type.test.ts holds the
+     whole of src/ to naming the display family in exactly one module, which is
+     what makes its 20px floor cover every route rather than one file — and a
+     test that spelled the family out by hand would be the first hole in it. */
+  it("sets the wordmark in the display face at 28, clear of its floor", () => {
     const doc = shell("exhibition");
     const wordmark = [...doc.querySelectorAll("span")].find(
       (span) => span.textContent === "buildgallery",
     );
     expect(wordmark).toBeTruthy();
     const style = styleOf(wordmark);
-    expect(style).toContain("Bodoni Moda");
+    expect(style).toContain(BODONI);
     expect(style).toContain("font-size:28px");
+    expect(28).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
     expect(style).toContain("color:var(--text)");
   });
 
@@ -194,6 +200,42 @@ describe("AuthCheckbox", () => {
     expect(box(true)).toContain("color:var(--on-action)");
     expect(box(false)).toContain("background:var(--recess)");
     expect(box(false)).toContain("border-color:var(--line)");
+  });
+});
+
+/* ── targets a thumb can hit ──────────────────────────────────────────────────
+   `critique-affordance` floors a touch target at 44×44, and WCAG 2.5.8 floors
+   it at 24×24 for anything that is not a word inside a sentence. Three controls
+   on this surface were the size of their own text, and the reveal — the only
+   way to see what you have typed — was an 18px icon.
+   ─────────────────────────────────────────────────────────────────────────── */
+describe("touch targets", () => {
+  it("gives the password reveal 44px without moving the icon", () => {
+    const doc = staticDoc(
+      <AuthInput label="Password" value="x" onChange={() => {}} showPasswordToggle />,
+    );
+    const reveal = doc.querySelector("button");
+    const style = styleOf(reveal);
+    // 18px icon + 13px each side = 44. `right` comes back by the same 13, so
+    // the icon's centre is where it was: 1 + 13 + 9 = 14 + 9.
+    expect(style).toContain("padding:13px");
+    expect(style).toContain("right:1px");
+  });
+
+  it("leaves the reveal in the tab order", () => {
+    const doc = staticDoc(
+      <AuthInput label="Password" value="x" onChange={() => {}} showPasswordToggle />,
+    );
+    const reveal = doc.querySelector("button");
+    expect(reveal?.getAttribute("tabindex")).toBeNull();
+    expect(reveal?.getAttribute("aria-label")).toBe("Show password");
+  });
+
+  it("makes the checkbox's whole label the target", () => {
+    const doc = staticDoc(
+      <AuthCheckbox id="terms" checked={false} onChange={() => {}} label="Terms" />,
+    );
+    expect(styleOf(doc.querySelector("label"))).toContain("padding:6px 0");
   });
 });
 

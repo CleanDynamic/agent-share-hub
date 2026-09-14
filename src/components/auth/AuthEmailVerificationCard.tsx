@@ -151,6 +151,9 @@ export function AuthEmailVerificationCard({
             style={{
               ...linkStyle,
               marginTop: "8px",
+              /* A standalone control, so it carries its own target rather than
+                 the 16px its text happens to be. */
+              padding: "6px 0",
               fontSize: "13px",
               fontWeight: 500,
               cursor: resendState === "sending" ? "default" : "pointer",
