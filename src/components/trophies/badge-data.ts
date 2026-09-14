@@ -1,3 +1,4 @@
+import { legacyTier, tierFill } from "@/lib/theme/progress"
 import type { LucideIcon } from "lucide-react"
 import {
   Award,
@@ -320,9 +321,30 @@ export const tierLabel: Record<Tier, string> = {
   platinum: "Platinum",
 }
 
+/**
+ * The four tiers, as grounds on the three-rung ladder — BG-P28b.
+ *
+ * WHAT THIS WAS: four `var(--tier-*)` custom properties. NONE OF THE FOUR WAS
+ * EVER DEFINED, in `index.css` or anywhere else, so every tier accent on this
+ * surface resolved to an invalid value and painted nothing. The rainbow this
+ * prompt was asked to collapse had already collapsed; it just did it silently.
+ *
+ * WHAT IT IS NOW: each tier resolves through `legacyTier()` onto one of the
+ * three rungs and yields that rung's GROUND. Four names into three rungs means
+ * silver and gold share the middle one — deliberately, because the top rung is
+ * the scarce one and spending it on both gold and platinum would double the
+ * amber in a trophy cabinet and halve what it is worth. `tierLabel` still
+ * renders beside every mark, so the rank is legible; it simply is not carried
+ * by a private colour any more.
+ *
+ * CALLERS THAT WANT THE MATCHING LABEL COLOUR must use `tierFill(legacyTier(x))`
+ * rather than pairing this value with an ink of their own: the top rung is only
+ * legal because its label is `--on-lit`, and amber-on-amber is what a caller
+ * gets by guessing.
+ */
 export const tierColorVar: Record<Tier, string> = {
-  bronze: "var(--tier-bronze)",
-  silver: "var(--tier-silver)",
-  gold: "var(--tier-gold)",
-  platinum: "var(--tier-platinum)",
+  bronze: tierFill(legacyTier("bronze")).background as string,
+  silver: tierFill(legacyTier("silver")).background as string,
+  gold: tierFill(legacyTier("gold")).background as string,
+  platinum: tierFill(legacyTier("platinum")).background as string,
 }

@@ -1,8 +1,32 @@
 import { useState } from "react"
 import { Info } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { xpText } from "@/lib/theme/progress"
 import { tokens } from "./tokens"
 import DiminishingMeter from "./diminishing-meter"
+
+/* ── BG-P28b ────────────────────────────────────────────────────────────────
+   THE LEDGER IS A DATA TABLE, and `data-visualization` applies to it even
+   though it is built from divs. Three things follow from that and none of them
+   is a recolour:
+
+   · THE XP COLUMN IS DM MONO WITH TABULAR NUMERALS. It was the body face at
+     weight 700, so "+120" and "+25" were different widths and the column's
+     right edge moved row to row — the one thing a column of figures must not
+     do. `xpText()` supplies the face, the numerals and a legal colour.
+   · THE FIGURE IS NOT COLOURED. It was `tokens.orange`, which resolves to
+     `--action` — "the primary thing to do" — spent on a number you cannot
+     press. Every row's award is the same KIND of thing, so colouring them says
+     nothing; `--text` for a full award and `--text2` for a diminished one is
+     the whole encoding, and it matches the struck-through base beside it.
+   · ROWS STRIPE IN `--recess`. Eight rows of icon + label + figure need a
+     horizontal guide for the eye to carry across; the hairline alone does not
+     do it once the list is scrolled. `--recess` is the system's inset ground
+     and is already measured against both text tokens in both rooms.
+   ────────────────────────────────────────────────────────────────────────── */
 
 export interface XpLedgerEntry {
   id: string
@@ -123,7 +147,9 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                   borderRadius: tokens.radiusCard,
                   background: tokens.shell,
                   border: tokens.borderStrong,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  // A shadow on a light ground and one on a dark ground are
+                  // not the same object; the scale is defined per theme.
+                  ...elevation.raised,
                   zIndex: 20,
                   ...tokens.glass,
                 }}
@@ -159,7 +185,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
               {g.label}
             </div>
 
-            {g.rows.map((row) => {
+            {g.rows.map((row, i) => {
               const diminished = typeof row.baseXp === "number" && row.baseXp > row.xp
               const Icon = row.icon
               return (
@@ -171,6 +197,8 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                     gap: 12,
                     padding: "11px 16px",
                     borderTop: tokens.borderSoft,
+                    // Striping, so the eye carries across a scrolled column.
+                    background: i % 2 === 1 ? t.recess : "transparent",
                   }}
                 >
                   <span
@@ -180,10 +208,10 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                       justifyContent: "center",
                       width: 30,
                       height: 30,
-                      borderRadius: 8,
-                      background: "rgba(255,255,255,0.06)",
+                      borderRadius: r.chip,
+                      background: t.glass2,
                       flexShrink: 0,
-                      color: tokens.text,
+                      color: tokens.textMuted,
                     }}
                   >
                     <Icon size={15} />
@@ -218,7 +246,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      fontFamily: tokens.fontMono,
+                      ...xpText(),
                       flexShrink: 0,
                     }}
                   >
@@ -226,8 +254,8 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                       <>
                         <span
                           style={{
+                            ...xpText("secondary"),
                             fontSize: 11,
-                            color: tokens.textFaint,
                             textDecoration: "line-through",
                           }}
                         >
@@ -243,9 +271,9 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                     )}
                     <span
                       style={{
+                        ...xpText(diminished ? "secondary" : "primary"),
                         fontSize: 13,
-                        fontWeight: 700,
-                        color: diminished ? tokens.textMuted : tokens.orange,
+                        fontWeight: 500,
                       }}
                     >
                       {`+${row.xp}`}

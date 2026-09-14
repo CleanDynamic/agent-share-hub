@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { PiggyBank, X } from "lucide-react"
 import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface EligibilityNoticeProps {
   isVerified: boolean
@@ -30,8 +33,15 @@ export default function EligibilityNotice({
         gap: 14,
         padding: "16px 18px",
         borderRadius: tokens.radiusCard,
-        background: "rgba(232,87,26,0.08)",
-        border: "0.5px solid rgba(232,87,26,0.30)",
+        /**
+         * BG-P28b. This was an orange wash inside an orange border —
+         * `--action` twice, on a notice that is not an action but a statement
+         * about when XP begins. It is the system's quiet inset surface now, so
+         * it reads as information; the one button inside it keeps `--action`,
+         * which is where the primary belongs.
+         */
+        background: t.glass2,
+        border: `0.5px solid ${t.line}`,
         fontFamily: tokens.fontSans,
       }}
       role="status"
@@ -43,12 +53,12 @@ export default function EligibilityNotice({
           justifyContent: "center",
           width: 36,
           height: 36,
-          borderRadius: 10,
-          background: "rgba(232,87,26,0.16)",
+          borderRadius: r.media,
+          background: tierFill("rare").background,
           flexShrink: 0,
         }}
       >
-        <PiggyBank size={20} color={tokens.orange} />
+        <PiggyBank size={20} color={t.text2} />
       </span>
 
       <div style={{ flex: 1, minWidth: 0, paddingRight: 18 }}>
@@ -59,7 +69,9 @@ export default function EligibilityNotice({
           Verify your email and your XP switches on after your first 48 hours. Everything you do now
           is already banked.
           {!isVerified && hoursRemaining > 0 && (
-            <span style={{ color: tokens.amber }}>{` ~${Math.round(hoursRemaining)}h to go.`}</span>
+            // Was `color: tokens.amber` — amber TYPE, 3.01:1 on the
+            // Exhibition ground. A countdown is data, so it is set as data.
+            <span style={xpText()}>{` ~${Math.round(hoursRemaining)}h to go.`}</span>
           )}
         </p>
 
@@ -70,11 +82,11 @@ export default function EligibilityNotice({
             style={{
               marginTop: 12,
               padding: "8px 16px",
-              borderRadius: tokens.radiusPill,
+              borderRadius: r.control,
               border: "none",
               cursor: "pointer",
-              background: tokens.orangeGradient,
-              color: "#fff",
+              background: t.action,
+              color: t.onAction,
               fontFamily: tokens.fontSans,
               fontSize: 13,
               fontWeight: 600,

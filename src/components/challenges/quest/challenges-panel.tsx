@@ -23,6 +23,9 @@ import type {
 import ClaimButton from "./claim-button"
 import WeeklyChallengeCard from "./weekly-challenge-card"
 import ChallengeHistoryRow from "./challenge-history-row"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { levelLamp, tierFill } from "@/lib/theme/progress"
 
 export interface ChallengesPanelProps {
   dailies: Challenge[]
@@ -198,9 +201,12 @@ function TabButton({
         <span
           className="flex h-4 min-w-4 items-center justify-center px-1 font-mono text-[10px] font-bold"
           style={{
-            borderRadius: radius.pill,
-            background: semantic.xp,
-            color: "#FFFFFF",
+            // The count badge is an amber FILL with its measured label on it —
+            // it was amber with `#FFFFFF`, which is illegal on Exhibition and
+            // low-contrast on Dusk.
+            borderRadius: r.chip,
+            background: tierFill("highest").background,
+            color: tierFill("highest").color,
           }}
         >
           {badge}
@@ -211,9 +217,10 @@ function TabButton({
           aria-label="new"
           className="absolute -right-0.5 -top-0.5 h-2 w-2"
           style={{
-            borderRadius: radius.pill,
-            background: colors.orange,
-            boxShadow: `0 0 8px ${withAlpha(colors.orange, 0.8)}`,
+            // "Something new arrived" is progress, not the primary action.
+            // Its 8px orange glow went: a glow has nothing to glow against on
+            // a luminous grey ground.
+            ...levelLamp({ size: 8 }),
           }}
         />
       )}

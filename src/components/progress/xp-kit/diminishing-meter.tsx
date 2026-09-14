@@ -1,4 +1,5 @@
 import { tokens } from "./tokens"
+import { t } from "@/lib/theme/tokens"
 
 export interface DiminishingMeterProps {
   /** e.g. "like", "download", "comment" */
@@ -48,7 +49,7 @@ export default function DiminishingMeter({
               width: 14,
               height: 5,
               borderRadius: tokens.radiusPill,
-              background: i < activeSegments ? color : "rgba(255,255,255,0.12)",
+              background: i < activeSegments ? color : t.line,
               transition: "background 200ms ease-out",
             }}
           />

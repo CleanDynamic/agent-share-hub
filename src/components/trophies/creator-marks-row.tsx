@@ -1,5 +1,8 @@
 import type { CreatorMark } from "./badge-data"
 import { CreatorMarkTile } from "./creator-mark-tile"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 interface CreatorMarksRowProps {
   marks: CreatorMark[]
@@ -22,14 +25,32 @@ export function CreatorMarksRow({ marks }: CreatorMarksRowProps) {
     <section aria-labelledby="creator-marks-heading" className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <h2 id="creator-marks-heading" className="text-lg font-semibold tracking-tight text-foreground">
+          <h2
+            id="creator-marks-heading"
+            className="text-lg font-semibold tracking-tight"
+            style={{ color: t.text }}
+          >
             Your marks
           </h2>
-          <span className="rounded-full bg-mark/15 px-2 py-0.5 text-xs font-medium text-mark">
+          {/* BG-P28b: was `bg-mark/15 text-mark`, and neither --mark nor its
+              Tailwind registration exists, so this chip has always rendered
+              unstyled. It is a count, so it is set as data on the ladder's
+              middle rung — the earned MARKS carry the light, not the tally. */}
+          <span
+            className="px-2 py-0.5 text-xs font-medium"
+            style={{
+              borderRadius: r.chip,
+              background: tierFill("rare").background,
+              border: `1px solid ${tierFill("rare").borderColor}`,
+              ...xpText(),
+            }}
+          >
             {earnedCount} earned
           </span>
         </div>
-        <p className="hidden text-sm text-muted-foreground sm:block">Warm milestones from your first steps</p>
+        <p className="hidden text-sm sm:block" style={{ color: t.text2 }}>
+          Warm milestones from your first steps
+        </p>
       </div>
 
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">

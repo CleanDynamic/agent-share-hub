@@ -13,15 +13,45 @@ import {
   Trophy,
   Sparkles,
 } from "lucide-react"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { progressFill, tierFill, xpText } from "@/lib/theme/progress"
 import {
   colors,
-  orangeGradient,
   radius,
   semantic,
   shellSurface,
   withAlpha,
 } from "./tokens"
 import type { QuestStep, CreatorMark } from "./types"
+
+/* ── BG-P28b ────────────────────────────────────────────────────────────────
+   THREE RULES DECIDE EVERY COLOUR BELOW, and each replaced a hue that was
+   saying the wrong thing.
+
+   1. XP IS NEVER AMBER TYPE. Four figures here were `color: semantic.xp`,
+      which after the token repoint resolves to `--lit` — amber text, 3.01:1 on
+      the Exhibition ground and the one thing the theme forbids outright. They
+      take `xpText()` now: DM Mono, tabular, in `--text` or `--text2`. The amber
+      moved to the things it can legally be — the quest medallion and the
+      progress bar's fill, both of which are FILLS.
+
+   2. A COMPLETED STEP IS `--evidence`, which is what the task asks for and
+      what the plaque already uses for "this worked". The tick was an amber
+      disc with a white glyph; it is a solid `--evidence` disc with the glyph
+      in `--bg`, a pair that measures over 5:1 in both rooms (the token
+      inverts across themes, and so does the ground, so they stay opposed).
+
+   3. "GO" IS SECONDARY, "CLAIM" IS PRIMARY. The theme allows ONE primary
+      action per view. Every active step used to render a `--action`-filled
+      "Go", so a quest with three open steps shipped three primaries, and the
+      daily nudge's Claim — the one genuinely primary act on this page — had
+      to compete with them. Go is a glass secondary with a `--line` border now.
+
+   The orange glow box-shadows went with them: a coloured glow under a button
+   is decoration the system does not sanction, and on Exhibition it had nothing
+   to glow against.
+   ────────────────────────────────────────────────────────────────────────── */
 
 export interface QuestChecklistProps {
   steps: QuestStep[]
@@ -69,7 +99,7 @@ export default function QuestChecklist({
 
   // ---- Final celebration state ----
   if (allDone && completedMark) {
-    const accent = colors.orange
+    const accent = t.lit
     return (
       <section
         aria-label="Quest complete"
@@ -81,7 +111,7 @@ export default function QuestChecklist({
           className="pointer-events-none absolute inset-0"
           style={{
             background: `radial-gradient(120% 90% at 50% 0%, ${withAlpha(
-              colors.orange,
+              t.lit,
               0.18,
             )} 0%, transparent 60%)`,
           }}
@@ -89,14 +119,15 @@ export default function QuestChecklist({
         <div className="relative flex flex-col items-center gap-4">
           <div
             className="flex h-20 w-20 items-center justify-center"
+            data-bg-animated=""
             style={{
-              borderRadius: radius.pill,
-              background: orangeGradient,
-              boxShadow: `0 10px 40px ${withAlpha(colors.orange, 0.5)}`,
-              animation: "qc-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both",
+              // A circle, so --r-full is the legal step for it.
+              borderRadius: r.full,
+              background: tierFill("highest").background,
+              animation: "bgQuestPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both",
             }}
           >
-            <Trophy size={36} strokeWidth={2} color="#FFFFFF" />
+            <Trophy size={36} strokeWidth={2} color={tierFill("highest").color} />
           </div>
 
           <div>
@@ -117,19 +148,20 @@ export default function QuestChecklist({
           {/* CreatorMark pop-in */}
           <div
             className="mt-1 flex items-center gap-3 px-4 py-2.5"
+            data-bg-animated=""
             style={{
-              borderRadius: radius.pill,
-              background: withAlpha(accent, 0.1),
-              border: `0.5px solid ${withAlpha(accent, 0.4)}`,
+              borderRadius: r.chip,
+              background: tierFill("rare").background,
+              border: `0.5px solid ${tierFill("rare").borderColor}`,
               animation:
-                "qc-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.25s both",
+                "bgQuestPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.25s both",
             }}
           >
             <span
               className="flex h-7 w-7 items-center justify-center"
-              style={{ borderRadius: radius.pill, background: accent }}
+              style={{ borderRadius: r.full, background: accent }}
             >
-              <Sparkles size={15} color="#FFFFFF" strokeWidth={2.5} />
+              <Sparkles size={15} color={t.onLit} strokeWidth={2.5} />
             </span>
             <span
               className="text-sm font-semibold"
@@ -137,21 +169,12 @@ export default function QuestChecklist({
             >
               {completedMark.name}
             </span>
-            <span
-              className="font-mono text-xs"
-              style={{ color: semantic.xp }}
-            >
+            <span className="text-xs" style={xpText("secondary")}>
               +{totalXp} XP
             </span>
           </div>
         </div>
 
-        <style>{`
-          @keyframes qc-pop {
-            0% { transform: scale(0.4); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-        `}</style>
       </section>
     )
   }
@@ -165,11 +188,10 @@ export default function QuestChecklist({
             className="flex h-10 w-10 items-center justify-center"
             style={{
               borderRadius: radius.card,
-              background: orangeGradient,
-              boxShadow: `0 6px 18px ${withAlpha(colors.orange, 0.35)}`,
+              background: tierFill("highest").background,
             }}
           >
-            <Trophy size={20} color="#FFFFFF" strokeWidth={2} />
+            <Trophy size={20} color={tierFill("highest").color} strokeWidth={2} />
           </span>
           <div>
             <h2
@@ -180,7 +202,7 @@ export default function QuestChecklist({
             </h2>
             <p className="text-xs" style={{ color: colors.textSecondary }}>
               {completedCount} of {steps.length} steps ·{" "}
-              <span className="font-mono" style={{ color: semantic.xp }}>
+              <span style={xpText("secondary")}>
                 {earnedXp}/{totalXp} XP
               </span>
             </p>
@@ -194,7 +216,7 @@ export default function QuestChecklist({
             aria-label="Dismiss quest"
             className="flex h-7 w-7 items-center justify-center transition-colors"
             style={{
-              borderRadius: radius.pill,
+              borderRadius: r.full,
               color: colors.textMuted,
               border: `0.5px solid ${colors.borderSoft}`,
             }}
@@ -215,8 +237,7 @@ export default function QuestChecklist({
             style={{
               width: `${pct}%`,
               borderRadius: radius.pill,
-              background: orangeGradient,
-              boxShadow: `0 0 12px ${withAlpha(colors.orange, 0.6)}`,
+              background: progressFill().background,
             }}
           />
         </div>
@@ -247,9 +268,9 @@ function StepRow({
       >
         <span
           className="flex h-5 w-5 items-center justify-center"
-          style={{ borderRadius: radius.pill, background: semantic.xp }}
+          style={{ borderRadius: r.full, background: semantic.completed }}
         >
-          <Check size={12} color="#FFFFFF" strokeWidth={3} />
+          <Check size={12} color={t.bg} strokeWidth={3} />
         </span>
         <span
           className="flex-1 text-sm line-through"
@@ -257,7 +278,7 @@ function StepRow({
         >
           {step.label}
         </span>
-        <span className="font-mono text-xs" style={{ color: colors.textMuted }}>
+        <span className="text-xs" style={xpText("secondary")}>
           +{step.xp}
         </span>
       </li>
@@ -270,16 +291,16 @@ function StepRow({
         className="flex items-center gap-3 px-3 py-3"
         style={{
           borderRadius: radius.card,
-          background: withAlpha(colors.orange, 0.08),
-          border: `0.5px solid ${withAlpha(colors.orange, 0.35)}`,
+          background: tierFill("rare").background,
+          border: `0.5px solid ${tierFill("rare").borderColor}`,
         }}
       >
         <span
           className="flex h-7 w-7 items-center justify-center"
           style={{
             borderRadius: radius.card,
-            background: withAlpha(colors.orange, 0.18),
-            color: colors.orange,
+            background: t.glass2,
+            color: colors.textSecondary,
           }}
         >
           <StepIcon id={step.id} />
@@ -291,10 +312,7 @@ function StepRow({
           >
             {step.label}
           </span>
-          <span
-            className="ml-2 font-mono text-xs"
-            style={{ color: semantic.xp }}
-          >
+          <span className="ml-2 text-xs" style={xpText("secondary")}>
             +{step.xp} XP
           </span>
         </div>
@@ -303,10 +321,12 @@ function StepRow({
           onClick={() => onGo?.(step)}
           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-transform hover:scale-105"
           style={{
-            borderRadius: radius.pill,
-            background: orangeGradient,
-            color: "#FFFFFF",
-            boxShadow: `0 4px 14px ${withAlpha(colors.orange, 0.35)}`,
+            // SECONDARY. The page's one primary is the claim button; see the
+            // note at the top of this file.
+            borderRadius: r.control,
+            background: t.glass,
+            color: t.text,
+            border: `0.5px solid ${t.line}`,
           }}
         >
           Go
@@ -325,14 +345,14 @@ function StepRow({
       <span
         className="flex h-5 w-5 items-center justify-center"
         style={{
-          borderRadius: radius.pill,
-          border: `1.5px solid ${colors.locked}`,
+          borderRadius: r.full,
+          border: `1.5px solid ${colors.borderSoft}`,
         }}
       />
       <span className="flex-1 text-sm" style={{ color: colors.locked }}>
         {step.label}
       </span>
-      <span className="font-mono text-xs" style={{ color: colors.locked }}>
+      <span className="text-xs" style={xpText("secondary")}>
         +{step.xp}
       </span>
     </li>

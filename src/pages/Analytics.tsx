@@ -8,6 +8,8 @@ import { ShellHeader } from "@/components/shell/ShellHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Zap } from "lucide-react";
 import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -300,9 +302,9 @@ export default function Analytics() {
               onLoadMore={() => xpEventsQ.refetch()}
             />
             <SectionHeader title="Challenges completed" />
-            <div style={{ background: "rgba(52,52,66,0.45)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.10)", overflow: "hidden" }}>
+            <div style={{ background: t.glass2, borderRadius: r.control, border: `0.5px solid ${t.line}`, overflow: "hidden" }}>
               {(historyQ.data ?? []).length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                <div style={{ padding: 20, textAlign: "center", color: t.text2, fontSize: 13 }}>
                   No challenges claimed yet.
                 </div>
               ) : (

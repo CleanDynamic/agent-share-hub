@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState } from "react"
 import { Check, Sparkles } from "lucide-react"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { xpText } from "@/lib/theme/progress"
 import {
   colors,
-  orangeGradient,
   radius,
-  semantic,
   prefersReducedMotion,
 } from "./tokens"
 
@@ -34,6 +35,17 @@ export interface ClaimButtonProps {
 /**
  * ClaimButton — press → particle burst → floating +XP.
  * Honours prefers-reduced-motion (instant, no particles).
+ *
+ * THIS IS THE PAGE'S ONE PRIMARY ACTION (BG-P28b), which is why it keeps the
+ * `--action` fill while the quest list's "Go" buttons stepped down to glass
+ * secondaries. Claiming is the one thing on `/analytics` you press to make
+ * something happen.
+ *
+ * THE FLOATING REWARD WAS AMBER TYPE — `color: semantic.xp`, which resolves to
+ * `--lit` and measures 3.01:1 on Exhibition. It is `xpText()` now, like every
+ * other XP figure in the product. The particle palette dropped its literal
+ * `#FFFFFF` for the same reason: white motes are invisible against a luminous
+ * grey room.
  */
 export default function ClaimButton({
   xp,
@@ -57,7 +69,9 @@ export default function ClaimButton({
     const burst: Particle[] = Array.from({ length: 14 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.4
       const dist = 26 + Math.random() * 30
-      const palette = [colors.orange, colors.amber, semantic.xp, "#FFFFFF"]
+      // The light and the action, which is what a claim awards and what it
+      // is. No white: a white mote has nothing to show against on Exhibition.
+      const palette = [t.lit, t.action, t.lit, t.action]
       return {
         id: seq.current++,
         dx: Math.cos(angle) * dist,
@@ -90,17 +104,12 @@ export default function ClaimButton({
         aria-label={claimed ? claimedLabel : `${label} ${xp} XP`}
         className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold transition-transform"
         style={{
-          borderRadius: radius.pill,
-          color: claimed ? colors.textSecondary : "#FFFFFF",
-          background: claimed ? colors.input : orangeGradient,
-          border: claimed
-            ? `0.5px solid ${colors.borderSoft}`
-            : "0.5px solid rgba(255,255,255,0.18)",
+          borderRadius: r.control,
+          color: claimed ? colors.textSecondary : t.onAction,
+          background: claimed ? colors.input : t.action,
+          border: `0.5px solid ${claimed ? colors.borderSoft : t.action}`,
           cursor: claimed ? "default" : "pointer",
           transform: pressing ? "scale(0.94)" : "scale(1)",
-          boxShadow: claimed
-            ? "none"
-            : "0 4px 14px rgba(232,87,26,0.35)",
         }}
       >
         {claimed ? (
@@ -117,13 +126,15 @@ export default function ClaimButton({
           <span
             key={p.id}
             aria-hidden
+            data-bg-animated=""
             style={{
               position: "absolute",
               width: p.size,
               height: p.size,
-              borderRadius: radius.pill,
+              // A mote is a circle.
+              borderRadius: r.full,
               background: p.color,
-              animation: "qb-particle 0.6s ease-out forwards",
+              animation: "bgClaimParticle 0.6s ease-out forwards",
               // @ts-expect-error custom props
               "--dx": `${p.dx}px`,
               "--dy": `${p.dy}px`,
@@ -138,12 +149,12 @@ export default function ClaimButton({
           <span
             key={f.id}
             aria-hidden
-            className="text-sm font-bold font-mono"
+            data-bg-animated=""
+            className="text-sm font-bold"
             style={{
+              ...xpText(),
               position: "absolute",
-              color: semantic.xp,
-              textShadow: "0 2px 8px rgba(0,0,0,0.45)",
-              animation: "qb-float 0.9s ease-out forwards",
+              animation: "bgClaimFloat 0.9s ease-out forwards",
             }}
           >
             {"+"}
@@ -152,20 +163,6 @@ export default function ClaimButton({
         ))}
       </span>
 
-      <style>{`
-        @keyframes qb-particle {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
-        }
-        @keyframes qb-float {
-          0%   { transform: translateY(0); opacity: 0; }
-          18%  { opacity: 1; }
-          100% { transform: translateY(-34px); opacity: 0; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .relative [style*="qb-particle"], .relative [style*="qb-float"] { display: none !important; }
-        }
-      `}</style>
     </div>
   )
 }

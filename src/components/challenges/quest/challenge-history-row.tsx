@@ -1,5 +1,8 @@
 import { Check } from "lucide-react"
 import { colors, radius, semantic, tracks, withAlpha } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { xpText } from "@/lib/theme/progress"
 import type { ChallengeHistoryEntry } from "./types"
 
 export interface ChallengeHistoryRowProps {
@@ -9,7 +12,15 @@ export interface ChallengeHistoryRowProps {
 export default function ChallengeHistoryRow({
   entry,
 }: ChallengeHistoryRowProps) {
-  const accent = entry.track ? tracks[entry.track] : colors.teal
+  /**
+   * A ROW IN THIS LIST IS A COMPLETED CHALLENGE, so it is `--evidence` — the
+   * token the plaque already uses for "this worked" — rather than the track's
+   * own colour. The four tracks used to carry four hues; they resolve to one
+   * light now (see the ladder), which would have made every row amber and
+   * every row's label amber TYPE. Evidence says the true thing and says it
+   * legally in both rooms.
+   */
+  const accent = colors.teal
   return (
     <div
       className="flex items-center gap-3 px-3 py-2.5"
@@ -20,8 +31,8 @@ export default function ChallengeHistoryRow({
       <span
         className="flex h-6 w-6 shrink-0 items-center justify-center"
         style={{
-          borderRadius: radius.pill,
-          background: withAlpha(accent, 0.16),
+          borderRadius: r.full,
+          background: t.evidenceFill,
           color: accent,
         }}
       >
@@ -36,7 +47,7 @@ export default function ChallengeHistoryRow({
           {entry.title}
         </p>
         {entry.track && (
-          <span className="text-xs" style={{ color: accent }}>
+          <span className="text-xs" style={{ color: colors.textSecondary }}>
             {entry.track}
           </span>
         )}
@@ -50,7 +61,7 @@ export default function ChallengeHistoryRow({
       </span>
       <span
         className="w-14 shrink-0 text-right font-mono text-xs font-semibold"
-        style={{ color: semantic.xp }}
+        style={xpText("secondary")}
       >
         +{entry.xp} XP
       </span>
