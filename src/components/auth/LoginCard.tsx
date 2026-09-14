@@ -7,6 +7,9 @@ import { AuthDivider } from "./AuthDivider";
 import { AuthInput } from "./AuthInput";
 import { AuthCheckbox } from "./AuthCheckbox";
 import { AuthButton } from "./AuthButton";
+import { t } from "@/lib/theme/tokens";
+import { fieldMessageStyle } from "@/lib/theme/controls";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type LoginMethod = "email" | OAuthProvider;
 
@@ -52,9 +55,16 @@ export function LoginCard({
 
   const isFormValid = emailOrUsername.trim() && password.trim();
 
+  /* UNDERLINED AT REST, NOT ONLY ON HOVER. A link told apart from the text
+     around it by colour alone fails WCAG 1.4.1, and a touch reader never gets
+     the hover that would reveal it — so the affordance is visible before anyone
+     interacts. This is the kit's `link` treatment, spelled out because these are
+     router links rather than buttons. */
   const footerLinkStyle = {
-    color: "#E8571A",
-    textDecoration: "none",
+    color: t.action,
+    textDecoration: "underline",
+    textUnderlineOffset: "4px",
+    textDecorationThickness: "1px",
   };
 
   return (
@@ -71,10 +81,10 @@ export function LoginCard({
             border: "none",
             padding: 0,
             marginBottom: "16px",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: FIGTREE,
             fontSize: "13px",
             fontWeight: 500,
-            color: "rgba(255, 255, 255, 0.55)",
+            color: t.text2,
             cursor: "pointer",
           }}
         >
@@ -126,12 +136,14 @@ export function LoginCard({
                   background: "none",
                   border: "none",
                   padding: 0,
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: FIGTREE,
                   fontSize: "12px",
                   fontWeight: 500,
-                  color: "#E8571A",
+                  color: t.action,
                   cursor: "pointer",
-                  textDecoration: "none",
+                  textDecoration: "underline",
+                  textUnderlineOffset: "4px",
+                  textDecorationThickness: "1px",
                 }}
               >
                 Forgot password?
@@ -141,13 +153,12 @@ export function LoginCard({
         </div>
 
         {error && (
+          /* Under the two fields it is about, never only a toast. */
           <p
+            role="alert"
             style={{
+              ...fieldMessageStyle,
               marginTop: "14px",
-              fontFamily: "Figtree, sans-serif",
-              fontSize: "12px",
-              fontWeight: 400,
-              color: "#ef4444",
               textAlign: "center",
             }}
           >
@@ -169,10 +180,10 @@ export function LoginCard({
         style={{
           marginTop: "20px",
           textAlign: "center",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "12px",
           fontWeight: 400,
-          color: "rgba(255, 255, 255, 0.55)",
+          color: t.text2,
         }}
       >
         New here?{" "}

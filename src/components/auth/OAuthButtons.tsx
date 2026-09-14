@@ -1,6 +1,19 @@
 import { Loader2, Github } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { buttonSlot, buttonStyle } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type OAuthProvider = "google" | "github" | "x";
+
+/* THE PROVIDER MARKS ARE UNTOUCHED, DELIBERATELY. Google's four-colour G and
+   X's wordmark are other companies' trademarks, reproduced under brand
+   guidelines that specify their colours exactly; repainting either onto a
+   buildgallery token would be both off-brand for them and legally wrong. They
+   are the one place on these pages where a raw hex is correct. GitHub's mark is
+   monochrome by its own guidelines and takes `currentColor`, which is now
+   `--text` — the same thing it has always been, one token later. */
 
 // Google G Icon SVG
 function GoogleIcon() {
@@ -35,99 +48,86 @@ function XIcon() {
   );
 }
 
+interface OAuthButtonProps {
+  label: string;
+  mark: ReactNode;
+  loading: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}
+
+/**
+ * One provider button, on BG-P07's SECONDARY treatment: `--glass` fill,
+ * `--line` hairline, `--text` label.
+ *
+ * A SECONDARY, NOT A THIRD TREATMENT. These three sit directly above the card's
+ * one primary action, and the theme allows exactly one primary per view — so
+ * the question is not what colour they should be but which rung of the existing
+ * ladder they are on, and "another way to do the same thing as the button
+ * below" is the definition of a secondary. `--glass` here is a translucent
+ * FILL and not a blur: this button is inside a blurred card, and a second
+ * blurred layer inside the first is the nesting the theme forbids.
+ *
+ * Each button owns its own interactive state, which is why this is a component
+ * rather than three copies of a style object with three sets of mouse handlers
+ * — the version this replaces wrote hover colours straight onto `currentTarget`,
+ * so a button hovered while its sibling was loading kept the hover paint.
+ */
+function OAuthButton({ label, mark, loading, disabled, onClick }: OAuthButtonProps) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>({}, { disabled });
+
+  return (
+    <button
+      type="button"
+      data-visual-slot={buttonSlot("secondary")}
+      {...handlers}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      style={{
+        ...buttonStyle("secondary", state),
+        height: "48px",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "10px",
+        fontFamily: FIGTREE,
+        fontSize: "13px",
+        fontWeight: 600,
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      {loading ? <Loader2 className="animate-spin" size={18} /> : mark}
+      <span>{label}</span>
+    </button>
+  );
+}
+
 interface OAuthButtonsProps {
   onOAuthClick: (provider: OAuthProvider) => void;
   loadingProvider: OAuthProvider | null;
 }
 
 export function OAuthButtons({ onOAuthClick, loadingProvider }: OAuthButtonsProps) {
-  const buttonStyle = {
-    height: "48px",
-    width: "100%",
-    background: "rgba(255, 255, 255, 0.04)",
-    border: "0.5px solid rgba(255, 255, 255, 0.14)",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "10px",
-    cursor: "pointer",
-    transition: "background 180ms, border-color 180ms, transform 100ms",
-    fontFamily: "Figtree, sans-serif",
-    fontSize: "13px",
-    fontWeight: 600,
-    color: "rgba(255, 255, 255, 0.92)",
-  };
-
-  const handleHover = (e: React.MouseEvent<HTMLButtonElement>, hover: boolean) => {
-    const target = e.currentTarget;
-    if (hover) {
-      target.style.background = "rgba(255, 255, 255, 0.08)";
-      target.style.borderColor = "rgba(255, 255, 255, 0.20)";
-    } else {
-      target.style.background = "rgba(255, 255, 255, 0.04)";
-      target.style.borderColor = "rgba(255, 255, 255, 0.14)";
-    }
-  };
+  const providers: { id: OAuthProvider; label: string; mark: ReactNode }[] = [
+    { id: "google", label: "Continue with Google", mark: <GoogleIcon /> },
+    { id: "github", label: "Continue with GitHub", mark: <Github size={18} /> },
+    { id: "x", label: "Continue with X", mark: <XIcon /> },
+  ];
 
   return (
     <div className="flex flex-col" style={{ gap: "8px" }}>
-      <button
-        type="button"
-        style={buttonStyle}
-        onMouseEnter={(e) => handleHover(e, true)}
-        onMouseLeave={(e) => handleHover(e, false)}
-        onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-        onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        onClick={() => onOAuthClick("google")}
-        disabled={loadingProvider !== null}
-        aria-label="Continue with Google"
-      >
-        {loadingProvider === "google" ? (
-          <Loader2 className="animate-spin" size={18} />
-        ) : (
-          <GoogleIcon />
-        )}
-        <span>Continue with Google</span>
-      </button>
-
-      <button
-        type="button"
-        style={buttonStyle}
-        onMouseEnter={(e) => handleHover(e, true)}
-        onMouseLeave={(e) => handleHover(e, false)}
-        onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-        onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        onClick={() => onOAuthClick("github")}
-        disabled={loadingProvider !== null}
-        aria-label="Continue with GitHub"
-      >
-        {loadingProvider === "github" ? (
-          <Loader2 className="animate-spin" size={18} />
-        ) : (
-          <Github size={18} />
-        )}
-        <span>Continue with GitHub</span>
-      </button>
-
-      <button
-        type="button"
-        style={buttonStyle}
-        onMouseEnter={(e) => handleHover(e, true)}
-        onMouseLeave={(e) => handleHover(e, false)}
-        onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
-        onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        onClick={() => onOAuthClick("x")}
-        disabled={loadingProvider !== null}
-        aria-label="Continue with X"
-      >
-        {loadingProvider === "x" ? (
-          <Loader2 className="animate-spin" size={18} />
-        ) : (
-          <XIcon />
-        )}
-        <span>Continue with X</span>
-      </button>
+      {providers.map((provider) => (
+        <OAuthButton
+          key={provider.id}
+          label={provider.label}
+          mark={provider.mark}
+          loading={loadingProvider === provider.id}
+          disabled={loadingProvider !== null}
+          onClick={() => onOAuthClick(provider.id)}
+        />
+      ))}
     </div>
   );
 }

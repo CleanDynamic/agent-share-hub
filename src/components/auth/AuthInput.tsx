@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, Check, X } from "lucide-react";
 
+import { fieldMessageStyle, fieldStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { eyebrow, FIGTREE } from "@/lib/theme/type";
+
 export interface InputValidation {
   state: "idle" | "checking" | "valid" | "invalid";
   message?: string;
@@ -20,6 +24,28 @@ interface AuthInputProps {
   autoComplete?: string;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   The auth field, on BG-P07's field treatment. The props are unchanged: this
+   component's API is what every auth card calls, and a restyle that moved it
+   would be a rewrite of six cards for no visual gain.
+
+   `fieldStyle()` is the whole paint — `--recess` well, `--line` hairline,
+   `--action` once focused, `--cat-breakage` when invalid — and it is the same
+   object `ui/input.tsx` spends, so a field here and a field in the workspace
+   are one control rather than two that resemble each other.
+
+   TWO FOCUS FACTS, NOT ONE. A mouse click brightens the border to `--action`;
+   only a keyboard focus adds the ring. That is why `focused` and `keyboardFocus`
+   are separate states rather than one: `fieldStyle` takes `focusVisible` for
+   the ring, and the resting-border override below is what keeps the pointer
+   case looking the way it always has.
+
+   THE iOS RULE IS UNTOUCHED. `index.css` forces 16px on every `input` below
+   768px so mobile Safari does not zoom the viewport on focus and never zoom
+   back. Nothing here sets a font size that could outrank it — the 14px below is
+   the desktop size, and the `!important` in the stylesheet wins on the phone.
+   ──────────────────────────────────────────────────────────────────────────── */
+
 export function AuthInput({
   label,
   type = "text",
@@ -34,17 +60,15 @@ export function AuthInput({
   autoComplete,
 }: AuthInputProps) {
   const [focused, setFocused] = useState(false);
+  const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const inputType = showPasswordToggle ? (showPassword ? "text" : "password") : type;
+  const invalid = validation?.state === "invalid";
 
   const labelStyle = {
-    fontFamily: "Figtree, sans-serif",
-    fontSize: "11px",
-    fontWeight: 600,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase" as const,
-    color: "rgba(255, 255, 255, 0.55)",
+    ...eyebrow,
+    color: t.text2,
     paddingBottom: "6px",
     display: "block",
   };
@@ -56,27 +80,24 @@ export function AuthInput({
   };
 
   const inputStyle = {
+    ...fieldStyle({ invalid, focusVisible: keyboardFocus }),
+    /* A pointer focus keeps the accent border it has always had; only the ring
+       above is reserved for the keyboard. Invalid outranks both. */
+    ...(focused && !invalid ? { borderColor: t.action } : null),
     height: "48px",
     width: "100%",
-    background: "rgba(82, 82, 100, 0.50)",
-    border: focused
-      ? "1px solid #E8571A"
-      : validation?.state === "invalid"
-      ? "1px solid #ef4444"
-      : "0.5px solid rgba(255, 255, 255, 0.14)",
-    borderRadius: "10px",
     padding: showPasswordToggle || validation ? "0 44px 0 14px" : "0 14px",
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: FIGTREE,
     fontSize: "14px",
     fontWeight: 400,
-    color: "rgba(255, 255, 255, 0.92)",
-    outline: "none",
-    transition: "border-color 180ms",
   };
 
+  /* The placeholder, which is the one thing an inline style cannot reach. The
+     rule already existed; only its colour moved, onto the token that means
+     "absent content" everywhere else in the kit. */
   const placeholderStyle = `
     .auth-input::placeholder {
-      color: rgba(255, 255, 255, 0.40);
+      color: var(--text2);
       font-family: Figtree, sans-serif;
       font-size: 14px;
       font-weight: 400;
@@ -86,25 +107,29 @@ export function AuthInput({
   const iconStyle = {
     position: "absolute" as const,
     right: "14px",
-    color: "rgba(255, 255, 255, 0.55)",
+    color: t.text2,
     cursor: showPasswordToggle ? "pointer" : "default",
+    display: "flex",
+    alignItems: "center",
   };
 
   const helperStyle = {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: FIGTREE,
     fontSize: "11px",
     fontWeight: 400,
     fontStyle: "italic" as const,
-    color: "rgba(255, 255, 255, 0.45)",
+    color: t.text2,
     marginTop: "6px",
   };
 
+  /* Beneath the field, always — never only a toast. Breakage red is legal as
+     text on both grounds (≥4.83 Exhibition, ≥5.75 Dusk), which is what lets the
+     message and the border share one token; a confirmation is `--evidence`, the
+     token that means "it worked" everywhere else. */
   const validationMessageStyle = {
-    fontFamily: "Figtree, sans-serif",
-    fontSize: "11px",
-    fontWeight: 400,
+    ...fieldMessageStyle,
     marginTop: "6px",
-    color: validation?.state === "valid" ? "#2EC4B6" : "#ef4444",
+    color: validation?.state === "valid" ? t.evidence : t.catBreakage,
   };
 
   return (
@@ -120,9 +145,19 @@ export function AuthInput({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             style={inputStyle}
-            onFocus={() => setFocused(true)}
+            onFocus={(event) => {
+              setFocused(true);
+              let visible = true;
+              try {
+                visible = event.currentTarget.matches(":focus-visible");
+              } catch {
+                /* :focus-visible unsupported. Show the ring rather than hide it. */
+              }
+              if (visible) setKeyboardFocus(true);
+            }}
             onBlur={() => {
               setFocused(false);
+              setKeyboardFocus(false);
               onBlur?.();
             }}
             required={required}
@@ -133,7 +168,7 @@ export function AuthInput({
           {showPasswordToggle && (
             <button
               type="button"
-              style={iconStyle}
+              style={{ ...iconStyle, background: "none", border: "none", padding: 0 }}
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
               aria-label={showPassword ? "Hide password" : "Show password"}
@@ -147,10 +182,10 @@ export function AuthInput({
                 <Loader2 size={16} className="animate-spin" />
               )}
               {validation.state === "valid" && (
-                <Check size={16} style={{ color: "#2EC4B6" }} />
+                <Check size={16} style={{ color: t.evidence }} />
               )}
               {validation.state === "invalid" && (
-                <X size={16} style={{ color: "#ef4444" }} />
+                <X size={16} style={{ color: t.catBreakage }} />
               )}
             </span>
           )}

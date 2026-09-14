@@ -297,3 +297,63 @@ describe("SPEC_DIVERGENCE", () => {
     expect(round(contrast("#D98C6B", exhibition.bg))).toBe(2.12); // skill says 2.05
   });
 });
+
+/* ── the password strength meter's three colours (BG-P27) ─────────────────── */
+//
+// `--cat-breakage` / `--cat-artefact` / `--evidence` LOOK like a traffic light
+// and are not one: they are three of the nine part-category hues doing a second,
+// legitimate job. That is what makes them measurable, and this is the
+// measurement — the ramp they replaced was `#ef4444 / #f59e0b / #2EC4B6`, picked
+// by eye, of which the amber measures 2.28:1 on Exhibition's ground.
+//
+// ON THE CARD, NOT ON THE PAGE. The meter sits inside an auth card, which is
+// `--glass` over `--bg`, so the ground under it is the composite rather than the
+// room. The category floors above already hold each hue against `--bg`; these
+// hold the three against the surface they are actually painted on, in both
+// rooms, because a hue that clears the floor on the page and fails on the card
+// fails where a reader is looking. Exhibition's card LIGHTENS the ground and
+// Dusk's DARKENS it, so neither room's figure can be inferred from the other.
+//
+// The `backdrop-filter` is not modelled, for the reason the glass divergences
+// above record: it blurs what is behind the card rather than tinting it, and
+// behind an auth card is one flat token plus AuthShell's ≤10% wash.
+describe("the password strength meter", () => {
+  const METER: TokenName[] = ["cat-breakage", "cat-artefact", "evidence"];
+
+  const CARD = {
+    exhibition: { "cat-breakage": 5.88, "cat-artefact": 6.41, evidence: 5.56 },
+    dusk: { "cat-breakage": 4.66, "cat-artefact": 7.65, evidence: 6.63 },
+  } as const;
+
+  /** The auth card's ground: `--glass` composited over the room. */
+  const card = (theme: ThemeKey) => over(THEMES[theme].glass, THEMES[theme].bg);
+
+  it.each(
+    (["exhibition", "dusk"] as const).flatMap((theme) =>
+      METER.map((token) => ({ theme, token })),
+    ),
+  )("$theme reads $token as a label on the auth card", ({ theme, token }) => {
+    const actual = round(contrast(THEMES[theme][token], card(theme)));
+    expect(actual).toBe(CARD[theme][token as keyof (typeof CARD)[ThemeKey]]);
+    expect(
+      actual,
+      `${theme} ${token} is ${actual}:1 on the auth card, under the text floor`,
+    ).toBeGreaterThanOrEqual(TEXT_FLOOR);
+  });
+
+  it.each(
+    (["exhibition", "dusk"] as const).flatMap((theme) =>
+      METER.map((token) => ({ theme, token })),
+    ),
+  )("$theme separates a filled $token segment from the track", ({ theme, token }) => {
+    // The FILLED-against-UNFILLED step is what carries the reading, so it is
+    // floored at 3.0:1 as UI state. The track itself is `--recess` and is
+    // deliberately quiet against the card — it is the bar's extent, not its
+    // value.
+    const actual = round(contrast(THEMES[theme][token], THEMES[theme].recess));
+    expect(
+      actual,
+      `${theme} ${token} is ${actual}:1 against the --recess track`,
+    ).toBeGreaterThanOrEqual(UI_FLOOR);
+  });
+});
