@@ -89,7 +89,7 @@ export function RightPanelExplore() {
             data-visual-slot="btn-secondary"
             style={{
               background: 'var(--recess)',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--line)',
               borderRadius: 'var(--radius-btn)',
               color: 'var(--legacy-text)',
             }}

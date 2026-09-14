@@ -99,12 +99,14 @@ describe("the radius scale", () => {
 
   it("never adopts the legacy pill tokens as steps of the scale", () => {
     // BG-P07 repointed --radius-btn and --radius-badge at --r-control and
-    // --r-chip, so the pill is gone from the running app. The two NAMES still
-    // exist in the legacy :root block because three consumers of them sit in
-    // files that prompt was not allowed to edit; see the exemption below.
+    // --r-chip, so the pill is gone from the running app. BG-P29 DELETED
+    // --radius-badge, which by then had no consumer at all; --radius-btn
+    // survives because three consumers of it sit in files neither prompt was
+    // allowed to edit, and the exemption below records them.
     // Neither is a step of this scale and neither may become one — a fourth
     // name for a radius the scale already has is how a six-step vocabulary
-    // turns back into sixteen.
+    // turns back into sixteen. --radius-badge stays named here so re-adding it
+    // as a step is still caught after the declaration has gone.
     expect(RADIUS_NAMES).not.toContain("radius-btn" as RadiusName);
     expect(RADIUS_NAMES).not.toContain("radius-badge" as RadiusName);
   });
@@ -194,12 +196,21 @@ describe("the legacy pill tokens", () => {
     }
   });
 
-  it("declares both legacy names as the new scale, so no surface is a pill", () => {
+  it("declares the one surviving legacy name as the new scale, so no surface is a pill", () => {
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
     expect(css).toMatch(/--radius-btn:\s*var\(--r-control\)/);
-    expect(css).toMatch(/--radius-badge:\s*var\(--r-chip\)/);
     // The 100px the pill rule was built on must be gone from the declaration.
     expect(css).not.toMatch(/--radius-(?:btn|badge):\s*100px/);
+  });
+
+  it("has deleted --radius-badge outright, because nothing read it", () => {
+    // BG-P29. The ratchet tightens: --radius-badge had zero consumers across
+    // src/ once BG-P07's sweep landed, so the name is gone rather than
+    // repointed. Only --radius-btn is exempt now, and only because RULE 3
+    // reserves the two shell files its three call sites live in.
+    const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
+    const declared = css.match(/^\s*--radius-badge:/m);
+    expect(declared, "--radius-badge is declared again — it had no consumers").toBeNull();
   });
 
   it("leaves no stylesheet rule reading a legacy name", () => {

@@ -65,7 +65,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       data-visual-slot="feed-card"
       style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--line)',
         borderLeft: `3px solid ${sc.border}`,
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,
@@ -73,7 +73,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* TOP BAR */}
       <div

@@ -796,7 +796,7 @@ function EditProfileModal({
       <DialogContent
         className="sm:max-w-lg"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
@@ -904,7 +904,7 @@ function FollowListModal({
       <DialogContent
         className="sm:max-w-sm"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>

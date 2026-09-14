@@ -1829,7 +1829,7 @@ const ContentDetail = () => {
         <DialogContent
           className="sm:max-w-sm"
           data-visual-slot="modal-surface"
-          style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+          style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
         >
           <DialogHeader>
             <DialogTitle>Forks of this content</DialogTitle>
@@ -1857,7 +1857,7 @@ const ContentDetail = () => {
         <DialogContent
           className="sm:max-w-md"
           data-visual-slot="modal-surface"
-          style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+          style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
         >
           <DialogHeader>
             <DialogTitle>Write a recommendation</DialogTitle>

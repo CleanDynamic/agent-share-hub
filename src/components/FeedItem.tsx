@@ -250,7 +250,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       data-visual-slot="feed-card"
       style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--line)',
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,
         padding: '18px 20px',
@@ -258,7 +258,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>

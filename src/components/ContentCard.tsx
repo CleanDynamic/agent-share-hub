@@ -202,14 +202,14 @@ export function ContentCard({
         data-visual-slot="feed-card"
         style={{
           background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          border: '1px solid var(--line)',
           borderRadius: 'var(--radius-card)',
           marginBottom: '8px',
           transition: 'border-color 0.15s ease',
           cursor: 'pointer',
         }}
         onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
       >
         {/* Actions — bookmark + collection */}
         <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 min-h-[44px]">

@@ -9,50 +9,73 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── What is left of the legacy :root block (BG-P29) ──────────────────────────
+   BG-P18b deleted `--bg: #25252F` from here and left the rest to this prompt.
+   Of the fifteen names that stood in this block, ELEVEN ARE GONE and three are
+   repointed at the theme tokens they always meant. A name survives only if
+   something still reads it, and every survivor is now a `var()` reference
+   rather than a value, so nothing in this block decides a colour any more.
+
+   DELETED WITH ZERO CONSUMERS — grep across src/ for `var(--name)` found none:
+     --glass-panel-surface    an HSL triple nothing wrapped in hsl()
+     --text-muted             superseded by --text2
+     --orange     #8B4513     the old brand, superseded by --action
+     --teal       #1F7A6D     the old brand, superseded by --evidence
+     --input-bg               the three field names went with BG-P07's global
+     --input-border           field rule, which paints raw <input> elements
+     --input-focus-border     from --recess, --line, --action and --lit
+     --divider                superseded by --line
+     --radius-badge           BG-P07 retired the pill and its last consumer
+                              went with it; src/lib/theme/radius.test.ts is
+                              updated to stop requiring the declaration
+
+   DELETED BECAUSE THEY WERE ALREADY DEAD — declared again, later in this file,
+   at equal specificity, so the value here never won:
+     --text       the buildgallery theme blocks redeclare it
+     --border     THE SHADCN BRIDGE REDECLARES IT, AND THAT WAS A LIVE BUG.
+                  `--border` is a name this block and shadcn/ui both wanted.
+                  The bridge's value is an HSL TRIPLE — `213 11% 80%` — because
+                  tailwind.config.ts wraps it as `hsl(var(--border))`, and it is
+                  declared later, so `border: 1px solid var(--border)` resolved
+                  to `1px solid 213 11% 80%`: invalid, and therefore NO BORDER
+                  AT ALL. Twenty declarations across fourteen files were
+                  drawing nothing. The bridge keeps the name — constraint 3 of
+                  this prompt forbids renaming it, and every Tailwind
+                  `border-border` in the codebase depends on it — so the twenty
+                  bare consumers move to `var(--line)`, which is what the value
+                  deleted here (a 14% white hairline) meant. Their borders
+                  reappear; see DIVERGED in the handoff.
+
+   --radius-btn IS THE ONE NAME THAT CANNOT GO YET. BG-P07 retired the pill and
+   repointed this at --r-control, but three consumers sit in LeftPanel.tsx and
+   RightPanelExplore.tsx — externally-supplied visual shells (`neoscale-ui`
+   RULE 3) carrying the reserved primary and secondary button surfaces, two
+   independent reasons each to leave them alone. Editing them is an
+   automatic-fail in code review, so the name stays and the exemption stays
+   recorded in radius.test.ts, which is a ratchet that may only shrink. Nothing
+   renders as a pill: the value is the scale.
+   ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* BG-P18b. `--bg: #25252F` stood here and is deleted. It was already dead —
-     the buildgallery block below redeclares --bg at equal specificity and
-     later in the cascade, so the page resolved #E4E6E8 / #1F1B2B either way —
-     but a legacy ground still spelled out in the token block is the line a
-     reader copies. Only this one line went; BG-P29 owns the rest of the
-     block. */
-  --surface: rgba(255,255,255,0.03);
-  --glass-panel-surface: 240 12% 80%;
-  --border: rgba(255, 255, 255, 0.14);
-  --border-hover: rgba(255,255,255,0.12);
-  --text: rgba(255,255,255,0.85);
-  --text-muted: rgba(255,255,255,0.40);
-  /* BG-P02. The legacy dark paint's text colour, held under its own name.
-     --text now belongs to the buildgallery theme blocks below and flips
-     to #1B2026 on Exhibition; the surfaces still carrying the old dark
-     paint read this instead until their prompt repaints them. Delete each
-     reference as its surface is repainted, then delete this. */
-  --legacy-text: rgba(255,255,255,0.85);
-  --orange: #8B4513;
-  --teal: #1F7A6D;
-  --radius-card: 14px;
-  /* BG-P07. The pill rule is gone, and so is every consumer of these two names
-     that this prompt is allowed to edit. They survive only because three
-     consumers live in files it is not: LeftPanel.tsx and RightPanelExplore.tsx
-     are externally-supplied visual shells (`neoscale-ui` RULE 3), and the
-     buttons inside them are the reserved primary and secondary button
-     surfaces — two reasons each to leave them alone.
-
-     Repointing the VALUE retires the pill on those surfaces anyway, without
-     editing a file this prompt must not touch. A `var()` declared in a later
-     :root block resolves fine: custom properties are substituted at
-     computed-value time, after the cascade has collected every declaration on
-     the element, so the ordering here is irrelevant.
-
-     Delete both names when the prompt that owns the rails repoints its three
-     call sites at `--r-control`. src/lib/theme/radius.test.ts holds them to
-     this, and names the exempt files. */
+  /* The three cards that read this — ContentCard, FeedItem, BountyCard — are
+     cards, and the theme says a card is --glass over --glass-border. It was
+     `rgba(255,255,255,0.03)`: a 3% white wash, which is an invisible card on
+     the Exhibition ground and was never a surface tier in this system. */
+  --surface: var(--glass);
+  /* The hover step for the same three cards' hairline. `--text2` is what the
+     Explore rail's own stylesheet already steps a hairline up to on hover
+     (`.ns-right-search:hover`), so this is a legal pairing reused rather than
+     a value struck. Was `rgba(255,255,255,0.12)`. */
+  --border-hover: var(--text2);
+  /* BG-P02 held the legacy dark paint's ink under its own name so surfaces not
+     yet repainted could keep reading it while --text moved to the theme. One
+     consumer is left, in RightPanelExplore.tsx, which RULE 3 exempts from
+     editing — so the NAME survives and its VALUE becomes the ink it was
+     standing in for. Was `rgba(255,255,255,0.85)`. */
+  --legacy-text: var(--text);
+  /* 14px was already the card step by coincidence; now it is the card step by
+     reference, and it cannot drift from --r-card if the scale ever moves. */
+  --radius-card: var(--r-card);
   --radius-btn: var(--r-control);
-  --radius-badge: var(--r-chip);
-  --input-bg: rgba(255,255,255,0.05);
-  --input-border: rgba(255,255,255,0.10);
-  --input-focus-border: rgba(255,255,255,0.20);
-  --divider: rgba(255, 255, 255, 0.14);
 }
 
 /* ── buildgallery.ai theme tokens (BG-P01) ────────────────────────────────────

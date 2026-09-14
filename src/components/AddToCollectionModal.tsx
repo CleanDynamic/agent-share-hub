@@ -198,7 +198,7 @@ export function AddToCollectionModal({ open, onOpenChange, contentId, contentTit
       <DialogContent
         className="max-w-sm"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
