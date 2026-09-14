@@ -188,7 +188,7 @@ export function CompactUploadHeader({
           className="w-full max-w-[720px] flex items-center justify-between"
           style={{
             height: "36px", padding: "8px 24px",
-            background: "rgba(8,8,12,0.92)",
+            background: "var(--bg)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
             borderBottom: "0.5px solid var(--line)",

@@ -189,7 +189,7 @@ export function useVariableAutocomplete({
       style={{
         top: state.top,
         left: state.left,
-        background: 'rgba(22,22,30,0.98)',
+        background: 'var(--bg)',
         border: '1px solid var(--line)',
         backdropFilter: 'blur(8px)',
       }}

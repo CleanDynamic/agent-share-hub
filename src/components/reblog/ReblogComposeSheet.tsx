@@ -184,7 +184,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
   return (
     <div
       style={{
-        background: "rgba(82, 82, 100, 0.40)",
+        background: "var(--recess)",
         border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "12px 14px",
@@ -413,7 +413,7 @@ export default function ReblogComposeSheet({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{
-          background: "rgba(0,0,0,0.55)",
+          background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           backdropFilter: "blur(8px)",
           opacity: visible ? 1 : 0,
           transition: "opacity 200ms ease",
@@ -477,7 +477,7 @@ export default function ReblogComposeSheet({
     <div
       className="fixed inset-0 z-50"
       style={{
-        background: "rgba(0,0,0,0.55)",
+        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         backdropFilter: "blur(8px)",
         opacity: visible ? 1 : 0,
         transition: "opacity 280ms cubic-bezier(0.16,1,0.3,1)",
@@ -801,7 +801,7 @@ function ComposeBody({
                 maxHeight: 280,
                 borderRadius: 12,
                 overflow: "hidden",
-                background: "rgba(0,0,0,0.40)",
+                background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 aspectRatio: "16/9",
               }}
             >
@@ -820,7 +820,7 @@ function ComposeBody({
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  background: "rgba(0,0,0,0.50)",
+                  background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 }}
               >
                 <Play size={22} style={{ color: "var(--text)", marginLeft: 2 }} />
@@ -837,7 +837,7 @@ function ComposeBody({
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "rgba(0,0,0,0.60)",
+              background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               border: "none",
               cursor: "pointer",
               padding: 0,

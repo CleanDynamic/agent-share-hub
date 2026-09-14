@@ -420,7 +420,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
             zoomable
             maskColor="rgba(15,15,20,0.6)"
             style={{
-              background: 'rgba(20,20,28,0.85)',
+              background: 'var(--recess)',
               border: '0.5px solid var(--line)',
               borderRadius: 6,
             }}

@@ -58,7 +58,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
       <HoverCardContent
         className="w-72 p-0 overflow-hidden"
         style={{
-          background: "rgba(27, 27, 32, 0.95)",
+          background: "var(--bg)",
           backdropFilter: "blur(40px)",
           border: "1px solid var(--line)",
         }}

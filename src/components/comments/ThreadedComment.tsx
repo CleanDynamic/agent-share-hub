@@ -101,7 +101,7 @@ function ReplyComposer({
   return (
     <div
       style={{
-        background: "rgba(68,68,84,0.30)",
+        background: "var(--recess)",
         border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "10px 12px",
@@ -151,7 +151,7 @@ function ReplyComposer({
         rows={2}
         style={{
           width: "100%",
-          background: "rgba(82,82,100,0.60)",
+          background: "var(--recess)",
           border: "0.5px solid var(--line)",
           borderRadius: 8,
           padding: "8px 10px",
@@ -349,7 +349,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           {level > 0 && <ThreadLine />}
           <div
             style={{
-              background: "rgba(68,68,84,0.25)",
+              background: "var(--recess)",
               border: "0.5px solid var(--line)",
               borderRadius: 10,
               padding: "12px 14px",
@@ -422,7 +422,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           ref={cardRef}
           className={isNewReply ? "ns-comment-new-reply" : ""}
           style={{
-            background: "rgba(68,68,84,0.40)",
+            background: "var(--recess)",
             border: isHighlighted
               ? "1px solid color-mix(in srgb, var(--action) 85%, transparent)"
               : "0.5px solid var(--line)",
@@ -532,7 +532,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   rows={3}
                   style={{
                     width: "100%",
-                    background: "rgba(82,82,100,0.60)",
+                    background: "var(--recess)",
                     border: "0.5px solid var(--line)",
                     borderRadius: 8,
                     padding: "8px 10px",

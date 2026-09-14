@@ -153,7 +153,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             bottom: 60,
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(16,16,24,0.95)',
+            background: 'var(--bg)',
             backdropFilter: 'blur(20px)',
             border: '1px solid var(--line)',
             borderRadius: 12,
@@ -282,7 +282,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
         gap: 3,
         alignItems: 'center',
         zIndex: 100,
-        background: 'rgba(16,16,24,0.80)',
+        background: 'var(--recess)',
         backdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--line)',
         borderRadius: 0,
@@ -419,7 +419,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             sideOffset={8}
             className="w-auto p-0"
             style={{
-              background: 'rgba(16,16,24,0.95)',
+              background: 'var(--bg)',
               backdropFilter: 'blur(20px)',
               border: '1px solid var(--line)',
               borderRadius: 10,

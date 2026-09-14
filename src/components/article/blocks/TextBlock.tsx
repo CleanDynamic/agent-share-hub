@@ -264,7 +264,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
             <div
               className="rounded-md p-3"
               style={{
-                background: 'rgba(0,0,0,0.25)',
+                background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 minHeight: 240,
               }}

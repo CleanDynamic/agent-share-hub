@@ -322,7 +322,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="rounded-md overflow-hidden mb-2 nodrag"
           style={{
-            background: 'rgba(0,0,0,0.25)',
+            background: 'var(--recess)',
             border: '1px solid var(--line)',
             minHeight: 96,
           }}
@@ -460,7 +460,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
             <div
               className="rounded-md overflow-hidden"
               style={{
-                background: 'rgba(0,0,0,0.35)',
+                background: 'var(--recess)',
                 border: '1px solid var(--line)',
               }}
             >
@@ -516,7 +516,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               <pre
                 className="text-[11px] leading-snug whitespace-pre-wrap break-words rounded-md p-3 max-h-48 overflow-auto"
                 style={{
-                  background: 'rgba(0,0,0,0.35)',
+                  background: 'var(--recess)',
                   border: '1px solid var(--line)',
                   color: lastRun?.error ? '#fca5a5' : 'var(--text)',
                   minHeight: 48,

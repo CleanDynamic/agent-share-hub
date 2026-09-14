@@ -175,7 +175,7 @@ export function UploadTypePicker({
   const getBackdropStyle = (): React.CSSProperties => ({
     position: "fixed",
     inset: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
     backdropFilter: "blur(8px)",
     WebkitBackdropFilter: "blur(8px)",
     zIndex: 50,
@@ -186,11 +186,11 @@ export function UploadTypePicker({
   const getModalStyle = (): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
       position: "fixed",
-      backgroundColor: "rgba(40, 40, 52, 0.95)",
+      backgroundColor: "var(--bg)",
       backdropFilter: "blur(40px) saturate(160%)",
       WebkitBackdropFilter: "blur(40px) saturate(160%)",
       border: "0.5px solid var(--line)",
-      boxShadow: "0 24px 64px rgba(0, 0, 0, 0.50)",
+      boxShadow: "var(--elev-overlay)",
       display: "flex",
       flexDirection: "column",
       zIndex: 51,
@@ -230,7 +230,7 @@ export function UploadTypePicker({
   }
 
   const getCardStyle = (isHovered: boolean, isPressed: boolean): React.CSSProperties => ({
-    backgroundColor: isHovered ? "rgba(68, 68, 84, 0.65)" : "rgba(68, 68, 84, 0.50)",
+    backgroundColor: "var(--recess)",
     border: isHovered
       ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
       : "0.5px solid var(--line)",

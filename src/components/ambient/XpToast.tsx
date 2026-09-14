@@ -23,7 +23,7 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         minWidth: 240,
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
-        border: "0.5px solid rgba(232,87,26,0.32)",
+        border: "0.5px solid color-mix(in srgb, var(--action) 32%, transparent)",
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
         boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
@@ -38,10 +38,10 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
           borderRadius: 9,
           background: tokens.orangeGradient,
           flexShrink: 0,
-          boxShadow: "0 2px 10px rgba(232,87,26,0.40)",
+          boxShadow: "0 2px 10px color-mix(in srgb, var(--action) 40%, transparent)",
         }}
       >
-        <Sparkles size={15} color="#fff" />
+        <Sparkles size={15} color="var(--text)" />
       </span>
 
       <div className="flex flex-col gap-0.5 min-w-0">

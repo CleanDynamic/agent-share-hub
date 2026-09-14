@@ -349,7 +349,7 @@ export function CoverImageField({
         {uploading && (
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.45)" }}
+            style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}
           >
             <CircularProgress value={progress} />
           </div>
@@ -442,7 +442,7 @@ export function CoverImageField({
             className="absolute top-2 right-2 flex items-center gap-1 z-10"
             style={{
               padding: "4px",
-              background: "rgba(8,8,12,0.65)",
+              background: "var(--recess)",
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",
               border: "0.5px solid var(--line)",

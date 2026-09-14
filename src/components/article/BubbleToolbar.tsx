@@ -155,7 +155,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
         display: 'flex',
         alignItems: 'center',
         gap: 2,
-        background: 'rgba(16,16,24,0.95)',
+        background: 'var(--bg)',
         backdropFilter: 'blur(12px)',
         border: '1px solid var(--line)',
         borderRadius: 8,

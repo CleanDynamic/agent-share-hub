@@ -69,7 +69,7 @@ export function BlockViewerInCanvas({
               cursor: 'zoom-in',
               borderRadius: 8,
               overflow: 'hidden',
-              background: 'rgba(0,0,0,0.25)',
+              background: 'var(--recess)',
             }}
           >
             <img
@@ -140,7 +140,7 @@ export function BlockViewerInCanvas({
               cursor: 'zoom-in',
               borderRadius: 8,
               overflow: 'hidden',
-              background: 'rgba(0,0,0,0.55)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
             }}
           >
             {thumbSrc ? (
@@ -187,7 +187,7 @@ export function BlockViewerInCanvas({
               transform: 'translate(-50%, -50%)',
               width: 56, height: 56,
               borderRadius: '50%',
-              background: 'rgba(0,0,0,0.65)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
               border: '2px solid var(--line)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               pointerEvents: 'none',
@@ -309,7 +309,7 @@ export function BlockViewerInCanvas({
       {/* Prompt blocks — orange left border box */}
       {block.type === 'prompt' && (
         <div style={{
-          background: 'rgba(0,0,0,0.30)',
+          background: 'var(--recess)',
           border: '1px solid var(--line)',
           borderLeft: '3px solid color-mix(in srgb, var(--action) 55%, transparent)',
           borderRadius: 8, padding: '12px 14px',
@@ -330,7 +330,7 @@ export function BlockViewerInCanvas({
       {/* Code blocks — blue left border + monospace */}
       {block.type === 'code' && (
         <div style={{
-          background: 'rgba(0,0,0,0.40)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           border: '1px solid var(--line)',
           borderLeft: '3px solid color-mix(in srgb, var(--cat-data) 55%, transparent)',
           borderRadius: 8, padding: '12px 14px',

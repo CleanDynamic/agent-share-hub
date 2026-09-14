@@ -15,7 +15,7 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.60)',
+        background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
         zIndex: 200,
         display: 'flex',
         alignItems: 'flex-start',
@@ -25,7 +25,7 @@ export function ClearAllDialog({ open, onClose, onConfirm }: ClearAllDialogProps
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'rgba(10,10,16,0.98)',
+          background: 'var(--bg)',
           border: '1px solid var(--line)',
           borderRadius: 14,
           padding: 24,

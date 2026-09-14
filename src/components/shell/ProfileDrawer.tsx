@@ -30,7 +30,7 @@ export interface ProfileDrawerProps {
   onSignOut: () => void;
 }
 
-const BRAND_ORANGE = "#E8571A";
+const BRAND_ORANGE = "var(--action)";
 
 const NAV: { route: DrawerRoute; label: string; Icon: React.ElementType }[] = [
   { route: "home", label: "Home", Icon: Home },
@@ -98,7 +98,7 @@ export function ProfileDrawer({
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0,0,0,0.55)",
+          background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           zIndex: 1100,
           opacity: isOpen ? 1 : 0,
           transition: "opacity 200ms ease-out",
@@ -118,8 +118,8 @@ export function ProfileDrawer({
           bottom: 0,
           left: 0,
           width: "min(320px, 88vw)",
-          background: "#0F0F14",
-          borderRight: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--bg)",
+          borderRight: "1px solid var(--line)",
           zIndex: 1101,
           display: "flex",
           flexDirection: "column",
@@ -137,7 +137,7 @@ export function ProfileDrawer({
             aria-label="Close menu"
             style={{
               width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
-              background: "transparent", border: "none", color: "rgba(255,255,255,0.65)", cursor: "pointer",
+              background: "transparent", border: "none", color: "var(--text2)", cursor: "pointer",
             }}
           >
             <X size={20} />
@@ -148,25 +148,25 @@ export function ProfileDrawer({
         <div style={{ padding: "8px 20px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
           <Avatar className="h-16 w-16">
             {user?.avatarUrl && <AvatarImage src={user.avatarUrl} />}
-            <AvatarFallback style={{ background: "#8B4513", color: "#fff", fontSize: 22 }}>
+            <AvatarFallback style={{ background: "var(--action)", color: "var(--text)", fontSize: 22 }}>
               {user?.initials || "?"}
             </AvatarFallback>
           </Avatar>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
               {user?.name || "Guest"}
             </div>
             {user?.handle && (
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>@{user.handle}</div>
+              <div style={{ fontSize: 13, color: "var(--text2)" }}>@{user.handle}</div>
             )}
           </div>
           {user && (
-            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
+            <div style={{ display: "flex", gap: 16, fontSize: 12, color: "var(--text2)" }}>
               <span>
-                <strong style={{ color: "#fff", fontWeight: 600 }}>{formatCount(user.followersCount)}</strong> followers
+                <strong style={{ color: "var(--text)", fontWeight: 600 }}>{formatCount(user.followersCount)}</strong> followers
               </span>
               <span>
-                <strong style={{ color: "#fff", fontWeight: 600 }}>{formatCount(user.followingCount)}</strong> following
+                <strong style={{ color: "var(--text)", fontWeight: 600 }}>{formatCount(user.followingCount)}</strong> following
               </span>
             </div>
           )}
@@ -188,11 +188,11 @@ export function ProfileDrawer({
                 style={{
                   height: 48,
                   padding: "12px 20px",
-                  borderBottom: "0.5px solid rgba(255,255,255,0.06)",
-                  background: active ? "rgba(232,87,26,0.12)" : "transparent",
+                  borderBottom: "0.5px solid var(--line)",
+                  background: active ? "color-mix(in srgb, var(--action) 12%, transparent)" : "transparent",
                   border: "none",
                   cursor: "pointer",
-                  color: active ? BRAND_ORANGE : "rgba(255,255,255,0.85)",
+                  color: active ? BRAND_ORANGE : "var(--text)",
                 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -213,7 +213,7 @@ export function ProfileDrawer({
             className="w-full flex items-center justify-between"
             style={{
               height: 48, padding: "12px 20px",
-              borderTop: "0.5px solid rgba(255,255,255,0.14)",
+              borderTop: "0.5px solid var(--line)",
               background: "transparent", border: "none", cursor: "pointer",
               color: "#e74c3c",
             }}

@@ -36,7 +36,7 @@ export function MediaPopup({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.85)',
+        background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
         zIndex: 300,
         display: 'flex',
         alignItems: 'center',
@@ -90,7 +90,7 @@ export function MediaPopup({
               maxHeight: '85vh',
               objectFit: 'contain',
               borderRadius: 8,
-              background: 'rgba(0,0,0,0.40)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
               display: 'block',
             }}
           />
@@ -106,7 +106,7 @@ export function MediaPopup({
               maxHeight: '85vh',
               border: 'none',
               borderRadius: 8,
-              background: 'rgba(0,0,0,0.60)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
             }}
           />
         ) : (
@@ -119,7 +119,7 @@ export function MediaPopup({
               maxWidth: '90vw',
               maxHeight: '85vh',
               borderRadius: 8,
-              background: 'rgba(0,0,0,0.60)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
               display: 'block',
             }}
           />

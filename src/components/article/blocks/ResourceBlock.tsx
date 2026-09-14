@@ -190,7 +190,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
       <div
         className="rounded-md overflow-hidden mb-2 nodrag"
         style={{
-          background: 'rgba(0,0,0,0.25)',
+          background: 'var(--recess)',
           border: '1px solid var(--line)',
           minHeight: 80,
         }}

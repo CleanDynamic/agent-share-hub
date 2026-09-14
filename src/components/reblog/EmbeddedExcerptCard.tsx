@@ -72,7 +72,7 @@ export function EmbeddedExcerptCard({
         className="flex items-start gap-3 rounded-xl"
         style={{
           padding: "14px 16px",
-          background: "rgba(82, 82, 100, 0.25)",
+          background: "var(--recess)",
           border: "0.5px solid var(--line)",
         }}
       >
@@ -111,7 +111,7 @@ export function EmbeddedExcerptCard({
       }}
       className="group"
       style={{
-        background: "rgba(82, 82, 100, 0.40)",
+        background: "var(--recess)",
         border: "0.5px solid var(--line)",
         borderRadius: 10,
         padding: "14px 16px",

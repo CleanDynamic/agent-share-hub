@@ -32,7 +32,7 @@ export default function BadgeEarnedToast({
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
         boxShadow:
-          "0 16px 40px rgba(0,0,0,0.50), 0 0 0 1px rgba(232,87,26,0.14)",
+          "0 16px 40px rgba(0,0,0,0.50), 0 0 0 1px color-mix(in srgb, var(--action) 14%, transparent)",
         fontFamily: tokens.fontSans,
       }}
     >
@@ -44,10 +44,10 @@ export default function BadgeEarnedToast({
             height: 38,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            boxShadow: "0 3px 14px rgba(232,87,26,0.45)",
+            boxShadow: "0 3px 14px color-mix(in srgb, var(--action) 45%, transparent)",
           }}
         >
-          <Award size={19} color="#fff" />
+          <Award size={19} color="var(--text)" />
         </span>
 
         <div className="min-w-0 flex-1">
@@ -95,7 +95,7 @@ export default function BadgeEarnedToast({
                 borderRadius: tokens.radiusPill,
                 background: tokens.orangeGradient,
                 border: "none",
-                color: "#fff",
+                color: "var(--text)",
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",

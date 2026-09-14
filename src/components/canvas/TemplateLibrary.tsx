@@ -118,7 +118,7 @@ export function TemplateLibrary({
       <div
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.60)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           zIndex: 200,
         }}
         onClick={onClose}
@@ -129,7 +129,7 @@ export function TemplateLibrary({
         position: 'fixed',
         right: 0, top: 0, bottom: 0,
         width: 360,
-        background: 'rgba(10,10,16,0.99)',
+        background: 'var(--bg)',
         borderLeft:
           '1px solid var(--line)',
         zIndex: 201,

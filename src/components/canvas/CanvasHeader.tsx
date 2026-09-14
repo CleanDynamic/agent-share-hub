@@ -389,7 +389,7 @@ function EvidenceEditor({
                     style={{
                       position: 'absolute', top: -4, right: -4,
                       width: 16, height: 16, borderRadius: '50%',
-                      background: 'rgba(0,0,0,0.70)', border: 'none',
+                      background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', border: 'none',
                       color: 'var(--text)', fontSize: 10, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}

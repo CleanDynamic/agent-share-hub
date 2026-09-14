@@ -61,11 +61,11 @@ export default function NavProgressChip({
             height: 34,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            color: "#fff",
+            color: "var(--text)",
             fontFamily: tokens.fontMono,
             fontSize: 13,
             fontWeight: 600,
-            boxShadow: "0 2px 10px rgba(232,87,26,0.35)",
+            boxShadow: "0 2px 10px color-mix(in srgb, var(--action) 35%, transparent)",
           }}
         >
           {level}
@@ -92,7 +92,7 @@ export default function NavProgressChip({
             style={{
               height: 5,
               borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              background: "var(--recess)",
             }}
           >
             <span
@@ -138,7 +138,7 @@ export default function NavProgressChip({
             style={{
               height: 6,
               borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              background: "var(--recess)",
             }}
           >
             <div
@@ -204,7 +204,7 @@ export default function NavProgressChip({
             padding: "8px 12px",
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            color: "#fff",
+            color: "var(--text)",
             fontSize: 12,
             fontWeight: 600,
           }}

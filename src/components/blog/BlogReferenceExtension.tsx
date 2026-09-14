@@ -138,7 +138,7 @@ function ChipNodeView({ node, editor, getPos }: NodeViewProps) {
             top: menu.y,
             left: menu.x,
             zIndex: 9999,
-            background: "rgba(16,16,24,0.96)",
+            background: "var(--bg)",
             border: "0.5px solid var(--line)",
             borderRadius: 8,
             backdropFilter: "blur(20px)",

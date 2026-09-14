@@ -382,7 +382,7 @@ export function ArrowOverlay({
           >
             <div
               style={{
-                background: 'rgba(10,10,16,0.98)',
+                background: 'var(--bg)',
                 border:
                   '1px solid var(--line)',
                 borderRadius: 10,

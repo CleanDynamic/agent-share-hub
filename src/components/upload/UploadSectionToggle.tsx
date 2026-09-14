@@ -40,7 +40,7 @@ export function UploadSectionToggle({
     <div
       className="w-full"
       style={{
-        background: "rgba(22,22,30,0.40)",
+        background: "var(--recess)",
         border: `1px solid ${hover || open ? 'var(--text2)' : 'var(--line)'}`,
         borderRadius: "10px",
         overflow: "hidden",

@@ -159,7 +159,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         className={cn('group relative rounded-lg p-2.5 backdrop-blur-md transition-all')}
         style={{
           width: 240,
-          background: 'rgba(20,20,28,0.85)',
+          background: 'var(--recess)',
           border: selected
             ? `1px solid ${AGENT_COLOR}99`
             : expandedSelection

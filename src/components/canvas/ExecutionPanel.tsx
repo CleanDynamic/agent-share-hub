@@ -130,7 +130,7 @@ export function ExecutionPanel({
       position: 'fixed',
       right: 0, top: 0, bottom: 0,
       width: 380,
-      background: 'rgba(10,10,16,0.99)',
+      background: 'var(--bg)',
       borderLeft:
         '1px solid var(--line)',
       zIndex: 300,

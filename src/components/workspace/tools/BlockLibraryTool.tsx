@@ -22,25 +22,25 @@ interface BlockDef {
 
 const BLOCKS: readonly BlockDef[] = [
   // Core (4)
-  { type: 'text',     label: 'Text',     description: 'Plain text or notes',  color: 'rgba(255,255,255,0.60)', category: 'Core' },
-  { type: 'heading',  label: 'Heading',  description: 'Section divider',      color: 'rgba(255,255,255,0.50)', category: 'Core' },
-  { type: 'note',     label: 'Note',     description: 'Sticky note',          color: '#F59E0B',                category: 'Core' },
-  { type: 'quote',    label: 'Quote',    description: 'Pull quote',           color: 'rgba(255,255,255,0.60)', category: 'Core' },
+  { type: 'text',     label: 'Text',     description: 'Plain text or notes',  color: 'var(--text2)', category: 'Core' },
+  { type: 'heading',  label: 'Heading',  description: 'Section divider',      color: 'var(--text2)', category: 'Core' },
+  { type: 'note',     label: 'Note',     description: 'Sticky note',          color: 'var(--cat-narrative)',                category: 'Core' },
+  { type: 'quote',    label: 'Quote',    description: 'Pull quote',           color: 'var(--text2)', category: 'Core' },
   // AI (4)
-  { type: 'prompt',   label: 'Prompt',   description: 'AI prompt',            color: '#E8571A',                category: 'AI' },
-  { type: 'agent',    label: 'Agent',    description: 'AI agent config',      color: '#7C3AED',                category: 'AI' },
-  { type: 'model',    label: 'Model',    description: 'Model config',         color: '#A78BFA',                category: 'AI' },
-  { type: 'result',   label: 'Result',   description: 'LLM output',           color: '#7C3AED',                category: 'AI' },
+  { type: 'prompt',   label: 'Prompt',   description: 'AI prompt',            color: 'var(--action)',                category: 'AI' },
+  { type: 'agent',    label: 'Agent',    description: 'AI agent config',      color: 'var(--cat-agents)',                category: 'AI' },
+  { type: 'model',    label: 'Model',    description: 'Model config',         color: 'var(--cat-agents)',                category: 'AI' },
+  { type: 'result',   label: 'Result',   description: 'LLM output',           color: 'var(--cat-agents)',                category: 'AI' },
   // Content (5)
-  { type: 'code',     label: 'Code',     description: 'Code snippet',         color: '#22C55E',                category: 'Content' },
-  { type: 'image',    label: 'Image',    description: 'Visual',               color: 'rgba(255,255,255,0.60)', category: 'Content' },
-  { type: 'video',    label: 'Video',    description: 'Video embed',          color: 'rgba(255,255,255,0.60)', category: 'Content' },
-  { type: 'resource', label: 'Resource', description: 'Link card',            color: '#06B6D4',                category: 'Content' },
-  { type: 'tutorial', label: 'Tutorial', description: 'Step-by-step',         color: '#2EC4B6',                category: 'Content' },
+  { type: 'code',     label: 'Code',     description: 'Code snippet',         color: 'var(--cat-configuration)',                category: 'Content' },
+  { type: 'image',    label: 'Image',    description: 'Visual',               color: 'var(--text2)', category: 'Content' },
+  { type: 'video',    label: 'Video',    description: 'Video embed',          color: 'var(--text2)', category: 'Content' },
+  { type: 'resource', label: 'Resource', description: 'Link card',            color: 'var(--cat-data)',                category: 'Content' },
+  { type: 'tutorial', label: 'Tutorial', description: 'Step-by-step',         color: 'var(--evidence)',                category: 'Content' },
   // Structural (3)
-  { type: 'tool',     label: 'Tool',     description: 'Tool setup',           color: '#3B82F6',                category: 'Structural' },
-  { type: 'workflow', label: 'Workflow', description: 'Nested canvas',        color: '#3B82F6',                category: 'Structural' },
-  { type: 'compare',  label: 'Compare',  description: 'Side-by-side',         color: '#EC4899',                category: 'Structural' },
+  { type: 'tool',     label: 'Tool',     description: 'Tool setup',           color: 'var(--cat-data)',                category: 'Structural' },
+  { type: 'workflow', label: 'Workflow', description: 'Nested canvas',        color: 'var(--cat-data)',                category: 'Structural' },
+  { type: 'compare',  label: 'Compare',  description: 'Side-by-side',         color: 'var(--cat-media)',                category: 'Structural' },
 ];
 
 const CATEGORIES = ['All', 'Core', 'AI', 'Content', 'Structural'] as const;
@@ -117,7 +117,7 @@ export function BlockLibraryTool({
           borderRadius: PANEL_INPUT_RADIUS,
         }}
       >
-        <Search size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
+        <Search size={14} style={{ color: 'var(--text2)', flexShrink: 0 }} />
         <input
           type="text"
           value={query}
@@ -129,7 +129,7 @@ export function BlockLibraryTool({
             background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
@@ -162,8 +162,8 @@ export function BlockLibraryTool({
                 padding: '4px 10px',
                 borderRadius: 100,
                 border: 'none',
-                background: active ? 'rgba(232,87,26,0.12)' : 'rgba(255, 255, 255, 0.12)',
-                color: active ? '#E8571A' : 'rgba(255,255,255,0.55)',
+                background: active ? 'color-mix(in srgb, var(--action) 12%, transparent)' : 'var(--recess)',
+                color: active ? 'var(--action)' : 'var(--text2)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 10,
                 fontWeight: 500,
@@ -206,7 +206,7 @@ export function BlockLibraryTool({
               gridColumn: '1 / -1',
               padding: '20px 8px',
               textAlign: 'center',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'var(--text2)',
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
             }}
@@ -223,7 +223,7 @@ export function BlockLibraryTool({
           flexShrink: 0,
           padding: '6px 10px',
           borderTop: PANEL_DIVIDER,
-          color: 'rgba(255,255,255,0.30)',
+          color: 'var(--text2)',
           fontFamily: 'Figtree, sans-serif',
           fontSize: 10,
           fontWeight: 400,
@@ -252,7 +252,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
     borderRadius: 6,
     padding: '6px 8px',
     background: hover ? withAlpha(block.color, 0.06) : PANEL_CARD_BACKGROUND,
-    border: `0.5px solid ${hover ? withAlpha(block.color, 0.20) : 'rgba(255, 255, 255, 0.14)'}`,
+    border: `0.5px solid ${hover ? withAlpha(block.color, 0.20) : 'var(--recess)'}`,
     cursor: 'grab',
     display: 'flex',
     flexDirection: 'column',
@@ -299,7 +299,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
             fontFamily: 'Figtree, sans-serif',
             fontSize: 11,
             fontWeight: 500,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -313,7 +313,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
           fontFamily: 'Figtree, sans-serif',
           fontSize: 10,
           fontWeight: 400,
-          color: 'rgba(255,255,255,0.40)',
+          color: 'var(--text2)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',

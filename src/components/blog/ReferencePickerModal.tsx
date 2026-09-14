@@ -67,7 +67,7 @@ const styles = {
   overlay: {
     position: "fixed" as const,
     inset: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -76,7 +76,7 @@ const styles = {
   modal: {
     width: 560,
     maxHeight: 540,
-    backgroundColor: "rgba(16,16,24,0.96)",
+    backgroundColor: "var(--bg)",
     backdropFilter: "blur(24px)",
     WebkitBackdropFilter: "blur(24px)",
     border: "0.5px solid var(--line)",

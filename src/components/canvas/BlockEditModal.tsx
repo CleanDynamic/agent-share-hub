@@ -36,7 +36,7 @@ export function BlockEditModal({ block, open, onClose, onChange }: BlockEditModa
       <DialogContent
         className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto"
         style={{
-          background: 'rgba(10,10,16,0.98)',
+          background: 'var(--bg)',
           border: '1px solid var(--line)',
           borderRadius: 14,
         }}

@@ -497,7 +497,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="rounded-md mb-2 nodrag p-2"
           style={{
-            background: 'rgba(0,0,0,0.25)',
+            background: 'var(--recess)',
             border: '1px solid var(--line)',
             minHeight: 80,
           }}
@@ -579,7 +579,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
             <div
               className="rounded-md p-3 max-h-[400px] overflow-auto"
               style={{
-                background: 'rgba(0,0,0,0.35)',
+                background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 minHeight: 200,
               }}

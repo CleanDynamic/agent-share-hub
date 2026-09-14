@@ -203,7 +203,7 @@ export function CanvasTOC({
         flexDirection: 'column',
         borderRight: '1px solid var(--line)',
         overflow: 'hidden',
-        background: 'rgba(6,6,10,0.55)',
+        background: 'var(--recess)',
         backdropFilter: 'blur(16px)',
         position: 'relative',
       }}>

@@ -332,7 +332,7 @@ export function BlogView({ item }: BlogViewProps) {
           <div
             className="mt-10 p-5 rounded-xl flex items-start gap-4"
             style={{
-              background: "rgba(22,22,30,0.40)",
+              background: "var(--recess)",
               border: "0.5px solid var(--line)",
             }}
           >
@@ -461,7 +461,7 @@ export function BlogView({ item }: BlogViewProps) {
           border-radius: 4px;
         }
         .blog-view-prose .ProseMirror pre {
-          background: rgba(15,15,22,0.7);
+          background: "var(--recess)";
           border: 0.5px solid var(--line);
           border-radius: 8px;
           padding: 14px 16px;

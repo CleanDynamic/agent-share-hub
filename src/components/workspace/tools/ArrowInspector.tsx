@@ -23,37 +23,37 @@ const TYPES: Array<{
   {
     value: 'feeds_into',
     label: 'Feeds into',
-    swatch: '#2EC4B6',
+    swatch: 'var(--evidence)',
     description: 'Default — carries data downstream.',
   },
   {
     value: 'alternative_to',
     label: 'Alternative to',
-    swatch: 'rgba(255,255,255,0.4)',
+    swatch: 'var(--recess)',
     description: 'Sibling option, no data flow.',
   },
   {
     value: 'depends_on',
     label: 'Depends on',
-    swatch: '#E8571A',
+    swatch: 'var(--action)',
     description: 'Requires upstream block to run first.',
   },
   {
     value: 'contradicts',
     label: 'Contradicts',
-    swatch: '#EF4444',
+    swatch: 'var(--cat-breakage)',
     description: 'Marks an opposing block.',
   },
   {
     value: 'references',
     label: 'References',
-    swatch: 'rgba(255,255,255,0.5)',
+    swatch: 'var(--recess)',
     description: 'Lightweight pointer.',
   },
   {
     value: 'custom',
     label: 'Custom',
-    swatch: '#FFFFFF',
+    swatch: 'var(--text)',
     description: 'Use your own colour.',
   },
 ];
@@ -66,29 +66,29 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
 
   if (!conn) {
     return (
-      <div className="p-4 text-[11px] text-white/40">
+      <div className="p-4 text-[11px] text-muted-foreground">
         Arrow no longer exists.
       </div>
     );
   }
 
   const customColor =
-    (conn as unknown as { custom_color?: string }).custom_color ?? '#FFFFFF';
+    (conn as unknown as { custom_color?: string }).custom_color ?? 'var(--text)';
 
   return (
-    <div className="p-4 space-y-5 text-white/80">
+    <div className="p-4 space-y-5 text-muted-foreground">
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-white/45 mb-1">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
           Arrow
         </h3>
-        <p className="text-[11px] text-white/40">
+        <p className="text-[11px] text-muted-foreground">
           Configure how blocks relate.
         </p>
       </div>
 
       {/* Type picker */}
       <div>
-        <label className="block text-[11px] font-medium text-white/50 mb-2">
+        <label className="block text-[11px] font-medium text-muted-foreground mb-2">
           Type
         </label>
         <div className="space-y-1">
@@ -110,8 +110,8 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
                 className={cn(
                   'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left transition-colors',
                   active
-                    ? 'bg-white/[0.08] border border-white/[0.15]'
-                    : 'border border-transparent hover:bg-white/[0.04]',
+                    ? 'bg-foreground/[0.08] border border-border/[0.15]'
+                    : 'border border-transparent hover:bg-foreground/[0.04]',
                 )}
               >
                 <span
@@ -119,10 +119,10 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
                   style={{ background: t.swatch }}
                 />
                 <span className="flex-1 min-w-0">
-                  <span className="block text-xs font-medium text-white/85">
+                  <span className="block text-xs font-medium text-muted-foreground">
                     {t.label}
                   </span>
-                  <span className="block text-[10.5px] text-white/40 truncate">
+                  <span className="block text-[10.5px] text-muted-foreground truncate">
                     {t.description}
                   </span>
                 </span>
@@ -135,7 +135,7 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
       {/* Custom colour */}
       {conn.connection_type === 'custom' && (
         <div>
-          <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+          <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
             Custom colour
           </label>
           <input
@@ -147,14 +147,14 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
                 custom_color: e.target.value,
               } as never)
             }
-            className="h-8 w-full rounded-md bg-white/[0.03] border border-white/[0.08] cursor-pointer"
+            className="h-8 w-full rounded-md bg-foreground/[0.03] border border-border/[0.08] cursor-pointer"
           />
         </div>
       )}
 
       {/* Label */}
       <div>
-        <label className="block text-[11px] font-medium text-white/50 mb-1.5">
+        <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
           Label
         </label>
         <input
@@ -165,17 +165,17 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
             })
           }
           placeholder="Optional label"
-          className="w-full px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-white/80 placeholder:text-white/30 outline-none focus:border-white/[0.12] transition-colors"
+          className="w-full px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] text-xs text-muted-foreground placeholder:text-muted-foreground outline-none focus:border-border/[0.12] transition-colors"
         />
       </div>
 
       {/* Carries data toggle */}
-      <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-white/[0.03] border border-white/[0.06] cursor-pointer">
+      <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-foreground/[0.03] border border-border/[0.06] cursor-pointer">
         <span>
-          <span className="block text-xs font-medium text-white/85">
+          <span className="block text-xs font-medium text-muted-foreground">
             Carries data
           </span>
-          <span className="block text-[10.5px] text-white/40">
+          <span className="block text-[10.5px] text-muted-foreground">
             Source output flows to target on run.
           </span>
         </span>
@@ -185,7 +185,7 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
           onChange={(e) =>
             updateConnection(connectionId, { carries_data: e.target.checked })
           }
-          className="h-4 w-4 cursor-pointer accent-[#E8571A]"
+          className="h-4 w-4 cursor-pointer accent-[var(--action)]"
         />
       </label>
 
@@ -196,7 +196,7 @@ export function ArrowInspector({ connectionId }: ArrowInspectorProps) {
           removeConnection(connectionId);
           clearSelection();
         }}
-        className="w-full px-3 py-2 rounded-md text-xs font-medium text-red-300 hover:text-red-200 bg-red-500/[0.08] hover:bg-red-500/[0.14] border border-red-500/[0.18] transition-colors"
+        className="w-full px-3 py-2 rounded-md text-xs font-medium text-[var(--cat-breakage)] hover:text-[var(--cat-breakage)] bg-[var(--cat-breakage)]/[0.08] hover:bg-[var(--cat-breakage)]/[0.14] border border-[var(--cat-breakage)]/[0.18] transition-colors"
       >
         Delete arrow
       </button>

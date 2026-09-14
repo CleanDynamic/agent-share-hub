@@ -118,7 +118,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
         <div style={{
           marginTop: 4,
           borderRadius: 8, overflow: 'hidden',
-          background: 'rgba(0,0,0,0.40)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           maxWidth: 320,
         }}>
           <img

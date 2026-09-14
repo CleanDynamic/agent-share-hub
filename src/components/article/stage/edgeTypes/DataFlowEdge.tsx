@@ -189,7 +189,7 @@ export function DataFlowEdge(props: EdgeProps) {
               fontSize: 10,
               padding: '2px 6px',
               borderRadius: 4,
-              background: 'rgba(20,20,28,0.9)',
+              background: 'var(--bg)',
               color: 'var(--text)',
               border: `1px solid ${style.stroke}`,
             }}

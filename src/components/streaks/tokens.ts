@@ -3,26 +3,26 @@
 
 export const COLORS = {
   // brand / gamification language
-  xpOrange: "#E8571A",
+  xpOrange: "var(--action)",
   orangeDeep: "#C44514",
-  reputationTeal: "#2EC4B6",
-  streakAmber: "#F59E0B",
-  purple: "#7C3AED",
-  greenPositive: "#22C55E",
+  reputationTeal: "var(--evidence)",
+  streakAmber: "var(--lit)",
+  purple: "var(--cat-agents)",
+  greenPositive: "var(--cat-configuration)",
   // surfaces
   shell: "rgba(52,52,66,0.55)",
   card: "rgba(68,68,84,0.60)",
   input: "rgba(82,82,100,0.60)",
   // text
-  text: "rgba(255,255,255,0.92)",
-  textMuted: "rgba(255,255,255,0.55)",
-  textFaint: "rgba(255,255,255,0.35)",
-  locked: "rgba(255,255,255,0.25)",
+  text: "var(--text)",
+  textMuted: "var(--recess)",
+  textFaint: "var(--recess)",
+  locked: "var(--recess)",
 } as const
 
 export const BORDER = {
-  hairline: "0.5px solid rgba(255,255,255,0.10)",
-  hairlineStrong: "0.5px solid rgba(255,255,255,0.14)",
+  hairline: "0.5px solid var(--line)",
+  hairlineStrong: "0.5px solid var(--line)",
 } as const
 
 export const RADIUS = {
@@ -45,9 +45,9 @@ export const ORANGE_GRADIENT = `linear-gradient(135deg, ${COLORS.xpOrange} 0%, $
 
 // Heatmap intensity ramp (orange, low -> high activity).
 export const HEAT_RAMP = [
-  "rgba(255,255,255,0.06)", // 0 — empty cell
-  "rgba(232,87,26,0.28)",
-  "rgba(232,87,26,0.50)",
-  "rgba(232,87,26,0.72)",
-  "rgba(232,87,26,0.95)",
+  "var(--recess)", // 0 — empty cell
+  "color-mix(in srgb, var(--action) 28%, transparent)",
+  "color-mix(in srgb, var(--action) 50%, transparent)",
+  "color-mix(in srgb, var(--action) 72%, transparent)",
+  "color-mix(in srgb, var(--action) 95%, transparent)",
 ] as const

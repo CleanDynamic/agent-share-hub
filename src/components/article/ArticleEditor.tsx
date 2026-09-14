@@ -1291,7 +1291,7 @@ export function ArticleEditor({
             onClick={() => setSaveDialogOpen(false)}
             style={{
               position: 'absolute', inset: 0,
-              background: 'rgba(0,0,0,0.60)',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
               backdropFilter: 'blur(4px)',
               WebkitBackdropFilter: 'blur(4px)',
             }}
@@ -1302,7 +1302,7 @@ export function ArticleEditor({
             aria-label="Name your draft"
             style={{
               position: 'relative', zIndex: 1,
-              background: 'rgba(14,14,20,0.98)',
+              background: 'var(--bg)',
               border: '1px solid var(--line)',
               borderRadius: 16,
               padding: '24px 26px',

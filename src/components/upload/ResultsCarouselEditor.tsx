@@ -159,7 +159,7 @@ export function ResultsCarouselEditor({
         zIndex: 50,
         minWidth: 140,
         padding: 4,
-        background: "rgba(20,20,24,0.96)",
+        background: "var(--bg)",
         border: "0.5px solid var(--line)",
         borderRadius: 8,
         boxShadow: "0 8px 24px rgba(0,0,0,0.40)",
@@ -390,7 +390,7 @@ export function ResultsCarouselEditor({
               position: "relative",
               width: "100%",
               aspectRatio: "16 / 9",
-              background: "rgba(0,0,0,0.40)",
+              background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               borderRadius: 8,
               overflow: "hidden",
               border: isDraggingOver
@@ -412,7 +412,7 @@ export function ResultsCarouselEditor({
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 8,
-                        background: "rgba(0,0,0,0.55)",
+                        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                       }}
                     >
                       <Loader2
@@ -490,7 +490,7 @@ export function ResultsCarouselEditor({
                         alignItems: "center",
                         gap: 4,
                         padding: "4px 10px",
-                        background: "rgba(0,0,0,0.50)",
+                        background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                         border: "none",
                         borderRadius: 6,
                         cursor: "pointer",
@@ -522,7 +522,7 @@ export function ResultsCarouselEditor({
                       width: 36,
                       height: 36,
                       borderRadius: "50%",
-                      background: "rgba(0,0,0,0.50)",
+                      background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                       border: "none",
                       cursor: "pointer",
                       display: "flex",
@@ -545,7 +545,7 @@ export function ResultsCarouselEditor({
                       width: 36,
                       height: 36,
                       borderRadius: "50%",
-                      background: "rgba(0,0,0,0.50)",
+                      background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                       border: "none",
                       cursor: "pointer",
                       display: "flex",
@@ -674,7 +674,7 @@ export function ResultsCarouselEditor({
                       : "1px solid transparent",
                   opacity: draggedThumbnailId === slide.id ? 0.5 : 1,
                   transition: "opacity 0.2s ease",
-                  background: "rgba(0,0,0,0.40)",
+                  background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 }}
               >
                 {slide.kind === "photo" && slide.mediaUrl && (
@@ -697,7 +697,7 @@ export function ResultsCarouselEditor({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        background: "rgba(0,0,0,0.30)",
+                        background: "var(--recess)",
                       }}
                     >
                       <Play size={14} color="white" fill="white" />
@@ -735,7 +735,7 @@ export function ResultsCarouselEditor({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "rgba(0,0,0,0.60)",
+                      background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                     }}
                   >
                     <Loader2
@@ -758,7 +758,7 @@ export function ResultsCarouselEditor({
                       width: 16,
                       height: 16,
                       borderRadius: "50%",
-                      background: "rgba(0,0,0,0.70)",
+                      background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                       border: "none",
                       padding: 0,
                       cursor: "pointer",

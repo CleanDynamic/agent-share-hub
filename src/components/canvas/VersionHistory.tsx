@@ -70,7 +70,7 @@ export function VersionHistory({
       <div
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.50)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           zIndex: 200,
         }}
         onClick={onClose}
@@ -79,7 +79,7 @@ export function VersionHistory({
         position: 'fixed',
         right: 0, top: 0, bottom: 0,
         width: 320,
-        background: 'rgba(10,10,16,0.99)',
+        background: 'var(--bg)',
         borderLeft:
           '1px solid var(--line)',
         zIndex: 201,

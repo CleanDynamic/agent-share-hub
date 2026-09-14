@@ -151,7 +151,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
         <div
           className="flex items-center gap-2 px-2 py-2 mb-2 rounded-md"
           style={{
-            background: 'rgba(0,0,0,0.25)',
+            background: 'var(--recess)',
             border: '1px solid var(--line)',
           }}
         >

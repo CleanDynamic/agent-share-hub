@@ -24,13 +24,13 @@ export function AnnotationsList({
     <>
       <div style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.40)', zIndex: 200,
+        background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', zIndex: 200,
       }} onClick={onClose} />
       <div style={{
         position: 'fixed',
         left: 220, top: 60,
         width: 300, maxHeight: '70vh',
-        background: 'rgba(10,10,16,0.99)',
+        background: 'var(--bg)',
         border: '1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)',
         borderRadius: 12, zIndex: 201,
         overflow: 'hidden',

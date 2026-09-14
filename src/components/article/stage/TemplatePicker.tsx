@@ -235,7 +235,7 @@ export function TemplatePicker({
                 type="button"
                 onClick={() => handlePick(null)}
                 className="text-left rounded-lg border border-dashed border-foreground/15 hover:border-foreground/30 transition-colors p-3 flex flex-col gap-2 min-h-[180px]"
-                style={{ background: 'rgba(20,20,28,0.4)' }}
+                style={{ background: 'var(--recess)' }}
               >
                 <div className="h-20 rounded-md flex items-center justify-center text-foreground/40 text-2xl">
                   ＋
@@ -251,11 +251,11 @@ export function TemplatePicker({
                 type="button"
                 onClick={() => handlePick(t)}
                 className="text-left rounded-lg border border-foreground/10 hover:border-foreground/25 transition-colors p-3 flex flex-col gap-2 min-h-[180px]"
-                style={{ background: 'rgba(20,20,28,0.55)' }}
+                style={{ background: 'var(--recess)' }}
               >
                 <div
                   className="h-20 rounded-md overflow-hidden flex items-center justify-center"
-                  style={{ background: 'rgba(10,10,14,0.6)' }}
+                  style={{ background: 'var(--recess)' }}
                 >
                   <MiniPreview template={t} />
                 </div>

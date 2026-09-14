@@ -321,7 +321,7 @@ export default function BountyUpload() {
       {/* Sticky bottom nav */}
       <div style={{
         position: 'sticky', bottom: 0, marginTop: 'auto',
-        background: 'rgba(8,8,12,0.95)',
+        background: 'var(--bg)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid var(--line)',
         padding: '12px 20px 16px 20px',

@@ -356,7 +356,7 @@ export function CanvasBlock({
                 style={{
                   position: 'absolute', bottom: 2, right: 2,
                   display: 'flex', alignItems: 'center', gap: 2,
-                  background: 'rgba(10,10,16,0.90)',
+                  background: 'var(--bg)',
                   border: '1px solid rgba(251,191,36,0.20)',
                   borderRadius: 4, padding: '1px 3px',
                   zIndex: 30,
@@ -489,7 +489,7 @@ export function CanvasBlock({
                 style={{
                   position: 'absolute', bottom: 4, right: 4,
                   display: 'flex', alignItems: 'center', gap: 2,
-                  background: 'rgba(10,10,16,0.95)',
+                  background: 'var(--bg)',
                   border: '1px solid var(--line)',
                   borderRadius: 5, padding: '2px 4px',
                   zIndex: 30,
@@ -547,7 +547,7 @@ export function CanvasBlock({
                     {stagePickerOpen && (
                       <div style={{
                         position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
-                        background: 'rgba(10,10,16,0.98)', border: '1px solid var(--line)',
+                        background: 'var(--bg)', border: '1px solid var(--line)',
                         borderRadius: 6, padding: '4px 0', minWidth: 120, zIndex: 50,
                         boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
                       }}>
@@ -620,7 +620,7 @@ export function CanvasBlock({
             {block.isLocked && block.lockType === 'blur' && (
               <div style={{
                 position: 'absolute', inset: 0, backdropFilter: 'blur(8px)',
-                background: 'rgba(6,6,10,0.60)', display: 'flex', alignItems: 'center',
+                background: 'var(--recess)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', borderRadius: 10,
               }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Download to unlock</div>
