@@ -84,3 +84,42 @@ export function tokenAlpha(name: TokenName, alpha: number): string {
   const percent = Math.round(Math.min(Math.max(alpha, 0), 1) * 1000) / 10;
   return `color-mix(in srgb, var(--${name}) ${percent}%, transparent)`;
 }
+
+/**
+ * A COLOUR at a fraction of its opacity, where the colour is a string rather
+ * than a known token name.
+ *
+ * `tokenAlpha` above is the one to reach for in new code: it takes a
+ * `TokenName` and is checked at compile time. This is for the repointed token
+ * modules, whose `withAlpha(colour, alpha)` helpers are called with whatever
+ * their own exports hold — and those exports are now `var(--token)` strings.
+ *
+ * WHY THIS EXISTS AT ALL. A module like `challenges/quest/tokens.ts` published
+ * hexes and a `withAlpha` that took them apart with `parseInt`. Repointing the
+ * exports at tokens breaks that parse: `var(--action)` has no channels, so the
+ * old code fell through to its `rgba(NaN,NaN,NaN,α)` and painted nothing. The
+ * `var()` branch defers the blend to the browser, which is the only place both
+ * the alpha and the theme's current value for the token are known at once.
+ * BG-P21 made the same change to `hexToRgba` in `src/components/build/tokens.ts`
+ * for the same reason; this is that behaviour in one place rather than three.
+ *
+ * Hex in, `rgba()` out — byte-identical to what the old helpers emitted, so a
+ * call site still passing a literal is unaffected. Anything that is neither a
+ * hex nor a `var()` returns unchanged.
+ */
+export function colourAlpha(colour: string, alpha: number): string {
+  const input = (colour ?? "").trim();
+
+  const hex = /^#?([0-9a-f]{6})$/i.exec(input);
+  if (hex) {
+    const int = parseInt(hex[1], 16);
+    return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`;
+  }
+
+  if (/^var\(--[a-z0-9-]+\)$/i.test(input)) {
+    const percent = Math.round(Math.min(Math.max(alpha, 0), 1) * 1000) / 10;
+    return `color-mix(in srgb, ${input} ${percent}%, transparent)`;
+  }
+
+  return colour;
+}

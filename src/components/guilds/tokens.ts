@@ -1,3 +1,35 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// DELIBERATELY NOT REPOINTED — BG-P29. THIS SURFACE IS NOT MOUNTED.
+//
+// Every value below is a literal struck for one dark room, and it stays that
+// way. BG-P29 swept the rest of the codebase onto `var(--token)` references and
+// skipped this folder on purpose, because nothing renders it: no route reaches
+// any component here, and no file outside this folder imports one. The sweep's
+// compliance guard — `src/lib/theme/compliance.test.ts` — allowlists this file
+// by path for exactly that reason, and names this note as the justification.
+//
+// WHY SKIPPED RATHER THAN REPOINTED. A mechanical recolour of a surface nobody
+// has designed yet is a liability, not an asset: it would look finished, it
+// would carry BG-P25's gamification mapping into decisions nobody has made, and
+// the next session would have to unpick it before it could think. The two-theme
+// system is what this surface should be designed AGAINST, from the tokens
+// outward — not something it should be retrofitted into after the fact.
+//
+// WHY SKIPPED RATHER THAN DELETED. The components are complete and coherent;
+// what is missing is a route and a decision about where this belongs. Deleting
+// working code to satisfy a lint count is the wrong trade.
+//
+// SO: IF YOU ARE THE SESSION THAT MOUNTS THIS, START FROM `buildgallery-theme`
+// AND `src/lib/theme/tokens.ts`. Do not repoint the values below one by one —
+// read the surface, decide what each element MEANS, and spend the semantic
+// token that names that job. Then delete this note and this file's entry in the
+// compliance allowlist. The four gamification surfaces that ARE live
+// (`profile-game`, `progress/gamification`, `progress/xp-kit`,
+// `challenges/quest`) share one mapping, documented at the head of
+// `src/components/profile-game/tokens.ts`; agree with it or argue with it, but
+// do not invent a fifth answer.
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Shared design tokens for the Guild/Circle UI system.
 // Plain object — consumed via inline style={{}} for all visual treatment.
 
