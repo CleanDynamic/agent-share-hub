@@ -122,13 +122,17 @@ const CATEGORIES: Category[] = [
 
 const CAPPED: Record<string, { max: number; why: string }> = {
   "src/components/auth/OAuthButtons.tsx": {
-    max: 3,
+    max: 4,
     why:
-      "GOOGLE'S BRAND MARK, inside its own logo SVG: #4285F4, #34A853, " +
-      "#EA4335 and the red. A provider's logo is their trademark and is not " +
-      "ours to theme — recolouring it would misrepresent them, and every " +
-      "OAuth button on the web shows the mark as issued. The button AROUND " +
-      "it is on tokens.",
+      "GOOGLE'S BRAND MARK, inside its own logo SVG — all four wedges: " +
+      "#4285F4 blue, #34A853 green, #FBBC05 yellow, #EA4335 red. A provider's " +
+      "logo is their trademark and is not ours to theme; recolouring it would " +
+      "misrepresent them, and every OAuth button on the web shows the mark as " +
+      "issued. The button AROUND it is on tokens. THE CAP IS 4 BECAUSE THE " +
+      "SWEEP GOT THIS WRONG ONCE: #FBBC05 is also a plausible legacy amber, so " +
+      "it was mapped to --lit and the screenshot diff caught a 5x10 patch of " +
+      "the Google G turning theme-dependent. If a fifth literal ever appears " +
+      "here, it is not a brand wedge.",
   },
   "src/components/article/blocks/CodeBlock.tsx": {
     max: 5,
