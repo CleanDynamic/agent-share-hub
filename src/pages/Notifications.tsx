@@ -17,6 +17,7 @@ import {
   type NotificationCardData,
 } from "@/components/notifications/NotificationCard";
 import { ShellHeader } from "@/components/shell/ShellHeader";
+import { t as tok, tokenAlpha, tokenVar, type TokenName } from "@/lib/theme/tokens";
 
 const PAGE_SIZE = 50;
 
@@ -91,16 +92,23 @@ function resolveDeepLink(n: NotificationCardData, raw: DataNotification): string
 }
 
 // ── Empty states ──────────────────────────────────────────────────────────
-function EmptyStateBadge({ icon, color }: { icon: React.ReactNode; color: string }) {
+/**
+ * BG-P26. This used to take a hex and build its ground by string concatenation
+ * — `${color}1F` — which is only meaningful for a literal hex. A semantic token
+ * is a `var()` reference whose value is not known until the browser resolves it
+ * against `<html data-theme>`, so the alpha has to be deferred too: `tokenAlpha`
+ * emits a `color-mix`, which is the same trick the rest of the kit uses.
+ */
+function EmptyStateBadge({ icon, token }: { icon: React.ReactNode; token: TokenName }) {
   return (
     <div
       style={{
         width: 44,
         height: 44,
         borderRadius: "50%",
-        background: `${color}1F`,
-        border: `1px solid ${color}55`,
-        color,
+        background: tokenAlpha(token, 0.12),
+        border: `1px solid ${tokenAlpha(token, 0.33)}`,
+        color: tokenVar(token),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -120,12 +128,12 @@ function EmptyAll() {
         padding: "72px 24px",
         maxWidth: 360,
         margin: "0 auto",
-        color: "rgba(255,255,255,0.55)",
+        color: tok.text2,
         fontFamily: "Figtree, sans-serif",
       }}
     >
-      <EmptyStateBadge icon={<Bell size={20} />} color="#2EC4B6" />
-      <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+      <EmptyStateBadge icon={<Bell size={20} />} token="text2" />
+      <div style={{ fontSize: 15, fontWeight: 600, color: tok.text }}>
         You're all clear
       </div>
       <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
@@ -143,12 +151,16 @@ function EmptyUnread() {
         padding: "72px 24px",
         maxWidth: 360,
         margin: "0 auto",
-        color: "rgba(255,255,255,0.65)",
+        color: tok.text2,
         fontFamily: "Figtree, sans-serif",
       }}
     >
-      <EmptyStateBadge icon={<CheckCircle size={20} />} color="#2EC4B6" />
-      <div style={{ fontSize: 15, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+      {/* Caught up is a good state, so the badge takes `--evidence` — the token
+          this system uses for "it worked" — rather than the teal it was pinned
+          to. The empty-all badge above stays neutral: nothing has happened, and
+          nothing has gone right either. */}
+      <EmptyStateBadge icon={<CheckCircle size={20} />} token="evidence" />
+      <div style={{ fontSize: 15, fontWeight: 600, color: tok.text }}>
         All caught up
       </div>
       <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5 }}>
@@ -364,7 +376,7 @@ export default function NotificationsPage() {
             display: "flex",
             justifyContent: "center",
             padding: "48px 0",
-            color: "rgba(255,255,255,0.45)",
+            color: tok.text2,
           }}
         >
           <Loader2 size={18} className="animate-spin" />
@@ -397,7 +409,7 @@ export default function NotificationsPage() {
                 display: "flex",
                 justifyContent: "center",
                 padding: "16px 0",
-                color: "rgba(255,255,255,0.45)",
+                color: tok.text2,
               }}
             >
               <Loader2 size={16} className="animate-spin" />

@@ -11,6 +11,9 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
+import { r } from "@/lib/theme/radius";
+import { data as dataType, eyebrow, tabular } from "@/lib/theme/type";
 
 // ── Types ────────────────────────────────────────────────────────────────
 export type NotificationKind =
@@ -97,9 +100,9 @@ function Avatar({
           width: 36,
           height: 36,
           borderRadius: "50%",
-          background: "rgba(46,196,182,0.15)",
-          color: "#2EC4B6",
-          border: "1px solid rgba(46,196,182,0.30)",
+          background: tok.recess,
+          color: tok.text2,
+          border: `1px solid ${tok.line}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -124,28 +127,41 @@ function Avatar({
         borderRadius: "50%",
         objectFit: "cover",
         flexShrink: 0,
-        border: "0.5px solid rgba(255,255,255,0.10)",
+        border: `0.5px solid ${tok.line}`,
       }}
     />
   );
 }
 
-function IconBadge({
-  children,
-  color,
-}: {
-  children: React.ReactNode;
-  color: string;
-}) {
+/**
+ * BG-P26 — ONE badge treatment, for every subkind.
+ *
+ * This used to take a `color` and there were nine of them: #2EC4B6, #E8571A,
+ * #FF6B6B, #A8DADC, #AA96DA, #888888 and the rest, mixed with hex-alpha
+ * suffixes (`${color}26`). None was a theme token, so none changed between the
+ * rooms, and a stream of nine differently-coloured discs is a rainbow that
+ * encodes nothing — the nine hues that DO encode something in this system are
+ * the part categories, and a notification is not a part.
+ *
+ * BG-P26 asks for one row treatment for every subkind, so the badge is one
+ * treatment: `--recess` ground, `--line` hairline, `--text2` icon. What the
+ * notification says is carried by the words — the actor, the action in plain
+ * words, the target — which is where it belongs and where a screen reader can
+ * reach it. The icon stays as the shape cue it always was.
+ *
+ * The `color` prop is gone rather than ignored, so a call site cannot pass a
+ * hue and quietly have it dropped.
+ */
+function IconBadge({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
         width: 36,
         height: 36,
         borderRadius: "50%",
-        background: `${color}26`,
-        border: `1px solid ${color}4D`,
-        color,
+        background: tok.recess,
+        border: `1px solid ${tok.line}`,
+        color: tok.text2,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -171,7 +187,7 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
   switch (kind) {
     case "reference_received":
       return (
-        <IconBadge color="#2EC4B6">
+        <IconBadge>
           <Quote size={16} />
         </IconBadge>
       );
@@ -179,13 +195,13 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
       return actor?.avatarUrl ? (
         <Avatar src={actor.avatarUrl} alt={actor.displayName} fallback={initials} />
       ) : (
-        <IconBadge color="#E8571A">
+        <IconBadge>
           <UserPlus size={16} />
         </IconBadge>
       );
     case "bounty_interaction":
       return (
-        <IconBadge color="#E8571A">
+        <IconBadge>
           <Target size={16} />
         </IconBadge>
       );
@@ -193,20 +209,20 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
       const t = metadata.engagementType;
       if (t === "like") {
         return (
-          <IconBadge color="#FF6B6B">
+          <IconBadge>
             <Heart size={16} />
           </IconBadge>
         );
       }
       if (t === "repost") {
         return (
-          <IconBadge color="#A8DADC">
+          <IconBadge>
             <Repeat2 size={16} />
           </IconBadge>
         );
       }
       return (
-        <IconBadge color="#2EC4B6">
+        <IconBadge>
           <MessageSquare size={16} />
         </IconBadge>
       );
@@ -215,19 +231,19 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
       return actor?.avatarUrl ? (
         <Avatar src={actor.avatarUrl} alt={actor.displayName} fallback={initials} />
       ) : (
-        <IconBadge color="#2EC4B6">
+        <IconBadge>
           <MessageSquare size={16} />
         </IconBadge>
       );
     case "mention":
       return (
-        <IconBadge color="#E8571A">
+        <IconBadge>
           <AtSign size={16} />
         </IconBadge>
       );
     case "system":
       return (
-        <IconBadge color="#AA96DA">
+        <IconBadge>
           <Sparkles size={16} />
         </IconBadge>
       );
@@ -235,7 +251,7 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
       return actor?.avatarUrl ? (
         <Avatar src={actor.avatarUrl} alt={actor.displayName} fallback={initials} />
       ) : (
-        <IconBadge color="#888888">
+        <IconBadge>
           <Sparkles size={16} />
         </IconBadge>
       );
@@ -355,16 +371,21 @@ export function NotificationCard({
   const isFollowBack =
     notification.kind === "new_follower" && !notification.metadata.isFollowing;
 
+  // Rows sit on the page ground and lift to `--recess` on hover, the same
+  // two-step the thread list uses. A realtime arrival flashes `--evidence` —
+  // the token for a live state — rather than the teal it was hard-coded to.
   const background = pulseActive
-    ? "rgba(46,196,182,0.06)"
+    ? tokenAlpha("evidence", 0.08)
     : hovered
-    ? "rgba(22,22,30,0.50)"
-    : "rgba(22,22,30,0.30)";
+    ? tok.recess
+    : tok.bg;
 
+  // BG-P26: an unread row carries an `--action` left edge. A read row keeps a
+  // transparent 2px edge so nothing shifts when it is marked read.
   const leftRule = !notification.isRead
-    ? "rgba(46,196,182,0.55)"
+    ? tok.action
     : pulseActive
-    ? "rgba(46,196,182,0.40)"
+    ? tokenAlpha("evidence", 0.4)
     : "transparent";
 
   return (
@@ -383,11 +404,12 @@ export function NotificationCard({
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={cn(
-        "group relative mb-2 flex cursor-pointer gap-3 rounded-lg border-[0.5px] border-white/5 px-4 py-3"
-      )}
+      className={cn("group relative mb-2 flex cursor-pointer gap-3 px-4 py-3")}
       style={{
         background,
+        // A list row takes `--r-control` from the radius scale.
+        borderRadius: r["r-control"],
+        border: `0.5px solid ${tok.line}`,
         borderLeft: `2px solid ${leftRule}`,
         transition: "background 280ms ease, border-color 600ms ease, opacity 200ms ease",
       }}
@@ -404,7 +426,7 @@ export function NotificationCard({
             fontFamily: "Figtree, sans-serif",
             fontSize: 13,
             fontWeight: 500,
-            color: "rgba(255,255,255,0.92)",
+            color: tok.text,
             lineHeight: 1.4,
             paddingRight: 28,
           }}
@@ -418,7 +440,7 @@ export function NotificationCard({
               marginTop: 4,
               fontFamily: "Figtree, sans-serif",
               fontSize: 12,
-              color: "rgba(255,255,255,0.55)",
+              color: tok.text2,
               lineHeight: 1.5,
               overflow: "hidden",
               display: "-webkit-box",
@@ -433,9 +455,12 @@ export function NotificationCard({
         <div
           style={{
             marginTop: 6,
-            fontFamily: "Figtree, sans-serif",
+            // A timestamp is data, so it takes the mono face and tabular
+            // digits — a column of them lines up rather than jitters.
+            fontFamily: dataType.fontFamily,
+            ...tabular,
             fontSize: 11,
-            color: "rgba(255,255,255,0.40)",
+            color: tok.text2,
           }}
         >
           {formattedTime}
@@ -460,16 +485,18 @@ export function NotificationCard({
             onClick(notification);
           }}
           style={{
-            background: isFollowBack ? "rgba(232,87,26,0.15)" : "transparent",
-            border: isFollowBack
-              ? "0.5px solid rgba(232,87,26,0.40)"
-              : "0.5px solid rgba(255,255,255,0.10)",
-            color: isFollowBack ? "#E8571A" : "rgba(255,255,255,0.85)",
+            // The emphasised CTA takes an `--action` wash with `--text` on it,
+            // the same ground and ink as an own-message bubble — the hue itself
+            // is not legal as ink on its own wash (3.97:1 on Exhibition).
+            // Everything else is a secondary: a `--line` border and no fill.
+            background: isFollowBack ? tokenAlpha("action", 0.14) : "transparent",
+            border: `0.5px solid ${isFollowBack ? tokenAlpha("action", 0.4) : tok.line}`,
+            color: isFollowBack ? tok.text : tok.text2,
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
             fontWeight: 600,
             padding: "4px 9px",
-            borderRadius: 6,
+            borderRadius: r["r-chip"],
             cursor: "pointer",
           }}
         >
@@ -497,9 +524,9 @@ export function NotificationCard({
             alignItems: "center",
             justifyContent: "center",
             background: "transparent",
-            border: "0.5px solid rgba(255,255,255,0.10)",
+            border: `0.5px solid ${tok.line}`,
             borderRadius: 999,
-            color: "rgba(255,255,255,0.55)",
+            color: tok.text2,
             cursor: "pointer",
             opacity: hovered ? 1 : 0,
             transition: "opacity 160ms ease",
@@ -521,12 +548,12 @@ export function NotificationGroupHeader({ label }: { label: string }) {
         marginTop: 14,
         marginBottom: 6,
         paddingLeft: 4,
-        fontFamily: "Figtree, sans-serif",
-        fontSize: 11,
-        fontWeight: 600,
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        color: "rgba(255,255,255,0.45)",
+        // BG-P26: mono day headings. This is the eyebrow role — 12px DM Mono,
+        // uppercase, 0.08em — which is what the scale already calls a small
+        // label above a group, so the heading is taken from there rather than
+        // hand-set a fourth time.
+        ...eyebrow,
+        color: tok.text2,
       }}
     >
       {label}
