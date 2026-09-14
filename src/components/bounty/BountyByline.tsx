@@ -55,7 +55,7 @@ export function BountyByline({
           <img
             src={bountyAuthor.avatarUrl}
             alt={bountyAuthor.displayName}
-            style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)" }}
+            style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid var(--line)" }}
           />
           <div style={{ textAlign: "left" }}>
             <div
@@ -63,7 +63,7 @@ export function BountyByline({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.90)",
+                color: "var(--text)",
               }}
             >
               {bountyAuthor.displayName}
@@ -72,7 +72,7 @@ export function BountyByline({
               style={{
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 12,
-                color: "rgba(255,255,255,0.45)",
+                color: "var(--text2)",
               }}
             >
               @{bountyAuthor.handle}
@@ -89,9 +89,9 @@ export function BountyByline({
               gap: 4,
               padding: "4px 10px",
               borderRadius: 100,
-              background: "rgba(46,196,182,0.10)",
-              border: "0.5px solid rgba(46,196,182,0.25)",
-              color: "#2EC4B6",
+              background: "color-mix(in srgb, var(--evidence) 10%, transparent)",
+              border: "0.5px solid color-mix(in srgb, var(--evidence) 25%, transparent)",
+              color: "var(--evidence)",
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 600,
@@ -109,8 +109,8 @@ export function BountyByline({
           style={{
             marginTop: 10,
             padding: 10,
-            background: "rgba(46,196,182,0.04)",
-            border: "0.5px solid rgba(46,196,182,0.15)",
+            background: "color-mix(in srgb, var(--evidence) 4%, transparent)",
+            border: "0.5px solid color-mix(in srgb, var(--evidence) 15%, transparent)",
             borderRadius: 8,
             display: "flex",
             flexDirection: "column",
@@ -134,7 +134,7 @@ export function BountyByline({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.85)",
+                      color: "var(--text)",
                     }}
                   >
                     {solver.displayName}
@@ -143,13 +143,13 @@ export function BountyByline({
                     style={{
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 11,
-                      color: "rgba(255,255,255,0.45)",
+                      color: "var(--text2)",
                     }}
                   >
                     @{solver.handle}
                   </span>
                   {solver.isTrustedSolver && (
-                    <Shield size={10} color="#2EC4B6" style={{ flexShrink: 0 }} />
+                    <Shield size={10} color="var(--evidence)" style={{ flexShrink: 0 }} />
                   )}
                 </div>
               </div>
@@ -158,8 +158,8 @@ export function BountyByline({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
                   fontWeight: 400,
-                  color: "rgba(46,196,182,0.70)",
-                  background: "rgba(46,196,182,0.08)",
+                  color: "color-mix(in srgb, var(--evidence) 70%, transparent)",
+                  background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
                   padding: "2px 6px",
                   borderRadius: 4,
                   whiteSpace: "nowrap",
@@ -176,7 +176,7 @@ export function BountyByline({
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 500,
-              color: "#2EC4B6",
+              color: "var(--evidence)",
               background: "none",
               border: "none",
               cursor: "pointer",

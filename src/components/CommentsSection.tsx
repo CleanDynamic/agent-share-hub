@@ -269,7 +269,7 @@ export function CommentsSection({
                   className="flex items-center gap-1 mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Heart
-                    className={`h-3 w-3 ${likedIds.has(c.id) ? "fill-red-500 text-red-500" : ""}`}
+                    className={`h-3 w-3 ${likedIds.has(c.id) ? "fill-[var(--cat-breakage)] text-[var(--cat-breakage)]" : ""}`}
                   />
                   {c.like_count > 0 && <span>{c.like_count}</span>}
                 </button>

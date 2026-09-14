@@ -41,11 +41,11 @@ export function AcceptSolutionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-[480px] p-6 border border-white/10 bg-background/95 backdrop-blur-xl"
+        className="sm:max-w-[480px] p-6 border border-border bg-background/95 backdrop-blur-xl"
       >
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <CheckCircle className="w-5 h-5" style={{ color: "#2EC4B6" }} />
+            <CheckCircle className="w-5 h-5" style={{ color: "var(--evidence)" }} />
             <span>
               Accept solution by{" "}
               <span className="text-foreground">@{solverHandle}</span>?
@@ -59,7 +59,7 @@ export function AcceptSolutionDialog({
           </p>
           <ul className="space-y-2 text-[13px] text-foreground/80">
             <li className="flex gap-2">
-              <span className="text-teal-300 select-none">•</span>
+              <span className="text-[var(--evidence)] select-none">•</span>
               <span>
                 <span className="text-foreground">
                   {solverDisplayName ? solverDisplayName : `@${solverHandle}`}
@@ -68,26 +68,26 @@ export function AcceptSolutionDialog({
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="text-teal-300 select-none">•</span>
+              <span className="text-[var(--evidence)] select-none">•</span>
               <span>
                 Their solution merges into the bounty's{" "}
                 <span className="text-foreground">{slotName}</span>
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="text-teal-300 select-none">•</span>
+              <span className="text-[var(--evidence)] select-none">•</span>
               <span>
                 The bounty status updates{" "}
                 <span
                   className="text-foreground"
-                  style={{ color: isLastSlot ? "#2EC4B6" : undefined }}
+                  style={{ color: isLastSlot ? "var(--evidence)" : undefined }}
                 >
                   {statusLine}
                 </span>
               </span>
             </li>
           </ul>
-          <p className="text-[11px] italic text-muted-foreground pt-1 border-t border-white/5">
+          <p className="text-[11px] italic text-muted-foreground pt-1 border-t border-border">
             All accepted solutions are permanently attributed via the
             platform's acceptance log. Attribution cannot be removed.
           </p>
@@ -104,8 +104,8 @@ export function AcceptSolutionDialog({
           <Button
             onClick={() => void onConfirm()}
             disabled={submitting}
-            className="text-black font-semibold"
-            style={{ background: "#2EC4B6" }}
+            className="text-primary-foreground font-semibold"
+            style={{ background: "var(--evidence)" }}
           >
             <Check className="w-4 h-4 mr-1.5" />
             {submitting ? "Accepting…" : "Accept and merge"}

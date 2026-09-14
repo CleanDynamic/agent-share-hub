@@ -52,10 +52,10 @@ export function BountyMoreMenu({
             justifyContent: 'center',
             width: size,
             height: size,
-            background: 'rgba(15,15,20,0.55)',
-            border: '0.5px solid rgba(255,255,255,0.10)',
+            background: "var(--recess)",
+            border: '0.5px solid var(--line)',
             borderRadius: 4,
-            color: 'rgba(255,255,255,0.65)',
+            color: 'var(--text2)',
             cursor: 'pointer',
             zIndex: 5,
           }}
@@ -76,7 +76,8 @@ export function BountyMoreMenu({
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 500,
-            color: isMissing ? '#F59E0B' : 'rgba(255,255,255,0.75)',
+            /* Marked unsolved is a GAP, so it takes the gap hue. */
+            color: isMissing ? 'var(--cat-breakage)' : 'var(--text2)',
           }}
         >
           {isMissing ? (

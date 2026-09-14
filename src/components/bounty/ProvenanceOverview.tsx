@@ -30,8 +30,8 @@ export function ProvenanceOverview({
       style={{
         marginTop: 32,
         padding: 20,
-        background: "rgba(46,196,182,0.03)",
-        border: "0.5px solid rgba(46,196,182,0.15)",
+        background: "color-mix(in srgb, var(--evidence) 3%, transparent)",
+        border: "0.5px solid color-mix(in srgb, var(--evidence) 15%, transparent)",
         borderRadius: 12,
       }}
     >
@@ -44,13 +44,13 @@ export function ProvenanceOverview({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Users size={14} color="#2EC4B6" />
+          <Users size={14} color="var(--evidence)" />
           <h3
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
               margin: 0,
             }}
           >
@@ -65,7 +65,7 @@ export function ProvenanceOverview({
             gap: 4,
             fontFamily: "Figtree, sans-serif",
             fontSize: 11,
-            color: "rgba(46,196,182,0.85)",
+            color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
             background: "none",
             border: "none",
             cursor: "pointer",
@@ -87,8 +87,8 @@ export function ProvenanceOverview({
         {/* Bounty author card */}
         <div
           style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "0.5px solid rgba(255,255,255,0.08)",
+            background: "var(--recess)",
+            border: "0.5px solid var(--line)",
             borderRadius: 8,
             padding: 12,
           }}
@@ -105,7 +105,7 @@ export function ProvenanceOverview({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "var(--text)",
                 }}
               >
                 {bountyAuthor.displayName}
@@ -114,7 +114,7 @@ export function ProvenanceOverview({
                 style={{
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 11,
-                  color: "rgba(255,255,255,0.45)",
+                  color: "var(--text2)",
                 }}
               >
                 @{bountyAuthor.handle}
@@ -124,7 +124,7 @@ export function ProvenanceOverview({
                   marginTop: 4,
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
-                  color: "#F59E0B",
+                  color: "var(--evidence)",
                   fontWeight: 600,
                 }}
               >
@@ -135,7 +135,7 @@ export function ProvenanceOverview({
                   marginTop: 2,
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 10,
-                  color: "rgba(255,255,255,0.40)",
+                  color: "var(--text2)",
                 }}
               >
                 Posted bounty · {bountyAuthor.postedAt}
@@ -149,8 +149,8 @@ export function ProvenanceOverview({
             key={solver.id}
             onClick={() => onSolverClick(solver.id)}
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              background: "var(--recess)",
+              border: "0.5px solid var(--line)",
               borderRadius: 8,
               padding: 12,
               cursor: "pointer",
@@ -158,10 +158,10 @@ export function ProvenanceOverview({
               transition: "background 0.15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(46,196,182,0.05)";
+              e.currentTarget.style.background = "color-mix(in srgb, var(--evidence) 5%, transparent)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+              e.currentTarget.style.background = "var(--recess)";
             }}
           >
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -177,18 +177,18 @@ export function ProvenanceOverview({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "rgba(255,255,255,0.85)",
+                      color: "var(--text)",
                     }}
                   >
                     {solver.displayName}
                   </span>
-                  {solver.isTrustedSolver && <Shield size={10} color="#2EC4B6" />}
+                  {solver.isTrustedSolver && <Shield size={10} color="var(--evidence)" />}
                 </div>
                 <div
                   style={{
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 11,
-                    color: "rgba(255,255,255,0.45)",
+                    color: "var(--text2)",
                   }}
                 >
                   @{solver.handle}
@@ -198,7 +198,7 @@ export function ProvenanceOverview({
                     marginTop: 4,
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 10,
-                    color: "#2EC4B6",
+                    color: "var(--evidence)",
                     fontWeight: 600,
                   }}
                 >
@@ -209,7 +209,7 @@ export function ProvenanceOverview({
                     marginTop: 2,
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 10,
-                    color: "rgba(255,255,255,0.40)",
+                    color: "var(--text2)",
                   }}
                 >
                   Solved {solver.slotName} · {solver.acceptedAt}
@@ -224,10 +224,10 @@ export function ProvenanceOverview({
         style={{
           marginTop: 12,
           paddingTop: 12,
-          borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
+          borderTop: "0.5px solid var(--line)",
           fontFamily: "Figtree, sans-serif",
           fontSize: 10,
-          color: "rgba(255,255,255,0.40)",
+          color: "var(--text2)",
           fontStyle: "italic",
         }}
       >
