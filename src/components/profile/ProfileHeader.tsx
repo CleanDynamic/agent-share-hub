@@ -259,16 +259,21 @@ export function ProfileHeader({
                   </LevelRing>
                 ) : (
                   <div
-                    className="w-24 h-24 sm:w-28 sm:h-28 overflow-hidden"
+                    /* `border-4` STAYS. It is the avatar's box model — four
+                       pixels of the page's own ground cut out of a 96px circle
+                       — and replacing it with a shadow would have grown the
+                       picture inside by eight pixels. Only its colour moves:
+                       `border-background` was the shadcn ground and could not
+                       follow the theme. The outer hairline is a shadow because
+                       it is new, and a shadow costs no layout. */
+                    className="w-24 h-24 sm:w-28 sm:h-28 border-4 overflow-hidden"
                     style={{
                       /* `--r-full` is for circular things only, and an avatar
                          is the example the scale names. */
                       borderRadius: r.full,
                       background: t.recess,
-                      /* The ring that lifts the avatar off the cover. It was
-                         `border-4 border-background` plus a white ring; one
-                         token-coloured ring does the same job in both rooms. */
-                      boxShadow: `0 0 0 4px ${t.bg}, 0 0 0 5px ${t.line}`,
+                      borderColor: t.bg,
+                      boxShadow: `0 0 0 1px ${t.line}`,
                     }}
                   >
                     <AvatarInner profile={profile} initials={initials} />

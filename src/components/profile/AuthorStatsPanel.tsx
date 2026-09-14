@@ -376,7 +376,9 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
         <>
           <div
             style={{
-              height: "1px",
+              /* 0.5px, untouched: `height` is structural and this prompt
+                 repaints. Only the colour moved. */
+              height: "0.5px",
               backgroundColor: t.line,
               margin: "16px 0",
             }}
