@@ -115,8 +115,13 @@ export function SolutionSubmissionShell({
           style={{
             marginTop: 16,
             marginBottom: 16,
-            background: "var(--recess)",
-            border: "1px solid color-mix(in srgb, var(--cat-breakage) 26%, transparent)",
+            /* THE GROUND IS THE HUE'S OWN MEASURED FILL, not --recess.
+               --cat-breakage on --recess is 4.47:1 on Exhibition and 4.31:1 on
+               Dusk — both just under the 4.5 text floor — and the theme says
+               reuse a legal pairing before reaching for anything else. This is
+               that pairing: 5.88:1 and 4.66:1. */
+            background: "var(--cat-breakage-fill)",
+            border: "1px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)",
             borderRadius: "var(--r-control)",
             padding: "12px 16px",
             overflow: "hidden",

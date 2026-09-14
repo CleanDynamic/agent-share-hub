@@ -44,12 +44,15 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
         background: "var(--glass)",
         border: "0.5px solid var(--line)",
       }}
+      /* The hover step is the BORDER, not a second ground. --glass-hi is the
+         top-edge highlight token rather than a surface, and using it here put
+         --text2 at 4:1 on Dusk — under the text floor. Lifting the hairline to
+         --text2 keeps the card's own ground legal in both rooms and still
+         reads as "this row is live". */
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--glass-hi)";
-        e.currentTarget.style.borderColor = "var(--line)";
+        e.currentTarget.style.borderColor = "var(--text2)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "var(--glass)";
         e.currentTarget.style.borderColor = "var(--line)";
       }}
     >
