@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { AuthShell } from "./AuthShell";
 import { AuthInput } from "./AuthInput";
 import { AuthButton } from "./AuthButton";
+import { fieldMessageStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { cardTitle, FIGTREE } from "@/lib/theme/type";
 
 export interface ResetPasswordRequestCardProps {
   email: string;
@@ -28,29 +31,22 @@ export function ResetPasswordRequestCard({
 
   return (
     <AuthShell>
-      <h2
-        style={{
-          margin: 0,
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "18px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 0.95)",
-        }}
-      >
+      <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>
         Reset your password
       </h2>
       <p
         style={{
           marginTop: "8px",
           marginBottom: "20px",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
-          color: "rgba(255, 255, 255, 0.60)",
+          color: t.text2,
         }}
       >
-        Enter your email and we&apos;ll send you a link to reset your password.
+        Enter your email and we&apos;ll send a link that lets you set a new
+        password. The link works once and expires after an hour.
       </p>
 
       <form onSubmit={handleFormSubmit}>
@@ -65,15 +61,10 @@ export function ResetPasswordRequestCard({
         />
 
         {error && (
+          /* Under the field it is about, never only a toast. */
           <p
-            style={{
-              marginTop: "14px",
-              fontFamily: "Figtree, sans-serif",
-              fontSize: "12px",
-              fontWeight: 400,
-              color: "#ef4444",
-              textAlign: "center",
-            }}
+            role="alert"
+            style={{ ...fieldMessageStyle, marginTop: "14px", textAlign: "center" }}
           >
             {error}
           </p>
@@ -93,13 +84,23 @@ export function ResetPasswordRequestCard({
         style={{
           marginTop: "20px",
           textAlign: "center",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "12px",
           fontWeight: 400,
-          color: "rgba(255, 255, 255, 0.55)",
+          color: t.text2,
         }}
       >
-        <Link to="/login" style={{ color: "#E8571A", textDecoration: "none" }}>
+        <Link
+          to="/login"
+          style={{
+            display: "inline-block",
+            padding: "6px 0",
+            color: t.action,
+            textDecoration: "underline",
+            textUnderlineOffset: "4px",
+            textDecorationThickness: "1px",
+          }}
+        >
           Back to sign in
         </Link>
       </div>

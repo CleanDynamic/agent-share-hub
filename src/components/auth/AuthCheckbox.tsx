@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
+
+import { checkboxStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 interface AuthCheckboxProps {
   checked: boolean;
@@ -8,12 +13,33 @@ interface AuthCheckboxProps {
   id: string;
 }
 
+/**
+ * "Keep me signed in" and "I agree to the Terms".
+ *
+ * The box is the kit's: `--r-chip`, `--recess` with a `--line` hairline at rest,
+ * `--action` with an `--on-action` tick when checked — the same pair
+ * `ui/checkbox.tsx` shows. `controls.ts` records the affordance defect this
+ * inherits: at 16px square, an 8px radius is a circle, so the box reads like a
+ * radio. The fix is a bigger box, which is structural and not this prompt's.
+ *
+ * THE RING IS NEW, AND IT IS A FIX RATHER THAN A REPAINT. The real control is
+ * an `sr-only` input, so a keyboard user tabbing onto it had NO visible mark at
+ * all — the checkbox was invisible to focus on a form whose submit button is
+ * disabled until it is ticked. The input's focus now rings the box that stands
+ * in for it.
+ */
 export function AuthCheckbox({ checked, onChange, label, id }: AuthCheckboxProps) {
+  const [keyboardFocus, setKeyboardFocus] = useState(false);
+
   return (
     <label
       htmlFor={id}
       className="flex items-center cursor-pointer"
-      style={{ gap: "10px" }}
+      /* 6px top and bottom takes the label — which IS the target, since the box
+         is 16px and the input is sr-only — from 18px tall to 30, clear of the
+         24px WCAG 2.5.8 floor. The row it sits in grows by 12px once; nothing
+         moves sideways. */
+      style={{ gap: "10px", padding: "6px 0" }}
     >
       <div style={{ position: "relative" }}>
         <input
@@ -22,29 +48,39 @@ export function AuthCheckbox({ checked, onChange, label, id }: AuthCheckboxProps
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only"
+          onFocus={(event) => {
+            let visible = true;
+            try {
+              visible = event.currentTarget.matches(":focus-visible");
+            } catch {
+              /* :focus-visible unsupported. Show the ring rather than hide it. */
+            }
+            if (visible) setKeyboardFocus(true);
+          }}
+          onBlur={() => setKeyboardFocus(false)}
         />
         <div
           style={{
+            ...checkboxStyle({ focusVisible: keyboardFocus }),
             width: "16px",
             height: "16px",
-            border: checked ? "none" : "1px solid rgba(255, 255, 255, 0.30)",
-            borderRadius: "4px",
-            background: checked ? "#E8571A" : "transparent",
+            background: checked ? t.action : t.recess,
+            borderColor: checked ? t.action : t.line,
+            color: t.onAction,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "background 150ms, border 150ms",
           }}
         >
-          {checked && <Check size={12} color="white" strokeWidth={3} />}
+          {checked && <Check size={12} strokeWidth={3} />}
         </div>
       </div>
       <span
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "12px",
           fontWeight: 400,
-          color: "rgba(255, 255, 255, 0.70)",
+          color: t.text2,
         }}
       >
         {label}

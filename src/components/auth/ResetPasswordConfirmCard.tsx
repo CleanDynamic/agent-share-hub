@@ -5,6 +5,9 @@ import {
   PasswordStrengthMeter,
   type PasswordStrength,
 } from "./PasswordStrengthMeter";
+import { fieldMessageStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { cardTitle, FIGTREE } from "@/lib/theme/type";
 
 export interface ResetPasswordConfirmCardProps {
   password: string;
@@ -40,29 +43,22 @@ export function ResetPasswordConfirmCard({
 
   return (
     <AuthShell>
-      <h2
-        style={{
-          margin: 0,
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "18px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 0.95)",
-        }}
-      >
+      <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>
         Choose a new password
       </h2>
       <p
         style={{
           marginTop: "8px",
           marginBottom: "20px",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
-          color: "rgba(255, 255, 255, 0.60)",
+          color: t.text2,
         }}
       >
-        Your reset link is valid. Set your new password below.
+        Your reset link is valid. Set a new password below and we&apos;ll sign
+        you in with it.
       </p>
 
       <form onSubmit={handleFormSubmit}>
@@ -91,15 +87,7 @@ export function ResetPasswordConfirmCard({
               autoComplete="new-password"
             />
             {mismatchError && (
-              <p
-                style={{
-                  marginTop: "6px",
-                  fontFamily: "Figtree, sans-serif",
-                  fontSize: "11px",
-                  fontWeight: 400,
-                  color: "#ef4444",
-                }}
-              >
+              <p role="alert" style={{ ...fieldMessageStyle, marginTop: "6px" }}>
                 {mismatchError}
               </p>
             )}
@@ -108,14 +96,8 @@ export function ResetPasswordConfirmCard({
 
         {error && (
           <p
-            style={{
-              marginTop: "14px",
-              fontFamily: "Figtree, sans-serif",
-              fontSize: "12px",
-              fontWeight: 400,
-              color: "#ef4444",
-              textAlign: "center",
-            }}
+            role="alert"
+            style={{ ...fieldMessageStyle, marginTop: "14px", textAlign: "center" }}
           >
             {error}
           </p>

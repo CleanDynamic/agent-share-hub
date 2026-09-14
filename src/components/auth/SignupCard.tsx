@@ -7,6 +7,9 @@ import { AuthInput, type InputValidation } from "./AuthInput";
 import { AuthCheckbox } from "./AuthCheckbox";
 import { AuthButton } from "./AuthButton";
 import { PasswordStrengthMeter, type PasswordStrength } from "./PasswordStrengthMeter";
+import { t } from "@/lib/theme/tokens";
+import { fieldMessageStyle } from "@/lib/theme/controls";
+import { FIGTREE } from "@/lib/theme/type";
 
 export type SignupMethod = "email" | OAuthProvider;
 
@@ -72,15 +75,16 @@ export function SignupCard({
     usernameValidation.state !== "checking" &&
     emailValidation.state !== "invalid";
 
+  /* Both underlined at rest — a link told apart by colour alone fails WCAG
+     1.4.1, and a touch reader never gets the hover that would reveal it. */
   const linkStyle = {
-    color: "#E8571A",
+    color: t.action,
     textDecoration: "underline",
+    textUnderlineOffset: "4px",
+    textDecorationThickness: "1px",
   };
 
-  const footerLinkStyle = {
-    color: "#E8571A",
-    textDecoration: "none",
-  };
+  const footerLinkStyle = linkStyle;
 
   return (
     <AuthShell>
@@ -157,13 +161,12 @@ export function SignupCard({
         </div>
 
         {error && (
+          /* Under the fields it is about, never only a toast. */
           <p
+            role="alert"
             style={{
+              ...fieldMessageStyle,
               marginTop: "14px",
-              fontFamily: "Figtree, sans-serif",
-              fontSize: "12px",
-              fontWeight: 400,
-              color: "#ef4444",
               textAlign: "center",
             }}
           >
@@ -185,10 +188,10 @@ export function SignupCard({
         style={{
           marginTop: "20px",
           textAlign: "center",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "12px",
           fontWeight: 400,
-          color: "rgba(255, 255, 255, 0.55)",
+          color: t.text2,
         }}
       >
         Already have an account?{" "}

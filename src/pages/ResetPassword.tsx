@@ -5,6 +5,9 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead } from "@/components/SeoHead";
+import { AuthButton } from "@/components/auth/AuthButton";
+import { t } from "@/lib/theme/tokens";
+import { cardTitle, FIGTREE } from "@/lib/theme/type";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { ResetPasswordRequestCard } from "@/components/auth/ResetPasswordRequestCard";
 import { ResetPasswordConfirmCard } from "@/components/auth/ResetPasswordConfirmCard";
@@ -224,31 +227,26 @@ export default function ResetPassword() {
       <>
         {seoHead}
         <AuthShell>
+          /* Pending is `--text2`: nothing has succeeded and nothing has failed. */
           <div className="flex flex-col items-center text-center">
             <Loader2
               className="animate-spin"
-              style={{ width: "56px", height: "56px", color: "#E8571A" }}
+              style={{ width: "56px", height: "56px", color: t.text2 }}
             />
-            <h2
-              style={{
-                marginTop: "20px",
-                fontFamily: "Figtree, sans-serif",
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "rgba(255, 255, 255, 0.92)",
-              }}
-            >
+            <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
               Checking your reset link…
             </h2>
             <p
               style={{
                 marginTop: "6px",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: FIGTREE,
                 fontSize: "13px",
-                color: "rgba(255, 255, 255, 0.60)",
+                lineHeight: 1.55,
+                color: t.text2,
               }}
             >
-              Just a moment.
+              We&apos;re confirming the link is still valid. The form for your
+              new password appears here in a moment.
             </p>
           </div>
         </AuthShell>
@@ -338,44 +336,37 @@ interface SentConfirmationProps {
 function SentConfirmation({ email, onBackToSignIn }: SentConfirmationProps) {
   return (
     <div className="flex flex-col items-center text-center">
-      <h2
-        style={{
-          margin: 0,
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "18px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 0.95)",
-        }}
-      >
-        Check your inbox
-      </h2>
+      <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>Check your inbox</h2>
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
-          color: "rgba(255, 255, 255, 0.60)",
+          color: t.text2,
         }}
       >
-        If an account exists with{" "}
-        <span style={{ color: "rgba(255, 255, 255, 0.85)" }}>{email}</span>, we
-        sent a reset link. Check your inbox.
+        If an account exists with <span style={{ color: t.text }}>{email}</span>,
+        we sent a reset link. Open it and you can set a new password — it works
+        once and expires after an hour.
       </p>
       <button
         type="button"
         onClick={onBackToSignIn}
         style={{
-          marginTop: "24px",
+          marginTop: "18px",
           background: "none",
           border: "none",
-          padding: 0,
-          fontFamily: "Figtree, sans-serif",
+          padding: "6px 0",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 500,
-          color: "#E8571A",
+          color: t.action,
           cursor: "pointer",
+          textDecoration: "underline",
+          textUnderlineOffset: "4px",
+          textDecorationThickness: "1px",
         }}
       >
         Back to sign in
@@ -396,66 +387,47 @@ function ResetLinkError({ onRequestNew, onBackToSignIn }: ResetLinkErrorProps) {
         style={{
           width: "56px",
           height: "56px",
-          color: "#EF4444",
+          color: t.catBreakage,
           strokeWidth: 1.5,
         }}
       />
-      <h2
-        style={{
-          marginTop: "20px",
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "18px",
-          fontWeight: 700,
-          color: "rgba(255, 255, 255, 0.95)",
-        }}
-      >
+      <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
         This reset link doesn&apos;t work
       </h2>
       <p
         style={{
           marginTop: "8px",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 400,
           lineHeight: 1.55,
-          color: "rgba(255, 255, 255, 0.60)",
+          color: t.text2,
         }}
       >
-        It may have expired or already been used. Request a new one to try
-        again.
+        It may have expired or already been used. Request a new one and
+        we&apos;ll email a fresh link — your password has not changed.
       </p>
-      <button
-        type="button"
-        onClick={onRequestNew}
-        style={{
-          marginTop: "24px",
-          width: "100%",
-          height: "44px",
-          borderRadius: "10px",
-          background: "linear-gradient(135deg, #E8571A 0%, #C44514 100%)",
-          border: "none",
-          fontFamily: "Figtree, sans-serif",
-          fontSize: "14px",
-          fontWeight: 600,
-          color: "#FFFFFF",
-          cursor: "pointer",
-        }}
-      >
-        Request a new one
-      </button>
+      <div style={{ width: "100%", marginTop: "16px" }}>
+        <AuthButton type="button" onClick={onRequestNew}>
+          Request a new one
+        </AuthButton>
+      </div>
       <button
         type="button"
         onClick={onBackToSignIn}
         style={{
-          marginTop: "12px",
+          marginTop: "6px",
           background: "none",
           border: "none",
-          padding: 0,
-          fontFamily: "Figtree, sans-serif",
+          padding: "6px 0",
+          fontFamily: FIGTREE,
           fontSize: "13px",
           fontWeight: 500,
-          color: "#E8571A",
+          color: t.action,
           cursor: "pointer",
+          textDecoration: "underline",
+          textUnderlineOffset: "4px",
+          textDecorationThickness: "1px",
         }}
       >
         Back to sign in
