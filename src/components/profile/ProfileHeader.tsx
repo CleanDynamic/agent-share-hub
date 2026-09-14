@@ -199,15 +199,20 @@ export function ProfileHeader({
 
   return (
     <header className="w-full">
-      {/* Cover Strip — a media well, at the media radius. It was a three-stop
-          Tailwind gradient off `primary`/`accent`, which is decoration this
-          system does not have; `--porthole` is the token for a well with
-          nothing in it, and it reads as a deliberate empty frame in both rooms
-          rather than as a failed image. */}
+      {/* Cover Strip. It was a three-stop Tailwind gradient off
+          `primary`/`accent`, which is decoration this system does not have.
+          `--recess` RATHER THAN `--porthole`, and the difference is the whole
+          balance of the page: a 200px full-width band is the largest object
+          on the profile, and in `--porthole` it is also the darkest — on
+          Exhibition that is a near-black slab at the top of a luminous grey
+          room, and the composition tips into it before the reader has read a
+          word. `GalleryCard` sets the precedent for the same decision at card
+          scale: a build with no picture holds a text well, not an empty media
+          slot. `--porthole` stays for wells that actually carry media. */}
       <div
         className="relative w-full h-44 sm:h-52 overflow-hidden"
         style={{
-          background: t.porthole,
+          background: t.recess,
           border: `1px solid ${t.line}`,
           borderRadius: r.media,
         }}
@@ -597,21 +602,23 @@ function StatButton({
       className="inline-flex items-center gap-1.5"
       style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer" }}
     >
-      <span style={{ ...dataText, ...tabular, color: t.text, fontWeight: 500 }}>{value}</span>
-      <span style={{ ...dataText, color: t.text2 }}>{label}</span>
-      {hasViewList && (
-        <span
-          aria-hidden
-          style={{
-            ...chipType,
-            color: t.action,
-            opacity: hovered ? 1 : 0,
-            transition: "opacity 160ms cubic-bezier(.2,.6,.35,1)",
-          }}
-        >
-          View list →
-        </span>
-      )}
+      <span style={{ ...dataText, ...tabular, color: t.text, fontWeight: 500 }}>
+        {value}
+      </span>
+      {/* THE LABEL CARRIES THE HOVER, NOT A SIXTH ELEMENT. See the note on the
+          rhythm fix above: a hover-only "View list →" held its width at rest
+          and broke the row's spacing into two intervals. The label stepping up
+          to full ink says the same thing, costs no width, and the `title`
+          states it in words for anyone who cannot hover. */}
+      <span
+        style={{
+          ...dataText,
+          color: hovered && hasViewList ? t.text : t.text2,
+          transition: "color 160ms cubic-bezier(.2,.6,.35,1)",
+        }}
+      >
+        {label}
+      </span>
     </button>
   );
 }

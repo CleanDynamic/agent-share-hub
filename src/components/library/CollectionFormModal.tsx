@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { data as dataText } from "@/lib/theme/type";
 
 /**
  * The accent a creator can pin to one of their collections.
@@ -114,7 +115,7 @@ export function CollectionFormModal({
               maxLength={60}
               autoFocus
             />
-            <div className="text-[11px] text-muted-foreground text-right">
+            <div className="text-right" style={{ ...dataText, fontSize: 11, color: t.text2 }}>
               {name.length}/60
             </div>
           </div>
@@ -129,7 +130,7 @@ export function CollectionFormModal({
               rows={2}
               maxLength={200}
             />
-            <div className="text-[11px] text-muted-foreground text-right">
+            <div className="text-right" style={{ ...dataText, fontSize: 11, color: t.text2 }}>
               {description.length}/200
             </div>
           </div>
@@ -171,7 +172,7 @@ export function CollectionFormModal({
               <div className="text-sm font-medium">
                 {isPrivate ? "Private" : "Public"}
               </div>
-              <div className="text-[11px] text-muted-foreground">
+              <div style={{ ...dataText, fontSize: 11, color: t.text2 }}>
                 {isPrivate
                   ? "Only you can see this collection."
                   : "Anyone can view this collection."}

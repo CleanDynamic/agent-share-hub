@@ -3,6 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FeedReblogAdapter, type FeedReblogRow } from "@/components/reblog/FeedReblogAdapter";
+import { chipStyle } from "@/lib/theme/controls";
+import { t } from "@/lib/theme/tokens";
+import { body } from "@/lib/theme/type";
 
 interface Props {
   userId: string;
@@ -57,11 +60,17 @@ export function ProfileAuthoredReblogs({ userId, activeFilter, onFilterChange }:
             <button
               key={c.value}
               onClick={() => onFilterChange(c.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                active
-                  ? "bg-emerald-400/15 text-emerald-300 border border-emerald-400/30"
-                  : "bg-white/[0.04] text-white/60 border border-white/8 hover:bg-white/[0.08]"
-              }`}
+              aria-pressed={active}
+              className="px-3 py-1.5 whitespace-nowrap"
+              /* The kit's chip, which is what the identical row two components
+                 away already wears. This one was a Tailwind emerald — a hue
+                 from no palette in this system, on a rounded-full capsule the
+                 shape language dropped. */
+              style={{
+                ...chipStyle("outline", { selectable: true }),
+                fontSize: 11,
+                ...(active ? { borderColor: t.action, color: t.text } : {}),
+              }}
             >
               {c.label}
             </button>
@@ -70,9 +79,9 @@ export function ProfileAuthoredReblogs({ userId, activeFilter, onFilterChange }:
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-white/40 py-8 text-center">Loading reblogs…</div>
+        <div className="py-8 text-center" style={{ ...body, fontSize: 14, color: t.text2 }}>Loading reblogs…</div>
       ) : !data || data.length === 0 ? (
-        <div className="text-sm text-white/40 py-12 text-center">
+        <div className="py-12 text-center" style={{ ...body, fontSize: 14, color: t.text2 }}>
           No reblogs yet.
         </div>
       ) : (

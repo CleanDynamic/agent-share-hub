@@ -41,6 +41,7 @@ import type {
   SavedItem,
 } from "@/lib/library/types";
 import type { CollectionMenuAction } from "@/components/library/CollectionCard";
+import { buttonStyle } from "@/lib/theme/controls";
 
 function deleteCollectionFn(id: string) {
   return import("@/lib/library/updateCollection").then((m) =>
@@ -396,6 +397,14 @@ export default function LibraryPage() {
         onSavedItemRemove={handleSavedItemRemove}
         counts={counts}
         isOwnLibrary={isOwnLibrary}
+        /* Whichever view is on screen is the one whose arrival matters: the
+           other query can still be in flight without the reader waiting on
+           it. */
+        isLoading={
+          view === "collections"
+            ? collectionsQuery.isLoading
+            : savedItemsQuery.isLoading
+        }
         pageTitle={pageTitle}
         pageSubtitle={
           isOwnLibrary
@@ -438,10 +447,10 @@ export default function LibraryPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            {/* The kit's destructive button: `--cat-breakage` with the
+                measured label on it. The shadcn `--destructive` is a second
+                palette this system replaces. */}
+            <AlertDialogAction onClick={confirmDelete} style={buttonStyle("destructive")}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

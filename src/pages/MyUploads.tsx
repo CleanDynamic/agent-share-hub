@@ -14,6 +14,8 @@ import { Plus, Star, StarHalf, RefreshCw, X } from "lucide-react";
 import { PublishUpdateModal } from "@/components/PublishUpdateModal";
 import { useToast } from "@/hooks/use-toast";
 import { useDraftCount } from "@/hooks/useDraftCount";
+import { categoryFill } from "@/lib/theme/category";
+import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, tabular, type } from "@/lib/theme/type";
@@ -34,22 +36,44 @@ function roundedStars(avg: number, count: number): number {
 function TinyStars({ value }: { value: number }) {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
-    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5 fill-primary text-primary" />);
+    if (i <= Math.floor(value)) stars.push(<Star key={i} className="h-2.5 w-2.5" style={{ fill: t.lit, color: t.lit }} />);
+    else if (i - 0.5 === value) stars.push(<StarHalf key={i} className="h-2.5 w-2.5" style={{ fill: t.lit, color: t.lit }} />);
     else stars.push(<Star key={i} className="h-2.5 w-2.5" style={{ color: t.line }} />);
   }
   return <span className="inline-flex gap-0.5">{stars}</span>;
 }
 
+/**
+ * A review outcome, as three tokens rather than three Tailwind hues.
+ *
+ * Approved is `--evidence` — somebody other than the creator looked and said
+ * yes, which is the claim that token names. Rejected is `--cat-breakage`.
+ * Pending is neither: it is not a warning and not a fault, it is a queue
+ * position, so it takes the neutral recess like any other uncoloured label.
+ */
 function statusBadge(status: string) {
-  switch (status) {
-    case "approved":
-      return <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">Approved</Badge>;
-    case "rejected":
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px]">Rejected</Badge>;
-    default:
-      return <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">Pending</Badge>;
-  }
+  const evidence = categoryFill("evidence");
+  const breakage = categoryFill("breakage");
+  const paint =
+    status === "approved"
+      ? { label: "Approved", ...evidence }
+      : status === "rejected"
+        ? { label: "Rejected", ...breakage }
+        : { label: "Pending", background: t.recess, color: t.text2 };
+  return (
+    <Badge
+      style={{
+        ...chipType,
+        fontSize: 10,
+        borderRadius: r.chip,
+        backgroundColor: paint.background,
+        color: paint.color,
+        borderColor: "transparent",
+      }}
+    >
+      {paint.label}
+    </Badge>
+  );
 }
 
 export default function MyUploads() {
@@ -248,7 +272,7 @@ export default function MyUploads() {
                                       version: (item as any).current_version || "1.0",
                                     });
                                   }}
-                                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                                  className="hover:underline flex items-center gap-1" style={{ ...body, fontSize: 11, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.action }}
                                 >
                                   <RefreshCw className="h-3 w-3" /> Publish update
                                 </button>
@@ -272,7 +296,7 @@ export default function MyUploads() {
                                     <span style={{ ...dataText, color: t.text2 }}>@{inv.profiles?.username || inv.profiles?.display_name}</span>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); withdrawInvite(inv.id); }}
-                                      className="text-destructive hover:underline flex items-center gap-0.5"
+                                      className="hover:underline flex items-center gap-0.5" style={{ ...body, fontSize: 12, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.catBreakage }}
                                     >
                                       <X className="h-3 w-3" /> Withdraw
                                     </button>
@@ -356,7 +380,7 @@ export default function MyUploads() {
                         <TableCell style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{proj.componentCount}</TableCell>
                         <TableCell>
                           {(proj as any).package_price_enabled ? (
-                            <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
+                            <Badge style={{ ...chipType, fontSize: 10, background: t.recess, color: t.text2, borderColor: t.line, borderRadius: r.chip }}>
                               Package: £{Number((proj as any).package_price_gbp ?? 0).toFixed(2)}
                             </Badge>
                           ) : (
@@ -375,7 +399,7 @@ export default function MyUploads() {
                               e.stopPropagation();
                               navigate(`/project/${proj.id}/edit`);
                             }}
-                            className="text-[11px] text-primary hover:underline"
+                            className="hover:underline" style={{ ...body, fontSize: 11, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: t.action }}
                           >
                             Edit pricing
                           </button>

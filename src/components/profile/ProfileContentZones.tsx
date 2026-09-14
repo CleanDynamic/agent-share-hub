@@ -44,6 +44,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ZoneItem } from "@/lib/profile/types";
 import { buttonStyle, chipStyle, chipType, uiTransition } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -490,21 +491,35 @@ function EmptyState({
   isOwnProfile: boolean;
   onCreateBlueprint?: () => void;
 }) {
-  const states: Record<Zone, { message: string; link?: { text: string; href: string } }> = {
+  /* WHAT AN EMPTY WALL SAYS. Each line states the fact and nothing else — no
+     apology, no nudge, no exclamation. "No builds yet" is the word this
+     platform uses out loud, and it is the same word the tab above it carries;
+     "Nothing published yet" was the data layer's vocabulary showing through.
+     The second line is what to do about it, and appears only for the person who
+     can act on it: telling a VISITOR to go and create a build is telling them
+     to fix somebody else's empty wall. */
+  const states: Record<Zone, { message: string; hint?: string; link?: { text: string; href: string } }> = {
     authored: {
-      message: "Nothing published yet",
+      message: "No builds yet",
+      hint: isOwnProfile
+        ? "Anything you publish shows up here, newest first."
+        : undefined,
       link: isOwnProfile && !onCreateBlueprint
-        ? { text: "Create your first blueprint", href: "/upload" }
+        ? { text: "Publish your first build", href: "/upload" }
         : undefined,
     },
     curated: {
-      message: "No bookmarks yet",
-      link: isOwnProfile ? { text: "Browse content", href: "/discover" } : undefined,
+      message: "No collections yet",
+      hint: isOwnProfile
+        ? "Save a build from anywhere on the site and it lands in your library."
+        : undefined,
+      link: isOwnProfile ? { text: "Browse the gallery", href: "/gallery" } : undefined,
     },
-    activity: { message: "No recent activity" },
+    activity: { message: "No activity yet" },
     network: {
       message: "No connections yet",
-      link: isOwnProfile ? { text: "Discover creators", href: "/discover" } : undefined,
+      hint: isOwnProfile ? "People you follow, and people who follow you." : undefined,
+      link: isOwnProfile ? { text: "Find creators", href: "/gallery" } : undefined,
     },
   };
   const s = states[zone];
@@ -516,7 +531,27 @@ function EmptyState({
         ...body,
       }}
     >
-      <div style={{ ...body, fontSize: "13px", color: t.text2 }}>{s.message}</div>
+      {/* The fact, in full ink; the invitation under it in `--text2`. A single
+          grey line for both made the state read as an error message. */}
+      <div style={{ ...body, fontSize: "15px", fontWeight: 600, color: t.text }}>
+        {s.message}
+      </div>
+      {s.hint && (
+        <div
+          style={{
+            ...body,
+            fontSize: "13px",
+            color: t.text2,
+            marginTop: 6,
+            maxWidth: 380,
+            marginLeft: "auto",
+            marginRight: "auto",
+            textWrap: "pretty",
+          }}
+        >
+          {s.hint}
+        </div>
+      )}
       {zone === "authored" && isOwnProfile && onCreateBlueprint && (
         <button
           type="button"
@@ -533,7 +568,7 @@ function EmptyState({
             fontWeight: 600,
           }}
         >
-          Create your first blueprint
+          Publish your first build
         </button>
       )}
       {s.link && (
@@ -558,20 +593,26 @@ function EmptyState({
   );
 }
 
+/**
+ * The zone, before it has arrived.
+ *
+ * IT SPENDS THE KIT'S SKELETON rather than a local `animate-pulse` box, and the
+ * difference is not cosmetic: a pulse fades the whole block in and out, which
+ * at a glance is indistinguishable from content that is failing to load, while
+ * a sweep travels in one direction and reads as progress. The kit also drops
+ * the movement under `prefers-reduced-motion`, which the pulse did not.
+ *
+ * The placeholders are the real cards' proportions and the real grid's
+ * geometry, so nothing jumps when the rows land.
+ */
 function LoadingSkeleton({ zone }: { zone: Zone }) {
   if (zone === "activity") {
     return (
-      <div>
+      <div role="status" aria-label="Loading">
         {[1, 2, 3, 4].map((i) => (
-          <div
+          <Skeleton
             key={i}
-            style={{
-              height: "44px",
-              marginBottom: "8px",
-              background: t.recess,
-              borderRadius: r.control,
-            }}
-            className="animate-pulse"
+            style={{ height: 44, marginBottom: 8, borderRadius: r.control }}
           />
         ))}
       </div>
@@ -580,6 +621,8 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
   const cols = zone === "network" ? 3 : 2;
   return (
     <div
+      role="status"
+      aria-label="Loading"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -587,15 +630,7 @@ function LoadingSkeleton({ zone }: { zone: Zone }) {
       }}
     >
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div
-          key={i}
-          style={{
-            height: "110px",
-            background: t.recess,
-            borderRadius: r.card,
-          }}
-          className="animate-pulse"
-        />
+        <Skeleton key={i} style={{ height: 110, borderRadius: r.card }} />
       ))}
     </div>
   );

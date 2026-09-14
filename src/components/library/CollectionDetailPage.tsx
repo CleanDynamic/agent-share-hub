@@ -361,7 +361,7 @@ function SortableItemCard({
                     e.stopPropagation();
                     onItemRemove(item);
                   }}
-                  className="text-destructive focus:text-destructive"
+                  style={{ color: t.catBreakage }}
                 >
                   <Trash2 size={14} className="mr-2" />
                   Remove from collection
@@ -595,7 +595,7 @@ export function CollectionDetailPage({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={onDelete}
-                  className="text-destructive focus:text-destructive"
+                  style={{ color: t.catBreakage }}
                 >
                   Delete collection
                 </DropdownMenuItem>

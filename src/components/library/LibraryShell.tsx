@@ -7,6 +7,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CollectionCard, type CollectionMenuAction } from "./CollectionCard";
 import type { CollectionPreview, SavedItem } from "@/lib/library/types";
 import { categoryFill } from "@/lib/theme/category";
@@ -49,6 +50,17 @@ interface LibraryShellProps {
   onSavedItemRemove: (item: SavedItem) => void;
   counts: { collections: number; allItems: number };
   isOwnLibrary: boolean;
+  /**
+   * The collections or items are still in flight.
+   *
+   * IT MATTERS THAT THIS EXISTS. Without it the page had two states, not
+   * three: a library that had not arrived yet rendered the EMPTY state, so
+   * every visit began by telling the reader they had saved nothing and
+   * inviting them to start — and then replaced that with their forty saved
+   * items. Saying "you have nothing" to somebody who has something is worse
+   * than saying nothing at all.
+   */
+  isLoading?: boolean;
   pageTitle?: string;
   pageSubtitle?: string;
   hideHeader?: boolean;
@@ -109,6 +121,7 @@ export function LibraryShell({
   onSavedItemRemove,
   counts,
   isOwnLibrary,
+  isLoading = false,
   pageTitle = "Library",
   pageSubtitle = "Your saved blueprints, blogs, stages, and blocks",
   hideHeader = false,
@@ -288,7 +301,9 @@ export function LibraryShell({
 
       {/* Main content */}
       <div>
-        {activeView === "collections" ? (
+        {isLoading ? (
+          <LoadingState view={activeView} />
+        ) : activeView === "collections" ? (
           hasCollections ? (
             <CollectionsGrid
               collections={collections}
@@ -322,6 +337,42 @@ export function LibraryShell({
           />
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The library, before it has arrived.
+ *
+ * The real geometry of whichever view is current — the three-up collection
+ * grid at the card's 16:10 proportion, or the 60px rows of the saved list — so
+ * nothing jumps when the data lands. The kit's `Skeleton` paints them, which
+ * means one sweep rather than a pulse, and no movement at all under
+ * `prefers-reduced-motion`.
+ */
+function LoadingState({ view }: { view: ViewMode }) {
+  if (view === "collections") {
+    return (
+      <div className="ns-collections-grid" role="status" aria-label="Loading collections">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Skeleton style={{ aspectRatio: "16 / 10", borderRadius: r.card }} />
+            <Skeleton style={{ height: 14, width: "70%", borderRadius: r.chip }} />
+            <Skeleton style={{ height: 11, width: "45%", borderRadius: r.chip }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      role="status"
+      aria-label="Loading saved items"
+    >
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <Skeleton key={i} style={{ height: 60, borderRadius: r.control }} />
+      ))}
     </div>
   );
 }

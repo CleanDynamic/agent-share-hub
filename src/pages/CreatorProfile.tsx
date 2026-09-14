@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FeedItem } from "@/components/FeedItem";
 import { PortfolioCard } from "@/components/PortfolioCard";
+import { categoryFill } from "@/lib/theme/category";
 import { buttonStyle, chipType, GLASS_BLUR, uiTransition } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -245,10 +246,11 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
         {profile.banner_url ? (
           <img src={profile.banner_url} alt="Banner" className="w-full h-full object-cover" />
         ) : (
-          /* A media well with nothing in it, not a two-stop ramp off the
-             shadcn primary — a gradient is decoration this system does not
-             have, and `--porthole` is the token for an empty well. */
-          <div className="w-full h-full" style={{ background: t.porthole }} />
+          /* `--recess`, not a two-stop ramp off the shadcn primary and not
+             `--porthole` either. See the note on the same band in
+             `ProfileHeader`: a 200px full-width slab is the largest object on
+             the page, and in the media-well colour it is also the darkest. */
+          <div className="w-full h-full" style={{ background: t.recess }} />
         )}
       </div>
 
@@ -395,7 +397,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
                     {content && (
                       <p className="mb-1" style={{ ...dataText, fontSize: 12, color: t.text2 }}>
                         Replied to <Badge variant="outline" className="text-[10px] font-medium">{content.content_type}</Badge>{" "}
-                        <span className="text-secondary">{content.title}</span>
+                        <span style={{ color: t.action }}>{content.title}</span>
                       </p>
                     )}
                     <p style={{ ...body, fontSize: 14, color: t.text }}>{reply.text}</p>
@@ -471,7 +473,21 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
                 return (
                   <Link key={resp.id} to={`/content/${resp.bounty_content_id}?tab=responses`} className="block rounded-xl border border-green-500/30 bg-card p-4 hover:brightness-110 transition-colors">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-green-400 px-2 py-0.5 rounded-full bg-green-500/15">✓ Solution</span>
+                      <span
+                        /* An accepted solution is the evidence claim: somebody
+                           else ran it and said it worked. The measured pair,
+                           at the chip radius — green is not in this palette. */
+                        style={{
+                          ...chipType,
+                          fontSize: 10,
+                          padding: "2px 8px",
+                          borderRadius: r.chip,
+                          backgroundColor: categoryFill("evidence").background,
+                          color: t.text,
+                        }}
+                      >
+                        ✓ Solution
+                      </span>
                     </div>
                     <p style={{ ...body, fontSize: 14, fontWeight: 600, color: t.text }}>{bounty?.title || "Unknown bounty"}</p>
                     <p className="mt-1 line-clamp-2" style={{ ...body, fontSize: 12, color: t.text2 }}>{resp.how_it_fixes}</p>

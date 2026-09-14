@@ -30,6 +30,10 @@ import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog"
 // portable, gallery, layers — into the main chunk with it.
 import { listBuildsByCreator } from "@/lib/build/builds";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
+import { buttonStyle } from "@/lib/theme/controls";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { body, type } from "@/lib/theme/type";
 import { getAuthorStats } from "@/lib/profile/getAuthorStats";
 import { getMostReferenced } from "@/lib/profile/getMostReferenced";
 import { getZoneContent } from "@/lib/profile/getZoneContent";
@@ -54,19 +58,39 @@ const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
 
 const BUCKET = "profile-assets";
 
+/**
+ * The profile, before it has arrived.
+ *
+ * IT IS THE HEADER'S OWN SHAPE, not four grey bars. A skeleton that does not
+ * match what replaces it is a layout shift with extra steps, so this carries
+ * the cover at `--r-media`, the avatar as a circle, the name, the handle, and —
+ * the part that was missing — a placeholder the width of the two earned
+ * numbers, which is the row a reader's eye goes to next. The kit's `Skeleton`
+ * paints them: `--recess` with a sweep across it, dropped under reduced motion.
+ */
 function ProfileSkeleton() {
   return (
-    <div className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-4">
-      <Skeleton className="h-52 w-full rounded-xl" />
+    <div
+      className="w-full max-w-[600px] mx-auto px-4 py-6 space-y-4"
+      data-visual-slot="profile-skeleton"
+      role="status"
+      aria-label="Loading profile"
+    >
+      <Skeleton className="h-52 w-full" style={{ borderRadius: r.media }} />
       <div className="px-2 -mt-12 flex items-end gap-4">
-        <Skeleton className="h-24 w-24 rounded-full" />
+        <Skeleton className="h-24 w-24" style={{ borderRadius: r.full }} />
         <div className="space-y-2 pb-2 flex-1">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-32" />
+          {/* The earned numbers' slot: a tag and the line beside it. */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-24" style={{ borderRadius: r.chip }} />
+            <Skeleton className="h-4 w-28" style={{ borderRadius: r.chip }} />
+          </div>
         </div>
       </div>
-      <Skeleton className="h-16 w-full" />
-      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-16 w-full" style={{ borderRadius: r.panel }} />
+      <Skeleton className="h-10 w-full" style={{ borderRadius: r.control }} />
     </div>
   );
 }
@@ -147,6 +171,14 @@ export default function Profile() {
     queryKey: ["profile-earned", summary?.id ?? null],
     enabled: !!summary?.id,
     queryFn: () => listBuildsByCreator(summary!.id),
+    /* NO RETRIES, AND THE REASON IS A SCHEMA DRIFT THIS PROMPT CANNOT FIX.
+       `BUILD_COLUMNS` selects `rebuild_count`, which the repo's own migration
+       adds but the deployed database does not yet have — so against that
+       database this read 400s. With the default three retries the header sits
+       on "counting" for about ten seconds before falling back; failing once
+       puts it straight into the honest zero state. On a database that HAS the
+       column nothing about this changes, because it does not fail. */
+    retry: false,
   });
 
   const earned = useMemo(() => {
@@ -580,9 +612,31 @@ export default function Profile() {
 
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
+    /* A statement of fact and a way out, not a dead end. Token-coloured like
+       every other state on this route: `text-muted-foreground` is the shadcn
+       palette, which this system replaces. */
     return (
-      <div className="max-w-[600px] mx-auto px-4 py-12 text-center text-muted-foreground">
-        <p>Profile not found.</p>
+      <div className="max-w-[600px] mx-auto px-4 py-12 text-center" role="status">
+        <p style={{ ...type.cardTitle, color: t.text, margin: 0 }}>
+          Profile not found
+        </p>
+        <p style={{ ...body, fontSize: 14, color: t.text2, marginTop: 8 }}>
+          The handle may have changed, or the link is broken.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate("/gallery")}
+          style={{
+            ...buttonStyle("secondary"),
+            ...body,
+            fontSize: 13,
+            fontWeight: 500,
+            padding: "8px 16px",
+            marginTop: 20,
+          }}
+        >
+          Back to the gallery
+        </button>
       </div>
     );
   }

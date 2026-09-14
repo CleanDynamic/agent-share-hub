@@ -55,6 +55,7 @@ import type {
   SavedItem,
 } from "@/lib/library/types";
 import { type } from "@/lib/theme/type";
+import { Skeleton } from "@/components/ui/skeleton";
 import { buttonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -327,8 +328,35 @@ export default function CollectionDetailRoute() {
   // Loading / error states
   if (detailQuery.isLoading) {
     return (
-      <div style={{ padding: 40, textAlign: "center", ...body, color: t.text2 }}>
-        Loading collection…
+      /* THE PAGE'S OWN SHAPE, not a sentence. A centred "Loading collection…"
+         is a different layout from the collection, so the page jumped the
+         moment it arrived; these placeholders are the header's and the grid's
+         real geometry, painted by the kit's `Skeleton` — one sweep, and no
+         movement under `prefers-reduced-motion`. */
+      <div
+        style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 24px 40px" }}
+        role="status"
+        aria-label="Loading collection"
+      >
+        <Skeleton style={{ height: 12, width: 72, borderRadius: r.chip }} />
+        <Skeleton style={{ height: 34, width: "45%", borderRadius: r.chip, marginTop: 16 }} />
+        <Skeleton style={{ height: 13, width: "70%", borderRadius: r.chip, marginTop: 10 }} />
+        <Skeleton style={{ height: 11, width: "35%", borderRadius: r.chip, marginTop: 8 }} />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: 16,
+            marginTop: 32,
+          }}
+        >
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Skeleton style={{ aspectRatio: "16 / 10", borderRadius: r.card }} />
+              <Skeleton style={{ height: 13, width: "80%", borderRadius: r.chip }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -359,7 +387,11 @@ export default function CollectionDetailRoute() {
             ? "You don't have permission to view it."
             : "It may have been deleted or the link is broken."}
         </p>
-        <Button variant="outline" onClick={() => navigate("/library")} className="mt-4">
+        <Button
+          onClick={() => navigate("/library")}
+          className="mt-4"
+          style={buttonStyle("secondary")}
+        >
           Back to Library
         </Button>
       </div>
@@ -486,7 +518,7 @@ export default function CollectionDetailRoute() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              style={buttonStyle("destructive")}
             >
               Delete
             </AlertDialogAction>

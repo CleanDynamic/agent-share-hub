@@ -147,8 +147,11 @@ function CoverTile({ item }: { item: CoverItem }) {
   const tileStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    /* A media well, and the token named for one. */
-    background: t.porthole,
+    /* `--recess`: this is the tile with NOTHING in it — an icon on a ground —
+       and every branch below that does carry a picture overrides it with
+       `--porthole`, the well colour proper. An empty porthole is the darkest
+       object on an Exhibition card and there are four of them per cover. */
+    background: t.recess,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -160,7 +163,7 @@ function CoverTile({ item }: { item: CoverItem }) {
     case "blueprint":
       if (item.coverUrl) {
         return (
-          <div style={tileStyle}>
+          <div style={{ ...tileStyle, background: t.porthole }}>
             <img
               src={item.coverUrl}
               alt=""
@@ -412,7 +415,7 @@ export function CollectionCard({
                     e.stopPropagation();
                     onMenuAction?.("delete");
                   }}
-                  className="text-destructive focus:text-destructive"
+                  style={{ color: t.catBreakage }}
                 >
                   <Trash2 size={14} className="mr-2" />
                   Delete
