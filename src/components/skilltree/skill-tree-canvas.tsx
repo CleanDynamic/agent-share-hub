@@ -2,6 +2,9 @@ import { useRef, useState } from "react"
 import { Sparkles, type LucideIcon } from "lucide-react"
 import { tokens, sans, type TrackId, type NodeState } from "./tokens"
 import SkillNode from "./skill-node"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { tierFill } from "@/lib/theme/progress"
 
 export interface TierNode {
   tier: number
@@ -96,16 +99,19 @@ export default function SkillTreeCanvas({
           style={{
             width: 64,
             height: 64,
-            borderRadius: "50%",
+            borderRadius: r.full,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: tokens.brandGradient,
-            boxShadow: `0 0 24px color-mix(in srgb, ${tokens.brandOrange} 55%, transparent)`,
+            // The root of the tree is an unlocked node, so it takes the same
+            // top rung every unlocked node takes. Its 24px orange glow went
+            // with every other glow on this surface: a glow needs darkness to
+            // glow against, and Exhibition has none to offer it.
+            background: tierFill("highest").background,
             flexShrink: 0,
           }}
         >
-          <Sparkles size={26} color="#fff" strokeWidth={2} />
+          <Sparkles size={26} color={tierFill("highest").color} strokeWidth={2} />
         </div>
 
         {tiers.map((t, i) => {
@@ -120,15 +126,16 @@ export default function SkillTreeCanvas({
                 style={{
                   width: nodeGap - 56,
                   height: 1.5,
-                  background: unlocked
-                    ? trackColor
-                    : "rgba(255,255,255,0.12)",
-                  boxShadow: unlocked
-                    ? `0 0 8px color-mix(in srgb, ${trackColor} 60%, transparent)`
-                    : "none",
-                  animation: unlocked
-                    ? "linePulse 2.4s ease-in-out infinite"
-                    : "none",
+                  /**
+                   * CONNECTORS ARE `--line` AND NEVER GLOW (BG-P28b), in both
+                   * states. A lit, pulsing connector made the tree read as a
+                   * circuit board rather than as a sequence, and the pulse
+                   * animated opacity on a line nobody was asked to watch. The
+                   * line's job is "this follows from that", which is a
+                   * hairline's job everywhere else in the product; whether a
+                   * tier is reached is said by the NODES it joins.
+                   */
+                  background: tok.line,
                   margin: "0 0",
                 }}
               />
@@ -147,7 +154,7 @@ export default function SkillTreeCanvas({
                     fontWeight: 600,
                     letterSpacing: "0.04em",
                     textTransform: "uppercase",
-                    color: unlocked ? trackColor : tokens.textFaint,
+                    color: unlocked ? tok.text : tokens.textFaint,
                   }}
                 >
                   Tier {t.tier}
@@ -158,11 +165,6 @@ export default function SkillTreeCanvas({
           )
         })}
       </div>
-
-      <style>{`@keyframes linePulse {
-        0%,100% { opacity: 1; }
-        50% { opacity: 0.55; }
-      }`}</style>
 
       <div
         style={{

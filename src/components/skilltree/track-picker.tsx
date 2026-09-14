@@ -7,6 +7,10 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { tokens, sans, type TrackId } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill } from "@/lib/theme/progress"
 
 export interface TrackOption {
   id: TrackId
@@ -85,10 +89,14 @@ export default function TrackPicker({
                 backdropFilter: tokens.glass,
                 WebkitBackdropFilter: tokens.glass,
                 border: isSel
-                  ? `1px solid ${t.color}`
+                  ? `1px solid ${tok.action}`
                   : tokens.border,
+                // The selected card is marked by its border alone. The 24px
+                // coloured glow it carried had nothing to glow against on
+                // Exhibition, and `box-shadow` is not a property the motion
+                // rules let us animate anyway.
                 boxShadow: isSel
-                  ? `0 0 0 1px ${t.color}, 0 0 24px color-mix(in srgb, ${t.color} 35%, transparent)`
+                  ? `0 0 0 1px ${tok.action}`
                   : "none",
                 cursor: "pointer",
                 transition: "box-shadow 0.2s ease, border-color 0.2s ease",
@@ -102,12 +110,12 @@ export default function TrackPicker({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: `color-mix(in srgb, ${t.color} 16%, transparent)`,
-                  border: `0.5px solid color-mix(in srgb, ${t.color} 40%, transparent)`,
+                  background: tierFill("rare").background,
+                  border: `0.5px solid ${tierFill("rare").borderColor}`,
                   marginBottom: 14,
                 }}
               >
-                <Icon size={32} color={t.color} strokeWidth={1.75} />
+                <Icon size={32} color={tok.text2} strokeWidth={1.75} />
               </div>
 
               <h3
@@ -147,9 +155,9 @@ export default function TrackPicker({
                       fontSize: 10,
                       fontWeight: 500,
                       padding: "3px 8px",
-                      borderRadius: tokens.radiusPill,
+                      borderRadius: r.chip,
                       color: tokens.textDim,
-                      background: "rgba(255,255,255,0.06)",
+                      background: tok.glass2,
                       border: tokens.borderSoft,
                     }}
                   >
@@ -168,16 +176,16 @@ export default function TrackPicker({
                   marginTop: "auto",
                   width: "100%",
                   padding: "9px 0",
-                  borderRadius: tokens.radiusPill,
+                  borderRadius: r.control,
                   border: "none",
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 600,
                   fontFamily: sans,
-                  color: "#fff",
+                  color: tok.onAction,
                   background: isSel
                     ? tokens.brandGradient
-                    : "rgba(255,255,255,0.08)",
+                    : tok.recess,
                 }}
               >
                 Choose

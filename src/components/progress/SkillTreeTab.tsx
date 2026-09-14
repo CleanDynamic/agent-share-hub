@@ -9,6 +9,8 @@ import RespecDialog from "@/components/skilltree/respec-dialog";
 import { trackMeta, type TrackId } from "@/components/skilltree/tokens";
 import { usePerksCatalogue, useUserPerks, useSetTrack, useRespec } from "@/hooks/useProgress";
 import type { UserProgress, VisibleSurfaces, PerkRow } from "@/lib/progress";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 const TIER_THRESHOLDS = [100, 300, 700, 1500];
 const ICONS: Record<string, LucideIcon> = {
@@ -107,14 +109,18 @@ export default function SkillTreeTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-          Track: <span style={{ color: meta.color, fontWeight: 600 }}>{meta.name}</span>
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+          {/* BG-P28b: was `color: meta.color`, which resolves to --lit now that
+              the four track hues collapsed onto one light — i.e. amber TYPE,
+              3.01:1 on Exhibition. A track is named by its NAME; the weight
+              carries the emphasis and the colour stays legal. */}
+          Track: <span style={{ color: t.text, fontWeight: 600 }}>{meta.name}</span>
         </div>
         <button
           onClick={() => setRespecOpen(true)}
           style={{
             background: "transparent", border: 0, padding: 0,
-            color: "rgba(255,255,255,0.45)", fontSize: 12, cursor: "pointer",
+            color: t.text2, fontSize: 12, cursor: "pointer",
             textDecoration: "underline",
           }}
         >

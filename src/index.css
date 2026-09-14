@@ -654,3 +654,97 @@ input[type="search"] { border-radius: var(--r-control); }
     transition: none !important;
   }
 }
+
+/* ── BG-P28b. The streak flame ───────────────────────────────────────────────
+   These were an inline <style> block inside streak-flame.tsx, which the
+   delivery rules disallow: keyframes belong here and are referenced by name.
+
+   The at-risk pulse used to hard-code `rgba(232,87,26,…)` into its drop-shadow
+   — a raw brand orange that the theme switch could not reach, so an at-risk
+   streak pulsed the old dark-room hue in both rooms. It spends `--action` now
+   and follows `<html data-theme>` like everything else.
+
+   Both animations sit on elements carrying [data-bg-animated], which is the
+   attribute BG-P07's reduced-motion guard above already keys on, so neither
+   needs its own media query. */
+@keyframes bgStreakFlicker {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.92;
+  }
+}
+
+@keyframes bgStreakAtRisk {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--action) 65%, transparent));
+  }
+}
+
+/* BG-P28b. The XP bar's sheen. Was an inline <style> block inside xp-bar.tsx;
+   keyframes belong here and are referenced by name. It animates `transform`
+   only, which is what the motion rules allow, and its element carries
+   [data-bg-animated] so the reduced-motion guard above switches it off. */
+@keyframes bgXpBarSheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+/* BG-P28b. The quest medallion's pop-in, and the claim button's burst and
+   floating reward. All three were inline <style> blocks; keyframes belong here.
+
+   `bgClaimParticle` reads --dx/--dy set per particle inline, which is how a
+   burst gives each mote its own vector without a keyframe each. Every element
+   using these carries [data-bg-animated], so the reduced-motion guard already
+   in this file switches them off — the claim button also returns early before
+   creating any particle when the preference is set, so the motion is answered
+   in CSS and in JavaScript, as the theme requires. */
+@keyframes bgQuestPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bgClaimParticle {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes bgClaimFloat {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-34px);
+    opacity: 0;
+  }
+}

@@ -1,5 +1,9 @@
 import { RefreshCw, Clock } from "lucide-react"
 import { tokens, sans, type TrackId, trackMeta } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill } from "@/lib/theme/progress"
 
 export interface RespecDialogProps {
   currentTrack: TrackId
@@ -27,7 +31,7 @@ export default function RespecDialog({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10,10,16,0.6)",
+        ...SCRIM,
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
         fontFamily: sans,
@@ -57,12 +61,12 @@ export default function RespecDialog({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: `color-mix(in srgb, ${meta.color} 16%, transparent)`,
-            border: `0.5px solid color-mix(in srgb, ${meta.color} 40%, transparent)`,
+            background: tierFill("rare").background,
+            border: `0.5px solid ${tierFill("rare").borderColor}`,
             marginBottom: 16,
           }}
         >
-          <RefreshCw size={22} color={meta.color} strokeWidth={2} />
+          <RefreshCw size={22} color={tok.text2} strokeWidth={2} />
         </div>
 
         <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
@@ -76,7 +80,7 @@ export default function RespecDialog({
             marginTop: 10,
           }}
         >
-          Your <strong style={{ color: meta.color }}>{meta.name}</strong>{" "}
+          Your <strong style={{ color: tok.text }}>{meta.name}</strong>{" "}
           track XP is kept — nothing is lost. Your active perks swap to the
           new track&apos;s tree, and respec goes on a 30-day cooldown.
         </p>
@@ -111,9 +115,9 @@ export default function RespecDialog({
             style={{
               flex: 1,
               padding: "10px 0",
-              borderRadius: tokens.radiusPill,
+              borderRadius: r.control,
               border: tokens.border,
-              background: "rgba(255,255,255,0.06)",
+              background: tok.glass2,
               color: tokens.text,
               fontSize: 13,
               fontWeight: 600,
@@ -130,12 +134,12 @@ export default function RespecDialog({
             style={{
               flex: 1,
               padding: "10px 0",
-              borderRadius: tokens.radiusPill,
+              borderRadius: r.control,
               border: "none",
               background: canRespec
                 ? tokens.brandGradient
-                : "rgba(255,255,255,0.08)",
-              color: canRespec ? "#fff" : tokens.textFaint,
+                : tok.recess,
+              color: canRespec ? tok.onAction : tokens.textFaint,
               fontSize: 13,
               fontWeight: 600,
               fontFamily: sans,

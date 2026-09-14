@@ -1,4 +1,6 @@
 import { trackMeta, tokens, type TrackId } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
 
 export interface PerkPillProps {
   track: TrackId
@@ -13,7 +15,7 @@ export default function PerkPill({ track, tier }: PerkPillProps) {
       style={{
         gap: 4,
         padding: "2px 7px",
-        borderRadius: tokens.radiusPill,
+        borderRadius: r.chip,
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: "0.06em",

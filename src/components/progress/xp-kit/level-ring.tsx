@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react"
+
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { progressFill, progressTrack, tierFill } from "@/lib/theme/progress"
 import { tokens } from "./tokens"
 
 export interface LevelRingProps {
@@ -14,6 +18,19 @@ export interface LevelRingProps {
 /**
  * Avatar wrapper with a circular XP progress ring and a docked level chip.
  * The ring fill animates a sweep on mount (600ms ease-out).
+ *
+ * REPAINTED ONTO THE LADDER (BG-P28b). The arc was `tokens.orange`, which is
+ * `--action` — "the primary thing to do" — spent on a reading of how far along
+ * you are, which is not an action. An arc IS a light, so it is `--lit`, and the
+ * groove behind it is `--line` rather than the white-alpha that vanished on
+ * Exhibition.
+ *
+ * THE LEVEL CHIP WAS THE ILLEGAL PART: an orange gradient with `#fff` on it,
+ * ringed by a 1.5px border of `#25252F` — the OLD PAGE GROUND, hard-coded, so
+ * on Exhibition the chip wore a dark ring that matched nothing on the page. It
+ * is the ladder's top rung now (an amber fill with `--on-lit` on it) and the
+ * ring is `--bg`, which is what that border was always trying to be: the page
+ * showing through, so the chip reads as docked rather than stuck on.
  */
 export default function LevelRing({
   avatarUrl,
@@ -56,7 +73,7 @@ export default function LevelRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.10)"
+          stroke={progressTrack().background as string}
           strokeWidth={stroke}
         />
         <circle
@@ -64,7 +81,7 @@ export default function LevelRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={tokens.orange}
+          stroke={progressFill().background as string}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference}`}
@@ -109,16 +126,20 @@ export default function LevelRing({
           position: "absolute",
           bottom: -2,
           right: -2,
-          background: tokens.orangeGradient,
-          color: "#fff",
-          fontFamily: tokens.fontSans,
-          fontWeight: 700,
+          background: tierFill("highest").background,
+          color: tierFill("highest").color,
+          fontFamily: tokens.fontMono,
+          fontVariantNumeric: "tabular-nums",
+          fontWeight: 500,
           fontSize: chipFont,
           lineHeight: 1,
           padding: chipPad,
-          borderRadius: tokens.radiusPill,
-          border: "1.5px solid #25252F",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+          borderRadius: r.chip,
+          // Was `1.5px solid #25252F` — the old page ground, hard-coded. The
+          // border's job is to let the page show through so the chip reads as
+          // docked against the avatar rather than pasted onto it, which is
+          // `--bg` by definition and follows the theme.
+          border: `1.5px solid ${t.bg}`,
         }}
         aria-label={`Level ${level}`}
       >

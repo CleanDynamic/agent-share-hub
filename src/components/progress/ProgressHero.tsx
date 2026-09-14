@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
-import { Sparkles, type LucideIcon } from "lucide-react";
+import { Sparkles } from "lucide-react";
+
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 import LevelRing from "./xp-kit/level-ring";
 import XpBar from "./xp-kit/xp-bar";
 import CreatorMarkChip from "./xp-kit/creator-mark-chip";
@@ -21,6 +25,19 @@ export interface ProgressHeroProps {
   rightSlot?: ReactNode;
 }
 
+/**
+ * The top of `/analytics`: who you are, what level, how far to the next one.
+ * Repainted by BG-P28b.
+ *
+ * THE CARD WAS A DARK SLAB IN A LIT ROOM — `rgba(52,52,66,0.55)` behind
+ * `rgba(255,255,255,0.95)` type, struck for a `#25252F` page. On Exhibition
+ * that is a grey block with white text on it, which is the single worst thing
+ * on the page in the light room. It is `--glass` with a `--glass-border` now,
+ * which is what the theme gives a reading surface in either room.
+ *
+ * THE BLUR WAS 28px. The system has exactly one blur value — 16px, saturate
+ * 1.15 — and no smaller one to save cost; 28px was a second.
+ */
 export function ProgressHero({
   name,
   avatarUrl,
@@ -35,15 +52,15 @@ export function ProgressHero({
   return (
     <div
       style={{
-        background: "rgba(52,52,66,0.55)",
-        border: "0.5px solid rgba(255,255,255,0.14)",
-        borderRadius: 14,
+        background: t.glass,
+        border: `0.5px solid ${t.glassBorder}`,
+        borderRadius: r.card,
         padding: 20,
         display: "flex",
         gap: 20,
         alignItems: "flex-start",
-        backdropFilter: "blur(28px) saturate(160%)",
-        WebkitBackdropFilter: "blur(28px) saturate(160%)",
+        backdropFilter: "blur(16px) saturate(1.15)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.15)",
       }}
     >
       <LevelRing
@@ -56,10 +73,10 @@ export function ProgressHero({
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: FIGTREE,
             fontSize: 18,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.95)",
+            color: t.text,
           }}
         >
           {name}

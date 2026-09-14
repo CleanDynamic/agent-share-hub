@@ -1,5 +1,9 @@
 import { X, type LucideIcon } from "lucide-react"
 import { tokens, sans, mono, fmt, type TrackId } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface Perk {
   name: string
@@ -59,14 +63,16 @@ export default function PerkDetailPanel({
             alignItems: "center",
             justifyContent: "center",
             background: isUnlocked
-              ? perk.trackColor
-              : `color-mix(in srgb, ${perk.trackColor} 16%, transparent)`,
-            border: `0.5px solid color-mix(in srgb, ${perk.trackColor} 45%, transparent)`,
+              ? tierFill("highest").background
+              : tierFill("rare").background,
+            border: `0.5px solid ${
+              isUnlocked ? tierFill("highest").borderColor : tierFill("rare").borderColor
+            }`,
           }}
         >
           <Icon
             size={24}
-            color={isUnlocked ? "#fff" : perk.trackColor}
+            color={isUnlocked ? tierFill("highest").color : tok.text2}
             strokeWidth={2}
           />
         </div>
@@ -75,9 +81,9 @@ export default function PerkDetailPanel({
           onClick={onClose}
           aria-label="Close"
           style={{
-            background: "rgba(255,255,255,0.06)",
+            background: tok.glass2,
             border: tokens.borderSoft,
-            borderRadius: 8,
+            borderRadius: r.chip,
             width: 30,
             height: 30,
             display: "flex",
@@ -103,10 +109,12 @@ export default function PerkDetailPanel({
           letterSpacing: "0.05em",
           textTransform: "uppercase",
           padding: "3px 9px",
-          borderRadius: tokens.radiusPill,
-          color: perk.trackColor,
-          background: `color-mix(in srgb, ${perk.trackColor} 15%, transparent)`,
-          border: `0.5px solid color-mix(in srgb, ${perk.trackColor} 40%, transparent)`,
+          borderRadius: r.chip,
+          // Was `color: perk.trackColor` — amber TYPE once the four track hues
+          // collapsed onto one light. The rung carries the emphasis instead.
+          color: tierFill("rare").color,
+          background: tierFill("rare").background,
+          border: `0.5px solid ${tierFill("rare").borderColor}`,
         }}
       >
         {perk.trackName} · Tier {perk.tier}
@@ -164,7 +172,7 @@ export default function PerkDetailPanel({
           >
             <span style={{ fontSize: 12, color: tokens.textDim }}>
               Reach Tier {perk.tier} —{" "}
-              <span style={{ fontFamily: mono, color: perk.trackColor }}>
+              <span style={{ fontFamily: mono, ...xpText() }}>
                 {fmt(remaining)}
               </span>{" "}
               track XP to go
@@ -173,8 +181,8 @@ export default function PerkDetailPanel({
           <div
             style={{
               height: 6,
-              borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              borderRadius: r.chip,
+              background: tok.line,
               overflow: "hidden",
             }}
           >
@@ -182,9 +190,10 @@ export default function PerkDetailPanel({
               style={{
                 width: `${pct}%`,
                 height: "100%",
-                borderRadius: tokens.radiusPill,
-                background: perk.trackColor,
-                boxShadow: `0 0 10px color-mix(in srgb, ${perk.trackColor} 60%, transparent)`,
+                borderRadius: r.chip,
+                // The light as a fill; the 10px glow under it went with every
+                // other glow on this surface.
+                background: tok.lit,
                 transition: "width 0.4s ease",
               }}
             />

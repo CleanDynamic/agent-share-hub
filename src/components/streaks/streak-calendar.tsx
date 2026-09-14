@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight, Snowflake } from "lucide-react"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
 import { BORDER, COLORS, FONT, HEAT_RAMP, RADIUS } from "./tokens"
 
 export interface StreakDay {
@@ -111,7 +113,23 @@ export default function StreakCalendar({
 
         {data.map((day) => {
           const dayNum = Number(day.date.slice(-2))
-          const bg = day.frozen ? "rgba(46,196,182,0.18)" : HEAT_RAMP[Math.min(day.level, 4)]
+          const level = Math.min(day.level, 4)
+          const bg = day.frozen ? t.evidenceFill : HEAT_RAMP[level]
+          /**
+           * THE LABEL ON A FILLED CELL TAKES `--on-lit`, NOT `--text`.
+           *
+           * The top two rungs of the ramp are `--lit` at 70% and at full
+           * strength, and `--text` on amber is only legal in ONE room: it is
+           * near-black on Exhibition (7.29:1) and near-white on Dusk, where it
+           * lands on a bright amber cell and fails. `--on-lit` is the measured
+           * label for an amber fill in both rooms, which is the whole reason
+           * the token exists.
+           */
+          const label = day.frozen
+            ? t.evidence
+            : level >= 3
+              ? t.onLit
+              : COLORS.textMuted
           return (
             <div
               key={day.date}
@@ -119,18 +137,18 @@ export default function StreakCalendar({
               className="relative flex items-center justify-center"
               style={{
                 aspectRatio: "1 / 1",
-                borderRadius: 7,
+                // The chip step, rather than the 7 this was drawn at.
+                borderRadius: r.chip,
                 background: bg,
-                border: day.frozen
-                  ? "0.5px solid rgba(46,196,182,0.45)"
-                  : "0.5px solid rgba(255,255,255,0.06)",
+                border: `0.5px solid ${day.frozen ? t.evidence : t.line}`,
               }}
             >
               <span
                 style={{
                   fontFamily: FONT.mono,
                   fontSize: 10,
-                  color: day.level >= 3 ? COLORS.text : COLORS.textMuted,
+                  fontVariantNumeric: "tabular-nums",
+                  color: label,
                 }}
               >
                 {dayNum}

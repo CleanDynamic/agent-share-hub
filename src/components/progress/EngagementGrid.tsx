@@ -1,5 +1,9 @@
 import { Bookmark, MessageCircle, Upload, Repeat, Heart, Users, Eye, Calendar } from "lucide-react";
 
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
+
 export interface EngagementGridProps {
   counters: Record<string, number>;
 }
@@ -15,6 +19,21 @@ const ITEMS: { key: string; label: string; icon: any }[] = [
   { key: "returns", label: "Day-returns", icon: Calendar },
 ];
 
+/**
+ * The engagement counters — eight tiles of one number each. Repainted by
+ * BG-P28b.
+ *
+ * THESE ARE STAT TILES, SO THEY ARE SET AS DATA. The number was Figtree at 600;
+ * it is DM Mono with tabular numerals now, because eight counts laid out in a
+ * 4-across grid are a column whether or not anyone called them one, and a
+ * proportional face makes "1,204" and "998" different widths in adjacent cells.
+ * `data-visualization`'s rule about aligned figures applies to a grid of tiles
+ * exactly as it does to a table.
+ *
+ * NO AMBER HERE, deliberately. Every tile is the same weight because every
+ * counter is the same KIND of thing — lighting one would say it mattered more.
+ * The page's one lit element is the level marker in the hero above.
+ */
 export function EngagementGrid({ counters }: EngagementGridProps) {
   return (
     <div
@@ -30,20 +49,36 @@ export function EngagementGrid({ counters }: EngagementGridProps) {
           <div
             key={key}
             style={{
-              background: "rgba(68,68,84,0.55)",
-              border: "0.5px solid rgba(255,255,255,0.10)",
-              borderRadius: 10,
+              background: t.glass2,
+              border: `0.5px solid ${t.line}`,
+              borderRadius: r.media,
               padding: 12,
               display: "flex",
               flexDirection: "column",
               gap: 6,
             }}
           >
-            <Icon size={14} color="rgba(255,255,255,0.45)" />
-            <div style={{ fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", fontFamily: "Figtree, sans-serif" }}>
+            <Icon size={14} color="currentColor" style={{ color: t.text2 }} />
+            <div
+              style={{
+                fontFamily: DM_MONO,
+                ...tabular,
+                fontSize: 18,
+                fontWeight: 500,
+                color: t.text,
+              }}
+            >
               {v.toLocaleString()}
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <div
+              style={{
+                fontFamily: FIGTREE,
+                fontSize: 11,
+                color: t.text2,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
               {label}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Snowflake } from "lucide-react"
+import { elevation } from "@/lib/theme/elevation"
 import { BORDER, COLORS, FONT, RADIUS } from "./tokens"
 
 export interface FreezeIndicatorProps {
@@ -76,13 +77,16 @@ export default function FreezeIndicator({
             border: BORDER.hairlineStrong,
             borderRadius: RADIUS.card,
             padding: "10px 12px",
-            backdropFilter: "blur(28px) saturate(160%)",
-            WebkitBackdropFilter: "blur(28px) saturate(160%)",
+            // THE one blur value; this was a second at 28px.
+            backdropFilter: "blur(16px) saturate(1.15)",
+            WebkitBackdropFilter: "blur(16px) saturate(1.15)",
             fontSize: 12.5,
             lineHeight: 1.5,
             color: COLORS.text,
             zIndex: 20,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+            // A shadow on a light ground and one on a dark ground are not the
+            // same object, which is why the scale is defined per theme.
+            ...elevation.raised,
           }}
         >
           Freeze passes keep your streak alive on a missed day. You get{" "}

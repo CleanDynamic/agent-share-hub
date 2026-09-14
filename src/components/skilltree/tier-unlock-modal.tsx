@@ -1,5 +1,9 @@
 import { X, Check, type LucideIcon } from "lucide-react"
 import { tokens, sans, type TrackId, trackMeta } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface UnlockedPerk {
   name: string
@@ -33,7 +37,7 @@ export default function TierUnlockModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10,10,16,0.6)",
+        ...SCRIM,
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
         fontFamily: sans,
@@ -51,7 +55,9 @@ export default function TierUnlockModal({
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
           border: `1px solid ${color}`,
-          boxShadow: `0 0 40px color-mix(in srgb, ${color} 35%, transparent)`,
+          // The 40px coloured halo went: a glow needs darkness to glow
+          // against, and the dialog already carries the overlay elevation.
+          ...elevation.overlay,
           color: tokens.text,
           position: "relative",
         }}
@@ -64,7 +70,7 @@ export default function TierUnlockModal({
             position: "absolute",
             top: 16,
             right: 16,
-            background: "rgba(255,255,255,0.06)",
+            background: tok.glass2,
             border: tokens.borderSoft,
             borderRadius: 8,
             width: 30,
@@ -136,10 +142,10 @@ export default function TierUnlockModal({
                     alignItems: "center",
                     justifyContent: "center",
                     background: color,
-                    boxShadow: `0 0 14px color-mix(in srgb, ${color} 55%, transparent)`,
+
                   }}
                 >
-                  <Icon size={20} color="#fff" strokeWidth={2.25} />
+                  <Icon size={20} color={tok.onLit} strokeWidth={2.25} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>
@@ -168,10 +174,10 @@ export default function TierUnlockModal({
             width: "100%",
             marginTop: 22,
             padding: "11px 0",
-            borderRadius: tokens.radiusPill,
+            borderRadius: r.control,
             border: "none",
             background: tokens.brandGradient,
-            color: "#fff",
+            color: tok.onAction,
             fontSize: 14,
             fontWeight: 600,
             fontFamily: sans,

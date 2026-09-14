@@ -1,4 +1,6 @@
 import { tokens, mono, fmt } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
 
 export interface TrackXpBarProps {
   trackXp: number
@@ -35,7 +37,7 @@ export default function TrackXpBar({
           style={{
             fontFamily: mono,
             fontSize: 12,
-            color: trackColor,
+            color: t.text,
             fontWeight: 600,
           }}
         >
@@ -48,8 +50,8 @@ export default function TrackXpBar({
         style={{
           position: "relative",
           height: 8,
-          borderRadius: tokens.radiusPill,
-          background: "rgba(255,255,255,0.08)",
+          borderRadius: r.chip,
+          background: t.line,
           border: tokens.borderSoft,
           overflow: "visible",
         }}
@@ -59,9 +61,10 @@ export default function TrackXpBar({
             position: "absolute",
             inset: 0,
             width: `${pct}%`,
-            borderRadius: tokens.radiusPill,
-            background: trackColor,
-            boxShadow: `0 0 12px color-mix(in srgb, ${trackColor} 60%, transparent)`,
+            borderRadius: r.chip,
+            // The light as a FILL. The 12px glow under it went: a glow needs
+            // darkness to glow against, and on Exhibition it read as a sticker.
+            background: t.lit,
             transition: "width 0.4s ease",
           }}
         />
@@ -81,8 +84,8 @@ export default function TrackXpBar({
                 height: 14,
                 borderRadius: 2,
                 background: reached
-                  ? trackColor
-                  : "rgba(255,255,255,0.30)",
+                  ? t.lit
+                  : t.line,
               }}
               title={`Tier ${i + 1} — ${fmt(t)} XP`}
             />
@@ -98,8 +101,8 @@ export default function TrackXpBar({
             width: 12,
             height: 12,
             borderRadius: "50%",
-            background: "#fff",
-            border: `2px solid ${trackColor}`,
+            background: t.bg,
+            border: `2px solid ${t.lit}`,
             boxShadow: `0 0 10px color-mix(in srgb, ${trackColor} 70%, transparent)`,
           }}
         />

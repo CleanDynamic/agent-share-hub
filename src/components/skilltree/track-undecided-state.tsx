@@ -5,6 +5,10 @@ import {
   Users,
 } from "lucide-react"
 import { tokens, sans, trackMeta } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t as tok } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill } from "@/lib/theme/progress"
 
 export interface TrackUndecidedStateProps {
   onChoose: () => void
@@ -47,11 +51,11 @@ export default function TrackUndecidedState({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "rgba(255,255,255,0.05)",
+              background: tok.glass2,
               border: tokens.borderSoft,
             }}
           >
-            <Icon size={24} color={trackMeta[id].color} strokeWidth={1.75} />
+            <Icon size={24} color={tok.text2} strokeWidth={1.75} />
           </div>
         ))}
       </div>
@@ -84,10 +88,10 @@ export default function TrackUndecidedState({
         style={{
           marginTop: 18,
           padding: "10px 24px",
-          borderRadius: tokens.radiusPill,
+          borderRadius: r.control,
           border: "none",
           background: tokens.brandGradient,
-          color: "#fff",
+          color: tok.onAction,
           fontSize: 13,
           fontWeight: 600,
           fontFamily: sans,
