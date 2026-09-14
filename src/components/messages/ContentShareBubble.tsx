@@ -15,15 +15,28 @@ function relativeOpenedLabel(iso: string | null | undefined): string {
   return `Opened ${new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 }
 
+/**
+ * BG-P26. The eight block types, resolved into part categories.
+ *
+ * These were #A855F7, #3B82F6, #22C55E, #EC4899, #F97316, #EAB308 and #14B8A6 —
+ * seven of the fourteen legacy content-type badge colours, which the theme
+ * retires outright. Anything needing a colour resolves into one of the nine
+ * part hues, or into `--text2` when nothing fits, and each of these has an
+ * obvious home: a prompt is an instruction, a result is evidence, an api call
+ * is data, and the three media types are media.
+ *
+ * Unlike the old hexes these keep their hue but change value between the rooms,
+ * and each is measured at 4.83:1 or better on its own ground.
+ */
 const BLOCK_TYPE_COLORS: Record<string, string> = {
-  prompt: "#A855F7",
-  code: "#3B82F6",
-  result: "#22C55E",
-  image: "#EC4899",
-  video: "#F97316",
-  audio: "#EAB308",
-  text: "#6B7280",
-  api: "#14B8A6",
+  prompt: "var(--cat-instruction)",
+  code: "var(--cat-configuration)",
+  result: "var(--cat-evidence)",
+  image: "var(--cat-media)",
+  video: "var(--cat-media)",
+  audio: "var(--cat-media)",
+  text: "var(--cat-narrative)",
+  api: "var(--cat-data)",
 };
 
 export interface BlueprintContent {
@@ -106,7 +119,7 @@ function StageMiniMap({
             y1={f.y}
             x2={t.x}
             y2={t.y}
-            stroke="rgba(255,255,255,0.18)"
+            stroke="var(--line)"
             strokeWidth={1}
           />
         );
@@ -117,8 +130,8 @@ function StageMiniMap({
           cx={b.x}
           cy={b.y}
           r={5}
-          fill={BLOCK_TYPE_COLORS[b.type?.toLowerCase()] || "#6B7280"}
-          stroke="rgba(0,0,0,0.4)"
+          fill={BLOCK_TYPE_COLORS[b.type?.toLowerCase()] || "var(--text2)"}
+          stroke="var(--bg)"
           strokeWidth={1}
         />
       ))}
@@ -228,11 +241,11 @@ export function ContentShareBubble({
   }, [viewedAt]);
 
   const bubbleBg = isFromCurrentUser
-    ? "rgba(46,196,182,0.12)"
-    : "rgba(255, 255, 255, 0.12)";
+    ? "color-mix(in srgb, var(--evidence) 12%, transparent)"
+    : "var(--recess)";
   const hoverBg = isFromCurrentUser
-    ? "rgba(46,196,182,0.16)"
-    : "rgba(255,255,255,0.08)";
+    ? "color-mix(in srgb, var(--evidence) 16%, transparent)"
+    : "var(--recess)";
   const borderRadius = isFromCurrentUser
     ? "14px 4px 14px 14px"
     : "4px 14px 14px 14px";
@@ -241,10 +254,10 @@ export function ContentShareBubble({
     if (!isFromCurrentUser || !readState) return null;
     const openedText = relativeOpenedLabel(viewedAt ?? null);
     const cfg: Record<string, { text: string; color: string }> = {
-      sending: { text: "Sending…", color: "rgba(255,255,255,0.40)" },
-      delivered: { text: "Delivered", color: "rgba(255,255,255,0.40)" },
-      seen: { text: `Seen ${timestamp}`, color: "rgba(46,196,182,0.65)" },
-      opened: { text: openedText, color: "rgba(46,196,182,0.85)" },
+      sending: { text: "Sending…", color: "var(--text2)" },
+      delivered: { text: "Delivered", color: "var(--text2)" },
+      seen: { text: `Seen ${timestamp}`, color: "color-mix(in srgb, var(--evidence) 65%, transparent)" },
+      opened: { text: openedText, color: "var(--evidence)" },
     };
     const c = cfg[readState];
     if (!c) return null;
@@ -266,7 +279,7 @@ export function ContentShareBubble({
           style={{
             backgroundColor: bubbleBg,
             borderRadius,
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
             fontFamily: "Figtree, sans-serif",
             fontSize: 12,
           }}
@@ -293,7 +306,7 @@ export function ContentShareBubble({
             className="w-full h-[80px]"
             style={{
               background:
-                "linear-gradient(135deg, rgba(46,196,182,0.18), rgba(180,83,49,0.18))",
+                "linear-gradient(135deg, color-mix(in srgb, var(--evidence) 18%, transparent), rgba(180,83,49,0.18))",
             }}
           />
         )}
@@ -302,8 +315,8 @@ export function ContentShareBubble({
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
               style={{
-                backgroundColor: "rgba(46,196,182,0.18)",
-                color: "rgba(46,196,182,0.95)",
+                backgroundColor: "color-mix(in srgb, var(--evidence) 18%, transparent)",
+                color: "var(--evidence)",
                 fontFamily: "Figtree, sans-serif",
                 letterSpacing: "0.04em",
               }}
@@ -312,21 +325,21 @@ export function ContentShareBubble({
             </span>
             <span
               className="text-[11px] truncate"
-              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
+              style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
             >
               by @{bp.author}
             </span>
           </div>
           <p
             className="text-[14px] font-semibold leading-snug line-clamp-2"
-            style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
+            style={{ color: "var(--text)", ...type.cardTitle,}}
           >
             {bp.title}
           </p>
           {bp.useCase && (
             <div
               className="flex items-start gap-1.5 text-[11px] leading-snug"
-              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Figtree, sans-serif" }}
+              style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
             >
               <Target className="h-3 w-3 mt-0.5 shrink-0" />
               <span className="line-clamp-2">{bp.useCase}</span>
@@ -335,7 +348,7 @@ export function ContentShareBubble({
           {bp.blockTypes.length > 0 && <BlockTypeChips types={bp.blockTypes} />}
           <div
             className="text-[10px] pt-1"
-            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
           >
             {bp.stageCount} stages · {bp.blockCount} blocks · {bp.readTime}
           </div>
@@ -362,26 +375,26 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
           >
             from {s.blueprintTitle}
           </span>
         </div>
         <p
           className="text-[14px] font-semibold leading-snug"
-          style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
+          style={{ color: "var(--text)", ...type.cardTitle,}}
         >
           {s.name}
         </p>
         <div
           className="rounded-md overflow-hidden"
-          style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
+          style={{ backgroundColor: "var(--recess)" }}
         >
           <StageMiniMap blocks={s.blocks} connections={s.connections} />
         </div>
         <div
           className="text-[10px]"
-          style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
+          style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
         >
           {s.blockCount} blocks · {s.connectionCount} connections
         </div>
@@ -391,7 +404,7 @@ export function ContentShareBubble({
 
   const renderBlock = () => {
     const b = content as BlockContent;
-    const typeColor = BLOCK_TYPE_COLORS[b.type?.toLowerCase()] || "#6B7280";
+    const typeColor = BLOCK_TYPE_COLORS[b.type?.toLowerCase()] || "var(--text2)";
     const isMedia = ["image", "video"].includes((b.type || "").toLowerCase());
     return (
       <div className="p-3 space-y-2">
@@ -409,21 +422,21 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
           >
             from {b.stageName} in {b.blueprintTitle}
           </span>
         </div>
         <p
           className="text-[14px] font-semibold leading-snug"
-          style={{ color: "rgba(255,255,255,0.95)", ...type.cardTitle,}}
+          style={{ color: "var(--text)", ...type.cardTitle,}}
         >
           {b.name}
         </p>
         <div
           className="rounded-md p-2 overflow-hidden"
           style={{
-            backgroundColor: "rgba(0,0,0,0.25)",
+            backgroundColor: "var(--recess)",
             maxHeight: 96,
           }}
         >
@@ -437,7 +450,7 @@ export function ContentShareBubble({
             <pre
               className="text-[11px] whitespace-pre-wrap break-words line-clamp-4"
               style={{
-                color: "rgba(255,255,255,0.75)",
+                color: "var(--text2)",
                 fontFamily: "JetBrains Mono, ui-monospace, monospace",
                 margin: 0,
               }}
@@ -449,7 +462,7 @@ export function ContentShareBubble({
         {b.referenceCount && b.referenceCount > 0 ? (
           <div
             className="text-[10px]"
-            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
           >
             Used {b.referenceCount}× in other blueprints
           </div>
@@ -476,14 +489,14 @@ export function ContentShareBubble({
         style={{
           backgroundColor: hovered ? hoverBg : bubbleBg,
           borderRadius,
-          border: "1px solid rgba(255, 255, 255, 0.14)",
+          border: "1px solid var(--recess)",
         }}
       >
         {senderNote && (
           <div
             className="px-3 pt-2.5 pb-1 text-[13px] leading-snug whitespace-pre-wrap break-words"
             style={{
-              color: "rgba(255,255,255,0.85)",
+              color: "var(--text)",
               fontFamily: "Figtree, sans-serif",
             }}
           >
@@ -498,7 +511,7 @@ export function ContentShareBubble({
             className="absolute bottom-2 right-2 transition-opacity"
             style={{ opacity: hovered ? 1 : 0.6 }}
           >
-            <ArrowRight className="h-3.5 w-3.5" style={{ color: "rgba(255,255,255,0.6)" }} />
+            <ArrowRight className="h-3.5 w-3.5" style={{ color: "var(--text2)" }} />
           </div>
         </div>
       </div>

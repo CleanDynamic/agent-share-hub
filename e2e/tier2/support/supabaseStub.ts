@@ -443,7 +443,13 @@ export async function installSupabaseStub(
       });
     }
 
-    const rows = filterRows(tables[table], url);
+    // PostgREST's `count=exact` is the number of rows MATCHING, before any
+    // limit or range is applied — that is the whole point of asking for it. The
+    // body is the limited page; the count is not. Computing both from the same
+    // limited array made a `limit: 1` count query report a total of 1, which is
+    // what the notifications header does to fill its tab counts.
+    const matched = filterRows(tables[table], url, { paginate: false });
+    const rows = filterRows(tables[table], url, { paginate: true });
 
     // A `head:true` count query wants the total in Content-Range, not a body.
     const prefer = request.headers()["prefer"] ?? "";
@@ -451,7 +457,7 @@ export async function installSupabaseStub(
     const isHead = method === "HEAD";
     const headers: Record<string, string> = { ...corsHeaders() };
     if (wantsCount || isHead) {
-      headers["content-range"] = `0-${Math.max(0, rows.length - 1)}/${rows.length}`;
+      headers["content-range"] = `0-${Math.max(0, rows.length - 1)}/${matched.length}`;
     }
 
     // `.single()` / `.maybeSingle()` ask for an object via Accept.
@@ -666,7 +672,11 @@ function fakeJwt(claims: Record<string, unknown>): string {
  * getThreads does most of its partitioning in JS on the rows it gets back, so
  * over-serving changes nothing the specs assert on.
  */
-function filterRows(rows: any[], url: URL): any[] {
+function filterRows(
+  rows: any[],
+  url: URL,
+  { paginate }: { paginate: boolean } = { paginate: true }
+): any[] {
   let out = [...rows];
 
   for (const [key, value] of url.searchParams) {
@@ -701,8 +711,11 @@ function filterRows(rows: any[], url: URL): any[] {
     });
   }
 
-  const limit = url.searchParams.get("limit");
-  if (limit) out = out.slice(0, Number(limit));
+  if (paginate) {
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const limit = url.searchParams.get("limit");
+    out = out.slice(offset, limit ? offset + Number(limit) : undefined);
+  }
 
   return out;
 }

@@ -151,7 +151,7 @@ export function ShareToDMModal({
       <DialogContent
         className="max-w-md"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle className="text-base font-bold text-foreground">
