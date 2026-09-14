@@ -28,9 +28,23 @@
 //     data colour. Zero is not "a little bit of the thing"; it is the absence
 //     of it, and a sequential ramp whose bottom step is the same hue as its top
 //     makes an empty year look like a faint streak.
-//   · The alphas rise 25 / 45 / 70 / 100 rather than 28 / 50 / 72 / 95. The top
+//   · The alphas rise 18 / 32 / 50 / 100 rather than 28 / 50 / 72 / 95. The top
 //     step is the token at full strength, so the busiest day is the same amber
 //     as the flame above it — one light, one meaning.
+//
+// WHY THE MIDDLE STEPS ARE QUIETER THAN THE RAMP'S OWN LOGIC WOULD SUGGEST.
+// `Analytics.tsx` hard-codes `level: d.kind === "frozen" ? 0 : 3` — every
+// active day resolves to index 3, whatever the person actually did. So in
+// production this is not a five-step ramp at all: it is a BINARY rendered on
+// one, and a sixty-day streak paints ~55 cells of the same value. At the 72%
+// the old ramp used, that field carried more amber AREA than the level ring,
+// the flame and the quest bar combined, and the page's entry point became a
+// calendar rather than "what level am I". Pulling the middle steps down keeps
+// the ramp monotonic and keeps the eye on the level marker, where it belongs.
+//
+// The encoding itself is BG-P29-or-later work and is out of this prompt's
+// scope, which is appearance only: either feed the calendar real activity
+// counts so the ramp earns its five steps, or collapse it to two.
 
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
@@ -96,8 +110,8 @@ export const ORANGE_GRADIENT = t.action
  */
 export const HEAT_RAMP = [
   t.recess,
-  tokenAlpha("lit", 0.25),
-  tokenAlpha("lit", 0.45),
-  tokenAlpha("lit", 0.7),
+  tokenAlpha("lit", 0.18),
+  tokenAlpha("lit", 0.32),
+  tokenAlpha("lit", 0.5),
   t.lit,
 ] as const

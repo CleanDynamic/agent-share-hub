@@ -116,20 +116,23 @@ export default function StreakCalendar({
           const level = Math.min(day.level, 4)
           const bg = day.frozen ? t.evidenceFill : HEAT_RAMP[level]
           /**
-           * THE LABEL ON A FILLED CELL TAKES `--on-lit`, NOT `--text`.
+           * THE LABEL FOLLOWS THE CELL, and the threshold is the ramp's top
+           * step ONLY.
            *
-           * The top two rungs of the ramp are `--lit` at 70% and at full
-           * strength, and `--text` on amber is only legal in ONE room: it is
-           * near-black on Exhibition (7.29:1) and near-white on Dusk, where it
-           * lands on a bright amber cell and fails. `--on-lit` is the measured
-           * label for an amber fill in both rooms, which is the whole reason
-           * the token exists.
+           * `--on-lit` is the measured label for a SOLID amber fill, and at
+           * index 4 that is what the cell is. The steps below it are `--lit` at
+           * 18–50% over the card, which lands light on Exhibition and dark on
+           * Dusk — so they take `--text`, which inverts with the room and reads
+           * on both. Using `--on-lit` on a 50% wash would have put near-black
+           * on a mid-dark cell on Dusk, at roughly 2.5:1.
            */
           const label = day.frozen
             ? t.evidence
-            : level >= 3
+            : level >= 4
               ? t.onLit
-              : COLORS.textMuted
+              : level >= 1
+                ? t.text
+                : COLORS.textMuted
           return (
             <div
               key={day.date}
