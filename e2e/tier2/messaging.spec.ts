@@ -147,7 +147,14 @@ test.describe("realtime still delivers", () => {
       msg(DEFAULT_THREAD_ID, THEM.id, "sent from another context", new Date().toISOString())
     );
 
-    await expect(page.getByText("sent from another context")).toBeVisible();
+    // Scoped to a message body, not to the page. The arriving message is also
+    // the thread's newest, so `useThreadListUpdates` refetches and the same text
+    // appears in the list's preview a moment later — matching page-wide is a
+    // race against that second render. A bubble is a <p>; the list preview is a
+    // <span> inside the row button. Asserting on the bubble also says the
+    // stronger thing: the message reached the CONVERSATION, not merely the list.
+    const inThread = page.locator("p").filter({ hasText: "sent from another context" });
+    await expect(inThread.first()).toBeVisible();
   });
 
   test("the thread list subscribes too, so a new thread's message reaches it", async ({ page }) => {

@@ -568,6 +568,30 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { transform: translateY(0); }
 }
 
+/* ── Messaging (BG-P26) ───────────────────────────────────────────────────────
+   Two keyframes for the conversation, here because a keyframe is the one thing
+   an inline style cannot express. Both are referenced by name from a style
+   object that also carries `data-bg-animated`, so reduced motion is answered
+   twice: the component drops the animation on render, and the rule above drops
+   it for a visitor who changes the setting while a message is already on screen.
+
+   `dmTypingDot` moves OPACITY ONLY, which is what BG-P26 asks for — a typing
+   indicator that bounced would animate a layout property and pull the row's
+   height with it. The three dots share one keyframe and are separated by
+   animation-delay, set inline per dot.
+
+   `dmMessageIn` is the new-message entrance: 200ms, opacity plus an 8px rise on
+   `transform`. Neither property triggers layout, so an arriving message does not
+   reflow the thread above it. */
+@keyframes dmTypingDot {
+  0%, 80%, 100% { opacity: 0.25; }
+  40%           { opacity: 1; }
+}
+@keyframes dmMessageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── The card's hover shadow (BG-P09) ─────────────────────────────────────────
    A PSEUDO-ELEMENT, BECAUSE THE THEME FORBIDS ANIMATING `box-shadow`. A shadow
    that changes has to change on a pseudo-element whose OPACITY is animated:
