@@ -761,7 +761,7 @@ export function DiscoverFilterSheet({
               height: 36,
               borderRadius: 8,
               border: 'none',
-              background: 'linear-gradient(135deg, var(--action) 0%, var(--action) 100%)',
+              background: 'var(--action)',
               cursor: 'pointer',
             }}
           >

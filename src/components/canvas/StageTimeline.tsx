@@ -72,7 +72,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
               width: 14, height: 14,
               borderRadius: '50%',
               background: 'var(--action)',
-              border: '3px solid rgba(6,6,10,1)',
+              border: '3px solid var(--bg)',
               zIndex: 2,
             }} />
 
@@ -167,7 +167,7 @@ export function StageTimeline({ stages, blocks, postType, showAnnotations }: Sta
             width: 14, height: 14,
             borderRadius: '50%',
             background: 'var(--recess)',
-            border: '3px solid rgba(6,6,10,1)',
+            border: '3px solid var(--bg)',
             zIndex: 2,
           }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -325,7 +325,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
       {!isBlog && wteTeaser && (
-        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#55e0d2" }}>
+        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "var(--evidence)" }}>
           <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
           <span className="opacity-70">Expect: </span>
           {wteTeaser}

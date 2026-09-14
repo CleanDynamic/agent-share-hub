@@ -14,17 +14,17 @@ interface AutoDetectedCardProps {
 }
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
-  prompt: "#E8571A",
-  code: "#22C55E",
-  result: "#7C3AED",
-  agent: "#7C3AED",
-  tool: "#3B82F6",
-  model: "#A78BFA",
-  workflow: "#3B82F6",
-  compare: "#EC4899",
-  tutorial: "#2EC4B6",
-  resource: "#06B6D4",
-  note: "#F59E0B",
+  prompt: "var(--action)",
+  code: "var(--cat-configuration)",
+  result: "var(--cat-agents)",
+  agent: "var(--cat-agents)",
+  tool: "var(--cat-data)",
+  model: "var(--cat-agents)",
+  workflow: "var(--cat-data)",
+  compare: "var(--cat-media)",
+  tutorial: "var(--evidence)",
+  resource: "var(--cat-data)",
+  note: "var(--lit)",
 };
 
 function StatBlock({
@@ -40,20 +40,20 @@ function StatBlock({
     <div className="flex flex-col gap-1">
       <span
         className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-        style={{ color: "rgba(255,255,255,0.40)" }}
+        style={{ color: "var(--text2)" }}
       >
         {label}
       </span>
       <span
         className="text-[22px] font-bold leading-tight"
-        style={{ color: "rgba(255,255,255,0.95)" }}
+        style={{ color: "var(--text)" }}
       >
         {value}
       </span>
       {subtitle && (
         <span
           className="text-[11px] font-normal"
-          style={{ color: "rgba(255,255,255,0.40)" }}
+          style={{ color: "var(--text2)" }}
         >
           {subtitle}
         </span>
@@ -63,13 +63,13 @@ function StatBlock({
 }
 
 function BlockTypeChip({ type }: { type: string }) {
-  const color = BLOCK_TYPE_COLORS[type.toLowerCase()] || "rgba(255,255,255,0.40)";
+  const color = BLOCK_TYPE_COLORS[type.toLowerCase()] || "var(--text2)";
   return (
     <span
       className="inline-flex items-center gap-1.5"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "0.5px solid var(--line)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
@@ -77,7 +77,7 @@ function BlockTypeChip({ type }: { type: string }) {
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
       <span
         className="text-[11px] font-medium"
-        style={{ color: "rgba(255,255,255,0.85)" }}
+        style={{ color: "var(--text)" }}
       >
         {type}
       </span>
@@ -90,16 +90,16 @@ function ModelChip({ name }: { name: string }) {
     <span
       className="inline-flex items-center gap-1.5"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "0.5px solid var(--line)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
     >
-      <Brain size={11} style={{ color: "rgba(255,255,255,0.85)" }} />
+      <Brain size={11} style={{ color: "var(--text)" }} />
       <span
         className="text-[11px] font-medium"
-        style={{ color: "rgba(255,255,255,0.85)" }}
+        style={{ color: "var(--text)" }}
       >
         {name}
       </span>
@@ -112,16 +112,16 @@ function ToolChip({ name }: { name: string }) {
     <span
       className="inline-flex items-center gap-1.5"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "0.5px solid var(--line)",
         borderRadius: "4px",
         padding: "3px 8px",
       }}
     >
-      <Wrench size={11} style={{ color: "rgba(255,255,255,0.85)" }} />
+      <Wrench size={11} style={{ color: "var(--text)" }} />
       <span
         className="text-[11px] font-medium"
-        style={{ color: "rgba(255,255,255,0.85)" }}
+        style={{ color: "var(--text)" }}
       >
         {name}
       </span>
@@ -133,7 +133,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-      style={{ color: "rgba(255,255,255,0.40)" }}
+      style={{ color: "var(--text2)" }}
     >
       {children}
     </span>
@@ -144,7 +144,7 @@ function EmptyPlaceholder() {
   return (
     <span
       className="text-[11px] font-medium"
-      style={{ color: "rgba(255,255,255,0.30)" }}
+      style={{ color: "var(--text2)" }}
     >
       —
     </span>
@@ -176,8 +176,8 @@ export function AutoDetectedCard({
       <div
         className="w-full flex flex-col items-center justify-center text-center"
         style={{
-          background: "rgba(22,22,30,0.40)",
-          border: "0.5px dashed rgba(255,255,255,0.10)",
+          background: "var(--recess)",
+          border: "0.5px dashed var(--line)",
           borderRadius: "10px",
           padding: "32px 18px",
         }}
@@ -185,19 +185,19 @@ export function AutoDetectedCard({
       >
         <FileQuestion
           size={32}
-          style={{ color: "rgba(255,255,255,0.30)", marginBottom: 12 }}
+          style={{ color: "var(--text2)", marginBottom: 12 }}
           aria-hidden
         />
         <p
           className="text-[12px]"
-          style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Figtree, sans-serif" }}
+          style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
         >
           Nothing detected yet — add some content in the editor first.
         </p>
         <button
           onClick={onEditClick}
           className="publish-focus mt-4 cursor-pointer text-[11px] font-medium transition-colors rounded"
-          style={{ color: "rgba(46,196,182,0.85)" }}
+          style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)" }}
         >
           Open editor →
         </button>
@@ -209,8 +209,8 @@ export function AutoDetectedCard({
     <div
       className="w-full"
       style={{
-        background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
         borderRadius: "10px",
         padding: "18px",
       }}
@@ -265,12 +265,12 @@ export function AutoDetectedCard({
       <button
         onClick={onEditClick}
         className="publish-focus mt-5 cursor-pointer text-[11px] font-medium transition-colors rounded"
-        style={{ color: "rgba(46,196,182,0.85)" }}
+        style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)" }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = "rgba(46,196,182,1.0)";
+          e.currentTarget.style.color = "var(--evidence)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = "rgba(46,196,182,0.85)";
+          e.currentTarget.style.color = "color-mix(in srgb, var(--evidence) 85%, transparent)";
         }}
       >
         These look wrong? Update in editor →

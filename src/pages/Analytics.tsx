@@ -300,9 +300,9 @@ export default function Analytics() {
               onLoadMore={() => xpEventsQ.refetch()}
             />
             <SectionHeader title="Challenges completed" />
-            <div style={{ background: "rgba(52,52,66,0.45)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.10)", overflow: "hidden" }}>
+            <div style={{ background: "var(--glass)", borderRadius: 12, border: "0.5px solid var(--line)", overflow: "hidden" }}>
               {(historyQ.data ?? []).length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
+                <div style={{ padding: 20, textAlign: "center", color: "var(--text2)", fontSize: 13 }}>
                   No challenges claimed yet.
                 </div>
               ) : (

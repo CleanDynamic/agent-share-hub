@@ -54,9 +54,9 @@ const POST_TYPE_DISPLAY = {
   build: {
     label: 'Build',
     emoji: '🔨',
-    color: '#8B4513',
-    bg: 'rgba(139,69,19,0.12)',
-    border: 'rgba(139,69,19,0.25)',
+    color: 'var(--action)',
+    bg: 'color-mix(in srgb, var(--action) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--action) 25%, transparent)',
     wteLabel: 'Outcome',
     blueprintLabel: 'The Blueprint',
     stepStyle: 'numbered',
@@ -65,9 +65,9 @@ const POST_TYPE_DISPLAY = {
   technique: {
     label: 'Technique',
     emoji: '⚡',
-    color: '#1F7A6D',
-    bg: 'rgba(31,122,109,0.12)',
-    border: 'rgba(31,122,109,0.25)',
+    color: 'var(--evidence)',
+    bg: 'color-mix(in srgb, var(--evidence) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--evidence) 25%, transparent)',
     wteLabel: 'The Claim',
     blueprintLabel: 'The Technique',
     stepStyle: 'dot',
@@ -76,9 +76,9 @@ const POST_TYPE_DISPLAY = {
   discovery: {
     label: 'Discovery',
     emoji: '🔍',
-    color: '#7C3AED',
-    bg: 'rgba(124,58,237,0.12)',
-    border: 'rgba(124,58,237,0.25)',
+    color: 'var(--cat-agents)',
+    bg: 'color-mix(in srgb, var(--cat-agents) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--cat-agents) 25%, transparent)',
     wteLabel: 'The Finding',
     blueprintLabel: 'Evidence',
     stepStyle: 'dot',
@@ -87,9 +87,9 @@ const POST_TYPE_DISPLAY = {
   discussion: {
     label: 'Discussion',
     emoji: '💬',
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,0.12)',
-    border: 'rgba(59,130,246,0.25)',
+    color: 'var(--cat-data)',
+    bg: 'color-mix(in srgb, var(--cat-data) 12%, transparent)',
+    border: 'color-mix(in srgb, var(--cat-data) 25%, transparent)',
     wteLabel: "What I'm Looking For",
     blueprintLabel: 'Context',
     stepStyle: 'none',
@@ -202,7 +202,7 @@ function SaveButton({ contentId }: { contentId: string }) {
       style={{
         display: 'flex', alignItems: 'center',
         gap: 5, fontSize: 13,
-        color: saved ? '#8B4513' : 'rgba(255,255,255,0.40)',
+        color: saved ? 'var(--action)' : 'var(--text2)',
         background: 'none', border: 'none',
         cursor: 'pointer', padding: '4px 8px',
         borderRadius: 6, transition: 'color 0.15s',
@@ -832,15 +832,15 @@ const ContentDetail = () => {
           onClick={() => navigate(-1)}
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
-            fontSize: 12, color: 'rgba(255,255,255,0.30)',
+            fontSize: 12, color: 'var(--text2)',
             background: 'none', border: 'none',
             cursor: 'pointer', padding: '0 0 16px 0',
             transition: 'color 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement)
-            .style.color = 'rgba(255,255,255,0.65)'}
+            .style.color = 'var(--text2)'}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement)
-            .style.color = 'rgba(255,255,255,0.30)'}
+            .style.color = 'var(--text2)'}
         >
           ← Back
         </button>
@@ -870,10 +870,10 @@ const ContentDetail = () => {
             ? Math.ceil((new Date(closesAt).getTime() - Date.now()) / 86400000)
             : null;
           const statusConfig = {
-            open:    { bg: "rgba(220,38,38,0.08)",  border: "#EF4444", text: "#EF4444",  emoji: "🔴" },
-            claimed: { bg: "rgba(217,119,6,0.08)",  border: "#F59E0B", text: "#F59E0B", emoji: "🟡" },
-            solved:  { bg: "rgba(22,163,74,0.08)",  border: "#22C55E", text: "#22C55E",  emoji: "🟢" },
-          }[status] ?? { bg: "rgba(220,38,38,0.08)", border: "#EF4444", text: "#EF4444", emoji: "🔴" };
+            open:    { bg: "color-mix(in srgb, var(--cat-breakage) 8%, transparent)",  border: "var(--cat-breakage)", text: "var(--cat-breakage)",  emoji: "🔴" },
+            claimed: { bg: "color-mix(in srgb, var(--lit) 8%, transparent)",  border: "var(--lit)", text: "var(--lit)", emoji: "🟡" },
+            solved:  { bg: "color-mix(in srgb, var(--cat-configuration) 8%, transparent)",  border: "var(--cat-configuration)", text: "var(--cat-configuration)",  emoji: "🟢" },
+          }[status] ?? { bg: "color-mix(in srgb, var(--cat-breakage) 8%, transparent)", border: "var(--cat-breakage)", text: "var(--cat-breakage)", emoji: "🔴" };
 
           async function toggleMeToo() {
             if (!user) return;
@@ -921,7 +921,7 @@ const ContentDetail = () => {
                     onClick={toggleMeToo}
                     className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${
                       hasMeTooLocal
-                        ? "bg-[#1F7A6D]/15 text-[#1F7A6D] border-[#1F7A6D]/30"
+                        ? "bg-[var(--evidence)]/15 text-[var(--evidence)] border-[var(--evidence)]/30"
                         : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground/60"
                     }`}
                   >
@@ -981,10 +981,10 @@ const ContentDetail = () => {
                 {typeInfo.sub && (
                   <span style={{
                     fontSize: 9,
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
-                    borderLeft: '1px solid rgba(255,255,255,0.15)',
+                    borderLeft: '1px solid var(--line)',
                     paddingLeft: 6, marginLeft: 2,
                   }}>
                     {typeInfo.sub}
@@ -1014,7 +1014,7 @@ const ContentDetail = () => {
         <h1 style={{
           ...type.cardTitle,
 
-          color: 'rgba(255,255,255,0.95)',
+          color: 'var(--text)',
 
           margin: '10px 0 8px 0',
         }}>
@@ -1054,7 +1054,7 @@ const ContentDetail = () => {
                   {ptConfig.wteLabel}
                 </div>
                 <p style={{
-                  fontSize: 13, color: 'rgba(255,255,255,0.70)',
+                  fontSize: 13, color: 'var(--text2)',
                   lineHeight: 1.65, margin: 0,
                 }}>
                   {wteText}
@@ -1070,7 +1070,7 @@ const ContentDetail = () => {
           <p style={{
             fontSize: 15,
             fontWeight: 400,
-            color: 'rgba(255,255,255,0.65)',
+            color: 'var(--text2)',
             lineHeight: 1.75,
             margin: '0 0 18px 0',
             fontFamily: 'Figtree, sans-serif',
@@ -1083,7 +1083,7 @@ const ContentDetail = () => {
         {isBounty && (item as any).bounty_gap && (
           <div
             className="rounded-xl px-4 py-3 mb-4"
-            style={{ background: "rgba(31,122,109,0.05)", borderLeft: "2px solid #1F7A6D" }}
+            style={{ background: "color-mix(in srgb, var(--evidence) 5%, transparent)", borderLeft: "2px solid var(--evidence)" }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">What a good solution needs:</p>
             <p className="text-sm text-foreground leading-relaxed">{(item as any).bounty_gap}</p>
@@ -1103,33 +1103,33 @@ const ContentDetail = () => {
             }}>
               <div style={{
                 width: 26, height: 26, borderRadius: '50%',
-                background: 'rgba(139,69,19,0.20)',
-                border: '1px solid rgba(139,69,19,0.30)',
+                background: 'color-mix(in srgb, var(--action) 20%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: '#8B4513',
+                fontSize: 11, fontWeight: 700, color: 'var(--action)',
               }}>
                 {(creator.display_name || creator.username || '?')[0].toUpperCase()}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>
                 {creator.display_name || creator.username}
               </span>
             </Link>
           )}
 
-          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
+          <span style={{ color: 'var(--text2)', fontSize: 12 }}>·</span>
 
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text2)' }}>
             {formatDate(item.approved_at ?? item.created_at)}
           </span>
 
-          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
+          <span style={{ color: 'var(--text2)', fontSize: 12 }}>·</span>
 
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text2)' }}>
             {viewCount.toLocaleString()} views
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.20)', fontSize: 12 }}>·</span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          <span style={{ color: 'var(--text2)', fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 12, color: 'var(--text2)' }}>
             {count.toLocaleString()} copies
           </span>
 
@@ -1137,9 +1137,9 @@ const ContentDetail = () => {
           {(item.ai_tools ?? []).slice(0, 3).map((t: string) => (
             <span key={t} style={{
               padding: '2px 8px', borderRadius: 9999, fontSize: 11,
-              background: 'rgba(255, 255, 255, 0.14)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              color: 'rgba(255,255,255,0.45)',
+              background: 'var(--recess)',
+              border: '1px solid var(--line)',
+              color: 'var(--text2)',
             }}>
               {t}
             </span>
@@ -1148,9 +1148,9 @@ const ContentDetail = () => {
             ...((item as any).custom_tags ?? [])].slice(0, 4).map((t: string) => (
             <span key={t} style={{
               padding: '2px 7px', borderRadius: 9999, fontSize: 10,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.09)',
-              color: 'rgba(255,255,255,0.35)',
+              background: 'var(--glass-2)',
+              border: '1px solid var(--line)',
+              color: 'var(--text2)',
             }}>
               {t}
             </span>
@@ -1168,12 +1168,12 @@ const ContentDetail = () => {
                   onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setDiscussionOpen(true); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 4,
-                    fontSize: 12, color: 'rgba(255,255,255,0.40)',
+                    fontSize: 12, color: 'var(--text2)',
                     background: 'none', border: 'none', cursor: 'pointer',
                     padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.80)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
                   title={label}
                 >
                   <MessageCircle style={{ width: 12, height: 12 }} /> {label}
@@ -1184,14 +1184,14 @@ const ContentDetail = () => {
               onClick={() => { if (!isLoggedIn) { setAccountGateOpen(true); return; } setForkModalOpen(true); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
-                fontSize: 12, color: 'rgba(255,255,255,0.40)',
+                fontSize: 12, color: 'var(--text2)',
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: '4px 8px',
                 borderRadius: 6,
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.80)'}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.40)'}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
             >
               <GitFork style={{ width: 12, height: 12 }} /> Fork
             </button>
@@ -1215,8 +1215,8 @@ const ContentDetail = () => {
           <div style={{
             padding: '14px 16px',
             marginBottom: 28,
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.14)',
+            background: 'var(--glass-2)',
+            border: '1px solid var(--line)',
             borderRadius: 10,
           }}>
             <div style={{
@@ -1224,7 +1224,7 @@ const ContentDetail = () => {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.10em',
-              color: 'rgba(255,255,255,0.30)',
+              color: 'var(--text2)',
               marginBottom: 10,
             }}>
               Contents
@@ -1247,19 +1247,19 @@ const ContentDetail = () => {
                       textDecoration: 'none',
                       fontWeight: (entry as any).isHeading ? 700 : 400,
                       color: (entry as any).isHeading
-                        ? 'rgba(255,255,255,0.75)'
-                        : 'rgba(255,255,255,0.45)',
+                        ? 'var(--text)'
+                        : 'var(--text2)',
                       paddingLeft: (entry as any).isHeading ? 0 : 14,
                       fontSize: (entry as any).isHeading ? 13 : 12,
                       transition: 'color 0.15s',
                     }}
-                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#fff')}
-                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = (entry as any).isHeading ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)')}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--text)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = (entry as any).isHeading ? 'var(--text)' : 'var(--text2)')}
                   >
                     {!(entry as any).isHeading && (
                       <span style={{
                         fontSize: 11,
-                        color: 'rgba(255,255,255,0.25)',
+                        color: 'var(--text2)',
                         minWidth: 16,
                         textAlign: 'right',
                       }}>
@@ -1305,7 +1305,7 @@ const ContentDetail = () => {
             {canvasDoc.loading && (
               <div style={{
                 padding: '40px', textAlign: 'center',
-                color: 'rgba(255,255,255,0.20)',
+                color: 'var(--text2)',
                 fontSize: 13,
               }}>
                 Loading…
@@ -1339,8 +1339,8 @@ const ContentDetail = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 0',
-          borderTop: '1px solid rgba(255, 255, 255, 0.14)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+          borderTop: '1px solid var(--line)',
+          borderBottom: '1px solid var(--line)',
           marginBottom: 20, marginTop: 4,
         }}>
           <StarRating
@@ -1431,11 +1431,11 @@ const ContentDetail = () => {
             <div
               className="flex items-center gap-1 sticky top-0 z-20 overflow-x-auto"
               style={{
-                background: 'rgba(8,8,12,0.80)',
+                background: 'var(--recess)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 paddingBottom: 12,
-                borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                borderBottom: '1px solid var(--line)',
                 marginBottom: 20,
               }}
             >
@@ -1452,8 +1452,8 @@ const ContentDetail = () => {
                         padding: '6px 16px',
                         borderRadius: 100,
                         border: 'none',
-                        background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
-                        color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
+                        background: activeTab === tab ? 'color-mix(in srgb, var(--action) 8%, transparent)' : 'transparent',
+                        color: activeTab === tab ? 'var(--action)' : 'var(--text2)',
                         cursor: 'pointer',
                       }}
                     >
@@ -1477,13 +1477,13 @@ const ContentDetail = () => {
                         padding: '6px 16px',
                         borderRadius: 100,
                         border: 'none',
-                        background: activeTab === tab ? 'rgba(139,69,19,0.08)' : 'transparent',
-                        color: activeTab === tab ? '#8B4513' : 'rgba(255,255,255,0.45)',
+                        background: activeTab === tab ? 'color-mix(in srgb, var(--action) 8%, transparent)' : 'transparent',
+                        color: activeTab === tab ? 'var(--action)' : 'var(--text2)',
                         cursor: 'pointer',
                       }}
                     >
                       {tab === "changelog" && (
-                        <>Changelog{hasLibraryUpdate && <span style={{ marginLeft: 4, color: '#8B4513' }}>●</span>}</>
+                        <>Changelog{hasLibraryUpdate && <span style={{ marginLeft: 4, color: 'var(--action)' }}>●</span>}</>
                       )}
                       {tab === "tips" && "Tips"}
                       {tab === "comments" && `Comments (${(item as any).comment_count ?? 0})`}
@@ -1601,7 +1601,7 @@ const ContentDetail = () => {
                       <button
                         onClick={() => setComposerOpen(true)}
                         className="text-sm font-semibold px-4 py-2 rounded-xl"
-                        style={{ background: "#8B4513", color: "white" }}
+                        style={{ background: "var(--action)", color: "white" }}
                       >
                         Submit a Blueprint →
                       </button>
@@ -1657,13 +1657,13 @@ const ContentDetail = () => {
                         id={`response-${resp.id}`}
                         className="rounded-xl border bg-card overflow-hidden"
                         style={isSolution ? {
-                          borderColor: "#22C55E",
+                          borderColor: "var(--cat-configuration)",
                           borderLeftWidth: 3,
-                          boxShadow: "0 0 12px rgba(34,197,94,0.15)",
+                          boxShadow: "0 0 12px color-mix(in srgb, var(--cat-configuration) 15%, transparent)",
                         } : {}}
                       >
                         {isSolution && (
-                          <div className="px-4 py-2 text-xs font-bold text-green-400 border-b border-green-500/20" style={{ background: "rgba(34,197,94,0.06)" }}>
+                          <div className="px-4 py-2 text-xs font-bold text-green-400 border-b border-green-500/20" style={{ background: "color-mix(in srgb, var(--cat-configuration) 6%, transparent)" }}>
                             ⭐ Marked as solution by @{creator?.username}
                           </div>
                         )}
@@ -1683,7 +1683,7 @@ const ContentDetail = () => {
                           </div>
 
                           {/* ROW 2 — How it fixes */}
-                          <div className="rounded-lg px-3 py-2.5" style={{ background: "rgba(255,255,255,0.03)", borderLeft: "2px solid #1F7A6D" }}>
+                          <div className="rounded-lg px-3 py-2.5" style={{ background: "var(--glass-2)", borderLeft: "2px solid var(--evidence)" }}>
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">How this fixes it:</p>
                             <p className="text-sm text-foreground leading-relaxed">{resp.how_it_fixes}</p>
                           </div>
@@ -1724,7 +1724,7 @@ const ContentDetail = () => {
                               disabled={!isLoggedIn}
                               className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                                 isVerified
-                                  ? "bg-[#1F7A6D]/15 text-[#1F7A6D] border-[#1F7A6D]/30"
+                                  ? "bg-[var(--evidence)]/15 text-[var(--evidence)] border-[var(--evidence)]/30"
                                   : "bg-card text-muted-foreground border-border hover:border-muted-foreground/40"
                               }`}
                             >
@@ -1829,7 +1829,7 @@ const ContentDetail = () => {
         <DialogContent
           className="sm:max-w-sm"
           data-visual-slot="modal-surface"
-          style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
+          style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
         >
           <DialogHeader>
             <DialogTitle>Forks of this content</DialogTitle>
@@ -1857,7 +1857,7 @@ const ContentDetail = () => {
         <DialogContent
           className="sm:max-w-md"
           data-visual-slot="modal-surface"
-          style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
+          style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
         >
           <DialogHeader>
             <DialogTitle>Write a recommendation</DialogTitle>
@@ -1898,7 +1898,7 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
         const curator = rec.curators?.profiles;
         const initials = (curator?.display_name || curator?.username || "?").slice(0, 2).toUpperCase();
         return (
-          <div key={rec.id} className="border-l-[3px] border-[#1F7A6D] pl-3">
+          <div key={rec.id} className="border-l-[3px] border-[var(--evidence)] pl-3">
             <p className="text-sm text-foreground italic leading-relaxed">{rec.recommendation_text}</p>
             <div className="flex items-center gap-2 mt-2">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[10px] font-medium shrink-0 overflow-hidden">
@@ -1908,7 +1908,7 @@ function CuratorPicksCard({ recs }: { recs: any[] }) {
                 <Link to={`/creator/${curator?.username}`} className="text-xs font-medium text-foreground hover:text-primary transition-colors">
                   {curator?.display_name || curator?.username}
                 </Link>
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#1F7A6D]/15 text-[#1F7A6D] border border-[#1F7A6D]/30 font-medium">Curator</span>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--evidence)]/15 text-[var(--evidence)] border border-[var(--evidence)]/30 font-medium">Curator</span>
                 <p className="text-[11px] text-muted-foreground">{curator?.follower_count ?? 0} followers</p>
               </div>
             </div>
@@ -1976,13 +1976,13 @@ function WhatToExpectSection({ item }: { item: any }) {
       <div style={{ marginBottom: 20 }}>
         <div style={{
           fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+          letterSpacing: '0.12em', color: 'var(--text2)',
           marginBottom: 10,
         }}>
           What to expect
         </div>
         <p style={{
-          fontSize: 14, color: 'rgba(255,255,255,0.60)',
+          fontSize: 14, color: 'var(--text2)',
           lineHeight: 1.7,
         }}>
           {fallbackText}
@@ -1998,14 +1998,14 @@ function WhatToExpectSection({ item }: { item: any }) {
       <div style={{ marginBottom: 20 }}>
         <div style={{
           fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+          letterSpacing: '0.12em', color: 'var(--text2)',
           marginBottom: 10,
         }}>
           What to expect
         </div>
         <div style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: 'var(--glass-2)',
+          border: '1px solid var(--line)',
           borderRadius: 12, overflow: 'hidden',
         }}>
           {block.image_url && (() => {
@@ -2026,7 +2026,7 @@ function WhatToExpectSection({ item }: { item: any }) {
           })()}
           {(block.text_content || block.content) && (
             <p style={{
-              fontSize: 13, color: 'rgba(255,255,255,0.65)',
+              fontSize: 13, color: 'var(--text2)',
               lineHeight: 1.65, padding: '12px 14px', margin: 0,
             }}>
               {block.text_content || block.content}
@@ -2046,7 +2046,7 @@ function WhatToExpectSection({ item }: { item: any }) {
     <div style={{ marginBottom: 20 }}>
       <div style={{
         fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.12em', color: 'rgba(255,255,255,0.30)',
+        letterSpacing: '0.12em', color: 'var(--text2)',
         marginBottom: 10,
       }}>
         What to expect
@@ -2056,8 +2056,8 @@ function WhatToExpectSection({ item }: { item: any }) {
       <div
         style={{
           position: 'relative',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--glass-2)',
+          border: '1px solid var(--line)',
           borderRadius: 12, overflow: 'hidden',
           userSelect: 'none',
         }}
@@ -2066,7 +2066,7 @@ function WhatToExpectSection({ item }: { item: any }) {
       >
         {/* Image area */}
         {hasImages && (
-          <div style={{ position: 'relative', height: 180, background: 'rgba(0,0,0,0.30)' }}>
+          <div style={{ position: 'relative', height: 180, background: 'var(--porthole)' }}>
             {block.image_url ? (() => {
               const isVid = /\.(mp4|webm|mov|ogg)$/i.test(block.image_url);
               return isVid ? (
@@ -2093,7 +2093,7 @@ function WhatToExpectSection({ item }: { item: any }) {
               <div style={{
                 width: '100%', height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 32, color: 'rgba(255,255,255,0.10)',
+                fontSize: 32, color: 'var(--text2)',
               }}>
                 ◆
               </div>
@@ -2104,7 +2104,7 @@ function WhatToExpectSection({ item }: { item: any }) {
         {/* Text content */}
         {blockText && (
           <p style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.65)',
+            fontSize: 13, color: 'var(--text2)',
             lineHeight: 1.65, padding: '12px 14px', margin: 0,
           }}>
             {blockText}
@@ -2119,9 +2119,9 @@ function WhatToExpectSection({ item }: { item: any }) {
             top: hasImages ? 80 : '50%',
             transform: 'translateY(-50%)',
             width: 28, height: 28, borderRadius: '50%',
-            background: 'rgba(0,0,0,0.50)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', cursor: 'pointer',
+            background: 'var(--porthole)',
+            border: '1px solid var(--line)',
+            color: 'var(--chrome-hi)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 14, zIndex: 2,
           }}
@@ -2135,9 +2135,9 @@ function WhatToExpectSection({ item }: { item: any }) {
             top: hasImages ? 80 : '50%',
             transform: 'translateY(-50%)',
             width: 28, height: 28, borderRadius: '50%',
-            background: 'rgba(0,0,0,0.50)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            color: '#fff', cursor: 'pointer',
+            background: 'var(--porthole)',
+            border: '1px solid var(--line)',
+            color: 'var(--chrome-hi)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 14, zIndex: 2,
           }}
@@ -2159,7 +2159,7 @@ function WhatToExpectSection({ item }: { item: any }) {
               width: i === current ? 16 : 6,
               height: 6, borderRadius: 3,
               background: i === current
-                ? '#8B4513' : 'rgba(255,255,255,0.20)',
+                ? 'var(--action)' : 'var(--recess)',
               border: 'none', cursor: 'pointer', padding: 0,
               transition: 'all 0.25s ease',
             }}

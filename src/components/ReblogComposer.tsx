@@ -85,18 +85,18 @@ function ReblogComposePanel({
       {/* Header */}
       <div style={{
         padding: '14px 16px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+        borderBottom: '1px solid var(--line)',
         fontSize: 11, fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.10em',
-        color: 'rgba(255,255,255,0.30)',
+        color: 'var(--text2)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
       }}>
         <span>↻ Your Reblog</span>
         <span style={{
           fontSize: 11, fontWeight: 400,
-          color: charsLeft < 50 ? '#F59E0B' : 'rgba(255,255,255,0.20)',
+          color: charsLeft < 50 ? 'var(--lit)' : 'var(--text2)',
         }}>
           {charsLeft}
         </span>
@@ -113,7 +113,7 @@ function ReblogComposePanel({
           style={{
             width: '100%', background: 'transparent',
             border: 'none', outline: 'none',
-             color: 'rgba(255,255,255,0.88)',
+             color: 'var(--text)',
              resize: 'none',
             ...type.cardTitle,
             boxSizing: 'border-box',
@@ -130,15 +130,15 @@ function ReblogComposePanel({
             }}>
               <div style={{
                 width: 1, height: 16,
-                background: 'rgba(31,122,109,0.25)',
+                background: 'color-mix(in srgb, var(--evidence) 25%, transparent)',
               }} />
               <div style={{
                 width: 20, height: 20, borderRadius: '50%',
-                background: 'rgba(31,122,109,0.10)',
-                border: '1px solid rgba(31,122,109,0.25)',
+                background: 'color-mix(in srgb, var(--evidence) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--evidence) 25%, transparent)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 8, color: 'rgba(31,122,109,0.60)',
+                fontSize: 8, color: 'color-mix(in srgb, var(--evidence) 60%, transparent)',
                 fontWeight: 700,
               }}>
                 {i + 2}
@@ -157,7 +157,7 @@ function ReblogComposePanel({
                 style={{
                   width: '100%', background: 'transparent',
                   border: 'none', outline: 'none',
-                  fontSize: 14, color: 'rgba(255,255,255,0.72)',
+                  fontSize: 14, color: 'var(--text2)',
                   lineHeight: 1.65, resize: 'none',
                   fontFamily: 'Figtree, sans-serif',
                   boxSizing: 'border-box',
@@ -167,7 +167,7 @@ function ReblogComposePanel({
                 type="button"
                 onClick={() => setThreads(threads.filter((_, j) => j !== i))}
                 style={{
-                  fontSize: 10, color: 'rgba(255,255,255,0.25)',
+                  fontSize: 10, color: 'var(--text2)',
                   background: 'none', border: 'none',
                   cursor: 'pointer', padding: 0,
                 }}
@@ -182,21 +182,21 @@ function ReblogComposePanel({
         {annotations.map((ann, i) => (
           <div key={ann.id} style={{
             marginTop: 16,
-            border: '1px solid rgba(139,69,19,0.20)',
-            borderLeft: '3px solid rgba(139,69,19,0.50)',
+            border: '1px solid color-mix(in srgb, var(--action) 20%, transparent)',
+            borderLeft: '3px solid color-mix(in srgb, var(--action) 50%, transparent)',
             borderRadius: 8,
             overflow: 'hidden',
           }}>
             {/* Referenced block preview */}
             <div style={{
               padding: '8px 12px',
-              background: 'rgba(139,69,19,0.06)',
-              borderBottom: '1px solid rgba(139,69,19,0.12)',
+              background: 'color-mix(in srgb, var(--action) 6%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--action) 12%, transparent)',
               display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
             }}>
               <div style={{
-                fontSize: 11, color: 'rgba(255,255,255,0.45)',
+                fontSize: 11, color: 'var(--text2)',
                 overflow: 'hidden', textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap', flex: 1,
               }}>
@@ -207,7 +207,7 @@ function ReblogComposePanel({
                 onClick={() => setAnnotations(annotations.filter((_, j) => j !== i))}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(255,255,255,0.25)',
+                  color: 'var(--text2)',
                   cursor: 'pointer', fontSize: 14,
                   marginLeft: 8, flexShrink: 0,
                 }}
@@ -228,7 +228,7 @@ function ReblogComposePanel({
                 width: '100%', background: 'transparent',
                 border: 'none', outline: 'none',
                 padding: '10px 12px', fontSize: 13,
-                color: 'rgba(255,255,255,0.70)',
+                color: 'var(--text2)',
                 lineHeight: 1.65, resize: 'none',
                 fontFamily: 'Figtree, sans-serif',
                 boxSizing: 'border-box',
@@ -241,18 +241,18 @@ function ReblogComposePanel({
         {comparisons.map((cmp, i) => (
           <div key={cmp.id} style={{
             marginTop: 16,
-            border: '1px solid rgba(124,58,237,0.20)',
-            borderLeft: '3px solid rgba(124,58,237,0.45)',
+            border: '1px solid color-mix(in srgb, var(--cat-agents) 20%, transparent)',
+            borderLeft: '3px solid color-mix(in srgb, var(--cat-agents) 45%, transparent)',
             borderRadius: 8, overflow: 'hidden',
           }}>
             <div style={{
               padding: '8px 12px',
-              background: 'rgba(124,58,237,0.06)',
-              borderBottom: '1px solid rgba(124,58,237,0.12)',
+              background: 'color-mix(in srgb, var(--cat-agents) 6%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--cat-agents) 12%, transparent)',
               display: 'flex', alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>
+              <span style={{ fontSize: 11, color: 'var(--text2)' }}>
                 ↔ Comparison
               </span>
               <button
@@ -260,7 +260,7 @@ function ReblogComposePanel({
                 onClick={() => setComparisons(comparisons.filter((_, j) => j !== i))}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(255,255,255,0.25)',
+                  color: 'var(--text2)',
                   cursor: 'pointer', fontSize: 14,
                 }}
               >
@@ -271,18 +271,18 @@ function ReblogComposePanel({
               {/* Side A — original */}
               <div style={{
                 flex: 1, padding: '10px 12px',
-                borderRight: '1px solid rgba(255, 255, 255, 0.14)',
+                borderRight: '1px solid var(--line)',
               }}>
                 <div style={{
                   fontSize: 9, fontWeight: 700,
                   textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.25)',
+                  color: 'var(--text2)',
                   letterSpacing: '0.08em', marginBottom: 6,
                 }}>
                   Original
                 </div>
                 <div style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.45)',
+                  fontSize: 12, color: 'var(--text2)',
                   fontStyle: 'italic', lineHeight: 1.5,
                 }}>
                   "{cmp.blockPreview}"
@@ -293,7 +293,7 @@ function ReblogComposePanel({
                 <div style={{
                   fontSize: 9, fontWeight: 700,
                   textTransform: 'uppercase',
-                  color: 'rgba(124,58,237,0.70)',
+                  color: 'color-mix(in srgb, var(--cat-agents) 70%, transparent)',
                   letterSpacing: '0.08em', marginBottom: 6,
                 }}>
                   My version
@@ -310,7 +310,7 @@ function ReblogComposePanel({
                   style={{
                     width: '100%', background: 'transparent',
                     border: 'none', outline: 'none',
-                    fontSize: 13, color: 'rgba(255,255,255,0.70)',
+                    fontSize: 13, color: 'var(--text2)',
                     resize: 'none', lineHeight: 1.6,
                     fontFamily: 'Figtree, sans-serif',
                     boxSizing: 'border-box',
@@ -327,14 +327,14 @@ function ReblogComposePanel({
           onClick={() => setThreads([...threads, ''])}
           style={{
             marginTop: 14, fontSize: 12,
-            color: 'rgba(31,122,109,0.55)',
+            color: 'color-mix(in srgb, var(--evidence) 55%, transparent)',
             background: 'none', border: 'none',
             cursor: 'pointer', padding: 0,
           }}
         >
           + Add to thread
         </button>
-        <div style={{ fontSize: 11, marginTop: 8, color: 'rgba(255,255,255,0.18)' }}>
+        <div style={{ fontSize: 11, marginTop: 8, color: 'var(--text2)' }}>
           Or click a block on the right to annotate or compare it →
         </div>
       </div>
@@ -342,11 +342,11 @@ function ReblogComposePanel({
       {/* Submit bar */}
       <div style={{
         padding: '12px 16px',
-        borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+        borderTop: '1px solid var(--line)',
         display: 'flex', alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+        <div style={{ fontSize: 11, color: 'var(--text2)' }}>
           {annotations.length + comparisons.length > 0 && (
             `${annotations.length} annotation${annotations.length !== 1 ? 's' : ''}, ${comparisons.length} comparison${comparisons.length !== 1 ? 's' : ''}`
           )}
@@ -357,8 +357,8 @@ function ReblogComposePanel({
           disabled={submitting}
           style={{
             padding: '8px 20px', borderRadius: 9999,
-            background: '#1F7A6D', border: 'none',
-            color: '#fff', fontSize: 13, fontWeight: 700,
+            background: 'var(--evidence)', border: 'none',
+            color: 'var(--on-action)', fontSize: 13, fontWeight: 700,
             cursor: submitting ? 'default' : 'pointer',
           }}
         >
@@ -386,11 +386,11 @@ function OriginalPostPanel({
       {/* Header */}
       <div style={{
         padding: '14px 16px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+        borderBottom: '1px solid var(--line)',
         fontSize: 11, fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.10em',
-        color: 'rgba(255,255,255,0.30)',
+        color: 'var(--text2)',
       }}>
         Original Post
       </div>
@@ -403,7 +403,7 @@ function OriginalPostPanel({
           <h3 style={{
             ...type.cardTitle,
 
-            color: 'rgba(255,255,255,0.88)',
+            color: 'var(--text)',
             margin: '0 0 10px 0',
           }}>
             {original.title}
@@ -413,7 +413,7 @@ function OriginalPostPanel({
         {/* Description */}
         {original?.description && (
           <p style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.50)',
+            fontSize: 13, color: 'var(--text2)',
             lineHeight: 1.65, margin: '0 0 16px 0',
           }}>
             {original.description}
@@ -429,8 +429,8 @@ function OriginalPostPanel({
               style={{
                 marginBottom: 16,
                 border: isAnnotated
-                  ? '1px solid rgba(139,69,19,0.30)'
-                  : '1px solid rgba(255, 255, 255, 0.14)',
+                  ? '1px solid color-mix(in srgb, var(--action) 30%, transparent)'
+                  : '1px solid var(--line)',
                 borderRadius: 8, overflow: 'hidden',
                 transition: 'border-color 0.15s',
                 cursor: 'pointer',
@@ -439,21 +439,21 @@ function OriginalPostPanel({
               onMouseEnter={e => {
                 if (!isAnnotated) {
                   (e.currentTarget as HTMLElement).style.borderColor =
-                    'rgba(255,255,255,0.15)';
+                    'var(--line)';
                 }
               }}
               onMouseLeave={e => {
                 if (!isAnnotated) {
                   (e.currentTarget as HTMLElement).style.borderColor =
-                    'rgba(255, 255, 255, 0.14)';
+                    'var(--line)';
                 }
               }}
             >
               {/* Block header */}
               <div style={{
                 padding: '6px 10px',
-                background: 'rgba(255,255,255,0.02)',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                background: 'var(--glass-2)',
+                borderBottom: '1px solid var(--line)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between',
               }}>
@@ -461,7 +461,7 @@ function OriginalPostPanel({
                   fontSize: 9, fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                 }}>
                   {block.block_type?.replace(/_/g, ' ')}
                 </span>
@@ -475,9 +475,9 @@ function OriginalPostPanel({
                       style={{
                         fontSize: 9, padding: '2px 7px',
                         borderRadius: 4, cursor: 'pointer',
-                        background: 'rgba(139,69,19,0.10)',
-                        border: '1px solid rgba(139,69,19,0.25)',
-                        color: '#8B4513', fontWeight: 700,
+                        background: 'color-mix(in srgb, var(--action) 10%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--action) 25%, transparent)',
+                        color: 'var(--action)', fontWeight: 700,
                       }}
                     >
                       ↳ Annotate
@@ -488,9 +488,9 @@ function OriginalPostPanel({
                       style={{
                         fontSize: 9, padding: '2px 7px',
                         borderRadius: 4, cursor: 'pointer',
-                        background: 'rgba(124,58,237,0.10)',
-                        border: '1px solid rgba(124,58,237,0.25)',
-                        color: '#7C3AED', fontWeight: 700,
+                        background: 'color-mix(in srgb, var(--cat-agents) 10%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--cat-agents) 25%, transparent)',
+                        color: 'var(--cat-agents)', fontWeight: 700,
                       }}
                     >
                       ↔ Compare
@@ -500,7 +500,7 @@ function OriginalPostPanel({
                 {isAnnotated && (
                   <span style={{
                     fontSize: 9,
-                    color: 'rgba(139,69,19,0.60)',
+                    color: 'color-mix(in srgb, var(--action) 60%, transparent)',
                     fontWeight: 700,
                   }}>
                     ✓ Referenced
@@ -511,7 +511,7 @@ function OriginalPostPanel({
               {/* Block content preview */}
               <div style={{ padding: '8px 10px' }}>
                 <p style={{
-                  fontSize: 12, color: 'rgba(255,255,255,0.45)',
+                  fontSize: 12, color: 'var(--text2)',
                   lineHeight: 1.55, margin: 0,
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -755,8 +755,8 @@ export function ReblogComposer({ open, onOpenChange, original, onSuccess }: Rebl
           maxWidth: '900px',
           width: '92vw',
           maxHeight: '88vh',
-          background: '#0E0E16',
-          border: '1px solid rgba(255,255,255,0.07)',
+          background: 'var(--bg)',
+          border: '1px solid var(--line)',
           overflow: 'hidden',
         }}
       >
@@ -772,7 +772,7 @@ export function ReblogComposer({ open, onOpenChange, original, onSuccess }: Rebl
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            borderRight: '1px solid rgba(255,255,255,0.07)',
+            borderRight: '1px solid var(--line)',
             overflow: 'hidden',
           }}>
             <ReblogComposePanel

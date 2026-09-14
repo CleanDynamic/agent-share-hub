@@ -24,14 +24,14 @@ export function SectionHeader({ title, subtitle, action }: SectionHeaderProps) {
             fontFamily: "Figtree, sans-serif",
             fontSize: 16,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
             margin: 0,
           }}
         >
           {title}
         </h2>
         {subtitle && (
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{subtitle}</p>
+          <p style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{subtitle}</p>
         )}
       </div>
       {action}

@@ -56,7 +56,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
           position: "relative",
           height: 8,
           borderRadius: tokens.radiusPill,
-          background: "rgba(255,255,255,0.10)",
+          background: "var(--recess)",
           overflow: "hidden",
         }}
         role="progressbar"
@@ -83,7 +83,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
               bottom: 0,
               width: "40%",
               background:
-                "linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)",
+                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--chrome-hi) 45%, transparent), transparent)",
               animation: "xpbar-sheen 2.4s ease-in-out infinite",
             }}
           />
@@ -98,7 +98,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
             justifyContent: "center",
             fontFamily: tokens.fontMono,
             fontSize: 11,
-            color: "#fff",
+            color: "var(--on-action)",
             textShadow: "0 1px 3px rgba(0,0,0,0.6)",
             opacity: hover ? 1 : 0,
             transition: "opacity 150ms ease-out",

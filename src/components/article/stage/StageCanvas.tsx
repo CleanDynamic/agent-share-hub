@@ -418,7 +418,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
           <MiniMap
             pannable
             zoomable
-            maskColor="rgba(15,15,20,0.6)"
+            maskColor="var(--recess)"
             style={{
               background: 'var(--recess)',
               border: '0.5px solid var(--line)',

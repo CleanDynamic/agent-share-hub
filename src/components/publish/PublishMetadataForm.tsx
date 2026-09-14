@@ -22,6 +22,7 @@ import {
   type BountyDetailsValue,
   type RewardType,
 } from "./BountyDetailsCard";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export type PostType = "blueprint" | "blog" | "bounty";
 
@@ -122,33 +123,33 @@ interface PostTypeTheme {
 const POST_TYPE_THEMES: Record<PostType, PostTypeTheme> = {
   blueprint: {
     label: "BLUEPRINT",
-    pillBg: "rgba(232,87,26,0.14)",
-    pillText: "#E8571A",
-    accent: "#E8571A",
-    accentSoft: "rgba(232,87,26,0.10)",
-    publishGradient: "linear-gradient(135deg, #E8571A 0%, #D4470F 100%)",
+    pillBg: "color-mix(in srgb, var(--action) 14%, transparent)",
+    pillText: "var(--action)",
+    accent: "var(--action)",
+    accentSoft: "color-mix(in srgb, var(--action) 10%, transparent)",
+    publishGradient: "var(--action)",
     pageTitle: "Publish blueprint",
     publishedToast: "Blueprint published",
     updatedToast: "Blueprint updated",
   },
   blog: {
     label: "BLOG",
-    pillBg: "rgba(46,196,182,0.14)",
-    pillText: "#2EC4B6",
-    accent: "#2EC4B6",
-    accentSoft: "rgba(46,196,182,0.10)",
-    publishGradient: "linear-gradient(135deg, #2EC4B6 0%, #1F9E91 100%)",
+    pillBg: "color-mix(in srgb, var(--evidence) 14%, transparent)",
+    pillText: "var(--evidence)",
+    accent: "var(--evidence)",
+    accentSoft: "color-mix(in srgb, var(--evidence) 10%, transparent)",
+    publishGradient: "var(--evidence)",
     pageTitle: "Publish blog",
     publishedToast: "Blog published",
     updatedToast: "Blog updated",
   },
   bounty: {
     label: "BOUNTY",
-    pillBg: "rgba(245,158,11,0.14)",
-    pillText: "#F59E0B",
-    accent: "#F59E0B",
-    accentSoft: "rgba(245,158,11,0.10)",
-    publishGradient: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+    pillBg: "color-mix(in srgb, var(--lit) 14%, transparent)",
+    pillText: "var(--lit)",
+    accent: "var(--lit)",
+    accentSoft: "color-mix(in srgb, var(--lit) 10%, transparent)",
+    publishGradient: "var(--lit)",
     pageTitle: "Post bounty",
     publishedToast: "Bounty posted",
     updatedToast: "Bounty updated",
@@ -413,13 +414,13 @@ export function PublishMetadataForm({
       {/* Header */}
       <header
         className="h-[60px] flex items-center justify-between px-4 sm:px-6"
-        style={{ borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)" }}
+        style={{ borderBottom: "0.5px solid var(--line)" }}
       >
         <button
           onClick={onBack}
           className="publish-focus rounded flex items-center gap-2 hover:opacity-80 transition-opacity"
           style={{
-            color: "rgba(255,255,255,0.65)",
+            color: "var(--text2)",
             fontSize: "13px",
             fontWeight: 500,
             fontFamily: "Figtree, sans-serif",
@@ -432,7 +433,7 @@ export function PublishMetadataForm({
         <h1
           className="hidden sm:block"
           style={{
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
             fontSize: "18px",
             fontWeight: 600,
             fontFamily: "Figtree, sans-serif",
@@ -459,7 +460,7 @@ export function PublishMetadataForm({
       {/* Progress Bar */}
       <div
         className="h-1 w-full relative group cursor-help"
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+        style={{ backgroundColor: "var(--recess)" }}
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={validation.total}
@@ -473,9 +474,9 @@ export function PublishMetadataForm({
         <div
           className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10"
           style={{
-            backgroundColor: "rgba(22,22,30,0.95)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            color: "rgba(255,255,255,0.8)",
+            backgroundColor: "var(--recess)",
+            border: "1px solid var(--line)",
+            color: "var(--text)",
             fontSize: "12px",
             fontFamily: "Figtree, sans-serif",
           }}
@@ -504,11 +505,11 @@ export function PublishMetadataForm({
                   maxLength={140}
                   className="publish-focus w-full h-[44px] px-4 rounded-lg outline-none transition-all"
                   style={{
-                    backgroundColor: "rgba(30,30,40,0.50)",
+                    backgroundColor: "var(--recess)",
                     border: validation.errors.useCase
-                      ? "0.5px solid rgba(239,68,68,0.40)"
-                      : "0.5px solid rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.92)",
+                      ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                      : "0.5px solid var(--line)",
+                    color: "var(--text)",
                     fontSize: "14px",
                     fontFamily: "Figtree, sans-serif",
                   }}
@@ -517,8 +518,8 @@ export function PublishMetadataForm({
                   <span
                     style={{
                       color: validation.errors.useCase
-                        ? "rgba(239,68,68,0.85)"
-                        : "rgba(255,255,255,0.40)",
+                        ? "color-mix(in srgb, var(--cat-breakage) 85%, transparent)"
+                        : "var(--text2)",
                       fontSize: "11px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -529,7 +530,7 @@ export function PublishMetadataForm({
                   </span>
                   <span
                     style={{
-                      color: "rgba(255,255,255,0.30)",
+                      color: "var(--text2)",
                       fontSize: "11px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -605,7 +606,7 @@ export function PublishMetadataForm({
             {validation.errors.tags && (
               <span
                 style={{
-                  color: "rgba(239,68,68,0.85)",
+                  color: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)",
                   fontSize: "11px",
                   fontFamily: "Figtree, sans-serif",
                 }}
@@ -632,9 +633,9 @@ export function PublishMetadataForm({
                     placeholder="What does the reader need before starting? (e.g. 'A Polymarket account, basic Python')"
                     className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                     style={{
-                      backgroundColor: "rgba(30,30,40,0.50)",
-                      border: "0.5px solid rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.92)",
+                      backgroundColor: "var(--recess)",
+                      border: "0.5px solid var(--line)",
+                      color: "var(--text)",
                       fontSize: "14px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -648,9 +649,9 @@ export function PublishMetadataForm({
                     placeholder="What will the reader have after working through this? (e.g. 'A working arbitrage bot polling weather markets every 30s')"
                     className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
                     style={{
-                      backgroundColor: "rgba(30,30,40,0.50)",
-                      border: "0.5px solid rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.92)",
+                      backgroundColor: "var(--recess)",
+                      border: "0.5px solid var(--line)",
+                      color: "var(--text)",
                       fontSize: "14px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -696,7 +697,7 @@ export function PublishMetadataForm({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   fontWeight: 500,
-                  color: missingItemCount === 0 ? "rgba(239,68,68,0.85)" : "#F59E0B",
+                  color: missingItemCount === 0 ? "color-mix(in srgb, var(--cat-breakage) 85%, transparent)" : "var(--lit)",
                 }}
               >
                 <span style={{ opacity: 0.7 }}>Missing items:</span>
@@ -772,7 +773,7 @@ export function PublishMetadataForm({
                   <span
                     className="absolute left-4 top-1/2 -translate-y-1/2"
                     style={{
-                      color: "rgba(255,255,255,0.40)",
+                      color: "var(--text2)",
                       fontSize: "14px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -791,11 +792,11 @@ export function PublishMetadataForm({
                     placeholder={isBlog ? "your-blog-slug" : "your-blueprint-slug"}
                     className="publish-focus w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all"
                     style={{
-                      backgroundColor: "rgba(30,30,40,0.50)",
+                      backgroundColor: "var(--recess)",
                       border: validation.errors.slug
-                        ? "0.5px solid rgba(239,68,68,0.40)"
-                        : "0.5px solid rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.92)",
+                        ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                        : "0.5px solid var(--line)",
+                      color: "var(--text)",
                       fontSize: "14px",
                       fontFamily: "Figtree, sans-serif",
                     }}
@@ -813,7 +814,7 @@ export function PublishMetadataForm({
                 </div>
                 <span
                   style={{
-                    color: "rgba(255,255,255,0.40)",
+                    color: "var(--text2)",
                     fontSize: "11px",
                     fontFamily: "Figtree, sans-serif",
                   }}
@@ -830,8 +831,8 @@ export function PublishMetadataForm({
       <footer
         className="fixed bottom-0 left-0 right-0 h-[80px] flex items-center justify-between px-4 sm:px-6 z-40 gap-3"
         style={{
-          borderTop: "0.5px solid rgba(255, 255, 255, 0.14)",
-          backgroundColor: "rgba(8,8,12,0.85)",
+          borderTop: "0.5px solid var(--line)",
+          backgroundColor: "var(--recess)",
           backdropFilter: "blur(20px)",
         }}
       >
@@ -840,11 +841,11 @@ export function PublishMetadataForm({
             onClick={onSaveDraft}
             className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap"
             style={{
-              color: "rgba(255,255,255,0.65)",
+              color: "var(--text2)",
               fontSize: "13px",
               fontWeight: 500,
               fontFamily: "Figtree, sans-serif",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              border: "0.5px solid var(--line)",
             }}
           >
             Save as draft
@@ -853,11 +854,11 @@ export function PublishMetadataForm({
             onClick={onDiscard}
             className="publish-focus px-3 sm:px-4 py-2 rounded-lg hover:bg-white/5 transition-colors whitespace-nowrap hidden sm:inline-flex"
             style={{
-              color: "rgba(255,255,255,0.65)",
+              color: "var(--text2)",
               fontSize: "13px",
               fontWeight: 500,
               fontFamily: "Figtree, sans-serif",
-              border: "0.5px solid rgba(255,255,255,0.08)",
+              border: "0.5px solid var(--line)",
             }}
           >
             Discard changes
@@ -886,9 +887,9 @@ export function PublishMetadataForm({
             <div
               className="absolute right-0 bottom-full mb-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap"
               style={{
-                backgroundColor: "rgba(22,22,30,0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.8)",
+                backgroundColor: "var(--recess)",
+                border: "1px solid var(--line)",
+                color: "var(--text)",
                 fontSize: "12px",
                 fontFamily: "Figtree, sans-serif",
               }}
@@ -964,8 +965,8 @@ function BlogAutoDetectedCard({
     <div
       className="w-full"
       style={{
-        background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--recess)",
+        border: "0.5px solid var(--line)",
         borderRadius: "10px",
         padding: "18px",
       }}
@@ -974,19 +975,19 @@ function BlogAutoDetectedCard({
         <div className="flex flex-col gap-1">
           <span
             className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-            style={{ color: "rgba(255,255,255,0.40)" }}
+            style={{ color: "var(--text2)" }}
           >
             Word Count
           </span>
           <span
             className="text-[22px] font-bold leading-tight"
-            style={{ color: "rgba(255,255,255,0.95)" }}
+            style={{ color: "var(--text)" }}
           >
             {wordCount.toLocaleString()}
           </span>
           <span
             className="text-[11px] font-normal"
-            style={{ color: "rgba(255,255,255,0.40)" }}
+            style={{ color: "var(--text2)" }}
           >
             {readingMinutes} min read
           </span>
@@ -994,19 +995,19 @@ function BlogAutoDetectedCard({
         <div className="flex flex-col gap-1">
           <span
             className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-            style={{ color: "rgba(255,255,255,0.40)" }}
+            style={{ color: "var(--text2)" }}
           >
             References
           </span>
           <span
             className="text-[22px] font-bold leading-tight"
-            style={{ color: "rgba(255,255,255,0.95)" }}
+            style={{ color: "var(--text)" }}
           >
             {refs?.length ?? 0}
           </span>
           <span
             className="text-[11px] font-normal"
-            style={{ color: "rgba(255,255,255,0.40)" }}
+            style={{ color: "var(--text2)" }}
           >
             inline link{(refs?.length ?? 0) === 1 ? "" : "s"}
           </span>
@@ -1016,14 +1017,14 @@ function BlogAutoDetectedCard({
       <div className="mt-6 flex flex-col gap-2">
         <span
           className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-          style={{ color: "rgba(255,255,255,0.40)" }}
+          style={{ color: "var(--text2)" }}
         >
           Referenced Items
         </span>
         {loadingRefs ? (
           <span
             className="text-[11px]"
-            style={{ color: "rgba(255,255,255,0.40)" }}
+            style={{ color: "var(--text2)" }}
           >
             Loading…
           </span>
@@ -1036,7 +1037,7 @@ function BlogAutoDetectedCard({
         ) : (
           <span
             className="text-[11px] font-medium"
-            style={{ color: "rgba(255,255,255,0.30)" }}
+            style={{ color: "var(--text2)" }}
           >
             No inline references yet — use @ in the editor to link blueprints, stages, or blocks.
           </span>
@@ -1047,12 +1048,12 @@ function BlogAutoDetectedCard({
         <button
           onClick={onEditClick}
           className="publish-focus mt-5 cursor-pointer text-[11px] font-medium transition-colors rounded"
-          style={{ color: "rgba(46,196,182,0.85)" }}
+          style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)" }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = "rgba(46,196,182,1.0)";
+            e.currentTarget.style.color = "var(--evidence)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = "rgba(46,196,182,0.85)";
+            e.currentTarget.style.color = "color-mix(in srgb, var(--evidence) 85%, transparent)";
           }}
         >
           These look wrong? Update in editor →
@@ -1068,17 +1069,17 @@ function ReferenceChip({ item }: { item: ReferencedItem }) {
     <span
       className="inline-flex items-center gap-1.5"
       style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "0.5px solid var(--line)",
         borderRadius: "4px",
         padding: "3px 8px",
         maxWidth: "260px",
       }}
     >
-      <Icon size={11} style={{ color: "rgba(46,196,182,0.85)" }} />
+      <Icon size={11} style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)" }} />
       <span
         className="text-[11px] font-medium truncate"
-        style={{ color: "rgba(255,255,255,0.85)" }}
+        style={{ color: "var(--text)" }}
       >
         {item.title}
       </span>
@@ -1101,7 +1102,7 @@ function FieldGroup({
     <div className="flex flex-col gap-2">
       <label
         style={{
-          color: "rgba(255,255,255,0.65)",
+          color: "var(--text2)",
           fontSize: "12px",
           fontWeight: 500,
           fontFamily: "Figtree, sans-serif",
@@ -1113,7 +1114,7 @@ function FieldGroup({
       {error && (
         <span
           style={{
-            color: "rgba(239,68,68,0.85)",
+            color: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)",
             fontSize: "11px",
             fontFamily: "Figtree, sans-serif",
           }}
@@ -1136,12 +1137,12 @@ function SlugBadge({
     return (
       <div
         className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
-        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+        style={{ backgroundColor: "var(--glass-2)" }}
       >
-        <Loader2 size={12} className="animate-spin" style={{ color: "rgba(255,255,255,0.55)" }} />
+        <Loader2 size={12} className="animate-spin" style={{ color: "var(--text2)" }} />
         <span
           style={{
-            color: "rgba(255,255,255,0.55)",
+            color: "var(--text2)",
             fontSize: "11px",
             fontWeight: 500,
             fontFamily: "Figtree, sans-serif",
@@ -1157,12 +1158,12 @@ function SlugBadge({
     return (
       <div
         className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
-        style={{ backgroundColor: "rgba(245,158,11,0.10)" }}
+        style={{ backgroundColor: "color-mix(in srgb, var(--lit) 10%, transparent)" }}
       >
-        <AlertTriangle size={12} style={{ color: "#F59E0B" }} />
+        <AlertTriangle size={12} style={{ color: "var(--lit)" }} />
         <span
           style={{
-            color: "#F59E0B",
+            color: "var(--lit)",
             fontSize: "11px",
             fontWeight: 500,
             fontFamily: "Figtree, sans-serif",
@@ -1177,12 +1178,12 @@ function SlugBadge({
   return (
     <div
       className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 rounded"
-      style={{ backgroundColor: "rgba(46,196,182,0.10)" }}
+      style={{ backgroundColor: "color-mix(in srgb, var(--evidence) 10%, transparent)" }}
     >
-      <Check size={12} style={{ color: "#2EC4B6" }} />
+      <Check size={12} style={{ color: "var(--evidence)" }} />
       <span
         style={{
-          color: "#2EC4B6",
+          color: "var(--evidence)",
           fontSize: "11px",
           fontWeight: 500,
           fontFamily: "Figtree, sans-serif",
@@ -1215,7 +1216,7 @@ function Section({
     <section
       id={`publish-section-${number}`}
       className="rounded-xl p-5 scroll-mt-20"
-      style={{ backgroundColor: "rgba(22,22,30,0.40)" }}
+      style={{ backgroundColor: "var(--recess)" }}
       aria-labelledby={`publish-section-${number}-title`}
     >
       <div className="h-6 flex items-center gap-3 mb-4">
@@ -1224,8 +1225,8 @@ function Section({
           onClick={() => onBadgeClick?.(number)}
           className="publish-focus w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.12)",
-            color: "rgba(255,255,255,0.55)",
+            backgroundColor: "var(--recess)",
+            color: "var(--text2)",
             fontSize: "11px",
             fontWeight: 600,
             fontFamily: "Figtree, sans-serif",
@@ -1237,7 +1238,7 @@ function Section({
         <h2
           id={`publish-section-${number}-title`}
           style={{
-            color: "rgba(255,255,255,0.92)",
+            color: "var(--text)",
             fontSize: "14px",
             fontWeight: 600,
             fontFamily: "Figtree, sans-serif",
@@ -1250,7 +1251,7 @@ function Section({
           <span
             className="px-1.5 py-0.5 rounded-full"
             style={{
-              backgroundColor: `${accent}1A`,
+              backgroundColor: `${colourAlpha(accent, 0.102)}`,
               color: accent,
               fontSize: "9px",
               fontWeight: 600,
@@ -1266,16 +1267,16 @@ function Section({
           <div className="relative ml-auto group">
             <HelpCircle
               size={14}
-              style={{ color: "rgba(255,255,255,0.30)" }}
+              style={{ color: "var(--text2)" }}
               className="cursor-help"
               aria-label={helpText}
             />
             <div
               className="absolute right-0 top-full mt-2 px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
               style={{
-                backgroundColor: "rgba(22,22,30,0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.8)",
+                backgroundColor: "var(--recess)",
+                border: "1px solid var(--line)",
+                color: "var(--text)",
                 fontSize: "12px",
                 fontFamily: "Figtree, sans-serif",
                 maxWidth: "280px",
@@ -1314,11 +1315,11 @@ function ChipButton({
       aria-pressed={active}
       className="publish-focus h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
       style={{
-        backgroundColor: active ? accentSoft : "rgba(255,255,255,0.03)",
+        backgroundColor: active ? accentSoft : "var(--glass-2)",
         border: active
-          ? `0.5px solid ${accent}66`
-          : "0.5px solid rgba(255,255,255,0.08)",
-        color: active ? accent : "rgba(255,255,255,0.70)",
+          ? `0.5px solid ${colourAlpha(accent, 0.4)}`
+          : "0.5px solid var(--line)",
+        color: active ? accent : "var(--text2)",
         fontSize: "12px",
         fontWeight: 500,
         fontFamily: "Figtree, sans-serif",
@@ -1327,7 +1328,7 @@ function ChipButton({
       {Icon && (
         <Icon
           size={12}
-          style={{ color: active ? accent : "rgba(255,255,255,0.50)" }}
+          style={{ color: active ? accent : "var(--text2)" }}
         />
       )}
       {label}

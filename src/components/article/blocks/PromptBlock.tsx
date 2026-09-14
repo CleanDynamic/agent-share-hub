@@ -307,7 +307,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
         onClick={selectThis}
         className={cn(
           'group relative rounded-lg p-2.5',
-          'bg-[rgba(20,20,28,0.95)] backdrop-blur-md',
+          'bg-[var(--recess)] backdrop-blur-md',
         )}
         style={{
           width: isExpanded ? 480 : 240,
@@ -322,7 +322,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                 ? '1px dashed color-mix(in srgb, var(--action) 45%, transparent)'
                 : '1px solid var(--line)',
           boxShadow: isExpanded
-            ? '0 12px 40px rgba(0,0,0,0.45), 0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent)'
+            ? 'var(--elev-overlay), 0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent)'
             : selected
               ? '0 0 0 2px color-mix(in srgb, var(--action) 18%, transparent)'
               : 'none',
@@ -484,7 +484,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   {models.find((m) => m.value === model)?.label}
                 </button>
                 {showModelDropdown && (
-                  <div className="nodrag absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-20">
+                  <div className="nodrag absolute top-full left-0 right-0 mt-1 py-1 bg-[var(--recess)] border border-border/[0.08] rounded-md z-20">
                     {models.map((m) => (
                       <button
                         key={m.value}
@@ -631,7 +631,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
+          className="w-[480px] sm:max-w-[480px] bg-[var(--recess)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
             <SheetTitle className="text-foreground text-base">
@@ -743,7 +743,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
                   {models.find((m) => m.value === model)?.label}
                 </button>
                 {showModelDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10">
+                  <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[var(--recess)] border border-border/[0.08] rounded-md z-10">
                     {models.map((m) => (
                       <button
                         key={m.value}

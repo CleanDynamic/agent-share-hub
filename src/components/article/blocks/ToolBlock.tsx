@@ -12,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 interface ToolBlockData {
   blockId: string;
@@ -92,13 +93,13 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[rgba(20,20,28,0.85)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
         style={{
           width: 260,
           border: selected
-            ? `1px solid ${TYPE_COLOR}99`
+            ? `1px solid ${colourAlpha(TYPE_COLOR, 0.6)}`
             : '1px solid var(--line)',
-          boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
+          boxShadow: selected ? `0 0 0 2px ${colourAlpha(TYPE_COLOR, 0.149)}` : 'none',
         }}
       >
         <Handle
@@ -193,7 +194,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
+          className="w-[560px] sm:max-w-[560px] bg-[var(--recess)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
             <SheetTitle className="text-foreground text-base">Tool block</SheetTitle>

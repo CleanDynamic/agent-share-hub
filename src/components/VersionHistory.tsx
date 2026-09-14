@@ -56,14 +56,14 @@ export function VersionHistory({ contentId, currentVersion }: VersionHistoryProp
             versions.map((v, i) => (
               <div key={v.id} className="flex items-start gap-3">
                 <div className="flex flex-col items-center pt-0.5">
-                  <div className={`h-2 w-2 rounded-full ${i === 0 ? "bg-[#1D9E75]" : "bg-muted-foreground/30"}`} />
+                  <div className={`h-2 w-2 rounded-full ${i === 0 ? "bg-[var(--evidence)]" : "bg-muted-foreground/30"}`} />
                   {i < versions.length - 1 && <div className="w-px h-full bg-border mt-1" />}
                 </div>
                 <div className="flex-1 min-w-0 pb-3">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-sm font-semibold text-foreground">v{v.version_number}</span>
                     {i === 0 && (
-                      <Badge className="bg-[#1D9E75] text-white border-transparent text-[10px] px-1.5 py-0">Latest</Badge>
+                      <Badge className="bg-[var(--evidence)] text-white border-transparent text-[10px] px-1.5 py-0">Latest</Badge>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{v.changelog}</p>

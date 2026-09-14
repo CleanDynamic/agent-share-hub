@@ -25,17 +25,17 @@ export function ComposerBar({ user }: { user?: User }) {
       style={{
         padding: '14px 16px',
         marginBottom: '0px',
-        background: "rgba(27, 27, 32, 0.4)",
+        background: "var(--recess)",
         backdropFilter: "blur(40px)",
-        border: `1px solid ${isFocused ? "rgba(139, 69, 19, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
+        border: `1px solid ${isFocused ? "color-mix(in srgb, var(--action) 30%, transparent)" : "var(--line)"}`,
       }}
     >
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
         style={{
-          background: "rgba(139, 69, 19, 0.15)",
-          color: "#8B4513",
-          border: "1px solid rgba(139, 69, 19, 0.3)",
+          background: "color-mix(in srgb, var(--action) 15%, transparent)",
+          color: "var(--action)",
+          border: "1px solid color-mix(in srgb, var(--action) 30%, transparent)",
         }}
       >
         {userInitials}
@@ -43,7 +43,7 @@ export function ComposerBar({ user }: { user?: User }) {
 
       <div
         onClick={() => openUploadTypePicker()}
-        style={{ flex: 1, color: "rgba(255,255,255,0.30)", fontSize: 14, cursor: "pointer" }}
+        style={{ flex: 1, color: "var(--text2)", fontSize: 14, cursor: "pointer" }}
       >
         Share something...
       </div>

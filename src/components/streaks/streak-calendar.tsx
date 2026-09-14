@@ -111,7 +111,7 @@ export default function StreakCalendar({
 
         {data.map((day) => {
           const dayNum = Number(day.date.slice(-2))
-          const bg = day.frozen ? "rgba(46,196,182,0.18)" : HEAT_RAMP[Math.min(day.level, 4)]
+          const bg = day.frozen ? "color-mix(in srgb, var(--evidence) 18%, transparent)" : HEAT_RAMP[Math.min(day.level, 4)]
           return (
             <div
               key={day.date}
@@ -122,8 +122,8 @@ export default function StreakCalendar({
                 borderRadius: 7,
                 background: bg,
                 border: day.frozen
-                  ? "0.5px solid rgba(46,196,182,0.45)"
-                  : "0.5px solid rgba(255,255,255,0.06)",
+                  ? "0.5px solid color-mix(in srgb, var(--evidence) 45%, transparent)"
+                  : "0.5px solid var(--line)",
               }}
             >
               <span

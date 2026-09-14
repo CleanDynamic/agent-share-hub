@@ -383,7 +383,7 @@ export function CoverImageField({
                 borderRadius: 'var(--r-control)',
                 border: "1.5px solid var(--action)",
                 background: "color-mix(in srgb, var(--action) 22%, transparent)",
-                boxShadow: "0 0 0 1px rgba(0,0,0,0.45)",
+                boxShadow: "0 0 0 1px var(--line)",
                 transition: reframeDragging ? "none" : "left 120ms ease, top 120ms ease",
               }}
             />
@@ -393,7 +393,8 @@ export function CoverImageField({
               className="absolute left-0 right-0 bottom-0 flex items-center justify-end gap-2 z-20"
               style={{
                 padding: "8px 10px",
-                background: "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))",
+                background:
+                  "linear-gradient(to top, color-mix(in srgb, var(--porthole) 55%, transparent), transparent)",
               }}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}

@@ -80,8 +80,8 @@ export function BountyDetailsCard({
       id={anchorId}
       className="w-full"
       style={{
-        background: "rgba(22,22,30,0.40)",
-        border: "0.5px solid rgba(245,158,11,0.18)",
+        background: "var(--recess)",
+        border: "0.5px solid color-mix(in srgb, var(--lit) 18%, transparent)",
         borderRadius: 12,
         padding: 20,
       }}
@@ -89,13 +89,13 @@ export function BountyDetailsCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Target size={14} color="#F59E0B" strokeWidth={1.8} />
+          <Target size={14} color="var(--lit)" strokeWidth={1.8} />
           <span
             style={{
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 600,
-              color: "rgba(255,255,255,0.92)",
+              color: "var(--text)",
             }}
           >
             Bounty details
@@ -112,7 +112,7 @@ export function BountyDetailsCard({
                   border: "none",
                   cursor: "help",
                   padding: 0,
-                  color: "rgba(255,255,255,0.40)",
+                  color: "var(--text2)",
                 }}
               >
                 <Info size={13} strokeWidth={1.8} />
@@ -173,16 +173,16 @@ export function BountyDetailsCard({
                 className="flex-1 outline-none"
                 style={{
                   height: 44,
-                  background: "rgba(30,30,40,0.50)",
+                  background: "var(--recess)",
                   border: errors?.rewardAmount
-                    ? "0.5px solid rgba(239,68,68,0.40)"
-                    : "0.5px solid rgba(255,255,255,0.08)",
+                    ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                    : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                 }}
               />
               <select
@@ -204,16 +204,16 @@ export function BountyDetailsCard({
                 style={{
                   width: 120,
                   height: 44,
-                  background: "rgba(30,30,40,0.50)",
+                  background: "var(--recess)",
                   border: errors?.rewardCurrency
-                    ? "0.5px solid rgba(239,68,68,0.40)"
-                    : "0.5px solid rgba(255,255,255,0.08)",
+                    ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                    : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                 }}
               >
                 <option value="" disabled>
@@ -241,16 +241,16 @@ export function BountyDetailsCard({
                 className="outline-none"
                 style={{
                   height: 44,
-                  background: "rgba(30,30,40,0.50)",
+                  background: "var(--recess)",
                   border: errors?.rewardCurrency
-                    ? "0.5px solid rgba(239,68,68,0.40)"
-                    : "0.5px solid rgba(255,255,255,0.08)",
+                    ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                    : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.92)",
+                  color: "var(--text)",
                 }}
               />
             )}
@@ -282,16 +282,16 @@ export function BountyDetailsCard({
               style={{
                 width: "100%",
                 height: 44,
-                background: "rgba(30,30,40,0.50)",
-                border: "0.5px solid rgba(255,255,255,0.08)",
+                background: "var(--recess)",
+                border: "0.5px solid var(--line)",
                 borderRadius: 6,
                 padding: "0 12px",
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 fontWeight: 500,
                 color: value.deadline
-                  ? "rgba(255,255,255,0.92)"
-                  : "rgba(255,255,255,0.40)",
+                  ? "var(--text)"
+                  : "var(--text2)",
                 cursor: "pointer",
               }}
             >
@@ -300,7 +300,7 @@ export function BountyDetailsCard({
                   ? format(value.deadline, "PPP")
                   : "Select a date or leave blank"}
               </span>
-              <CalendarIcon size={14} color="rgba(255,255,255,0.40)" />
+              <CalendarIcon size={14} color="var(--text2)" />
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -345,16 +345,16 @@ export function BountyDetailsCard({
             className="w-full outline-none resize-none"
             style={{
               minHeight: 100,
-              background: "rgba(30,30,40,0.50)",
+              background: "var(--recess)",
               border: errors?.acceptanceCriteria
-                ? "0.5px solid rgba(239,68,68,0.40)"
-                : "0.5px solid rgba(255,255,255,0.08)",
+                ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 40%, transparent)"
+                : "0.5px solid var(--line)",
               borderRadius: 6,
               padding: 12,
               fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.92)",
+              color: "var(--text)",
             }}
           />
         </div>
@@ -371,7 +371,7 @@ export function BountyDetailsCard({
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 400,
-              color: "rgba(255,255,255,0.40)",
+              color: "var(--text2)",
             }}
           >
             {value.acceptanceCriteria.length} / {ACCEPT_MAX}
@@ -389,7 +389,7 @@ export function BountyDetailsCard({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              backgroundColor: "#F59E0B",
+              backgroundColor: "var(--lit)",
             }}
           />
           <span
@@ -397,7 +397,7 @@ export function BountyDetailsCard({
               fontFamily: "Figtree, sans-serif",
               fontSize: 11,
               fontWeight: 500,
-              color: "rgba(255,255,255,0.70)",
+              color: "var(--text2)",
             }}
           >
             Status: Open
@@ -408,7 +408,7 @@ export function BountyDetailsCard({
             fontFamily: "Figtree, sans-serif",
             fontSize: 10,
             fontWeight: 400,
-            color: "rgba(255,255,255,0.30)",
+            color: "var(--text2)",
           }}
         >
           All bounties start Open. You can mark them solved later.
@@ -423,7 +423,7 @@ function Divider() {
     <div
       style={{
         height: "0.5px",
-        background: "rgba(255, 255, 255, 0.12)",
+        background: "var(--recess)",
         margin: "12px 0",
       }}
     />
@@ -439,7 +439,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         textTransform: "uppercase",
         letterSpacing: "0.08em",
-        color: "rgba(255,255,255,0.40)",
+        color: "var(--text2)",
       }}
     >
       {children}
@@ -457,10 +457,10 @@ function HelperText({
   error?: boolean;
 }) {
   const color = error
-    ? "rgba(239,68,68,0.85)"
+    ? "color-mix(in srgb, var(--cat-breakage) 85%, transparent)"
     : amber
-    ? "rgba(245,158,11,0.55)"
-    : "rgba(255,255,255,0.40)";
+    ? "color-mix(in srgb, var(--lit) 55%, transparent)"
+    : "var(--text2)";
   return (
     <span
       style={{
@@ -492,14 +492,14 @@ function Chip({
         height: 28,
         padding: "4px 14px",
         border: active
-          ? "0.5px solid rgba(245,158,11,0.40)"
-          : "0.5px solid rgba(255,255,255,0.08)",
+          ? "0.5px solid color-mix(in srgb, var(--lit) 40%, transparent)"
+          : "0.5px solid var(--line)",
         borderRadius: 6,
-        background: active ? "rgba(245,158,11,0.10)" : "transparent",
+        background: active ? "color-mix(in srgb, var(--lit) 10%, transparent)" : "transparent",
         fontFamily: "Figtree, sans-serif",
         fontSize: 12,
         fontWeight: 500,
-        color: active ? "#F59E0B" : "rgba(255,255,255,0.70)",
+        color: active ? "var(--lit)" : "var(--text2)",
         cursor: "pointer",
         transition: "all 0.15s ease",
       }}
@@ -523,23 +523,23 @@ function QuickPickChip({
       style={{
         height: 24,
         padding: "3px 10px",
-        border: "0.5px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid var(--line)",
         borderRadius: 6,
         background: "transparent",
         fontFamily: "Figtree, sans-serif",
         fontSize: 11,
         fontWeight: 500,
-        color: "rgba(255,255,255,0.50)",
+        color: "var(--text2)",
         cursor: "pointer",
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
+        e.currentTarget.style.background = "var(--glass-2)";
+        e.currentTarget.style.borderColor = "var(--line)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+        e.currentTarget.style.borderColor = "var(--line)";
       }}
     >
       {children}

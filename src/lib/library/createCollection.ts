@@ -13,7 +13,7 @@ export async function createCollection({
   ownerId,
   name,
   description = null,
-  accentColor = "#9CA3AF",
+  accentColor = "var(--text2)",
   isPrivate = true,
 }: CreateCollectionInput): Promise<Collection> {
   const trimmed = (name ?? "").trim();

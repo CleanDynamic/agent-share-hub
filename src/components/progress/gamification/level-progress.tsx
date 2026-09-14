@@ -39,7 +39,7 @@ export default function LevelProgress({
               boxShadow: `0 6px 18px ${withAlpha(colors.brand, 0.35)}`,
             }}
           >
-            <Zap size={20} color="#fff" fill="#fff" />
+            <Zap size={20} color="var(--on-action)" fill="var(--on-action)" />
           </span>
           <div className="flex flex-col">
             <span
@@ -74,7 +74,7 @@ export default function LevelProgress({
       <div
         className="relative h-3 w-full overflow-hidden"
         style={{
-          background: withAlpha("#000000", 0.25),
+          background: colors.borderSoft,
           borderRadius: radius.pill,
         }}
       >

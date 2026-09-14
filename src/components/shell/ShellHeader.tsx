@@ -44,7 +44,7 @@ export type ShellHeaderProps = {
 
 const FONT = "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 const ORANGE = "var(--action)";
-const ORANGE_GRADIENT = "linear-gradient(135deg, var(--action) 0%, #C44514 100%)";
+const ORANGE_GRADIENT = "var(--action)";
 
 export function ShellHeader({
   onBack,

@@ -10,6 +10,7 @@ import {
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import type { BlockPosition } from '@/lib/canvas-types';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 const BLOCK_TYPE_ICONS: Record<string, any> = {
   text: Type,
@@ -42,8 +43,8 @@ const QUICK_BLOCK_TYPES = [
   { type: 'model_params', label: 'Model', accent: 'var(--cat-agents)', desc: 'Model config' },
   { type: 'tutorial_step', label: 'Tutorial', accent: 'var(--action)', desc: 'Step-by-step' },
   { type: 'section_heading', label: 'Heading', accent: 'var(--recess)', desc: 'Section divider' },
-  { type: 'resource', label: 'Resource', accent: '#64748B', desc: 'Link / reference' },
-  { type: 'sticky_note', label: 'Note', accent: '#FBBF24', desc: 'Sticky note comment' },
+  { type: 'resource', label: 'Resource', accent: 'var(--cat-data)', desc: 'Link / reference' },
+  { type: 'sticky_note', label: 'Note', accent: 'var(--lit)', desc: 'Sticky note comment' },
   { type: 'video', label: 'Video', accent: 'var(--cat-media)', desc: 'Video embed' },
 ];
 
@@ -166,7 +167,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             flexDirection: 'column',
             gap: 8,
             zIndex: 101,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+            boxShadow: 'var(--elev-overlay)',
           }}>
             {/* Search input */}
             <input
@@ -225,7 +226,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       cursor: 'pointer',
                       background: isHovered ? 'var(--recess)' : 'var(--recess)',
                       border: isHovered
-                        ? `1px solid ${accentColor}26`
+                        ? `1px solid ${colourAlpha(accentColor, 0.149)}`
                         : '1px solid var(--line)',
                       color: 'var(--text2)',
                       fontWeight: 500,
@@ -425,7 +426,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               borderRadius: 10,
               padding: 6,
               minWidth: 180,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--elev-raised)',
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -606,7 +607,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               padding: '6px 18px',
               background: submitting
                 ? 'color-mix(in srgb, var(--action) 40%, transparent)'
-                : 'linear-gradient(135deg, var(--action) 0%, var(--action) 100%)',
+                : 'var(--action)',
               border: 'none',
               borderRadius: 6,
               color: 'var(--text)',

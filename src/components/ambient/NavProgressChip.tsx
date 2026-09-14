@@ -122,7 +122,7 @@ export default function NavProgressChip({
           border: tokens.borderStrong,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 16px 40px rgba(0,0,0,0.40)",
+          boxShadow: "var(--elev-overlay)",
         }}
       >
         <div className="flex items-center justify-between">

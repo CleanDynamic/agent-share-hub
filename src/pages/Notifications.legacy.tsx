@@ -526,7 +526,7 @@ const NotificationsPage = () => {
       <div className="mx-auto max-w-2xl">
         {allNotifications.some((n) => !n.is_read) && (
           <div className="flex justify-end" style={{ marginBottom: 12 }}>
-            <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: '#1F7A6D', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
+            <button onClick={markAllRead} disabled={markingAll} style={{ fontSize: 13, color: 'var(--evidence)', background: 'none', border: 'none', cursor: 'pointer', opacity: markingAll ? 0.5 : 1 }}>
               {markingAll ? "Marking…" : "Mark all as read"}
             </button>
           </div>
@@ -539,7 +539,7 @@ const NotificationsPage = () => {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : allNotifications.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textAlign: 'center', paddingTop: 64, paddingBottom: 64 }}>No notifications yet.</p>
+          <p style={{ fontSize: 13, color: 'var(--text2)', textAlign: 'center', paddingTop: 64, paddingBottom: 64 }}>No notifications yet.</p>
         ) : (
           <div className="space-y-0">
             {allNotifications.map((n) => {
@@ -559,28 +559,28 @@ const NotificationsPage = () => {
                       width: '100%',
                       textAlign: 'left',
                       padding: '14px 0',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-                      background: !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent',
+                      borderBottom: '1px solid var(--line)',
+                      background: !n.is_read ? 'var(--glass-2)' : 'transparent',
                       border: 'none',
                       borderBottomWidth: 1,
                       borderBottomStyle: 'solid',
-                      borderBottomColor: 'rgba(255, 255, 255, 0.12)',
+                      borderBottomColor: 'var(--line)',
                       cursor: isSplitContest ? 'default' : 'pointer',
                       transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = !n.is_read ? 'rgba(255,255,255,0.01)' : 'transparent'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--recess)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = !n.is_read ? 'var(--glass-2)' : 'transparent'; }}
                   >
                     <div className="shrink-0" style={{ width: 8, paddingTop: 6 }}>
-                      {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: '#1F7A6D' }} />}
+                      {!n.is_read && <span style={{ display: 'block', width: 6, height: 6, borderRadius: '50%', background: 'var(--evidence)' }} />}
                     </div>
                     <Avatar className="shrink-0" style={{ width: 28, height: 28, marginTop: 2 }}>
-                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'rgba(139,69,19,0.15)' : 'rgba(255, 255, 255, 0.14)', color: isSystem ? '#8B4513' : 'rgba(255,255,255,0.45)' }}>
+                      <AvatarFallback style={{ fontSize: 10, fontWeight: 700, background: isSystem ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)', color: isSystem ? 'var(--action)' : 'var(--text2)' }}>
                         {isSystem ? "NS" : initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.80)', lineHeight: 1.4 }}>{text}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>{text}</p>
                       {isSplitContest && (
                         <SplitContestActions notification={n} onDone={() => {
                           markRead(n.id);
@@ -588,7 +588,7 @@ const NotificationsPage = () => {
                         }} />
                       )}
                     </div>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', flexShrink: 0, paddingTop: 2 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text2)', flexShrink: 0, paddingTop: 2 }}>
                       {timeAgo(n.created_at)}
                     </span>
                   </button>

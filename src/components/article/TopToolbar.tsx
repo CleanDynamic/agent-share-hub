@@ -387,11 +387,11 @@ const TEXT_PALETTE: PaletteEntry[] = [
   { name: 'Gray', value: 'var(--text2)' },
   { name: 'Brown', value: '#8B5E3C' },
   { name: 'Orange', value: 'var(--action)' },
-  { name: 'Yellow', value: '#F5C518' },
+  { name: 'Yellow', value: 'var(--lit)' },
   { name: 'Green', value: '#2BB673' },
   { name: 'Teal', value: 'var(--evidence)' },
   { name: 'Blue', value: 'var(--cat-data)' },
-  { name: 'Purple', value: '#A855F7' },
+  { name: 'Purple', value: 'var(--cat-agents)' },
   { name: 'Pink', value: 'var(--cat-media)' },
   { name: 'Red', value: 'var(--cat-breakage)' },
 ];

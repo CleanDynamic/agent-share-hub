@@ -117,10 +117,10 @@ export function TagInput({
           "w-full min-h-[44px] px-2.5 py-1.5 rounded-lg flex flex-wrap items-center gap-1.5 transition-all cursor-text",
         )}
         style={{
-          backgroundColor: "rgba(30,30,40,0.50)",
+          backgroundColor: "var(--recess)",
           border: isFocused
-            ? "0.5px solid rgba(232,87,26,0.40)"
-            : "0.5px solid rgba(255,255,255,0.08)",
+            ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
+            : "0.5px solid var(--line)",
         }}
       >
         {value.map((tag) => {
@@ -131,12 +131,12 @@ export function TagInput({
               className={cn("inline-flex items-center gap-1 h-7 px-2.5 rounded-full transition-all")}
               style={{
                 backgroundColor: isFlashing
-                  ? "rgba(239,68,68,0.18)"
-                  : "rgba(232,87,26,0.10)",
+                  ? "color-mix(in srgb, var(--cat-breakage) 18%, transparent)"
+                  : "color-mix(in srgb, var(--action) 10%, transparent)",
                 border: isFlashing
-                  ? "0.5px solid rgba(239,68,68,0.50)"
-                  : "0.5px solid rgba(232,87,26,0.30)",
-                color: isFlashing ? "rgb(248,113,113)" : "#E8571A",
+                  ? "0.5px solid color-mix(in srgb, var(--cat-breakage) 50%, transparent)"
+                  : "0.5px solid color-mix(in srgb, var(--action) 30%, transparent)",
+                color: isFlashing ? "var(--cat-breakage)" : "var(--action)",
                 fontSize: "12px",
                 fontWeight: 500,
                 fontFamily: "Figtree, sans-serif",
@@ -149,7 +149,7 @@ export function TagInput({
                   e.stopPropagation();
                   removeTag(tag);
                 }}
-                className="text-[rgba(255,255,255,0.40)] hover:text-[rgba(239,68,68,0.85)] transition-colors"
+                className="text-[var(--text2)] hover:text-[var(--cat-breakage)] transition-colors"
                 aria-label={`Remove ${tag}`}
               >
                 <X size={11} />
@@ -173,8 +173,8 @@ export function TagInput({
           maxLength={32}
           className={cn(
             "flex-1 min-w-[120px] h-7 bg-transparent border-none outline-none",
-            "text-[13px] font-normal text-[rgba(255,255,255,0.92)]",
-            "placeholder:text-[rgba(255,255,255,0.30)]",
+            "text-[13px] font-normal text-[var(--text)]",
+            "placeholder:text-[var(--text2)]",
             "disabled:cursor-not-allowed",
           )}
           style={{ fontFamily: "Figtree, sans-serif" }}
@@ -186,8 +186,8 @@ export function TagInput({
         <div
           className="absolute left-0 right-0 mt-1 rounded-lg overflow-hidden z-20"
           style={{
-            backgroundColor: "rgba(22,22,30,0.95)",
-            border: "0.5px solid rgba(255,255,255,0.10)",
+            backgroundColor: "var(--recess)",
+            border: "0.5px solid var(--line)",
             backdropFilter: "blur(12px)",
           }}
         >
@@ -204,18 +204,18 @@ export function TagInput({
                 className={cn(
                   "w-full flex items-center justify-between px-2.5 py-1.5 text-left transition-colors",
                   highlightedIndex === index
-                    ? "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]"
-                    : "hover:bg-[rgba(255, 255, 255, 0.14)] border-l-2 border-l-transparent",
+                    ? "bg-[var(--recess)] border-l-2 border-l-[var(--action)]"
+                    : "hover:bg-[var(--recess)] border-l-2 border-l-transparent",
                 )}
                 style={{ fontFamily: "Figtree, sans-serif" }}
               >
                 <span className="flex items-center gap-1.5">
-                  <span style={{ color: "rgba(255,255,255,0.30)", fontSize: "12px" }}>#</span>
-                  <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "12px", fontWeight: 500 }}>
+                  <span style={{ color: "var(--text2)", fontSize: "12px" }}>#</span>
+                  <span style={{ color: "var(--text)", fontSize: "12px", fontWeight: 500 }}>
                     {suggestion.tag}
                   </span>
                 </span>
-                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "10px" }}>
+                <span style={{ color: "var(--text2)", fontSize: "10px" }}>
                   Used {suggestion.usageCount}×
                 </span>
               </button>
@@ -229,14 +229,14 @@ export function TagInput({
               }}
               className={cn(
                 "w-full px-2.5 py-1.5 text-left transition-colors",
-                "bg-[rgba(232,87,26,0.06)] border-l-2 border-l-[#E8571A]",
-                "hover:bg-[rgba(255, 255, 255, 0.14)]",
+                "bg-[var(--recess)] border-l-2 border-l-[var(--action)]",
+                "hover:bg-[var(--recess)]",
               )}
               style={{ fontFamily: "Figtree, sans-serif" }}
             >
-              <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "12px" }}>
+              <span style={{ color: "var(--text2)", fontSize: "12px" }}>
                 Press Enter to add{" "}
-                <span style={{ color: "#E8571A", fontWeight: 600 }}>
+                <span style={{ color: "var(--action)", fontWeight: 600 }}>
                   '#{inputValue.trim()}'
                 </span>
               </span>

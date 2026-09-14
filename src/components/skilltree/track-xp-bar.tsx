@@ -49,7 +49,7 @@ export default function TrackXpBar({
           position: "relative",
           height: 8,
           borderRadius: tokens.radiusPill,
-          background: "rgba(255,255,255,0.08)",
+          background: "var(--recess)",
           border: tokens.borderSoft,
           overflow: "visible",
         }}
@@ -82,7 +82,7 @@ export default function TrackXpBar({
                 borderRadius: 2,
                 background: reached
                   ? trackColor
-                  : "rgba(255,255,255,0.30)",
+                  : "var(--recess)",
               }}
               title={`Tier ${i + 1} — ${fmt(t)} XP`}
             />
@@ -98,7 +98,7 @@ export default function TrackXpBar({
             width: 12,
             height: 12,
             borderRadius: "50%",
-            background: "#fff",
+            background: "var(--on-action)",
             border: `2px solid ${trackColor}`,
             boxShadow: `0 0 10px color-mix(in srgb, ${trackColor} 70%, transparent)`,
           }}

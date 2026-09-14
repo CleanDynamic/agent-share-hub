@@ -15,7 +15,7 @@ export interface CreatorMarkChipProps {
 /** A small warm identity chip used beside names and on profiles. */
 export default function CreatorMarkChip({ mark, variant = "full" }: CreatorMarkChipProps) {
   const Icon = mark.icon
-  const tint = "linear-gradient(135deg, rgba(245,158,11,0.20) 0%, rgba(232,87,26,0.22) 100%)"
+  const tint = "linear-gradient(135deg, color-mix(in srgb, var(--lit) 20%, transparent) 0%, color-mix(in srgb, var(--action) 22%, transparent) 100%)"
 
   if (variant === "minimal") {
     return (
@@ -30,7 +30,7 @@ export default function CreatorMarkChip({ mark, variant = "full" }: CreatorMarkC
           height: 24,
           borderRadius: "50%",
           background: tint,
-          border: "0.5px solid rgba(232,87,26,0.45)",
+          border: "0.5px solid color-mix(in srgb, var(--action) 45%, transparent)",
           color: tokens.orange,
           cursor: "help",
           verticalAlign: "middle",
@@ -50,7 +50,7 @@ export default function CreatorMarkChip({ mark, variant = "full" }: CreatorMarkC
         padding: "3px 9px",
         borderRadius: tokens.radiusPill,
         background: tint,
-        border: "0.5px solid rgba(232,87,26,0.45)",
+        border: "0.5px solid color-mix(in srgb, var(--action) 45%, transparent)",
         fontFamily: tokens.fontSans,
         fontSize: 10,
         fontWeight: 600,

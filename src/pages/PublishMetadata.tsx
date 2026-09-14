@@ -350,15 +350,15 @@ export default function PublishMetadata() {
         />
         {/* Header skeleton */}
         <div className="h-[60px] flex items-center justify-between px-4 sm:px-6"
-          style={{ borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)" }}>
+          style={{ borderBottom: "0.5px solid var(--line)" }}>
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-5 w-40 hidden sm:block" />
           <Skeleton className="h-5 w-20 rounded-full" />
         </div>
-        <div className="h-1 w-full" style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }} />
+        <div className="h-1 w-full" style={{ backgroundColor: "var(--recess)" }} />
         <div className="mx-auto w-full max-w-[720px] px-4 sm:px-6 py-8 flex flex-col gap-8">
           {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} className="rounded-xl p-5" style={{ backgroundColor: "rgba(22,22,30,0.40)" }}>
+            <div key={n} className="rounded-xl p-5" style={{ backgroundColor: "var(--recess)" }}>
               <div className="flex items-center gap-3 mb-4">
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <Skeleton className="h-4 w-32" />

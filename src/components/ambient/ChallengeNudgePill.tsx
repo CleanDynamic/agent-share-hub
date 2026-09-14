@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Target, X } from "lucide-react"
 import { tokens, xpColor, streakColor } from "./tokens"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface ChallengeNudgePillProps {
   /** Short challenge prompt, e.g. "Publish a blueprint today". */
@@ -37,10 +38,10 @@ export default function ChallengeNudgePill({
         padding: "7px 8px 7px 14px",
         borderRadius: tokens.radiusPill,
         background: tokens.card,
-        border: `0.5px solid ${accent}4D`,
+        border: `0.5px solid ${colourAlpha(accent, 0.302)}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: "0 6px 20px rgba(0,0,0,0.28)",
+        boxShadow: "var(--elev-raised)",
       }}
     >
       <span
@@ -49,7 +50,7 @@ export default function ChallengeNudgePill({
           width: 26,
           height: 26,
           borderRadius: tokens.radiusPill,
-          background: `${accent}26`,
+          background: `${colourAlpha(accent, 0.149)}`,
         }}
       >
         <Target size={15} color={accent} />
@@ -79,7 +80,7 @@ export default function ChallengeNudgePill({
           padding: "6px 14px",
           borderRadius: tokens.radiusPill,
           background: tokens.orangeGradient,
-          color: "#fff",
+          color: "var(--on-action)",
           fontSize: 12.5,
           fontWeight: 600,
         }}

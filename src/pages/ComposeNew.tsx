@@ -642,7 +642,7 @@ export default function ComposeNew() {
           padding: 14,
           borderRadius: 12,
           border: `1px solid ${HAIRLINE}`,
-          background: "rgba(255,255,255,0.02)",
+          background: "var(--glass-2)",
         }}
       >
         <label htmlFor="intake-repo-url" style={{ ...labelText, textTransform: "uppercase" }}>
@@ -679,8 +679,8 @@ export default function ComposeNew() {
               fontWeight: 300,
               lineHeight: 1.6,
               color: TEXT_PRIMARY,
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--glass-2)",
+              border: "1px solid var(--line)",
               borderRadius: 10,
               padding: "9px 12px",
               outline: "none",
@@ -702,7 +702,7 @@ export default function ComposeNew() {
                 height: 34,
                 padding: "0 18px",
                 borderRadius: 100,
-                background: "rgba(255,255,255,0.025)",
+                background: "var(--glass-2)",
                 border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
                 color: busy ? TEXT_MUTED : TEAL,
                 cursor: busy ? "wait" : "pointer",
@@ -741,7 +741,7 @@ export default function ComposeNew() {
           padding: 14,
           borderRadius: 12,
           border: `1px solid ${drop.isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
-          background: drop.isDragging ? hexToRgba(TEAL, 0.06) : "rgba(255,255,255,0.02)",
+          background: drop.isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
           transition: "background 120ms ease, border-color 120ms ease",
         }}
       >
@@ -766,7 +766,7 @@ export default function ComposeNew() {
                 height: 34,
                 padding: "0 18px",
                 borderRadius: 100,
-                background: "rgba(255,255,255,0.025)",
+                background: "var(--glass-2)",
                 border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
                 color: busy ? TEXT_MUTED : TEAL,
                 cursor: busy ? "wait" : "pointer",
@@ -838,7 +838,7 @@ export default function ComposeNew() {
           padding: 14,
           borderRadius: 12,
           border: `1px dashed ${isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
-          background: isDragging ? hexToRgba(TEAL, 0.06) : "rgba(255,255,255,0.02)",
+          background: isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
           transition: "background 120ms ease, border-color 120ms ease",
         }}
       >
@@ -868,8 +868,8 @@ export default function ComposeNew() {
             fontWeight: 300,
             lineHeight: 1.6,
             color: TEXT_PRIMARY,
-            background: "rgba(255,255,255,0.025)",
-            border: `1px solid rgba(255,255,255,0.06)`,
+            background: "var(--glass-2)",
+            border: `1px solid var(--line)`,
             borderRadius: 10,
             padding: "10px 12px",
             outline: "none",
@@ -950,7 +950,7 @@ export default function ComposeNew() {
               height: 34,
               padding: "0 18px",
               borderRadius: 100,
-              background: "rgba(255,255,255,0.025)",
+              background: "var(--glass-2)",
               border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
               color: busy ? TEXT_MUTED : TEAL,
               cursor: busy ? "wait" : "pointer",

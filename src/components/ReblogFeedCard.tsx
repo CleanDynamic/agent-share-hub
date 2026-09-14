@@ -113,13 +113,13 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
       style={{
         padding: '14px 16px',
         marginBottom: 0,
-        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+        borderBottom: '1px solid var(--line)',
         cursor: 'pointer',
         transition: 'background 0.15s',
       }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.background =
-          'rgba(255,255,255,0.02)'
+          'var(--glass-2)'
       }}
       onMouseLeave={e => {
         (e.currentTarget as HTMLElement).style.background =
@@ -132,9 +132,9 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         display: 'flex', alignItems: 'center', gap: 6,
         marginBottom: 10, paddingLeft: 44,
       }}>
-        <Repeat2 size={12} color="rgba(255,255,255,0.28)" />
+        <Repeat2 size={12} color="var(--text2)" />
         <span style={{
-          fontSize: 12, color: 'rgba(255,255,255,0.30)',
+          fontSize: 12, color: 'var(--text2)',
         }}>
           {post.author.display_name} reblogged
         </span>
@@ -149,12 +149,12 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         <AccountHoverCard account={post.author}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(31,122,109,0.15)',
-            border: '1px solid rgba(31,122,109,0.30)',
+            background: 'color-mix(in srgb, var(--evidence) 15%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--evidence) 30%, transparent)',
             display: 'flex', alignItems: 'center',
             justifyContent: 'center',
             fontSize: 12, fontWeight: 600,
-            color: '#1F7A6D', flexShrink: 0,
+            color: 'var(--evidence)', flexShrink: 0,
           }}>
             {post.author.avatar_url
               ? <img src={post.author.avatar_url}
@@ -176,21 +176,21 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
             <AccountHoverCard account={post.author}>
               <span style={{
                 fontSize: 13, fontWeight: 600,
-                color: 'rgba(255,255,255,0.85)',
+                color: 'var(--text)',
               }}>
                 {post.author.display_name}
               </span>
             </AccountHoverCard>
             <span style={{
-              fontSize: 12, color: 'rgba(255,255,255,0.40)',
+              fontSize: 12, color: 'var(--text2)',
             }}>
               @{post.author.username}
             </span>
             <span style={{
-              color: 'rgba(255,255,255,0.20)', fontSize: 10,
+              color: 'var(--text2)', fontSize: 10,
             }}>·</span>
             <span style={{
-              fontSize: 12, color: 'rgba(255,255,255,0.40)',
+              fontSize: 12, color: 'var(--text2)',
             }}>
               {getTimeAgo(post.created_at)}
             </span>
@@ -200,7 +200,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
           {post.description && (
             <p style={{
               fontSize: 14, lineHeight: 1.65,
-              color: 'rgba(255,255,255,0.70)',
+              color: 'var(--text2)',
               margin: '8px 0 0 0',
               fontFamily: 'Figtree, sans-serif',
             }}>
@@ -215,18 +215,18 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         <div
           style={{
             marginLeft: 46,
-            border: '1px solid rgba(255,255,255,0.10)',
+            border: '1px solid var(--line)',
             borderRadius: 12,
             overflow: 'hidden',
             transition: 'border-color 0.15s',
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style
-              .borderColor = 'rgba(255,255,255,0.15)'
+              .borderColor = 'var(--line)'
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style
-              .borderColor = 'rgba(255,255,255,0.10)'
+              .borderColor = 'var(--line)'
           }}
           onClick={e => {
             e.stopPropagation()
@@ -250,7 +250,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               <div style={{
                 position: 'absolute', inset: 0,
                 background:
-                  'linear-gradient(to top, rgba(0,0,0,0.60), transparent)',
+                  'linear-gradient(to top, color-mix(in srgb, var(--porthole) 60%, transparent), transparent)',
               }} />
             </div>
           )}
@@ -264,11 +264,11 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
             }}>
               <div style={{
                 width: 18, height: 18, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.08)',
+                background: 'var(--recess)',
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 9, fontWeight: 700,
-                color: 'rgba(255,255,255,0.50)',
+                color: 'var(--text2)',
                 flexShrink: 0,
               }}>
                 {getInitials(
@@ -277,20 +277,20 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               </div>
               <span style={{
                 fontSize: 12, fontWeight: 600,
-                color: 'rgba(255,255,255,0.55)',
+                color: 'var(--text2)',
               }}>
                 {resolvedOriginal.original_author.display_name}
               </span>
               <span style={{
-                color: 'rgba(255,255,255,0.20)', fontSize: 10,
+                color: 'var(--text2)', fontSize: 10,
               }}>·</span>
               <span style={{
                 fontSize: 9, fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
-                color: 'rgba(255,255,255,0.35)',
+                color: 'var(--text2)',
                 padding: '1px 6px', borderRadius: 4,
-                background: 'rgba(255, 255, 255, 0.14)',
+                background: 'var(--recess)',
               }}>
                 {(resolvedOriginal.post_type
                   || resolvedOriginal.content_type)
@@ -300,7 +300,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
 
             {/* Original title */}
             <div style={{
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text)',
                marginBottom: 4,
               ...type.cardTitle,
               overflow: 'hidden',
@@ -315,7 +315,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
             {resolvedOriginal.description && (
               <p style={{
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.40)',
+                color: 'var(--text2)',
                 lineHeight: 1.55, margin: 0,
                 overflow: 'hidden',
                 display: '-webkit-box',
@@ -343,7 +343,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               fontSize: 13, background: 'none', border: 'none',
               cursor: 'pointer',
               color: isLiked
-                ? '#ef4444' : 'rgba(255,255,255,0.35)',
+                ? 'var(--cat-breakage)' : 'var(--text2)',
               transition: 'color 0.15s',
             }}
             onClick={e => {
@@ -359,7 +359,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
           <button
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              fontSize: 13, color: 'rgba(255,255,255,0.40)',
+              fontSize: 13, color: 'var(--text2)',
               background: 'none', border: 'none',
               cursor: 'pointer',
             }}
@@ -371,7 +371,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
           <button
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              fontSize: 13, color: 'rgba(255,255,255,0.40)',
+              fontSize: 13, color: 'var(--text2)',
               background: 'none', border: 'none',
               cursor: 'pointer',
             }}
@@ -383,7 +383,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         </div>
         <button
           style={{
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text2)',
             background: 'none', border: 'none',
             cursor: 'pointer',
           }}

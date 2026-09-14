@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionInput } from "@/components/MentionInput";
 import { FIGTREE, type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -1264,14 +1265,14 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
             <div key={step.id} style={{
               padding: '12px', borderRadius: 10,
               background: 'var(--recess)',
-              border: `1px solid ${cfg.color}30`,
+              border: `1px solid ${colourAlpha(cfg.color, 0.188)}`,
               borderLeft: `3px solid ${cfg.color}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center',
                 gap: 8, marginBottom: 8 }}>
                 <span style={{
                   width: 22, height: 22, borderRadius: '50%',
-                  background: `${cfg.color}20`, border: `1px solid ${cfg.color}50`,
+                  background: `${colourAlpha(cfg.color, 0.125)}`, border: `1px solid ${colourAlpha(cfg.color, 0.314)}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11, fontWeight: 700, color: cfg.color, flexShrink: 0,
                 }}>
@@ -1305,7 +1306,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                         style={{
                           padding: '2px 8px', borderRadius: 4, fontSize: 11,
                           cursor: 'pointer',
-                          background: active ? `${c.color}20` : 'transparent',
+                          background: active ? `${colourAlpha(c.color, 0.125)}` : 'transparent',
                           border: `1px solid ${active ? c.color + '50' : 'var(--recess)'}`,
                           color: active ? c.color : 'var(--text2)',
                         }}>

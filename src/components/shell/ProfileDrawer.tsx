@@ -215,7 +215,7 @@ export function ProfileDrawer({
               height: 48, padding: "12px 20px",
               borderTop: "0.5px solid var(--line)",
               background: "transparent", border: "none", cursor: "pointer",
-              color: "#e74c3c",
+              color: "var(--cat-breakage)",
             }}
           >
             <span style={{ display: "flex", alignItems: "center", gap: 14 }}>

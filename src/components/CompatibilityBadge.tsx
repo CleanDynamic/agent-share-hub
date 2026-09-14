@@ -70,8 +70,8 @@ export function CompatibilityBadge({ contentId, creatorId, compatibilityStatus, 
 
   if (status === "outdated") {
     return (
-      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border" style={{ backgroundColor: "#1A1500", borderColor: "#BA7517" }}>
-        <p className="text-xs flex items-center gap-1.5" style={{ color: "#EF9F27" }}>
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border" style={{ backgroundColor: "color-mix(in srgb, var(--lit) 12%, transparent)", borderColor: "var(--lit)" }}>
+        <p className="text-xs flex items-center gap-1.5" style={{ color: "var(--lit)" }}>
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
           Last verified over 90 days ago — AI tools change fast. Check before using.
         </p>

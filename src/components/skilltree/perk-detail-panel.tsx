@@ -66,7 +66,7 @@ export default function PerkDetailPanel({
         >
           <Icon
             size={24}
-            color={isUnlocked ? "#fff" : perk.trackColor}
+            color={isUnlocked ? "var(--on-action)" : perk.trackColor}
             strokeWidth={2}
           />
         </div>
@@ -75,7 +75,7 @@ export default function PerkDetailPanel({
           onClick={onClose}
           aria-label="Close"
           style={{
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--glass-2)",
             border: tokens.borderSoft,
             borderRadius: 8,
             width: 30,
@@ -174,7 +174,7 @@ export default function PerkDetailPanel({
             style={{
               height: 6,
               borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              background: "var(--recess)",
               overflow: "hidden",
             }}
           >

@@ -229,7 +229,7 @@ export function ContentCard({
               Subscribers only
             </Badge>
           ) : is_pwyw ? (
-            <Badge variant="outline" className="text-[10px] font-medium bg-[#1F7A6D]/15 text-[#1F7A6D] border-[#1F7A6D]/30">
+            <Badge variant="outline" className="text-[10px] font-medium bg-[var(--evidence)]/15 text-[var(--evidence)] border-[var(--evidence)]/30">
               Pay what you want
             </Badge>
           ) : isPaid ? (
@@ -288,7 +288,7 @@ export function ContentCard({
           </p>
         )}
         {has_preview && (
-          <p className="text-[11px] font-medium mb-1" style={{ color: "#1F7A6D" }}>Preview available</p>
+          <p className="text-[11px] font-medium mb-1" style={{ color: "var(--evidence)" }}>Preview available</p>
         )}
         {last_changelog_at && (
           <p className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
@@ -365,7 +365,7 @@ export function ContentCard({
             />
           )}
           {has_curator_recommendation && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[#1F7A6D]/15 text-[#1F7A6D] border border-[#1F7A6D]/30 font-medium">
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--evidence)]/15 text-[var(--evidence)] border border-[var(--evidence)]/30 font-medium">
               Curated ✓
             </span>
           )}

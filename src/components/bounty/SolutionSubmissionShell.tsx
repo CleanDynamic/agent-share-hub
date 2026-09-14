@@ -249,7 +249,7 @@ export function SolutionSubmissionShell({
               padding: "8px 18px",
               borderRadius: 6,
               border: "none",
-              background: "linear-gradient(135deg, var(--action) 0%, var(--action) 100%)",
+              background: "var(--action)",
               color: "var(--text)",
               cursor: canSubmit && !isSubmitting ? "pointer" : "not-allowed",
               opacity: canSubmit && !isSubmitting ? 1 : 0.4,

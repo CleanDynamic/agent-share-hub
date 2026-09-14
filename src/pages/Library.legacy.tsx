@@ -180,8 +180,8 @@ export default function LibraryPage() {
           <div
             className="mb-5 space-y-2"
             style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255, 255, 255, 0.14)",
+              background: "var(--glass-2)",
+              border: "1px solid var(--line)",
               borderRadius: 12,
               padding: "14px 16px",
             }}
@@ -191,9 +191,9 @@ export default function LibraryPage() {
                 onClick={() => setShowEmojiGrid(!showEmojiGrid)}
                 className="h-9 w-9 rounded-md flex items-center justify-center text-sm shrink-0 transition-colors"
                 style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255, 255, 255, 0.12)",
-                  color: "rgba(255,255,255,0.45)",
+                  border: "1px solid var(--line)",
+                  background: "var(--recess)",
+                  color: "var(--text2)",
                 }}
               >
                 {newEmoji || <Smile className="h-4 w-4" />}
@@ -212,7 +212,7 @@ export default function LibraryPage() {
               <button
                 onClick={() => { setShowCreate(false); setShowEmojiGrid(false); }}
                 className="p-1 transition-colors"
-                style={{ color: "rgba(255,255,255,0.28)" }}
+                style={{ color: "var(--text2)" }}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -224,7 +224,7 @@ export default function LibraryPage() {
                     key={em}
                     onClick={() => { setNewEmoji(em); setShowEmojiGrid(false); }}
                     className="h-8 w-8 rounded flex items-center justify-center text-sm transition-colors"
-                    style={{ background: "rgba(255, 255, 255, 0.12)" }}
+                    style={{ background: "var(--recess)" }}
                   >
                     {em}
                   </button>
@@ -265,7 +265,7 @@ export default function LibraryPage() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "rgba(255,255,255,0.45)",
+                  color: "var(--text2)",
                 }}
               >
                 {folderLabel} — {filtered.length} {filtered.length === 1 ? "item" : "items"}
@@ -279,9 +279,9 @@ export default function LibraryPage() {
                     fontWeight: 500,
                     padding: "6px 14px",
                     borderRadius: 8,
-                    border: "1px solid rgba(31,122,109,0.3)",
-                    color: "#1F7A6D",
-                    background: "rgba(31,122,109,0.08)",
+                    border: "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
+                    color: "var(--evidence)",
+                    background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
                   }}
                 >
                   {activeFolderObj.published_collection_id ? "Update Collection" : "Publish as Collection"}
@@ -328,7 +328,7 @@ export default function LibraryPage() {
           <div
             className="fixed inset-0 z-50 flex items-center justify-center"
             style={{
-              background: "rgba(8,8,12,0.80)",
+              background: "var(--recess)",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
             }}
@@ -337,10 +337,10 @@ export default function LibraryPage() {
             <div
               className="max-w-sm mx-4"
               style={{
-                background: "rgba(16,16,24,0.95)",
+                background: "var(--recess)",
                 backdropFilter: "blur(40px) saturate(180%)",
                 WebkitBackdropFilter: "blur(40px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid var(--line)",
                 borderRadius: 16,
                 padding: 24,
               }}
@@ -350,7 +350,7 @@ export default function LibraryPage() {
                 style={{
                   fontSize: 15,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.90)",
+                  color: "var(--text)",
                   marginBottom: 8,
                 }}
               >
@@ -360,7 +360,7 @@ export default function LibraryPage() {
                 style={{
                   fontSize: 13,
                   fontWeight: 300,
-                  color: "rgba(255,255,255,0.45)",
+                  color: "var(--text2)",
                   marginBottom: 20,
                 }}
               >
@@ -375,8 +375,8 @@ export default function LibraryPage() {
                     fontWeight: 500,
                     padding: "8px 16px",
                     borderRadius: 8,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.45)",
+                    border: "1px solid var(--line)",
+                    color: "var(--text2)",
                     background: "transparent",
                   }}
                 >
@@ -390,9 +390,9 @@ export default function LibraryPage() {
                     fontWeight: 500,
                     padding: "8px 16px",
                     borderRadius: 8,
-                    border: "1px solid rgba(239,68,68,0.3)",
-                    color: "#EF4444",
-                    background: "rgba(239,68,68,0.1)",
+                    border: "1px solid color-mix(in srgb, var(--cat-breakage) 30%, transparent)",
+                    color: "var(--cat-breakage)",
+                    background: "color-mix(in srgb, var(--cat-breakage) 10%, transparent)",
                   }}
                 >
                   Delete

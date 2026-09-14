@@ -35,8 +35,8 @@ const POST_TYPE_STYLES: Record<
   { bg: string; text: string; label: string }
 > = {
   blueprint: { bg: "color-mix(in srgb, var(--action) 18%, transparent)", text: "var(--action)", label: "Blueprint" },
-  blog: { bg: "rgba(45, 185, 160, 0.18)", text: "#2DB9A0", label: "Blog" },
-  bounty: { bg: "rgba(234, 179, 8, 0.18)", text: "#EAB308", label: "Bounty" },
+  blog: { bg: "color-mix(in srgb, var(--evidence) 18%, transparent)", text: "var(--evidence)", label: "Blog" },
+  bounty: { bg: "color-mix(in srgb, var(--lit) 18%, transparent)", text: "var(--lit)", label: "Bounty" },
 };
 
 function formatTimestamp(iso: string): string {
@@ -221,7 +221,7 @@ export function EmbeddedExcerptCard({
       {!isExcerptStillValid && (
         <div
           className="flex items-center gap-1.5"
-          style={{ marginBottom: 8, fontSize: 11, color: "rgba(234, 179, 8, 0.85)" }}
+          style={{ marginBottom: 8, fontSize: 11, color: "color-mix(in srgb, var(--lit) 85%, transparent)" }}
         >
           <AlertTriangle size={12} />
           <span>Excerpt may have been edited since this was quoted</span>

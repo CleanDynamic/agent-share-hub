@@ -146,7 +146,13 @@ describe("the .ns-* rules inherited from the retired shell", () => {
     // gains a rule, the surfaces wearing it change appearance, and whoever
     // adds it should have to come here and say so.
     const inert = ["ns-btn-primary", "ns-btn-silver", "ns-right-cat"];
-    const sheets = [SHARED, RAIL, "src/index.css", "src/components/shell/flat-shell.css", "src/App.css"];
+    /* BG-P29 deleted src/App.css from this list and from the repository. It
+       was the Vite starter template's stylesheet, imported by nothing — and it
+       carried a `#root { max-width: 1280px; padding: 2rem; text-align: center }`
+       rule that would have fought the app's own frame the moment anyone wired
+       it up, plus three hexes the colour sweep would otherwise have had to
+       allowlist as "dead file". */
+    const sheets = [SHARED, RAIL, "src/index.css", "src/components/shell/flat-shell.css"];
     for (const cls of inert) {
       for (const sheet of sheets) {
         expect(defines(read(sheet), cls), `${sheet} now defines .${cls}`).toBe(false);

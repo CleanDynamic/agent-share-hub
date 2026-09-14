@@ -82,7 +82,7 @@ export default function FreezeIndicator({
             lineHeight: 1.5,
             color: COLORS.text,
             zIndex: 20,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+            boxShadow: "var(--elev-raised)",
           }}
         >
           Freeze passes keep your streak alive on a missed day. You get{" "}

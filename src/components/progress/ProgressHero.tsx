@@ -35,8 +35,8 @@ export function ProgressHero({
   return (
     <div
       style={{
-        background: "rgba(52,52,66,0.55)",
-        border: "0.5px solid rgba(255,255,255,0.14)",
+        background: "var(--glass)",
+        border: "0.5px solid var(--line)",
         borderRadius: 14,
         padding: 20,
         display: "flex",
@@ -59,7 +59,7 @@ export function ProgressHero({
             fontFamily: "Figtree, sans-serif",
             fontSize: 18,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.95)",
+            color: "var(--text)",
           }}
         >
           {name}

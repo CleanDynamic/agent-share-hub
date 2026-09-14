@@ -271,7 +271,7 @@ function GapControl({
               marginTop: -(KNOB / 2),
               /* A thumb is a circle, which is what `--r-full` is for. */
               borderRadius: r.full,
-              /* --on-action is the measured ink for a filled control; "#08080C"
+              /* --on-action is the measured ink for a filled control; "var(--bg)"
                  was the old void, invisible on a red track in the light room. */
               background: isGap ? t.onAction : t.text2,
               transition: "left 160ms cubic-bezier(.2,.6,.35,1)",

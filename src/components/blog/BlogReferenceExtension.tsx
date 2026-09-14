@@ -143,7 +143,7 @@ function ChipNodeView({ node, editor, getPos }: NodeViewProps) {
             borderRadius: 8,
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.6)",
+            boxShadow: "var(--elev-raised)",
             padding: 4,
             minWidth: 180,
             display: "flex",

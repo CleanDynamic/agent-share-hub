@@ -138,7 +138,7 @@ export function ThreadReferencePicker({
     >
       <div
         className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "rgba(15,15,22,0.92)" }}
+        style={{ backgroundColor: "var(--recess)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-3 h-9 border-b border-white/5">
@@ -176,7 +176,7 @@ export function ThreadReferencePicker({
               {activeType === type && (
                 <div
                   className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
-                  style={{ backgroundColor: "rgb(46,196,182)" }}
+                  style={{ backgroundColor: "var(--evidence)" }}
                 />
               )}
             </button>
@@ -231,7 +231,7 @@ export function ThreadReferencePicker({
                 ) : (
                   <div
                     className="h-6 w-6 rounded flex items-center justify-center shrink-0 text-white/70"
-                    style={{ backgroundColor: "rgba(255, 255, 255, 0.14)" }}
+                    style={{ backgroundColor: "var(--recess)" }}
                   >
                     {item.icon || typeConfig[item.type].icon}
                   </div>

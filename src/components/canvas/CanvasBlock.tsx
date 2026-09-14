@@ -6,6 +6,7 @@ import { BlockEditModal } from './BlockEditModal';
 import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 import { ExecutionPanel } from './ExecutionPanel';
 import { type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
   prompt: 'Prompt', code: 'Code', text: 'Text', long_text: 'Long Text',
@@ -103,13 +104,24 @@ export function CanvasBlock({
   const inset = 4;
 
   const BLOCK_ACCENT: Record<string, string> = {
-    prompt: 'var(--action)', code: '#2E5A88', result: '#2D6B4F',
-    agent_config: '#5B3A7A', workflow: 'var(--evidence)', comparison: '#7A3050',
-    image: '#8B6914', tutorial_step: '#6B3A2A',
+    // BG-P29. The last eight literals here resolve into the nine part-category
+    // hues, which is the table this map was always a private copy of. Each goes
+    // to the category the block TYPE belongs to rather than to the nearest hue:
+    // a result is evidence, an image and a video are media, a tutorial step and
+    // a sticky note are narrative, a tool setup is configuration, model params
+    // are agents, a resource is data.
+    //
+    // `--recess` on the three prose types is NOT a borrowed surface token: it
+    // is the same value as the `?? 'var(--recess)'` fallback below, and it
+    // means "this type carries no hue" — which a heading and a body block
+    // correctly do not.
+    prompt: 'var(--action)', code: 'var(--cat-data)', result: 'var(--cat-evidence)',
+    agent_config: 'var(--cat-agents)', workflow: 'var(--evidence)', comparison: 'var(--cat-media)',
+    image: 'var(--cat-media)', tutorial_step: 'var(--cat-narrative)',
     section_heading: 'var(--recess)', text: 'var(--recess)',
-    long_text: 'var(--recess)', tool_setup: '#1A5E6B',
-    model_params: '#5A4F7A', resource: '#4A5568',
-    sticky_note: '#7A6B2A', video: '#6B2A4A',
+    long_text: 'var(--recess)', tool_setup: 'var(--cat-configuration)',
+    model_params: 'var(--cat-agents)', resource: 'var(--cat-data)',
+    sticky_note: 'var(--cat-narrative)', video: 'var(--cat-media)',
   };
   const accent = BLOCK_ACCENT[block.type] ?? 'var(--recess)';
 
@@ -263,7 +275,7 @@ export function CanvasBlock({
             : 'none',
           zIndex: dragging ? 50 : 10,
           boxShadow: dragging
-            ? '0 12px 40px rgba(0,0,0,0.50)'
+            ? 'var(--elev-overlay)'
             : undefined,
           cursor: mode === 'edit'
             ? (dragging ? 'grabbing' : 'grab')
@@ -278,17 +290,17 @@ export function CanvasBlock({
             style={{
               height: '100%',
               position: 'relative',
-              background: 'rgba(251,191,36,0.10)',
-              borderLeft: '3px solid #FBBF24',
-              borderTop: '1px solid rgba(251,191,36,0.20)',
-              borderRight: '1px solid rgba(251,191,36,0.20)',
-              borderBottom: '1px solid rgba(251,191,36,0.20)',
+              background: 'color-mix(in srgb, var(--lit) 10%, transparent)',
+              borderLeft: '3px solid var(--lit)',
+              borderTop: '1px solid color-mix(in srgb, var(--lit) 20%, transparent)',
+              borderRight: '1px solid color-mix(in srgb, var(--lit) 20%, transparent)',
+              borderBottom: '1px solid color-mix(in srgb, var(--lit) 20%, transparent)',
               borderRadius: 6,
               padding: '6px 10px 6px 22px',
               overflow: 'hidden',
               boxShadow: selected
-                ? '0 0 0 1px rgba(251,191,36,0.45), 0 4px 16px rgba(0,0,0,0.35)'
-                : hovered ? '0 4px 12px rgba(0,0,0,0.30)' : 'none',
+                ? '0 0 0 1px color-mix(in srgb, var(--lit) 45%, transparent), var(--elev-raised)'
+                : hovered ? 'var(--elev-raised)' : 'none',
               fontStyle: 'italic',
               fontSize: 12,
               color: 'var(--text2)',
@@ -315,7 +327,7 @@ export function CanvasBlock({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(251,191,36,0.70)',
+                  color: 'color-mix(in srgb, var(--lit) 70%, transparent)',
                   cursor: 'pointer',
                   padding: 0,
                   zIndex: 3,
@@ -343,7 +355,7 @@ export function CanvasBlock({
                 width: 0, height: 0,
                 borderStyle: 'solid',
                 borderWidth: '0 10px 10px 0',
-                borderColor: 'transparent rgba(251,191,36,0.25) transparent transparent',
+                borderColor: 'transparent color-mix(in srgb, var(--lit) 25%, transparent) transparent transparent',
                 pointerEvents: 'none',
               }}
             />
@@ -357,7 +369,7 @@ export function CanvasBlock({
                   position: 'absolute', bottom: 2, right: 2,
                   display: 'flex', alignItems: 'center', gap: 2,
                   background: 'var(--bg)',
-                  border: '1px solid rgba(251,191,36,0.20)',
+                  border: '1px solid color-mix(in srgb, var(--lit) 20%, transparent)',
                   borderRadius: 4, padding: '1px 3px',
                   zIndex: 30,
                 }}
@@ -409,15 +421,15 @@ export function CanvasBlock({
           <div
             style={{
               height: '100%',
-              background: selected ? `${accent}10` : 'rgba(20,20,28,0.75)',
+              background: selected ? `${colourAlpha(accent, 0.063)}` : 'var(--recess)',
               border: selectionBorder,
               borderRadius: 10,
               overflow: 'hidden',
               cursor: 'pointer',
               transition: 'border-color 0.15s, box-shadow 0.15s',
               boxShadow: selected
-                ? `0 0 0 1px ${accent}50, 0 4px 20px rgba(0,0,0,0.3)`
-                : hovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
+                ? `0 0 0 1px ${colourAlpha(accent, 0.314)}, var(--elev-raised)`
+                : hovered ? 'var(--elev-raised)' : 'none',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
@@ -549,7 +561,7 @@ export function CanvasBlock({
                         position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
                         background: 'var(--bg)', border: '1px solid var(--line)',
                         borderRadius: 6, padding: '4px 0', minWidth: 120, zIndex: 50,
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.50)',
+                        boxShadow: 'var(--elev-raised)',
                       }}>
                         <button onClick={() => { onAssignStage(block.id, null); setStagePickerOpen(false); }}
                           style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: 'var(--text2)', cursor: 'pointer' }}>
@@ -581,7 +593,7 @@ export function CanvasBlock({
               <div style={{
                 position: 'absolute', top: 6, right: 6,
                 fontSize: 8, fontWeight: 700, color: accent,
-                background: `${accent}18`, border: `1px solid ${accent}30`,
+                background: `${colourAlpha(accent, 0.094)}`, border: `1px solid ${colourAlpha(accent, 0.188)}`,
                 borderRadius: 3, padding: '0px 4px', zIndex: 2,
               }}>
                 {block.stageIndex}
@@ -592,7 +604,7 @@ export function CanvasBlock({
           /* ── VIEW MODE: Full content display ── */
           <div style={{
             height: '100%',
-            background: block.type === 'section_heading' ? 'transparent' : 'rgba(20,20,28,0.75)',
+            background: block.type === 'section_heading' ? 'transparent' : 'var(--recess)',
             border: block.type === 'section_heading' ? 'none' : '1px solid var(--line)',
             borderRadius: 10, overflow: 'hidden',
             backdropFilter: 'blur(4px)',
@@ -645,7 +657,7 @@ export function CanvasBlock({
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
               cursor: 'se-resize', background: 'var(--cat-data)', borderRadius: '50%', zIndex: 26,
-              border: '2px solid rgba(6,6,10,0.80)',
+              border: '2px solid var(--bg)',
               opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
             }} />
           </>

@@ -1310,7 +1310,7 @@ export function ArticleEditor({
               borderRadius: 16,
               padding: '24px 26px',
               maxWidth: 420, width: '90%',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
+              boxShadow: 'var(--elev-overlay)',
               fontFamily: 'Figtree, sans-serif',
             }}
           >

@@ -850,7 +850,7 @@ export function CanvasShell(props: CanvasShellProps) {
                     bottom: 0,
                     left: 0,
                     width: 32,
-                    background: 'linear-gradient(to right, rgba(10,10,16,0.95), transparent)',
+                    background: 'linear-gradient(to right, color-mix(in srgb, var(--recess) 95%, transparent), transparent)',
                   }}
                 />
               )}
@@ -863,7 +863,7 @@ export function CanvasShell(props: CanvasShellProps) {
                     bottom: 0,
                     right: 0,
                     width: 32,
-                    background: 'linear-gradient(to left, rgba(10,10,16,0.95), transparent)',
+                    background: 'linear-gradient(to left, color-mix(in srgb, var(--recess) 95%, transparent), transparent)',
                   }}
                 />
               )}
@@ -1106,7 +1106,7 @@ export function CanvasShell(props: CanvasShellProps) {
           padding: '8px 16px',
           zIndex: 150,
           fontFamily: 'Figtree, sans-serif',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--elev-raised)',
         }}>
           {grammarToast}
         </div>

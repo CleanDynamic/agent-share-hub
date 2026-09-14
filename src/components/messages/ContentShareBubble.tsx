@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Target, ArrowRight, AlertCircle } from "lucide-react";
 import { type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 function relativeOpenedLabel(iso: string | null | undefined): string {
   if (!iso) return "Opened";
@@ -148,7 +149,7 @@ function BlockTypeChips({ types }: { types: { type: string; color: string }[] })
           key={i}
           className="text-[10px] px-1.5 py-0.5 rounded"
           style={{
-            backgroundColor: `${t.color}22`,
+            backgroundColor: `${colourAlpha(t.color, 0.133)}`,
             color: t.color,
             fontFamily: "Figtree, sans-serif",
           }}
@@ -306,7 +307,7 @@ export function ContentShareBubble({
             className="w-full h-[80px]"
             style={{
               background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--evidence) 18%, transparent), rgba(180,83,49,0.18))",
+                "linear-gradient(135deg, color-mix(in srgb, var(--evidence) 18%, transparent), color-mix(in srgb, var(--action) 18%, transparent))",
             }}
           />
         )}
@@ -365,8 +366,8 @@ export function ContentShareBubble({
           <span
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
             style={{
-              backgroundColor: "rgba(168,85,247,0.18)",
-              color: "rgba(168,85,247,0.95)",
+              backgroundColor: "color-mix(in srgb, var(--cat-agents) 18%, transparent)",
+              color: "color-mix(in srgb, var(--cat-agents) 95%, transparent)",
               fontFamily: "Figtree, sans-serif",
               letterSpacing: "0.04em",
             }}
@@ -412,7 +413,7 @@ export function ContentShareBubble({
           <span
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
             style={{
-              backgroundColor: `${typeColor}22`,
+              backgroundColor: `${colourAlpha(typeColor, 0.133)}`,
               color: typeColor,
               fontFamily: "Figtree, sans-serif",
               letterSpacing: "0.04em",

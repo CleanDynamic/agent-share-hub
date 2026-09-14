@@ -10,7 +10,7 @@ export function LibraryHeader({ itemCount, updateCount }: LibraryHeaderProps) {
         style={{
           fontSize: 22,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.90)",
+          color: "var(--text)",
           marginBottom: 6,
           letterSpacing: "-0.01em",
         }}
@@ -21,7 +21,7 @@ export function LibraryHeader({ itemCount, updateCount }: LibraryHeaderProps) {
         style={{
           fontSize: 13,
           fontWeight: 300,
-          color: "rgba(255,255,255,0.45)",
+          color: "var(--text2)",
           marginBottom: 4,
         }}
       >
@@ -31,13 +31,13 @@ export function LibraryHeader({ itemCount, updateCount }: LibraryHeaderProps) {
         style={{
           fontSize: 12,
           fontWeight: 500,
-          color: "rgba(255,255,255,0.28)",
+          color: "var(--text2)",
           letterSpacing: "0.04em",
         }}
       >
         {itemCount} item{itemCount !== 1 ? "s" : ""}
         {updateCount > 0 && (
-          <span style={{ color: "#8B4513", marginLeft: 8 }}>
+          <span style={{ color: "var(--action)", marginLeft: 8 }}>
             · {updateCount} updated
           </span>
         )}

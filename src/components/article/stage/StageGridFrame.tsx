@@ -113,8 +113,8 @@ export function StageGridFrame({
       style={{
         maxWidth: 720,
         margin: '16px auto',
-        background: 'rgba(20, 20, 28, 0.55)',
-        border: '0.5px solid rgba(255,255,255,0.08)',
+        background: 'var(--recess)',
+        border: '0.5px solid var(--line)',
       }}
     >
       {/* Canvas Area */}
@@ -130,7 +130,7 @@ export function StageGridFrame({
           style={{
             height: 28,
             background:
-              'linear-gradient(to bottom, rgba(15,15,20,0.85) 0%, rgba(15,15,20,0.55) 70%, rgba(15,15,20,0) 100%)',
+              'linear-gradient(to bottom, color-mix(in srgb, var(--recess) 85%, transparent) 0%, color-mix(in srgb, var(--recess) 55%, transparent) 70%, transparent 100%)',
             opacity: overlayVisible ? 1 : 0,
             transition: 'opacity 160ms ease',
           }}
@@ -141,8 +141,8 @@ export function StageGridFrame({
               width: 18,
               height: 18,
               borderRadius: '50%',
-              background: 'rgba(232,87,26,0.18)',
-              color: '#E8571A',
+              background: 'color-mix(in srgb, var(--action) 18%, transparent)',
+              color: 'var(--action)',
               fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               fontWeight: 600,
@@ -173,7 +173,7 @@ export function StageGridFrame({
                 fontSize: 13,
                 fontWeight: stageName ? 600 : 500,
                 fontStyle: stageName ? 'normal' : 'italic',
-                color: stageName ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.30)',
+                color: stageName ? 'var(--text)' : 'var(--text2)',
               }}
               title={stageName ? 'Click to rename' : 'Click to name this stage'}
             >
@@ -186,7 +186,7 @@ export function StageGridFrame({
             style={{
               fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
-              color: 'rgba(255,255,255,0.45)',
+              color: 'var(--text2)',
             }}
           >
             {blockCount} {blockCount === 1 ? 'block' : 'blocks'}
@@ -219,7 +219,7 @@ export function StageGridFrame({
           style={{
             height: 32,
             background:
-              'linear-gradient(to top, rgba(15,15,20,0.85) 0%, rgba(15,15,20,0.55) 70%, rgba(15,15,20,0) 100%)',
+              'linear-gradient(to top, color-mix(in srgb, var(--recess) 85%, transparent) 0%, color-mix(in srgb, var(--recess) 55%, transparent) 70%, transparent 100%)',
             opacity: overlayVisible ? 1 : 0,
             transition: 'opacity 160ms ease',
           }}
@@ -236,7 +236,7 @@ export function StageGridFrame({
         )}
         style={{
           height: 4,
-          background: overlayVisible ? 'rgba(255,255,255,0.12)' : 'transparent',
+          background: overlayVisible ? 'var(--recess)' : 'transparent',
           transition: 'background 160ms ease',
         }}
       />

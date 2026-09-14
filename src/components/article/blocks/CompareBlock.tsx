@@ -76,7 +76,7 @@ export function CompareBlockNode({ id, data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl border bg-[rgba(20,20,28,0.75)]',
+        'group relative rounded-xl border bg-[var(--recess)]',
         'backdrop-blur-md shadow-lg w-[320px]',
         selected ? 'border-white/30' : 'border-white/10',
       )}

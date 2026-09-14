@@ -155,7 +155,7 @@ export function ForkModal({ open, onOpenChange, originalItem, originalCreatorUse
       <DialogContent
         className="sm:max-w-md"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--line)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle>Fork '{originalItem.title}'</DialogTitle>

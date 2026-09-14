@@ -157,7 +157,7 @@ function StepEditor({
 
   const focusStyle = (field: string): React.CSSProperties =>
     focused === field
-      ? { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.12)" }
+      ? { background: "var(--glass-2)", borderColor: "var(--line)" }
       : {};
 
   return (
@@ -482,7 +482,7 @@ export function LayerReview({
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        background: "rgba(8,8,12,0.62)",
+        background: "var(--recess)",
       }}
     >
       <div
@@ -517,7 +517,7 @@ export function LayerReview({
             padding: "8px 12px",
             borderRadius: 8,
             border: `1px solid ${HAIRLINE}`,
-            background: "rgba(255,255,255,0.025)",
+            background: "var(--glass-2)",
             color: TEXT_SECONDARY,
             fontWeight: 400,
             letterSpacing: 0,
@@ -576,8 +576,8 @@ export function LayerReview({
             style={{
               ...controlBase,
               color: anything ? TEXT_PRIMARY : TEXT_MUTED,
-              border: `1px solid ${anything ? hexToRgba(ORANGE, 0.45) : "rgba(255,255,255,0.06)"}`,
-              background: anything ? hexToRgba(ORANGE, 0.14) : "rgba(255,255,255,0.025)",
+              border: `1px solid ${anything ? hexToRgba(ORANGE, 0.45) : "var(--line)"}`,
+              background: anything ? hexToRgba(ORANGE, 0.14) : "var(--glass-2)",
               cursor: anything && !committing ? "pointer" : "not-allowed",
               opacity: committing ? 0.7 : 1,
             }}
@@ -593,7 +593,7 @@ export function LayerReview({
               ...controlBase,
               color: TEXT_PRIMARY,
               border: `1px solid ${HAIRLINE}`,
-              background: "rgba(255,255,255,0.025)",
+              background: "var(--glass-2)",
               opacity: committing ? 0.7 : 1,
             }}
           >

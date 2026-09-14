@@ -191,10 +191,10 @@ export function LeftPanel({ collapsed = false }: { collapsed?: boolean }) {
                   asChild
                   data-visual-slot="btn-primary"
                   style={{
-                    background: '#111',
+                    background: 'var(--action)',
                     border: '1px solid var(--line)',
                     borderRadius: 'var(--radius-btn)',
-                    color: '#fff',
+                    color: 'var(--on-action)',
                     fontWeight: 600,
                   }}
                 >

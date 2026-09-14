@@ -96,7 +96,7 @@ export default function QuestChecklist({
               animation: "qc-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both",
             }}
           >
-            <Trophy size={36} strokeWidth={2} color="#FFFFFF" />
+            <Trophy size={36} strokeWidth={2} color="var(--text)" />
           </div>
 
           <div>
@@ -129,7 +129,7 @@ export default function QuestChecklist({
               className="flex h-7 w-7 items-center justify-center"
               style={{ borderRadius: radius.pill, background: accent }}
             >
-              <Sparkles size={15} color="#FFFFFF" strokeWidth={2.5} />
+              <Sparkles size={15} color="var(--text)" strokeWidth={2.5} />
             </span>
             <span
               className="text-sm font-semibold"
@@ -169,7 +169,7 @@ export default function QuestChecklist({
               boxShadow: `0 6px 18px ${withAlpha(colors.orange, 0.35)}`,
             }}
           >
-            <Trophy size={20} color="#FFFFFF" strokeWidth={2} />
+            <Trophy size={20} color="var(--text)" strokeWidth={2} />
           </span>
           <div>
             <h2
@@ -249,7 +249,7 @@ function StepRow({
           className="flex h-5 w-5 items-center justify-center"
           style={{ borderRadius: radius.pill, background: semantic.xp }}
         >
-          <Check size={12} color="#FFFFFF" strokeWidth={3} />
+          <Check size={12} color="var(--text)" strokeWidth={3} />
         </span>
         <span
           className="flex-1 text-sm line-through"
@@ -305,7 +305,7 @@ function StepRow({
           style={{
             borderRadius: radius.pill,
             background: orangeGradient,
-            color: "#FFFFFF",
+            color: "var(--text)",
             boxShadow: `0 4px 14px ${withAlpha(colors.orange, 0.35)}`,
           }}
         >

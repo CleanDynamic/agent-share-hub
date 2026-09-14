@@ -162,7 +162,7 @@ export function ResultsCarouselEditor({
         background: "var(--bg)",
         border: "0.5px solid var(--line)",
         borderRadius: 8,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.40)",
+        boxShadow: "var(--elev-raised)",
       }}
     >
       {[

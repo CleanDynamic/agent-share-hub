@@ -132,7 +132,7 @@ export function LayerStaleNotice({ build, tree }: LayerStaleNoticeProps) {
                 borderRadius: 100,
                 color: TEXT_SECONDARY,
                 border: `1px solid ${HAIRLINE}`,
-                background: "rgba(255,255,255,0.025)",
+                background: "var(--glass-2)",
                 cursor: "pointer",
               }}
             >

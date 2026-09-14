@@ -20,7 +20,7 @@ const BLOCK_TYPE_COLORS: Record<string, string> = {
   code: 'var(--cat-agents)',
   data: 'var(--cat-data)',
   decision: 'var(--cat-media)',
-  variable: '#34D399',
+  variable: 'var(--cat-configuration)',
 };
 
 function colorFor(type: string): string {

@@ -61,7 +61,7 @@ export default function PostXpFootnote({
           border: `0.5px solid color-mix(in srgb, var(--action) 40%, transparent)`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 14px 36px rgba(0,0,0,0.40), 0 0 0 1px color-mix(in srgb, var(--action) 10%, transparent)",
+          boxShadow: "var(--elev-raised), 0 0 0 1px color-mix(in srgb, var(--action) 10%, transparent)",
         }}
       >
         <span

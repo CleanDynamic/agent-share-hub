@@ -50,8 +50,8 @@ export default function StreakFlame({
           50% { transform: scale(1.06); opacity: 0.92; }
         }
         @keyframes streakAtRiskPulse {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(232,87,26,0)); }
-          50% { transform: scale(1.12); filter: drop-shadow(0 0 6px rgba(232,87,26,0.65)); }
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 color-mix(in srgb, var(--action) 0%, transparent)); }
+          50% { transform: scale(1.12); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--action) 65%, transparent)); }
         }
       `}</style>
 

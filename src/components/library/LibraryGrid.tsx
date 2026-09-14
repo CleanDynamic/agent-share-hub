@@ -12,8 +12,8 @@ function SkeletonCard() {
   return (
     <div
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "1px solid var(--line)",
         borderRadius: 12,
         padding: 20,
       }}
@@ -24,7 +24,7 @@ function SkeletonCard() {
           style={{
             height: 14,
             width: 80,
-            background: "rgba(255, 255, 255, 0.14)",
+            background: "var(--recess)",
           }}
         />
         <div
@@ -32,7 +32,7 @@ function SkeletonCard() {
           style={{
             height: 12,
             width: "75%",
-            background: "rgba(255, 255, 255, 0.12)",
+            background: "var(--recess)",
           }}
         />
         <div
@@ -40,16 +40,16 @@ function SkeletonCard() {
           style={{
             height: 10,
             width: "100%",
-            background: "rgba(255,255,255,0.03)",
+            background: "var(--glass-2)",
           }}
         />
-        <div className="flex items-center gap-2 pt-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.12)" }}>
+        <div className="flex items-center gap-2 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
           <div
             className="rounded-full"
             style={{
               height: 10,
               width: 48,
-              background: "rgba(255,255,255,0.05)",
+              background: "var(--glass-2)",
             }}
           />
           <div
@@ -57,7 +57,7 @@ function SkeletonCard() {
             style={{
               height: 10,
               width: 36,
-              background: "rgba(255, 255, 255, 0.12)",
+              background: "var(--recess)",
             }}
           />
         </div>
@@ -108,21 +108,21 @@ export function LibraryGrid({
             key={lib.id}
             className="relative group"
             style={{
-              background: "rgba(255,255,255,0.015)",
-              border: "1px solid rgba(255,255,255,0.05)",
+              background: "var(--glass-2)",
+              border: "1px solid var(--line)",
               borderRadius: 14,
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.border =
-                "1px solid rgba(255,255,255,0.12)";
+                "1px solid var(--line)";
               e.currentTarget.style.transform = "translateY(-2px)";
               e.currentTarget.style.boxShadow =
-                "0 8px 32px rgba(0,0,0,0.3)";
+                "var(--elev-raised)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.border =
-                "1px solid rgba(255,255,255,0.05)";
+                "1px solid var(--line)";
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
             }}
@@ -131,8 +131,8 @@ export function LibraryGrid({
               <div
                 className="absolute -top-1.5 -right-1.5 z-10 h-3 w-3 rounded-full"
                 style={{
-                  background: "#8B4513",
-                  boxShadow: "0 0 8px rgba(139,69,19,0.5)",
+                  background: "var(--action)",
+                  boxShadow: "0 0 8px color-mix(in srgb, var(--action) 50%, transparent)",
                 }}
               />
             )}
@@ -156,7 +156,7 @@ export function LibraryGrid({
                 className="px-5 pb-3 -mt-1"
                 style={{
                   fontSize: 11,
-                  color: "#8B4513",
+                  color: "var(--action)",
                   fontWeight: 500,
                 }}
               >

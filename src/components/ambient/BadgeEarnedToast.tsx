@@ -1,5 +1,6 @@
 import { Award, X } from "lucide-react";
 import { tokens } from "./tokens";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface BadgeEarnedToastProps {
   title: string;
@@ -28,11 +29,11 @@ export default function BadgeEarnedToast({
         maxWidth: 360,
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
-        border: `0.5px solid ${tokens.orange}66`,
+        border: `0.5px solid ${colourAlpha(tokens.orange, 0.4)}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
         boxShadow:
-          "0 16px 40px rgba(0,0,0,0.50), 0 0 0 1px color-mix(in srgb, var(--action) 14%, transparent)",
+          "var(--elev-overlay), 0 0 0 1px color-mix(in srgb, var(--action) 14%, transparent)",
         fontFamily: tokens.fontSans,
       }}
     >

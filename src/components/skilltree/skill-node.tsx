@@ -38,14 +38,14 @@ export default function SkillNode({
 
   if (state === "locked") {
     inner = {
-      background: "rgba(40,40,52,0.9)",
+      background: "var(--recess)",
       border: tokens.border,
       opacity: 0.6,
     }
     icon = <Lock size={22} color={tokens.locked} strokeWidth={2} />
   } else if (state === "available") {
     inner = {
-      background: "rgba(40,40,52,0.9)",
+      background: "var(--recess)",
       border: `2px solid ${trackColor}`,
       boxShadow: `0 0 0 4px color-mix(in srgb, ${trackColor} 18%, transparent)`,
       animation: "skillPulse 2s ease-in-out infinite",
@@ -54,10 +54,10 @@ export default function SkillNode({
   } else {
     inner = {
       background: trackColor,
-      border: `2px solid color-mix(in srgb, ${trackColor} 80%, #fff 20%)`,
+      border: `2px solid color-mix(in srgb, ${trackColor} 80%, var(--chrome-hi) 20%)`,
       boxShadow: `0 0 18px color-mix(in srgb, ${trackColor} 65%, transparent)`,
     }
-    icon = <PerkIcon size={24} color="#fff" strokeWidth={2.25} />
+    icon = <PerkIcon size={24} color="var(--on-action)" strokeWidth={2.25} />
   }
 
   return (
@@ -97,7 +97,7 @@ export default function SkillNode({
             fontSize: 11,
             fontFamily: sans,
             color: tokens.text,
-            background: "rgba(20,20,28,0.95)",
+            background: "var(--recess)",
             border: tokens.border,
             zIndex: 5,
           }}

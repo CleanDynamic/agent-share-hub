@@ -88,7 +88,7 @@ export default function StreakLostCard({
           borderRadius: RADIUS.pill,
           background: ORANGE_GRADIENT,
           border: "none",
-          color: "#fff",
+          color: "var(--on-action)",
           fontSize: 14,
           fontWeight: 600,
           cursor: "pointer",

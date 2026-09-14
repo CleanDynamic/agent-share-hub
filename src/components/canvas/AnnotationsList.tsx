@@ -35,7 +35,7 @@ export function AnnotationsList({
         borderRadius: 12, zIndex: 201,
         overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.60)',
+        boxShadow: 'var(--elev-overlay)',
       }}>
         <div style={{
           padding: '14px 16px 10px 16px',

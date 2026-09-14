@@ -32,7 +32,7 @@ export default function StreakSavedToast({
         fontFamily: FONT.sans,
         backdropFilter: "blur(28px) saturate(160%)",
         WebkitBackdropFilter: "blur(28px) saturate(160%)",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+        boxShadow: "var(--elev-raised)",
       }}
     >
       <div
@@ -41,8 +41,8 @@ export default function StreakSavedToast({
           width: 38,
           height: 38,
           borderRadius: RADIUS.card,
-          background: "rgba(46,196,182,0.16)",
-          border: "0.5px solid rgba(46,196,182,0.4)",
+          background: "color-mix(in srgb, var(--evidence) 16%, transparent)",
+          border: "0.5px solid color-mix(in srgb, var(--evidence) 40%, transparent)",
           color: COLORS.reputationTeal,
         }}
       >

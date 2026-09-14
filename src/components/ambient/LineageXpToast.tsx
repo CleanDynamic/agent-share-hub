@@ -26,7 +26,7 @@ export default function LineageXpToast({
         border: tokens.borderSoft,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+        boxShadow: 'var(--elev-raised)',
         minWidth: 280,
       }}
     >
