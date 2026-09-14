@@ -37,9 +37,28 @@
 // the theme's own answer for tier and rarity is weight and fill rather than a
 // rainbow — so a track is named by its name and lit by `--lit` like every other
 // progress marker. Nothing on the routes BG-P25 touches renders these.
+//
+// BG-P28b: THIS MODULE NOW DEFERS RATHER THAN ARGUES. Everything above was
+// decided here first, and then six sibling modules had to be talked into the
+// same answer one at a time. `src/lib/theme/progress.ts` is that answer written
+// down once — the three-rung ladder, the lamp, and the rule that amber is light
+// and never type — and this module's `tier`, `lamp` and `xpText` are re-exports
+// of it rather than a seventh private copy. The keys below are unchanged; what
+// changed is where their meaning is defined.
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import {
+  legacyTier,
+  levelLamp,
+  lockedFill,
+  progressFill,
+  progressGlow,
+  progressTrack,
+  tierFill,
+  xpText,
+  type ProgressTier,
+} from "@/lib/theme/progress";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 export const tokens = {
@@ -116,4 +135,22 @@ export const trackColors: Record<TrackName, string> = {
   Curator: t.lit,
   Mentor: t.lit,
   Explorer: t.lit,
+}
+
+/**
+ * The shared ladder, re-exported so a profile mark and a level marker on
+ * `/analytics` cannot drift apart. These are not copies — they are the same
+ * functions the progress surfaces spend, and `src/lib/theme/progress.ts` is
+ * where their argument lives.
+ */
+export {
+  legacyTier,
+  levelLamp,
+  lockedFill,
+  progressFill,
+  progressGlow,
+  progressTrack,
+  tierFill,
+  xpText,
+  type ProgressTier,
 }

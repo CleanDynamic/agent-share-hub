@@ -84,3 +84,38 @@ export function tokenAlpha(name: TokenName, alpha: number): string {
   const percent = Math.round(Math.min(Math.max(alpha, 0), 1) * 1000) / 10;
   return `color-mix(in srgb, var(--${name}) ${percent}%, transparent)`;
 }
+
+/**
+ * The same blend for a colour that arrives as a STRING rather than as a token
+ * name — a `var(--x)` reference already pulled out of a constant, or a hex from
+ * a column the database still stores.
+ *
+ * WHY THIS EXISTS (BG-P28b). Six gamification token modules each shipped their
+ * own `withAlpha(hex, alpha)` that parsed the hex by hand. Repointing those
+ * modules turned every one of their constants into a `var(--token)` string, at
+ * which point a hand-rolled hex parser produces `rgba(NaN, NaN, NaN, a)` and
+ * the tint disappears — or, with the usual `return hex` fallback, hands the
+ * caller the hue AT FULL STRENGTH, so a 6% wash becomes a solid panel with
+ * unreadable text on it. Every one of those six now delegates here.
+ *
+ * `color-mix` defers the blend to the browser, which is the only place both the
+ * alpha and the theme's current value for the token are known at once. The hex
+ * branch stays because `node_types.colour` still holds hexes; anything that is
+ * neither a token reference nor a hex returns unchanged.
+ */
+export function colourAlpha(colour: string, alpha: number): string {
+  const input = (colour ?? "").trim();
+
+  const hex = /^#?([0-9a-f]{6})$/i.exec(input);
+  if (hex) {
+    const int = parseInt(hex[1], 16);
+    return `rgba(${(int >> 16) & 255},${(int >> 8) & 255},${int & 255},${alpha})`;
+  }
+
+  if (/^var\(--[a-z0-9-]+\)$/i.test(input)) {
+    const percent = Math.round(Math.min(Math.max(alpha, 0), 1) * 1000) / 10;
+    return `color-mix(in srgb, ${input} ${percent}%, transparent)`;
+  }
+
+  return colour;
+}
