@@ -9,7 +9,10 @@ import { sendContentShareMessage } from "@/lib/messaging";
 import { queryBlueprints } from "@/lib/discover/queryBlueprints";
 import { queryStages } from "@/lib/discover/queryStages";
 import { queryBlocks } from "@/lib/discover/queryBlocks";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
+// Aliased `tok`: this file already binds `t` twice in tight scopes (a
+// setTimeout handle and a MediaStreamTrack), and a token accessor that can
+// be shadowed is a trap for whoever edits those blocks next.
+import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { data as dataType, tabular } from "@/lib/theme/type";
 import { uiTransition } from "@/lib/theme/controls";
@@ -338,15 +341,15 @@ export function MessageInputBar({
   // Voice preview state
   if (voiceBlob && !recording) {
     return (
-      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: t.bg }}>
-        <button onClick={cancelRecording} style={{ color: t.text2, transition: uiTransition() }} aria-label="Discard the recording">
+      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: tok.bg }}>
+        <button onClick={cancelRecording} style={{ color: tok.text2, transition: uiTransition() }} aria-label="Discard the recording">
           <X className="h-5 w-5" />
         </button>
         <div className="flex-1 flex items-center gap-2">
-          <span className="text-sm" style={{ color: t.text }}>🎤 Voice message</span>
+          <span className="text-sm" style={{ color: tok.text }}>🎤 Voice message</span>
           <span
             className="text-xs"
-            style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text2 }}
+            style={{ fontFamily: dataType.fontFamily, ...tabular, color: tok.text2 }}
           >
             {fmtDur}
           </span>
@@ -357,8 +360,8 @@ export function MessageInputBar({
           className="p-2"
           style={{
             borderRadius: r["r-control"],
-            background: t.action,
-            color: t.onAction,
+            background: tok.action,
+            color: tok.onAction,
             transition: uiTransition(),
           }}
         >
@@ -371,8 +374,8 @@ export function MessageInputBar({
   // Recording state
   if (recording) {
     return (
-      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: t.bg }}>
-        <button onClick={cancelRecording} className="text-xs" style={{ color: t.text2, transition: uiTransition() }}>
+      <div className="px-3 py-2 border-t border-border flex items-center gap-3 shrink-0" style={{ backgroundColor: tok.bg }}>
+        <button onClick={cancelRecording} className="text-xs" style={{ color: tok.text2, transition: uiTransition() }}>
           ← Slide to cancel
         </button>
         <div className="flex-1 flex items-center justify-center gap-2">
@@ -383,11 +386,11 @@ export function MessageInputBar({
           <span
             className="h-2 w-2 rounded-full animate-pulse"
             data-bg-animated=""
-            style={{ background: t.catBreakage }}
+            style={{ background: tok.catBreakage }}
           />
           <span
             className="text-sm"
-            style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text }}
+            style={{ fontFamily: dataType.fontFamily, ...tabular, color: tok.text }}
           >
             {fmtDur}
           </span>
@@ -397,8 +400,8 @@ export function MessageInputBar({
           className="p-2"
           style={{
             borderRadius: r["r-control"],
-            background: t.catBreakageFill,
-            color: t.catBreakage,
+            background: tok.catBreakageFill,
+            color: tok.catBreakage,
             transition: uiTransition(),
           }}
         >
@@ -409,30 +412,30 @@ export function MessageInputBar({
   }
 
   return (
-    <div className="shrink-0" style={{ backgroundColor: t.bg }}>
+    <div className="shrink-0" style={{ backgroundColor: tok.bg }}>
       {/* Pending share chip */}
       {pendingShare && (
         <div className="px-3 pt-2 flex items-start">
           <div
             className="flex items-center gap-2 max-w-full pr-2 pl-2 py-1.5"
-            style={{ borderRadius: r["r-chip"], border: `1px solid ${t.line}`, background: t.recess }}
+            style={{ borderRadius: r["r-chip"], border: `1px solid ${tok.line}`, background: tok.recess }}
           >
             <div
               className="h-6 w-6 flex items-center justify-center shrink-0"
               style={{
                 borderRadius: r["r-chip"],
                 background: tokenAlpha("action", 0.14),
-                color: t.text,
+                color: tok.text,
               }}
             >
               {pendingShare.type === "blueprint" ? <FileText className="h-3 w-3" /> : pendingShare.type === "stage" ? <Layers className="h-3 w-3" /> : <Box className="h-3 w-3" />}
             </div>
             <div className="min-w-0">
-              <div className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: t.text }}>
+              <div className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: tok.text }}>
                 {pendingShare.label}
               </div>
               {pendingShare.subtitle && (
-                <div className="text-[10px] truncate max-w-[220px]" style={{ color: t.text2 }}>
+                <div className="text-[10px] truncate max-w-[220px]" style={{ color: tok.text2 }}>
                   {pendingShare.subtitle}
                 </div>
               )}
@@ -440,7 +443,7 @@ export function MessageInputBar({
             <button
               onClick={() => setPendingShare(null)}
               className="ml-1 shrink-0"
-              style={{ color: t.text2, transition: uiTransition() }}
+              style={{ color: tok.text2, transition: uiTransition() }}
               aria-label="Remove pending share"
             >
               <X className="h-3.5 w-3.5" />
@@ -464,7 +467,7 @@ export function MessageInputBar({
             <button
               onClick={() => { setImageFile(null); setImagePreviewUrl(null); }}
               className="absolute -top-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center"
-              style={{ background: t.bg, border: `1px solid ${t.line}`, color: t.text2 }}
+              style={{ background: tok.bg, border: `1px solid ${tok.line}`, color: tok.text2 }}
             >
               <X className="h-3 w-3" />
             </button>
@@ -489,7 +492,7 @@ export function MessageInputBar({
           <button
             onClick={() => cameraInputRef.current?.click()}
             className="p-1"
-            style={{ color: t.text2, transition: uiTransition() }}
+            style={{ color: tok.text2, transition: uiTransition() }}
             aria-label="Take a photo"
           >
             <Camera className="h-5 w-5" />
@@ -498,7 +501,7 @@ export function MessageInputBar({
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-1"
-            style={{ color: t.text2, transition: uiTransition() }}
+            style={{ color: tok.text2, transition: uiTransition() }}
             aria-label="Attach an image"
           >
             <ImageIcon className="h-5 w-5" />
@@ -507,7 +510,7 @@ export function MessageInputBar({
           <button
             onClick={startRecording}
             className="p-1"
-            style={{ color: t.text2, transition: uiTransition() }}
+            style={{ color: tok.text2, transition: uiTransition() }}
             aria-label="Record a voice note"
           >
             <Mic className="h-5 w-5" />
@@ -520,7 +523,7 @@ export function MessageInputBar({
               else openPicker("");
             }}
             className="p-1"
-            style={{ color: pickerOpen ? t.text : t.text2, transition: uiTransition() }}
+            style={{ color: pickerOpen ? tok.text : tok.text2, transition: uiTransition() }}
             aria-label="Share content"
           >
             <AtSign className="h-5 w-5" />
@@ -547,7 +550,7 @@ export function MessageInputBar({
           <button
             onClick={() => setShowEmoji(!showEmoji)}
             className="absolute right-3 bottom-2"
-            style={{ color: t.text2, transition: uiTransition() }}
+            style={{ color: tok.text2, transition: uiTransition() }}
             aria-label="Insert an emoji"
           >
             <Smile className="h-4 w-4" />
@@ -567,8 +570,8 @@ export function MessageInputBar({
                 // 6.35:1 on Dusk). `bg-primary` was a shadcn palette colour and
                 // carried neither room's action hue.
                 borderRadius: r["r-control"],
-                background: t.action,
-                color: t.onAction,
+                background: tok.action,
+                color: tok.onAction,
                 opacity: sending ? 0.6 : 1,
                 transition: uiTransition(),
               }}
@@ -582,7 +585,7 @@ export function MessageInputBar({
             <button
               onClick={sendHeart}
               className="p-2"
-              style={{ color: t.text2, transition: uiTransition() }}
+              style={{ color: tok.text2, transition: uiTransition() }}
               aria-label="Send a heart"
             >
               <Heart className="h-5 w-5" />
