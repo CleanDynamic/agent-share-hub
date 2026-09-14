@@ -55,7 +55,7 @@ function Separator() {
       style={{
         width: 1,
         height: 16,
-        background: "rgba(255,255,255,0.10)",
+        background: "var(--recess)",
         margin: "0 4px",
       }}
     />
@@ -80,7 +80,7 @@ function ActionButton({
   count,
   label,
   isActive = false,
-  activeColor = "#E8571A",
+  activeColor = "var(--action)",
   onClick,
   tooltip,
   customBackground,
@@ -92,7 +92,7 @@ function ActionButton({
     ? customTextColor
     : isActive
     ? activeColor
-    : "rgba(255,255,255,0.65)";
+    : "var(--recess)";
 
   return (
     <button
@@ -113,7 +113,7 @@ function ActionButton({
         background: customBackground
           ? customBackground
           : isHovered
-          ? "rgba(255, 255, 255, 0.12)"
+          ? "var(--recess)"
           : "transparent",
         color: textColor,
         transition: "background 150ms ease",
@@ -213,12 +213,12 @@ export function FloatingEngagementBar({
           : "translateX(-50%) translateY(8px)",
         width: "auto",
         height: 48,
-        background: "rgba(16,16,24,0.92)",
+        background: "var(--glass)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        border: "0.5px solid rgba(255,255,255,0.10)",
+        border: "0.5px solid var(--line)",
         borderRadius: 100,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+        boxShadow: "var(--elev-raised)",
         padding: "4px 12px",
         display: "flex",
         flexDirection: "row",
@@ -235,13 +235,13 @@ export function FloatingEngagementBar({
         icon={
           <Heart
             size={16}
-            fill={post.hasLiked ? "#E8571A" : "none"}
-            stroke={post.hasLiked ? "#E8571A" : "currentColor"}
+            fill={post.hasLiked ? "var(--action)" : "none"}
+            stroke={post.hasLiked ? "var(--action)" : "currentColor"}
           />
         }
         count={counts.likes}
         isActive={post.hasLiked}
-        activeColor="#E8571A"
+        activeColor="var(--action)"
         onClick={onLike}
         tooltip="Like (L)"
       />
@@ -257,12 +257,12 @@ export function FloatingEngagementBar({
         icon={
           <Repeat2
             size={16}
-            stroke={post.hasReposted ? "#E8571A" : "currentColor"}
+            stroke={post.hasReposted ? "var(--action)" : "currentColor"}
           />
         }
         count={counts.reposts}
         isActive={post.hasReposted}
-        activeColor="#E8571A"
+        activeColor="var(--action)"
         onClick={onRepost}
         tooltip="Reblog"
       />
@@ -280,12 +280,12 @@ export function FloatingEngagementBar({
         icon={
           <Bookmark
             size={16}
-            fill={post.hasBookmarked ? "#2EC4B6" : "none"}
-            stroke={post.hasBookmarked ? "#2EC4B6" : "currentColor"}
+            fill={post.hasBookmarked ? "var(--evidence)" : "none"}
+            stroke={post.hasBookmarked ? "var(--evidence)" : "currentColor"}
           />
         }
         isActive={post.hasBookmarked}
-        activeColor="#2EC4B6"
+        activeColor="var(--evidence)"
         onClick={(e) => onBookmark(e.currentTarget)}
         tooltip="Save to Library (B)"
       />
@@ -311,8 +311,8 @@ export function FloatingEngagementBar({
           <ActionButton
             icon={<Target size={16} />}
             label="Submit"
-            customBackground="rgba(245,158,11,0.10)"
-            customTextColor="#F59E0B"
+            customBackground="var(--cat-breakage-fill)"
+            customTextColor="var(--cat-breakage)"
             onClick={onSubmitSolution}
           />
         </>

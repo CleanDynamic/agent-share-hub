@@ -50,13 +50,13 @@ function CopyButton({
         fontSize: 10, padding: '3px 10px',
         borderRadius: 5, cursor: 'pointer',
         background: copied
-          ? 'rgba(34,197,94,0.15)'
-          : 'rgba(255, 255, 255, 0.14)',
+          ? 'color-mix(in srgb, var(--cat-configuration) 15%, transparent)'
+          : 'var(--recess)',
         border: `1px solid ${copied
-          ? 'rgba(34,197,94,0.35)'
-          : 'rgba(255,255,255,0.10)'}`,
+          ? 'color-mix(in srgb, var(--cat-configuration) 35%, transparent)'
+          : 'var(--recess)'}`,
         color: copied
-          ? '#22C55E' : 'rgba(255,255,255,0.45)',
+          ? 'var(--cat-configuration)' : 'var(--text2)',
         fontWeight: 600,
         fontFamily: 'Figtree, sans-serif',
         transition: 'all 0.15s',
@@ -207,14 +207,17 @@ function AdModal({ open, onComplete, label, countdownSeconds = 3 }: {
   }, [open, seconds, onComplete, countdownSeconds]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm"
+      style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}
+    >
       <div className="flex flex-col items-center gap-5 px-6 text-center">
         <div className="w-[320px] h-[100px] bg-muted/40 rounded-lg flex items-center justify-center border border-border">
           <span className="text-xs text-muted-foreground">Ad Space</span>
         </div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Advertisement</p>
         <p className="text-sm text-foreground">
-          {label} <span className="font-bold text-[#1F7A6D]">{seconds}</span>…
+          {label} <span className="font-bold text-[var(--evidence)]">{seconds}</span>…
         </p>
         <a href="/login" className="text-xs text-muted-foreground hover:text-foreground underline">Sign in to skip ads</a>
       </div>
@@ -245,13 +248,13 @@ function RenderGitHubBlock({ textContent, subBlocks }: { textContent: string | n
   if (!textContent) return null;
   const desc = Array.isArray(subBlocks) && subBlocks[0]?.description ? subBlocks[0].description : null;
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "rgba(36, 41, 47, 0.6)", border: "1px solid rgba(255,255,255,0.1)" }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--recess)", border: "1px solid var(--line)" }}>
       <a
         href={textContent}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 w-full h-10 rounded-lg text-sm font-medium transition-colors"
-        style={{ backgroundColor: "#1F7A6D", color: "#fff" }}
+        style={{ backgroundColor: "var(--evidence)", color: "var(--text)" }}
       >
         <Github className="h-4 w-4" />
         View on GitHub →
@@ -273,7 +276,7 @@ function RenderLargeFileBlock({ textContent, subBlocks }: { textContent: string 
   const displayPlatform = platform === "Other" && customPlatform ? customPlatform : platform;
 
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid hsl(var(--border))" }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--recess)", border: "1px solid hsl(var(--border))" }}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">{displayPlatform}</span>
         {sizeHint && <span className="text-xs text-muted-foreground">{sizeHint}</span>}
@@ -328,7 +331,7 @@ export function RenderBlockContent({
 
     const bodyStyle: React.CSSProperties = {
       fontSize: 15,
-      color: 'rgba(255,255,255,0.72)',
+      color: 'var(--text2)',
       lineHeight: 1.75,
       whiteSpace: 'pre-wrap',
       margin: 0,
@@ -345,7 +348,7 @@ export function RenderBlockContent({
                 <h3 key={i} style={{
                   ...cardTitle,
 
-                  color: 'rgba(255,255,255,0.92)',
+                  color: 'var(--text)',
                   marginTop: 16,
                   marginBottom: 10,
                 }}>{p.replace(/^#\s*/, "")}</h3>
@@ -382,12 +385,12 @@ export function RenderBlockContent({
       const subs: string[] = Array.isArray(subBlocks) ? subBlocks : [];
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <p style={{ ...bodyStyle, color: 'rgba(255,255,255,0.88)', fontWeight: 500 }}><MentionText text={parentLabel} /></p>
+          <p style={{ ...bodyStyle, color: 'var(--text)', fontWeight: 500 }}><MentionText text={parentLabel} /></p>
           {subs.length > 0 && (
             <div style={{ marginLeft: 22, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {subs.map((s, si) => (
                 <p key={si} style={bodyStyle}>
-                  <span style={{ color: 'rgba(255,255,255,0.35)', marginRight: 6 }}>↳</span>{s}
+                  <span style={{ color: 'var(--text2)', marginRight: 6 }}>↳</span>{s}
                 </p>
               ))}
             </div>
@@ -435,22 +438,22 @@ export function RenderBlockContent({
     return (
       <div style={{
         position: 'relative',
-        background: 'rgba(0,0,0,0.35)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderLeft: '3px solid rgba(139,69,19,0.50)',
+        background: 'var(--recess)',
+        border: '1px solid var(--line)',
+        borderLeft: '3px solid color-mix(in srgb, var(--action) 50%, transparent)',
         borderRadius: 8,
         padding: '14px 16px',
       }}>
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Figtree' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'Figtree' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
         <pre style={{
           fontFamily: "'Courier New', monospace",
           fontSize: 13,
-          color: 'rgba(255,255,255,0.88)',
+          color: 'var(--text)',
           lineHeight: 1.65,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
@@ -472,25 +475,25 @@ export function RenderBlockContent({
     return (
       <div style={{
         position: 'relative',
-        background: 'rgba(0,0,0,0.35)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderLeft: '3px solid rgba(59,130,246,0.50)',
+        background: 'var(--recess)',
+        border: '1px solid var(--line)',
+        borderLeft: '3px solid color-mix(in srgb, var(--cat-data) 50%, transparent)',
         borderRadius: 8,
         padding: '14px 16px',
       }}>
         {lang && (
-          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 8 }}>{lang}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', display: 'block', marginBottom: 8 }}>{lang}</span>
         )}
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.07)', color: copied ? '#22C55E' : 'rgba(255,255,255,0.50)', cursor: 'pointer', fontFamily: 'Figtree' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'Figtree' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
         <pre style={{
           fontFamily: "'Courier New', monospace",
           fontSize: 13,
-          color: 'rgba(255,255,255,0.88)',
+          color: 'var(--text)',
           lineHeight: 1.65,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
@@ -509,13 +512,13 @@ export function RenderBlockContent({
     const bText = sideB.content ?? sideB.text ?? (typeof sideB === 'string' ? sideB : null) ?? "";
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>A</div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
+        <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>A</div>
+          <p style={{ fontSize: 13, color: 'var(--text2)', whiteSpace: 'pre-wrap', margin: 0 }}>{aText}</p>
         </div>
-        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', marginBottom: 8 }}>B</div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
+        <div style={{ background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text2)', marginBottom: 8 }}>B</div>
+          <p style={{ fontSize: 13, color: 'var(--text2)', whiteSpace: 'pre-wrap', margin: 0 }}>{bText}</p>
         </div>
       </div>
     );
@@ -531,13 +534,13 @@ export function RenderBlockContent({
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 14, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, textDecoration: 'none' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 14, background: 'var(--recess)', border: '1px solid var(--line)', borderRadius: 8, textDecoration: 'none' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <ExternalLink style={{ width: 14, height: 14, color: '#1F7A6D', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: '#1F7A6D', wordBreak: 'break-all' }}>{url}</span>
+          <ExternalLink style={{ width: 14, height: 14, color: 'var(--evidence)', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: 'var(--evidence)', wordBreak: 'break-all' }}>{url}</span>
         </div>
-        {description && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.50)', margin: 0 }}>{description}</p>}
+        {description && <p style={{ fontSize: 12, color: 'var(--text2)', margin: 0 }}>{description}</p>}
       </a>
     );
   }
@@ -560,7 +563,7 @@ export function RenderBlockContent({
                 width: '100%',
                 maxHeight: 400,
                 borderRadius: 8,
-                background: 'rgba(0,0,0,0.40)',
+                background: 'var(--recess)',
                 display: 'block',
               }}
             />
@@ -574,7 +577,7 @@ export function RenderBlockContent({
                 objectFit: 'contain',
                 borderRadius: 8,
                 display: 'block',
-                background: 'rgba(0,0,0,0.20)',
+                background: 'var(--recess)',
               }}
             />
           )
@@ -584,7 +587,7 @@ export function RenderBlockContent({
         {imageDescription && (
           <p style={{
             fontSize: 12,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'var(--text2)',
             fontStyle: 'italic',
             marginTop: 6, marginBottom: 0,
             lineHeight: 1.5,
@@ -623,7 +626,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
   const highlightVars = (text: string) => {
     return text.replace(
       /\{\{(\w+)\}\}/g,
-      '<mark style="background:rgba(31,122,109,0.20);color:#1F7A6D;border-radius:3px;padding:1px 4px">{{$1}}</mark>'
+      '<mark style="background:color-mix(in srgb, var(--evidence) 20%, transparent);color:var(--evidence);border-radius:3px;padding:1px 4px">{{$1}}</mark>'
     );
   };
 
@@ -634,9 +637,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
           <span style={{
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
             fontWeight: 700, textTransform: 'uppercase',
-            background: 'rgba(139,69,19,0.15)',
-            border: '1px solid rgba(139,69,19,0.30)',
-            color: '#8B4513',
+            background: 'color-mix(in srgb, var(--action) 15%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
+            color: 'var(--action)',
           }}>
             {block.prompt_role}
           </span>
@@ -644,9 +647,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         {block.prompt_model && (
           <span style={{
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
-            background: 'rgba(255, 255, 255, 0.14)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.60)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
+            color: 'var(--text2)',
           }}>
             {block.prompt_model}
           </span>
@@ -656,13 +659,13 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
       {variables.length > 0 && (
         <div style={{
           padding: '10px 12px', marginBottom: 12,
-          background: 'rgba(31,122,109,0.05)',
-          border: '1px solid rgba(31,122,109,0.15)',
+          background: 'color-mix(in srgb, var(--evidence) 5%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--evidence) 15%, transparent)',
           borderRadius: 8,
         }}>
           <div style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#1F7A6D', marginBottom: 8,
+            letterSpacing: '0.10em', color: 'var(--evidence)', marginBottom: 8,
           }}>
             Fill in variables
           </div>
@@ -670,7 +673,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
             {variables.map((v: { name: string; description: string }) => (
               <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <code style={{
-                  fontSize: 12, color: '#1F7A6D', flexShrink: 0,
+                  fontSize: 12, color: 'var(--evidence)', flexShrink: 0,
                   fontFamily: 'Courier New, monospace',
                 }}>
                   {`{{${v.name}}}`}
@@ -680,10 +683,10 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
                   onChange={e => setFilled(f => ({ ...f, [v.name]: e.target.value }))}
                   placeholder={v.description || `Enter ${v.name}`}
                   style={{
-                    flex: 1, background: 'rgba(255, 255, 255, 0.12)',
-                    border: '1px solid rgba(31,122,109,0.25)',
+                    flex: 1, background: 'var(--recess)',
+                    border: '1px solid color-mix(in srgb, var(--evidence) 25%, transparent)',
                     borderRadius: 6, padding: '4px 8px', fontSize: 12,
-                    color: '#fff', outline: 'none',
+                    color: 'var(--text)', outline: 'none',
                   }} />
               </div>
             ))}
@@ -695,10 +698,10 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         <div
           dangerouslySetInnerHTML={{ __html: highlightVars(getFilledPrompt()) }}
           style={{
-            background: 'rgba(0,0,0,0.35)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '14px',
-            fontSize: 13, color: 'rgba(255,255,255,0.85)',
+            fontSize: 13, color: 'var(--text)',
             fontFamily: 'Courier New, monospace',
             lineHeight: 1.7, whiteSpace: 'pre-wrap',
             minHeight: 80,
@@ -706,9 +709,9 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         <button onClick={handleCopy} style={{
           position: 'absolute', top: 10, right: 10,
           padding: '3px 10px', borderRadius: 6, fontSize: 11,
-          background: copied ? 'rgba(34,197,94,0.20)' : 'rgba(255,255,255,0.08)',
-          border: `1px solid ${copied ? 'rgba(34,197,94,0.40)' : 'rgba(255,255,255,0.15)'}`,
-          color: copied ? '#22C55E' : 'rgba(255,255,255,0.60)',
+          background: copied ? 'color-mix(in srgb, var(--cat-configuration) 20%, transparent)' : 'var(--recess)',
+          border: `1px solid ${copied ? 'color-mix(in srgb, var(--cat-configuration) 40%, transparent)' : 'var(--recess)'}`,
+          color: copied ? 'var(--cat-configuration)' : 'var(--text2)',
           cursor: 'pointer', transition: 'all 0.15s',
         }}>
           {copied ? '✓ Copied' : 'Copy'}
@@ -719,16 +722,16 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
         <div style={{ marginTop: 12 }}>
           <div style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.28)',
+            letterSpacing: '0.10em', color: 'var(--text2)',
             marginBottom: 8,
           }}>
             Example output
           </div>
           <div style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.14)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '10px 12px',
-            fontSize: 13, color: 'rgba(255,255,255,0.55)',
+            fontSize: 13, color: 'var(--text2)',
             lineHeight: 1.65, whiteSpace: 'pre-wrap',
           }}>
             {block.prompt_example_output}
@@ -744,8 +747,8 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
 const WorkflowViewer = ({ block }: { block: BlockRow }) => {
   const steps = block.workflow_steps ?? [];
   const STEP_COLORS: Record<string, string> = {
-    manual: '#9CA3AF', ai: '#1F7A6D',
-    automated: '#3B82F6', decision: '#F59E0B',
+    manual: 'var(--text2)', ai: 'var(--evidence)',
+    automated: 'var(--cat-data)', decision: 'var(--cat-agents)',
   };
   const STEP_EMOJIS: Record<string, string> = {
     manual: '👤', ai: '🤖', automated: '⚡', decision: '◆',
@@ -756,14 +759,14 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
       {block.workflow_trigger && (
         <div style={{
           padding: '10px 14px', marginBottom: 16,
-          background: 'rgba(139,69,19,0.08)',
-          border: '1px solid rgba(139,69,19,0.20)',
+          background: 'color-mix(in srgb, var(--action) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--action) 20%, transparent)',
           borderRadius: 8, fontSize: 13,
-          color: 'rgba(255,255,255,0.75)',
+          color: 'var(--text2)',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#8B4513',
+            letterSpacing: '0.10em', color: 'var(--action)',
             display: 'block', marginBottom: 4,
           }}>
             Trigger
@@ -774,7 +777,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {steps.map((step: any, i: number) => {
-          const color = STEP_COLORS[step.stepType] ?? '#9CA3AF';
+          const color = STEP_COLORS[step.stepType] ?? 'var(--text2)';
           const emoji = STEP_EMOJIS[step.stepType] ?? '●';
           const isDecision = step.stepType === 'decision';
           return (
@@ -811,7 +814,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                     <span style={{ fontSize: 13 }}>{emoji}</span>
                     <span style={{
                       fontSize: 14, fontWeight: 600,
-                      color: 'rgba(255,255,255,0.90)',
+                      color: 'var(--text)',
                     }}>
                       {step.title}
                     </span>
@@ -819,8 +822,8 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                       <span style={{
                         fontSize: 11, padding: '1px 8px',
                         borderRadius: 9999,
-                        background: 'rgba(255, 255, 255, 0.14)',
-                        color: 'rgba(255,255,255,0.40)',
+                        background: 'var(--recess)',
+                        color: 'var(--text2)',
                       }}>
                         {step.tool}
                       </span>
@@ -828,7 +831,7 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                   </div>
                   {step.description && (
                     <p style={{
-                      fontSize: 13, color: 'rgba(255,255,255,0.55)',
+                      fontSize: 13, color: 'var(--text2)',
                       lineHeight: 1.6, margin: '6px 0 0 22px',
                     }}>
                       {step.description}
@@ -841,9 +844,9 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                       {step.decisionYes && (
                         <div style={{
                           padding: '4px 10px', borderRadius: 6, fontSize: 12,
-                          background: 'rgba(34,197,94,0.10)',
-                          border: '1px solid rgba(34,197,94,0.25)',
-                          color: '#22C55E',
+                          background: 'color-mix(in srgb, var(--cat-configuration) 10%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--cat-configuration) 25%, transparent)',
+                          color: 'var(--cat-configuration)',
                         }}>
                           ✓ {step.decisionYes}
                         </div>
@@ -851,9 +854,9 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                       {step.decisionNo && (
                         <div style={{
                           padding: '4px 10px', borderRadius: 6, fontSize: 12,
-                          background: 'rgba(239,68,68,0.10)',
-                          border: '1px solid rgba(239,68,68,0.25)',
-                          color: '#EF4444',
+                          background: 'color-mix(in srgb, var(--cat-breakage) 10%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--cat-breakage) 25%, transparent)',
+                          color: 'var(--cat-breakage)',
                         }}>
                           ✗ {step.decisionNo}
                         </div>
@@ -870,14 +873,14 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
       {block.workflow_output && (
         <div style={{
           padding: '10px 14px', marginTop: 8,
-          background: 'rgba(34,197,94,0.08)',
-          border: '1px solid rgba(34,197,94,0.20)',
+          background: 'color-mix(in srgb, var(--cat-configuration) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--cat-configuration) 20%, transparent)',
           borderRadius: 8, fontSize: 13,
-          color: 'rgba(255,255,255,0.75)',
+          color: 'var(--text2)',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#22C55E',
+            letterSpacing: '0.10em', color: 'var(--cat-configuration)',
             display: 'block', marginBottom: 4,
           }}>
             Output
@@ -902,9 +905,9 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
           <span style={{
             padding: '2px 10px', borderRadius: 9999, fontSize: 11,
             fontWeight: 700, textTransform: 'uppercase',
-            background: 'rgba(59,130,246,0.15)',
-            border: '1px solid rgba(59,130,246,0.30)',
-            color: '#3B82F6',
+            background: 'color-mix(in srgb, var(--cat-data) 15%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--cat-data) 30%, transparent)',
+            color: 'var(--cat-data)',
           }}>
             {block.code_language}
           </span>
@@ -914,15 +917,15 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
       {deps.length > 0 && (
         <div style={{
           padding: '8px 10px', marginBottom: 10,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 6, fontSize: 12,
-          color: 'rgba(255,255,255,0.50)',
+          color: 'var(--text2)',
           fontFamily: 'Courier New, monospace',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+            letterSpacing: '0.10em', color: 'var(--text2)',
             fontFamily: 'Figtree',
           }}>
             Install
@@ -933,10 +936,10 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
 
       <div style={{ position: 'relative' }}>
         <pre style={{
-          background: 'rgba(0,0,0,0.45)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '14px',
-          fontSize: 12, color: '#A5F3FC',
+          fontSize: 12, color: 'var(--cat-data)',
           fontFamily: 'Courier New, monospace',
           lineHeight: 1.6, overflowX: 'auto',
           whiteSpace: 'pre', margin: 0,
@@ -950,9 +953,9 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
         }} style={{
           position: 'absolute', top: 10, right: 10,
           padding: '3px 10px', borderRadius: 6, fontSize: 11,
-          background: copied ? 'rgba(34,197,94,0.20)' : 'rgba(255,255,255,0.08)',
-          border: `1px solid ${copied ? 'rgba(34,197,94,0.40)' : 'rgba(255,255,255,0.15)'}`,
-          color: copied ? '#22C55E' : 'rgba(255,255,255,0.60)',
+          background: copied ? 'color-mix(in srgb, var(--cat-configuration) 20%, transparent)' : 'var(--recess)',
+          border: `1px solid ${copied ? 'color-mix(in srgb, var(--cat-configuration) 40%, transparent)' : 'var(--recess)'}`,
+          color: copied ? 'var(--cat-configuration)' : 'var(--text2)',
           cursor: 'pointer',
         }}>
           {copied ? '✓ Copied' : 'Copy'}
@@ -962,11 +965,11 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
       {block.code_run_instructions && (
         <div style={{
           marginTop: 10, fontSize: 13,
-          color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+          color: 'var(--text2)', lineHeight: 1.6,
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: 'rgba(255,255,255,0.28)',
+            letterSpacing: '0.10em', color: 'var(--text2)',
             display: 'block', marginBottom: 4,
           }}>Run</span>
           {block.code_run_instructions}
@@ -976,10 +979,10 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
       {block.code_example_output && (
         <pre style={{
           marginTop: 10,
-          background: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 6, padding: '8px 12px',
-          fontSize: 11, color: 'rgba(255,255,255,0.45)',
+          fontSize: 11, color: 'var(--text2)',
           fontFamily: 'Courier New, monospace',
           lineHeight: 1.5, overflowX: 'auto',
           whiteSpace: 'pre',
@@ -999,14 +1002,14 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
       <div style={{ marginBottom: 10 }}>
         <div style={{
           fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.10em', color: '#EF4444', marginBottom: 6,
+          letterSpacing: '0.10em', color: 'var(--cat-breakage)', marginBottom: 6,
         }}>Before</div>
         <div style={{
           padding: '10px 12px',
-          background: 'rgba(239,68,68,0.05)',
-          border: '1px solid rgba(239,68,68,0.15)',
+          background: 'color-mix(in srgb, var(--cat-breakage) 5%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--cat-breakage) 15%, transparent)',
           borderRadius: 8, fontSize: 13,
-          color: 'rgba(255,255,255,0.70)',
+          color: 'var(--text2)',
           lineHeight: 1.6, whiteSpace: 'pre-wrap',
         }}>
           {block.result_before}
@@ -1017,15 +1020,15 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
       <div style={{ marginBottom: 10 }}>
         <div style={{
           fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.10em', color: '#22C55E', marginBottom: 6,
+          letterSpacing: '0.10em', color: 'var(--cat-configuration)', marginBottom: 6,
         }}>Output</div>
         <div style={{ position: 'relative' }}>
           <div style={{
             padding: '10px 12px',
-            background: 'rgba(34,197,94,0.05)',
-            border: '1px solid rgba(34,197,94,0.15)',
+            background: 'color-mix(in srgb, var(--cat-configuration) 5%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--cat-configuration) 15%, transparent)',
             borderRadius: 8, fontSize: 13,
-            color: 'rgba(255,255,255,0.85)',
+            color: 'var(--text)',
             lineHeight: 1.65, whiteSpace: 'pre-wrap',
           }}>
             {block.result_after}
@@ -1034,9 +1037,9 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
             style={{
               position: 'absolute', top: 8, right: 8,
               padding: '2px 8px', borderRadius: 6, fontSize: 10,
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+              background: 'var(--recess)',
+              border: '1px solid var(--line)',
+              color: 'var(--text2)', cursor: 'pointer',
             }}>Copy</button>
         </div>
       </div>
@@ -1044,10 +1047,10 @@ const ResultViewer = ({ block }: { block: BlockRow }) => (
     {block.result_verdict && (
       <div style={{
         padding: '10px 12px',
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.14)',
+        background: 'var(--recess)',
+        border: '1px solid var(--line)',
         borderRadius: 8, fontSize: 13, fontStyle: 'italic',
-        color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+        color: 'var(--text2)', lineHeight: 1.6,
       }}>
         {block.result_verdict}
       </div>
@@ -1074,17 +1077,17 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{
         fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.08em', color: 'rgba(255,255,255,0.50)',
+        letterSpacing: '0.08em', color: 'var(--text2)',
         marginBottom: 8, textAlign: 'center',
       }}>
         {label}
       </div>
       <div style={{
         padding: '10px 12px',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--recess)',
+        border: '1px solid var(--line)',
         borderRadius: 8, fontSize: 13,
-        color: 'rgba(255,255,255,0.75)',
+        color: 'var(--text2)',
         lineHeight: 1.65, whiteSpace: 'pre-wrap',
         fontFamily: 'Courier New, monospace',
         minHeight: 80,
@@ -1098,7 +1101,7 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
     <div>
       {block.comparison_axis && (
         <div style={{
-          fontSize: 11, color: 'rgba(255,255,255,0.35)',
+          fontSize: 11, color: 'var(--text2)',
           textAlign: 'center', marginBottom: 12,
           fontStyle: 'italic',
         }}>
@@ -1111,7 +1114,7 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
           content={contentA}
         />
         <div style={{
-          color: 'rgba(255,255,255,0.20)',
+          color: 'var(--text2)',
           fontSize: 20, paddingTop: 28, flexShrink: 0,
         }}>↔</div>
         <SideCard
@@ -1122,14 +1125,14 @@ const ComparisonViewer = ({ block }: { block: BlockRow }) => {
       {block.comparison_verdict && (
         <div style={{
           marginTop: 12, padding: '10px 14px',
-          background: 'rgba(245,158,11,0.06)',
-          border: '1px solid rgba(245,158,11,0.20)',
+          background: 'var(--cat-evidence-fill)',
+          border: '1px solid color-mix(in srgb, var(--cat-evidence) 30%, transparent)',
           borderRadius: 8, fontSize: 13, fontStyle: 'italic',
-          color: 'rgba(255,255,255,0.65)',
+          color: 'var(--text2)',
         }}>
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.10em', color: '#F59E0B',
+            letterSpacing: '0.10em', color: 'var(--cat-evidence)',
             display: 'block', marginBottom: 4, fontStyle: 'normal',
           }}>Verdict</span>
           {block.comparison_verdict}
@@ -1152,13 +1155,13 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
       style={{ textDecoration: 'none', display: 'block' }}>
       <div style={{
         padding: '14px 16px',
-        background: 'rgba(139,92,246,0.06)',
-        border: '1px solid rgba(139,92,246,0.20)',
+        background: 'color-mix(in srgb, var(--cat-agents) 6%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--cat-agents) 20%, transparent)',
         borderRadius: 10, cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
-        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.40)'}
-        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.20)'}
+        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'color-mix(in srgb, var(--cat-agents) 40%, transparent)'}
+        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'color-mix(in srgb, var(--cat-agents) 20%, transparent)'}
       >
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6,
@@ -1169,14 +1172,14 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontSize: 14, fontWeight: 600,
-              color: 'rgba(255,255,255,0.90)',
+              color: 'var(--text)',
               whiteSpace: 'nowrap', overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}>
               {block.resource_title || block.text_content}
             </div>
             <div style={{
-              fontSize: 11, color: 'rgba(255,255,255,0.35)',
+              fontSize: 11, color: 'var(--text2)',
               whiteSpace: 'nowrap', overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}>
@@ -1187,9 +1190,9 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
             <span style={{
               fontSize: 10, fontWeight: 700,
               padding: '2px 6px', borderRadius: 4,
-              background: 'rgba(245,158,11,0.15)',
-              border: '1px solid rgba(245,158,11,0.30)',
-              color: '#F59E0B',
+              background: 'var(--cat-artefact-fill)',
+              border: '1px solid color-mix(in srgb, var(--cat-artefact) 30%, transparent)',
+              color: 'var(--cat-artefact)',
             }}>
               £ Paid
             </span>
@@ -1197,7 +1200,7 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
         </div>
         {block.resource_annotation && (
           <p style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.50)',
+            fontSize: 13, color: 'var(--text2)',
             lineHeight: 1.6, margin: '0 0 0 30px',
           }}>
             {block.resource_annotation}
@@ -1231,7 +1234,7 @@ function TutorialCarousel({ images }: { images: string[] }) {
               style={{
                 width: i === current ? 20 : 6,
                 height: 6, borderRadius: 3,
-                background: i === current ? '#8B4513' : 'rgba(255,255,255,0.30)',
+                background: i === current ? 'var(--action)' : 'var(--recess)',
                 border: 'none', cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -1246,10 +1249,10 @@ function TutorialCarousel({ images }: { images: string[] }) {
             style={{
               position: 'absolute', left: 8,
               top: '50%', transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.50)',
-              border: 'none', borderRadius: '50%',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
+              border: 'none', borderRadius: 'var(--r-full)',
               width: 28, height: 28,
-              color: '#fff', cursor: 'pointer',
+              color: 'var(--chrome-hi)', cursor: 'pointer',
               fontSize: 12,
             }}
           >
@@ -1260,10 +1263,10 @@ function TutorialCarousel({ images }: { images: string[] }) {
             style={{
               position: 'absolute', right: 8,
               top: '50%', transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.50)',
-              border: 'none', borderRadius: '50%',
+              background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
+              border: 'none', borderRadius: 'var(--r-full)',
               width: 28, height: 28,
-              color: '#fff', cursor: 'pointer',
+              color: 'var(--chrome-hi)', cursor: 'pointer',
               fontSize: 12,
             }}
           >
@@ -1286,18 +1289,18 @@ function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
 
     return (
       <div style={{
-        border: '1px solid rgba(139,69,19,0.18)',
-        borderLeft: '3px solid rgba(139,69,19,0.45)',
+        border: '1px solid color-mix(in srgb, var(--action) 18%, transparent)',
+        borderLeft: '3px solid color-mix(in srgb, var(--action) 45%, transparent)',
         borderRadius: 8,
         overflow: 'hidden',
-        background: 'rgba(139,69,19,0.03)',
+        background: 'color-mix(in srgb, var(--action) 3%, transparent)',
       }}>
         {/* Media */}
         {mediaUrl && mediaType === 'video' && (
           <video
             src={mediaUrl}
             controls playsInline
-            style={{ width: '100%', maxHeight: 300, display: 'block', background: 'rgba(0,0,0,0.40)' }}
+            style={{ width: '100%', maxHeight: 300, display: 'block', background: 'var(--recess)' }}
           />
         )}
         {mediaUrl && mediaType === 'voicenote' && (
@@ -1318,7 +1321,7 @@ function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
           <div style={{ padding: '14px 16px' }}>
             <p style={{
               fontSize: 14, lineHeight: 1.70,
-              color: 'rgba(255,255,255,0.72)',
+              color: 'var(--text2)',
               margin: 0, fontFamily: 'Figtree, sans-serif',
             }}>
               {tutorialText}
@@ -1448,7 +1451,7 @@ export function ContentBlockViewer({
     if (!useInstructions) return null;
     return (
       <div>
-        <div className="border border-[#1E1E2A] rounded-xl p-5 bg-[#111118]">
+        <div className="border border-[var(--recess)] rounded-xl p-5 bg-[var(--bg)]">
           <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-[inherit] leading-relaxed">{useInstructions}</pre>
         </div>
       </div>
@@ -1507,13 +1510,13 @@ export function ContentBlockViewer({
                   {/* Hairline above */}
                   <div style={{
                     height: 1,
-                    background: 'rgba(255,255,255,0.07)',
+                    background: 'var(--recess)',
                     marginBottom: 14,
                   }} />
                   <h2 style={{
                     ...cardTitle,
 
-                    color: 'rgba(255,255,255,0.92)',
+                    color: 'var(--text)',
                     margin: 0,
                   }}>
                     {block.text_content}
@@ -1546,12 +1549,12 @@ export function ContentBlockViewer({
                         <div style={{
                           width: 24, height: 24,
                           borderRadius: '50%',
-                          background: 'rgba(139,69,19,0.12)',
-                          border: '1px solid rgba(139,69,19,0.28)',
+                          background: 'color-mix(in srgb, var(--action) 12%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--action) 28%, transparent)',
                           display: 'flex', alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: 11, fontWeight: 700,
-                          color: '#8B4513', flexShrink: 0,
+                          color: 'var(--action)', flexShrink: 0,
                         }}>
                           {index + 1}
                         </div>
@@ -1560,7 +1563,7 @@ export function ContentBlockViewer({
                         <div style={{
                           width: 6, height: 6,
                           borderRadius: '50%',
-                          background: 'rgba(255,255,255,0.20)',
+                          background: 'var(--recess)',
                           flexShrink: 0,
                         }} />
                       )}
@@ -1574,11 +1577,11 @@ export function ContentBlockViewer({
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.10em',
-                        color: 'rgba(255,255,255,0.35)',
+                        color: 'var(--text2)',
                         padding: '2px 8px',
                         borderRadius: 4,
-                        background: 'rgba(255, 255, 255, 0.12)',
-                        border: '1px solid rgba(255,255,255,0.07)',
+                        background: 'var(--recess)',
+                        border: '1px solid var(--line)',
                       }}>
                         {typeEmoji} {typeLabel}
                       </span>
@@ -1586,7 +1589,7 @@ export function ContentBlockViewer({
                       {/* Line */}
                       <div style={{
                         flex: 1, height: 1,
-                        background: 'rgba(255,255,255,0.05)',
+                        background: 'var(--recess)',
                       }} />
                     </div>
                   );
@@ -1596,7 +1599,7 @@ export function ContentBlockViewer({
                   position: 'relative',
                   paddingLeft: isPreview ? 14 : 0,
                   borderLeft: isPreview
-                    ? '2px solid rgba(31,122,109,0.45)'
+                    ? '2px solid color-mix(in srgb, var(--evidence) 45%, transparent)'
                     : 'none',
                 }}>
                   <div style={{ position: 'relative' }}>
@@ -1605,11 +1608,11 @@ export function ContentBlockViewer({
                     <div className="flex gap-1 pb-2">
                       <button type="button" onClick={() => setActiveTab((p) => ({ ...p, [block.id]: "A" }))}
                         className={`text-xs px-3 py-1 rounded-md transition-colors ${currentTab === "A" ? "font-medium border-b-2" : "text-muted-foreground hover:text-foreground"}`}
-                        style={currentTab === "A" ? { color: "#8B4513", borderColor: "#8B4513" } : {}}>A</button>
+                        style={currentTab === "A" ? { color: "var(--action)", borderColor: "var(--action)" } : {}}>A</button>
                       {blockVariations.map((v) => (
                         <button key={v.id} type="button" onClick={() => setActiveTab((p) => ({ ...p, [block.id]: v.variation_label }))}
                           className={`text-xs px-3 py-1 rounded-md transition-colors ${currentTab === v.variation_label ? "font-medium border-b-2" : "text-muted-foreground hover:text-foreground"}`}
-                          style={currentTab === v.variation_label ? { color: "#8B4513", borderColor: "#8B4513" } : {}}>{v.variation_label}</button>
+                          style={currentTab === v.variation_label ? { color: "var(--action)", borderColor: "var(--action)" } : {}}>{v.variation_label}</button>
                       ))}
                     </div>
                   )}
@@ -1629,7 +1632,7 @@ export function ContentBlockViewer({
                             <h3 style={{
                               ...cardTitle,
 
-                              color: 'rgba(255,255,255,0.92)',
+                              color: 'var(--text)',
                               margin: '0 0 14px 0',
                             }}>
                               {block.subheading}
@@ -1642,7 +1645,7 @@ export function ContentBlockViewer({
                               <div style={{
                                 fontSize: 13,
                                 fontWeight: 600,
-                                color: 'rgba(255,255,255,0.45)',
+                                color: 'var(--text2)',
                                 marginBottom: 12,
                                 fontFamily: 'Figtree, sans-serif',
                               }}>
@@ -1670,7 +1673,7 @@ export function ContentBlockViewer({
                       <div className="mt-3 px-1">
                         <a href={block.external_file_url} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors hover:bg-accent/60"
-                          style={{ borderColor: "#1F7A6D", color: "#1F7A6D" }}>
+                          style={{ borderColor: "var(--evidence)", color: "var(--evidence)" }}>
                           <Download className="h-3.5 w-3.5" />Download from {detectHostName(block.external_file_url)} →
                         </a>
                       </div>
@@ -1680,7 +1683,7 @@ export function ContentBlockViewer({
                     {isUnblurred && block.github_url && block.block_type !== "github" && (
                       <div className="mt-2 px-1">
                         <a href={block.github_url} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline" style={{ color: "#1F7A6D" }}>
+                          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:underline" style={{ color: "var(--evidence)" }}>
                           🐙 View on GitHub →
                         </a>
                       </div>
@@ -1689,7 +1692,7 @@ export function ContentBlockViewer({
                     {/* View button overlay — not shown for preview blocks, blogs, or GitHub blocks */}
                     {!isUnblurred && !isPreview && !isBlog && !isGitHub && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Button onClick={() => handleViewClick(block.id)} className="gap-2 rounded-full px-5 h-8 text-[13px] font-medium text-white bg-secondary hover:bg-secondary/90">
+                        <Button onClick={() => handleViewClick(block.id)} className="gap-2 rounded-full px-5 h-8 text-[13px] font-medium text-foreground bg-secondary hover:bg-secondary/90">
                           <Eye className="h-3.5 w-3.5" />Reveal
                         </Button>
                       </div>
@@ -1744,7 +1747,7 @@ export function ContentBlockViewer({
                   id={`block-${item.groupId}`}
                   style={{
                     margin: '24px 0',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    border: '1px solid var(--line)',
                     borderRadius: 12,
                     overflow: 'hidden',
                   }}
@@ -1752,14 +1755,14 @@ export function ContentBlockViewer({
                   {/* Group heading */}
                   <div style={{
                     padding: '12px 16px',
-                    background: 'rgba(255,255,255,0.02)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    background: 'var(--recess)',
+                    borderBottom: '1px solid var(--line)',
                   }}>
                     <div style={{
                       fontSize: 10, fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.12em',
-                      color: 'rgba(255,255,255,0.25)',
+                      color: 'var(--text2)',
                       marginBottom: 3,
                     }}>
                       ▤ Group
@@ -1767,7 +1770,7 @@ export function ContentBlockViewer({
                     <h3 style={{
                       ...cardTitle,
 
-                      color: 'rgba(255,255,255,0.88)',
+                      color: 'var(--text)',
                       margin: 0,
                     }}>
                       {item.title}
@@ -1795,12 +1798,12 @@ export function ContentBlockViewer({
                         }}>
                           <div style={{
                             width: 18, height: 18, borderRadius: '50%',
-                            background: 'rgba(255, 255, 255, 0.14)',
-                            border: '1px solid rgba(255,255,255,0.12)',
+                            background: 'var(--recess)',
+                            border: '1px solid var(--line)',
                             display: 'flex', alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: 9, fontWeight: 700,
-                            color: 'rgba(255,255,255,0.35)', flexShrink: 0,
+                            color: 'var(--text2)', flexShrink: 0,
                           }}>
                             {bi + 1}
                           </div>
@@ -1808,7 +1811,7 @@ export function ContentBlockViewer({
                             fontSize: 9, fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.10em',
-                            color: 'rgba(255,255,255,0.22)',
+                            color: 'var(--text2)',
                           }}>
                             {BLOCK_ICONS[block.block_type] ?? '◆'}{' '}
                             {block.block_type?.replace(/_/g, ' ')}

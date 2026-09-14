@@ -154,7 +154,7 @@ export function ResultsCarouselViewer({
               height: index === currentIndex ? 9 : 6,
               borderRadius: "50%",
               backgroundColor:
-                index === currentIndex ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.30)",
+                index === currentIndex ? "var(--text)" : "var(--recess)",
               border: "none",
               padding: 0,
               cursor: "pointer",
@@ -167,7 +167,7 @@ export function ResultsCarouselViewer({
             style={{
               fontSize: 11,
               fontFamily: "Figtree, sans-serif",
-              color: "rgba(255,255,255,0.40)",
+              color: "var(--text2)",
               marginLeft: 2,
             }}
           >
@@ -196,21 +196,21 @@ export function ResultsCarouselViewer({
         style={{ height: 32, padding: "0 0 8px 0" }}
       >
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.92)" }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
             Results
           </span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: "rgba(255,255,255,0.40)" }}>
+          <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text2)" }}>
             {currentIndex + 1} of {slides.length}
           </span>
         </div>
         <button
           type="button"
           onClick={onSaveAll}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors hover:bg-white/10"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors hover:bg-muted"
           style={{ background: "transparent", border: "none", cursor: "pointer" }}
         >
-          <Bookmark size={12} style={{ color: "rgba(255,255,255,0.70)" }} />
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.70)" }}>Save all to Library</span>
+          <Bookmark size={12} style={{ color: "var(--text2)" }} />
+          <span style={{ fontSize: 12, color: "var(--text2)" }}>Save all to Library</span>
         </button>
       </div>
 
@@ -219,7 +219,7 @@ export function ResultsCarouselViewer({
         className="relative overflow-hidden"
         style={{
           height: viewerHeight,
-          backgroundColor: "rgba(0,0,0,0.30)",
+          backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           borderRadius: 12,
         }}
       >
@@ -261,20 +261,20 @@ export function ResultsCarouselViewer({
                 <button
                   type="button"
                   onClick={toggleMute}
-                  className="absolute bottom-3 right-3 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+                  className="absolute bottom-3 right-3 flex items-center justify-center rounded-full transition-colors hover:bg-muted"
                   style={{
                     width: 32,
                     height: 32,
-                    backgroundColor: "rgba(0,0,0,0.50)",
+                    backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                     border: "none",
                     cursor: "pointer",
                   }}
                   aria-label={isMuted ? "Unmute" : "Mute"}
                 >
                   {isMuted ? (
-                    <VolumeX size={16} style={{ color: "rgba(255,255,255,0.92)" }} />
+                    <VolumeX size={16} style={{ color: "var(--text)" }} />
                   ) : (
-                    <Volume2 size={16} style={{ color: "rgba(255,255,255,0.92)" }} />
+                    <Volume2 size={16} style={{ color: "var(--text)" }} />
                   )}
                 </button>
               </div>
@@ -285,7 +285,7 @@ export function ResultsCarouselViewer({
                 className="w-full h-full flex items-center justify-center text-center"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(46,196,182,0.04) 0%, transparent 100%)",
+                    "linear-gradient(180deg, color-mix(in srgb, var(--evidence) 4%, transparent) 0%, transparent 100%)",
                   padding: "32px 48px",
                 }}
               >
@@ -295,7 +295,7 @@ export function ResultsCarouselViewer({
                     fontWeight: 400,
                     fontStyle: "italic",
                     lineHeight: 1.6,
-                    color: "rgba(255,255,255,0.92)",
+                    color: "var(--text)",
                   }}
                 >
                   {currentSlide.text}
@@ -310,67 +310,67 @@ export function ResultsCarouselViewer({
           <button
             type="button"
             onClick={goToPrevious}
-            className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full transition-colors hover:bg-muted"
             style={{
               width: 40,
               height: 40,
-              backgroundColor: "rgba(0,0,0,0.50)",
+              backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               border: "none",
               cursor: "pointer",
             }}
             aria-label="Previous slide"
           >
-            <ChevronLeft size={20} style={{ color: "rgba(255,255,255,0.92)" }} />
+            <ChevronLeft size={20} style={{ color: "var(--text)" }} />
           </button>
         )}
         {currentIndex < slides.length - 1 && (
           <button
             type="button"
             onClick={goToNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full transition-colors hover:bg-muted"
             style={{
               width: 40,
               height: 40,
-              backgroundColor: "rgba(0,0,0,0.50)",
+              backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               border: "none",
               cursor: "pointer",
             }}
             aria-label="Next slide"
           >
-            <ChevronRight size={20} style={{ color: "rgba(255,255,255,0.92)" }} />
+            <ChevronRight size={20} style={{ color: "var(--text)" }} />
           </button>
         )}
 
         <button
           type="button"
           onClick={handleMenuClick}
-          className="absolute top-3 right-3 flex items-center justify-center rounded-full transition-colors hover:bg-white/20"
+          className="absolute top-3 right-3 flex items-center justify-center rounded-full transition-colors hover:bg-muted"
           style={{
             width: 28,
             height: 28,
-            backgroundColor: "rgba(0,0,0,0.50)",
+            backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
             border: "none",
             cursor: "pointer",
           }}
           aria-label="Slide options"
         >
-          <MoreHorizontal size={14} style={{ color: "rgba(255,255,255,0.92)" }} />
+          <MoreHorizontal size={14} style={{ color: "var(--text)" }} />
         </button>
 
         {currentSlide.commentCount > 0 && (
           <button
             type="button"
             onClick={() => onSlideComments(currentSlide.id)}
-            className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full transition-colors hover:bg-white/20"
+            className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full transition-colors hover:bg-muted"
             style={{
               padding: "4px 8px",
-              backgroundColor: "rgba(0,0,0,0.50)",
+              backgroundColor: "color-mix(in srgb, var(--porthole) 62%, transparent)",
               border: "none",
               cursor: "pointer",
             }}
             aria-label={`${currentSlide.commentCount} comments on this slide`}
           >
-            <MessageSquare size={12} style={{ color: "rgba(255,255,255,0.92)" }} />
+            <MessageSquare size={12} style={{ color: "var(--text)" }} />
             <span
               className="flex items-center justify-center rounded-full"
               style={{
@@ -378,8 +378,8 @@ export function ResultsCarouselViewer({
                 height: 14,
                 fontSize: 9,
                 fontWeight: 600,
-                color: "rgba(255,255,255,0.92)",
-                backgroundColor: "rgba(255,255,255,0.20)",
+                color: "var(--text)",
+                backgroundColor: "var(--recess)",
               }}
             >
               {currentSlide.commentCount}
@@ -409,7 +409,7 @@ export function ResultsCarouselViewer({
                 fontWeight: 400,
                 fontStyle: "italic",
                 lineHeight: 1.5,
-                color: "rgba(255,255,255,0.85)",
+                color: "var(--text)",
                 margin: 0,
               }}
             >
@@ -426,7 +426,7 @@ export function ResultsCarouselViewer({
                 border: "none",
                 background: "transparent",
                 fontSize: 14,
-                color: "rgba(255,255,255,0.60)",
+                color: "var(--text2)",
                 cursor: "pointer",
               }}
             >

@@ -20,13 +20,27 @@
    were already inert before the shell went. So BG-P17 moved no rule and edited
    no declaration; it only recorded where these came from.
 
-   THE FOUR RULES BELOW ARE STILL ON THE OLD COLOURS. Every colour here is a
-   hardcoded rgba(255,255,255,…) inherited from the shell, which only ever
-   rendered on a dark ground. They do not read <html data-theme> and so do not
-   change between Exhibition and Dusk. Repainting them onto tokens is BG-P29's
-   job — the rail's stylesheet already had that done in BG-P13, this file has
-   not — and deliberately not this prompt's, which is a deletion and must stay
-   bisectable.
+   BG-P28 REPAINTED THEM. The note below is what BG-P17 left here, kept because
+   it explains where these colours came from:
+
+     "THE FOUR RULES BELOW ARE STILL ON THE OLD COLOURS. Every colour here is a
+      hardcoded rgba(255,255,255,…) inherited from the shell, which only ever
+      rendered on a dark ground. They do not read <html data-theme> and so do
+      not change between Exhibition and Dusk. Repainting them onto tokens is
+      BG-P29's job — the rail's stylesheet already had that done in BG-P13,
+      this file has not — and deliberately not this prompt's, which is a
+      deletion and must stay bisectable."
+
+   The BG-P29 it names is not a surface prompt: BG-P28 is the last of those, and
+   this file's four consumers are all on its routes — the bounty upload notice,
+   the Explore rail, and the engagement bar and comment drawer on /content/:id.
+   Leaving them would have left the old brand on every one of them, which the
+   acceptance for this prompt rules out in as many words, and repointing an
+   extracted .ns-* rule at var(--token) is explicitly permitted here.
+
+   Only colour declarations changed. Every structural property — the layout,
+   the breakpoint behaviour, the !important overrides the mobile drawer needs —
+   is exactly as it was.
 ──────────────────────────────────────────────── */
 
 /* ── Back button ── */
@@ -36,16 +50,16 @@
   gap: 6px;
   padding: 12px 24px;
   font-size: 13px;
-  color: rgba(255,255,255,0.40);
+  color: var(--text2);
   background: none; border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid var(--line);
   cursor: pointer;
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   transition: color 0.15s;
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: rgba(255,255,255,0.85); }
+.ns-back-btn:hover { color: var(--text); }
 
 /* ── Section label (trending, categories etc) ── */
 .ns-section-label {
@@ -54,7 +68,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.35);
+  color: var(--text2);
   margin-bottom: 16px;
 }
 
@@ -74,7 +88,7 @@
     height: 85vh !important;
     max-width: 100% !important;
     border-left: none !important;
-    border-top: 0.5px solid rgba(255,255,255,0.10) !important;
+    border-top: 1px solid var(--line) !important;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     transform: translateY(0) !important;

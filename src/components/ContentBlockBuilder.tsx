@@ -502,7 +502,7 @@ const TextEditor = ({
           <div className="flex items-center justify-between mt-1">
             <span className={`text-xs ${len >= 450 ? "text-destructive" : "text-muted-foreground"}`}>{len} / {TEXT_MAX}</span>
           </div>
-          {atLimit && <p className="text-xs text-amber-600 mt-1">Limit reached. Add another text block to continue, or upload a file for longer content.</p>}
+          {atLimit && <p className="text-xs text-[var(--cat-artefact)] mt-1">Limit reached. Add another text block to continue, or upload a file for longer content.</p>}
         </>
       )}
     </div>
@@ -766,8 +766,8 @@ const MonospaceEditor = ({
         style={{
           position: "absolute", top: 8, right: 8,
           fontSize: 10, padding: "2px 8px", borderRadius: 6,
-          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
-          color: "rgba(255,255,255,0.60)", cursor: "pointer",
+          background: "var(--recess)", border: "1px solid var(--line)",
+          color: "var(--text2)", cursor: "pointer",
         }}
       >
         Copy
@@ -857,13 +857,13 @@ const ChipInput = ({ values, onChange, placeholder }: {
           <span key={v} style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '2px 8px', borderRadius: 9999, fontSize: 12,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)', color: '#fff',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)', color: 'var(--text)',
           }}>
             {v}
             <button type="button" onClick={() => onChange(values.filter(x => x !== v))}
               style={{ background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,0.40)', fontSize: 14, lineHeight: 1 }}>
+                color: 'var(--text2)', fontSize: 14, lineHeight: 1 }}>
               ×
             </button>
           </span>
@@ -874,16 +874,16 @@ const ChipInput = ({ values, onChange, placeholder }: {
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
           placeholder={placeholder ?? 'Type and press Enter'}
           style={{
-            flex: 1, background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            flex: 1, background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '6px 10px', fontSize: 13,
-            color: '#fff', outline: 'none',
+            color: 'var(--text)', outline: 'none',
           }} />
         <button type="button" onClick={add} style={{
           padding: '6px 12px', borderRadius: 8, fontSize: 12,
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
+          color: 'var(--text2)', cursor: 'pointer',
         }}>Add</button>
       </div>
     </div>
@@ -893,7 +893,7 @@ const ChipInput = ({ values, onChange, placeholder }: {
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
   <div style={{
     fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: '0.10em', color: 'rgba(255,255,255,0.30)',
+    letterSpacing: '0.10em', color: 'var(--text2)',
     marginBottom: 6, marginTop: 14,
   }}>{children}</div>
 );
@@ -924,11 +924,11 @@ const PromptBlockEditor = ({ block, update, index }: {
               padding: '4px 12px', borderRadius: 6, fontSize: 11,
               fontWeight: 600, textTransform: 'uppercase', cursor: 'pointer',
               background: block.promptRole === r
-                ? 'rgba(139,69,19,0.20)' : 'rgba(255, 255, 255, 0.12)',
+                ? 'color-mix(in srgb, var(--action) 20%, transparent)' : 'var(--recess)',
               border: `1px solid ${block.promptRole === r
-                ? 'rgba(139,69,19,0.50)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'color-mix(in srgb, var(--action) 50%, transparent)' : 'var(--recess)'}`,
               color: block.promptRole === r
-                ? '#8B4513' : 'rgba(255,255,255,0.45)',
+                ? 'var(--action)' : 'var(--recess)',
             }}>
             {r === 'full' ? 'Full Conversation' : r}
           </button>
@@ -940,10 +940,10 @@ const PromptBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { promptModel: e.target.value })}
         placeholder="e.g. Claude Sonnet, GPT-4o, Any"
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: '#fff', outline: 'none', boxSizing: 'border-box',
+          color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
         }} />
 
       <FieldLabel>Prompt</FieldLabel>
@@ -953,10 +953,10 @@ const PromptBlockEditor = ({ block, update, index }: {
           placeholder="Write your prompt. Use {{variable}} for placeholders."
           rows={7}
           style={{
-            width: '100%', background: 'rgba(0,0,0,0.30)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            width: '100%', background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '10px', fontSize: 13,
-            color: 'rgba(255,255,255,0.90)', outline: 'none',
+            color: 'var(--text)', outline: 'none',
             resize: 'vertical', fontFamily: 'Courier New, monospace',
             lineHeight: 1.6, boxSizing: 'border-box',
           }} />
@@ -965,9 +965,9 @@ const PromptBlockEditor = ({ block, update, index }: {
           style={{
             position: 'absolute', top: 8, right: 8,
             fontSize: 10, padding: '2px 8px', borderRadius: 6,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
+            color: 'var(--text2)', cursor: 'pointer',
           }}>
           Copy
         </button>
@@ -980,9 +980,9 @@ const PromptBlockEditor = ({ block, update, index }: {
             {detected.map(v => (
               <span key={v} style={{
                 padding: '2px 10px', borderRadius: 9999, fontSize: 12,
-                background: 'rgba(31,122,109,0.15)',
-                border: '1px solid rgba(31,122,109,0.30)',
-                color: '#1F7A6D', fontFamily: 'Courier New, monospace',
+                background: 'color-mix(in srgb, var(--evidence) 15%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--evidence) 30%, transparent)',
+                color: 'var(--evidence)', fontFamily: 'Courier New, monospace',
               }}>
                 {`{{${v}}}`}
               </span>
@@ -997,10 +997,10 @@ const PromptBlockEditor = ({ block, update, index }: {
         placeholder="Paste an example of what this prompt produces..."
         rows={4}
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: 'rgba(255,255,255,0.60)', outline: 'none',
+          color: 'var(--text2)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree, sans-serif',
           lineHeight: 1.6, boxSizing: 'border-box',
         }} />
@@ -1036,10 +1036,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
           placeholder="Paste the full system prompt..."
           rows={8}
           style={{
-            width: '100%', background: 'rgba(0,0,0,0.30)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            width: '100%', background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '10px', fontSize: 13,
-            color: 'rgba(255,255,255,0.90)', outline: 'none',
+            color: 'var(--text)', outline: 'none',
             resize: 'vertical', fontFamily: 'Courier New, monospace',
             lineHeight: 1.6, boxSizing: 'border-box',
           }} />
@@ -1048,9 +1048,9 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
           style={{
             position: 'absolute', top: 8, right: 8, fontSize: 10,
             padding: '2px 8px', borderRadius: 6,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
+            color: 'var(--text2)', cursor: 'pointer',
           }}>Copy</button>
       </div>
 
@@ -1061,10 +1061,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             onChange={e => update(index, { agentModel: e.target.value })}
             placeholder="e.g. claude-sonnet-4-6"
             style={{
-              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              width: '100%', background: 'var(--recess)',
+              border: '1px solid var(--line)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
-              color: '#fff', outline: 'none', boxSizing: 'border-box',
+              color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
             }} />
         </div>
         <div style={{ flex: 1 }}>
@@ -1073,10 +1073,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             value={block.agentTemperature}
             onChange={e => update(index, { agentTemperature: parseFloat(e.target.value) })}
             style={{
-              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              width: '100%', background: 'var(--recess)',
+              border: '1px solid var(--line)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
-              color: '#fff', outline: 'none', boxSizing: 'border-box',
+              color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
             }} />
         </div>
         <div style={{ flex: 1 }}>
@@ -1085,10 +1085,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
             value={block.agentMaxTokens}
             onChange={e => update(index, { agentMaxTokens: parseInt(e.target.value) })}
             style={{
-              width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              width: '100%', background: 'var(--recess)',
+              border: '1px solid var(--line)',
               borderRadius: 8, padding: '7px 10px', fontSize: 13,
-              color: '#fff', outline: 'none', boxSizing: 'border-box',
+              color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
             }} />
         </div>
       </FieldRow>
@@ -1107,9 +1107,9 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               style={{
                 padding: '4px 10px', borderRadius: 6, fontSize: 12,
                 cursor: 'pointer',
-                background: active ? 'rgba(31,122,109,0.15)' : 'rgba(255, 255, 255, 0.12)',
-                border: `1px solid ${active ? 'rgba(31,122,109,0.40)' : 'rgba(255,255,255,0.08)'}`,
-                color: active ? '#1F7A6D' : 'rgba(255,255,255,0.45)',
+                background: active ? 'color-mix(in srgb, var(--evidence) 15%, transparent)' : 'var(--recess)',
+                border: `1px solid ${active ? 'color-mix(in srgb, var(--evidence) 40%, transparent)' : 'var(--recess)'}`,
+                color: active ? 'var(--evidence)' : 'var(--text2)',
               }}>
               {t}
             </button>
@@ -1127,9 +1127,9 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               style={{
                 padding: '4px 12px', borderRadius: 6, fontSize: 12,
                 cursor: 'pointer',
-                background: active ? 'rgba(139,92,246,0.15)' : 'rgba(255, 255, 255, 0.12)',
-                border: `1px solid ${active ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
-                color: active ? '#8B5CF6' : 'rgba(255,255,255,0.45)',
+                background: active ? 'color-mix(in srgb, var(--cat-agents) 15%, transparent)' : 'var(--recess)',
+                border: `1px solid ${active ? 'color-mix(in srgb, var(--cat-agents) 40%, transparent)' : 'var(--recess)'}`,
+                color: active ? 'var(--cat-agents)' : 'var(--text2)',
               }}>
               {m}
             </button>
@@ -1142,8 +1142,8 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
         {block.agentCapabilities.map((cap, ci) => (
           <div key={cap.id} style={{
             padding: '10px 12px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -1155,8 +1155,8 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
                 placeholder="Capability name"
                 style={{
                   flex: 1, background: 'transparent', border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.10)',
-                  fontSize: 13, fontWeight: 600, color: '#fff',
+                  borderBottom: '1px solid var(--line)',
+                  fontSize: 13, fontWeight: 600, color: 'var(--text)',
                   outline: 'none', padding: '2px 0',
                 }} />
               <button type="button"
@@ -1164,7 +1164,7 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
                   agentCapabilities: block.agentCapabilities.filter((_,i) => i !== ci)
                 })}
                 style={{ background: 'none', border: 'none',
-                  color: 'rgba(255,255,255,0.30)', cursor: 'pointer', fontSize: 16 }}>
+                  color: 'var(--text2)', cursor: 'pointer', fontSize: 16 }}>
                 ×
               </button>
             </div>
@@ -1176,10 +1176,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
               placeholder="Sub-prompt or instructions for this capability..."
               rows={3}
               style={{
-                width: '100%', background: 'rgba(0,0,0,0.20)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                width: '100%', background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 6, padding: '6px 8px', fontSize: 12,
-                color: 'rgba(255,255,255,0.70)', outline: 'none',
+                color: 'var(--text2)', outline: 'none',
                 resize: 'vertical', fontFamily: 'Courier New, monospace',
                 boxSizing: 'border-box',
               }} />
@@ -1193,9 +1193,9 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
           })}
           style={{
             padding: '6px 12px', borderRadius: 8, fontSize: 12,
-            background: 'rgba(255, 255, 255, 0.12)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            color: 'rgba(255,255,255,0.50)', cursor: 'pointer',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
+            color: 'var(--text2)', cursor: 'pointer',
           }}>
           + Add Capability
         </button>
@@ -1207,10 +1207,10 @@ const AgentBlockEditor = ({ block: rawBlock, update, index }: {
 // ─── Workflow block editor ───────────────────────────────────
 
 const STEP_TYPE_CONFIG = {
-  manual:    { color: '#9CA3AF', label: 'Manual',    emoji: '👤' },
-  ai:        { color: '#1F7A6D', label: 'AI',        emoji: '🤖' },
-  automated: { color: '#3B82F6', label: 'Auto',      emoji: '⚡' },
-  decision:  { color: '#F59E0B', label: 'Decision',  emoji: '◆' },
+  manual:    { color: 'var(--text2)', label: 'Manual',    emoji: '👤' },
+  ai:        { color: 'var(--evidence)', label: 'AI',        emoji: '🤖' },
+  automated: { color: 'var(--cat-data)', label: 'Auto',      emoji: '⚡' },
+  decision:  { color: 'var(--cat-artefact)', label: 'Decision',  emoji: '◆' },
 };
 
 const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
@@ -1250,10 +1250,10 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
         onChange={e => update(index, { workflowTrigger: e.target.value })}
         placeholder="e.g. New email arrives in Gmail, User submits form..."
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: '#fff', outline: 'none', boxSizing: 'border-box',
+          color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
         }} />
 
       <FieldLabel>Steps</FieldLabel>
@@ -1263,7 +1263,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
           return (
             <div key={step.id} style={{
               padding: '12px', borderRadius: 10,
-              background: 'rgba(255,255,255,0.02)',
+              background: 'var(--recess)',
               border: `1px solid ${cfg.color}30`,
               borderLeft: `3px solid ${cfg.color}`,
             }}>
@@ -1283,14 +1283,14 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                   style={{
                     flex: 1, background: 'transparent',
                     border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.10)',
-                    fontSize: 13, fontWeight: 600, color: '#fff',
+                    borderBottom: '1px solid var(--line)',
+                    fontSize: 13, fontWeight: 600, color: 'var(--text)',
                     outline: 'none', padding: '2px 0',
                   }} />
                 <button type="button"
                   onClick={() => removeStep(si)}
                   style={{ background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.25)', cursor: 'pointer',
+                    color: 'var(--text2)', cursor: 'pointer',
                     fontSize: 16 }}>×</button>
               </div>
 
@@ -1306,8 +1306,8 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                           padding: '2px 8px', borderRadius: 4, fontSize: 11,
                           cursor: 'pointer',
                           background: active ? `${c.color}20` : 'transparent',
-                          border: `1px solid ${active ? c.color + '50' : 'rgba(255,255,255,0.08)'}`,
-                          color: active ? c.color : 'rgba(255,255,255,0.35)',
+                          border: `1px solid ${active ? c.color + '50' : 'var(--recess)'}`,
+                          color: active ? c.color : 'var(--text2)',
                         }}>
                         {c.emoji} {c.label}
                       </button>
@@ -1320,10 +1320,10 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                 placeholder="Describe what happens in this step..."
                 rows={2}
                 style={{
-                  width: '100%', background: 'rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  width: '100%', background: 'var(--recess)',
+                  border: '1px solid var(--line)',
                   borderRadius: 6, padding: '6px 8px', fontSize: 12,
-                  color: 'rgba(255,255,255,0.70)', outline: 'none',
+                  color: 'var(--text2)', outline: 'none',
                   resize: 'vertical', fontFamily: 'Figtree, sans-serif',
                   boxSizing: 'border-box',
                 }} />
@@ -1334,8 +1334,8 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                 style={{
                   width: '100%', background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  fontSize: 12, color: 'rgba(255,255,255,0.45)',
+                  borderBottom: '1px solid var(--line)',
+                  fontSize: 12, color: 'var(--text2)',
                   outline: 'none', padding: '4px 0', marginTop: 6,
                   boxSizing: 'border-box',
                 }} />
@@ -1346,19 +1346,19 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                     onChange={e => updateStep(si, { decisionYes: e.target.value })}
                     placeholder="✓ Yes path"
                     style={{
-                      flex: 1, background: 'rgba(34,197,94,0.08)',
-                      border: '1px solid rgba(34,197,94,0.20)',
+                      flex: 1, background: 'color-mix(in srgb, var(--cat-configuration) 8%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--cat-configuration) 20%, transparent)',
                       borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      color: '#22C55E', outline: 'none',
+                      color: 'var(--cat-configuration)', outline: 'none',
                     }} />
                   <input value={step.decisionNo ?? ''}
                     onChange={e => updateStep(si, { decisionNo: e.target.value })}
                     placeholder="✗ No path"
                     style={{
-                      flex: 1, background: 'rgba(239,68,68,0.08)',
-                      border: '1px solid rgba(239,68,68,0.20)',
+                      flex: 1, background: 'color-mix(in srgb, var(--cat-breakage) 8%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--cat-breakage) 20%, transparent)',
                       borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      color: '#EF4444', outline: 'none',
+                      color: 'var(--cat-breakage)', outline: 'none',
                     }} />
                 </div>
               )}
@@ -1368,9 +1368,9 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
 
         <button type="button" onClick={addStep} style={{
           padding: '8px', borderRadius: 8, fontSize: 12,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px dashed rgba(255,255,255,0.15)',
-          color: 'rgba(255,255,255,0.45)', cursor: 'pointer',
+          background: 'var(--recess)',
+          border: '1px dashed var(--line)',
+          color: 'var(--text2)', cursor: 'pointer',
         }}>
           + Add step
         </button>
@@ -1381,10 +1381,10 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
         onChange={e => update(index, { workflowOutput: e.target.value })}
         placeholder="e.g. Drafted reply email sent to Gmail drafts..."
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: '#fff', outline: 'none', boxSizing: 'border-box',
+          color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
         }} />
     </div>
   );
@@ -1408,11 +1408,11 @@ const CodeBlockEditor = ({ block, update, index }: {
               padding: '3px 10px', borderRadius: 6, fontSize: 12,
               cursor: 'pointer', textTransform: 'uppercase', fontWeight: 600,
               background: block.codeLanguage === l
-                ? 'rgba(59,130,246,0.20)' : 'rgba(255, 255, 255, 0.12)',
+                ? 'color-mix(in srgb, var(--cat-data) 20%, transparent)' : 'var(--recess)',
               border: `1px solid ${block.codeLanguage === l
-                ? 'rgba(59,130,246,0.50)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'color-mix(in srgb, var(--cat-data) 50%, transparent)' : 'var(--recess)'}`,
               color: block.codeLanguage === l
-                ? '#3B82F6' : 'rgba(255,255,255,0.45)',
+                ? 'var(--cat-data)' : 'var(--recess)',
             }}>
             {l}
           </button>
@@ -1426,10 +1426,10 @@ const CodeBlockEditor = ({ block, update, index }: {
           placeholder="Paste your code here..."
           rows={10}
           style={{
-            width: '100%', background: 'rgba(0,0,0,0.40)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            width: '100%', background: 'var(--recess)',
+            border: '1px solid var(--line)',
             borderRadius: 8, padding: '10px', fontSize: 12,
-            color: '#A5F3FC', outline: 'none', resize: 'vertical',
+            color: 'var(--cat-data)', outline: 'none', resize: 'vertical',
             fontFamily: 'Courier New, monospace', lineHeight: 1.5,
             boxSizing: 'border-box',
           }} />
@@ -1438,9 +1438,9 @@ const CodeBlockEditor = ({ block, update, index }: {
           style={{
             position: 'absolute', top: 8, right: 8, fontSize: 10,
             padding: '2px 8px', borderRadius: 6,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+            background: 'var(--recess)',
+            border: '1px solid var(--line)',
+            color: 'var(--text2)', cursor: 'pointer',
           }}>Copy</button>
       </div>
 
@@ -1455,10 +1455,10 @@ const CodeBlockEditor = ({ block, update, index }: {
         placeholder="How to run this code..."
         rows={2}
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          color: 'var(--text2)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
@@ -1469,10 +1469,10 @@ const CodeBlockEditor = ({ block, update, index }: {
         placeholder="Paste example terminal output..."
         rows={3}
         style={{
-          width: '100%', background: 'rgba(0,0,0,0.25)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 12,
-          color: 'rgba(255,255,255,0.55)', outline: 'none',
+          color: 'var(--text2)', outline: 'none',
           resize: 'vertical', fontFamily: 'Courier New, monospace',
           boxSizing: 'border-box',
         }} />
@@ -1492,10 +1492,10 @@ const ResultBlockEditor = ({ block, update, index }: {
       placeholder="What was the state before? What prompt / input did you use?"
       rows={3}
       style={{
-        width: '100%', background: 'rgba(239,68,68,0.04)',
-        border: '1px solid rgba(239,68,68,0.15)',
+        width: '100%', background: 'color-mix(in srgb, var(--cat-breakage) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--cat-breakage) 15%, transparent)',
         borderRadius: 8, padding: '8px 10px', fontSize: 13,
-        color: 'rgba(255,255,255,0.80)', outline: 'none',
+        color: 'var(--text2)', outline: 'none',
         resize: 'vertical', fontFamily: 'Figtree',
         boxSizing: 'border-box',
       }} />
@@ -1507,10 +1507,10 @@ const ResultBlockEditor = ({ block, update, index }: {
         placeholder="Paste the actual AI output here..."
         rows={6}
         style={{
-          width: '100%', background: 'rgba(34,197,94,0.04)',
-          border: '1px solid rgba(34,197,94,0.15)',
+          width: '100%', background: 'color-mix(in srgb, var(--cat-configuration) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--cat-configuration) 15%, transparent)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: 'rgba(255,255,255,0.85)', outline: 'none',
+          color: 'var(--text)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
@@ -1519,9 +1519,9 @@ const ResultBlockEditor = ({ block, update, index }: {
         style={{
           position: 'absolute', top: 8, right: 8, fontSize: 10,
           padding: '2px 8px', borderRadius: 6,
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          color: 'rgba(255,255,255,0.60)', cursor: 'pointer',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
+          color: 'var(--text2)', cursor: 'pointer',
         }}>Copy</button>
     </div>
 
@@ -1531,10 +1531,10 @@ const ResultBlockEditor = ({ block, update, index }: {
       placeholder="This worked because... / This failed because..."
       rows={2}
       style={{
-        width: '100%', background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.14)',
+        width: '100%', background: 'var(--recess)',
+        border: '1px solid var(--line)',
         borderRadius: 8, padding: '7px 10px', fontSize: 13,
-        color: 'rgba(255,255,255,0.70)', outline: 'none',
+        color: 'var(--text2)', outline: 'none',
         resize: 'vertical', fontFamily: 'Figtree',
         boxSizing: 'border-box',
       }} />
@@ -1548,7 +1548,7 @@ const ResultBlockEditor = ({ block, update, index }: {
             width: 32, height: 32, borderRadius: 6, fontSize: 16,
             cursor: 'pointer', border: 'none',
             background: block.resultRating >= r
-              ? 'rgba(245,158,11,0.20)' : 'rgba(255, 255, 255, 0.12)',
+              ? 'color-mix(in srgb, var(--cat-artefact) 20%, transparent)' : 'var(--recess)',
           }}>
           {block.resultRating >= r ? '★' : '☆'}
         </button>
@@ -1582,10 +1582,10 @@ const ComparisonBlockEditor = ({ block, update, index }: {
       <input value={label} onChange={e => onLabelChange(e.target.value)}
         placeholder="Label (e.g. GPT-4o)"
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 6, padding: '6px 8px', fontSize: 13,
-          fontWeight: 600, color: '#fff', outline: 'none',
+          fontWeight: 600, color: 'var(--text)', outline: 'none',
           marginBottom: 8, boxSizing: 'border-box',
         }} />
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -1596,11 +1596,11 @@ const ComparisonBlockEditor = ({ block, update, index }: {
               padding: '2px 8px', borderRadius: 4, fontSize: 11,
               cursor: 'pointer',
               background: type === t.v
-                ? 'rgba(139,69,19,0.20)' : 'rgba(255, 255, 255, 0.12)',
+                ? 'color-mix(in srgb, var(--action) 20%, transparent)' : 'var(--recess)',
               border: `1px solid ${type === t.v
-                ? 'rgba(139,69,19,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'color-mix(in srgb, var(--action) 40%, transparent)' : 'var(--recess)'}`,
               color: type === t.v
-                ? '#8B4513' : 'rgba(255,255,255,0.40)',
+                ? 'var(--action)' : 'var(--recess)',
             }}>
             {t.e} {t.l}
           </button>
@@ -1613,10 +1613,10 @@ const ComparisonBlockEditor = ({ block, update, index }: {
         rows={6}
         style={{
           width: '100%',
-          background: type === 'code' ? 'rgba(0,0,0,0.30)' : 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: type === 'code' ? 'var(--recess)' : 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 12,
-          color: type === 'code' ? '#A5F3FC' : 'rgba(255,255,255,0.80)',
+          color: type === 'code' ? 'var(--cat-data)' : 'var(--text)',
           outline: 'none', resize: 'vertical',
           fontFamily: type === 'code' || type === 'prompt'
             ? 'Courier New, monospace' : FIGTREE,
@@ -1632,10 +1632,10 @@ const ComparisonBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { comparisonAxis: e.target.value })}
         placeholder="e.g. Output quality, Speed, Cost, Tone..."
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: '#fff', outline: 'none',
+          color: 'var(--text)', outline: 'none',
           boxSizing: 'border-box', marginBottom: 14,
         }} />
 
@@ -1649,7 +1649,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
           onContentChange={v => update(index, { comparisonContentA: v })}
         />
         <div style={{
-          color: 'rgba(255,255,255,0.20)', fontSize: 20,
+          color: 'var(--text2)', fontSize: 20,
           paddingTop: 36, flexShrink: 0,
         }}>↔</div>
         <SideEditor
@@ -1668,10 +1668,10 @@ const ComparisonBlockEditor = ({ block, update, index }: {
         placeholder="Which won and why?"
         rows={2}
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          color: 'var(--text2)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
@@ -1693,10 +1693,10 @@ const ResourceBlockEditor = ({ block, update, index }: {
         placeholder="https://..."
         type="url"
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
-          color: '#fff', outline: 'none', boxSizing: 'border-box',
+          color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
         }} />
 
       <FieldLabel>Title</FieldLabel>
@@ -1704,10 +1704,10 @@ const ResourceBlockEditor = ({ block, update, index }: {
         onChange={e => update(index, { resourceTitle: e.target.value })}
         placeholder="Resource title"
         style={{
-          width: '100%', background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: '#fff', outline: 'none', boxSizing: 'border-box',
+          color: 'var(--text)', outline: 'none', boxSizing: 'border-box',
         }} />
 
       <FieldLabel>Type</FieldLabel>
@@ -1719,11 +1719,11 @@ const ResourceBlockEditor = ({ block, update, index }: {
               padding: '3px 10px', borderRadius: 6, fontSize: 12,
               cursor: 'pointer', textTransform: 'capitalize',
               background: block.resourceType === t
-                ? 'rgba(139,92,246,0.15)' : 'rgba(255, 255, 255, 0.12)',
+                ? 'color-mix(in srgb, var(--cat-agents) 15%, transparent)' : 'var(--recess)',
               border: `1px solid ${block.resourceType === t
-                ? 'rgba(139,92,246,0.40)' : 'rgba(255,255,255,0.08)'}`,
+                ? 'color-mix(in srgb, var(--cat-agents) 40%, transparent)' : 'var(--recess)'}`,
               color: block.resourceType === t
-                ? '#8B5CF6' : 'rgba(255,255,255,0.45)',
+                ? 'var(--cat-agents)' : 'var(--recess)',
             }}>
             {t}
           </button>
@@ -1736,10 +1736,10 @@ const ResourceBlockEditor = ({ block, update, index }: {
         placeholder="Why is this resource useful? What will the reader get from it?"
         rows={3}
         style={{
-          width: '100%', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          width: '100%', background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
-          color: 'rgba(255,255,255,0.70)', outline: 'none',
+          color: 'var(--text2)', outline: 'none',
           resize: 'vertical', fontFamily: 'Figtree',
           boxSizing: 'border-box',
         }} />
@@ -1750,7 +1750,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
           onChange={e => update(index, { resourceIsPaywalled: e.target.checked })}
           style={{ width: 14, height: 14 }} />
         <label htmlFor="paywalled"
-          style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', cursor: 'pointer' }}>
+          style={{ fontSize: 12, color: 'var(--text2)', cursor: 'pointer' }}>
           Paywalled / requires account
         </label>
       </div>
@@ -1860,9 +1860,9 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '8px 14px', borderRadius: 10,
-          background: 'rgba(255, 255, 255, 0.12)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          color: 'rgba(255,255,255,0.50)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
+          color: 'var(--text2)',
           fontSize: 12, fontWeight: 500,
           cursor: 'pointer',
           transition: 'border-color 0.15s',
@@ -1879,8 +1879,8 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
           gap: 6,
           marginTop: 8,
           padding: 8,
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.14)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 10,
         }}>
           {NEW_BLOCK_TYPES.map((bt) => (
@@ -1893,26 +1893,26 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
                 padding: '8px 10px',
                 borderRadius: 8,
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.05)',
+                border: '1px solid var(--line)',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'background 0.15s, border-color 0.15s',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255, 255, 255, 0.12)';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.10)';
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--recess)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.05)';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)';
               }}
             >
               <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>{bt.emoji}</span>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>
                   {bt.label}
                 </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', marginTop: 1 }}>
+                <div style={{ fontSize: 10, color: 'var(--text2)', marginTop: 1 }}>
                   {bt.desc}
                 </div>
               </div>
@@ -1943,11 +1943,11 @@ const TutorialStepEditor = ({ block, update, index }: {
 
   return (
     <div style={{
-      border: '1px solid rgba(139,69,19,0.20)',
-      borderLeft: '3px solid rgba(139,69,19,0.50)',
+      border: '1px solid color-mix(in srgb, var(--action) 20%, transparent)',
+      borderLeft: '3px solid color-mix(in srgb, var(--action) 50%, transparent)',
       borderRadius: 8,
       padding: '12px 14px',
-      background: 'rgba(139,69,19,0.04)',
+      background: 'color-mix(in srgb, var(--action) 4%, transparent)',
     }}>
       {/* Media type picker */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -1960,13 +1960,13 @@ const TutorialStepEditor = ({ block, update, index }: {
               padding: '4px 10px', borderRadius: 6,
               fontSize: 11, cursor: 'pointer',
               background: mediaType === opt.value
-                ? 'rgba(139,69,19,0.20)'
-                : 'rgba(255, 255, 255, 0.12)',
+                ? 'color-mix(in srgb, var(--action) 20%, transparent)'
+                : 'var(--recess)',
               border: `1px solid ${mediaType === opt.value
-                ? 'rgba(139,69,19,0.40)'
-                : 'rgba(255,255,255,0.08)'}`,
+                ? 'color-mix(in srgb, var(--action) 40%, transparent)'
+                : 'var(--recess)'}`,
               color: mediaType === opt.value
-                ? '#8B4513' : 'rgba(255,255,255,0.45)',
+                ? 'var(--action)' : 'var(--recess)',
             }}
           >
             {opt.emoji} {opt.label}
@@ -1981,16 +1981,16 @@ const TutorialStepEditor = ({ block, update, index }: {
           {block.tutorialMediaUrl && (
             <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               {mediaType === 'image' && (
-                <img src={block.tutorialMediaUrl} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)' }} />
+                <img src={block.tutorialMediaUrl} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
               )}
               {mediaType === 'video' && (
-                <video src={block.tutorialMediaUrl} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.10)' }} />
+                <video src={block.tutorialMediaUrl} style={{ width: 80, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
               )}
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.40)' }}>
+              <span style={{ fontSize: 11, color: 'var(--text2)' }}>
                 {mediaType === 'image' ? 'Image' : mediaType === 'video' ? 'Video' : 'Audio'} added
               </span>
               <button type="button" onClick={() => update(index, { tutorialMediaUrl: null })}
-                style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                style={{ fontSize: 11, color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 Remove
               </button>
             </div>
@@ -2001,9 +2001,9 @@ const TutorialStepEditor = ({ block, update, index }: {
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 14px', borderRadius: 6,
               fontSize: 11, cursor: 'pointer',
-              background: 'rgba(139,69,19,0.12)',
-              border: '1px solid rgba(139,69,19,0.30)',
-              color: '#8B4513', fontWeight: 600,
+              background: 'color-mix(in srgb, var(--action) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
+              color: 'var(--action)', fontWeight: 600,
               marginBottom: 6,
             }}>
               Upload {mediaType === 'voicenote' ? 'audio' : mediaType}
@@ -2025,7 +2025,7 @@ const TutorialStepEditor = ({ block, update, index }: {
           {/* Or paste URL (secondary) */}
           {!block.tutorialMediaUrl && (
             <div style={{ marginTop: 6 }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)', marginBottom: 4 }}>or paste URL</div>
+              <div style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 4 }}>or paste URL</div>
               <input
                 value=""
                 onChange={e => {
@@ -2033,10 +2033,10 @@ const TutorialStepEditor = ({ block, update, index }: {
                 }}
                 placeholder={`Paste ${mediaType} URL...`}
                 style={{
-                  width: '100%', background: 'rgba(0,0,0,0.15)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  width: '100%', background: 'var(--recess)',
+                  border: '1px solid var(--line)',
                   borderRadius: 6, padding: '5px 10px',
-                  fontSize: 11, color: '#fff', outline: 'none',
+                  fontSize: 11, color: 'var(--text)', outline: 'none',
                 }}
               />
             </div>
@@ -2051,7 +2051,7 @@ const TutorialStepEditor = ({ block, update, index }: {
             fontSize: 10, fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text2)',
             marginBottom: 6,
           }}>
             Carousel images
@@ -2061,7 +2061,7 @@ const TutorialStepEditor = ({ block, update, index }: {
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, paddingBottom: 4 }}>
               {(block.tutorialCarouselUrls ?? []).map((url, i) => (
                 <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                  <img src={url} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <img src={url} style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
                   <button type="button"
                     onClick={() => {
                       const next = [...(block.tutorialCarouselUrls ?? [])];
@@ -2071,8 +2071,8 @@ const TutorialStepEditor = ({ block, update, index }: {
                     style={{
                       position: 'absolute', top: -4, right: -4,
                       width: 16, height: 16, borderRadius: '50%',
-                      background: 'rgba(0,0,0,0.70)', border: 'none',
-                      color: '#fff', fontSize: 10, cursor: 'pointer',
+                      background: 'var(--recess)', border: 'none',
+                      color: 'var(--text)', fontSize: 10, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >×</button>
@@ -2084,9 +2084,9 @@ const TutorialStepEditor = ({ block, update, index }: {
           <label style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '5px 12px', borderRadius: 6, fontSize: 11,
-            cursor: 'pointer', background: 'rgba(139,69,19,0.12)',
-            border: '1px solid rgba(139,69,19,0.30)',
-            color: '#8B4513', fontWeight: 600,
+            cursor: 'pointer', background: 'color-mix(in srgb, var(--action) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
+            color: 'var(--action)', fontWeight: 600,
           }}>
             + Upload images
             <input type="file" accept="image/*" multiple style={{ display: 'none' }}
@@ -2102,7 +2102,7 @@ const TutorialStepEditor = ({ block, update, index }: {
           </label>
           {/* Or paste URLs fallback */}
           <div style={{ marginTop: 6 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.20)', marginBottom: 4 }}>or paste URLs (one per line)</div>
+            <div style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 4 }}>or paste URLs (one per line)</div>
             <textarea
               value=""
               onChange={e => {
@@ -2116,10 +2116,10 @@ const TutorialStepEditor = ({ block, update, index }: {
               placeholder="https://... (one per line)"
               rows={2}
               style={{
-                width: '100%', background: 'rgba(0,0,0,0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.14)',
+                width: '100%', background: 'var(--recess)',
+                border: '1px solid var(--line)',
                 borderRadius: 6, padding: '6px 10px',
-                fontSize: 11, color: '#fff', outline: 'none',
+                fontSize: 11, color: 'var(--text)', outline: 'none',
                 resize: 'none', boxSizing: 'border-box',
                 fontFamily: 'monospace',
               }}
@@ -2133,7 +2133,7 @@ const TutorialStepEditor = ({ block, update, index }: {
         fontSize: 10, fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        color: 'rgba(255,255,255,0.30)',
+        color: 'var(--text2)',
         marginBottom: 6,
       }}>
         Instruction
@@ -2147,8 +2147,8 @@ const TutorialStepEditor = ({ block, update, index }: {
           width: '100%',
           background: 'transparent',
           border: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
-          fontSize: 14, color: 'rgba(255,255,255,0.70)',
+          borderBottom: '1px solid var(--line)',
+          fontSize: 14, color: 'var(--text2)',
           outline: 'none', resize: 'none', padding: '4px 0',
           fontFamily: 'Figtree, sans-serif', lineHeight: 1.65,
           boxSizing: 'border-box',
@@ -2176,23 +2176,23 @@ const SectionHeadingEditor = ({
         width: '100%',
         background: 'transparent',
         border: 'none',
-        borderBottom: '2px solid rgba(139,69,19,0.35)',
+        borderBottom: '2px solid color-mix(in srgb, var(--action) 35%, transparent)',
 
         ...type.cardTitle,
-        color: 'rgba(255,255,255,0.90)',
+        color: 'var(--text)',
         outline: 'none',
         padding: '4px 0',
         boxSizing: 'border-box',
       }}
       onFocus={e => {
-        e.currentTarget.style.borderBottomColor = 'rgba(139,69,19,0.70)';
+        e.currentTarget.style.borderBottomColor = 'color-mix(in srgb, var(--action) 70%, transparent)';
       }}
       onBlur={e => {
-        e.currentTarget.style.borderBottomColor = 'rgba(139,69,19,0.35)';
+        e.currentTarget.style.borderBottomColor = 'color-mix(in srgb, var(--action) 35%, transparent)';
       }}
     />
     <div style={{
-      fontSize: 11, color: 'rgba(255,255,255,0.25)',
+      fontSize: 11, color: 'var(--text2)',
       marginTop: 6,
     }}>
       This heading will appear in the table of contents
@@ -2240,7 +2240,7 @@ const GroupBlockEditor = ({
 
   return (
     <div style={{
-      border: '1px dashed rgba(139,69,19,0.30)',
+      border: '1px dashed color-mix(in srgb, var(--action) 30%, transparent)',
       borderRadius: 12,
       marginBottom: 12,
       overflow: 'hidden',
@@ -2249,12 +2249,12 @@ const GroupBlockEditor = ({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '10px 12px',
-        background: 'rgba(139,69,19,0.06)',
+        background: 'color-mix(in srgb, var(--action) 6%, transparent)',
         borderBottom: group.isCollapsed
           ? 'none'
-          : '1px dashed rgba(139,69,19,0.20)',
+          : '1px dashed color-mix(in srgb, var(--action) 20%, transparent)',
       }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+        <span style={{ fontSize: 12, color: 'var(--text2)' }}>
           ▤
         </span>
         <input
@@ -2265,7 +2265,7 @@ const GroupBlockEditor = ({
             flex: 1,
             background: 'transparent', border: 'none',
             ...type.cardTitle,
-            color: 'rgba(255,255,255,0.80)', outline: 'none',
+            color: 'var(--text2)', outline: 'none',
           }}
         />
         <button
@@ -2273,7 +2273,7 @@ const GroupBlockEditor = ({
           onClick={() => onUpdateGroup({ isCollapsed: !group.isCollapsed })}
           style={{
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.30)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 14, padding: '0 4px',
           }}
         >
@@ -2284,7 +2284,7 @@ const GroupBlockEditor = ({
           onClick={onDeleteGroup}
           style={{
             background: 'none', border: 'none',
-            color: 'rgba(255,255,255,0.20)',
+            color: 'var(--text2)',
             cursor: 'pointer', fontSize: 16,
           }}
         >
@@ -2299,7 +2299,7 @@ const GroupBlockEditor = ({
           {group.blocks.length === 0 && (
             <div style={{
               textAlign: 'center', padding: '16px',
-              fontSize: 12, color: 'rgba(255,255,255,0.20)',
+              fontSize: 12, color: 'var(--text2)',
               fontStyle: 'italic',
             }}>
               No blocks in this group yet. Add blocks below.
@@ -2310,8 +2310,8 @@ const GroupBlockEditor = ({
             <div key={block.id} style={{
               padding: '10px 12px',
               marginBottom: 8,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.07)',
+              background: 'var(--recess)',
+              border: '1px solid var(--line)',
               borderRadius: 8,
             }}>
               {/* Mini block header */}
@@ -2321,7 +2321,7 @@ const GroupBlockEditor = ({
                 fontSize: 10, fontWeight: 700,
                 textTransform: 'uppercase',
                 letterSpacing: '0.10em',
-                color: 'rgba(255,255,255,0.30)',
+                color: 'var(--text2)',
               }}>
                 <span>
                   {NEW_BLOCK_TYPES.find(t => t.value === block.type)?.emoji ?? '◆'}
@@ -2334,7 +2334,7 @@ const GroupBlockEditor = ({
                   onClick={() => deleteBlockFromGroup(bi)}
                   style={{
                     marginLeft: 'auto', background: 'none',
-                    border: 'none', color: 'rgba(255,255,255,0.20)',
+                    border: 'none', color: 'var(--text2)',
                     cursor: 'pointer', fontSize: 14,
                   }}
                 >
@@ -2400,7 +2400,7 @@ const GroupBlockEditor = ({
           <div style={{ marginTop: 8 }}>
             <div style={{
               fontSize: 10, fontWeight: 600,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'var(--text2)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               marginBottom: 6,
@@ -2421,9 +2421,9 @@ const GroupBlockEditor = ({
                     style={{
                       padding: '3px 9px', borderRadius: 6,
                       fontSize: 11, cursor: 'pointer',
-                      background: 'rgba(255, 255, 255, 0.12)',
-                      border: '1px solid rgba(255,255,255,0.10)',
-                      color: 'rgba(255,255,255,0.45)',
+                      background: 'var(--recess)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--text2)',
                     }}
                   >
                     {t.emoji} {t.label}
@@ -2529,14 +2529,14 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
           const showingMain = activeTab === "A";
 
           return (
-            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[#1F7A6D]/50" : "border-border"}`}>
+            <div key={block.id} className={`border rounded-xl bg-card overflow-hidden ${block.isPreview ? "border-[var(--evidence)]/50" : "border-border"}`}>
               {/* Header */}
               <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <BlockTypeIcon type={block.type} />
                   <span>{BLOCK_TYPE_LABELS[block.type]}</span>
                   <span className="text-xs text-muted-foreground">Block {index + 1}</span>
-                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1F7A6D]/15 text-[#1F7A6D] font-medium">Preview</span>}
+                  {block.isPreview && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--evidence)]/15 text-[var(--evidence)] font-medium">Preview</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {contentType !== "Blog" && supportsPreview(block.type) && (() => {
@@ -2583,10 +2583,10 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
                   fontSize: 10, fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.12em',
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   marginBottom: 8,
                   paddingBottom: 8,
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderBottom: '1px solid var(--line)',
                 }}>
                   <span>{NEW_BLOCK_TYPES.find(b => b.value === block.type)?.emoji}</span>
                   <span>{NEW_BLOCK_TYPES.find(b => b.value === block.type)?.label ?? block.type}</span>
@@ -2732,9 +2732,9 @@ export function ContentBlockBuilder({ blocks, onChange, contentType }: Props) {
             onClick={() => onChange([...blocks, emptyGroup()])}
             style={{
               padding: '8px 14px', borderRadius: 8, fontSize: 12,
-              background: 'rgba(139,69,19,0.06)',
-              border: '1px dashed rgba(139,69,19,0.30)',
-              color: 'rgba(139,69,19,0.70)', cursor: 'pointer',
+              background: 'color-mix(in srgb, var(--action) 6%, transparent)',
+              border: '1px dashed color-mix(in srgb, var(--action) 30%, transparent)',
+              color: 'color-mix(in srgb, var(--action) 70%, transparent)', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
             }}
           >
