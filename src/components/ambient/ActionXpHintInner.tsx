@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react"
-import { tokens, xpColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface ActionXpHintProps {
   /** XP amount to float up, e.g. 2. */
@@ -22,7 +26,7 @@ export interface ActionXpHintProps {
 export default function ActionXpHint({
   amount,
   trigger,
-  color = xpColor,
+  color = undefined,
   offsetX = 0,
 }: ActionXpHintProps) {
   const [animating, setAnimating] = useState(false)
@@ -40,11 +44,18 @@ export default function ActionXpHint({
       key={trigger}
       className="pointer-events-none absolute left-1/2 top-0 select-none"
       style={{
-        fontFamily: tokens.fontMono,
+        /**
+         * BG-P28b. This floats over whatever button triggered it — a save, a
+         * follow, a publish — so it appears over every ground in the product.
+         * It was amber type propped up by a black text-shadow, which is the
+         * dark-room way of making an illegal colour survive; on Exhibition the
+         * shadow just smudged it. It is set as data in --text, like every other
+         * XP figure.
+         */
+        ...xpText(),
         fontSize: 13,
-        fontWeight: 700,
-        color,
-        textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+        fontWeight: 500,
+        ...(color ? { color } : null),
         transform: `translateX(calc(-50% + ${offsetX}px)) translateY(${animating ? -22 : -2}px)`,
         opacity: animating ? 0 : trigger > 0 ? 1 : 0,
         transition: animating

@@ -1,5 +1,9 @@
 import { Sparkles, X } from "lucide-react";
-import { tokens, xpColor } from "./tokens";
+import { tokens } from "./tokens";
+import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
+import { elevation, SCRIM } from "@/lib/theme/elevation";
+import { tierFill, xpText } from "@/lib/theme/progress";
 
 export interface XpToastProps {
   xp: number;
@@ -9,8 +13,18 @@ export interface XpToastProps {
 
 /**
  * Compact bottom-right XP toast for ambient XP events from the realtime
- * stream. Pairs with PostXpFootnote (which is the louder publish-success
- * variant).
+ * stream. Pairs with PostXpFootnote (the louder publish-success variant).
+ *
+ * THIS MOUNTS APP-WIDE, so it has to be legible over a light page, a dark
+ * page and the composer's flat working ground — which a toast struck for a
+ * #25252F room was not: `+N XP` was amber type at 3.01:1 on Exhibition, over
+ * a shell that assumed a dark ground beneath it.
+ *
+ * ONE AMBER-FILLED ELEMENT, AND IT IS THE XP FIGURE (BG-P28b). The figure was
+ * amber TYPE beside an orange-filled medallion — the wrong way round twice
+ * over. The medallion steps down to the quiet inset surface and the figure
+ * becomes the amber chip with `--on-lit` on it, so the toast has exactly one
+ * lit thing and it is the number you came to read.
  */
 export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
   return (
@@ -22,11 +36,11 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         padding: "10px 14px",
         minWidth: 240,
         borderRadius: tokens.radiusPanel,
-        background: tokens.shell,
-        border: "0.5px solid rgba(232,87,26,0.32)",
+        background: t.glass,
+        border: `0.5px solid ${t.glassBorder}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+        ...elevation.raised,
         fontFamily: tokens.fontSans,
       }}
     >
@@ -35,22 +49,25 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         style={{
           width: 30,
           height: 30,
-          borderRadius: 9,
-          background: tokens.orangeGradient,
+          borderRadius: r.chip,
+          background: t.glass2,
+          border: `0.5px solid ${t.line}`,
           flexShrink: 0,
-          boxShadow: "0 2px 10px rgba(232,87,26,0.40)",
         }}
       >
-        <Sparkles size={15} color="#fff" />
+        <Sparkles size={15} color={t.text2} />
       </span>
 
       <div className="flex flex-col gap-0.5 min-w-0">
         <span
           style={{
-            fontFamily: tokens.fontMono,
+            ...xpText("onLit"),
+            background: tierFill("highest").background,
+            borderRadius: r.chip,
+            padding: "1px 7px",
+            alignSelf: "flex-start",
             fontSize: 14,
-            fontWeight: 700,
-            color: xpColor,
+            fontWeight: 500,
             letterSpacing: "-0.01em",
           }}
         >
@@ -78,7 +95,7 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         style={{
           width: 22,
           height: 22,
-          borderRadius: 6,
+          borderRadius: r.chip,
           background: "transparent",
           border: "none",
           color: tokens.textFaint,

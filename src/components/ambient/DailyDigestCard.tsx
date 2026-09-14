@@ -1,5 +1,9 @@
 import { Flame, Sparkles, ArrowUpRight } from "lucide-react"
-import { tokens, xpColor, streakColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface DigestEntry {
   id: string
@@ -36,11 +40,11 @@ export default function DailyDigestCard({
         width: "100%",
         maxWidth: 360,
         borderRadius: tokens.radiusPanel,
-        background: tokens.shell,
-        border: tokens.borderStrong,
+        background: t.glass,
+        border: `0.5px solid ${t.glassBorder}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: "0 14px 40px rgba(0,0,0,0.32)",
+        ...elevation.raised,
         padding: 18,
       }}
     >
@@ -55,18 +59,22 @@ export default function DailyDigestCard({
           className="flex items-center gap-1.5"
           style={{
             padding: "5px 10px",
-            borderRadius: tokens.radiusPill,
-            background: `${streakColor}1F`,
-            border: `0.5px solid ${streakColor}55`,
+            /**
+             * BG-P28b. Was `${streakColor}1F` over `${streakColor}55` — alpha
+             * suffixes on what is now `var(--lit)`, so neither the ground nor
+             * the border was a colour and the chip rendered bare. The streak
+             * count is progress, so it is the amber FILL with --on-lit on it.
+             */
+            borderRadius: r.chip,
+            background: tierFill("highest").background,
           }}
         >
-          <Flame size={13} color={streakColor} />
+          <Flame size={13} color={tierFill("highest").color} />
           <span
             style={{
-              fontFamily: tokens.fontMono,
+              ...xpText("onLit"),
               fontSize: 12,
-              fontWeight: 600,
-              color: streakColor,
+              fontWeight: 500,
             }}
           >
             {streakDays}d
@@ -87,10 +95,9 @@ export default function DailyDigestCard({
             <span style={{ fontSize: 13, color: tokens.text }}>{e.label}</span>
             <span
               style={{
-                fontFamily: tokens.fontMono,
+                ...xpText("secondary"),
                 fontSize: 12.5,
-                fontWeight: 600,
-                color: xpColor,
+                fontWeight: 500,
               }}
             >
               +{e.xp}
@@ -101,7 +108,7 @@ export default function DailyDigestCard({
 
       <footer className="mt-4 flex items-center justify-between">
         <span className="flex items-center gap-1.5" style={{ color: tokens.textMuted, fontSize: 12.5 }}>
-          <Sparkles size={14} color={xpColor} />
+          <Sparkles size={14} color={t.text2} />
           Total earned
         </span>
         <div className="flex items-center gap-2">

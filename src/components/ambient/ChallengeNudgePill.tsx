@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { Target, X } from "lucide-react"
-import { tokens, xpColor, streakColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface ChallengeNudgePillProps {
   /** Short challenge prompt, e.g. "Publish a blueprint today". */
@@ -22,7 +26,7 @@ export interface ChallengeNudgePillProps {
 export default function ChallengeNudgePill({
   label,
   xpReward,
-  accent = streakColor,
+  accent = undefined,
   onAccept,
   onDismiss,
 }: ChallengeNudgePillProps) {
@@ -35,12 +39,20 @@ export default function ChallengeNudgePill({
       style={{
         fontFamily: tokens.fontSans,
         padding: "7px 8px 7px 14px",
-        borderRadius: tokens.radiusPill,
-        background: tokens.card,
-        border: `0.5px solid ${accent}4D`,
+        /**
+         * BG-P28b. The border was `${accent}4D` and the medallion `${accent}26`
+         * — an alpha suffix glued onto what is now `var(--lit)`, producing
+         * `var(--lit)4D`, which is not a colour, so the pill rendered with no
+         * border and no medallion ground. It takes the glass pairing every
+         * other ambient surface takes, which works over a light page, a dark
+         * page and the composer's flat ground alike.
+         */
+        borderRadius: r.control,
+        background: t.glass,
+        border: `0.5px solid ${t.glassBorder}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: "0 6px 20px rgba(0,0,0,0.28)",
+        ...elevation.raised,
       }}
     >
       <span
@@ -48,11 +60,12 @@ export default function ChallengeNudgePill({
         style={{
           width: 26,
           height: 26,
-          borderRadius: tokens.radiusPill,
-          background: `${accent}26`,
+          borderRadius: r.full,
+          background: t.glass2,
+          border: `0.5px solid ${t.line}`,
         }}
       >
-        <Target size={15} color={accent} />
+        <Target size={15} color={accent ?? t.text2} />
       </span>
 
       <span className="flex items-center gap-2">
@@ -61,10 +74,12 @@ export default function ChallengeNudgePill({
         </span>
         <span
           style={{
-            fontFamily: tokens.fontMono,
+            ...xpText("onLit"),
+            background: tierFill("highest").background,
+            borderRadius: r.chip,
+            padding: "1px 6px",
             fontSize: 11.5,
-            fontWeight: 600,
-            color: xpColor,
+            fontWeight: 500,
           }}
         >
           +{xpReward} XP
@@ -77,9 +92,9 @@ export default function ChallengeNudgePill({
         className="ml-1 shrink-0 transition-opacity hover:opacity-90"
         style={{
           padding: "6px 14px",
-          borderRadius: tokens.radiusPill,
-          background: tokens.orangeGradient,
-          color: "#fff",
+          borderRadius: r.control,
+          background: t.action,
+          color: t.onAction,
           fontSize: 12.5,
           fontWeight: 600,
         }}

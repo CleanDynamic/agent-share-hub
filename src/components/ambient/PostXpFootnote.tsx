@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react"
 import { Sparkles, X } from "lucide-react"
-import { tokens, xpColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface PostXpFootnoteProps {
   /** XP awarded for the action. */
@@ -57,11 +61,11 @@ export default function PostXpFootnote({
           padding: "12px 14px",
           minWidth: 268,
           borderRadius: tokens.radiusPanel,
-          background: tokens.shell,
-          border: `0.5px solid rgba(232,87,26,0.40)`,
+          background: t.glass,
+          border: `0.5px solid ${t.glassBorder}`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 14px 36px rgba(0,0,0,0.40), 0 0 0 1px rgba(232,87,26,0.10)",
+          ...elevation.raised,
         }}
       >
         <span
@@ -69,22 +73,25 @@ export default function PostXpFootnote({
           style={{
             width: 36,
             height: 36,
-            borderRadius: tokens.radiusPill,
-            background: tokens.orangeGradient,
-            boxShadow: "0 3px 14px rgba(232,87,26,0.45)",
+            borderRadius: r.full,
+            background: t.glass2,
+            border: `0.5px solid ${t.line}`,
           }}
         >
-          <Sparkles size={18} color="#fff" />
+          <Sparkles size={18} color={t.text2} />
         </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5">
             <span
               style={{
-                fontFamily: tokens.fontMono,
+                // The one amber-filled element on the toast.
+                ...xpText("onLit"),
+                background: tierFill("highest").background,
+                borderRadius: r.chip,
+                padding: "1px 7px",
                 fontSize: 15,
-                fontWeight: 700,
-                color: xpColor,
+                fontWeight: 500,
                 letterSpacing: "-0.01em",
               }}
             >

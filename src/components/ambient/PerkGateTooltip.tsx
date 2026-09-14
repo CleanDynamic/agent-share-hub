@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { Lock } from "lucide-react"
-import { tokens, xpColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface PerkGateTooltipProps {
   /** Name of the gated perk. */
@@ -46,12 +50,12 @@ export default function PerkGateTooltip({
         style={{
           width: 20,
           height: 20,
-          borderRadius: tokens.radiusPill,
-          background: tokens.pageBg,
-          border: tokens.borderStrong,
+          borderRadius: r.full,
+          background: t.bg,
+          border: `0.5px solid ${t.line}`,
         }}
       >
-        <Lock size={11} color={tokens.locked} />
+        <Lock size={11} color={t.text2} />
       </span>
 
       <span
@@ -64,11 +68,11 @@ export default function PerkGateTooltip({
           pointerEvents: "none",
           padding: 13,
           borderRadius: tokens.radiusCard,
-          background: tokens.shell,
-          border: tokens.borderStrong,
+          background: t.glass,
+          border: `0.5px solid ${t.glassBorder}`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+          ...elevation.raised,
         }}
       >
         <span className="flex items-center gap-2">
@@ -82,7 +86,7 @@ export default function PerkGateTooltip({
           style={{ fontSize: 11.5, color: tokens.textMuted, lineHeight: 1.45 }}
         >
           Unlocks at{" "}
-          <span style={{ color: xpColor, fontWeight: 600 }}>Level {unlockLevel}</span>
+          <span style={{ ...xpText(), fontWeight: 600 }}>Level {unlockLevel}</span>
           {levelsAway > 0
             ? ` — ${levelsAway} level${levelsAway === 1 ? "" : "s"} away`
             : " — ready to claim"}

@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { ChevronRight, Sparkles, Flame, Shield } from "lucide-react"
-import { tokens, xpColor, streakColor, reputationColor } from "./tokens"
+import { tokens, reputationColor } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { progressFill, progressTrack, tierFill, xpText } from "@/lib/theme/progress"
 
 export interface NavProgressChipProps {
   /** Current level number. */
@@ -22,6 +26,18 @@ export interface NavProgressChipProps {
 /**
  * NavProgressChip — compact level + mini XP bar for the left rail.
  * Hover reveals a flyout with the full breakdown. Ambient, L1.
+ *
+ * THIS IS MOUNTED IN AppShell, so it is on screen on EVERY route in the
+ * product — which made it the most-seen thing this prompt touches and the one
+ * with the most to lose from getting progress colour wrong. It was an orange
+ * gradient level disc over an orange mini-bar: `--action`, the primary-action
+ * colour, sitting permanently in the rail directly above the real primary
+ * actions, competing with them on every page.
+ *
+ * It is the ladder now. The level disc is the top rung (an amber fill with
+ * `--on-lit` on it), the bar is `--lit` in a `--line` groove, and every figure
+ * — the fraction, the percentage, the lifetime total — is `xpText()`, never
+ * amber type.
  */
 export default function NavProgressChip({
   level,
@@ -59,13 +75,11 @@ export default function NavProgressChip({
           style={{
             width: 34,
             height: 34,
-            borderRadius: tokens.radiusPill,
-            background: tokens.orangeGradient,
-            color: "#fff",
-            fontFamily: tokens.fontMono,
+            borderRadius: r.full,
+            background: tierFill("highest").background,
+            ...xpText("onLit"),
             fontSize: 13,
-            fontWeight: 600,
-            boxShadow: "0 2px 10px rgba(232,87,26,0.35)",
+            fontWeight: 500,
           }}
         >
           {level}
@@ -76,13 +90,7 @@ export default function NavProgressChip({
             <span style={{ fontSize: 12.5, fontWeight: 600, color: tokens.text }}>
               {levelName}
             </span>
-            <span
-              style={{
-                fontFamily: tokens.fontMono,
-                fontSize: 10.5,
-                color: tokens.textMuted,
-              }}
-            >
+            <span style={{ ...xpText("secondary"), fontSize: 10.5 }}>
               {xpIntoLevel}/{xpForLevel}
             </span>
           </span>
@@ -91,16 +99,16 @@ export default function NavProgressChip({
             className="mt-1.5 block w-full overflow-hidden"
             style={{
               height: 5,
-              borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              borderRadius: r.chip,
+              background: progressTrack().background,
             }}
           >
             <span
               className="block h-full transition-all duration-500"
               style={{
                 width: `${pct}%`,
-                borderRadius: tokens.radiusPill,
-                background: tokens.orangeGradient,
+                borderRadius: r.chip,
+                background: progressFill().background,
               }}
             />
           </span>
@@ -118,18 +126,18 @@ export default function NavProgressChip({
           pointerEvents: open ? "auto" : "none",
           padding: 14,
           borderRadius: tokens.radiusPanel,
-          background: tokens.shell,
-          border: tokens.borderStrong,
+          background: t.glass,
+          border: `0.5px solid ${t.glassBorder}`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 16px 40px rgba(0,0,0,0.40)",
+          ...elevation.raised,
         }}
       >
         <div className="flex items-center justify-between">
           <span style={{ fontSize: 13, fontWeight: 600, color: tokens.text }}>
             Level {level} · {levelName}
           </span>
-          <Sparkles size={14} color={xpColor} />
+          <Sparkles size={14} color={t.text2} />
         </div>
 
         <div className="mt-3">
@@ -137,16 +145,16 @@ export default function NavProgressChip({
             className="w-full overflow-hidden"
             style={{
               height: 6,
-              borderRadius: tokens.radiusPill,
-              background: "rgba(255,255,255,0.08)",
+              borderRadius: r.chip,
+              background: progressTrack().background,
             }}
           >
             <div
               style={{
                 width: `${pct}%`,
                 height: "100%",
-                borderRadius: tokens.radiusPill,
-                background: tokens.orangeGradient,
+                borderRadius: r.chip,
+                background: progressFill().background,
               }}
             />
           </div>
@@ -155,12 +163,7 @@ export default function NavProgressChip({
               {remaining} XP to Level {level + 1}
             </span>
             <span
-              style={{
-                fontFamily: tokens.fontMono,
-                fontSize: 11,
-                color: xpColor,
-                fontWeight: 600,
-              }}
+              style={{ ...xpText(), fontSize: 11, fontWeight: 500 }}
             >
               {Math.round(pct)}%
             </span>
@@ -173,18 +176,18 @@ export default function NavProgressChip({
         >
           {typeof totalXp === "number" && (
             <FlyoutStat
-              icon={<Sparkles size={13} color={xpColor} />}
+              icon={<Sparkles size={13} color={t.text2} />}
               label="Lifetime XP"
               value={totalXp.toLocaleString()}
-              color={xpColor}
+              color={t.text}
             />
           )}
           {typeof streakDays === "number" && (
             <FlyoutStat
-              icon={<Flame size={13} color={streakColor} />}
+              icon={<Flame size={13} color={t.text2} />}
               label="Streak"
               value={`${streakDays} day${streakDays === 1 ? "" : "s"}`}
-              color={streakColor}
+              color={t.text}
             />
           )}
           {typeof reputation === "number" && (
@@ -202,9 +205,9 @@ export default function NavProgressChip({
           className="mt-3 flex w-full items-center justify-center gap-1 transition-opacity hover:opacity-90"
           style={{
             padding: "8px 12px",
-            borderRadius: tokens.radiusPill,
-            background: tokens.orangeGradient,
-            color: "#fff",
+            borderRadius: r.control,
+            background: t.action,
+            color: t.onAction,
             fontSize: 12,
             fontWeight: 600,
           }}

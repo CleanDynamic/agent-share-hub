@@ -1,5 +1,9 @@
 import { GitFork, X } from 'lucide-react'
-import { tokens, xpColor } from './tokens'
+import { tokens } from './tokens'
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 const fontMono = tokens.fontMono
 
 export interface LineageXpToastProps {
@@ -22,11 +26,11 @@ export default function LineageXpToast({
       style={{
         padding: '12px 14px',
         borderRadius: tokens.radiusCard,
-        background: tokens.card,
-        border: tokens.borderSoft,
+        background: t.glass,
+        border: `0.5px solid ${t.glassBorder}`,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+        ...elevation.raised,
         minWidth: 280,
       }}
     >
@@ -35,17 +39,27 @@ export default function LineageXpToast({
         style={{
           width: 34,
           height: 34,
-          borderRadius: 9,
-          background: 'rgba(232,87,26,0.16)',
-          border: '0.5px solid rgba(232,87,26,0.4)',
+          borderRadius: r.chip,
+          background: t.glass2,
+          border: `0.5px solid ${t.line}`,
           flexShrink: 0,
         }}
       >
-        <GitFork size={17} strokeWidth={2.2} style={{ color: xpColor }} />
+        <GitFork size={17} strokeWidth={2.2} style={{ color: t.text2 }} />
       </span>
 
       <div className="flex flex-col gap-0.5">
-        <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 700, color: xpColor }}>
+        <span
+          style={{
+            ...xpText("onLit"),
+            background: tierFill("highest").background,
+            borderRadius: r.chip,
+            padding: "1px 7px",
+            alignSelf: "flex-start",
+            fontSize: 15,
+            fontWeight: 500,
+          }}
+        >
           +{xp} XP
         </span>
         <span style={{ fontSize: 12.5, color: tokens.textMuted }}>{message}</span>

@@ -1,5 +1,9 @@
 import { Hammer, TrendingUp, Flame, X } from "lucide-react"
-import { tokens, xpColor, reputationColor, streakColor } from "./tokens"
+import { tokens } from "./tokens"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { elevation, SCRIM } from "@/lib/theme/elevation"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface WelcomeXpModalProps {
   /** Fired when the user clicks "Start your quest". */
@@ -13,19 +17,16 @@ export interface WelcomeXpModalProps {
 const ROWS = [
   {
     icon: Hammer,
-    color: xpColor,
     title: "Create",
     body: "Earn XP for publishing and contributing.",
   },
   {
     icon: TrendingUp,
-    color: reputationColor,
     title: "Progress",
     body: "Levels and marks show on your profile.",
   },
   {
     icon: Flame,
-    color: streakColor,
     title: "Return",
     body: "Streaks reward showing up.",
   },
@@ -45,7 +46,7 @@ export default function WelcomeXpModal({
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ fontFamily: tokens.fontSans, background: "rgba(15,15,20,0.62)" }}
+      style={{ fontFamily: tokens.fontSans, ...SCRIM }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -57,11 +58,11 @@ export default function WelcomeXpModal({
           width: "100%",
           maxWidth: 412,
           borderRadius: tokens.radiusPanel,
-          background: tokens.shell,
-          border: tokens.borderStrong,
+          background: t.glass,
+          border: `0.5px solid ${t.glassBorder}`,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+          ...elevation.overlay,
           padding: 24,
         }}
       >
@@ -95,15 +96,15 @@ export default function WelcomeXpModal({
         </p>
 
         <div className="mt-5 flex flex-col gap-2.5">
-          {ROWS.map(({ icon: Icon, color, title, body }) => (
+          {ROWS.map(({ icon: Icon, title, body }) => (
             <div
               key={title}
               className="flex items-start gap-3"
               style={{
                 padding: 13,
                 borderRadius: tokens.radiusCard,
-                background: tokens.card,
-                border: tokens.borderSoft,
+                background: t.glass2,
+                border: `0.5px solid ${t.line}`,
               }}
             >
               <span
@@ -112,11 +113,20 @@ export default function WelcomeXpModal({
                   width: 36,
                   height: 36,
                   borderRadius: tokens.radiusCard,
-                  background: `${color}1F`,
-                  border: `0.5px solid ${color}55`,
+                  /**
+                   * BG-P28b. The three rows carried three hues — amber, teal,
+                   * amber — for three equal items, applied as `${color}1F` and
+                   * `${color}55`: alpha suffixes glued onto values that are now
+                   * `var(--…)` references, so each produced a non-colour and
+                   * these medallions rendered with no ground and no border at
+                   * all. Three equal rows take one quiet treatment; they are
+                   * distinguished by their icons and their words.
+                   */
+                  background: t.glass2,
+                  border: `0.5px solid ${t.line}`,
                 }}
               >
-                <Icon size={18} color={color} />
+                <Icon size={18} color={t.text2} />
               </span>
               <div className="min-w-0">
                 <div style={{ fontSize: 14, fontWeight: 600, color: tokens.text }}>
@@ -136,12 +146,11 @@ export default function WelcomeXpModal({
           className="mt-5 flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
             padding: "13px 16px",
-            borderRadius: tokens.radiusPill,
-            background: tokens.orangeGradient,
-            color: "#fff",
+            borderRadius: r.control,
+            background: t.action,
+            color: t.onAction,
             fontSize: 14.5,
             fontWeight: 600,
-            boxShadow: "0 6px 20px rgba(232,87,26,0.40)",
           }}
         >
           Start your quest
