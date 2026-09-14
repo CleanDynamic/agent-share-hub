@@ -34,23 +34,29 @@ export interface DiscoverFilterSheetProps {
   tagSuggestions: string[]
 }
 
+/* SIXTEEN INVENTED HUES, RESOLVED INTO THE NINE (BG-P28). The list read as a
+   rainbow because each entry was picked on its own: a lime for Tutorial, a
+   cyan for Model, an amber for Prompt that could not have carried its own dot
+   label on the Exhibition ground. They now resolve exactly as the result cards'
+   map does, so a filter chip and the card it filters to are the same hue for
+   the same reason — which is the whole point of having nine of them. */
 const blockTypes = [
-  { name: 'Text', color: '#8B8B8B' },
-  { name: 'Heading', color: '#A78BFA' },
-  { name: 'Prompt', color: '#F59E0B' },
-  { name: 'Code', color: '#10B981' },
-  { name: 'Result', color: '#3B82F6' },
-  { name: 'Image', color: '#EC4899' },
-  { name: 'Video', color: '#EF4444' },
-  { name: 'Agent', color: '#8B5CF6' },
-  { name: 'Workflow', color: '#F97316' },
-  { name: 'Compare', color: '#14B8A6' },
-  { name: 'Tool', color: '#6366F1' },
-  { name: 'Model', color: '#22D3EE' },
-  { name: 'Tutorial', color: '#84CC16' },
-  { name: 'Resource', color: '#FB923C' },
-  { name: 'Note', color: '#FBBF24' },
-  { name: 'Quote', color: '#A3A3A3' },
+  { name: 'Text', color: 'var(--cat-narrative)' },
+  { name: 'Heading', color: 'var(--cat-narrative)' },
+  { name: 'Prompt', color: 'var(--cat-instruction)' },
+  { name: 'Code', color: 'var(--cat-configuration)' },
+  { name: 'Result', color: 'var(--cat-evidence)' },
+  { name: 'Image', color: 'var(--cat-media)' },
+  { name: 'Video', color: 'var(--cat-media)' },
+  { name: 'Agent', color: 'var(--cat-agents)' },
+  { name: 'Workflow', color: 'var(--cat-configuration)' },
+  { name: 'Compare', color: 'var(--cat-evidence)' },
+  { name: 'Tool', color: 'var(--cat-configuration)' },
+  { name: 'Model', color: 'var(--cat-configuration)' },
+  { name: 'Tutorial', color: 'var(--cat-narrative)' },
+  { name: 'Resource', color: 'var(--cat-artefact)' },
+  { name: 'Note', color: 'var(--cat-narrative)' },
+  { name: 'Quote', color: 'var(--cat-narrative)' },
 ]
 
 const postTypes = ['Blueprint', 'Blog', 'Bounty']
@@ -72,7 +78,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontWeight: 600,
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
-        color: 'rgba(255,255,255,0.40)',
+        color: 'var(--text2)',
       }}
     >
       {children}
@@ -101,9 +107,9 @@ function Chip({
         fontWeight: 500,
         padding: '3px 8px',
         borderRadius: 100,
-        background: selected ? 'rgba(232,87,26,0.10)' : 'rgba(255,255,255,0.03)',
-        color: selected ? '#E8571A' : 'rgba(255,255,255,0.65)',
-        border: selected ? '0.5px solid rgba(232,87,26,0.40)' : '0.5px solid rgba(255, 255, 255, 0.14)',
+        background: selected ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'var(--recess)',
+        color: selected ? 'var(--action)' : 'var(--text2)',
+        border: selected ? '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)' : '0.5px solid var(--line)',
         cursor: 'pointer',
         gap: 5,
         transition: 'all 0.15s',
@@ -163,8 +169,8 @@ function TagInput({
         style={{
           gap: 6,
           padding: '8px 10px',
-          background: 'rgba(30,30,40,0.50)',
-          border: '0.5px solid rgba(255,255,255,0.08)',
+          background: 'var(--recess)',
+          border: '0.5px solid var(--line)',
           borderRadius: 8,
           minHeight: 40,
         }}
@@ -179,9 +185,9 @@ function TagInput({
               fontWeight: 500,
               padding: '2px 6px',
               borderRadius: 4,
-              background: 'rgba(232,87,26,0.10)',
-              color: '#E8571A',
-              border: '0.5px solid rgba(232,87,26,0.20)',
+              background: 'color-mix(in srgb, var(--action) 10%, transparent)',
+              color: 'var(--action)',
+              border: '0.5px solid color-mix(in srgb, var(--action) 20%, transparent)',
               gap: 4,
             }}
           >
@@ -190,7 +196,7 @@ function TagInput({
               onClick={() => removeTag(tag)}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
             >
-              <X size={10} style={{ color: '#E8571A' }} />
+              <X size={10} style={{ color: 'var(--action)' }} />
             </button>
           </span>
         ))}
@@ -218,7 +224,7 @@ function TagInput({
               outline: 'none',
               fontFamily: 'Figtree, sans-serif',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text)',
             }}
           />
         )}
@@ -231,8 +237,8 @@ function TagInput({
             left: 0,
             right: 0,
             marginTop: 4,
-            background: 'rgba(16,16,24,0.98)',
-            border: '0.5px solid rgba(255,255,255,0.10)',
+            background: 'var(--bg)',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '4px 0',
             maxHeight: 160,
@@ -250,13 +256,13 @@ function TagInput({
                 textAlign: 'left',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 12,
-                color: 'rgba(255,255,255,0.75)',
+                color: 'var(--text2)',
                 background: 'transparent',
                 border: 'none',
                 padding: '8px 12px',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--recess)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
               {suggestion}
@@ -301,13 +307,13 @@ function ExpandableChipList({
           className="flex items-center"
           style={{
             padding: '6px 10px',
-            background: 'rgba(30,30,40,0.50)',
-            border: '0.5px solid rgba(255,255,255,0.08)',
+            background: 'var(--recess)',
+            border: '0.5px solid var(--line)',
             borderRadius: 6,
             gap: 8,
           }}
         >
-          <Search size={12} style={{ color: 'rgba(255,255,255,0.40)' }} />
+          <Search size={12} style={{ color: 'var(--text2)' }} />
           <input
             type="text"
             value={searchValue}
@@ -320,7 +326,7 @@ function ExpandableChipList({
               outline: 'none',
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text)',
             }}
           />
         </div>
@@ -339,7 +345,7 @@ function ExpandableChipList({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.50)',
+              color: 'var(--text2)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -361,7 +367,7 @@ function ExpandableChipList({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 11,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.50)',
+              color: 'var(--text2)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -428,7 +434,7 @@ export function DiscoverFilterSheet({
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.50)',
+          background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
           zIndex: 40,
         }}
       />
@@ -442,9 +448,9 @@ export function DiscoverFilterSheet({
           bottom: 0,
           width: 420,
           maxWidth: '100vw',
-          background: 'rgba(16,16,24,0.96)',
+          background: 'var(--bg)',
           backdropFilter: 'blur(20px)',
-          borderLeft: '0.5px solid rgba(255,255,255,0.10)',
+          borderLeft: '0.5px solid var(--line)',
           zIndex: 50,
           display: 'flex',
           flexDirection: 'column',
@@ -456,7 +462,7 @@ export function DiscoverFilterSheet({
           style={{
             height: 52,
             padding: '0 20px',
-            borderBottom: '0.5px solid rgba(255,255,255,0.10)',
+            borderBottom: '0.5px solid var(--line)',
             flexShrink: 0,
           }}
         >
@@ -465,7 +471,7 @@ export function DiscoverFilterSheet({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 14,
               fontWeight: 600,
-              color: 'rgba(255,255,255,0.92)',
+              color: 'var(--text)',
             }}
           >
             Filters
@@ -480,7 +486,7 @@ export function DiscoverFilterSheet({
               display: 'flex',
             }}
           >
-            <X size={16} style={{ color: 'rgba(255,255,255,0.45)' }} />
+            <X size={16} style={{ color: 'var(--text2)' }} />
           </button>
         </div>
 
@@ -503,7 +509,7 @@ export function DiscoverFilterSheet({
                   style={{
                     fontFamily: 'Figtree, sans-serif',
                     fontSize: 10,
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     marginTop: 2,
                   }}
                 >
@@ -549,7 +555,7 @@ export function DiscoverFilterSheet({
                 style={{
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 10,
-                  color: 'rgba(255,255,255,0.35)',
+                  color: 'var(--text2)',
                   marginTop: 2,
                 }}
               >
@@ -724,7 +730,7 @@ export function DiscoverFilterSheet({
           style={{
             height: 60,
             padding: '0 20px',
-            borderTop: '0.5px solid rgba(255,255,255,0.10)',
+            borderTop: '0.5px solid var(--line)',
             flexShrink: 0,
           }}
         >
@@ -734,13 +740,13 @@ export function DiscoverFilterSheet({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.60)',
+              color: 'var(--text2)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.60)')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text2)')}
           >
             Reset
           </button>
@@ -755,7 +761,7 @@ export function DiscoverFilterSheet({
               height: 36,
               borderRadius: 8,
               border: 'none',
-              background: 'linear-gradient(135deg, #E8571A 0%, #D4470F 100%)',
+              background: 'linear-gradient(135deg, var(--action) 0%, var(--action) 100%)',
               cursor: 'pointer',
             }}
           >

@@ -90,24 +90,24 @@ export function DiscoverSearchHeader({
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                borderBottom: isActive ? '2px solid #E8571A' : '2px solid transparent',
+                borderBottom: isActive ? '2px solid var(--action)' : '2px solid transparent',
               }}
             >
               <div
                 className="flex items-center"
                 style={{
                   gap: 6,
-                  color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.45)',
+                  color: isActive ? 'var(--text)' : 'var(--text2)',
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 13,
                   fontWeight: 500,
                   transition: 'color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.75)'
+                  if (!isActive) e.currentTarget.style.color = 'var(--text2)'
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'
+                  if (!isActive) e.currentTarget.style.color = 'var(--text2)'
                 }}
               >
                 {tab.icon}
@@ -118,7 +118,7 @@ export function DiscoverSearchHeader({
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 10,
                   fontWeight: 400,
-                  color: 'rgba(255,255,255,0.30)',
+                  color: 'var(--text2)',
                   marginTop: 2,
                 }}
               >
@@ -135,14 +135,14 @@ export function DiscoverSearchHeader({
           className="flex items-center flex-1"
           style={{
             height: 44,
-            background: 'rgba(30,30,40,0.50)',
-            border: '0.5px solid rgba(255,255,255,0.08)',
+            background: 'var(--recess)',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '0 14px',
             position: 'relative',
           }}
         >
-          <Search size={16} style={{ color: 'rgba(255,255,255,0.40)', flexShrink: 0 }} />
+          <Search size={16} style={{ color: 'var(--text2)', flexShrink: 0 }} />
           <input
             type="text"
             value={query}
@@ -156,16 +156,16 @@ export function DiscoverSearchHeader({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 14,
               fontWeight: 400,
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--text)',
               marginLeft: 10,
             }}
             onFocus={(e) => {
               const parent = e.currentTarget.parentElement
-              if (parent) parent.style.border = '0.5px solid rgba(232,87,26,0.40)'
+              if (parent) parent.style.border = '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)'
             }}
             onBlur={(e) => {
               const parent = e.currentTarget.parentElement
-              if (parent) parent.style.border = '0.5px solid rgba(255,255,255,0.08)'
+              if (parent) parent.style.border = '0.5px solid var(--line)'
             }}
           />
           <span
@@ -173,8 +173,8 @@ export function DiscoverSearchHeader({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 10,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.30)',
-              border: '1px solid rgba(255, 255, 255, 0.14)',
+              color: 'var(--text2)',
+              border: '1px solid var(--line)',
               padding: '1px 5px',
               borderRadius: 4,
               flexShrink: 0,
@@ -189,21 +189,21 @@ export function DiscoverSearchHeader({
           className="flex items-center"
           style={{
             height: 44,
-            background: 'rgba(30,30,40,0.50)',
-            border: '0.5px solid rgba(255,255,255,0.08)',
+            background: 'var(--recess)',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '0 14px',
             gap: 8,
             cursor: 'pointer',
           }}
         >
-          <SlidersHorizontal size={14} style={{ color: 'rgba(255,255,255,0.75)' }} />
+          <SlidersHorizontal size={14} style={{ color: 'var(--text2)' }} />
           <span
             style={{
               fontFamily: 'Figtree, sans-serif',
               fontSize: 13,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.75)',
+              color: 'var(--text2)',
             }}
           >
             Filters
@@ -214,8 +214,8 @@ export function DiscoverSearchHeader({
                 width: 16,
                 height: 16,
                 borderRadius: '50%',
-                background: 'rgba(232,87,26,0.20)',
-                color: '#E8571A',
+                background: 'color-mix(in srgb, var(--action) 20%, transparent)',
+                color: 'var(--action)',
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 10,
                 fontWeight: 600,
@@ -243,9 +243,9 @@ export function DiscoverSearchHeader({
                 fontWeight: 500,
                 padding: '3px 8px',
                 borderRadius: 100,
-                background: 'rgba(232,87,26,0.10)',
-                color: '#E8571A',
-                border: '0.5px solid rgba(232,87,26,0.20)',
+                background: 'color-mix(in srgb, var(--action) 10%, transparent)',
+                color: 'var(--action)',
+                border: '0.5px solid color-mix(in srgb, var(--action) 20%, transparent)',
                 gap: 4,
               }}
             >
@@ -261,7 +261,7 @@ export function DiscoverSearchHeader({
                   alignItems: 'center',
                 }}
               >
-                <X size={10} style={{ color: '#E8571A' }} />
+                <X size={10} style={{ color: 'var(--action)' }} />
               </button>
             </span>
           ))}
@@ -272,7 +272,7 @@ export function DiscoverSearchHeader({
                 fontFamily: 'Figtree, sans-serif',
                 fontSize: 11,
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.50)',
+                color: 'var(--text2)',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
@@ -294,7 +294,7 @@ export function DiscoverSearchHeader({
             fontFamily: 'Figtree, sans-serif',
             fontSize: 12,
             fontWeight: 400,
-            color: 'rgba(255,255,255,0.55)',
+            color: 'var(--text2)',
           }}
         >
           {resultCount.toLocaleString()} results
@@ -308,7 +308,7 @@ export function DiscoverSearchHeader({
               fontFamily: 'Figtree, sans-serif',
               fontSize: 12,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.75)',
+              color: 'var(--text2)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
@@ -326,9 +326,9 @@ export function DiscoverSearchHeader({
                 top: '100%',
                 right: 0,
                 marginTop: 4,
-                background: 'rgba(16,16,24,0.96)',
+                background: 'var(--bg)',
                 backdropFilter: 'blur(20px)',
-                border: '0.5px solid rgba(255,255,255,0.10)',
+                border: '0.5px solid var(--line)',
                 borderRadius: 8,
                 padding: '4px 0',
                 minWidth: 160,
@@ -349,13 +349,13 @@ export function DiscoverSearchHeader({
                     fontFamily: 'Figtree, sans-serif',
                     fontSize: 12,
                     fontWeight: option === sort ? 600 : 400,
-                    color: option === sort ? '#E8571A' : 'rgba(255,255,255,0.75)',
+                    color: option === sort ? 'var(--action)' : 'var(--recess)',
                     background: 'transparent',
                     border: 'none',
                     padding: '8px 14px',
                     cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--recess)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   {option}

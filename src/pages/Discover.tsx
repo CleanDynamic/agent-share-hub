@@ -430,7 +430,7 @@ const Discover = () => {
             <FeedCard key={bp.id} post={bp} />
           ))}
           {blueprintsError && (
-            <div className="mt-4 rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+            <div className="mt-4 rounded-lg p-3 text-[12px]" style={{ background: "color-mix(in srgb, var(--cat-breakage) 10%, transparent)", color: "var(--cat-breakage)", border: "1px solid color-mix(in srgb, var(--cat-breakage) 25%, transparent)" }}>
               {blueprintsError}
             </div>
           )}
@@ -442,7 +442,7 @@ const Discover = () => {
             </div>
           )}
           {!blueprintsLoadingMore && blueprintRows.length >= blueprintTotal && blueprintTotal > 0 && (
-            <div className="mt-4 text-center text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <div className="mt-4 text-center text-[11px]" style={{ color: "var(--text2)" }}>
               End of results · {blueprintTotal} total
             </div>
           )}
@@ -454,7 +454,7 @@ const Discover = () => {
       return (
         <div className="flex flex-col gap-3">
           {stagesError && (
-            <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+            <div className="rounded-lg p-3 text-[12px]" style={{ background: "color-mix(in srgb, var(--cat-breakage) 10%, transparent)", color: "var(--cat-breakage)", border: "1px solid color-mix(in srgb, var(--cat-breakage) 25%, transparent)" }}>
               {stagesError}
             </div>
           )}
@@ -493,7 +493,7 @@ const Discover = () => {
     return (
       <div className="flex flex-col gap-3">
         {blocksError && (
-          <div className="rounded-lg p-3 text-[12px]" style={{ background: "rgba(239,68,68,0.10)", color: "#F87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+          <div className="rounded-lg p-3 text-[12px]" style={{ background: "color-mix(in srgb, var(--cat-breakage) 10%, transparent)", color: "var(--cat-breakage)", border: "1px solid color-mix(in srgb, var(--cat-breakage) 25%, transparent)" }}>
             {blocksError}
           </div>
         )}

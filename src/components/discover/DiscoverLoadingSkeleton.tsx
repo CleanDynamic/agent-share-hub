@@ -19,8 +19,8 @@ function SkeletonCard() {
     <div
       className="rounded-xl p-5"
       style={{
-        background: "rgba(22, 22, 30, 0.30)",
-        border: "0.5px solid rgba(255, 255, 255, 0.05)",
+        background: "var(--glass)",
+        border: "0.5px solid var(--line)",
       }}
     >
       <div className="flex items-center justify-between">
@@ -49,7 +49,7 @@ function SkeletonRect({ className }: { className?: string }) {
   return (
     <div
       className={cn("animate-pulse rounded", className)}
-      style={{ background: "rgba(255, 255, 255, 0.14)" }}
+      style={{ background: "var(--recess)" }}
     />
   );
 }

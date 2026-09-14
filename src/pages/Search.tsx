@@ -166,20 +166,20 @@ export default function Search() {
       {/* Search input */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+        borderBottom: '1px solid var(--line)',
         position: 'sticky', top: 0,
-        background: 'rgba(8,8,12,0.95)',
+        background: 'var(--bg)',
         backdropFilter: 'blur(20px)',
         zIndex: 10,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          background: 'var(--recess)',
+          border: '1px solid var(--line)',
           borderRadius: 9999, padding: '8px 14px',
         }}>
           <span style={{ fontSize: 13,
-            color: 'rgba(255,255,255,0.30)' }}>🔍</span>
+            color: 'var(--text2)' }}>🔍</span>
           <input
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
@@ -193,7 +193,7 @@ export default function Search() {
             style={{
               flex: 1, background: 'transparent',
               border: 'none', outline: 'none',
-              fontSize: 14, color: '#fff',
+              fontSize: 14, color: 'var(--text)',
               fontFamily: 'Figtree, sans-serif',
             }}
           />
@@ -205,7 +205,7 @@ export default function Search() {
               }}
               style={{
                 background: 'none', border: 'none',
-                color: 'rgba(255,255,255,0.30)',
+                color: 'var(--text2)',
                 cursor: 'pointer', fontSize: 16,
               }}
             >×</button>
@@ -217,9 +217,9 @@ export default function Search() {
       {q && (
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+          borderBottom: '1px solid var(--line)',
           position: 'sticky', top: 57,
-          background: 'rgba(8,8,12,0.95)',
+          background: 'var(--bg)',
           backdropFilter: 'blur(20px)',
           zIndex: 9,
         }}>
@@ -233,9 +233,9 @@ export default function Search() {
                   flex: 1, padding: '12px 4px',
                   background: 'none', border: 'none',
                   borderBottom: isActive
-                    ? '2px solid #8B4513' : '2px solid transparent',
+                    ? '2px solid var(--action)' : '2px solid transparent',
                   color: isActive
-                    ? '#fff' : 'rgba(255,255,255,0.40)',
+                    ? 'var(--text)' : 'var(--text2)',
                   fontSize: 13, fontWeight: isActive ? 700 : 400,
                   cursor: 'pointer',
                   transition: 'color 0.15s, border-color 0.15s',
@@ -253,7 +253,7 @@ export default function Search() {
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center',
           justifyContent: 'center', flexDirection: 'column',
-          gap: 12, color: 'rgba(255,255,255,0.25)',
+          gap: 12, color: 'var(--text2)',
           padding: 40,
         }}>
           <div style={{ fontSize: 32 }}>🔍</div>
@@ -275,7 +275,7 @@ export default function Search() {
           {(activePosts ?? []).length === 0 ? (
             <div style={{
               padding: '48px 16px', textAlign: 'center',
-              color: 'rgba(255,255,255,0.25)', fontSize: 14,
+              color: 'var(--text2)', fontSize: 14,
             }}>
               No results for "{q}"
             </div>
@@ -299,7 +299,7 @@ export default function Search() {
           {(people ?? []).length === 0 ? (
             <div style={{
               padding: '48px 16px', textAlign: 'center',
-              color: 'rgba(255,255,255,0.25)', fontSize: 14,
+              color: 'var(--text2)', fontSize: 14,
             }}>
               No people found for "{q}"
             </div>
@@ -311,7 +311,7 @@ export default function Search() {
                   display: 'flex', alignItems: 'center',
                   gap: 12, padding: '14px 16px',
                   borderBottom:
-                    '1px solid rgba(255,255,255,0.05)',
+                    '1px solid var(--line)',
                   cursor: 'pointer',
                 }}
                 onClick={() =>
@@ -321,12 +321,12 @@ export default function Search() {
                 {/* Avatar */}
                 <div style={{
                   width: 42, height: 42, borderRadius: '50%',
-                  background: 'rgba(139,69,19,0.15)',
-                  border: '1px solid rgba(139,69,19,0.30)',
+                  background: 'color-mix(in srgb, var(--action) 15%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--action) 30%, transparent)',
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 14, fontWeight: 700,
-                  color: '#8B4513', flexShrink: 0,
+                  color: 'var(--action)', flexShrink: 0,
                 }}>
                   {person.avatar_url
                     ? <img src={person.avatar_url}
@@ -343,14 +343,14 @@ export default function Search() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: 14, fontWeight: 600,
-                    color: 'rgba(255,255,255,0.90)',
+                    color: 'var(--text)',
                     marginBottom: 2,
                   }}>
                     {person.display_name}
                   </div>
                   <div style={{
                     fontSize: 12,
-                    color: 'rgba(255,255,255,0.40)',
+                    color: 'var(--text2)',
                     marginBottom: person.bio ? 4 : 0,
                   }}>
                     @{person.username}
@@ -358,8 +358,8 @@ export default function Search() {
                       <span style={{
                         marginLeft: 6, fontSize: 10,
                         padding: '1px 6px', borderRadius: 4,
-                        background: 'rgba(139,69,19,0.15)',
-                        color: '#8B4513', fontWeight: 700,
+                        background: 'color-mix(in srgb, var(--action) 15%, transparent)',
+                        color: 'var(--action)', fontWeight: 700,
                       }}>
                         Creator
                       </span>
@@ -368,7 +368,7 @@ export default function Search() {
                   {person.bio && (
                     <div style={{
                       fontSize: 12,
-                      color: 'rgba(255,255,255,0.45)',
+                      color: 'var(--text2)',
                       overflow: 'hidden',
                       display: '-webkit-box',
                       WebkitLineClamp: 1,
@@ -401,7 +401,7 @@ export default function Search() {
             <div style={{
               gridColumn: '1 / -1',
               padding: '48px 16px', textAlign: 'center',
-              color: 'rgba(255,255,255,0.25)', fontSize: 14,
+              color: 'var(--text2)', fontSize: 14,
             }}>
               No collections found for "{q}"
             </div>
@@ -414,8 +414,8 @@ export default function Search() {
                   key={col.id}
                   style={{
                     padding: '12px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: 'var(--recess)',
+                    border: '1px solid var(--line)',
                     borderRadius: 10, cursor: 'pointer',
                   }}
                   onClick={() =>
@@ -423,7 +423,7 @@ export default function Search() {
                   }
                 >
                   <div style={{
-                    color: 'rgba(255,255,255,0.85)',
+                    color: 'var(--text)',
                     marginBottom: 4,
                     ...type.cardTitle,
 
@@ -436,14 +436,14 @@ export default function Search() {
                   </div>
                   <div style={{
                     fontSize: 11,
-                    color: 'rgba(255,255,255,0.35)',
+                    color: 'var(--text2)',
                     marginBottom: 4,
                   }}>
                     {owner?.display_name ?? 'Unknown'}
                   </div>
                   <div style={{
                     fontSize: 11,
-                    color: 'rgba(255,255,255,0.25)',
+                    color: 'var(--text2)',
                   }}>
                     {col.item_count ?? 0} items
                   </div>

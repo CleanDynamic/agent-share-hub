@@ -4,23 +4,35 @@ import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMe
 import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
 import { type } from "@/lib/theme/type";
 
+/* THE FOURTEEN LEGACY BADGE COLOURS ARE RETIRED (BG-P28).
+   What stood here was seventeen invented hues — #FFE66D, #FCBAD3, #F5F5DC and
+   the rest — none of them measured, several of them (a cream, two pastels)
+   under 2:1 on the Exhibition ground. The theme retires that set outright and
+   says anything needing a colour resolves into the nine part hues, or into
+   --text2 when nothing fits. These follow the resolution BG-P26 already made
+   for the same map in ContentShareBubble, extended to the types only this
+   surface has: code and the three configuration-ish types are what you set up,
+   a result or a comparison is what happened, prose is narrative, and the two
+   media types are media. */
 const BLOCK_TYPE_COLORS: Record<string, string> = {
-  prompt: "#2EC4B6",
-  code: "#FF6B6B",
-  result: "#FFE66D",
-  text: "#A8DADC",
-  note: "#B5838D",
-  quote: "#E5989B",
-  image: "#6D6875",
-  video: "#B185DB",
-  agent: "#4ECDC4",
-  tool: "#F38181",
-  model: "#AA96DA",
-  workflow: "#FCBAD3",
-  compare: "#95E1D3",
-  tutorial: "#F9ED69",
-  resource: "#C9B1FF",
-  heading: "#F5F5DC",
+  prompt: "var(--cat-instruction)",
+  code: "var(--cat-configuration)",
+  result: "var(--cat-evidence)",
+  compare: "var(--cat-evidence)",
+  image: "var(--cat-media)",
+  video: "var(--cat-media)",
+  audio: "var(--cat-media)",
+  text: "var(--cat-narrative)",
+  note: "var(--cat-narrative)",
+  quote: "var(--cat-narrative)",
+  heading: "var(--cat-narrative)",
+  tutorial: "var(--cat-narrative)",
+  api: "var(--cat-data)",
+  agent: "var(--cat-agents)",
+  tool: "var(--cat-configuration)",
+  model: "var(--cat-configuration)",
+  workflow: "var(--cat-configuration)",
+  resource: "var(--cat-artefact)",
 };
 
 export interface DiscoverBlock {
@@ -56,7 +68,7 @@ function getDefaultBlockName(type: string): string {
 }
 
 function getBlockColor(type: string): string {
-  return BLOCK_TYPE_COLORS[type.toLowerCase()] || "#888888";
+  return BLOCK_TYPE_COLORS[type.toLowerCase()] || "var(--text2)";
 }
 
 function getContentPreview(block: DiscoverBlock): { content: string; isCode: boolean } {
@@ -136,17 +148,17 @@ export function BlockResultCard({
           anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
         });
       }}
-      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-white/[0.02]"
+      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-foreground/[0.02]"
       style={{
         padding: "14px 16px",
         marginBottom: "10px",
-        background: "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.02) 100%)",
+        background: "var(--glass)",
         backdropFilter: "blur(60px)",
         WebkitBackdropFilter: "blur(60px)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
-        borderTopColor: "rgba(255, 255, 255, 0.14)",
-        borderLeftColor: "rgba(255, 255, 255, 0.14)",
-        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.20)",
+        border: "1px solid var(--line)",
+        borderTopColor: "var(--line)",
+        borderLeftColor: "var(--line)",
+        boxShadow: "var(--elev-raised)",
       }}
     >
       {/* Author header row */}
@@ -165,13 +177,13 @@ export function BlockResultCard({
             {initials}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
               {author.name}
             </span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.40)" }}>
+            <span style={{ fontSize: 12, color: "var(--text2)" }}>
               @{author.handle}
             </span>
-            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10 }}>·</span>
+            <span style={{ color: "var(--text2)", fontSize: 10 }}>·</span>
             <span
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
@@ -201,7 +213,7 @@ export function BlockResultCard({
           />
           <button
             className="flex items-center gap-1 text-[11px] font-medium"
-            style={{ color: "rgba(255,255,255,0.55)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
+            style={{ color: "var(--text2)", background: "transparent", border: "none", cursor: "pointer", flexShrink: 0 }}
             onClick={(e) => {
               e.stopPropagation();
               onClick?.();
@@ -216,7 +228,7 @@ export function BlockResultCard({
       {/* Title (Playfair) */}
       <h3 style={{
         ...type.cardTitle,
-          color: "rgba(255,255,255,0.90)",
+          color: "var(--text)",
          marginTop: 10, marginBottom: 0,
       }}>
         {blockName}
@@ -224,11 +236,11 @@ export function BlockResultCard({
 
       <p style={{
         marginTop: 6, fontSize: 13,
-        color: "rgba(255,255,255,0.50)", lineHeight: 1.6, margin: 0,
+        color: "var(--text2)", lineHeight: 1.6, margin: 0,
       }}>
-        From <span style={{ color: "rgba(255,255,255,0.70)" }}>{parent.blueprintTitle}</span>
+        From <span style={{ color: "var(--text2)" }}>{parent.blueprintTitle}</span>
         {" · in "}
-        <span style={{ color: "rgba(255,255,255,0.70)" }}>{parent.stageName}</span>
+        <span style={{ color: "var(--text2)" }}>{parent.stageName}</span>
       </p>
 
       {/* Content preview */}
@@ -237,20 +249,20 @@ export function BlockResultCard({
           marginTop: 12,
           borderRadius: 10,
           overflow: "hidden",
-          background: "rgba(0,0,0,0.25)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          background: "var(--recess)",
+          border: "1px solid var(--line)",
           padding: 12,
         }}
       >
         {isMediaBlock ? (
-          <div className="text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+          <div className="text-[12px]" style={{ color: "var(--text2)" }}>
             {block.type.toLowerCase() === "image" ? "🖼️" : "🎬"} {block.type} thumbnail
           </div>
         ) : (
           <pre
             className="whitespace-pre-wrap text-[12px] leading-relaxed"
             style={{
-              color: "rgba(255,255,255,0.75)",
+              color: "var(--text2)",
               fontFamily: isCode ? "ui-monospace, SFMono-Regular, monospace" : "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               margin: 0,
             }}
@@ -261,7 +273,7 @@ export function BlockResultCard({
       </div>
 
       {referenceCount && referenceCount > 0 && (
-        <div className="mt-3 text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <div className="mt-3 text-[11px]" style={{ color: "var(--text2)" }}>
           Used {referenceCount}× in other blueprints
         </div>
       )}
