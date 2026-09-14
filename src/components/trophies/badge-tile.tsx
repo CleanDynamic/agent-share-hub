@@ -1,3 +1,9 @@
+// UNREACHABLE. Nothing imports this file — the trophies surfaces that DO render
+// on /analytics are creator-marks-row and showcase-strip. BG-P28b deliberately
+// left it unpainted; its sibling `badge-data.ts` was repointed because the
+// mounted surfaces read it. Same rule as the unmounted folders: see
+// docs/retired-surfaces.md before recolouring it.
+
 "use client"
 
 import type { Badge } from "./badge-data"

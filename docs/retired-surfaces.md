@@ -1737,3 +1737,47 @@ and a deletion that also repaints is a deletion nobody can bisect.
 
 The rail's stylesheet needs nothing: BG-P13 put every one of its colours on a
 token already.
+
+---
+
+## Unmounted gamification surfaces — skipped by BG-P28b
+
+BG-P28b repainted the progression system onto the progress ladder in
+`src/lib/theme/progress.ts`. Four sets of files were **deliberately not
+repainted**, because nothing in the application imports them. They are not
+frozen in the sense the rest of this page uses — no flag holds them down and no
+affordance was removed — they simply were never wired up.
+
+| Folder / file | Entry point checked | Importers outside itself |
+| --- | --- | --- |
+| `src/components/guilds/` | `GuildDemo.tsx` | none |
+| `src/components/reputation/` | `reputation-demo.tsx` | none |
+| `src/components/leaderboards/` | `index.ts` | none |
+| `src/components/trophies/badge-tile.tsx` | — | none |
+| `src/components/trophies/cabinet-grid.tsx` | — | `badge-tile.tsx` only |
+
+`src/components/skilltree/` was checked with them and is **not** in this list:
+`SkillTreeTab` imports seven of its modules, so it renders on `/analytics` and
+was repainted.
+
+Each file above carries a one-line header saying the same thing. They are left
+alone on purpose:
+
+- **BG-P29 must not repoint them.** A mechanical recolour of a dark-room
+  palette produces a surface that reads as "done" without anyone having seen it
+  on screen in either room, which is worse than an obviously unpainted one.
+- **A session that designs these should start from the new system** — the
+  three-rung ladder, `--lit` as light and never type — rather than inherit a
+  sweep.
+
+`trophies/badge-data.ts` IS repointed, because the two trophies surfaces that
+do render (`creator-marks-row`, `showcase-strip`) read it.
+
+### Note for BG-P33 — the review set is now six screens
+
+BG-P33's critique pass (its task 3) and its visual-regression baseline (task 4)
+were specified over five screens. `/analytics` is the sixth. It needs a seeded
+creator account to show more than the fallback tab set: `surfaces.tabs` decides
+which tabs exist, and an unseeded account renders only overview / trophies /
+history, so the skill-tree and challenges tabs are unreachable without one.
+

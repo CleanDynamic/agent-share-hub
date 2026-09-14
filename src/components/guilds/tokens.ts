@@ -1,3 +1,10 @@
+// UNMOUNTED. Deliberately skipped by BG-P28b — nothing in the application
+// imports this folder, so it was not repainted onto the progress ladder. Do not
+// treat it as an oversight and do not mechanically recolour it: a session that
+// designs these surfaces should start from `src/lib/theme/progress.ts` and the
+// buildgallery-theme two-theme system, not inherit a sweep of a dark-room
+// palette that no one has seen on screen. See docs/retired-surfaces.md.
+
 // Shared design tokens for the Guild/Circle UI system.
 // Plain object — consumed via inline style={{}} for all visual treatment.
 
