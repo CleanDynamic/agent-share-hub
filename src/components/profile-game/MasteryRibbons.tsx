@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import { Lock } from "lucide-react"
-import { tokens } from "./tokens"
+import { tierFill, tokens } from "./tokens"
 
 export interface MasteryRibbon {
   id: string
@@ -66,15 +66,22 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
                 style={{
                   width: 32,
                   height: 32,
+                  /**
+                   * BG-P28b. Was `${color}1f` over `${color}55` — alpha
+                   * suffixes on what BG-P25 turned into `var(--lit)`, so
+                   * neither resolved and this medallion rendered bare. An
+                   * earned ribbon takes the top rung, a locked one the middle;
+                   * see the ladder.
+                   */
                   borderRadius: tokens.radius.card,
-                  background: `${color}1f`,
-                  border: `0.5px solid ${color}55`,
+                  background: tierFill(ribbon.locked ? "rare" : "highest").background,
+                  border: `1px solid ${tierFill(ribbon.locked ? "rare" : "highest").borderColor}`,
                 }}
               >
                 {ribbon.locked ? (
-                  <Lock size={15} color={tokens.locked} strokeWidth={2.25} aria-hidden />
+                  <Lock size={15} color={tierFill("rare").color} strokeWidth={2.25} aria-hidden />
                 ) : (
-                  <Icon size={16} color={color} strokeWidth={2.25} aria-hidden />
+                  <Icon size={16} color={tierFill("highest").color} strokeWidth={2.25} aria-hidden />
                 )}
               </span>
               <div className="flex flex-col gap-1.5 flex-1 min-w-0">

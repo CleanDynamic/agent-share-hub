@@ -101,18 +101,26 @@ function TrackRibbon({ track, tier, color }: { track: TrackName; tier?: number; 
       style={{
         height: 26,
         padding: "0 14px",
+        /**
+         * BG-P28b. Was a two-stop gradient of `${color}33` into `${color}14`
+         * inside a `${color}66` border, and `color` is `var(--lit)` after
+         * BG-P25 — so all three were non-colours and the ribbon rendered
+         * unstyled with amber-intended TEXT on it. A track ribbon names a
+         * track, so it takes the middle rung and its own name carries it; the
+         * lamp beside it is the one lit mark.
+         */
         borderRadius: tokens.radius.pill,
-        background: `linear-gradient(135deg, ${color}33 0%, ${color}14 100%)`,
-        border: `0.5px solid ${color}66`,
+        background: tierFill("rare").background,
+        border: `1px solid ${tierFill("rare").borderColor}`,
         fontFamily: tokens.font.sans,
         fontSize: 12,
         fontWeight: 700,
         letterSpacing: 1.4,
         textTransform: "uppercase",
-        color: color,
+        color: tierFill("rare").color,
       }}
     >
-      <span style={{ width: 6, height: 6, borderRadius: 100, background: color }} aria-hidden />
+      <span style={{ ...levelLamp({ size: 6 }) }} aria-hidden />
       {`The ${track}`}
       {tier != null && (
         <span style={{ color: tokens.text.secondary, fontWeight: 600 }}>· Tier {tier}</span>

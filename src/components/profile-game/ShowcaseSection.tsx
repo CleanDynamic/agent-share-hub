@@ -1,5 +1,5 @@
 import { Pin, Sparkles } from "lucide-react"
-import { tokens } from "./tokens"
+import { tierFill, tokens } from "./tokens"
 import ShowcaseStrip, { type ShowcaseItem } from "./ShowcaseStrip"
 
 export interface ShowcaseSectionProps {
@@ -48,7 +48,7 @@ export default function ShowcaseSection({
             margin: 0,
           }}
         >
-          <Sparkles size={16} color={tokens.brand.orange} strokeWidth={2.25} aria-hidden />
+          <Sparkles size={16} color={tokens.text.secondary} strokeWidth={2.25} aria-hidden />
           {title}
         </h2>
         <div className="inline-flex items-center gap-2">
@@ -58,13 +58,22 @@ export default function ShowcaseSection({
               style={{
                 height: 24,
                 padding: "0 10px",
+                /**
+                 * BG-P28b. Was `${tokens.brand.orange}1f` over
+                 * `${tokens.brand.orange}66` — alpha suffixes glued onto what
+                 * BG-P25 turned into `var(--action)`, so both produced
+                 * non-colours and this chip has rendered with no ground and no
+                 * border ever since. It is the ladder's middle rung now, which
+                 * is also the right rank for it: "auto-pinned" is a status on
+                 * the section, not an achievement, so it does not take light.
+                 */
                 borderRadius: tokens.radius.pill,
-                background: `${tokens.brand.orange}1f`,
-                border: `0.5px solid ${tokens.brand.orange}66`,
+                background: tierFill("rare").background,
+                border: `1px solid ${tierFill("rare").borderColor}`,
                 fontFamily: tokens.font.sans,
                 fontSize: 11,
                 fontWeight: 600,
-                color: tokens.brand.orange,
+                color: tierFill("rare").color,
               }}
             >
               <Pin size={12} strokeWidth={2.25} aria-hidden />

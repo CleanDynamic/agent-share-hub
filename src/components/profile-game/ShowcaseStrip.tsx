@@ -26,7 +26,12 @@ export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
     >
       <style>{`.showcase-strip-scroll::-webkit-scrollbar{display:none}`}</style>
       {items.map((item) => {
-        const accent = item.accent ?? tokens.brand.orange
+        /**
+         * BG-P28b. A showcase card's accent marks an EARNED thing, so its
+         * default is the light rather than `--action` — a pinned badge is not
+         * a button. Callers may still override it per item.
+         */
+        const accent = item.accent ?? tokens.xp
         return (
           <article
             key={item.id}

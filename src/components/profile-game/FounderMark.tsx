@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 import { Crown } from "lucide-react"
-import { tokens } from "./tokens"
+import { tierFill, tokens } from "./tokens"
 
 export interface FounderMarkProps {
   /** Optional override label. */
@@ -30,8 +30,15 @@ export default function FounderMark({
       style={{
         height: 30,
         padding: "0 14px",
+        /**
+         * BG-P28b. A founder mark is the rarest thing a profile can carry, so
+         * it takes the ladder's TOP rung rather than `--action`: it is an
+         * achievement, not the primary thing to do. This is also what makes it
+         * agree with the level marker beside it, which is the whole point of
+         * task 6 — both are amber fills with `--on-lit` on them.
+         */
         borderRadius: tokens.radius.pill,
-        background: tokens.brand.orangeGradient,
+        background: tierFill("highest").background,
         border: tokens.border.soft,
         fontFamily: tokens.font.sans,
         fontSize: 12.5,
@@ -39,11 +46,11 @@ export default function FounderMark({
         letterSpacing: 0.3,
         /* The measured label for an `--action` ground. White was legal on one
            of the two orange values and on neither ground. */
-        color: tokens.brand.onOrange,
+        color: tierFill("highest").color,
         ...style,
       }}
     >
-      <Crown size={15} color={tokens.brand.onOrange} strokeWidth={2.25} aria-hidden />
+      <Crown size={15} color={tierFill("highest").color} strokeWidth={2.25} aria-hidden />
       {text}
     </span>
   )
