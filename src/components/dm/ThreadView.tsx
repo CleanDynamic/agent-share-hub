@@ -14,6 +14,12 @@ import { displayContentType } from "@/lib/content-types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContentShareBubble, type ContentShareValue, type ReadState } from "@/components/messages/ContentShareBubble";
 import { markContentViewed } from "@/lib/messaging";
+import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { r } from "@/lib/theme/radius";
+import { data as dataType, tabular } from "@/lib/theme/type";
+import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
+import { TypingIndicator } from "@/components/dm/TypingIndicator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -121,7 +127,13 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
         style={{
           width: 3,
           height: h,
-          backgroundColor: filled ? "hsl(var(--secondary))" : "hsl(var(--muted-foreground) / 0.3)",
+          // BG-P26. `--evidence` is the token for a live state, and a played
+          // bar is exactly that. The bars are graphics rather than type, so
+          // they answer to the 3.0:1 UI floor: measured 4.23:1 on `--recess`
+          // and 3.83:1 on the own-message wash on Exhibition, 6.14 and 6.09 on
+          // Dusk. The unplayed bars drop to 30% of the same hue so the track
+          // reads as one object at two states, not as two colours.
+          backgroundColor: filled ? t.evidence : tokenAlpha("evidence", 0.3),
           transition: "background-color 0.1s",
         }}
       />
@@ -132,11 +144,16 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
 
   return (
     <div className="flex items-center gap-2" style={{ width: 220, height: 48 }} onClick={toggle}>
-      <button className="shrink-0 text-foreground">
+      <button className="shrink-0" style={{ color: t.text }}>
         {playing ? "⏸" : "▶"}
       </button>
       <div className="flex items-end gap-[2px] flex-1 h-6">{bars}</div>
-      <span className="text-[11px] text-muted-foreground shrink-0">{fmtDur}</span>
+      <span
+        className="text-[11px] shrink-0"
+        style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text2 }}
+      >
+        {fmtDur}
+      </span>
     </div>
   );
 }
@@ -161,7 +178,8 @@ function PostShareCard({ contentId }: { contentId: string }) {
 
   return (
     <div
-      className="rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden cursor-pointer"
+      className="overflow-hidden cursor-pointer"
+      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}` }}
       style={{ maxWidth: 260 }}
       onClick={(e) => { e.stopPropagation(); navigate(`/content/${content.id}`); }}
     >
@@ -192,7 +210,8 @@ function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: an
 
   return (
     <div
-      className="rounded-xl border border-[rgba(255,255,255,0.1)] overflow-hidden cursor-pointer"
+      className="overflow-hidden cursor-pointer"
+      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}` }}
       style={{ maxWidth: 260 }}
       onClick={(e) => {
         e.stopPropagation();
@@ -203,7 +222,12 @@ function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: an
       <div className="p-2.5">
         <span
           className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider rounded-full"
-          style={{ padding: "2px 8px", color: "#34d399", background: "rgba(52,211,153,0.12)" }}
+          style={{
+            padding: "2px 8px",
+            borderRadius: r["r-chip"],
+            color: t.evidence,
+            background: tokenAlpha("evidence", 0.12),
+          }}
         >
           <Repeat2 size={10} /> Reblog
         </span>
@@ -264,12 +288,26 @@ function ReactionPills({
         <button
           key={emoji}
           onClick={(e) => { e.stopPropagation(); toggleReaction(emoji); }}
-          className={`inline-flex items-center gap-0.5 rounded-xl px-1.5 py-0.5 text-xs transition-colors ${
-            hasMe ? "bg-primary/20" : "bg-[rgba(255,255,255,0.08)]"
-          }`}
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs"
+          style={{
+            // A reaction the current user is part of takes the same `--action`
+            // wash the own-message bubble does, so "mine" reads the same way
+            // wherever it appears; everyone else's sits on `--recess`.
+            borderRadius: r["r-chip"],
+            background: hasMe ? tokenAlpha("action", 0.18) : t.recess,
+            color: t.text,
+            transition: uiTransition(),
+          }}
         >
           <span>{emoji}</span>
-          {count > 1 && <span className="text-[10px] text-muted-foreground">{count}</span>}
+          {count > 1 && (
+            <span
+              className="text-[10px]"
+              style={{ fontFamily: dataType.fontFamily, ...tabular, color: t.text2 }}
+            >
+              {count}
+            </span>
+          )}
         </button>
       ))}
     </div>
@@ -335,7 +373,7 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <button className="absolute top-4 right-4 text-white/80 hover:text-white z-10">
+      <button className="absolute top-4 right-4 z-10" style={{ color: t.text }}>
         <X className="h-8 w-8" />
       </button>
       <img
@@ -420,6 +458,28 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
 
   // Fetch reactions
   const messageIds = useMemo(() => (messages ?? []).map((m: any) => m.id), [messages]);
+
+  /* ── The new-message entrance (BG-P26) ────────────────────────────────────
+     A message gets the entrance only if it was not in the previous render's id
+     set. The set starts as null and is filled after the first commit, so the
+     initial load arrives already in place rather than animating forty bubbles
+     at once — an entrance that plays on everything reads as a page transition,
+     not as an arrival.
+
+     This is presentation state and nothing else: it reads the ids the query
+     already returned and opens no subscription of its own. */
+  /* No transport carries a typing signal yet; see TypingIndicator's header for
+     why BG-P26 could not add one. Kept as a named constant rather than an
+     inline `false` so the wiring point is obvious to whoever adds the
+     broadcast. */
+  const isOtherTyping = false;
+
+  const seenMsgIdsRef = useRef<Set<string> | null>(null);
+  const isNewMessage = (id: string) =>
+    seenMsgIdsRef.current !== null && !seenMsgIdsRef.current.has(id);
+  useEffect(() => {
+    seenMsgIdsRef.current = new Set(messageIds);
+  }, [messageIds]);
   const { data: allReactions } = useQuery({
     queryKey: ["dm_reactions", threadId, messageIds],
     queryFn: async () => {
@@ -777,20 +837,22 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
         className="flex items-center gap-2 my-3 px-1"
         aria-label="New messages"
       >
-        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+        {/* The divider's teal was a one-off; `--evidence` is the token for a
+            live state and carries the same reading in both rooms. */}
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: tokenAlpha("evidence", 0.3) }} />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: dataType.fontFamily,
             fontSize: 9,
-            fontWeight: 600,
+            fontWeight: 500,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            color: "#2EC4B6",
+            color: t.evidence,
           }}
         >
           New
         </span>
-        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: "rgba(46,196,182,0.30)" }} />
+        <span className="flex-1 h-[0.5px]" style={{ backgroundColor: tokenAlpha("evidence", 0.3) }} />
       </div>
     ) : null;
 
@@ -891,14 +953,40 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       if (msg.message_type === "like") return "";
       if (msg.message_type === "image") return "overflow-hidden";
       if (msg.message_type === "post_share") return "p-0 overflow-hidden";
-      return isMine
-        ? "bg-primary text-primary-foreground"
-        : "bg-[#1E1E2A] text-foreground";
+      return "";
     };
 
-    const bubbleRadius = isMine
-      ? "rounded-[18px_18px_4px_18px]"
-      : "rounded-[18px_18px_18px_4px]";
+    /**
+     * BG-P26. Own messages take an `--action` wash with `--text` on it; theirs
+     * take `--recess`. Both carry `--text`, which is the measured pairing —
+     * 10.27:1 and 11.33:1 on Exhibition, 10.54:1 and 10.62:1 on Dusk. The
+     * `--action` hue itself is NOT legal as ink on its own wash (3.76:1 on
+     * Exhibition), so the ink is the same in both bubbles and only the ground
+     * says who spoke.
+     *
+     * `bg-primary` was the old fill and it is a Tailwind palette colour, not a
+     * theme token, so it took neither room's action hue.
+     */
+    const bubbleSurface = (): React.CSSProperties => {
+      if (msg.message_type === "like") return {};
+      if (msg.message_type === "image" || msg.message_type === "post_share") return {};
+      return {
+        background: isMine ? tokenAlpha("action", 0.18) : t.recess,
+        color: t.text,
+      };
+    };
+
+    /**
+     * `--r-control` on three corners, squared on the corner nearest the sender:
+     * bottom-right for mine, bottom-left for theirs. The old shape was an 18px
+     * near-pill, and a pill is off-brand under the radius scale. The squared
+     * corner is what carries direction now that the fill no longer can.
+     */
+    const bubbleRadiusStyle: React.CSSProperties = {
+      borderRadius: isMine
+        ? `${r["r-control"]} ${r["r-control"]} 0 ${r["r-control"]}`
+        : `${r["r-control"]} ${r["r-control"]} ${r["r-control"]} 0`,
+    };
 
     const paddingClass = msg.message_type === "image" || msg.message_type === "post_share" || msg.message_type === "like"
       ? "" : "px-3.5 py-2.5";
@@ -921,8 +1009,18 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       </>
     );
 
+    const entering = isNewMessage(msg.id) && !prefersReducedMotion();
+
     const bubble = (
-      <div key={msg.id}>
+      <div
+        key={msg.id}
+        data-bg-animated={entering ? "" : undefined}
+        style={
+          entering
+            ? { animation: "dmMessageIn 200ms cubic-bezier(.2,.6,.35,1) both" }
+            : undefined
+        }
+      >
         {showDate && (
           <div className="flex justify-center my-4">
             <span className="text-[12px] text-muted-foreground bg-background px-3 py-1 rounded-full">
@@ -955,7 +1053,8 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             <ContextMenu>
               <ContextMenuTrigger>
                 <div
-                  className={`${bubbleClasses()} ${bubbleRadius} ${paddingClass} cursor-pointer`}
+                  className={`${bubbleClasses()} ${paddingClass} cursor-pointer`}
+                  style={{ ...bubbleSurface(), ...bubbleRadiusStyle }}
                   onClick={() => setShowTimestampId(showingTimestamp ? null : msg.id)}
                 >
                   {bubbleContent()}
@@ -985,7 +1084,14 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             />
 
             {showingTimestamp && (
-              <p className={`text-[10px] text-muted-foreground mt-0.5 ${isMine ? "text-right" : "text-left"}`}>
+              <p
+                className={`text-[10px] mt-0.5 ${isMine ? "text-right" : "text-left"}`}
+                style={{
+                  fontFamily: dataType.fontFamily,
+                  ...tabular,
+                  color: t.text2,
+                }}
+              >
                 {formatMessageTime(msg.sent_at)}
               </p>
             )}
@@ -1034,7 +1140,22 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground truncate">{displayName}</p>
               {presence && presenceLabel(presence.is_online, presence.last_seen_at) && (
-                <p className={`text-[12px] ${presence.is_online ? "text-[#22C55E]" : "text-muted-foreground"}`}>
+                /* BG-P26. Online used to be carried by a green that belongs to
+                   no theme; it is now a dot in `--evidence`, the token for a
+                   live state, with the label itself in `--text2` so the colour
+                   marks the state rather than shouting it. The dot is a mark,
+                   not type, so it answers to the 3.0:1 UI floor. */
+                <p
+                  className="text-[12px] flex items-center gap-1.5"
+                  style={{ color: t.text2 }}
+                >
+                  {presence.is_online && (
+                    <span
+                      aria-hidden="true"
+                      className="inline-block rounded-full shrink-0"
+                      style={{ width: 6, height: 6, background: t.evidence }}
+                    />
+                  )}
                   {presenceLabel(presence.is_online, presence.last_seen_at)}
                 </p>
               )}
@@ -1080,20 +1201,55 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       >
         {loadingOlder && (
           <div className="flex justify-center py-3">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="h-4 w-4 animate-spin" style={{ color: t.text2 }} />
           </div>
         )}
         {messagesLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          /* BG-P26. Skeleton bubbles rather than a spinner, alternating sides
+             and at the real radius, so the thread does not jump when the
+             messages land. */
+          <div className="flex flex-col justify-end gap-3 py-4" aria-busy="true">
+            {[
+              { mine: false, w: "58%" },
+              { mine: false, w: "42%" },
+              { mine: true, w: "50%" },
+              { mine: false, w: "64%" },
+              { mine: true, w: "36%" },
+            ].map((row, i) => (
+              <div
+                key={i}
+                className="flex"
+                style={{ justifyContent: row.mine ? "flex-end" : "flex-start" }}
+              >
+                <Skeleton
+                  style={{
+                    width: row.w,
+                    maxWidth: "75%",
+                    height: 38,
+                    borderRadius: row.mine
+                      ? `${r["r-control"]} ${r["r-control"]} 0 ${r["r-control"]}`
+                      : `${r["r-control"]} ${r["r-control"]} ${r["r-control"]} 0`,
+                  }}
+                />
+              </div>
+            ))}
           </div>
         ) : !messages || messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            {enquiryRef ? `Reply to the enquiry about "${enquiryRef}"` : "Start the conversation"}
-          </p>
+          <div className="flex flex-col items-center gap-2 text-center py-8">
+            <p className="text-sm" style={{ color: t.text }}>
+              {enquiryRef ? `Reply to the enquiry about "${enquiryRef}"` : "No messages yet"}
+            </p>
+            {!enquiryRef && (
+              <p className="text-xs" style={{ color: t.text2, maxWidth: 260 }}>
+                Say something to start this conversation.
+              </p>
+            )}
+          </div>
         ) : (
           messages.map((msg: any, idx: number) => renderMessage(msg, idx, messages))
         )}
+        {/* At the foot of the thread, where the next message would land. */}
+        <TypingIndicator active={isOtherTyping} who={displayName} />
         <div ref={messagesEndRef} />
       </div>
 
@@ -1109,7 +1265,10 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
 
       {/* Reply preview bar */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-[#111118] shrink-0">
+        <div
+          className="flex items-center gap-2 px-3 py-2 shrink-0"
+          style={{ borderTop: `1px solid ${t.line}`, background: t.bg }}
+        >
           <span className="text-xs text-muted-foreground truncate flex-1">
             ↩ Replying to {replyTo.sender_id === user?.id ? "yourself" : displayName}: {replyTo.text_content?.slice(0, 50) || "Media"}
           </span>

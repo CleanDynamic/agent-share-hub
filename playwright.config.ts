@@ -15,8 +15,12 @@
 // a cold Vite dev start is slower again. Tight navigation timeouts here produce
 // failures that say nothing about correctness.
 //
-// The auth setup project runs first and writes the storage states the tier-2 and
-// tier-3 projects reuse, so no test signs in through the UI.
+// NO TEST SIGNS IN THROUGH THE UI, but not via a storage-state setup project —
+// the `setup` project below matches `*.setup.ts` and there is no such file, so
+// it contributes nothing. Tier 3 needs no auth at all. Tier 2 injects its own
+// session and stubs PostgREST and the realtime socket per test, in
+// e2e/tier2/support/supabaseStub.ts; that keeps it runnable with no dev project
+// and, more importantly, keeps it from writing to a real one.
 
 import { defineConfig, devices } from "@playwright/test";
 

@@ -17,6 +17,10 @@ import { ConversationHeader, type ConversationHeaderThread } from "@/components/
 import { getThreads } from "@/lib/messaging/getThreads";
 import { useThreadListUpdates } from "@/lib/messaging/realtime";
 import type { ThreadSummary } from "@/lib/messaging/types";
+import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
+import { r } from "@/lib/theme/radius";
+import { uiTransition } from "@/lib/theme/controls";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "";
@@ -75,7 +79,7 @@ function ComposeModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md" data-visual-slot="modal-surface" style={{ background: '#0E0E16', border: '1px solid var(--border)' }}>
+      <DialogContent className="max-w-md" data-visual-slot="modal-surface" style={{ background: tok.bg, border: `1px solid ${tok.line}` }}>
         <DialogHeader>
           <DialogTitle className="text-base font-bold text-foreground">New message</DialogTitle>
         </DialogHeader>
@@ -459,6 +463,7 @@ export default function MessagesPage() {
           onCompose={() => setComposeOpen(true)}
           counts={counts}
           width={220}
+          loading={isLoading && !tabData}
         />
 
         <div className="flex-1 min-w-0 h-full flex flex-col">
@@ -476,22 +481,22 @@ export default function MessagesPage() {
                   className="flex items-center gap-2 flex-shrink-0"
                   style={{
                     padding: "8px 14px",
-                    borderBottom: "0.5px solid rgba(255, 255, 255, 0.14)",
-                    background: "rgba(255,255,255,0.02)",
+                    borderBottom: `0.5px solid ${tok.line}`,
+                    background: tok.recess,
                   }}
                 >
-                  <Search size={12} style={{ color: "rgba(255,255,255,0.40)" }} />
+                  <Search size={12} style={{ color: tok.text2 }} />
                   <input
                     autoFocus
                     type="text"
                     value={inThreadQuery}
                     onChange={(e) => setInThreadQuery(e.target.value)}
                     placeholder="Search in conversation..."
-                    className="flex-1 bg-transparent outline-none placeholder:text-white/40"
+                    className="flex-1 bg-transparent outline-none placeholder:text-[var(--text2)]"
                     style={{
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.85)",
+                      color: tok.text,
                     }}
                   />
                   <button
@@ -513,30 +518,62 @@ export default function MessagesPage() {
               </div>
             </>
           ) : activeThreadId && !activeThreadInfo ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            /* BG-P26. A skeleton rather than a spinner: a spinner says "wait",
+               a skeleton says what is coming. Shapes match the conversation
+               being loaded — alternating sides, varying widths — so the surface
+               does not jump when the real messages replace them. */
+            <div className="flex h-full flex-col justify-end gap-3 p-6" aria-busy="true">
+              {[
+                { mine: false, w: "58%" },
+                { mine: false, w: "42%" },
+                { mine: true, w: "50%" },
+                { mine: false, w: "64%" },
+                { mine: true, w: "36%" },
+              ].map((row, i) => (
+                <div
+                  key={i}
+                  className="flex"
+                  style={{ justifyContent: row.mine ? "flex-end" : "flex-start" }}
+                >
+                  <Skeleton
+                    style={{
+                      width: row.w,
+                      maxWidth: "75%",
+                      height: 38,
+                      borderRadius: row.mine
+                        ? `${r["r-control"]} ${r["r-control"]} 0 ${r["r-control"]}`
+                        : `${r["r-control"]} ${r["r-control"]} ${r["r-control"]} 0`,
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center px-6">
               <div
                 className="flex items-center justify-center rounded-full"
-                style={{ width: 72, height: 72, background: "rgba(255, 255, 255, 0.12)" }}
+                style={{ width: 72, height: 72, background: tok.recess }}
               >
-                <MessageSquare size={28} style={{ color: "rgba(255,255,255,0.40)" }} />
+                <MessageSquare size={28} style={{ color: tok.text2 }} />
               </div>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: tok.text }}>
                 Select a conversation
               </p>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "rgba(255,255,255,0.50)", maxWidth: 280 }}>
+              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: tok.text2, maxWidth: 280 }}>
                 Pick a thread from the list, or start a new one.
               </p>
               <button
                 onClick={() => setComposeOpen(true)}
-                className="mt-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+                className="mt-2 px-3 py-1.5 text-xs font-medium"
                 style={{
-                  color: "rgba(255,255,255,0.92)",
-                  background: "rgba(232,87,26,0.12)",
-                  border: "0.5px solid rgba(232,87,26,0.30)",
+                  // The one primary on an otherwise empty surface: an `--action`
+                  // wash with `--text` on it. The hue itself is not legal as ink
+                  // on its own wash, so the ink is `--text` here as everywhere.
+                  color: tok.text,
+                  background: tokenAlpha("action", 0.14),
+                  border: `0.5px solid ${tokenAlpha("action", 0.3)}`,
+                  borderRadius: r["r-control"],
+                  transition: uiTransition(),
                 }}
               >
                 Start a new conversation
@@ -552,7 +589,7 @@ export default function MessagesPage() {
 
       {/* Settings drawer */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent side="right" className="w-[340px] sm:w-[380px] bg-[#0E0E16] border-l border-border">
+        <SheetContent side="right" className="w-[340px] sm:w-[380px] border-l border-border" style={{ background: tok.bg }}>
           <SheetHeader>
             <SheetTitle className="text-base">Conversation settings</SheetTitle>
           </SheetHeader>
