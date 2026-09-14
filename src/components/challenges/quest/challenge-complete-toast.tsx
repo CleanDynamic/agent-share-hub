@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2, X } from "lucide-react"
 import {
+import { r } from "@/lib/theme/radius"
+import { tierFill, xpText } from "@/lib/theme/progress"
   colors,
   orangeGradient,
   radius,
@@ -83,7 +85,7 @@ export default function ChallengeCompleteToast({
         style={{
           borderRadius: radius.pill,
           background: withAlpha(colors.orange, 0.16),
-          color: semantic.xp,
+          ...xpText(),
         }}
       >
         +{xp} XP

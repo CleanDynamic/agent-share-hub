@@ -25,7 +25,7 @@ import WeeklyChallengeCard from "./weekly-challenge-card"
 import ChallengeHistoryRow from "./challenge-history-row"
 import { r } from "@/lib/theme/radius"
 import { t } from "@/lib/theme/tokens"
-import { levelLamp, tierFill } from "@/lib/theme/progress"
+import { levelLamp, tierFill, xpText } from "@/lib/theme/progress"
 
 export interface ChallengesPanelProps {
   dailies: Challenge[]
@@ -277,9 +277,11 @@ function DailyRow({
       <span
         className="shrink-0 px-2 py-0.5 font-mono text-xs font-semibold"
         style={{
-          borderRadius: radius.pill,
-          background: withAlpha(colors.orange, 0.14),
-          color: semantic.xp,
+          // The amber FILL with its measured label, not amber type on an
+          // orange wash.
+          borderRadius: r.chip,
+          background: tierFill("highest").background,
+          ...xpText("onLit"),
         }}
       >
         +{challenge.xp}

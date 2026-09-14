@@ -9,6 +9,9 @@ import {
 } from "./tokens"
 import type { WeeklyChallenge, ChallengeState } from "./types"
 import ClaimButton from "./claim-button"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { tierFill, xpText } from "@/lib/theme/progress"
 
 export interface WeeklyChallengeCardProps {
   challenge: WeeklyChallenge
@@ -38,9 +41,12 @@ export default function WeeklyChallengeCard({
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center"
           style={{
+            // `colors.purple` marked a TRACK and resolves to --lit now, so
+            // this medallion was an amber wash with amber glyph on it. The
+            // rung supplies a measured ground/label pair instead.
             borderRadius: radius.card,
-            background: withAlpha(colors.purple, 0.18),
-            color: colors.purple,
+            background: tierFill("rare").background,
+            color: tierFill("rare").color,
           }}
         >
           <Target size={18} strokeWidth={2} />
@@ -50,14 +56,23 @@ export default function WeeklyChallengeCard({
             <span
               className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
               style={{
-                borderRadius: radius.pill,
-                background: withAlpha(colors.purple, 0.18),
-                color: colors.purple,
+                borderRadius: r.chip,
+                background: tierFill("rare").background,
+                border: `1px solid ${tierFill("rare").borderColor}`,
+                color: t.text2,
               }}
             >
               Weekly
             </span>
-            <span className="font-mono text-xs" style={{ color: semantic.xp }}>
+            <span
+              className="text-xs"
+              style={{
+                ...xpText("onLit"),
+                background: tierFill("highest").background,
+                borderRadius: r.chip,
+                padding: "1px 6px",
+              }}
+            >
               +{challenge.xp} XP
             </span>
           </div>
