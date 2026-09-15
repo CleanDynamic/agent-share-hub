@@ -101,6 +101,13 @@ const profile = (who: typeof ME, extra: Row = {}): Row => ({
 
 const PROFILES: Row[] = [profile(ME), profile(THEM)];
 
+/** Three picture shapes, so an unreserved row of cards would come out uneven. */
+const SHAPES: Array<[number, number]> = [
+  [1920, 1080],
+  [1200, 1600],
+  [1600, 1200],
+];
+
 /** A published build with every branch a card can render: plaque, rebuild credit, chips. */
 function buildRow(n: number, extra: Row = {}): Row {
   const titles = [
@@ -122,7 +129,7 @@ function buildRow(n: number, extra: Row = {}): Row {
     live_url: null,
     repo_url: null,
     hero_node_id: null,
-    cover_media_id: null,
+    cover_media_id: `33333333-0000-4000-8000-0000000000c${n}`,
     cost_setup: 40,
     cost_monthly: 12,
     currency: "GBP",
@@ -148,7 +155,27 @@ function buildRow(n: number, extra: Row = {}): Row {
     donation_enabled: false,
     solves_node_id: null,
     build_nodes: [],
-    build_media: [],
+    /* THE EMBEDDED COVER. The gallery reads media through the PostgREST embed
+       `build_media!build_media_build_id_fkey(...)`, not through a second query,
+       so a cover only reaches a card if it is on the row itself. Each carries
+       its own width and height: that is what BG-P09's slot reservation reads,
+       and three different shapes is what makes an unreserved row of cards come
+       out at three different heights. */
+    build_media: [
+      {
+        id: `33333333-0000-4000-8000-0000000000c${n}`,
+        node_id: null,
+        bucket: "build-media",
+        path: `cover-${n}.png`,
+        kind: "image",
+        width: SHAPES[n % SHAPES.length][0],
+        height: SHAPES[n % SHAPES.length][1],
+        poster_path: null,
+        duration: null,
+        post_position: 0,
+        post_text: null,
+      },
+    ],
     bounties: [],
     profiles: profile(n % 2 ? ME : THEM),
     ...extra,
@@ -308,6 +335,14 @@ export const NODE_TYPES: Row[] = [
   schema: { fields: [{ key: "text", label: "Text", type: "text" }] },
 }));
 
+/**
+ * The hero, plus a cover for each card.
+ *
+ * EVERY ROW CARRIES ITS width AND height, because that is the thing BG-P09's
+ * slot reservation reads and the thing the CLS measurement is testing. Three
+ * different shapes, so a row of cards whose slots were NOT reserved would come
+ * out at three different heights and shift as the pictures land.
+ */
 export const MEDIA: Row[] = [
   {
     id: "33333333-0000-4000-8000-0000000000m1",
@@ -323,6 +358,20 @@ export const MEDIA: Row[] = [
     poster_path: null,
     created_at: ISO("2026-08-01"),
   },
+  ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({
+    id: `33333333-0000-4000-8000-0000000000c${n}`,
+    build_id: `33333333-0000-4000-8000-00000000000${n}`,
+    bucket: "build-media",
+    path: `cover-${n}.png`,
+    kind: "image",
+    mime: "image/png",
+    bytes: 180_000,
+    width: SHAPES[n % SHAPES.length][0],
+    height: SHAPES[n % SHAPES.length][1],
+    duration: null,
+    poster_path: null,
+    created_at: ISO("2026-08-01"),
+  })),
 ];
 
 /** An open bounty on the gap node — the ask a solve page exists to answer. */
@@ -510,8 +559,58 @@ const TABLES: Record<string, Row[]> = {
   user_library: USER_LIBRARY,
 };
 
+/**
+ * The Builds tab's flat feed rows.
+ *
+ * IT IS AN RPC, NOT A TABLE, so seeding `builds` does nothing for it:
+ * `getBuildFeed` calls `get_build_feed` and maps one flat row per card. Note
+ * what the row does NOT carry — the cover's width and height. `coverRows()`
+ * sets both to null and says why, and the honest consequence it records is
+ * that a Builds-tab card falls back to the FIXED 168px slot rather than
+ * reserving a variable height. That is why the CLS measurement in
+ * performance.spec.ts takes the gallery grid as well: the gallery embed does
+ * carry the dimensions, so it is the surface where BG-P09's reservation is
+ * actually under test.
+ */
+const BUILD_FEED_ROWS = BUILDS.map((b, n) => ({
+  item_kind: "build",
+  item_at: b.published_at,
+  build_id: b.id,
+  slug: b.slug,
+  title: b.title,
+  outcome: b.outcome,
+  shape: b.shape,
+  cover_media_id: b.cover_media_id,
+  creator_id: b.creator_id,
+  creator_username: n % 2 ? ME.username : THEM.username,
+  creator_display: n % 2 ? ME.display_name : THEM.display_name,
+  creator_avatar: null,
+  reproduction_count: b.reproduction_count,
+  rebuild_count: b.rebuild_count,
+  parent_build_id: b.parent_build_id,
+  source_title_at_fork: b.source_title_at_fork,
+  source_handle_at_fork: b.source_handle_at_fork,
+  rebuild_note: b.rebuild_note,
+  repro_note: null,
+  repro_model: null,
+  repro_user_username: null,
+  status: "published",
+  made_for: b.made_for,
+  last_confirmed_at: b.last_confirmed_at,
+  last_confirmed_model: b.last_confirmed_model,
+  cover_bucket: "build-media",
+  cover_path: `cover-${n}.png`,
+  cover_kind: "image",
+  cover_poster_path: null,
+  repro_worked: null,
+  bounty_id: null,
+  bounty_reward_gbp: null,
+  bounty_gap_title: null,
+}));
+
 /** RPCs whose shape is an object rather than a list. */
 const RPCS: Record<string, unknown> = {
+  get_build_feed: BUILD_FEED_ROWS,
   gallery_facets: {
     roles: [
       { value: "founder", count: 6, label: null, logo_url: null },
@@ -652,13 +751,47 @@ export async function installStub(page: Page) {
     return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
   });
 
-  await page.route(/\/storage\/v1\//, (route) =>
-    route.fulfill({
+  /* STORAGE IS TWO CALLS, NOT ONE, and answering both with the image is why the
+     sweep saw no pictures at first. The bucket is private, so a card asks
+     `POST /storage/v1/object/sign/...` for a token and gets JSON back, then
+     GETs `render/image/sign/...` for the transformed bytes. A stub that serves
+     PNG bytes to the POST hands the card a picture where it expected a URL,
+     and every cover silently vanishes. */
+  await page.route(/\/storage\/v1\//, (route) => {
+    const url = route.request().url();
+    const signing = route.request().method() === "POST" && /\/object\/sign\//.test(url);
+    if (signing) {
+      /* RECORD WHAT THE APP ASKED FOR. The signed URL this stub hands back is
+         the stub's, so nothing about the width in it describes the product.
+         The transform the CLIENT sends in the sign request does, and it is the
+         only place a sweep can see whether an image is being sized to its slot
+         or served full-size into it. */
+      try {
+        const body = route.request().postDataJSON() as { transform?: unknown } | null;
+        if (body && body.transform) {
+          void page.evaluate((transform) => {
+            const store = ((window as unknown as Record<string, unknown>).__transforms ??=
+              []) as unknown[];
+            store.push(transform);
+          }, body.transform).catch(() => {});
+        }
+      } catch {
+        /* a sign request with no JSON body tells us nothing and is not an error */
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          signedURL: "/render/image/sign/build-media/cover.png?token=audit&width=1200&quality=70",
+        }),
+      });
+    }
+    return route.fulfill({
       status: 200,
       contentType: "image/png",
       body: Buffer.from(PNG_BASE64, "base64"),
-    }),
-  );
+    });
+  });
 
   // The realtime socket is mocked rather than proxied: no server is contacted,
   // and the app's join frames go nowhere. A visual sweep needs no broker.
@@ -750,11 +883,20 @@ export const DEGRADED: Record<string, string> = {
 };
 
 /** Open one audit route in one theme, with the network stubbed, and settle it. */
-export async function openRoute(page: Page, route: AuditRoute, theme: Theme) {
+export async function openRoute(
+  page: Page,
+  route: AuditRoute,
+  theme: Theme,
+  /* `load` waits for every subresource, which never arrives inside a sane
+     timeout when the dev server is serving hundreds of unbundled modules
+     through a 400kbps throttle. The throttled CLS measurement passes
+     "domcontentloaded" and settles on its own. */
+  options: { waitUntil?: "load" | "domcontentloaded" } = {},
+) {
   await withTheme(page, theme);
   if (route.auth) await withSession(page);
   await installStub(page);
-  await page.goto(route.path, { waitUntil: "load" });
+  await page.goto(route.path, { waitUntil: options.waitUntil ?? "load" });
   // The reveal animations are 450ms and the feed's skeletons resolve on the
   // next tick; a measurement taken before that reads a surface mid-fade.
   await page.waitForTimeout(1500);
