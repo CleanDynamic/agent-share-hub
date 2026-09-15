@@ -45,6 +45,19 @@
 // because text2-on-recess already measures 4.55:1 on Exhibition and 5.73:1 on
 // Dusk — the skill's order is reuse a legal pairing first, and this is one.
 
+// `--recess` IS A SURFACE AND NEVER INK (BG-P30). It is the token for inset
+// surfaces, screens and wells, and it is one step from `--bg` by design — which
+// makes it 1.16:1 on the Exhibition ground and 1.33:1 on Dusk's if anything
+// paints text with it. The audit sweep found it doing exactly that on the shell
+// tabs, and a scan for the cause found fourteen more: every one an INACTIVE
+// state — an unselected tab, an unchosen sort, a section that is not the
+// current one — reaching for "quieter than the text" and landing on a surface.
+//
+// The token that names quiet ink is `--text2`, and text2/bg is a published
+// contract pairing at 5.26:1 and 7.65:1. If a state needs to be quieter than
+// that, it is quieter than legible, and the answer is weight or size, not a
+// paler colour.
+
 import {
   amber,
   blue,

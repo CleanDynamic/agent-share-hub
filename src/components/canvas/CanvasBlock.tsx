@@ -570,7 +570,7 @@ export function CanvasBlock({
                         {stages.map(s => (
                           <button key={s.id}
                             onClick={() => { onAssignStage(block.id, s.id); setStagePickerOpen(false); }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? 'var(--cat-data)' : 'var(--recess)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? 'var(--cat-data)' : 'var(--text2)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
                             {s.stageNumber}. {s.title}
                           </button>
                         ))}

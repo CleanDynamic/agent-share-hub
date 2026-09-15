@@ -821,7 +821,7 @@ export function CanvasShell(props: CanvasShellProps) {
                       padding: '4px 12px', fontSize: 11, fontWeight: 600,
                       borderRadius: 6, border: 'none', cursor: 'pointer',
                       background: activeStageTab === s.id ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
-                      color: activeStageTab === s.id ? 'var(--action)' : 'var(--recess)',
+                      color: activeStageTab === s.id ? 'var(--action)' : 'var(--text2)',
                       transition: 'all 0.15s',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,

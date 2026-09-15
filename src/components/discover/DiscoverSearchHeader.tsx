@@ -349,7 +349,7 @@ export function DiscoverSearchHeader({
                     fontFamily: 'Figtree, sans-serif',
                     fontSize: 12,
                     fontWeight: option === sort ? 600 : 400,
-                    color: option === sort ? 'var(--action)' : 'var(--recess)',
+                    color: option === sort ? 'var(--action)' : 'var(--text2)',
                     background: 'transparent',
                     border: 'none',
                     padding: '8px 14px',

@@ -765,7 +765,7 @@ function SortDropdown({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: value === opt ? 500 : 400,
-                color: value === opt ? "var(--text)" : "var(--recess)",
+                color: value === opt ? "var(--text)" : "var(--text2)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
