@@ -29,6 +29,7 @@
 import type { CSSProperties } from "react";
 
 import { categoryFill } from "./category";
+import { animation, feedback, hoverLift, prefersReducedMotion, SHIMMER_MS } from "./motion";
 import { elevation, SCRIM } from "./elevation";
 import { focusRing } from "./focus";
 import { r } from "./radius";
@@ -36,74 +37,34 @@ import { t } from "./tokens";
 import { DM_MONO } from "./type";
 
 /* ── Motion ───────────────────────────────────────────────────────────────────
-   The theme allows ≤200ms on `transform` and `opacity`, forbids `transition:
-   all`, forbids `ease-in` on UI, and forbids animating `box-shadow` — an
-   animated shadow cannot be composited, so it re-rasterises the element every
-   frame, which is what turns a grid of hovering cards into a dropped-frame
-   scroll.
+   BG-P32 MOVED THE VOCABULARY OUT. Durations, easings, the two media queries
+   and the four transition patterns now live in `./motion.ts`, which is the one
+   place in the product a duration is decided. This file spends them; it no
+   longer defines them.
 
-   So the transition list below is written out property by property and
-   `box-shadow` is not in it, in this file or any consumer of it. Colour
-   properties are included because a fill crossing from rest to hover is a
-   cross-fade, not a layout change, and they composite acceptably at this
-   duration.
+   The names below are re-exported because forty-odd modules already import
+   `UI_MS`, `UI_EASING`, `uiTransition`, `hoverIsFine`, `prefersReducedMotion`
+   and `hoverLift` from here, and the control kit is a legitimate place to reach
+   for them. They are aliases, not second definitions — change a duration in
+   `motion.ts` and every one of those modules moves with it.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/** 160ms. Under the theme's 200ms ceiling for UI feedback. */
-export const UI_MS = 160;
-
-/** Never `ease-in` on UI: a control that starts slowly reads as unresponsive. */
-export const UI_EASING = "cubic-bezier(.2,.6,.35,1)";
-
-const TRANSITIONED = ["background-color", "border-color", "color", "opacity", "transform"] as const;
-
-const HOVER_QUERY = "(hover: hover) and (pointer: fine)";
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-
-/* One MediaQueryList per query for the whole app rather than one per control.
-   `.matches` is live, so a cached list stays current without a listener, and a
-   control that re-renders for any other reason reads the new value. */
-const lists = new Map<string, MediaQueryList | null>();
-
-function matchesMedia(query: string): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  if (!lists.has(query)) {
-    try {
-      lists.set(query, window.matchMedia(query));
-    } catch {
-      lists.set(query, null);
-    }
-  }
-  return lists.get(query)?.matches ?? false;
-}
+export {
+  FAST as UI_MS,
+  STANDARD as UI_EASING,
+  hoverIsFine,
+  prefersReducedMotion,
+  hoverLift,
+} from "./motion";
 
 /**
- * True where a hover state is worth showing at all. The theme gates hover
- * motion behind this because on a touch screen `:hover` sticks after a tap,
- * leaving a control looking permanently pressed.
- */
-export const hoverIsFine = (): boolean => matchesMedia(HOVER_QUERY);
-
-/** True when the visitor has asked for less motion. Honoured in CSS *and* here. */
-export const prefersReducedMotion = (): boolean => matchesMedia(REDUCED_MOTION_QUERY);
-
-/**
- * The kit's transition, or `none` under `prefers-reduced-motion: reduce`.
+ * The kit's transition: the five properties a control changes, at `fast`.
  *
  * Reduced motion is answered by removing the transition rather than by
- * shortening it: the end state is identical, it simply arrives at once. Nothing
- * here is load-bearing for comprehension, so nothing is lost by skipping it.
+ * shortening it — `feedback()` returns "none" — so the end state is identical
+ * and simply arrives at once.
  */
-export function uiTransition(): string {
-  if (prefersReducedMotion()) return "none";
-  return TRANSITIONED.map((property) => `${property} ${UI_MS}ms ${UI_EASING}`).join(", ");
-}
-
-/** The 1px lift a control takes on hover. Suppressed for reduced motion. */
-export function hoverLift(active: boolean): CSSProperties {
-  if (!active || prefersReducedMotion()) return {};
-  return { transform: "translateY(-1px)" };
-}
+export const uiTransition = (): string => feedback();
 
 /* ── Interaction state ────────────────────────────────────────────────────────
    Every builder below takes the same shape, so a component tracks three
@@ -512,9 +473,7 @@ export const SWITCH_TRACK_CLASS =
 export function switchThumbStyle(): CSSProperties {
   return {
     borderRadius: r.full,
-    transition: prefersReducedMotion()
-      ? "none"
-      : `transform ${UI_MS}ms ${UI_EASING}, background-color ${UI_MS}ms ${UI_EASING}`,
+    transition: feedback("transform", "background-color"),
   };
 }
 
@@ -771,7 +730,7 @@ export function skeletonStyle(): CSSProperties {
       : `linear-gradient(90deg, ${t.recess} 0%, ${t.glass2} 50%, ${t.recess} 100%)`,
     backgroundSize: still ? undefined : "200% 100%",
     borderRadius: r.media,
-    animation: still ? undefined : `bgShimmer 1600ms ${UI_EASING} infinite`,
+    animation: animation("bgShimmer", SHIMMER_MS, { iterations: "infinite" }),
   };
 }
 

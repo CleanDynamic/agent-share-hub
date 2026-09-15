@@ -156,6 +156,20 @@
   --r-panel: 16px;
   --r-full: 999px;
 
+  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
+     Theme-independent and declared in both blocks so a component reads every
+     root token from one place, exactly as the radius scale above does. The TS
+     module is the source of truth — it is what a style object spends; these
+     exist for the handful of rules that live in CSS because they cannot be
+     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
+     reset). motion.test.ts holds the two sides to each other, so a duration
+     cannot be changed here without being changed there. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-reveal: 450ms;
+  --motion-theme: 180ms;
+  --motion-ease: cubic-bezier(.2,.6,.35,1);
+
   /* BG-P04 — elevation. Exhibition's depth is a true shadow: the luminous grey
      room has a light source, so a surface above the page casts. Struck from
      --text rather than from black, so the shadow belongs to the room. `flat`
@@ -280,6 +294,20 @@
   --r-panel: 16px;
   --r-full: 999px;
 
+  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
+     Theme-independent and declared in both blocks so a component reads every
+     root token from one place, exactly as the radius scale above does. The TS
+     module is the source of truth — it is what a style object spends; these
+     exist for the handful of rules that live in CSS because they cannot be
+     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
+     reset). motion.test.ts holds the two sides to each other, so a duration
+     cannot be changed here without being changed there. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-reveal: 450ms;
+  --motion-theme: 180ms;
+  --motion-ease: cubic-bezier(.2,.6,.35,1);
+
   /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
      level pairs a deeper shadow with an inset --glass-hi top hairline: the
      surface's own edge catching the horizon. The hairline says "above", the
@@ -332,9 +360,9 @@
 :root[data-theme-changing] *::before,
 :root[data-theme-changing] *::after {
   transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    border-color 180ms ease !important;
+    background-color var(--motion-theme) var(--motion-ease),
+    color var(--motion-theme) var(--motion-ease),
+    border-color var(--motion-theme) var(--motion-ease) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -781,7 +809,7 @@ input[type="search"] { border-radius: var(--r-control); }
     box-shadow: var(--elev-raised);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 160ms cubic-bezier(.2,.6,.35,1);
+    transition: opacity var(--motion-fast) var(--motion-ease);
   }
 
   [data-visual-slot="gallery-card"]:hover::after {

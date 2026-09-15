@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { ThemeProvider, THEME_STORAGE_KEY, useTheme } from "./ThemeContext";
+import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 /* Reports what the provider decided, so a test can read state and the root
    attribute in one place. */
@@ -59,6 +60,12 @@ beforeEach(() => {
   window.localStorage.clear();
   delete document.documentElement.dataset.theme;
   delete document.documentElement.dataset.themeChanging;
+  /* BG-P32. The provider reads prefers-reduced-motion through the motion
+     module, which caches one MediaQueryList per query for the whole app —
+     `.matches` is live, so a cached list stays current without a listener. A
+     test that swaps `window.matchMedia` wholesale is the one case that defeats
+     it, so the cache is dropped between tests and each stub is honoured. */
+  __resetMotionMediaCache();
   stubMatchMedia(false);
 });
 
