@@ -26,6 +26,7 @@ import { notifyEngagement } from "@/lib/notifications";
 import { toast } from "sonner";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { BODONI, type } from "@/lib/theme/type";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 const lowlight = createLowlight(common);
 
@@ -137,7 +138,7 @@ export function BlogView({ item }: BlogViewProps) {
 
   const onComment = () => {
     const el = document.getElementById("blog-comments");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   };
 
   const tags: string[] = useMemo(() => {

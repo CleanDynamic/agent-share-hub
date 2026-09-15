@@ -298,3 +298,72 @@ describe("scroll reveals live on the two sanctioned surfaces only", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("the theme switch (BG-P02, re-verified by BG-P32)", () => {
+  const css = readFileSync(join(SRC, "index.css"), "utf8");
+  const rule = css.slice(
+    css.indexOf(":root[data-theme-changing]"),
+    css.indexOf("}", css.indexOf(":root[data-theme-changing]")),
+  );
+
+  it("is scoped to the attribute, so it cannot run on first paint", () => {
+    // ThemeProvider sets data-theme-changing for exactly the switch's duration
+    // and never on the first write, so the rule has nothing to match until a
+    // switch is actually in flight.
+    expect(rule).toContain(":root[data-theme-changing]");
+    const provider = readFileSync(join(SRC, "contexts/ThemeContext.tsx"), "utf8");
+    expect(provider).toMatch(/if \(first \|\| prefersReducedMotion\(\)\)/);
+  });
+
+  it("crosses colour properties only, at the theme's 180ms", () => {
+    expect(rule).toContain("var(--motion-theme)");
+    for (const property of ["background-color", "color", "border-color"]) {
+      expect(rule).toContain(property);
+    }
+    expect(rule).not.toMatch(/\btransform\b|\bwidth\b|\bheight\b|box-shadow|\ball\b/);
+  });
+
+  it("is absent under reduced motion", () => {
+    // The global rule at the end of index.css collapses it along with
+    // everything else; ThemeProvider also declines to set the attribute.
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*transition-duration: 0\.01ms !important/);
+  });
+});
+
+describe("the global reduced-motion guarantee", () => {
+  const css = readFileSync(join(SRC, "index.css"), "utf8");
+  const global = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+
+  it("reaches every element and both pseudo-elements", () => {
+    expect(global).toMatch(/\*,\s*\n\s*\*::before,\s*\n\s*\*::after/);
+  });
+
+  it("collapses transitions, animations and smooth scrolling together", () => {
+    for (const declaration of [
+      "animation-duration: 0.01ms !important",
+      "animation-iteration-count: 1 !important",
+      "transition-duration: 0.01ms !important",
+      "scroll-behavior: auto !important",
+    ]) {
+      expect(global).toContain(declaration);
+    }
+  });
+
+  it("finishes rather than cancels, so transitionend still fires", () => {
+    /* `none`/`0s` cancels a transition outright and a cancelled transition
+       never fires `transitionend` — any component waiting on that event to
+       unmount a node or release a lock would hang, for exactly the readers
+       least able to work around it. */
+    expect(global).not.toMatch(/transition: *none/);
+    expect(global).not.toMatch(/animation: *none/);
+  });
+
+  it("has a JavaScript half for the scrolls CSS cannot reach", () => {
+    /* An explicit `behavior: "smooth"` argument beats the stylesheet, so every
+       one of them reads `scrollBehavior()` instead of the literal. */
+    const literal = SCANNED.filter(
+      (file) => !file.rel.endsWith("lib/theme/motion.ts") && /behavior: *["']smooth["']/.test(file.code),
+    ).map((file) => file.rel);
+    expect(literal).toEqual([]);
+  });
+});

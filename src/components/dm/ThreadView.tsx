@@ -20,6 +20,7 @@ import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
 import { TypingIndicator } from "@/components/dm/TypingIndicator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -642,7 +643,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
 
     if (isNew && isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
     } else if (isNew && !isNearBottom) {
       setShowNewMsgButton(true);
     }
@@ -694,7 +695,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   }, [loadingOlder, messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
     setShowNewMsgButton(false);
   };
 
@@ -1287,7 +1288,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
           onClearReply={() => setReplyTo(null)}
           onMessageSent={() => {
             haptic(10);
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
           }}
         />
       </div>

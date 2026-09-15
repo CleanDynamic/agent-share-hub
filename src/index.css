@@ -735,16 +735,13 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { background-position: -100% 0; }
 }
 
-/* BG-P07. The theme requires prefers-reduced-motion to be honoured in CSS AND
-   in JavaScript-driven animation. src/lib/theme/controls.ts drops the animation
-   from the style object, which covers every render; this covers the gap that
-   leaves — a visitor who changes the setting while a skeleton is already on
-   screen, where nothing would re-render to notice. */
-@media (prefers-reduced-motion: reduce) {
-  [data-bg-animated] {
-    animation: none !important;
-  }
-}
+/* BG-P07's per-surface reset, SUPERSEDED BY THE GLOBAL RULE at the end of this
+   file. It was scoped to `[data-bg-animated]` because a global reset "would
+   reach every animation in the application, including Radix's mount and unmount
+   transitions, and that is a far larger change than this prompt is making".
+   BG-P32 is the prompt that makes it: reaching every animation is now the
+   point, and the attribute survives only as the marker a component sets so its
+   own JavaScript half knows what it is suppressing. */
 
 /* BG-P27. The auth icon's entrance, moved out of a `<style>` tag injected by
    AuthEmailVerificationCard.tsx — the same relocation BG-P18 made for the
@@ -834,14 +831,61 @@ input[type="search"] { border-radius: var(--r-control); }
   }
 }
 
-/* BG-P07's rule, applied to the card: reduced motion is answered TWICE. The
-   inline styles drop their transitions at render, which covers every render;
-   this covers the gap that leaves — a visitor who changes the setting while a
-   card is already on screen, where nothing would re-render to notice. */
+
+/* ══ BG-P32 — the global reduced-motion guarantee ═════════════════════════════
+
+   ONE RULE, AND IT REACHES EVERYTHING. A visitor who has asked their operating
+   system for less motion gets a product where nothing moves: no transition, no
+   keyframe, no smooth scroll, anywhere, on any surface, including the ones this
+   prompt never opened and the ones added after it.
+
+   WHY `*` AND `!important`, WHICH ARE OTHERWISE NEVER RIGHT. Every other answer
+   is a list, and a list is a thing to forget to add to. The product carries
+   ~200 Tailwind transition utilities, 13 keyframes, four third-party animation
+   sources (Radix's mount/unmount, tailwindcss-animate, TipTap, dnd-kit) and a
+   dozen inline `animation` strings. Naming them is how the previous, narrower
+   rules ended up covering three selectors while the streak flame, the skill
+   tree and the typing indicator kept moving. A reader who asked for stillness
+   and got it on five surfaces out of forty has not been answered.
+
+   0.01ms RATHER THAN `none`, WHICH IS THE POINT OF THE ODD NUMBER. A duration
+   of zero cancels the transition outright, and a cancelled transition never
+   fires `transitionend` — so any component waiting on that event to unmount a
+   node, release a lock or advance a step would hang forever, on this code path
+   only, for exactly the readers least able to work around it. 0.01ms completes
+   within the same frame and still fires the event, so the application's own
+   state machines run unchanged and only the movement is gone. The same
+   reasoning gives `animation-iteration-count: 1`: an infinite loop that still
+   fires `animationend` once is a loop that has stopped.
+
+   `scroll-behavior: auto` IS NOT DECORATION EITHER. Smooth scrolling is
+   vestibular motion — it is the large-area movement reduced-motion users most
+   often cite — and this codebase asks for it in 37 places, each an explicit
+   `behavior: "smooth"` that CSS alone cannot reach. The declaration below
+   answers the CSS half; `prefersReducedMotion()` in src/lib/theme/motion.ts is
+   what the JavaScript half reads.
+
+   THIS IS THE CSS HALF OF A TWO-SIDED ANSWER, and both halves are needed.
+   The module returns "none" from every builder, which covers every render and
+   is what keeps a JavaScript-driven animation from ever starting. This covers
+   the gap that leaves: a visitor who changes the setting while a surface is
+   already on screen, where nothing would re-render to notice, and any animation
+   that reaches the page from a dependency this codebase does not author.
+   ════════════════════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
-  [data-visual-slot="gallery-card"],
-  [data-visual-slot="gallery-card"]::after,
-  [data-thread-region] {
-    transition: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-delay: -1ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto !important;
   }
 }

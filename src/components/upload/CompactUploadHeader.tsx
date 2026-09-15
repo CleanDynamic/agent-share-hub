@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { UploadSectionToggle } from "./UploadSectionToggle";
 import { CoverImageField } from "./CoverImageField";
 import type { CoverImage } from "@/types/blueprintMedia";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 interface CompactUploadHeaderProps {
   postType: "blueprint" | "blog" | "bounty";
@@ -58,7 +59,7 @@ export function CompactUploadHeader({
   }, [description]);
 
   const scrollToTop = useCallback(() => {
-    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    containerRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   }, []);
 
   const typeStyle = POST_TYPE_STYLES[postType];

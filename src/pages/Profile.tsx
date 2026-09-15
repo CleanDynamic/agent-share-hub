@@ -46,6 +46,7 @@ import { useProfileGameData } from "@/hooks/useProfileGameData";
 import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 /** The two trigger-maintained counters the header's earned numbers sum. */
 interface EarnedCounts {
@@ -577,7 +578,7 @@ export default function Profile() {
       requestAnimationFrame(() => {
         document
           .getElementById("profile-zones")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          ?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
       });
     },
     [updateParams]

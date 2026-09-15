@@ -20,6 +20,7 @@ import {
 } from "@/components/feed/FeedShell";
 import { resolvePostType } from "@/lib/content-types";
 import { t } from "@/lib/theme/tokens";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 /**
  * The Builds tab (NS-P41), in its own chunk.
@@ -606,7 +607,7 @@ const Home = () => {
   }, [queryClient]);
 
   const onLoadNewPosts = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
     setHasNewPosts(false);
     setNewPostCount(0);
     queryClient.invalidateQueries({ queryKey: ["home_recent_blueprints"] });

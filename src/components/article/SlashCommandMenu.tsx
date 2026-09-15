@@ -42,6 +42,7 @@ import {
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
 import type { Block } from '@/types/document';
+import { scrollBehavior } from '@/lib/theme/motion';
 
 export interface SlashCommandItem {
   id: string;
@@ -245,7 +246,7 @@ export function SlashCommandMenu({
 
   useEffect(() => {
     const itemEl = itemRefs.current[selectedIndex];
-    if (itemEl) itemEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (itemEl) itemEl.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
   }, [selectedIndex]);
 
   useEffect(() => {

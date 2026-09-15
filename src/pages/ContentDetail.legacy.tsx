@@ -102,6 +102,7 @@ import { insertNotification } from "@/lib/notifications";
 import { ReblogDetailView } from "@/components/ReblogDetailView";
 import { ReblogCard } from "@/components/ReblogCard";
 import { type } from "@/lib/theme/type";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 // BG-P05. Difficulty is not a part category and carries no colour: one
 // uncoloured mono label, defined once in @/lib/content-types.
@@ -1237,7 +1238,7 @@ const ContentDetail = () => {
                     onClick={e => {
                       e.preventDefault();
                       document.getElementById(entry.id)
-                        ?.scrollIntoView({ behavior: 'smooth' });
+                        ?.scrollIntoView({ behavior: scrollBehavior() });
                     }}
                     style={{
                       display: 'flex',

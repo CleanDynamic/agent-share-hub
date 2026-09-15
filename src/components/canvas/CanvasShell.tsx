@@ -18,6 +18,7 @@ import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPa
 import { ClearAllDialog } from './ClearAllDialog';
 
 import type { EvidenceMediaType } from './CanvasHeader';
+import { scrollBehavior } from '@/lib/theme/motion';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
@@ -95,7 +96,7 @@ export function CanvasShell(props: CanvasShellProps) {
   const scrollStageTabs = (direction: 'left' | 'right') => {
     const el = stageTabsScrollRef.current;
     if (!el) return;
-    el.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+    el.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: scrollBehavior() });
   };
 
   // ── Selection ───────────────────────────────────
@@ -711,7 +712,7 @@ export function CanvasShell(props: CanvasShellProps) {
           setSelectedBlockIds(new Set([blockId]));
           document.getElementById(`canvas-block-${blockId}`)
             ?.scrollIntoView({
-              behavior: 'smooth', block: 'center'
+              behavior: scrollBehavior(), block: 'center'
             });
         }}
         onBlockChange={(id, patch) => doc.updateBlock(id, patch)}
@@ -1195,7 +1196,7 @@ export function CanvasShell(props: CanvasShellProps) {
         onBlockFocus={blockId => {
           document.getElementById(
             `canvas-block-${blockId}`
-          )?.scrollIntoView({ behavior: 'smooth' });
+          )?.scrollIntoView({ behavior: scrollBehavior() });
           setAnnotationsOpen(false);
         }}
         onBlockChange={(id, patch) =>

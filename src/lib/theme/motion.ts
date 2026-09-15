@@ -300,6 +300,20 @@ export function revealTo(delayMs = 0): CSSProperties {
 export const canReveal = (): boolean =>
   !prefersReducedMotion() && typeof IntersectionObserver !== "undefined";
 
+/**
+ * `"smooth"`, or `"auto"` when the visitor has asked for less motion.
+ *
+ * THE ONE THING THE GLOBAL CSS RULE CANNOT REACH. `scroll-behavior: auto` in
+ * `index.css` governs scrolling the browser starts — an anchor jump, a
+ * `scrollIntoView()` with no argument. An explicit `behavior: "smooth"` passed
+ * to `scrollIntoView` or `scrollTo` is an argument, not a style, and it wins
+ * over the stylesheet. Smooth scrolling is large-area movement and the single
+ * thing reduced-motion readers most often name, so every one of this codebase's
+ * 37 smooth scrolls reads this instead of the literal.
+ */
+export const scrollBehavior = (): ScrollBehavior =>
+  prefersReducedMotion() ? "auto" : "smooth";
+
 /* ── The attention ring ───────────────────────────────────────────────────────
    A one-shot "the thing you asked for is HERE" mark: a deep link landing, a
    block reference jumping to its block, a bounty solve arriving.

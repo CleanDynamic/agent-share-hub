@@ -9,6 +9,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 export interface Slide {
   id: string;
@@ -58,7 +59,7 @@ export function ResultsCarouselViewer({
     if (idx >= 0) {
       setCurrentIndex(idx);
       requestAnimationFrame(() => {
-        containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        containerRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

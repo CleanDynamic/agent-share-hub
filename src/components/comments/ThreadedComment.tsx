@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Heart, MessageCircle, MoreHorizontal, X, ArrowRight } from "lucide-react";
 import type { CommentNode, ThreadedCommentProps } from "./types";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 const MAX_VISUAL_DEPTH = 4; // 0-indexed → 5 visual levels
 const INDENT_PX = 24;
@@ -330,7 +331,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
   // Deep-link scroll + highlight
   React.useEffect(() => {
     if (highlightedCommentId && highlightedCommentId === comment.id && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      cardRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
     }
   }, [highlightedCommentId, comment.id]);
 
