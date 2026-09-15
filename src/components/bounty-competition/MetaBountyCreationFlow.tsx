@@ -1,5 +1,6 @@
 import * as React from "react";
 import { X, Plus, Trash2 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 interface SubBountyDraft {
   id: string;
@@ -185,7 +186,7 @@ export function MetaBountyCreationFlow({
                       : step < currentStep
                         ? "color-mix(in srgb, var(--action) 40%, transparent)"
                         : "var(--recess)",
-                  transition: "all 0.2s",
+                  transition: feedback(),
                 }}
               />
             ))}

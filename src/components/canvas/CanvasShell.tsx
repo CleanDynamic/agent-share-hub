@@ -18,7 +18,7 @@ import { readingOrder, snapToGridDot, nearestEdge, getEdgeMidpoint, orthogonalPa
 import { ClearAllDialog } from './ClearAllDialog';
 
 import type { EvidenceMediaType } from './CanvasHeader';
-import { scrollBehavior } from '@/lib/theme/motion';
+import { scrollBehavior, feedback } from '@/lib/theme/motion';
 
 interface CanvasShellProps {
   mode: 'edit' | 'view';
@@ -808,7 +808,7 @@ export function CanvasShell(props: CanvasShellProps) {
                     borderRadius: 6, border: 'none', cursor: 'pointer',
                     background: !activeStageTab ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
                     color: !activeStageTab ? 'var(--action)' : 'var(--text2)',
-                    transition: 'all 0.15s',
+                    transition: feedback(),
                     flexShrink: 0,
                   }}
                 >
@@ -823,7 +823,7 @@ export function CanvasShell(props: CanvasShellProps) {
                       borderRadius: 6, border: 'none', cursor: 'pointer',
                       background: activeStageTab === s.id ? 'color-mix(in srgb, var(--action) 15%, transparent)' : 'var(--recess)',
                       color: activeStageTab === s.id ? 'var(--action)' : 'var(--recess)',
-                      transition: 'all 0.15s',
+                      transition: feedback(),
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                     }}

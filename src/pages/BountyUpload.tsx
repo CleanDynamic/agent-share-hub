@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { WorksWithPicker } from '@/components/WorksWithPicker'
 import { assertLegacyBountyCreateEnabled } from '@/lib/bounty-legacy/flags'
+import { feedback } from "@/lib/theme/motion";
 
 const BOUNTY_NEEDS = [
   { value: 'Prompt File', label: 'A Prompt',
@@ -162,7 +163,7 @@ export default function BountyUpload() {
                       ? 'color-mix(in srgb, var(--cat-breakage) 40%, transparent)'
                       : 'var(--recess)'}`,
                     textAlign: 'left', width: '100%',
-                    transition: 'all 0.15s',
+                    transition: feedback(),
                   }}
                 >
                   <span style={{ fontSize: 20, flexShrink: 0 }}>{n.emoji}</span>
@@ -301,7 +302,7 @@ export default function BountyUpload() {
                     color: deadline === d
                       ? 'var(--cat-breakage)'
                       : 'var(--recess)',
-                    transition: 'all 0.15s',
+                    transition: feedback(),
                   }}
                 >
                   {d === 0 ? 'Open' : `${d}d`}
@@ -340,7 +341,7 @@ export default function BountyUpload() {
                 : s < step
                   ? 'color-mix(in srgb, var(--cat-breakage) 40%, transparent)'
                   : 'var(--recess)',
-              transition: 'all 0.2s',
+              transition: feedback(),
             }} />
           ))}
         </div>

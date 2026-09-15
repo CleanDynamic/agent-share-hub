@@ -61,7 +61,7 @@ function CopyButton({
           ? 'var(--cat-configuration)' : 'var(--text2)',
         fontWeight: 600,
         fontFamily: 'Figtree, sans-serif',
-        transition: 'all 0.15s',
+        transition: feedback(),
         zIndex: 5,
       }}
     >
@@ -714,7 +714,7 @@ const PromptViewer = ({ block }: { block: BlockRow }) => {
           background: copied ? 'color-mix(in srgb, var(--cat-configuration) 20%, transparent)' : 'var(--recess)',
           border: `1px solid ${copied ? 'color-mix(in srgb, var(--cat-configuration) 40%, transparent)' : 'var(--recess)'}`,
           color: copied ? 'var(--cat-configuration)' : 'var(--text2)',
-          cursor: 'pointer', transition: 'all 0.15s',
+          cursor: 'pointer', transition: feedback(),
         }}>
           {copied ? '✓ Copied' : 'Copy'}
         </button>
@@ -1238,7 +1238,7 @@ function TutorialCarousel({ images }: { images: string[] }) {
                 height: 6, borderRadius: 3,
                 background: i === current ? 'var(--action)' : 'var(--recess)',
                 border: 'none', cursor: 'pointer',
-                transition: 'all 0.2s',
+                transition: feedback(),
               }}
             />
           ))}

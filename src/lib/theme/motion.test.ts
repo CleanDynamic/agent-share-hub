@@ -181,7 +181,14 @@ describe("no transition: all, anywhere in src/", () => {
   /* Both spellings: the CSS keyword and Tailwind's utility, which compiles to
      it. `transition-all` is the one that actually appeared in this codebase —
      52 times, across the control kit, the publish form and nine block types. */
-  const OFFENDERS = /transition:\s*all\b|(?:^|[\s"'`:])transition-all(?:[\s"'`]|$)/;
+  /* THREE SPELLINGS, because this codebase used all three and the first
+     version of this guard only saw two. `transition: all` is the CSS keyword;
+     `transition-all` is Tailwind's utility, which compiles to it; and
+     `transition: "all 0.15s"` is the same keyword inside a quoted style-object
+     value, which the first regex could not see past its own opening quote — 33
+     of those were still live after the pass that was meant to remove them. */
+  const OFFENDERS =
+    /transition:\s*["']?\s*all\b|(?:^|[\s"'`:])transition-all(?:[\s"'`]|$)/;
 
   it("finds none", () => {
     /* Named line by line, so a failure is actionable rather than a bare count. */

@@ -13,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { feedback } from "@/lib/theme/motion";
 
 export type RewardType = "none" | "kudos" | "cash" | "token";
 
@@ -501,7 +502,7 @@ function Chip({
         fontWeight: 500,
         color: active ? "var(--lit)" : "var(--text2)",
         cursor: "pointer",
-        transition: "all 0.15s ease",
+        transition: feedback(),
       }}
     >
       {children}
@@ -531,7 +532,7 @@ function QuickPickChip({
         fontWeight: 500,
         color: "var(--text2)",
         cursor: "pointer",
-        transition: "all 0.15s ease",
+        transition: feedback(),
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "var(--glass-2)";

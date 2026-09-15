@@ -332,7 +332,7 @@ export function ResultsCarouselEditor({
               isDraggingOver ? "color-mix(in srgb, var(--evidence) 50%, transparent)" : "var(--recess)"
             }`,
             borderRadius: 8,
-            transition: "all 150ms ease",
+            transition: feedback(),
           }}
         >
           <Images size={28} color="var(--text2)" />

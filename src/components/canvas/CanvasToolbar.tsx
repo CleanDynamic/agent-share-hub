@@ -127,7 +127,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     borderRadius: 6,
     color: 'var(--text2)',
     cursor: 'pointer',
-    transition: 'all 0.15s',
+    transition: feedback(),
   });
 
   const disabledNav: React.CSSProperties = {
@@ -232,7 +232,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       color: 'var(--text2)',
                       fontWeight: 500,
                       fontFamily: 'Figtree, sans-serif',
-                      transition: 'all 0.15s ease',
+                      transition: feedback(),
                       textAlign: 'left',
                     }}
                   >
@@ -345,7 +345,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             fontSize: 12, fontWeight: 500,
             fontFamily: 'Figtree, sans-serif',
             cursor: 'pointer',
-            transition: 'all 0.15s',
+            transition: feedback(),
             whiteSpace: 'nowrap',
           }}
         >
@@ -589,7 +589,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               fontFamily: 'Figtree, sans-serif',
               cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.6 : 1,
-              transition: 'all 0.15s',
+              transition: feedback(),
               whiteSpace: 'nowrap',
             }}
           >
@@ -616,7 +616,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               fontFamily: 'Figtree, sans-serif',
               cursor: submitting ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.7 : 1,
-              transition: 'all 0.15s',
+              transition: feedback(),
               whiteSpace: 'nowrap',
             }}
           >

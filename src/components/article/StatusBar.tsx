@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { SaveStatus } from '@/lib/documentPersistence';
+import { feedback } from '@/lib/theme/motion';
 
 interface StatusBarProps {
   branch?: string;
@@ -66,7 +67,7 @@ const itemButtonStyle = {
   cursor: 'pointer',
   whiteSpace: 'nowrap' as const,
   flexShrink: 0,
-  transition: 'all 120ms ease-out',
+  transition: feedback(),
 } satisfies React.CSSProperties;
 
 export function StatusBar({

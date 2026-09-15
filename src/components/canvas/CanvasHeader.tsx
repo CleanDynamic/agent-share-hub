@@ -365,7 +365,7 @@ function EvidenceEditor({
               border: `1px solid ${mediaType === t.value ? 'color-mix(in srgb, var(--action) 30%, transparent)' : 'var(--recess)'}`,
               color: mediaType === t.value ? 'var(--action)' : 'var(--recess)',
               fontFamily: 'Figtree, sans-serif',
-              transition: 'all 200ms',
+              transition: feedback(),
             }}
           >
             {t.label}

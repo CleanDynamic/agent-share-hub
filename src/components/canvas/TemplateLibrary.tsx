@@ -235,7 +235,7 @@ export function TemplateLibrary({
                     hoveredTemplate === template.id
                       ? 'color-mix(in srgb, var(--action) 6%, transparent)'
                       : 'var(--recess)',
-                  transition: 'all 0.15s',
+                  transition: feedback(),
                 }}
               >
                 <div style={{
@@ -284,7 +284,7 @@ export function TemplateLibrary({
                           color: active
                             ? 'var(--action)'
                             : 'var(--text2)',
-                          transition: 'all 0.12s',
+                          transition: feedback(),
                         }}
                       >
                         {s}x
@@ -362,7 +362,7 @@ export function TemplateLibrary({
                     background: 'color-mix(in srgb, var(--action) 85%, transparent)',
                     border: '1px solid color-mix(in srgb, var(--action) 50%, transparent)',
                     color: 'var(--text)',
-                    transition: 'all 0.12s',
+                    transition: feedback(),
                   }}
                 >
                   Apply{scale > 1 ? ` (${scale}x)` : ''}

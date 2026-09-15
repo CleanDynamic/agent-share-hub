@@ -9,7 +9,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { scrollBehavior } from "@/lib/theme/motion";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 export interface Slide {
   id: string;
@@ -159,7 +159,7 @@ export function ResultsCarouselViewer({
               border: "none",
               padding: 0,
               cursor: "pointer",
-              transition: "all 200ms ease",
+              transition: feedback(),
             }}
           />
         ))}

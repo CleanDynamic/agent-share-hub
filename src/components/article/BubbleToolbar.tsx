@@ -199,7 +199,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
                 ? 'var(--text)'
                 : 'var(--text2)',
               cursor: 'pointer',
-              transition: 'all 100ms',
+              transition: feedback(),
               padding: 0,
             }}
           >

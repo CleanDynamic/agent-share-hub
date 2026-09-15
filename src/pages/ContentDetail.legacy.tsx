@@ -2162,7 +2162,7 @@ function WhatToExpectSection({ item }: { item: any }) {
               background: i === current
                 ? 'var(--action)' : 'var(--recess)',
               border: 'none', cursor: 'pointer', padding: 0,
-              transition: 'all 0.25s ease',
+              transition: feedback(),
             }}
           />
         ))}

@@ -1,4 +1,5 @@
 import { Pencil, Trash2, MoreHorizontal, Share2, Plus, Folder, FolderOpen } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 interface FolderData {
   id: string;
@@ -68,7 +69,7 @@ export function LibrarySidebar({
     color: isActive
       ? "var(--evidence)"
       : "var(--text2)",
-    transition: "all 0.15s ease",
+    transition: feedback(),
   });
 
   const countStyle = {

@@ -50,6 +50,7 @@ import {
   PanelLeft,
   PanelRight,
 } from 'lucide-react';
+import { feedback } from '@/lib/theme/motion';
 
 const styles = {
   toolbar: {
@@ -131,7 +132,7 @@ function ToolbarButton({
     justifyContent: 'center',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.4 : 1,
-    transition: 'all 120ms ease-out',
+    transition: feedback(),
     border: 'none',
     padding: 0,
     background: 'transparent',
@@ -249,7 +250,7 @@ function ToolbarDropdown({
     alignItems: 'center',
     gap: 4,
     cursor: 'pointer',
-    transition: 'all 120ms ease-out',
+    transition: feedback(),
     fontSize: 13,
     fontWeight: 400,
     fontFamily: 'Figtree, sans-serif',
@@ -342,7 +343,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
             justifyContent: 'center',
             cursor: 'pointer',
             background: isHovered ? 'var(--recess)' : 'transparent',
-            transition: 'all 120ms ease-out',
+            transition: feedback(),
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -455,7 +456,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             justifyContent: 'center',
             cursor: 'pointer',
             background: hovered ? 'var(--recess)' : 'transparent',
-            transition: 'all 120ms ease-out',
+            transition: feedback(),
           }}
         >
           <span

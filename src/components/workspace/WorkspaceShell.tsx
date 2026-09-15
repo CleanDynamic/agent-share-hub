@@ -290,7 +290,7 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
             justifyContent: 'center',
             cursor: 'pointer',
             padding: 0,
-            transition: 'all 120ms ease-out',
+            transition: feedback(),
           }}
           onMouseEnter={(e) => {
             if (active) return;
