@@ -424,7 +424,7 @@ function NavTool() {
                     padding: '0 5px',
                     borderRadius: 9,
                     background: r.key === 'drafts' ? 'var(--recess)' : 'var(--action)',
-                    color: r.key === 'drafts' ? 'var(--recess)' : 'var(--text)',
+                    color: r.key === 'drafts' ? 'var(--text2)' : 'var(--text)',
                     fontSize: 10,
                     fontWeight: 700,
                     display: 'flex',

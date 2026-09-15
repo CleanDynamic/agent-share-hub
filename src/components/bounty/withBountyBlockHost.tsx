@@ -43,7 +43,7 @@ export function withBountyBlockHost<P extends NodeProps>(
               justifyContent: 'center',
               padding: 6,
               background: "var(--recess)",
-              backdropFilter: 'blur(2px)',
+              backdropFilter: 'blur(16px)',
               borderRadius: 8,
               pointerEvents: 'auto',
             }}

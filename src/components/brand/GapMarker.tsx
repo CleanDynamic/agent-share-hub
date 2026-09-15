@@ -217,7 +217,25 @@ export function GapMarker({
           ...dataText,
           ...tabular,
           margin: 0,
-          color: state === "solved" ? t.evidence : t.catBreakage,
+          /* BG-P30. THE UNSOLVED LINE WAS THE BREAKAGE HUE AS TEXT, which is
+             the one thing this file's own header rules out — "no red on
+             anything but the EDGE" — and which the sweep caught: on a build
+             card the line sits on the card composite (thread over frame over
+             ground), and Dusk's `--cat-breakage` measures 3.93:1 there
+             against a 4.5:1 floor, at 13px. Exhibition passes at 6.13:1, so
+             this is another pairing that is legal in one room only.
+
+             The row placement below already took this remedy: the nine hues
+             were each measured against `--bg`, and a hue as text on a card or
+             a recess is a pairing nobody measured. Here there is no container
+             to give it a fill — a container inside a card is a second card —
+             so the line takes the ink the system names for quiet text,
+             5.22:1 on Dusk and 6.24:1 on Exhibition, and the red stays where
+             the design always said it lived: on the dashed edge.
+
+             Solved keeps `--evidence`, which measures 5.59:1 and 5.80:1 on
+             the same composite, so the two states stay distinguishable. */
+          color: state === "solved" ? t.evidence : t.text2,
         }}
       >
         {summary}

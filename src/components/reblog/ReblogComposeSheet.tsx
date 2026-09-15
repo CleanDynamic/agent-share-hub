@@ -415,7 +415,7 @@ export default function ReblogComposeSheet({
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{
           background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(16px)",
           opacity: visible ? 1 : 0,
           transition: feedback("opacity"),
         }}
@@ -479,7 +479,7 @@ export default function ReblogComposeSheet({
       className="fixed inset-0 z-50"
       style={{
         background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-        backdropFilter: "blur(8px)",
+        backdropFilter: "blur(16px)",
         opacity: visible ? 1 : 0,
         transition: feedback("opacity"),
       }}
@@ -693,7 +693,6 @@ function ComposeBody({
             color: "var(--text)",
             background: "transparent",
             border: "none",
-            outline: "none",
             width: "100%",
             minHeight: 80,
             maxHeight: 240,

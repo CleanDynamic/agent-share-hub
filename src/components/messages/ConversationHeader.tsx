@@ -267,7 +267,7 @@ export function ConversationHeader({
           padding: "0 14px",
           borderBottom: "0.5px solid var(--line)",
           background: "var(--bg)",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(16px)",
         }}
       >
         <button

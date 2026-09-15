@@ -1433,8 +1433,8 @@ const ContentDetail = () => {
               className="flex items-center gap-1 sticky top-0 z-20 overflow-x-auto"
               style={{
                 background: 'var(--recess)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 paddingBottom: 12,
                 borderBottom: '1px solid var(--line)',
                 marginBottom: 20,

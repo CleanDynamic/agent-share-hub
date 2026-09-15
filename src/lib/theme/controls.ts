@@ -465,8 +465,37 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
   };
 }
 
+/* BG-P30 — THE UNCHECKED BOUNDARY IS THE WHOLE AFFORDANCE, so it is `--text2`
+   and not `--line`.
+
+   The three constants below shared one resting boundary, `--line`, and the
+   rendered sweep measured it on the grounds these controls actually sit on:
+   1.48:1 on a glass card in both rooms, 1.30:1 and 1.82:1 on the page ground,
+   1.13:1 and 1.37:1 on a recess. Against a 3.0:1 floor.
+
+   THAT FLOOR APPLIES HERE AND NOT TO A HAIRLINE, and the difference is what
+   the border is doing. `--line` is 1.2:1 on Exhibition's ground BY DESIGN —
+   the spec names it "hairlines, chip borders" and floors it nowhere, because a
+   separator carries no information and WCAG 1.4.11 exempts it. An unchecked
+   checkbox carries all of it: the box has no label of its own, no fill worth
+   the name (`--recess` is 1.31:1 on a glass card), and no tick. Its boundary IS
+   the control. A reader who cannot see the boundary cannot see that there is
+   something to tick.
+
+   `--text2` is the remedy the escalation order asks for first — a legal pairing
+   already in the system, and one these three controls were ALREADY spending on
+   hover. It measures 5.98:1 and 6.19:1 on a glass card, 5.26:1 and 7.65:1 on
+   the page ground, 4.55:1 and 5.73:1 on a recess.
+
+   HOVER STEPS UP TO `--text` rather than disappearing. It was `--text2`, which
+   is now the resting value, so the step had to move or the hover feedback would
+   have been lost to the fix. `--text` on the same grounds is 14.88:1 and
+   11.48:1.
+
+   CHECKED IS UNCHANGED. `--action` fill with `--action` border, and the
+   checked/unchecked distinction was never the failing pairing. */
 export const SWITCH_TRACK_CLASS =
-  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "bg-[color:var(--recess)] border-[color:var(--text2)] hover:border-[color:var(--text)] " +
   "data-[state=checked]:bg-[color:var(--action)] data-[state=checked]:border-[color:var(--action)]";
 
 /** The thumb. Circular — `--r-full` is correct here and almost nowhere else. */
@@ -513,8 +542,9 @@ export function checkboxStyle(state: ControlState = {}): CSSProperties {
   };
 }
 
+/** See the BG-P30 note above SWITCH_TRACK_CLASS for why this is `--text2`. */
 export const CHECKBOX_CLASS =
-  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "bg-[color:var(--recess)] border-[color:var(--text2)] hover:border-[color:var(--text)] " +
   "data-[state=checked]:bg-[color:var(--action)] data-[state=checked]:border-[color:var(--action)] " +
   "data-[state=checked]:text-[color:var(--on-action)] " +
   "data-[state=indeterminate]:bg-[color:var(--action)] data-[state=indeterminate]:border-[color:var(--action)] " +
@@ -542,8 +572,9 @@ export function radioStyle(state: ControlState = {}): CSSProperties {
   };
 }
 
+/** See the BG-P30 note above SWITCH_TRACK_CLASS for why this is `--text2`. */
 export const RADIO_CLASS =
-  "bg-[color:var(--recess)] border-[color:var(--line)] hover:border-[color:var(--text2)] " +
+  "bg-[color:var(--recess)] border-[color:var(--text2)] hover:border-[color:var(--text)] " +
   "text-[color:var(--action)] data-[state=checked]:border-[color:var(--action)]";
 
 /* ── Overlays ─────────────────────────────────────────────────────────────────

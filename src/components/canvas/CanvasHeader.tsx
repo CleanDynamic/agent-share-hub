@@ -363,7 +363,7 @@ function EvidenceEditor({
               cursor: 'pointer',
               background: mediaType === t.value ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'transparent',
               border: `1px solid ${mediaType === t.value ? 'color-mix(in srgb, var(--action) 30%, transparent)' : 'var(--recess)'}`,
-              color: mediaType === t.value ? 'var(--action)' : 'var(--recess)',
+              color: mediaType === t.value ? 'var(--action)' : 'var(--text2)',
               fontFamily: 'Figtree, sans-serif',
               transition: feedback(),
             }}

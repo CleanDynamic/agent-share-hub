@@ -361,7 +361,7 @@ export function ContentDetailShell({
           justifyContent: "space-between",
           padding: "0 16px",
           background: "var(--glass)",
-          backdropFilter: "blur(12px)",
+          backdropFilter: "blur(16px)",
           borderBottom: "1px solid var(--line)",
         }}
       >

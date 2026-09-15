@@ -169,8 +169,8 @@ export function StatusBar({
            text floor. --recess is the token for a surface the page is cut
            into, and --text2 measures 4.55:1 on it. */
         background: 'var(--recess)',
-        backdropFilter: 'blur(14px)',
-        WebkitBackdropFilter: 'blur(14px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
       }}
     >
       <div

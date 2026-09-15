@@ -573,7 +573,7 @@ export function CanvasBlock({
                         {stages.map(s => (
                           <button key={s.id}
                             onClick={() => { onAssignStage(block.id, s.id); setStagePickerOpen(false); }}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? 'var(--cat-data)' : 'var(--recess)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '4px 10px', background: 'none', border: 'none', fontSize: 10, color: block.stageId === s.id ? 'var(--cat-data)' : 'var(--text2)', cursor: 'pointer', fontWeight: block.stageId === s.id ? 700 : 400 }}>
                             {s.stageNumber}. {s.title}
                           </button>
                         ))}
@@ -610,7 +610,7 @@ export function CanvasBlock({
             background: block.type === 'section_heading' ? 'transparent' : 'var(--recess)',
             border: block.type === 'section_heading' ? 'none' : '1px solid var(--line)',
             borderRadius: 10, overflow: 'hidden',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(16px)',
             position: 'relative',
           }}>
             {showAnnotations && block.creatorAnnotation && (
@@ -634,7 +634,7 @@ export function CanvasBlock({
 
             {block.isLocked && block.lockType === 'blur' && (
               <div style={{
-                position: 'absolute', inset: 0, backdropFilter: 'blur(8px)',
+                position: 'absolute', inset: 0, backdropFilter: 'blur(16px)',
                 background: 'var(--recess)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', borderRadius: 10,
               }}>

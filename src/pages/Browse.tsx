@@ -871,7 +871,7 @@ const Browse = () => {
                 borderRadius: 'var(--r-control)',
                 border: 'none',
                 background: browseTab === tab.value ? 'color-mix(in srgb, var(--evidence) 8%, transparent)' : 'transparent',
-                color: browseTab === tab.value ? 'var(--evidence)' : 'var(--recess)',
+                color: browseTab === tab.value ? 'var(--evidence)' : 'var(--text2)',
                 cursor: 'pointer',
               }}
             >
@@ -924,7 +924,7 @@ const Browse = () => {
                 borderRadius: 'var(--r-chip)',
                 border: '1px solid ' + (sortMode === opt.value ? 'color-mix(in srgb, var(--evidence) 30%, transparent)' : 'var(--recess)'),
                 background: sortMode === opt.value ? 'color-mix(in srgb, var(--evidence) 10%, transparent)' : 'transparent',
-                color: sortMode === opt.value ? 'var(--evidence)' : 'var(--recess)',
+                color: sortMode === opt.value ? 'var(--evidence)' : 'var(--text2)',
                 cursor: 'pointer',
               }}
             >
@@ -947,7 +947,7 @@ const Browse = () => {
                 borderRadius: 'var(--r-chip)',
                 border: '1px solid ' + (timePeriod === opt.value ? 'color-mix(in srgb, var(--evidence) 30%, transparent)' : 'var(--recess)'),
                 background: timePeriod === opt.value ? 'color-mix(in srgb, var(--evidence) 10%, transparent)' : 'transparent',
-                color: timePeriod === opt.value ? 'var(--evidence)' : 'var(--recess)',
+                color: timePeriod === opt.value ? 'var(--evidence)' : 'var(--text2)',
                 cursor: 'pointer',
               }}
             >

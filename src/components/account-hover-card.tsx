@@ -59,7 +59,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
         className="w-72 p-0 overflow-hidden"
         style={{
           background: "var(--bg)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(16px)",
           border: "1px solid var(--line)",
         }}
         side="bottom"

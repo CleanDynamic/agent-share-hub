@@ -30,8 +30,8 @@ export default function StreakSavedToast({
         borderRadius: RADIUS.panel,
         padding: 16,
         fontFamily: FONT.sans,
-        backdropFilter: "blur(28px) saturate(160%)",
-        WebkitBackdropFilter: "blur(28px) saturate(160%)",
+        backdropFilter: "blur(16px) saturate(160%)",
+        WebkitBackdropFilter: "blur(16px) saturate(160%)",
         boxShadow: "var(--elev-raised)",
       }}
     >

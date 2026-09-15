@@ -161,7 +161,6 @@ function ReplyComposer({
           fontSize: 13,
           lineHeight: 1.55,
           resize: "none",
-          outline: "none",
           boxSizing: "border-box",
         }}
       />
@@ -542,7 +541,6 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                     fontSize: 13,
                     lineHeight: 1.55,
                     resize: "vertical",
-                    outline: "none",
                     boxSizing: "border-box",
                   }}
                 />

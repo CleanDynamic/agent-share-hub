@@ -16,12 +16,44 @@
          pay for DNS + TLS twice.
 
          Weights are the three the type scale emits, and no more: Figtree
-         400..500..600, Bodoni Moda 400..500 roman plus a 400 italic, DM Mono
-         400 and 500. Ranges where the family is variable, discrete weights
-         where it is not, so Google serves one file per family instead of one
-         per weight. Latin only — the product is English and nothing in the
-         repo renders another script; the browser picks the subset it needs
-         from the unicode-range rules either way.
+         400..500..600, Bodoni Moda 400..500 roman, DM Mono 400 and 500.
+         Ranges where the family is variable, discrete weights where it is
+         not, so Google serves one file per family instead of one per weight.
+         Latin only — the product is English and nothing in the repo renders
+         another script; the browser picks the subset it needs from the
+         unicode-range rules either way.
+
+         BG-P31 DROPPED BODONI'S ITALIC, AND MEASURED EVERYTHING ELSE.
+         Bytes of latin woff2 before paint, fetched and weighed rather than
+         estimated:
+
+           before this series   Inter + Playfair Display   493,720 B, 11 files
+           after BG-P03         the three families          79,972 B,  5 files
+           after this change    the three families          63,400 B,  4 files
+
+         Inter was asked for at SEVEN discrete weights — 48,432 B each, seven
+         times — and Playfair at four styles. The three families that replaced
+         them are variable where the family allows it, so the request is one
+         file per family rather than one per weight. That is where 84% of the
+         saving came from, before this prompt touched anything.
+
+         THE ITALIC WAS THE LAST UNUSED FILE. `ital,wght@0,400..500;1,400`
+         served a 16,572 B roman plus a 25,804 B italic, and NOTHING IN THE
+         PRODUCT SET IT: every site that spends BODONI was scanned and not one
+         carries `fontStyle: "italic"` — the one italic nearby is on Figtree,
+         in a blog description. Dropping the axis leaves a single 25,804 B
+         roman file: 16,572 B less, 20.7% off the font budget, for a face
+         nobody rendered. Across all unicode subsets the request falls from
+         184,148 B to 134,872 B.
+
+         No further subsetting is warranted. At 63,400 B the three families
+         together cost an eighth of what two did, and the remaining files are
+         one per family per weight with nothing left to drop. Self-hosting
+         would buy a connection, not bytes, and the preconnects above already
+         pay for that.
+
+         The italic is one token away if a display italic is ever wanted:
+         `family=Bodoni+Moda:ital,wght@0,400..500;1,400` restores it.
 
          The faces are read through src/lib/theme/type.ts. Change the scale
          there and the weights here together. -->
@@ -29,7 +61,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..500;1,400&family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400..500&family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
     />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody

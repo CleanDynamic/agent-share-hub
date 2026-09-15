@@ -224,8 +224,8 @@ export function LibrarySidebar({
                 className="absolute right-0 top-full z-20 mt-1 w-44 py-1"
                 style={{
                   background: "var(--recess)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
                   border: "1px solid var(--line)",
                   borderRadius: 10,
                   boxShadow: "var(--elev-raised)",

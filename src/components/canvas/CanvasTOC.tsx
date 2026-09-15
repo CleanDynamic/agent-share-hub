@@ -674,7 +674,7 @@ export function CanvasTOC({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: depth === 0 ? 'var(--recess)' : 'var(--recess)',
+                  color: 'var(--text2)',
                   cursor: depth === 0 ? 'not-allowed' : 'pointer',
                   fontSize: 11,
                   padding: '0 2px',
@@ -695,7 +695,7 @@ export function CanvasTOC({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: depth === 2 ? 'var(--recess)' : 'var(--recess)',
+                  color: 'var(--text2)',
                   cursor: depth === 2 ? 'not-allowed' : 'pointer',
                   fontSize: 11,
                   padding: '0 2px',

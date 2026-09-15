@@ -200,7 +200,6 @@ const inputStyle: CSSProperties = {
   minWidth: 0,
   height: 30,
   padding: "0 8px",
-  outline: "none",
 };
 
 // --- the section -------------------------------------------------------------

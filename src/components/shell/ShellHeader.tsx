@@ -221,7 +221,15 @@ export function ShellHeader({
                       fontFamily: FONT,
                       fontSize: 13,
                       fontWeight: 500,
-                      color: isActive ? ORANGE : "var(--recess)",
+                      /* BG-P30. The resting tab was painted `--recess`, which
+                         is a SURFACE token: 1.16:1 on Exhibition's ground and
+                         1.33:1 on Dusk's, at 13px/500. An inactive tab is
+                         still a label somebody has to read to choose it.
+                         `--text2` is what the system names quiet ink and is
+                         the pairing the contract publishes — 5.26:1 and
+                         7.65:1 — so this reuses a legal pairing rather than
+                         striking a value. */
+                      color: isActive ? ORANGE : "var(--text2)",
                       cursor: "pointer",
                       transition: feedback("color"),
                     }}

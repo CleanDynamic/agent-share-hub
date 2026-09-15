@@ -109,7 +109,6 @@ export function InspectorDocument({
             fontWeight: 500,
             color: title ? "var(--text)" : "var(--text2)",
             fontStyle: title ? "normal" : "italic",
-            outline: "none",
           }}
         />
 
@@ -128,7 +127,6 @@ export function InspectorDocument({
             padding: "10px 12px",
             fontSize: 13,
             color: "var(--text2)",
-            outline: "none",
             resize: "none",
             lineHeight: 1.4,
           }}
@@ -307,7 +305,6 @@ export function InspectorDocument({
               border: "none",
               fontSize: 13,
               color: "var(--text)",
-              outline: "none",
             }}
           />
         </div>
@@ -325,7 +322,6 @@ export function InspectorDocument({
               borderRadius: PANEL_INPUT_RADIUS,
               padding: "0 12px",
               cursor: "pointer",
-              outline: "none",
             }}
           >
             <span

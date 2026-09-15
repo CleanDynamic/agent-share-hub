@@ -495,7 +495,6 @@ const inputStyle: React.CSSProperties = {
   padding: "8px 10px",
   fontFamily: FIGTREE,
   fontSize: 13,
-  outline: "none",
 };
 
 const textareaStyle: React.CSSProperties = {

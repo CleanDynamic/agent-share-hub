@@ -156,7 +156,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'var(--bg)',
-            backdropFilter: 'blur(20px)',
+            backdropFilter: 'blur(16px)',
             border: '1px solid var(--line)',
             borderRadius: 12,
             padding: 12,
@@ -422,7 +422,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             className="w-auto p-0"
             style={{
               background: 'var(--bg)',
-              backdropFilter: 'blur(20px)',
+              backdropFilter: 'blur(16px)',
               border: '1px solid var(--line)',
               borderRadius: 10,
               padding: 6,
