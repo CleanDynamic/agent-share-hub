@@ -203,8 +203,8 @@ export function BountyCompetitionHeader({
     borderRadius: 16,
     padding: 24,
     marginBottom: 20,
-    backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
   };
 
   const labelStyle: React.CSSProperties = {

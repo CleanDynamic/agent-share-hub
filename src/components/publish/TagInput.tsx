@@ -188,7 +188,7 @@ export function TagInput({
           style={{
             backgroundColor: "var(--recess)",
             border: "0.5px solid var(--line)",
-            backdropFilter: "blur(12px)",
+            backdropFilter: "blur(16px)",
           }}
         >
           {filteredSuggestions.length > 0 ? (

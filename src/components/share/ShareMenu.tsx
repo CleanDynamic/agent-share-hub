@@ -582,8 +582,8 @@ const ShareMenu: React.FC<ShareMenuProps> = ({
       style={{
         ...floatingStyles,
         background: "var(--bg)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         border: "0.5px solid var(--line)",
         borderRadius: 10,
         boxShadow: "var(--elev-raised)",

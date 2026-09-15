@@ -418,7 +418,7 @@ export function ReblogFeedCard({
                     width: 56,
                     height: 56,
                     background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-                    backdropFilter: "blur(4px)",
+                    backdropFilter: "blur(16px)",
                   }}
                 >
                   <Play

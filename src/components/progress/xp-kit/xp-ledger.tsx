@@ -153,7 +153,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                 textTransform: "uppercase",
                 color: tokens.textFaint,
                 background: tokens.card,
-                backdropFilter: "blur(8px)",
+                backdropFilter: "blur(16px)",
               }}
             >
               {g.label}

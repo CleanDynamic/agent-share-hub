@@ -253,8 +253,8 @@ export function FindReplaceBar({
       style={{
         height: showReplace ? BAR_HEIGHT * 2 : BAR_HEIGHT,
         background: 'var(--cat-data)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--line)',
         padding: '6px 10px',
         display: 'flex',

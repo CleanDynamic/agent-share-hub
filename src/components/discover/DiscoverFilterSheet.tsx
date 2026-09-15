@@ -449,7 +449,7 @@ export function DiscoverFilterSheet({
           width: 420,
           maxWidth: '100vw',
           background: 'var(--bg)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(16px)',
           borderLeft: '0.5px solid var(--line)',
           zIndex: 50,
           display: 'flex',

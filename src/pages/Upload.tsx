@@ -2977,7 +2977,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               position: 'sticky',
               bottom: 0,
               background: 'var(--bg)',
-              backdropFilter: 'blur(20px)',
+              backdropFilter: 'blur(16px)',
               borderTop: '1px solid var(--line)',
               padding: '12px 0 16px 0',
               marginTop: 24,
@@ -3053,7 +3053,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       {/* Exit confirmation dialog */}
       {exitDialogOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={handleExitCancel} style={{ position: 'absolute', inset: 0, background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', backdropFilter: 'blur(4px)' }} />
+          <div onClick={handleExitCancel} style={{ position: 'absolute', inset: 0, background: 'color-mix(in srgb, var(--porthole) 62%, transparent)', backdropFilter: 'blur(16px)' }} />
           <div style={{
             position: 'relative', zIndex: 1, background: 'var(--bg)',
             border: '1px solid var(--line)', borderRadius: 16,

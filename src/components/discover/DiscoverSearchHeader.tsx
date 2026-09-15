@@ -327,7 +327,7 @@ export function DiscoverSearchHeader({
                 right: 0,
                 marginTop: 4,
                 background: 'var(--bg)',
-                backdropFilter: 'blur(20px)',
+                backdropFilter: 'blur(16px)',
                 border: '0.5px solid var(--line)',
                 borderRadius: 8,
                 padding: '4px 0',

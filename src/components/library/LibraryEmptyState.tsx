@@ -52,8 +52,8 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
       <div
         style={{
           background: "var(--recess)",
-          backdropFilter: "blur(40px) saturate(180%)",
-          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          backdropFilter: "blur(16px) saturate(180%)",
+          WebkitBackdropFilter: "blur(16px) saturate(180%)",
           border: "1px solid var(--line)",
           borderRadius: 20,
           padding: "48px 40px",
