@@ -54,8 +54,8 @@ export const tokens = {
   radiusCard: 10,
   radiusPill: 100,
   glass: {
-    backdropFilter: "blur(28px) saturate(160%)",
-    WebkitBackdropFilter: "blur(28px) saturate(160%)",
+    backdropFilter: "blur(16px) saturate(160%)",
+    WebkitBackdropFilter: "blur(16px) saturate(160%)",
   },
   fontSans:
     "'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",

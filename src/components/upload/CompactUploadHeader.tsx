@@ -189,8 +189,8 @@ export function CompactUploadHeader({
           style={{
             height: "36px", padding: "8px 24px",
             background: "var(--bg)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
             borderBottom: "0.5px solid var(--line)",
           }}
         >

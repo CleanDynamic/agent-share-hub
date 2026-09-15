@@ -169,7 +169,7 @@ export default function Search() {
         borderBottom: '1px solid var(--line)',
         position: 'sticky', top: 0,
         background: 'var(--bg)',
-        backdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(16px)',
         zIndex: 10,
       }}>
         <div style={{
@@ -220,7 +220,7 @@ export default function Search() {
           borderBottom: '1px solid var(--line)',
           position: 'sticky', top: 57,
           background: 'var(--bg)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(16px)',
           zIndex: 9,
         }}>
           {SEARCH_TABS.map(t => {

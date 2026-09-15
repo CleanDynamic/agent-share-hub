@@ -1295,8 +1295,8 @@ export function ArticleEditor({
             style={{
               position: 'absolute', inset: 0,
               background: 'color-mix(in srgb, var(--porthole) 62%, transparent)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
             }}
           />
           <div

@@ -293,7 +293,7 @@ function PledgeModal({
         position: "fixed",
         inset: 0,
         background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-        backdropFilter: "blur(8px)",
+        backdropFilter: "blur(16px)",
         zIndex: 1000,
         display: "flex",
         alignItems: "center",
@@ -375,7 +375,6 @@ function PledgeModal({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "var(--text)",
-                outline: "none",
               }}
             />
             <select
@@ -390,7 +389,6 @@ function PledgeModal({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "var(--text)",
-                outline: "none",
               }}
             >
               <option value="USD">USD</option>

@@ -194,7 +194,7 @@
 
 /* ── Page-content overrides carried over from the old shell (.ns-page-body ...)
      so routed pages render identically inside the dark frame.
-     NOTE: the old `.sticky` override also applied backdrop-filter: blur(20px);
+     NOTE: the old `.sticky` override also applied backdrop-filter: blur(16px);
      that blur is intentionally removed (blur is rails-only) — the near-opaque
      background keeps sticky headers legible. ── */
 .fs-page-body .bg-background,

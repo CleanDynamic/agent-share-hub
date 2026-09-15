@@ -511,7 +511,6 @@ function CommentCard({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   resize: "vertical",
-                  outline: "none",
                 }}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submitReply();
@@ -674,7 +673,6 @@ function Composer({
           fontSize: 13,
           lineHeight: 1.5,
           resize: "vertical",
-          outline: "none",
           boxSizing: "border-box",
         }}
         onKeyDown={(e) => {
@@ -767,7 +765,7 @@ function SortDropdown({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 11,
                 fontWeight: value === opt ? 500 : 400,
-                color: value === opt ? "var(--text)" : "var(--recess)",
+                color: value === opt ? "var(--text)" : "var(--text2)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -1002,8 +1000,8 @@ export function PrimitiveCommentDrawer({
           width: "100%",
           maxWidth: 380,
           background: "var(--bg)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           borderLeft: "0.5px solid var(--line)",
           zIndex: 999,
           display: "flex",

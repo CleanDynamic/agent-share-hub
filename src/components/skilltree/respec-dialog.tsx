@@ -28,8 +28,8 @@ export default function RespecDialog({
         alignItems: "center",
         justifyContent: "center",
         background: "var(--recess)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
         fontFamily: sans,
         padding: 16,
       }}

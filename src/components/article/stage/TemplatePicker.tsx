@@ -198,7 +198,7 @@ export function TemplatePicker({
         className="max-w-4xl p-0 overflow-hidden"
         style={{
           background: 'var(--bg)',
-          backdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(16px)',
           border: '1px solid var(--line)',
         }}
       >
