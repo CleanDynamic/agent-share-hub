@@ -12,9 +12,19 @@ obvious to these.
 ## Running
 
 ```bash
-npm run audit            # both sweeps
-npm run audit:contrast   # the contrast sweep only
-npm run audit:themes     # the both-theme completeness assertion only
+npm run audit            # every sweep
+npm run audit:contrast   # BG-P30 — the contrast sweep
+npm run audit:themes     # BG-P30 — the both-theme completeness assertion
+npm run audit:glass      # BG-P31 — the glass census and budget
+npm run audit:perf       # BG-P31 — load timing, Core Web Vitals, CLS, theme switch
+```
+
+`audit:perf` compares against a baseline taken on a BUILT bundle, so give it
+one or the numbers are about Vite's dev server rather than about the product:
+
+```bash
+npm run build && npx vite preview --port 4173 --strictPort --host 127.0.0.1 &
+PERF_BASE_URL=http://127.0.0.1:4173 npm run audit:perf
 ```
 
 Each starts a Vite dev server if one is not already listening on `5173`
@@ -35,6 +45,10 @@ Reports land in `e2e/audit/out/` (gitignored):
 | `contrast-summary.txt` | coverage, counts, and the failures as prose |
 | `theme-leaks.csv` | colours belonging to the other room |
 | `theme-completeness.txt` | the same, as prose |
+| `glass-census.csv` | every blurred surface, its blur, its nesting depth |
+| `glass-census.txt` | per-route counts and any budget finding |
+| `web-vitals.csv` | LCP, INP proxy and CLS per route per room |
+| `performance.txt` | the whole performance report |
 
 ## What the contrast sweep does
 
@@ -115,6 +129,39 @@ shrug:
   boundary already clears 3.0:1, does not also need its fill to — otherwise no
   inset control could sit on a surface one step from it, which is what
   `--recess` is for.
+
+## What the BG-P31 sweeps do
+
+**`glass-budget`** counts every element with a `backdrop-filter` on each route
+in each room, reports the maximum nesting depth, and fails on: a route over
+about twenty surfaces, any nesting at all, a blurred full-height fixed panel,
+or more than one blur value in play. The static half of that rule — exactly one
+blur value in the whole codebase, including components no route in this sweep
+opens — is asserted in `src/lib/theme/glass.test.ts`, where a source scan
+belongs.
+
+**`performance`** measures four things and asserts only the ones that are true
+or false regardless of how fast the machine is:
+
+- **Load timing** on `/` against the baseline in `neoscale-performance`
+  (domInteractive 287ms, load 2676ms, 494 nodes). Set `PERF_BASE_URL` or the
+  report says plainly that it used the dev server and the deltas are recorded
+  rather than concluded.
+- **Core Web Vitals** on three routes in both rooms. INP is a proxy — the worst
+  `event` duration over a handful of driven interactions — and is labelled as
+  one everywhere it appears.
+- **CLS under a slow link**, on the Builds tab *and* the gallery grid, because
+  they reserve differently: the feed row carries no cover dimensions so its
+  cards use a fixed slot, while the gallery embed carries width and height and
+  is where BG-P09's reservation is actually under test. The throttle goes on
+  *after* the app is up — throttling the initial navigation on a dev server
+  measures Vite, not the feed. The assertion is that no layout shift is sourced
+  from a media slot, a cover or an `<img>`.
+- **The theme switch**, which must move no geometry and produce no layout
+  shift. Six hundred elements' boxes before and after.
+
+No timing number is ever asserted. A wall-clock threshold in CI is a flake
+generator and the container is not the machine the baseline came from.
 
 ## Accepting a survivor
 
