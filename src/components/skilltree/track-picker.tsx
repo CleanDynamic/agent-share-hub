@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { tokens, sans, type TrackId } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface TrackOption {
   id: TrackId
@@ -91,7 +92,9 @@ export default function TrackPicker({
                   ? `0 0 0 1px ${t.color}, 0 0 24px color-mix(in srgb, ${t.color} 35%, transparent)`
                   : "none",
                 cursor: "pointer",
-                transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+                // BG-P32: the ring is set, not eased — box-shadow re-rasterises
+                // the card on every frame of a transition.
+                transition: feedback("border-color"),
               }}
             >
               <div

@@ -7,6 +7,7 @@ import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 import { ExecutionPanel } from './ExecutionPanel';
 import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
   prompt: 'Prompt', code: 'Code', text: 'Text', long_text: 'Long Text',
@@ -426,7 +427,9 @@ export function CanvasBlock({
               borderRadius: 10,
               overflow: 'hidden',
               cursor: 'pointer',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
+              // BG-P32: box-shadow cannot be composited, so it is set rather
+              // than eased. The border still crosses over.
+              transition: feedback('border-color'),
               boxShadow: selected
                 ? `0 0 0 1px ${colourAlpha(accent, 0.314)}, var(--elev-raised)`
                 : hovered ? 'var(--elev-raised)' : 'none',

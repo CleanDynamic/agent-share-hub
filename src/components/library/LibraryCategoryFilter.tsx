@@ -120,7 +120,7 @@ export function LibraryCategoryFilter({
           <button
             key={cat.label}
             onClick={() => onCategoryChange(cat.dbType)}
-            className="flex items-center gap-1.5 shrink-0 transition-all"
+            className="flex items-center gap-1.5 shrink-0 transition-feedback"
             style={{
               background: isActive ? cat.bg : "var(--glass-2)",
               border: isActive

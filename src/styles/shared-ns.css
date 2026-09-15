@@ -1,3 +1,20 @@
+/* ── BG-P32 — hover is gated on a fine pointer ────────────────────────────────
+   Every `:hover` rule below sits inside `(hover: hover) and (pointer: fine)`.
+   A touch reader has no hover, and an ungated `:hover` leaves the control
+   looking permanently pressed after a tap, until something else is touched.
+
+   Each rule is wrapped WHERE IT STANDS rather than collected into one block at
+   the end of the file, because several of them win over a neighbouring state
+   rule of equal specificity by document order alone — `.fs-nav-item:hover`
+   against `.fs-nav-item.active`, say. Moving them would silently flip which
+   one paints an active, hovered row.
+
+   The 563 Tailwind `hover:` utilities elsewhere in the product are gated by
+   `hoverOnlyWhenSupported` in tailwind.config.ts, which compiles them into
+   this same query; hover carried in a style object goes through `hoverIsFine()`
+   in src/lib/theme/motion.ts, which reads it too.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 /* ────────────────────────────────────────────────
    shared-ns.css — .ns-* rules used by components OUTSIDE the app frame.
    Copied verbatim out of the injected CSS of NeoScaleShell, the frame this
@@ -73,7 +90,10 @@
   width: 100%;
   text-align: left;
 }
-.ns-back-btn:hover { color: var(--text); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-back-btn:hover { color: var(--text); }
+}
 
 /* ── Section label (trending, categories etc) ── */
 .ns-section-label {

@@ -590,15 +590,37 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+/* ── BG-P32 — hover is gated on a fine pointer ────────────────────────────────
+   Every `:hover` rule below sits inside `(hover: hover) and (pointer: fine)`.
+   A touch reader has no hover, and an ungated `:hover` leaves the control
+   looking permanently pressed after a tap, until something else is touched.
+
+   Each rule is wrapped WHERE IT STANDS rather than collected into one block at
+   the end of the file, because several of them win over a neighbouring state
+   rule of equal specificity by document order alone — `.fs-nav-item:hover`
+   against `.fs-nav-item.active`, say. Moving them would silently flip which
+   one paints an active, hovered row.
+
+   The 563 Tailwind `hover:` utilities elsewhere in the product are gated by
+   `hoverOnlyWhenSupported` in tailwind.config.ts, which compiles them into
+   this same query; hover carried in a style object goes through `hoverIsFine()`
+   in src/lib/theme/motion.ts, which reads it too.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+}
 
 .mention-link {
   color: #E8571A;
   text-decoration: none;
   font-weight: 500;
 }
-.mention-link:hover {
-  text-decoration: underline;
+/* BG-P32 — gated: see the hover note above. */
+@media (hover: hover) and (pointer: fine) {
+  .mention-link:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Snap-point pulse animation for magnetized connection points */
@@ -717,12 +739,7 @@ input[type="search"] { border-radius: var(--r-control); }
    in JavaScript-driven animation. src/lib/theme/controls.ts drops the animation
    from the style object, which covers every render; this covers the gap that
    leaves — a visitor who changes the setting while a skeleton is already on
-   screen, where nothing would re-render to notice.
-
-   Scoped to a data attribute the kit sets rather than to `*`, deliberately. A
-   global reduced-motion reset would reach every animation in the application,
-   including Radix's mount and unmount transitions, and that is a far larger
-   change than this prompt is making. */
+   screen, where nothing would re-render to notice. */
 @media (prefers-reduced-motion: reduce) {
   [data-bg-animated] {
     animation: none !important;
@@ -820,9 +837,7 @@ input[type="search"] { border-radius: var(--r-control); }
 /* BG-P07's rule, applied to the card: reduced motion is answered TWICE. The
    inline styles drop their transitions at render, which covers every render;
    this covers the gap that leaves — a visitor who changes the setting while a
-   card is already on screen, where nothing would re-render to notice. The
-   unfold then snaps, which is the behaviour the theme asks for: the reader
-   still gets the thread, just not the travel. */
+   card is already on screen, where nothing would re-render to notice. */
 @media (prefers-reduced-motion: reduce) {
   [data-visual-slot="gallery-card"],
   [data-visual-slot="gallery-card"]::after,

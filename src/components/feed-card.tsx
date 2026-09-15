@@ -1,6 +1,6 @@
 import { type } from "@/lib/theme/type";
 import { categoryFill } from "@/lib/theme/category";
-import { UI_EASING, UI_MS, menuPanelStyle } from "@/lib/theme/controls";
+import { menuPanelStyle } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -20,6 +20,7 @@ import ActionXpHint from "@/components/ambient/ActionXpHint"
 import { AvatarLevelRing } from "@/components/profile-game/AvatarLevelRing"
 import AttributionChip from "@/components/remix/AttributionChip"
 import { useLineageParent } from "@/lib/remix/hooks"
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * BG-P18. THE FOURTEEN CONTENT-TYPE BADGE COLOURS ARE RETIRED, which the theme
@@ -272,7 +273,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
         background: t.glass,
         ...elevation.flat,
         borderRadius: r.card,
-        transition: `border-color ${UI_MS}ms ${UI_EASING}`,
+        transition: feedback("border-color"),
       }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text2)" }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}

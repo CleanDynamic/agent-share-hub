@@ -11,6 +11,8 @@
  * segment.
  */
 
+import { PULSE_MS, pulseRing } from "@/lib/theme/motion";
+
 export function blueprintUrl(contentId: string): string {
   return `/content/${contentId}`;
 }
@@ -67,21 +69,17 @@ export function absoluteUrl(path: string): string {
 }
 
 /**
- * One-shot pulse animation on an element. Uses inline animation so we don't
- * need a global CSS class.
+ * One-shot pulse on an element, for a deep link that has just landed.
+ *
+ * BG-P32. The outline half of this was already right; the box-shadow half was
+ * not — `box-shadow` cannot be composited, so transitioning it re-rasterised
+ * the element on every frame of the fade. The ring is the outline alone now,
+ * and it comes from `pulseRing` in the motion module, which is the single copy
+ * of an effect this codebase had hand-rolled four separate times.
+ *
+ * Returns its cancel function, so a caller that navigates away mid-pulse can
+ * leave nothing behind.
  */
-export function pulseElement(el: HTMLElement, durationMs = 700) {
-  const previousOutline = el.style.outline;
-  const previousTransition = el.style.transition;
-  const previousBoxShadow = el.style.boxShadow;
-  el.style.transition = "box-shadow 200ms ease-out, outline-color 200ms ease-out";
-  el.style.outline = "2px solid color-mix(in srgb, var(--evidence) 95%, transparent)";
-  el.style.boxShadow = "0 0 0 6px color-mix(in srgb, var(--evidence) 20%, transparent), 0 0 24px color-mix(in srgb, var(--evidence) 35%, transparent)";
-  window.setTimeout(() => {
-    el.style.outline = previousOutline;
-    el.style.boxShadow = previousBoxShadow;
-    window.setTimeout(() => {
-      el.style.transition = previousTransition;
-    }, 220);
-  }, durationMs);
+export function pulseElement(el: HTMLElement, durationMs = PULSE_MS): () => void {
+  return pulseRing(el, { holdMs: durationMs });
 }

@@ -5,11 +5,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Eye, Star, ClipboardList } from "lucide-react";
 import { timeAgo, formatNum, roundedStars } from "@/components/FeedItem";
 import { displayContentType } from "@/lib/content-types";
-import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { data as dataText } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 interface ProjectFeedCardProps {
   item: {
@@ -70,7 +71,7 @@ export function ProjectFeedCard({ item }: ProjectFeedCardProps) {
         borderRadius: r.card,
         marginBottom: 12,
         padding: '18px 20px',
-        transition: `border-color ${UI_MS}ms ${UI_EASING}`,
+        transition: feedback("border-color"),
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text2)'}

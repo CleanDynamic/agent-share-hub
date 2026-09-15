@@ -105,7 +105,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
+      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-feedback"
       style={{
         width: 280,
         border: selected

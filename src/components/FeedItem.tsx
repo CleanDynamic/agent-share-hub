@@ -420,7 +420,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* Expanded panel */}
       <div
-        className="overflow-hidden transition-all duration-200 ease-in-out"
+        className="overflow-hidden transition-fade duration-base"
         style={{ maxHeight: expanded ? 500 : 0, opacity: expanded ? 1 : 0 }}
       >
         {expanded && (

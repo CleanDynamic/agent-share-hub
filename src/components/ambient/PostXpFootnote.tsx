@@ -43,7 +43,7 @@ export default function PostXpFootnote({
     <div
       role="status"
       aria-live="polite"
-      className="transition-all duration-300"
+      className="transition-enter duration-base"
       style={{
         fontFamily: tokens.fontSans,
         opacity: mounted ? 1 : 0,

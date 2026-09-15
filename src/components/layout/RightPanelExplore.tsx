@@ -281,7 +281,7 @@ function TrendingSection({ navigate }: { navigate: ReturnType<typeof useNavigate
             <button
               key={item.id}
               onClick={() => navigate(`/content/${item.id}`)}
-              className="glass-level-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all hover:scale-[1.02] border border-white/5"
+              className="glass-level-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-feedback hover:scale-[1.02] border border-white/5"
             >
               <span className="shrink-0 w-6 text-xl font-light text-slate-600 text-center">{String(i + 1).padStart(2, "0")}</span>
               <div className="flex-1 overflow-hidden">

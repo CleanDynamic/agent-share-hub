@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react';
 import { useDocumentStore } from '@/lib/documentStore';
+import { pulseRing } from '@/lib/theme/motion';
+import { scrollBehavior } from '@/lib/theme/motion';
 
 /**
  * BlockReferenceNode
@@ -48,21 +50,12 @@ function pulseBlock(blockId: string) {
     document.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`);
   if (!el) return;
 
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
 
-  const prevShadow = el.style.boxShadow;
-  const prevTransition = el.style.transition;
-
-  el.style.transition = 'box-shadow 120ms ease-out';
-  el.style.boxShadow = `0 0 0 4px ${PULSE_COLOR}`;
-
-  window.setTimeout(() => {
-    el.style.transition = 'box-shadow 480ms ease-in';
-    el.style.boxShadow = prevShadow || 'none';
-    window.setTimeout(() => {
-      el.style.transition = prevTransition;
-    }, 520);
-  }, 600);
+  /* BG-P32. Was a hand-rolled box-shadow pulse easing `ease-in` on the way
+     out — two rules the theme forbids, and the third of four copies of the
+     same effect in this codebase. `pulseRing` is the one copy now. */
+  pulseRing(el, { colour: PULSE_COLOR });
 }
 
 function expandStageIfCollapsed(stageId: string) {

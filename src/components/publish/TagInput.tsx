@@ -114,7 +114,7 @@ export function TagInput({
       <div
         onClick={handleContainerClick}
         className={cn(
-          "w-full min-h-[44px] px-2.5 py-1.5 rounded-lg flex flex-wrap items-center gap-1.5 transition-all cursor-text",
+          "w-full min-h-[44px] px-2.5 py-1.5 rounded-lg flex flex-wrap items-center gap-1.5 transition-feedback cursor-text",
         )}
         style={{
           backgroundColor: "var(--recess)",
@@ -128,7 +128,7 @@ export function TagInput({
           return (
             <span
               key={tag}
-              className={cn("inline-flex items-center gap-1 h-7 px-2.5 rounded-full transition-all")}
+              className={cn("inline-flex items-center gap-1 h-7 px-2.5 rounded-full transition-feedback")}
               style={{
                 backgroundColor: isFlashing
                   ? "color-mix(in srgb, var(--cat-breakage) 18%, transparent)"

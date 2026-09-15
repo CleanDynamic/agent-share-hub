@@ -91,7 +91,7 @@ export function AccountHoverCard({ account, children }: AccountHoverCardProps) {
 
             {/* Follow button */}
             <button
-              className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+              className="px-4 py-1.5 rounded-full text-sm font-medium transition-feedback"
               style={{
                 background: "var(--action)",
                 color: "var(--text)",

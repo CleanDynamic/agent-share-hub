@@ -64,7 +64,7 @@ import {
   type RequirementKey,
 } from "@/lib/build";
 import { Button } from "@/components/ui/button";
-import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -74,6 +74,7 @@ import {
   eyebrow as eyebrowText,
   label as labelText,
 } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * The copy, held as constants because it is the design.
@@ -625,7 +626,7 @@ function CoverNudge({ onClick }: { onClick: () => void }) {
         textUnderlineOffset: 4,
         textDecorationThickness: hovered ? 2 : 1,
         cursor: "pointer",
-        transition: `text-decoration-thickness ${UI_MS}ms ${UI_EASING}`,
+        transition: feedback("text-decoration-thickness"),
       }}
     >
       {COVER_NUDGE}
@@ -693,7 +694,7 @@ function ChecklistRow({
           borderColor: "transparent",
           color: t.text2,
           cursor: "pointer",
-          transition: `background ${UI_MS}ms ${UI_EASING}, color ${UI_MS}ms ${UI_EASING}`,
+          transition: feedback("background-color", "color"),
         }}
       >
         <span

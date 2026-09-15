@@ -1,3 +1,20 @@
+/* ── BG-P32 — hover is gated on a fine pointer ────────────────────────────────
+   Every `:hover` rule below sits inside `(hover: hover) and (pointer: fine)`.
+   A touch reader has no hover, and an ungated `:hover` leaves the control
+   looking permanently pressed after a tap, until something else is touched.
+
+   Each rule is wrapped WHERE IT STANDS rather than collected into one block at
+   the end of the file, because several of them win over a neighbouring state
+   rule of equal specificity by document order alone — `.fs-nav-item:hover`
+   against `.fs-nav-item.active`, say. Moving them would silently flip which
+   one paints an active, hovered row.
+
+   The 563 Tailwind `hover:` utilities elsewhere in the product are gated by
+   `hoverOnlyWhenSupported` in tailwind.config.ts, which compiles them into
+   this same query; hover carried in a style object goes through `hoverIsFine()`
+   in src/lib/theme/motion.ts, which reads it too.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 /* ────────────────────────────────────────────────
    flat-shell.css — styles for FlatShell, the flat 2D app frame.
 
@@ -325,9 +342,12 @@
    that moves the right way in both themes, and --text2 measures 4.55:1 on it in
    Exhibition and 5.73:1 in Dusk — above the text floor, where the pair it
    replaces would now be --bg on --bg and no step at all. */
-.fs-nav-item:hover {
-  background: var(--recess);
-  color: var(--text);
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-nav-item:hover {
+    background: var(--recess);
+    color: var(--text);
+  }
 }
 /* 8% rather than 12%. The wash is read against --bg now rather than against
    --recess, and --bg is the lighter of the two on Exhibition and the darker on
@@ -420,7 +440,10 @@
   color: inherit;
   font-family: inherit;
 }
-.fs-user-btn:hover { background: var(--recess); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-user-btn:hover { background: var(--recess); }
+}
 .fs-user-avatar {
   width: 32px;
   height: 32px;
@@ -497,7 +520,10 @@
   font-family: inherit;
   transition: background 0.15s;
 }
-.fs-user-menu button:hover { background: var(--bg); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-user-menu button:hover { background: var(--bg); }
+}
 
 /* ── Signed out: the two account buttons, full rail width ──
      PRIMARY ABOVE SECONDARY. "Join free" was under "Sign in", which put the
@@ -542,15 +568,21 @@
   border: 1px solid var(--line);
   color: var(--text);
 }
-.fs-auth-btn.signin:hover {
-  background: var(--glass-hi);
-  border-color: var(--text2);
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-auth-btn.signin:hover {
+    background: var(--glass-hi);
+    border-color: var(--text2);
+  }
 }
 .fs-auth-btn.join {
   background: var(--action);
   color: var(--on-action);
 }
-.fs-auth-btn.join:hover { background: color-mix(in oklch, var(--action) 88%, var(--text)); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-auth-btn.join:hover { background: color-mix(in oklch, var(--action) 88%, var(--text)); }
+}
 
 /* ── Tablet 768–1023px: hide right rail, centre may grow ── */
 @media (min-width: 768px) and (max-width: 1023px) {

@@ -23,6 +23,7 @@ import {
   type RewardType,
 } from "./BountyDetailsCard";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 export type PostType = "blueprint" | "blog" | "bounty";
 
@@ -386,12 +387,12 @@ export function PublishMetadataForm({
     if (sub === "missing") {
       const el = document.getElementById("bounty-missing-line");
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
         return;
       }
     }
     const el = document.getElementById(`bounty-details-card-${sub}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
   };
 
   const slugPreview = state.slug.trim()
@@ -402,7 +403,7 @@ export function PublishMetadataForm({
 
   const scrollToSection = (n: number) => {
     const el = document.getElementById(`publish-section-${n}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   };
 
   // For the page title, "Editing live" still trumps the post type label
@@ -468,7 +469,7 @@ export function PublishMetadataForm({
         aria-label={`${validation.requiredFieldsCompleted} of ${validation.total} required fields complete`}
       >
         <div
-          className="h-full transition-all duration-300"
+          className="h-full"
           style={{ width: `${progressPercent}%`, backgroundColor: theme.accent }}
         />
         <div
@@ -503,7 +504,7 @@ export function PublishMetadataForm({
                       : "What does this blueprint help someone do? (e.g. 'Extract Foucault quotes from PDFs')"
                   }
                   maxLength={140}
-                  className="publish-focus w-full h-[44px] px-4 rounded-lg outline-none transition-all"
+                  className="publish-focus w-full h-[44px] px-4 rounded-lg outline-none transition-feedback"
                   style={{
                     backgroundColor: "var(--recess)",
                     border: validation.errors.useCase
@@ -631,7 +632,7 @@ export function PublishMetadataForm({
                     value={state.prerequisites}
                     onChange={(e) => set("prerequisites", e.target.value)}
                     placeholder="What does the reader need before starting? (e.g. 'A Polymarket account, basic Python')"
-                    className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
+                    className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-feedback resize-y"
                     style={{
                       backgroundColor: "var(--recess)",
                       border: "0.5px solid var(--line)",
@@ -647,7 +648,7 @@ export function PublishMetadataForm({
                     value={state.outcome}
                     onChange={(e) => set("outcome", e.target.value)}
                     placeholder="What will the reader have after working through this? (e.g. 'A working arbitrage bot polling weather markets every 30s')"
-                    className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-all resize-y"
+                    className="publish-focus w-full min-h-[80px] px-4 py-3 rounded-lg outline-none transition-feedback resize-y"
                     style={{
                       backgroundColor: "var(--recess)",
                       border: "0.5px solid var(--line)",
@@ -790,7 +791,7 @@ export function PublishMetadataForm({
                       )
                     }
                     placeholder={isBlog ? "your-blog-slug" : "your-blueprint-slug"}
-                    className="publish-focus w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-all"
+                    className="publish-focus w-full h-[44px] pl-7 pr-32 rounded-lg outline-none transition-feedback"
                     style={{
                       backgroundColor: "var(--recess)",
                       border: validation.errors.slug
@@ -869,7 +870,7 @@ export function PublishMetadataForm({
           <button
             onClick={handlePublish}
             disabled={!canPublish || isPublishing}
-            className="publish-focus h-[40px] px-6 rounded-lg flex items-center gap-2 transition-all"
+            className="publish-focus h-[40px] px-6 rounded-lg flex items-center gap-2 transition-feedback"
             style={{
               background: theme.publishGradient,
               color: "white",
@@ -1313,7 +1314,7 @@ function ChipButton({
       onClick={onClick}
       type="button"
       aria-pressed={active}
-      className="publish-focus h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-all"
+      className="publish-focus h-7 px-3.5 rounded-full flex items-center gap-1.5 transition-feedback"
       style={{
         backgroundColor: active ? accentSoft : "var(--glass-2)",
         border: active

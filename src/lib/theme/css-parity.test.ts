@@ -4,10 +4,10 @@
 // TypeScript says — a value edited in one place and not the other is the whole
 // failure mode of mirroring a token set into a stylesheet.
 //
-// Four groups now share those blocks: the colour tokens (BG-P01), the radius
-// scale (BG-P04), the elevation shadows (BG-P04) and the shadcn bridge
-// (BG-P28). Radius is theme-independent and therefore identical in both; the
-// other three are not.
+// Five groups now share those blocks: the colour tokens (BG-P01), the radius
+// scale (BG-P04), the elevation shadows (BG-P04), the shadcn bridge (BG-P28)
+// and the motion vocabulary (BG-P32). Radius and motion are theme-independent
+// and therefore identical in both; the other three are not.
 
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -15,6 +15,7 @@ import { TOKEN_NAMES, exhibition, dusk } from "./semantics";
 import { RADIUS, RADIUS_NAMES } from "./radius";
 import { ELEVATION_TOKENS, duskElevation, exhibitionElevation } from "./elevation";
 import { SHADCN_NAMES, duskShadcn, exhibitionShadcn } from "./shadcn";
+import { MOTION_NAMES, MOTION_TOKENS } from "./motion";
 
 const css = readFileSync("src/index.css", "utf-8");
 const block = (sel: string) => {
@@ -38,6 +39,7 @@ const DECLARED = [
   ...RADIUS_NAMES,
   ...ELEVATION_TOKENS,
   ...SHADCN_NAMES,
+  ...MOTION_NAMES,
 ].sort();
 
 describe("index.css mirrors semantics.ts", () => {
@@ -45,11 +47,13 @@ describe("index.css mirrors semantics.ts", () => {
     const got = parse(':root,\n:root[data-theme="exhibition"]');
     expect(Object.keys(got).sort()).toEqual(DECLARED);
     for (const n of TOKEN_NAMES) expect([n, got[n]]).toEqual([n, exhibition[n]]);
+    for (const n of MOTION_NAMES) expect([n, got[n]]).toEqual([n, MOTION_TOKENS[n]]);
   });
   it("dusk", () => {
     const got = parse(':root[data-theme="dusk"]');
     expect(Object.keys(got).sort()).toEqual(DECLARED);
     for (const n of TOKEN_NAMES) expect([n, got[n]]).toEqual([n, dusk[n]]);
+    for (const n of MOTION_NAMES) expect([n, got[n]]).toEqual([n, MOTION_TOKENS[n]]);
   });
 });
 

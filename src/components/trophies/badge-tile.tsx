@@ -25,7 +25,7 @@ export function BadgeTile({ badge, onSelect }: BadgeTileProps) {
       onClick={() => onSelect?.(badge)}
       aria-label={`${badge.name}${badge.earned ? ", earned" : ", in progress"}`}
       className={cn(
-        "group relative flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-all duration-200",
+        "group relative flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-feedback duration-base",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         badge.earned
           ? "border-border bg-card hover:-translate-y-0.5 hover:border-ring/50"
@@ -92,7 +92,7 @@ export function BadgeTile({ badge, onSelect }: BadgeTileProps) {
       {!badge.earned && typeof badge.progress === "number" ? (
         <span className="absolute inset-x-3 bottom-2 h-1 overflow-hidden rounded-full bg-muted">
           <span
-            className="block h-full rounded-full bg-ring transition-all"
+            className="block h-full rounded-full bg-ring"
             style={{ width: `${badge.progress}%` }}
           />
         </span>

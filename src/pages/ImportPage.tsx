@@ -58,7 +58,7 @@ import {
 } from "@/components/compose/useBuildFileDrop";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
-import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
@@ -69,6 +69,7 @@ import {
   label as labelText,
   measure,
 } from "@/lib/theme/type";
+import { fade, feedback } from "@/lib/theme/motion";
 
 /*  THE TWO KIT DOCUMENTS (BG-P24).
  *
@@ -250,7 +251,7 @@ function CopyDocumentButton({
              forbids as type on a light ground. */
           color: state === "failed" ? t.catBreakage : t.evidence,
           opacity: state === "idle" ? 0 : 1,
-          transition: `opacity ${UI_MS}ms ${UI_EASING}`,
+          transition: fade(),
         }}
       >
         {state === "copied"
@@ -438,7 +439,7 @@ function DropTarget({
           gap: 6,
           textAlign: "center",
           cursor: "pointer",
-          transition: `background-color ${UI_MS}ms ${UI_EASING}, border-color ${UI_MS}ms ${UI_EASING}`,
+          transition: feedback("background-color", "border-color"),
         }}
       >
         <span style={{ ...bodyText, color: armed ? t.action : t.text }}>
@@ -519,7 +520,10 @@ export default function ImportPage() {
         boxShadow: drop.isDragging
           ? `inset 0 0 0 2px ${tokenAlpha("action", 0.45)}`
           : "none",
-        transition: `box-shadow ${UI_MS}ms ${UI_EASING}`,
+        // BG-P32: the inset ring lands at once. It answers a drag already in
+        // progress, so there is nothing for a fade to tell the reader, and an
+        // eased box-shadow repaints the whole page surface every frame.
+        transition: undefined,
       }}
     >
       <Helmet>

@@ -307,7 +307,7 @@ export function LibrarySidebar({
       >
         <button
           onClick={() => onFolderSelect(null)}
-          className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+          className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
           style={{
             fontSize: 12,
             fontWeight: !activeFolder ? 600 : 400,
@@ -326,7 +326,7 @@ export function LibrarySidebar({
         </button>
         <button
           onClick={() => onFolderSelect("root")}
-          className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+          className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
           style={{
             fontSize: 12,
             fontWeight: activeFolder === "root" ? 600 : 400,
@@ -350,7 +350,7 @@ export function LibrarySidebar({
           <button
             key={folder.id}
             onClick={() => onFolderSelect(folder.id)}
-            className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+            className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
             style={{
               fontSize: 12,
               fontWeight: activeFolder === folder.id ? 600 : 400,

@@ -81,6 +81,9 @@ export const SHIMMER_MS = 1600;
 /** One turn of a spinner. Paired with `LINEAR`, never with `STANDARD`. */
 export const SPIN_MS = 1000;
 
+/** How long a "look here" ring holds before it fades. See `pulseRing`. */
+export const PULSE_MS = 600;
+
 /** Every duration this system knows, by name. */
 export const DURATION = {
   fast: FAST,
@@ -112,6 +115,25 @@ export const EASING = {
 } as const;
 
 export type EasingName = keyof typeof EASING;
+
+/* ── The CSS mirror ───────────────────────────────────────────────────────────
+   The same figures as `--motion-*` custom properties, declared in both theme
+   blocks of `index.css` exactly as the radius scale is. They exist for the
+   handful of rules that live in CSS because they cannot be expressed inline —
+   the theme cross-fade, the gallery card's shadow pseudo-element — and
+   `css-parity.test.ts` holds the stylesheet to this object, so a duration
+   cannot be changed on one side only.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export const MOTION_TOKENS = {
+  "motion-fast": `${FAST}ms`,
+  "motion-base": `${BASE}ms`,
+  "motion-reveal": `${REVEAL}ms`,
+  "motion-theme": `${THEME_SWITCH}ms`,
+  "motion-ease": STANDARD,
+} as const;
+
+export const MOTION_NAMES = Object.keys(MOTION_TOKENS) as (keyof typeof MOTION_TOKENS)[];
 
 /* ── The properties that may be transitioned ──────────────────────────────────
    A closed list, so that `transition: all` cannot be reintroduced by spelling
@@ -224,7 +246,21 @@ export function move(ms: number = BASE): string {
 }
 
 /**
- * PATTERN 4 — scroll entry. 450ms opacity plus transform, optionally staggered.
+ * PATTERN 4 — a small thing arriving in place. Opacity and transform together,
+ * at UI speed: a tooltip, a footnote, a toast, an overlay hint.
+ *
+ * Distinct from `reveal` below, which is the same two properties at 450ms and
+ * is permitted on two surfaces only. The difference is what the motion is for —
+ * this one answers an interaction the reader just had, so it is bound by the
+ * feedback ceiling; that one paces a page, so it is not.
+ */
+export function enter(ms: number = FAST): string {
+  if (prefersReducedMotion()) return "none";
+  return compose(["opacity", "transform"], ms);
+}
+
+/**
+ * PATTERN 5 — scroll entry. 450ms opacity plus transform, optionally staggered.
  *
  * Permitted on exactly two surfaces (`buildgallery-theme` §Motion): the gallery
  * grid's list entrance and the build page's section reveals. App surfaces get
@@ -263,6 +299,76 @@ export function revealTo(delayMs = 0): CSSProperties {
  */
 export const canReveal = (): boolean =>
   !prefersReducedMotion() && typeof IntersectionObserver !== "undefined";
+
+/* ── The attention ring ───────────────────────────────────────────────────────
+   A one-shot "the thing you asked for is HERE" mark: a deep link landing, a
+   block reference jumping to its block, a bounty solve arriving.
+
+   AN OUTLINE, NOT A BOX-SHADOW. Every one of these was an animated `box-shadow`
+   before BG-P32 — four separate hand-rolled versions of the same effect, three
+   of them easing `ease-in`. `box-shadow` is not compositable, so transitioning
+   it re-rasterises the element on every frame. `outline` draws the same ring,
+   takes no part in layout (so nothing reflows when it appears), and its colour
+   IS transitionable. The ring is sized once and only its colour moves.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** The ring's own transition: colour alone, over `PULSE_MS`. */
+export function pulse(ms: number = PULSE_MS): string {
+  if (prefersReducedMotion()) return "none";
+  return compose(["outline-color"], ms);
+}
+
+/**
+ * Ring an element once, then clean up after itself.
+ *
+ * Returns a cancel function, so a caller that unmounts mid-pulse leaves nothing
+ * behind. Under reduced motion the ring still appears and still clears — what
+ * is dropped is the fade, not the answer to "which one was it".
+ */
+export function pulseRing(
+  el: HTMLElement,
+  { colour = "var(--evidence)", holdMs = PULSE_MS, width = 2, offset = 2 } = {},
+): () => void {
+  const previous = {
+    outline: el.style.outline,
+    outlineColor: el.style.outlineColor,
+    outlineOffset: el.style.outlineOffset,
+    transition: el.style.transition,
+  };
+
+  const restore = () => {
+    el.style.outline = previous.outline;
+    el.style.outlineColor = previous.outlineColor;
+    el.style.outlineOffset = previous.outlineOffset;
+    el.style.transition = previous.transition;
+  };
+
+  /* The ring is sized and styled up front and starts transparent, so the only
+     thing that ever changes is its colour — nothing here invalidates layout. */
+  el.style.outline = `${width}px solid transparent`;
+  el.style.outlineOffset = `${offset}px`;
+  el.style.transition = pulse();
+
+  const timers: number[] = [];
+  const at = (ms: number, run: () => void) => timers.push(window.setTimeout(run, ms));
+
+  // Next frame, so the transparent start state is painted before the colour
+  // lands — without it the browser coalesces both into one style change and
+  // there is nothing to transition from.
+  const frame = window.requestAnimationFrame(() => {
+    el.style.outlineColor = colour;
+    at(holdMs, () => {
+      el.style.outlineColor = "transparent";
+      at(holdMs, restore);
+    });
+  });
+
+  return () => {
+    window.cancelAnimationFrame(frame);
+    for (const timer of timers) window.clearTimeout(timer);
+    restore();
+  };
+}
 
 /** The 1px lift a control takes on hover. Suppressed for reduced motion. */
 export function hoverLift(active: boolean): CSSProperties {

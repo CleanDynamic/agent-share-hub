@@ -48,7 +48,7 @@ import { CategoryChip } from "@/components/brand/CategoryChip";
 import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
 import { Plaque } from "@/components/brand/Plaque";
 import { RebuildCredit } from "@/components/brand/RebuildCredit";
-import { GLASS_BLUR, UI_EASING, UI_MS, hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
+import { GLASS_BLUR, hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -75,6 +75,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CardThread, THREAD_PAD, type CardLayout } from "./CardThread";
 import { BODY_HEIGHT } from "./cardBodies";
 import { coverMedia, mediaAlt, postMediaOf, stillFor, type MediaSrcMap } from "./cardMedia";
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * Shape to body. Five bodies, nine shapes: agent and workflow are apps as far
@@ -405,9 +406,7 @@ function Frame({
         textDecoration: "none",
         color: t.text,
         transform: lifted ? "translateY(-1px)" : "translateY(0)",
-        transition: prefersReducedMotion()
-          ? "none"
-          : `transform ${UI_MS}ms ${UI_EASING}, border-color ${UI_MS}ms ${UI_EASING}`,
+        transition: feedback("transform", "border-color"),
       }}
     >
       {children}
