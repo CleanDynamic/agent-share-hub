@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "audit": "playwright test --config=playwright.audit.config.ts",
+    "audit:contrast": "playwright test --config=playwright.audit.config.ts contrast-sweep",
+    "audit:themes": "playwright test --config=playwright.audit.config.ts theme-completeness"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
