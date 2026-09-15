@@ -183,12 +183,31 @@ const SURFACES = [
 ] as const;
 
 test.describe("reduced motion", () => {
-  test.use({ reducedMotion: "reduce" });
+  /* EMULATED PER PAGE RATHER THAN THROUGH `test.use({ reducedMotion })`.
+     The context-level option is plumbed at context creation and does not
+     reliably reach the page on every browser build this suite runs against —
+     where it does not, `matchMedia("(prefers-reduced-motion: reduce)")` comes
+     back false and every assertion below passes for the wrong reason, which is
+     the worst way for an accessibility test to fail. `emulateMedia` is a
+     runtime call on the page itself, and the guard beneath it makes the
+     emulation's own success a precondition of the test rather than an
+     assumption. */
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  });
+
+  async function assertEmulated(page: Page) {
+    const matches = await page.evaluate(
+      () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
+    expect(matches, "reduced motion is not actually emulated — the rest of this test would pass vacuously").toBe(true);
+  }
 
   for (const surface of SURFACES) {
     test(`BG-P32 — nothing moves on ${surface.name}`, async ({ page }) => {
       await stubRest(page);
       await page.goto(surface.path);
+      await assertEmulated(page);
       await page.locator(surface.ready).first().waitFor({ state: "attached", timeout: 30_000 });
       // One frame, so anything that animates on mount has had the chance to.
       await page.waitForTimeout(300);
@@ -208,6 +227,7 @@ test.describe("reduced motion", () => {
     await stubRest(page);
     await page.goto("/import");
 
+    await assertEmulated(page);
     const frame = page.locator('[data-visual-slot="import-frame"]');
     await frame.waitFor({ state: "attached", timeout: 30_000 });
 
@@ -231,6 +251,7 @@ test.describe("reduced motion", () => {
     await stubRest(page);
     await page.goto("/gallery");
 
+    await assertEmulated(page);
     const grid = page.locator('[data-visual-slot="gallery-grid"]');
     await expect(grid).toBeVisible({ timeout: 30_000 });
 
@@ -250,7 +271,9 @@ test.describe("reduced motion", () => {
    ════════════════════════════════════════════════════════════════════════════ */
 
 test.describe("motion allowed", () => {
-  test.use({ reducedMotion: "no-preference" });
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+  });
 
   test("BG-P32 — the gallery grid reveals, then settles fully visible", async ({ page }) => {
     await stubRest(page);
@@ -259,6 +282,21 @@ test.describe("motion allowed", () => {
     const cells = page.locator('[data-visual-slot="gallery-grid-cell"]');
     await expect(cells.first()).toBeVisible({ timeout: 30_000 });
 
+    /* EACH CELL SCROLLED INTO VIEW FIRST, because a cell below the fold that
+       has not revealed yet is the reveal WORKING — polling every cell without
+       scrolling would assert the observer had already fired for content the
+       reader has not reached, which is the one thing a scroll entry must not
+       do. (Measured on the stub: with nine cards in three rows, only the first
+       row has revealed when the page settles.)
+
+       `scrollIntoView` rather than `window.scrollTo`: the gallery scrolls
+       inside the frame's own region, not the document, so scrolling the window
+       moves the page by the 24px the document actually overflows and nothing
+       new intersects. */
+    await cells.evaluateAll((els) => {
+      for (const el of els) el.scrollIntoView({ block: "center" });
+    });
+
     // The reveal is 450ms plus up to 400ms of stagger; well inside this.
     await expect
       .poll(
@@ -266,7 +304,7 @@ test.describe("motion allowed", () => {
           cells.evaluateAll((els) =>
             els.every((el) => parseFloat(getComputedStyle(el).opacity) === 1),
           ),
-        { timeout: 5_000 },
+        { timeout: 10_000 },
       )
       .toBe(true);
   });
