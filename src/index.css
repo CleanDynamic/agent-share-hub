@@ -831,6 +831,105 @@ input[type="search"] { border-radius: var(--r-control); }
   }
 }
 
+/* ── BG-P32 — the keyframes twelve components were injecting ───────────────────
+   A keyframe is the one thing an inline style cannot express, so the theme puts
+   it here and a component references it by name. Ten components were shipping
+   their own `<style>` tag instead — which re-inserts the same rule on every
+   mount, puts the definition out of reach of the global reduced-motion rule's
+   companions, and in three separate cases defined `spin` locally. That last one
+   was a latent bug rather than a style problem: eight components animate
+   `spin`, only three defined it, and whether a spinner turned depended on
+   whether one of those three happened to be mounted.
+
+   Non-keyframe CSS stays where it was. StageCanvas's react-flow overrides and
+   ReferencePickerModal's scrollbar rules are third-party surface patches that
+   genuinely cannot be expressed inline, and they are not what this rule is
+   about.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* The one rotation in the product. Eight components reference it. */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* MetaBountyCreationFlow's spinner, kept under its own name because it is
+   referenced by that name in half a dozen places in that flow. */
+@keyframes mbcf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* A node arriving on the stage canvas. */
+@keyframes block-scale-in {
+  from { transform: scale(0.96); opacity: 0.6; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* The challenge-complete toast. */
+@keyframes ct-in {
+  0%   { transform: translateY(24px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* The claim button's two celebration pieces. `--dx`/`--dy` are set per particle
+   inline; a celebration is the one place this theme's restraint does not apply. */
+@keyframes qb-particle {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+@keyframes qb-float {
+  0%   { transform: translateY(0); opacity: 0; }
+  18%  { opacity: 1; }
+  100% { transform: translateY(-34px); opacity: 0; }
+}
+
+/* A quest item ticking off. */
+@keyframes qc-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* The level-up modal, and its confetti. */
+@keyframes levelup-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes levelup-confetti {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* The XP toast arriving. */
+@keyframes xptoast-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* A comment row flashing as it lands. */
+@keyframes tealFlash {
+  0%   { background-color: color-mix(in srgb, var(--evidence) 15%, transparent); }
+  100% { background-color: transparent; }
+}
+
+/* A deep link landing on a comment.
+
+   AN OUTLINE, NOT A BOX-SHADOW. This keyframe animated `box-shadow` from a 0px
+   ring to an 8px one — the uncompositable property the theme names, in the one
+   place a keyframe could hide it from a scanner that only reads `transition`.
+   An outline draws the same expanding ring, takes no part in layout, and its
+   colour composites; the geometry is fixed and only the colour moves, which is
+   the same shape `pulseRing` uses for the imperative version of this effect. */
+@keyframes ns-deep-link-pulse {
+  0%   { outline-color: color-mix(in srgb, var(--action) 55%, transparent); }
+  100% { outline-color: color-mix(in srgb, var(--action) 0%, transparent); }
+}
+
+.ns-comment-new-reply {
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+  animation: ns-deep-link-pulse 600ms var(--motion-ease);
+}
 
 /* ══ BG-P32 — the global reduced-motion guarantee ═════════════════════════════
 

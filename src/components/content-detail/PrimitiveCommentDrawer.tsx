@@ -1144,20 +1144,7 @@ export function PrimitiveCommentDrawer({
           </div>
         )}
       </div>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes tealFlash {
-          0% { background: color-mix(in srgb, var(--evidence) 15%, transparent); }
-          100% { background: transparent; }
-        }
-        @keyframes ns-deep-link-pulse {
-          0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action) 55%, transparent); }
-          100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--action) 0%, transparent); }
-        }
-        .ns-comment-new-reply {
-          animation: ns-deep-link-pulse 600ms ease-out;
-        }
-      `}</style>
+      
     </>
   );
 }

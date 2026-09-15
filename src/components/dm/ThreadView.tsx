@@ -1067,7 +1067,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
                     <button
                       key={emoji}
                       onClick={() => handleReaction(msg.id, emoji)}
-                      className="text-lg hover:scale-125 transition-transform p-0.5"
+                      className="text-lg hover:opacity-75 transition-feedback p-0.5"
                     >
                       {emoji}
                     </button>

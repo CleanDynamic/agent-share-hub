@@ -54,12 +54,16 @@ const DEFINITIONS: Record<string, string[]> = {
     "ns-right-search-results", "ns-search-result", "ns-search-result-badge",
     "ns-search-result-title",
   ],
-  "src/index.css": ["ns-badge"],
-  /* These three never left their consumer, so the rule and the markup that
+  /* BG-P32 moved `ns-comment-new-reply` here from the drawer's own injected
+     <style> tag. It is a rule whose only job is to run a keyframe, and a
+     keyframe is the one thing an inline style cannot express — so the theme
+     puts it in index.css and the component references it by name. The rule and
+     its keyframe travelled together and sit next to each other. */
+  "src/index.css": ["ns-badge", "ns-comment-new-reply"],
+  /* These two never left their consumer, so the rule and the markup that
      wears it live in one file and cannot drift apart. */
   "src/components/library/LibraryShell.tsx": ["ns-collections-grid"],
   "src/components/library/CollectionDetailPage.tsx": ["ns-detail-grid"],
-  "src/components/content-detail/PrimitiveCommentDrawer.tsx": ["ns-comment-new-reply"],
 };
 
 describe("the .ns-* rules inherited from the retired shell", () => {

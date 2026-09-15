@@ -454,7 +454,7 @@ export function ReferencePickerModal({
   return (
     <div style={overlayStyle} onMouseDown={handleOverlayClick}>
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+        
         .ref-picker-scrollbar::-webkit-scrollbar { width: 6px; }
         .ref-picker-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .ref-picker-scrollbar::-webkit-scrollbar-thumb { background: var(--recess); border-radius: 3px; }

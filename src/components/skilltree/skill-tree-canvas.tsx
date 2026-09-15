@@ -126,9 +126,10 @@ export default function SkillTreeCanvas({
                   boxShadow: unlocked
                     ? `0 0 8px color-mix(in srgb, ${trackColor} 60%, transparent)`
                     : "none",
-                  animation: unlocked
-                    ? "linePulse 2.4s ease-in-out infinite"
-                    : "none",
+                  /* BG-P32: unlocked is carried by the colour and the glow.
+                     A connector that also pulsed put a dozen independent loops
+                     on one screen — the audit's "pulsing indicators". */
+                  animation: "none",
                   margin: "0 0",
                 }}
               />
@@ -158,11 +159,6 @@ export default function SkillTreeCanvas({
           )
         })}
       </div>
-
-      <style>{`@keyframes linePulse {
-        0%,100% { opacity: 1; }
-        50% { opacity: 0.55; }
-      }`}</style>
 
       <div
         style={{

@@ -344,7 +344,6 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
     [],
   );
 
-
   return (
     <div
       ref={wrapperRef}
@@ -370,10 +369,7 @@ export function StageCanvasInner({ stageId, showMiniMap = false }: StageCanvasPr
         .stage-canvas-root.no-minimap .react-flow__minimap {
           display: none !important;
         }
-        @keyframes block-scale-in {
-          from { transform: scale(0.96); opacity: 0.6; }
-          to   { transform: scale(1);    opacity: 1; }
-        }
+        
         .stage-canvas-root .react-flow__node.block-scale-in {
           animation: block-scale-in 200ms ease-out;
         }

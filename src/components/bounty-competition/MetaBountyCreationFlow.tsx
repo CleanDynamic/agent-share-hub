@@ -1189,11 +1189,6 @@ export function MetaBountyCreationFlow({
           )}
         </div>
 
-        <style>{`
-          @keyframes mbcf-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     </div>
   );

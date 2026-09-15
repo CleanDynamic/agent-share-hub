@@ -32,12 +32,6 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <style>{`
-        @keyframes xpbar-sheen {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(220%); }
-        }
-      `}</style>
 
       <div
         style={{
@@ -85,7 +79,9 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
               width: "40%",
               background:
                 "linear-gradient(90deg, transparent, color-mix(in srgb, var(--chrome-hi) 45%, transparent), transparent)",
-              animation: "xpbar-sheen 2.4s ease-in-out infinite",
+              /* BG-P32: removed. A sheen sweeping a progress bar forever is
+                 movement with nothing to say, and this bar is in the rail. */
+              animation: "none",
             }}
           />
         </div>

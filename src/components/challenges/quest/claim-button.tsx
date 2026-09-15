@@ -153,15 +153,7 @@ export default function ClaimButton({
       </span>
 
       <style>{`
-        @keyframes qb-particle {
-          0%   { transform: translate(0,0) scale(1); opacity: 1; }
-          100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
-        }
-        @keyframes qb-float {
-          0%   { transform: translateY(0); opacity: 0; }
-          18%  { opacity: 1; }
-          100% { transform: translateY(-34px); opacity: 0; }
-        }
+
         @media (prefers-reduced-motion: reduce) {
           .relative [style*="qb-particle"], .relative [style*="qb-float"] { display: none !important; }
         }

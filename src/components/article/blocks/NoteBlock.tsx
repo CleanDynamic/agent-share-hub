@@ -143,7 +143,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
                     setShowColorPicker(false);
                   }}
                   className={cn(
-                    'w-5 h-5 rounded-full transition-transform hover:scale-110',
+                    'w-5 h-5 rounded-full transition-feedback hover:opacity-75',
                     dotColors[c],
                     c === color &&
                       'ring-2 ring-border ring-offset-1 ring-offset-[var(--recess)]',

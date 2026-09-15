@@ -99,12 +99,6 @@ export default function ChallengeCompleteToast({
         <X size={14} />
       </button>
 
-      <style>{`
-        @keyframes ct-in {
-          0% { transform: translateY(24px) scale(0.9); opacity: 0; }
-          100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   )
 }

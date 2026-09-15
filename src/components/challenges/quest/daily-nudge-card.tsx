@@ -77,7 +77,7 @@ export default function DailyNudgeCard({
         <button
           type="button"
           onClick={() => onGo?.(challenge)}
-          className="inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-transform hover:scale-105"
+          className="inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-feedback hover:opacity-85"
           style={{
             borderRadius: radius.pill,
             background: colors.input,

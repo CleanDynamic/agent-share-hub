@@ -462,3 +462,57 @@ describe("the global reduced-motion guarantee", () => {
     expect(literal).toEqual([]);
   });
 });
+
+describe("the audit's slop categories", () => {
+  /* `design-motion-principles`' anti-checklist, as assertions. What makes each
+     of these slop is FREQUENCY, not any single use: one pulsing dot is polish,
+     ten is a fingerprint. Both were found by running the audit over this
+     codebase after the vocabulary landed, and both are fixed — these keep them
+     fixed. */
+
+  it("has no decorative infinite pulse", () => {
+    /* Kept, and legal: a spinner, a skeleton sweep, a typing indicator and a
+       text caret, where the movement IS the information and stopping it would
+       remove the signal. Removed: a skill node's available ring, a skill-tree
+       connector, the streak flame and the XP bar's sheen — four loops that
+       throbbed to draw the eye at something the colour already said, in
+       persistent chrome where they never stopped. */
+    const LEGAL = /[Ss]pin|shimmer|Shimmer|Sweep|sweep|TypingDot|CaretBlink|snapPoint/;
+    const offenders = SCANNED.flatMap((file) =>
+      file.code
+        .split("\n")
+        .map((line, index) => [index + 1, line] as const)
+        .filter(([, line]) => /\binfinite\b/.test(line))
+        .filter(([, line]) => /animation/i.test(line))
+        .filter(([, line]) => !LEGAL.test(line))
+        .map(([number, line]) => `${file.rel}:${number} — ${line.trim().slice(0, 90)}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("does not scale on hover", () => {
+    /* Eight `hover:scale-*` across six components, three of them byte-identical
+       — the anti-checklist's threshold is three. The product has a hover
+       vocabulary already (colour, opacity, and the 1px `hoverLift`); a ninth
+       component reaching for scale means reaching past it. */
+    const offenders = SCANNED.flatMap((file) =>
+      file.code
+        .split("\n")
+        .map((line, index) => [index + 1, line] as const)
+        .filter(([, line]) => /hover:scale-|:hover[^{]*\{[^}]*scale\(/.test(line))
+        .map(([number, line]) => `${file.rel}:${number} — ${line.trim().slice(0, 90)}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps every keyframe in index.css, where the theme puts them", () => {
+    /* Hard constraint: a keyframe is the one thing an inline style cannot
+       express, so it lives in index.css and is referenced by name. Four
+       components were injecting a `<style>` tag instead — and every one of
+       them was injecting a pulse the category above removes. */
+    const offenders = SCANNED.filter((file) => !file.rel.endsWith(".css"))
+      .filter((file) => /@keyframes/.test(file.code))
+      .map((file) => file.rel);
+    expect(offenders).toEqual([]);
+  });
+});
