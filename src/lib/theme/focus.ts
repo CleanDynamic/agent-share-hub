@@ -30,6 +30,25 @@
 // (a stylesheet rule already in `index.css`), prefer that to tracking focus in
 // React state.
 
+// BG-P30 — `outline: "none"` IN AN INLINE STYLE DELETES THIS RING, and it is
+// the one way to lose it that nothing in the cascade can defend against. The
+// ring reaches a raw field through `index.css`'s
+// `input:focus-visible { outline: 2px solid var(--lit) }`, whose specificity
+// beats the `outline: none` in the resting `input, textarea, select` rule above
+// it — but an inline declaration outranks both, so a field carrying
+// `outline: "none"` in its style object has no focus indicator at all, in
+// either room, for a keyboard user.
+//
+// The audit sweep found two such fields on the compose intake and a static scan
+// found thirty-four more across eighteen files: every one a field or a control,
+// every one silently unfocusable-looking. All thirty-six declarations are gone,
+// and none of them was doing anything else: the resting rule already sets
+// `outline: none`, so removing the inline copy changes nothing until the
+// control is focused from a keyboard, at which point the shared ring appears.
+//
+// If a control needs to suppress a ring, it is not this one and the answer is
+// not an inline `outline: none`.
+
 import type { CSSProperties } from "react";
 
 /** The ring's width, and the width of the `--bg` band under it. Both 2px. */

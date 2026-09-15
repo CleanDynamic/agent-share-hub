@@ -233,7 +233,6 @@ export function LibraryShell({
                 ...body,
                 fontSize: 12,
                 color: t.text,
-                outline: "none",
               }}
             />
             {query && (
@@ -491,7 +490,6 @@ function SortDropdown({
           fontSize: 12,
           color: t.text2,
           cursor: "pointer",
-          outline: "none",
         }}
       >
         {/* The native option list is painted by the OS, so it takes the two

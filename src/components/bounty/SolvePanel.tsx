@@ -180,7 +180,6 @@ const textareaStyle: CSSProperties = {
   background: RECESS,
   border: `1px solid ${HAIRLINE}`,
   color: TEXT_PRIMARY,
-  outline: "none",
   resize: "vertical",
 };
 

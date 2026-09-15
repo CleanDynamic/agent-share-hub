@@ -262,7 +262,6 @@ export function MetaBountyCreationFlow({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
                     color: "var(--text)",
-                    outline: "none",
                   }}
                 />
               </div>
@@ -296,7 +295,6 @@ export function MetaBountyCreationFlow({
                     fontFamily: "Figtree, sans-serif",
                     fontSize: 14,
                     color: "var(--text)",
-                    outline: "none",
                     resize: "vertical",
                     minHeight: 100,
                   }}
@@ -449,7 +447,6 @@ export function MetaBountyCreationFlow({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         color: "var(--text)",
-                        outline: "none",
                         marginBottom: 10,
                       }}
                     />
@@ -472,7 +469,6 @@ export function MetaBountyCreationFlow({
                         fontFamily: "Figtree, sans-serif",
                         fontSize: 13,
                         color: "var(--text)",
-                        outline: "none",
                         resize: "none",
                         marginBottom: 4,
                       }}
@@ -509,7 +505,6 @@ export function MetaBountyCreationFlow({
                             fontFamily: "Figtree, sans-serif",
                             fontSize: 13,
                             color: "var(--text)",
-                            outline: "none",
                           }}
                         />
                       </div>
@@ -529,7 +524,6 @@ export function MetaBountyCreationFlow({
                           fontFamily: "Figtree, sans-serif",
                           fontSize: 13,
                           color: "var(--text)",
-                          outline: "none",
                           cursor: "pointer",
                         }}
                       >
@@ -623,7 +617,6 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "var(--text)",
-                      outline: "none",
                     }}
                   />
                 </div>
@@ -664,7 +657,6 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "var(--text)",
-                      outline: "none",
                     }}
                   />
                 </div>
@@ -702,7 +694,6 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "var(--text)",
-                      outline: "none",
                     }}
                   />
                 </div>
@@ -788,7 +779,6 @@ export function MetaBountyCreationFlow({
                       fontFamily: "Figtree, sans-serif",
                       fontSize: 14,
                       color: "var(--text)",
-                      outline: "none",
                       colorScheme: "dark",
                     }}
                   />

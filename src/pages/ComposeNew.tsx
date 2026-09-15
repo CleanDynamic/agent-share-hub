@@ -683,7 +683,6 @@ export default function ComposeNew() {
               border: "1px solid var(--line)",
               borderRadius: 10,
               padding: "9px 12px",
-              outline: "none",
             }}
           />
 
@@ -872,7 +871,6 @@ export default function ComposeNew() {
             border: `1px solid var(--line)`,
             borderRadius: 10,
             padding: "10px 12px",
-            outline: "none",
           }}
         />
 

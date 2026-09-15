@@ -375,7 +375,6 @@ function PledgeModal({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "var(--text)",
-                outline: "none",
               }}
             />
             <select
@@ -390,7 +389,6 @@ function PledgeModal({
                 fontFamily: "Figtree, sans-serif",
                 fontSize: 14,
                 color: "var(--text)",
-                outline: "none",
               }}
             >
               <option value="USD">USD</option>

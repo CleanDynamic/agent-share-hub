@@ -198,7 +198,7 @@ export function RightRailDrawer({ isOpen, onClose, onNavigate }: RightRailDrawer
                  browser's default placeholder is this text at reduced alpha,
                  which is the right relationship either way. */
               style={{
-                flex: 1, background: "transparent", border: "none", outline: "none",
+                flex: 1, background: "transparent", border: "none",
                 ...bodyText, fontSize: 13, color: t.text,
               }}
             />

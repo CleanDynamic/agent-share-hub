@@ -511,7 +511,6 @@ function CommentCard({
                   fontFamily: "Figtree, sans-serif",
                   fontSize: 12,
                   resize: "vertical",
-                  outline: "none",
                 }}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submitReply();
@@ -674,7 +673,6 @@ function Composer({
           fontSize: 13,
           lineHeight: 1.5,
           resize: "vertical",
-          outline: "none",
           boxSizing: "border-box",
         }}
         onKeyDown={(e) => {

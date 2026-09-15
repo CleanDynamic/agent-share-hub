@@ -96,7 +96,6 @@ const searchInputStyle: React.CSSProperties = {
   fontFamily: "Figtree, sans-serif",
   fontSize: 12,
   color: "var(--text)",
-  outline: "none",
 };
 
 function rowBg(active: boolean) {

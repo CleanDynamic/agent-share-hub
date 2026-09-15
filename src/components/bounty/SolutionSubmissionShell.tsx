@@ -180,7 +180,6 @@ export function SolutionSubmissionShell({
               resize: "vertical",
               background: "transparent",
               border: "none",
-              outline: "none",
               fontFamily: "Figtree, sans-serif",
               fontSize: 13,
               fontWeight: 400,

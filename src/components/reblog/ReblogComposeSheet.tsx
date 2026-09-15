@@ -692,7 +692,6 @@ function ComposeBody({
             color: "var(--text)",
             background: "transparent",
             border: "none",
-            outline: "none",
             width: "100%",
             minHeight: 80,
             maxHeight: 240,

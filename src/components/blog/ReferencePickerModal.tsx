@@ -171,7 +171,6 @@ const styles = {
     flex: 1,
     background: "none",
     border: "none",
-    outline: "none",
     fontFamily: "Figtree, sans-serif",
     fontSize: 13,
     fontWeight: 400,

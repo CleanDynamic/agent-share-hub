@@ -127,7 +127,6 @@ const fieldBase: React.CSSProperties = {
   fontFamily: "inherit",
   width: "100%",
   borderRadius: 8,
-  outline: "none",
   background: "transparent",
   border: "1px solid transparent",
   color: TEXT_PRIMARY,
