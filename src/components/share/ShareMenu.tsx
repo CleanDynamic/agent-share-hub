@@ -15,6 +15,7 @@ import {
   Search,
   Plus,
 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 export interface ShareCollection {
   id: string;
@@ -65,7 +66,7 @@ const menuItemStyle: React.CSSProperties = {
   alignItems: "center",
   gap: 10,
   cursor: "pointer",
-  transition: "background 0.15s ease",
+  transition: feedback("background-color"),
 };
 const iconStyle: React.CSSProperties = {
   width: 14,

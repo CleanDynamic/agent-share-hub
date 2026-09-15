@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { insertNotification } from "@/lib/notifications";
 import { type } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -432,7 +433,7 @@ function OriginalPostPanel({
                   ? '1px solid color-mix(in srgb, var(--action) 30%, transparent)'
                   : '1px solid var(--line)',
                 borderRadius: 8, overflow: 'hidden',
-                transition: 'border-color 0.15s',
+                transition: feedback("border-color"),
                 cursor: 'pointer',
                 opacity: isAnnotated ? 0.75 : 1,
               }}

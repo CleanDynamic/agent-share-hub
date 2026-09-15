@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MentionInput } from "@/components/MentionInput";
 import { FIGTREE, type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -1866,7 +1867,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
           color: 'var(--text2)',
           fontSize: 12, fontWeight: 500,
           cursor: 'pointer',
-          transition: 'border-color 0.15s',
+          transition: feedback("border-color"),
         }}
       >
         <Plus className="h-3.5 w-3.5" />
@@ -1897,7 +1898,7 @@ const BlockTypePicker = ({ onAdd }: { onAdd: (type: BlockType) => void }) => {
                 border: '1px solid var(--line)',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'background 0.15s, border-color 0.15s',
+                transition: feedback("background-color", "border-color"),
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'var(--recess)';

@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { feedback } from '@/lib/theme/motion';
 
 const TYPE_COLOR = 'var(--text2)';
 
@@ -34,7 +35,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 interface MiniEditorProps {
@@ -146,7 +147,7 @@ export function TextBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-feedback"
         style={{
           width: 260,
           minHeight: 80,

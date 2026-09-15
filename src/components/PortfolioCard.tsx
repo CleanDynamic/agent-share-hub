@@ -35,6 +35,7 @@ import { categoryFill } from "@/lib/theme/category";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, tabular, type } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 // BG-P05. Difficulty is not a part category and carries no colour: one
 // uncoloured mono label, defined once in @/lib/content-types.
@@ -84,7 +85,7 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
         border: `1px solid ${t.glassBorder}`,
         borderRadius: r.card,
         marginBottom: '8px',
-        transition: 'border-color 160ms cubic-bezier(.2,.6,.35,1)',
+        transition: feedback("border-color"),
         cursor: 'pointer',
       }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = t.line)}

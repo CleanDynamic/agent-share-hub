@@ -39,32 +39,21 @@ export default function StreakFlame({
   else if (isZero) glyphColor = COLORS.locked
   else if (isAtRisk) glyphColor = COLORS.xpOrange
 
-
   const numberColor = isZero ? COLORS.textFaint : COLORS.text
 
   return (
     <div className="inline-flex items-center gap-1.5" style={{ fontFamily: FONT.sans }}>
-      <style>{`
-        @keyframes streakFlameFlicker {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.06); opacity: 0.92; }
-        }
-        @keyframes streakAtRiskPulse {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 color-mix(in srgb, var(--action) 0%, transparent)); }
-          50% { transform: scale(1.12); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--action) 65%, transparent)); }
-        }
-      `}</style>
 
       <span
         aria-hidden="true"
         className="inline-flex"
         style={{
           color: glyphColor,
-          animation: shouldPulse
-            ? "streakAtRiskPulse 1.4s ease-in-out infinite"
-            : !isZero && !isFrozen
-              ? "streakFlameFlicker 2.6s ease-in-out infinite"
-              : "none",
+          /* BG-P32: at-risk is carried by `glyphColor` and by the copy
+             beside it. A 1.4s throb on a streak the reader cannot act on in
+             the moment is the audit's pulsing indicator, and it sat in the
+             persistent chrome where it never stopped. */
+          animation: "none",
         }}
       >
         {isFrozen ? (

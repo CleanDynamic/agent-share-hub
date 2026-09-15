@@ -179,7 +179,7 @@ export function StarRating({ contentId, contentTitle, avgRating, ratingCount, is
                   onMouseLeave={() => setHoverStar(0)}
                   onClick={() => submitRating(n)}
                   disabled={submitting}
-                  className="transition-transform hover:scale-110"
+                  className="transition-feedback hover:opacity-75"
                 >
                   <Star
                     className={`h-4 w-4 transition-colors ${

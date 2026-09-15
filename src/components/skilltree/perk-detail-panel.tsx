@@ -185,7 +185,7 @@ export default function PerkDetailPanel({
                 borderRadius: tokens.radiusPill,
                 background: perk.trackColor,
                 boxShadow: `0 0 10px color-mix(in srgb, ${perk.trackColor} 60%, transparent)`,
-                transition: "width 0.4s ease",
+                transition: "none",
               }}
             />
           </div>

@@ -52,6 +52,7 @@ import { useLineageParent } from "@/lib/remix/hooks";
 import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock } from "@/types/blueprintMedia";
 import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -273,7 +274,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
       window.setTimeout(() => {
         const el = document.querySelector(`[data-stage-id="${justClosed}"]`);
         if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
-          (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+          (el as HTMLElement).scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
         }
       }, 50);
     }
@@ -934,7 +935,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
   // ── Scroll to a block by id inside the canvas ──
   const scrollToBlock = useCallback((blockId: string) => {
     const el = document.getElementById(`canvas-block-${blockId}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   }, []);
 
   async function onSubmit(values: FormValues) {
@@ -1774,7 +1775,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       border: '1px solid var(--line)',
                       borderLeft: `3px solid ${card.accent}`,
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: feedback(),
                       textAlign: 'left',
                     }}
                     onMouseEnter={e => {
@@ -2245,7 +2246,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     ? 'color-mix(in srgb, var(--action) 35%, transparent)' : 'var(--recess)'}`,
                   color: isProjectMode
                     ? 'var(--action)' : 'var(--text2)',
-                  transition: 'all 0.15s',
+                  transition: feedback(),
                 }}
               >
                 {isProjectMode ? 'Project mode ON' : 'Make this a Project'}
@@ -2378,7 +2379,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                         background: 'var(--recess)',
                         border: '1px dashed var(--line)',
                         color: 'var(--text2)', cursor: 'pointer',
-                        transition: 'all 0.15s',
+                        transition: feedback(),
                       }}
                         onMouseEnter={e => {
                           (e.currentTarget as HTMLElement).style.borderColor = 'var(--line)';

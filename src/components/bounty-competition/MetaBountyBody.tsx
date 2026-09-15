@@ -223,7 +223,7 @@ function SubBountyRow({
               width: `${progress}%`,
               background: "var(--evidence)",
               borderRadius: "var(--r-chip)",
-              transition: "width 0.3s ease",
+              transition: "none",
             }}
           />
         </div>

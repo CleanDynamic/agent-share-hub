@@ -1,5 +1,7 @@
 import { NodeViewWrapper, type ReactNodeViewProps } from '@tiptap/react';
 import { useCallback } from 'react';
+import { pulseRing } from '@/lib/theme/motion';
+import { scrollBehavior } from '@/lib/theme/motion';
 
 /**
  * BlockRefNode
@@ -9,7 +11,7 @@ import { useCallback } from 'react';
  * referenced block's title.
  *
  * Clicking scrolls to the target block inside its stage grid and
- * briefly highlights it with a type-coloured box-shadow.
+ * briefly rings it in the block type's own colour.
  */
 
 // Block type → dot colour (mirrors canvas block colour palette)
@@ -22,24 +24,6 @@ const BLOCK_TYPE_DOT_COLOR: Record<string, string> = {
 
 function getDotColor(type: string): string {
   return BLOCK_TYPE_DOT_COLOR[type] ?? BLOCK_TYPE_DOT_COLOR.text;
-}
-
-/** Convert a dot colour to an rgba string at 0.4 opacity for the highlight ring. */
-function highlightShadow(dotColor: string): string {
-  // Handle #hex colours
-  if (dotColor.startsWith('#')) {
-    const hex = dotColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    return `0 0 0 2px rgba(${r},${g},${b},0.4)`;
-  }
-  // Handle rgba(...) colours — replace the alpha
-  const rgbaMatch = dotColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (rgbaMatch) {
-    return `0 0 0 2px rgba(${rgbaMatch[1]},${rgbaMatch[2]},${rgbaMatch[3]},0.4)`;
-  }
-  return `0 0 0 2px var(--line)`;
 }
 
 interface BlockRefAttrs {
@@ -62,35 +46,17 @@ export function BlockRefNode({ node }: ReactNodeViewProps) {
     const el = document.getElementById(`canvas-block-${blockId}`);
     if (!el) return;
 
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
 
-    // Apply temporary highlight ring
-    const shadow = highlightShadow(dotColor);
-    const prevShadow = el.style.boxShadow;
-    const prevTransition = el.style.transition;
-
-    el.style.boxShadow = shadow;
-    el.style.transition = 'box-shadow 0.15s ease-in';
-
-    // Fade out after a short pause
-    const timer = setTimeout(() => {
-      el.style.transition = 'box-shadow 1.5s ease-out';
-      el.style.boxShadow = prevShadow || 'none';
-
-      // Clean up inline styles after animation completes
-      const cleanup = setTimeout(() => {
-        el.style.boxShadow = prevShadow;
-        el.style.transition = prevTransition;
-      }, 1600);
-
-      // Store cleanup timer on element for GC
-      (el as any).__blockRefCleanup = cleanup;
-    }, 400);
-
-    // Cancel any previous highlight animation on this element
-    if ((el as any).__blockRefTimer) clearTimeout((el as any).__blockRefTimer);
-    if ((el as any).__blockRefCleanup) clearTimeout((el as any).__blockRefCleanup);
-    (el as any).__blockRefTimer = timer;
+    /* BG-P32. Was a hand-rolled box-shadow pulse — an uncompositable property
+       eased `ease-in` on the way in, both forbidden by the theme, and the
+       second of four copies of the same effect. `pulseRing` is the one copy
+       now, and it returns its own cancel rather than parking two timer ids on
+       the DOM node to be cleared by the next click. */
+    (el as unknown as { __blockRefCancel?: () => void }).__blockRefCancel?.();
+    (el as unknown as { __blockRefCancel?: () => void }).__blockRefCancel = pulseRing(el, {
+      colour: dotColor,
+    });
   }, [blockId, dotColor]);
 
   return (

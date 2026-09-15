@@ -102,7 +102,7 @@ export default function NavProgressChip({
             }}
           >
             <span
-              className="block h-full transition-all duration-500"
+              className="block h-full"
               style={{
                 width: `${pct}%`,
                 borderRadius: tokens.radiusPill,
@@ -116,7 +116,7 @@ export default function NavProgressChip({
       {/* Flyout */}
       <div
         role="tooltip"
-        className="absolute left-full top-0 z-50 ml-3 transition-all duration-150"
+        className="absolute left-full top-0 z-50 ml-3 transition-enter"
         style={{
           width: 232,
           opacity: open ? 1 : 0,

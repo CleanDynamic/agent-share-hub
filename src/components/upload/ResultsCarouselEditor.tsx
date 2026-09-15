@@ -14,6 +14,7 @@ import {
   Play,
   Loader2,
 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 export interface Slide {
   id: string;
@@ -331,7 +332,7 @@ export function ResultsCarouselEditor({
               isDraggingOver ? "color-mix(in srgb, var(--evidence) 50%, transparent)" : "var(--recess)"
             }`,
             borderRadius: 8,
-            transition: "all 150ms ease",
+            transition: feedback(),
           }}
         >
           <Images size={28} color="var(--text2)" />
@@ -629,7 +630,7 @@ export function ResultsCarouselEditor({
                     border: "none",
                     padding: 0,
                     cursor: "pointer",
-                    transition: "background 0.2s ease",
+                    transition: feedback("background-color"),
                   }}
                 />
               ))}
@@ -671,7 +672,7 @@ export function ResultsCarouselEditor({
                       ? "1px solid var(--action)"
                       : "1px solid transparent",
                   opacity: draggedThumbnailId === slide.id ? 0.5 : 1,
-                  transition: "opacity 0.2s ease",
+                  transition: feedback("opacity"),
                   background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 }}
               >
@@ -797,12 +798,6 @@ export function ResultsCarouselEditor({
         </div>
       )}
 
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

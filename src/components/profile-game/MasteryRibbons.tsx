@@ -116,7 +116,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
                       height: "100%",
                       borderRadius: tokens.radius.pill,
                       background: ribbon.locked ? tokens.locked : color,
-                      transition: "width 600ms cubic-bezier(0.4,0,0.2,1)",
+                      transition: "none",
                     }}
                   />
                 </div>

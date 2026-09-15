@@ -146,12 +146,6 @@ export default function QuestChecklist({
           </div>
         </div>
 
-        <style>{`
-          @keyframes qc-pop {
-            0% { transform: scale(0.4); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-        `}</style>
       </section>
     )
   }
@@ -211,7 +205,7 @@ export default function QuestChecklist({
           style={{ borderRadius: radius.pill, background: colors.input }}
         >
           <div
-            className="h-full transition-all duration-500"
+            className="h-full"
             style={{
               width: `${pct}%`,
               borderRadius: radius.pill,
@@ -301,7 +295,7 @@ function StepRow({
         <button
           type="button"
           onClick={() => onGo?.(step)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-transform hover:scale-105"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-feedback hover:opacity-85"
           style={{
             borderRadius: radius.pill,
             background: orangeGradient,

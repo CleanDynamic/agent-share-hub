@@ -56,7 +56,7 @@ export default function PerkGateTooltip({
 
       <span
         role="tooltip"
-        className="absolute bottom-full left-1/2 z-50 mb-2 transition-all duration-150"
+        className="absolute bottom-full left-1/2 z-50 mb-2 transition-enter"
         style={{
           width: 214,
           transform: open ? "translate(-50%, 0)" : "translate(-50%, 4px)",

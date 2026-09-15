@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Repeat2, ExternalLink }
 import { AccountHoverCard }
   from '@/components/account-hover-card'
 import { supabase } from '@/integrations/supabase/client'
+import { feedback } from "@/lib/theme/motion";
 
 export interface ReblogPost {
   // The reblog itself
@@ -115,7 +116,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
         marginBottom: 0,
         borderBottom: '1px solid var(--line)',
         cursor: 'pointer',
-        transition: 'background 0.15s',
+        transition: feedback("background-color"),
       }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.background =
@@ -218,7 +219,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
             border: '1px solid var(--line)',
             borderRadius: 12,
             overflow: 'hidden',
-            transition: 'border-color 0.15s',
+            transition: feedback("border-color"),
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style
@@ -344,7 +345,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               cursor: 'pointer',
               color: isLiked
                 ? 'var(--cat-breakage)' : 'var(--text2)',
-              transition: 'color 0.15s',
+              transition: feedback("color"),
             }}
             onClick={e => {
               e.stopPropagation()

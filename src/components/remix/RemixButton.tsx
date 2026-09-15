@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { GitFork } from 'lucide-react'
 import { tokens } from './tokens'
 import Tooltip from './Tooltip'
+import { feedback } from '@/lib/theme/motion';
 
 export interface RemixButtonProps {
   onRemix?: () => void
@@ -40,7 +41,9 @@ export default function RemixButton({
           boxShadow: hover && !disabled
             ? '0 8px 22px color-mix(in srgb, var(--action) 42%, transparent)'
             : '0 2px 10px color-mix(in srgb, var(--action) 28%, transparent)',
-          transition: 'transform 140ms ease, box-shadow 140ms ease',
+          // BG-P32: the lift eases, the shadow under it does not — an animated
+          // box-shadow is the one thing the theme names as uncompositable.
+          transition: feedback('transform'),
         }}
       >
         <GitFork size={16} strokeWidth={2.2} />

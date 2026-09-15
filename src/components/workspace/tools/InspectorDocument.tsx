@@ -9,6 +9,7 @@ import {
   PANEL_INPUT_RADIUS,
   SECTION_LABEL_STYLE,
 } from './toolPanelStyles';
+import { feedback } from "@/lib/theme/motion";
 
 interface InspectorDocumentProps {
   // Document section
@@ -337,7 +338,7 @@ export function InspectorDocument({
               style={{
                 color: "var(--text2)",
                 transform: isSelectOpen ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform 150ms ease",
+                transition: feedback("transform"),
               }}
             />
           </button>
@@ -450,7 +451,7 @@ export function InspectorDocument({
               ? "var(--text2)"
               : "var(--text)",
             opacity: publishDisabled ? 0.6 : 1,
-            transition: "background 150ms ease",
+            transition: feedback("background-color"),
           }}
         >
           {status === "published" ? "Update" : "Publish"}

@@ -149,7 +149,7 @@ export function BlockResultCard({
           anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
         });
       }}
-      className="group relative rounded-xl cursor-pointer transition-all duration-300 hover:bg-foreground/[0.02]"
+      className="group relative rounded-xl cursor-pointer transition-feedback hover:bg-foreground/[0.02]"
       style={{
         padding: "14px 16px",
         marginBottom: "10px",

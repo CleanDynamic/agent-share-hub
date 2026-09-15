@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { GitFork } from 'lucide-react'
 import { tokens, fontMono } from './tokens'
 import Tooltip from './Tooltip'
+import { feedback } from '@/lib/theme/motion';
 
 export interface DescendantBadgeProps {
   count: number
@@ -35,7 +36,7 @@ export default function DescendantBadge({
         color: tokens.textMuted,
         fontSize: 12.5,
         cursor: interactive ? 'pointer' : 'default',
-        transition: 'background 140ms ease, border 140ms ease',
+        transition: feedback("background-color", "border-color"),
       }}
     >
       <GitFork size={13} strokeWidth={2.2} style={{ color: tokens.teal }} />

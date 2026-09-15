@@ -101,7 +101,7 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             to="/browse"
-            className="flex items-center gap-2 transition-all"
+            className="flex items-center gap-2 transition-feedback"
             style={{
               background: "color-mix(in srgb, var(--evidence) 12%, transparent)",
               border: "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
@@ -117,7 +117,7 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
           </Link>
           <Link
             to="/upload"
-            className="flex items-center gap-2 transition-all"
+            className="flex items-center gap-2 transition-feedback"
             style={{
               background: "color-mix(in srgb, var(--action) 10%, transparent)",
               border: "1px solid color-mix(in srgb, var(--action) 25%, transparent)",

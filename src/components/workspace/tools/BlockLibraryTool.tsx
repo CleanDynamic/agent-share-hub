@@ -10,6 +10,7 @@ import {
 } from './toolPanelStyles';
 import { setDragType, clearDragType } from '@/lib/blockInsertion';
 import type { BlockType } from '@/types/document';
+import { feedback } from '@/lib/theme/motion';
 
 // ─── Block catalog ────────────────────────────────────────────────
 interface BlockDef {
@@ -169,7 +170,7 @@ export function BlockLibraryTool({
                 fontWeight: 500,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                transition: 'background-color 120ms ease, color 120ms ease',
+                transition: feedback("background-color", "color"),
               }}
             >
               {cat} · {counts[cat]}
@@ -257,7 +258,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    transition: 'background-color 120ms ease, border-color 120ms ease',
+    transition: feedback("background-color", "border-color"),
     userSelect: 'none',
   };
 

@@ -62,7 +62,7 @@ export default function TrackXpBar({
             borderRadius: tokens.radiusPill,
             background: trackColor,
             boxShadow: `0 0 12px color-mix(in srgb, ${trackColor} 60%, transparent)`,
-            transition: "width 0.4s ease",
+            transition: "none",
           }}
         />
         {/* tier notches */}

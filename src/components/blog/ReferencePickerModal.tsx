@@ -9,6 +9,7 @@ import {
   SearchX,
   Loader2,
 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 // Types
 export type ReferenceType = "blueprints" | "stages" | "blocks";
@@ -113,7 +114,7 @@ const styles = {
     justifyContent: "center",
     borderRadius: 4,
     color: "var(--text2)",
-    transition: "color 0.15s, background 0.15s",
+    transition: feedback("color", "background-color"),
   },
   tabsContainer: {
     height: 40,
@@ -134,7 +135,7 @@ const styles = {
     border: "none",
     borderBottom: "2px solid transparent",
     marginBottom: -0.5,
-    transition: "border-color 0.15s",
+    transition: feedback("border-color"),
     padding: 0,
     gap: 1,
   },
@@ -188,7 +189,7 @@ const styles = {
     padding: "6px 10px",
     borderRadius: 6,
     cursor: "pointer",
-    transition: "background 0.1s",
+    transition: feedback("background-color"),
     gap: 10,
     borderLeft: "2px solid transparent",
     marginLeft: -2,
@@ -452,7 +453,7 @@ export function ReferencePickerModal({
   return (
     <div style={overlayStyle} onMouseDown={handleOverlayClick}>
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+        
         .ref-picker-scrollbar::-webkit-scrollbar { width: 6px; }
         .ref-picker-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .ref-picker-scrollbar::-webkit-scrollbar-thumb { background: var(--recess); border-radius: 3px; }

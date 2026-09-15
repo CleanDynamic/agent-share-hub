@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { LayoutTemplate, MoreHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { feedback } from '@/lib/theme/motion';
 
 type WidthMode = 'narrow' | 'wide' | 'full';
 type BlockType = 'text' | 'prompt' | 'code' | 'result';
@@ -132,7 +133,7 @@ export function StageGridFrame({
             background:
               'linear-gradient(to bottom, color-mix(in srgb, var(--recess) 85%, transparent) 0%, color-mix(in srgb, var(--recess) 55%, transparent) 70%, transparent 100%)',
             opacity: overlayVisible ? 1 : 0,
-            transition: 'opacity 160ms ease',
+            transition: feedback("opacity"),
           }}
         >
           <div
@@ -221,7 +222,7 @@ export function StageGridFrame({
             background:
               'linear-gradient(to top, color-mix(in srgb, var(--recess) 85%, transparent) 0%, color-mix(in srgb, var(--recess) 55%, transparent) 70%, transparent 100%)',
             opacity: overlayVisible ? 1 : 0,
-            transition: 'opacity 160ms ease',
+            transition: feedback("opacity"),
           }}
         >
           {null}
@@ -237,7 +238,7 @@ export function StageGridFrame({
         style={{
           height: 4,
           background: overlayVisible ? 'var(--recess)' : 'transparent',
-          transition: 'background 160ms ease',
+          transition: feedback("background-color"),
         }}
       />
     </div>

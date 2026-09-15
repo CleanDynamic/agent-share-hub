@@ -42,6 +42,7 @@ import FreezeIndicator from "@/components/streaks/freeze-indicator";
 import SkillTreeTab from "@/components/progress/SkillTreeTab";
 import ChallengesTab from "@/components/progress/ChallengesTab";
 import { useStreakDays } from "@/hooks/useProgress";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 
 const TAB_LABELS: Record<string, string> = {
@@ -138,7 +139,7 @@ export default function Analytics() {
         break;
       case "todays-nudge": {
         const el = document.getElementById("daily-nudge-anchor");
-        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
         break;
       }
       case "come-back":

@@ -35,7 +35,7 @@ import { gapProblem, type NodeTree, type NodeType } from "@/lib/build";
 import { GapMarker, gapEdge, gapState } from "@/components/brand/GapMarker";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import { Switch } from "@/components/ui/switch";
-import { UI_EASING, UI_MS, fieldMessageStyle, fieldStyle } from "@/lib/theme/controls";
+import { fieldMessageStyle, fieldStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import {
@@ -45,6 +45,7 @@ import {
   label as labelText,
   tabular,
 } from "@/lib/theme/type";
+import { fade } from "@/lib/theme/motion";
 
 /**
  * The copy, held as constants because it is the design.
@@ -279,7 +280,7 @@ export function BountySection({
               // is NOT going to happen. Dimmed rather than unmounted, so a
               // creator can see what they are declining.
               opacity: skip ? 0.45 : 1,
-              transition: `opacity ${UI_MS}ms ${UI_EASING}`,
+              transition: fade(),
             }}
           >
             {gaps.map((gap) => (

@@ -1,4 +1,5 @@
 import { Pencil, Trash2, MoreHorizontal, Share2, Plus, Folder, FolderOpen } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 interface FolderData {
   id: string;
@@ -68,7 +69,7 @@ export function LibrarySidebar({
     color: isActive
       ? "var(--evidence)"
       : "var(--text2)",
-    transition: "all 0.15s ease",
+    transition: feedback(),
   });
 
   const countStyle = {
@@ -307,7 +308,7 @@ export function LibrarySidebar({
       >
         <button
           onClick={() => onFolderSelect(null)}
-          className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+          className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
           style={{
             fontSize: 12,
             fontWeight: !activeFolder ? 600 : 400,
@@ -326,7 +327,7 @@ export function LibrarySidebar({
         </button>
         <button
           onClick={() => onFolderSelect("root")}
-          className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+          className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
           style={{
             fontSize: 12,
             fontWeight: activeFolder === "root" ? 600 : 400,
@@ -350,7 +351,7 @@ export function LibrarySidebar({
           <button
             key={folder.id}
             onClick={() => onFolderSelect(folder.id)}
-            className="px-3 py-1.5 rounded-full shrink-0 transition-all"
+            className="px-3 py-1.5 rounded-full shrink-0 transition-feedback"
             style={{
               fontSize: 12,
               fontWeight: activeFolder === folder.id ? 600 : 400,

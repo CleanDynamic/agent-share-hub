@@ -8,6 +8,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PostMeta {
@@ -193,7 +194,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
         borderRadius: 12,
         overflow: "hidden",
         textDecoration: "none",
-        transition: "border-color 120ms ease",
+        transition: feedback("border-color"),
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "var(--line)";
@@ -390,7 +391,7 @@ export function ContentDetailShell({
             fontWeight: 600,
             color: "var(--text)",
             opacity: showStickyTitle ? 1 : 0,
-            transition: "opacity 200ms ease",
+            transition: feedback("opacity"),
             padding: "0 24px",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -415,7 +416,7 @@ export function ContentDetailShell({
                 width: `${scrollProgress}%`,
                 height: "100%",
                 background: TYPE_COLOR[post.postType],
-                transition: "width 150ms linear",
+                transition: "none",
               }}
             />
           </div>

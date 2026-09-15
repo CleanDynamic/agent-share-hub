@@ -47,9 +47,9 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode 
 import { aspectOf, type GalleryMedia, type PostEntry } from "@/lib/build";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { UI_EASING, prefersReducedMotion } from "@/lib/theme/controls";
 import { body as bodyText, data as dataText, tabular } from "@/lib/theme/type";
 import { stillFor, type MediaSrcMap } from "./cardMedia";
+import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 
 /* ────────────────────────────────────────────────────────────────────────────
    The measurements. Every one of them is a number this file needs twice — once
@@ -73,7 +73,20 @@ export const CONTROL_HEIGHT = 40;
 export const RAIL_WIDTH = 2;
 
 /** The one animated moment on the card. */
-export const UNFOLD_MS = 240;
+/* BG-P32. Was 240ms — a twelfth duration nothing else in the product used.
+   The unfold is UI feedback answering a click, so it belongs at the theme's
+   ceiling, and the ceiling is what the module calls `base`.
+
+   THE ONE KNOWING LAYOUT ANIMATION IN THE PRODUCT. `grid-template-rows` is a
+   layout property, and the theme's rule against animating one is about exactly
+   this cost. It is kept, deliberately, because it is the only way to unfold to
+   a content-determined height without measuring in JavaScript, it is scoped to
+   one region of one card, and the alternative — snapping — loses the thread's
+   sense of coming out of the card it belongs to. Reduced motion still drops it
+   entirely, twice: here, and in the global rule in index.css. Nothing else in
+   `src/` animates a layout property, and motion.test.ts is what keeps that
+   true; if a second one ever wants to, the answer is no. */
+export const UNFOLD_MS = BASE;
 
 /**
  * Which of the two the card is drawing.
@@ -635,7 +648,7 @@ function UnfoldRegion({
         gridTemplateRows: open ? "1fr" : "0fr",
         transition: prefersReducedMotion()
           ? "none"
-          : `grid-template-rows ${UNFOLD_MS}ms ${UI_EASING}`,
+          : `grid-template-rows ${UNFOLD_MS}ms ${STANDARD}`,
       }}
     >
       <div style={{ overflow: "hidden", minHeight: 0 }}>{children}</div>

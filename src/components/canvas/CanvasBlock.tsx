@@ -7,6 +7,7 @@ import { BlockViewerInCanvas } from './BlockViewerInCanvas';
 import { ExecutionPanel } from './ExecutionPanel';
 import { type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 const BLOCK_TYPE_LABELS: Record<string, string> = {
   prompt: 'Prompt', code: 'Code', text: 'Text', long_text: 'Long Text',
@@ -426,7 +427,9 @@ export function CanvasBlock({
               borderRadius: 10,
               overflow: 'hidden',
               cursor: 'pointer',
-              transition: 'border-color 0.15s, box-shadow 0.15s',
+              // BG-P32: box-shadow cannot be composited, so it is set rather
+              // than eased. The border still crosses over.
+              transition: feedback('border-color'),
               boxShadow: selected
                 ? `0 0 0 1px ${colourAlpha(accent, 0.314)}, var(--elev-raised)`
                 : hovered ? 'var(--elev-raised)' : 'none',
@@ -647,18 +650,18 @@ export function CanvasBlock({
             <div onMouseDown={handleResizeRight} style={{
               position: 'absolute', right: -2, top: '20%', height: '60%', width: 5,
               cursor: 'ew-resize', background: 'color-mix(in srgb, var(--cat-data) 60%, transparent)', borderRadius: 2, zIndex: 25,
-              opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.2, transition: feedback("opacity"),
             }} />
             <div onMouseDown={handleResizeBottom} style={{
               position: 'absolute', bottom: -2, left: '20%', width: '60%', height: 5,
               cursor: 'ns-resize', background: 'color-mix(in srgb, var(--cat-data) 60%, transparent)', borderRadius: 2, zIndex: 25,
-              opacity: hovered || selected ? 1 : 0.2, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.2, transition: feedback("opacity"),
             }} />
             <div onMouseDown={e => { handleResizeRight(e); handleResizeBottom(e); }} style={{
               position: 'absolute', bottom: -3, right: -3, width: 7, height: 7,
               cursor: 'se-resize', background: 'var(--cat-data)', borderRadius: '50%', zIndex: 26,
               border: '2px solid var(--bg)',
-              opacity: hovered || selected ? 1 : 0.25, transition: 'opacity 0.15s',
+              opacity: hovered || selected ? 1 : 0.25, transition: feedback("opacity"),
             }} />
           </>
         )}
@@ -717,7 +720,7 @@ export function CanvasBlock({
                   border: '2px solid var(--cat-data)',
                   zIndex: 30,
                   cursor: 'crosshair',
-                  transition: 'width 0.1s, height 0.1s, background 0.1s',
+                  transition: feedback("background-color"),
                   boxSizing: 'border-box',
                   transform: 'translate(-50%, -50%)',
                   ...(isMagnetized ? {

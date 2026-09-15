@@ -1,7 +1,38 @@
 import type { Config } from "tailwindcss";
 
+/* BG-P32 — Tailwind spends the motion module, it does not restate it.
+   Importing the constants rather than copying them is what makes "every
+   transition in the product comes from the motion module" true of the ~200
+   Tailwind transition utilities as well as of the style objects. Change FAST in
+   motion.ts and every `transition-*` class in the product moves with it.
+
+   Safe to import here: motion.ts's only import is a type-only one, and it
+   touches `window` exclusively from inside function bodies, so evaluating it in
+   the config process does nothing. */
+import { BASE, FAST, LINEAR, REVEAL, STANDARD, THEME_SWITCH } from "./src/lib/theme/motion";
+
 export default {
   darkMode: ["class"],
+
+  /* BG-P32 — every `hover:` utility behind a fine pointer.
+     The theme gates hover motion on `(hover: hover) and (pointer: fine)`,
+     because on a touch screen `:hover` sticks after a tap and leaves the
+     control looking permanently pressed until something else is touched. This
+     codebase carries 563 `hover:` utilities across 278 files; gating them one
+     at a time would be 563 hand-written media queries to keep in step, and the
+     first one anybody forgot would be invisible.
+
+     This flag compiles every one of them into exactly that query — Tailwind
+     emits `@media (hover: hover) and (pointer: fine) { &:hover }`, the same
+     string `HOVER_QUERY` in src/lib/theme/motion.ts holds — so the gate is one
+     decision rather than 563. motion.test.ts asserts the flag is on and that
+     the two strings agree; the hand-written `:hover` rules in the four
+     stylesheets are gated in place, and hover carried in a style object goes
+     through `hoverIsFine()`, which reads the same query. */
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -13,6 +44,41 @@ export default {
       },
     },
     extend: {
+      /* BG-P32 — the motion vocabulary as utilities.
+
+         DEFAULT is the point of this block. Tailwind's core transition plugin
+         reads `transitionDuration.DEFAULT` and `transitionTimingFunction.DEFAULT`
+         for every `transition-*` utility, so setting them here moves every
+         transition class already written in the product — `transition-colors`,
+         `transition-opacity`, `transition-transform`, all of them — onto the
+         module's 150ms and the module's curve, without touching the call sites.
+         Tailwind's own defaults are 150ms and cubic-bezier(0.4, 0, 0.2, 1);
+         the duration happens to agree, the curve does not.
+
+         The three named properties mirror the module's three transition
+         builders, so a className and a style object express the same decision:
+         `transition-feedback` is `feedback()`, `transition-fade` is `fade()`,
+         `transition-move` is `move()`, `transition-enter` is `enter()`. There
+         is deliberately no `all`. */
+      transitionProperty: {
+        feedback: "background-color, border-color, color, opacity, transform",
+        fade: "opacity",
+        move: "transform",
+        enter: "opacity, transform",
+      },
+      transitionDuration: {
+        DEFAULT: `${FAST}ms`,
+        fast: `${FAST}ms`,
+        base: `${BASE}ms`,
+        reveal: `${REVEAL}ms`,
+        theme: `${THEME_SWITCH}ms`,
+      },
+      transitionTimingFunction: {
+        DEFAULT: STANDARD,
+        standard: STANDARD,
+        linear: LINEAR,
+      },
+
       colors: {
         /* --- Semantic tokens (shadcn) --- */
         border: "hsl(var(--border))",

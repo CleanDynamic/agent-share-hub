@@ -1,3 +1,20 @@
+/* ── BG-P32 — hover is gated on a fine pointer ────────────────────────────────
+   Every `:hover` rule below sits inside `(hover: hover) and (pointer: fine)`.
+   A touch reader has no hover, and an ungated `:hover` leaves the control
+   looking permanently pressed after a tap, until something else is touched.
+
+   Each rule is wrapped WHERE IT STANDS rather than collected into one block at
+   the end of the file, because several of them win over a neighbouring state
+   rule of equal specificity by document order alone — `.fs-nav-item:hover`
+   against `.fs-nav-item.active`, say. Moving them would silently flip which
+   one paints an active, hovered row.
+
+   The 563 Tailwind `hover:` utilities elsewhere in the product are gated by
+   `hoverOnlyWhenSupported` in tailwind.config.ts, which compiles them into
+   this same query; hover carried in a style object goes through `hoverIsFine()`
+   in src/lib/theme/motion.ts, which reads it too.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 /* ────────────────────────────────────────────────
    right-rail-explore.css — internal styles for the Explore rail.
    Copied VERBATIM out of the injected CSS of NeoScaleShell, the frame this
@@ -38,9 +55,12 @@
   padding: 0 12px; gap: 8px;
   margin-bottom: 24px;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color var(--motion-base) var(--motion-ease);
 }
-.ns-right-search:hover { border-color: var(--text2); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-right-search:hover { border-color: var(--text2); }
+}
 .ns-right-search svg { width: 16px; height: 16px; color: var(--text2); flex-shrink: 0; }
 /* BG-P13. The wrapper above IS the field — it is what carries the --recess
    ground, the --line border and the --r-control radius, with the search icon
@@ -75,9 +95,12 @@
 .ns-search-result {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: var(--r-control); cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color var(--motion-fast) var(--motion-ease);
 }
-.ns-search-result:hover { background: var(--bg); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-search-result:hover { background: var(--bg); }
+}
 .ns-search-result-title { font-size: 15px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .ns-search-result-badge { font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace; font-size: 12px; padding: 1px 5px; border-radius: var(--r-chip); background: var(--recess); color: var(--text2); flex-shrink: 0; }
 
@@ -113,9 +136,12 @@
 .ns-curator-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; border-radius: var(--r-control);
-  cursor: pointer; transition: background 0.15s;
+  cursor: pointer; transition: background-color var(--motion-fast) var(--motion-ease);
 }
-.ns-curator-item:hover { background: var(--recess); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-curator-item:hover { background: var(--recess); }
+}
 .ns-curator-avatar {
   width: 22px; height: 22px; border-radius: 50%;
   background: var(--recess); flex-shrink: 0;
@@ -125,9 +151,12 @@
 .ns-collection-item {
   display: flex; flex-direction: column; gap: 2px;
   padding: 8px; border-radius: var(--r-control);
-  cursor: pointer; transition: background 0.15s;
+  cursor: pointer; transition: background-color var(--motion-fast) var(--motion-ease);
 }
-.ns-collection-item:hover { background: var(--recess); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-collection-item:hover { background: var(--recess); }
+}
 .ns-follow-item {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 4px;
@@ -147,7 +176,10 @@
 .ns-footer-link {
   font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
   font-size: 12px; color: var(--text2);
-  text-decoration: none; transition: color 0.15s;
+  text-decoration: none; transition: color var(--motion-fast) var(--motion-ease);
   cursor: pointer;
 }
-.ns-footer-link:hover { color: var(--text); }
+/* BG-P32 — gated: see the note at the top of this file. */
+@media (hover: hover) and (pointer: fine) {
+  .ns-footer-link:hover { color: var(--text); }
+}

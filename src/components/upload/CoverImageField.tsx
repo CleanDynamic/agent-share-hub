@@ -4,6 +4,7 @@ import { uploadMedia, MediaUploadError, IMAGE_MIME } from "@/lib/media/uploadMed
 import { deleteMedia } from "@/lib/media/deleteMedia";
 import type { CoverImage } from "@/types/blueprintMedia";
 import { useToast } from "@/hooks/use-toast";
+import { feedback } from "@/lib/theme/motion";
 
 const BUCKET = "blueprint-media";
 const PATH_PREFIX = "covers";
@@ -288,7 +289,7 @@ export function CoverImageField({
           cursor: reframing
             ? (reframeDragging ? "grabbing" : "grab")
             : value || uploading ? "default" : "pointer",
-          transition: "background 120ms ease, border-color 120ms ease",
+          transition: feedback("background-color", "border-color"),
           touchAction: reframing ? "none" : undefined,
           userSelect: "none",
         }}
@@ -384,7 +385,10 @@ export function CoverImageField({
                 border: "1.5px solid var(--action)",
                 background: "color-mix(in srgb, var(--action) 22%, transparent)",
                 boxShadow: "0 0 0 1px var(--line)",
-                transition: reframeDragging ? "none" : "left 120ms ease, top 120ms ease",
+                // BG-P32: `left` and `top` are layout properties, so the reframe box lands
+        // where it is dropped rather than easing there. The drag itself is
+        // untouched.
+        transition: "none",
               }}
             />
 
@@ -515,7 +519,7 @@ function ToolbarIconButton({
         border: "none",
         cursor: "pointer",
         color: destructive && hover ? "var(--cat-breakage)" : "var(--text)",
-        transition: "background 120ms ease, color 120ms ease",
+        transition: feedback("background-color", "color"),
       }}
     >
       {React.isValidElement(children) && destructive

@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 interface ToolBlockData {
   blockId: string;
@@ -28,7 +29,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 export function ToolBlockNode({ id, data, selected }: NodeProps) {
@@ -93,7 +94,7 @@ export function ToolBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-feedback"
         style={{
           width: 260,
           border: selected

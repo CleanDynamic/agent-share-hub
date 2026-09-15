@@ -1,4 +1,5 @@
 import { type } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 interface DiscussionComposeProps {
   form: any;
@@ -224,7 +225,7 @@ export function DiscussionCompose({
             cursor: mainText.trim() && !isOverLimit
               ? 'pointer' : 'default',
             fontFamily: 'Figtree',
-            transition: 'background 0.15s',
+            transition: feedback("background-color"),
           }}
         >
           {submitting ? 'Posting...' : 'Post'}

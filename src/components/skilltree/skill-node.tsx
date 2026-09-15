@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Lock, type LucideIcon } from "lucide-react"
 import { tokens, sans, type NodeState } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface SkillNodeProps {
   state: NodeState
@@ -29,7 +30,7 @@ export default function SkillNode({
     justifyContent: "center",
     cursor: "pointer",
     position: "relative",
-    transition: "transform 0.15s ease",
+    transition: feedback("transform"),
     transform: hover ? "scale(1.06)" : "scale(1)",
   }
 
@@ -48,7 +49,9 @@ export default function SkillNode({
       background: "var(--recess)",
       border: `2px solid ${trackColor}`,
       boxShadow: `0 0 0 4px color-mix(in srgb, ${trackColor} 18%, transparent)`,
-      animation: "skillPulse 2s ease-in-out infinite",
+      /* BG-P32: the ring says "available". It used to throb 2s on a loop,
+         which the motion audit rates as a pulsing indicator — decoration
+         dressed as information, on a page that can show a dozen at once. */
     }
     icon = <PerkIcon size={22} color={trackColor} strokeWidth={2} />
   } else {
@@ -66,10 +69,6 @@ export default function SkillNode({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <style>{`@keyframes skillPulse {
-        0%,100% { box-shadow: 0 0 0 4px color-mix(in srgb, ${trackColor} 18%, transparent); }
-        50% { box-shadow: 0 0 0 7px color-mix(in srgb, ${trackColor} 8%, transparent); }
-      }`}</style>
 
       <div
         role="button"

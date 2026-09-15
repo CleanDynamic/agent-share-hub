@@ -82,7 +82,7 @@ export function LibraryControls({
             <button
               key={s}
               onClick={() => onSortChange(s)}
-              className="px-3 py-1.5 rounded-lg transition-all"
+              className="px-3 py-1.5 rounded-lg transition-feedback"
               style={{
                 fontSize: 12,
                 fontWeight: 500,
@@ -135,7 +135,7 @@ export function LibraryControls({
         {/* New Folder */}
         <button
           onClick={onNewFolder}
-          className="flex items-center gap-1.5 shrink-0 transition-all"
+          className="flex items-center gap-1.5 shrink-0 transition-feedback"
           style={{
             background: "color-mix(in srgb, var(--action) 12%, transparent)",
             border: "1px solid color-mix(in srgb, var(--action) 30%, transparent)",

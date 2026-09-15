@@ -15,6 +15,7 @@ import {
   getExpandedBlockId,
   setExpandedBlockId,
 } from '@/lib/blockExpansion';
+import { feedback } from '@/lib/theme/motion';
 
 interface StageFullscreenProps {
   stageId: string;
@@ -107,7 +108,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         fontSize: 12,
         fontWeight: 500,
         cursor: 'pointer',
-        transition: 'background 120ms ease',
+        transition: feedback("background-color"),
       }}
     >
       <ArrowLeft size={14} strokeWidth={1.8} />
@@ -263,7 +264,7 @@ function IconBtn({ onClick, title, active = false, children }: IconBtnProps) {
         borderRadius: 5,
         color: baseColor,
         cursor: 'pointer',
-        transition: 'background 120ms ease, color 120ms ease',
+        transition: feedback("background-color", "color"),
       }}
     >
       {children}

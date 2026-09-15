@@ -65,17 +65,6 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
       aria-label={`Level ${newLevel} reached`}
       onClick={onClose}
     >
-      <style>{`
-        @keyframes levelup-pop {
-          0%   { transform: scale(0.6); opacity: 0; }
-          70%  { transform: scale(1.08); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes levelup-confetti {
-          0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
-          100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
-        }
-      `}</style>
 
       {/* Confetti */}
       {!reduced && (

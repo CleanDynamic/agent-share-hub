@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import { useDocumentStore } from '@/lib/documentStore';
 import { parseDeepLinkHash, pulseElement } from '@/lib/deepLink';
+import { scrollBehavior } from '@/lib/theme/motion';
 
 const lowlight = createLowlight(common);
 
@@ -73,7 +74,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
       const stageExists = canvasDoc.stages.some((s: any) => s.id === parsed.id);
       if (!stageExists) {
         toast.error('That stage no longer exists');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
         handledHashRef.current = key;
         return;
       }
@@ -82,7 +83,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
       const block = canvasDoc.blocks.find((b: any) => b.id === parsed.id);
       if (!block) {
         toast.error('That block no longer exists');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
         handledHashRef.current = key;
         return;
       }
@@ -101,7 +102,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
         ? (document.querySelector<HTMLElement>(`[data-stage-id="${stageId}"]`))
         : null;
       if (stageEl) {
-        stageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        stageEl.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
         // Give the scroll a beat to settle, then pulse + drill into block.
         window.setTimeout(() => {
           pulseElement(stageEl, 700);
@@ -112,7 +113,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
               blockAttempts += 1;
               const blockEl = document.getElementById(`canvas-block-${blockId}`);
               if (blockEl) {
-                blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                blockEl.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
                 setSelection({ kind: 'block', ids: [blockId] });
                 window.setTimeout(() => pulseElement(blockEl, 700), 250);
                 return;

@@ -9,6 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { prefersReducedMotion, THEME_SWITCH } from "@/lib/theme/motion";
+
 
 /* ────────────────────────────────────────────────
    ThemeContext — the mechanism that flips the theme.
@@ -44,10 +46,12 @@ export interface ThemeState {
 export const THEME_STORAGE_KEY = "bg-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
-/** Duration of the colour cross-fade. Mirrors the CSS in index.css. */
-const TRANSITION_MS = 180;
+/* BG-P32. The cross-fade's duration and the reduced-motion query both come from
+   the motion module now, so the attribute is removed on exactly the frame the
+   CSS finishes with it. The CSS half reads the same figure as `--motion-theme`;
+   `motion.test.ts` holds the two to each other. */
+const TRANSITION_MS = THEME_SWITCH;
 
 /* BG-P02. A visitor with no stored preference gets Exhibition, not the Dusk
    the theme spec names: a gallery that opens in the dark undersells itself, and
@@ -89,8 +93,6 @@ export function readStoredTheme(): ThemeChoice {
 }
 
 const systemPrefersDark = (): boolean => safeMatchMedia(DARK_QUERY)?.matches ?? false;
-
-const prefersReducedMotion = (): boolean => safeMatchMedia(REDUCED_MOTION_QUERY)?.matches ?? false;
 
 const resolveTheme = (theme: ThemeChoice, dark: boolean): ResolvedTheme =>
   theme === "system" ? (dark ? "dusk" : "exhibition") : theme;

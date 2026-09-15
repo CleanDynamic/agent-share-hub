@@ -38,6 +38,7 @@ import { body, data as dataType, eyebrow } from "@/lib/theme/type";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { gapEdge } from "@/components/brand/GapMarker";
 import { descendantIds, insideDropId, type NodeDrag } from "./useNodeDrag";
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * The chosen row: a low-alpha `--action` ground under an `--action` left edge.
@@ -167,7 +168,7 @@ function Chevron({ open }: { open: boolean }) {
       aria-hidden="true"
       style={{
         transform: open ? "rotate(90deg)" : "rotate(0deg)",
-        transition: "transform 120ms ease",
+        transition: feedback("transform"),
       }}
     >
       <path d="M3 1 L7 5 L3 9" fill="none" stroke="currentColor" strokeWidth="1.4" />

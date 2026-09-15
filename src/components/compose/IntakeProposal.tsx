@@ -40,7 +40,7 @@ import type { SecretWarning } from "@/lib/build/buildfile";
 import { bodyText, labelText } from "@/components/build/tokens";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { Button } from "@/components/ui/button";
-import { UI_EASING, UI_MS } from "@/lib/theme/controls";
+
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import {
@@ -50,6 +50,7 @@ import {
   sectionHead as sectionHeadText,
 } from "@/lib/theme/type";
 import { workspaceCard } from "@/components/shell/WorkspaceBar";
+import { feedback } from "@/lib/theme/motion";
 
 /** Long enough to recognise the item, short enough to stay on one line. */
 const SUMMARY_LIMIT = 96;
@@ -176,7 +177,7 @@ function KeepToggle({
         borderStyle: "solid",
         borderColor: kept ? t.evidence : t.line,
         color: kept ? t.evidence : t.text2,
-        transition: `background-color ${UI_MS}ms ${UI_EASING}, border-color ${UI_MS}ms ${UI_EASING}, color ${UI_MS}ms ${UI_EASING}`,
+        transition: feedback("background-color", "border-color", "color"),
       }}
     >
       <span aria-hidden style={{ fontSize: 10 }}>{kept ? "✓" : "○"}</span>
@@ -194,7 +195,7 @@ function rowStyle(kept: boolean): CSSProperties {
     gap: 10,
     padding: "9px 11px",
     opacity: kept ? 1 : 0.42,
-    transition: "opacity 120ms ease",
+    transition: feedback("opacity"),
   };
 }
 

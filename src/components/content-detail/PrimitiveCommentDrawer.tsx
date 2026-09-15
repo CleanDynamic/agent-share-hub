@@ -799,6 +799,7 @@ const menuItemStyle: React.CSSProperties = {
   borderRadius: 4,
 };
 import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
+import { feedback } from "@/lib/theme/motion";
 
 function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
   const tc: TCComment = {
@@ -1007,7 +1008,7 @@ export function PrimitiveCommentDrawer({
           display: "flex",
           flexDirection: "column",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.25s ease-out",
+          transition: feedback("transform"),
         }}
       >
         <div
@@ -1141,20 +1142,7 @@ export function PrimitiveCommentDrawer({
           </div>
         )}
       </div>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes tealFlash {
-          0% { background: color-mix(in srgb, var(--evidence) 15%, transparent); }
-          100% { background: transparent; }
-        }
-        @keyframes ns-deep-link-pulse {
-          0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action) 55%, transparent); }
-          100% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--action) 0%, transparent); }
-        }
-        .ns-comment-new-reply {
-          animation: ns-deep-link-pulse 600ms ease-out;
-        }
-      `}</style>
+      
     </>
   );
 }

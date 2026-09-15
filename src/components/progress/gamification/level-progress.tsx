@@ -85,7 +85,7 @@ export default function LevelProgress({
             background: colors.brandGradient,
             borderRadius: radius.pill,
             boxShadow: `0 0 12px ${withAlpha(colors.brand, 0.6)}`,
-            transition: "width 600ms ease",
+            transition: "none",
           }}
         />
       </div>

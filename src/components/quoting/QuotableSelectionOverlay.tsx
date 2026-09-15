@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Repeat2, MessageSquarePlus, Copy } from "lucide-react";
 import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
+import { feedback } from "@/lib/theme/motion";
 
 export interface SelectionData {
   text: string;
@@ -172,7 +173,7 @@ function ActionButton({
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          transition: "background 100ms ease",
+          transition: feedback("background-color"),
           color: "var(--text)",
         }}
         onMouseEnter={(e) => {

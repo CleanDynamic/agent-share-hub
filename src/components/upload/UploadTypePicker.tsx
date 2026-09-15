@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Sparkles, PenLine, Trophy, Target, X, ChevronRight } from "lucide-react"
+import { feedback } from "@/lib/theme/motion";
 
 export type UploadContentType = "blueprint" | "blog" | "bounty" | "meta-bounty"
 
@@ -211,7 +212,7 @@ export function UploadTypePicker({
             ? "translate(-50%, -50%) scale(0.96)"
             : "translate(-50%, -50%) scale(1)",
         opacity: isClosing ? 0 : isAnimating ? 0 : 1,
-        transition: "transform 200ms ease-out, opacity 200ms ease-out",
+        transition: feedback("transform", "opacity"),
       }
     }
 
@@ -239,7 +240,7 @@ export function UploadTypePicker({
     cursor: "pointer",
     minHeight: isDesktop ? "130px" : "88px",
     transform: isPressed ? "scale(0.98)" : isHovered ? "scale(1.02)" : "scale(1)",
-    transition: "transform 120ms ease-out, background-color 120ms ease-out, border 120ms ease-out",
+    transition: feedback("transform", "background-color", "border-color"),
     display: "flex",
     flexDirection: "column",
   })

@@ -69,7 +69,7 @@ const TabsTrigger = React.forwardRef<
         ref={ref}
         disabled={disabled}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-feedback focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
           TAB_TRIGGER_CLASS,
           className,
         )}

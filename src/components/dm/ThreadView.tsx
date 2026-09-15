@@ -20,6 +20,7 @@ import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
 import { TypingIndicator } from "@/components/dm/TypingIndicator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -134,7 +135,7 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
           // Dusk. The unplayed bars drop to 30% of the same hue so the track
           // reads as one object at two states, not as two colours.
           backgroundColor: filled ? t.evidence : tokenAlpha("evidence", 0.3),
-          transition: "background-color 0.1s",
+          transition: feedback("background-color"),
         }}
       />
     );
@@ -380,7 +381,7 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
         src={src}
         alt=""
         className="max-w-[90vw] max-h-[90vh] object-contain select-none"
-        style={{ transform: `scale(${scale})`, transition: "transform 0.15s" }}
+        style={{ transform: `scale(${scale})`, transition: feedback("transform") }}
         onClick={(e) => e.stopPropagation()}
         onDoubleClick={() => setScale(s => s === 1 ? 2 : 1)}
       />
@@ -642,7 +643,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
 
     if (isNew && isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
     } else if (isNew && !isNearBottom) {
       setShowNewMsgButton(true);
     }
@@ -694,7 +695,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
   }, [loadingOlder, messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
     setShowNewMsgButton(false);
   };
 
@@ -1066,7 +1067,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
                     <button
                       key={emoji}
                       onClick={() => handleReaction(msg.id, emoji)}
-                      className="text-lg hover:scale-125 transition-transform p-0.5"
+                      className="text-lg hover:opacity-75 transition-feedback p-0.5"
                     >
                       {emoji}
                     </button>
@@ -1287,7 +1288,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
           onClearReply={() => setReplyTo(null)}
           onMessageSent={() => {
             haptic(10);
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
           }}
         />
       </div>

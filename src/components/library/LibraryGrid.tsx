@@ -1,5 +1,6 @@
 import { ContentCard } from "@/components/ContentCard";
 import { LibraryEmptyState } from "./LibraryEmptyState";
+import { feedback } from "@/lib/theme/motion";
 
 interface LibraryGridProps {
   items: any[];
@@ -111,7 +112,7 @@ export function LibraryGrid({
               background: "var(--glass-2)",
               border: "1px solid var(--line)",
               borderRadius: 14,
-              transition: "all 0.2s ease",
+              transition: feedback(),
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.border =

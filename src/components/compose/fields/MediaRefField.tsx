@@ -45,6 +45,7 @@ import { FieldShell } from "../SchemaForm";
 import { type FieldWidgetProps } from "./index";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 const MONO =
   "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
@@ -186,7 +187,7 @@ export function MediaRefField({
           borderRadius: r.control,
           background: over ? tokenAlpha("action", 0.08) : t.recess,
           border: `1px dashed ${over ? TEAL : HAIRLINE}`,
-          transition: "background 120ms ease, border-color 120ms ease",
+          transition: feedback("background-color", "border-color"),
         }}
       >
         {/* The label points at this, so the field is still named for a screen
@@ -307,7 +308,7 @@ function Progress({ fraction }: { fraction: number }) {
             width: `${percent}%`,
             height: "100%",
             background: TEAL,
-            transition: "width 120ms linear",
+            transition: "none",
           }}
         />
       </div>

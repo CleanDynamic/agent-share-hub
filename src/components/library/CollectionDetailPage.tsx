@@ -46,6 +46,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, measure, tabular } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 export type ItemKind = "blueprint" | "blog" | "bounty" | "stage" | "block";
 
@@ -314,7 +315,7 @@ function SortableItemCard({
           top: 8,
           right: 8,
           zIndex: 10,
-          transition: "opacity 0.15s",
+          transition: feedback("opacity"),
         }}
       >
         <DropdownMenu>

@@ -94,6 +94,7 @@ import {
   labelText,
   pageHeadingText,
 } from "@/components/build/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 /** A build is never asked to name itself before it exists. */
 const DRAFT_TITLE = "Untitled build";
@@ -741,7 +742,7 @@ export default function ComposeNew() {
           borderRadius: 12,
           border: `1px solid ${drop.isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
           background: drop.isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
-          transition: "background 120ms ease, border-color 120ms ease",
+          transition: feedback("background-color", "border-color"),
         }}
       >
         <span style={{ ...labelText, textTransform: "uppercase" }}>
@@ -838,7 +839,7 @@ export default function ComposeNew() {
           borderRadius: 12,
           border: `1px dashed ${isDragging ? hexToRgba(TEAL, 0.55) : HAIRLINE}`,
           background: isDragging ? hexToRgba(TEAL, 0.06) : "var(--glass-2)",
-          transition: "background 120ms ease, border-color 120ms ease",
+          transition: feedback("background-color", "border-color"),
         }}
       >
         <label htmlFor="intake-transcript" style={{ ...labelText, textTransform: "uppercase" }}>

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { X, Plus, Trash2 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 interface SubBountyDraft {
   id: string;
@@ -185,7 +186,7 @@ export function MetaBountyCreationFlow({
                       : step < currentStep
                         ? "color-mix(in srgb, var(--action) 40%, transparent)"
                         : "var(--recess)",
-                  transition: "all 0.2s",
+                  transition: feedback(),
                 }}
               />
             ))}
@@ -744,7 +745,7 @@ export function MetaBountyCreationFlow({
                         position: "absolute",
                         top: 3,
                         left: formState.anonymousPledgesAllowed ? 23 : 3,
-                        transition: "left 0.2s ease",
+                        transition: "none",
                         boxShadow: "0 1px 3px color-mix(in srgb, var(--porthole) 62%, transparent)",
                       }}
                     />
@@ -1178,11 +1179,6 @@ export function MetaBountyCreationFlow({
           )}
         </div>
 
-        <style>{`
-          @keyframes mbcf-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     </div>
   );

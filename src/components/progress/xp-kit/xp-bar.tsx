@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { tokens } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface XpBarProps {
   level: number
@@ -31,12 +32,6 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <style>{`
-        @keyframes xpbar-sheen {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(220%); }
-        }
-      `}</style>
 
       <div
         style={{
@@ -72,7 +67,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
             width: `${fill}%`,
             background: tokens.orangeGradient,
             borderRadius: tokens.radiusPill,
-            transition: "width 700ms cubic-bezier(0.16,1,0.3,1)",
+            transition: "none",
             overflow: "hidden",
           }}
         >
@@ -84,7 +79,9 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
               width: "40%",
               background:
                 "linear-gradient(90deg, transparent, color-mix(in srgb, var(--chrome-hi) 45%, transparent), transparent)",
-              animation: "xpbar-sheen 2.4s ease-in-out infinite",
+              /* BG-P32: removed. A sheen sweeping a progress bar forever is
+                 movement with nothing to say, and this bar is in the rail. */
+              animation: "none",
             }}
           />
         </div>
@@ -101,7 +98,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
             color: "var(--on-action)",
             textShadow: "0 1px 3px rgba(0,0,0,0.6)",
             opacity: hover ? 1 : 0,
-            transition: "opacity 150ms ease-out",
+            transition: feedback("opacity"),
             pointerEvents: "none",
           }}
         >

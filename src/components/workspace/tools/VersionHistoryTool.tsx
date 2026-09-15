@@ -7,6 +7,7 @@ import {
   PANEL_DIVIDER,
   TOOL_HEADER_TITLE_STYLE,
 } from './toolPanelStyles';
+import { feedback } from '@/lib/theme/motion';
 
 type VersionScope = 'block' | 'document';
 
@@ -300,7 +301,7 @@ export function VersionHistoryTool({
                         alignItems: 'center',
                         gap: 4,
                         opacity: showActions ? 1 : 0,
-                        transition: 'opacity 120ms ease',
+                        transition: feedback("opacity"),
                       }}
                     >
                       <button

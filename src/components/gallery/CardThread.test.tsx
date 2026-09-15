@@ -368,7 +368,7 @@ describe("the collapsed and unfolded heights", () => {
     const { container } = renderThread({ rows: post(4) });
     const region = container.querySelector("[data-thread-region]") as HTMLElement;
     expect(region.style.transition).toBe(`grid-template-rows ${UNFOLD_MS}ms cubic-bezier(.2,.6,.35,1)`);
-    expect(UNFOLD_MS).toBe(240);
+    expect(UNFOLD_MS).toBe(200);
     // 0fr to 1fr: the row resolves to its content, which is already reserved, so
     // the height it grows to is settled before any image has loaded.
     expect(region.style.gridTemplateRows).toBe("0fr");

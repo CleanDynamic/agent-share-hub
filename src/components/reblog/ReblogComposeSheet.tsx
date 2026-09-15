@@ -14,6 +14,7 @@ import {
   Play,
 } from "lucide-react"
 import { EmbeddedExcerptCard } from "./EmbeddedExcerptCard"
+import { feedback } from "@/lib/theme/motion";
 
 export interface ExcerptComposeContext {
   text: string
@@ -170,7 +171,7 @@ function PostButton({
         borderRadius: 8,
         border: "none",
         lineHeight: 1,
-        transition: "opacity 150ms ease",
+        transition: feedback("opacity"),
       }}
     >
       {isPosting ? "Posting…" : "Post"}
@@ -416,7 +417,7 @@ export default function ReblogComposeSheet({
           background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           backdropFilter: "blur(16px)",
           opacity: visible ? 1 : 0,
-          transition: "opacity 200ms ease",
+          transition: feedback("opacity"),
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose()
@@ -435,7 +436,7 @@ export default function ReblogComposeSheet({
             WebkitBackdropFilter: sheetBackdropFilter,
             transform: visible ? "scale(1)" : "scale(0.96)",
             opacity: visible ? 1 : 0,
-            transition: "transform 200ms ease, opacity 200ms ease",
+            transition: feedback("transform", "opacity"),
             overflow: "hidden",
           }}
         >
@@ -480,7 +481,7 @@ export default function ReblogComposeSheet({
         background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
         backdropFilter: "blur(16px)",
         opacity: visible ? 1 : 0,
-        transition: "opacity 280ms cubic-bezier(0.16,1,0.3,1)",
+        transition: feedback("opacity"),
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
@@ -698,7 +699,7 @@ function ComposeBody({
             resize: "none",
             lineHeight: 1.55,
             padding: "8px 0",
-            transition: "background 150ms ease",
+            transition: feedback("background-color"),
           }}
           onFocus={(e) => {
             e.currentTarget.style.background = "var(--recess)"
@@ -740,7 +741,7 @@ function ComposeBody({
               cursor: "pointer",
               padding: "6px 12px",
               borderRadius: 6,
-              transition: "background 150ms ease",
+              transition: feedback("background-color"),
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.background = "var(--recess)")
@@ -765,7 +766,7 @@ function ComposeBody({
               cursor: "pointer",
               padding: "6px 12px",
               borderRadius: 6,
-              transition: "background 150ms ease",
+              transition: feedback("background-color"),
             }}
             onMouseEnter={(e) =>
               (e.currentTarget.style.background = "var(--recess)")

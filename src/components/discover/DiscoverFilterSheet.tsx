@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { X, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import type { SearchMode } from './DiscoverSearchHeader'
+import { feedback } from '@/lib/theme/motion';
 
 export interface FilterValue {
   postTypes: string[]
@@ -112,7 +113,7 @@ function Chip({
         border: selected ? '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)' : '0.5px solid var(--line)',
         cursor: 'pointer',
         gap: 5,
-        transition: 'all 0.15s',
+        transition: feedback(),
       }}
     >
       {dot && (

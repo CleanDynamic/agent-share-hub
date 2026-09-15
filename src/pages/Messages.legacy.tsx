@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { ThreadView } from "@/components/dm/ThreadView";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 /* ═══════════════════ Helpers ═══════════════════ */
 
@@ -533,7 +534,7 @@ const MessagesPage = () => {
 
   // Scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
   }, [messages]);
 
   // Realtime

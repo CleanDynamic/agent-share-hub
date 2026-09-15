@@ -154,7 +154,7 @@ export function TopicsPicker({ value, onChange }: TopicsPickerProps) {
               key={topic}
               type="button"
               onClick={() => toggle(topic)}
-              className={`text-xs px-3 py-2 rounded-lg border text-left transition-all ${
+              className={`text-xs px-3 py-2 rounded-lg border text-left transition-feedback ${
                 selected
                   ? "border-orange-500/50 text-orange-400 bg-orange-500/10 shadow-[0_0_8px_rgba(234,88,12,0.15)]"
                   : "border-border text-muted-foreground bg-card/50"

@@ -29,6 +29,7 @@ import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 // ── Quoted post card (embedded inside feed card) ──────────────
 
@@ -319,7 +320,7 @@ export function ReblogCard({ item, compact = false, context = "home" }: ReblogCa
         borderRadius: r.card,
         marginBottom: 12,
         padding: '18px 20px',
-        transition: 'border-color 0.2s ease',
+        transition: feedback("border-color"),
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text2)'}

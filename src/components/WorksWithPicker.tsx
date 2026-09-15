@@ -192,7 +192,7 @@ export function WorksWithPicker({ value, onChange, onSubmitToolClick }: WorksWit
               key={tool}
               type="button"
               onClick={() => toggle(tool)}
-              className="text-xs px-3 py-2 rounded-lg border text-left transition-all"
+              className="text-xs px-3 py-2 rounded-lg border text-left transition-feedback"
               style={
                 selected
                   ? {

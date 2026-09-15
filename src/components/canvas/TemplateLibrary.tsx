@@ -9,6 +9,7 @@ import type { CanvasBlock, BlockArrow }
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import { getNextRow } from '@/lib/canvas-utils';
 import { type } from "@/lib/theme/type";
+import { feedback } from '@/lib/theme/motion';
 
 const SCALE_OPTIONS = [1, 2, 3, 5, 10] as const;
 type ScaleValue = (typeof SCALE_OPTIONS)[number];
@@ -195,7 +196,7 @@ export function TemplateLibrary({
                 fontWeight: activeCategory === cat
                   ? 600 : 400,
                 whiteSpace: 'nowrap',
-                transition: 'color 0.15s',
+                transition: feedback("color"),
                 fontFamily: 'Figtree, sans-serif',
               }}
             >
@@ -234,7 +235,7 @@ export function TemplateLibrary({
                     hoveredTemplate === template.id
                       ? 'color-mix(in srgb, var(--action) 6%, transparent)'
                       : 'var(--recess)',
-                  transition: 'all 0.15s',
+                  transition: feedback(),
                 }}
               >
                 <div style={{
@@ -283,7 +284,7 @@ export function TemplateLibrary({
                           color: active
                             ? 'var(--action)'
                             : 'var(--text2)',
-                          transition: 'all 0.12s',
+                          transition: feedback(),
                         }}
                       >
                         {s}x
@@ -361,7 +362,7 @@ export function TemplateLibrary({
                     background: 'color-mix(in srgb, var(--action) 85%, transparent)',
                     border: '1px solid color-mix(in srgb, var(--action) 50%, transparent)',
                     color: 'var(--text)',
-                    transition: 'all 0.12s',
+                    transition: feedback(),
                   }}
                 >
                   Apply{scale > 1 ? ` (${scale}x)` : ''}

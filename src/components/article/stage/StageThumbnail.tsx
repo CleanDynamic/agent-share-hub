@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Maximize2 } from 'lucide-react';
 import { BountyMoreMenu } from '@/components/bounty/BountyMoreMenu';
 import { MissingStageBadge } from '@/components/bounty/MissingStageBadge';
+import { feedback } from '@/lib/theme/motion';
 
 export type ThumbnailBlockType =
   | 'prompt'
@@ -190,7 +191,7 @@ export function StageThumbnail({
         borderRadius: 10,
         overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'border-color 160ms ease',
+        transition: feedback("border-color"),
       }}
     >
       {/* HEADER ROW */}
@@ -314,7 +315,7 @@ export function StageThumbnail({
             borderRadius: 4,
             color: 'var(--text2)',
             cursor: 'pointer',
-            transition: 'color 120ms ease, background 120ms ease',
+            transition: feedback("color", "background-color"),
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = 'var(--text)';
@@ -477,7 +478,7 @@ function BlockLabelPill({ dotColor, label }: BlockLabelPillProps) {
         color: 'var(--text2)',
         lineHeight: 1.4,
         maxWidth: '100%',
-        transition: 'background 120ms ease',
+        transition: feedback("background-color"),
       }}
     >
       <span

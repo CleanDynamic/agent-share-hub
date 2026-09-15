@@ -79,7 +79,7 @@ export default function WeeklyChallengeCard({
           style={{ borderRadius: radius.pill, background: colors.input }}
         >
           <div
-            className="h-full transition-all duration-500"
+            className="h-full"
             style={{
               width: `${pct}%`,
               borderRadius: radius.pill,

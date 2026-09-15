@@ -8,6 +8,7 @@ import {
   X,
   ChevronDown,
 } from 'lucide-react'
+import { feedback } from '@/lib/theme/motion';
 
 export type SearchMode = 'blueprints' | 'stages' | 'blocks'
 
@@ -101,7 +102,7 @@ export function DiscoverSearchHeader({
                   fontFamily: 'Figtree, sans-serif',
                   fontSize: 13,
                   fontWeight: 500,
-                  transition: 'color 0.15s',
+                  transition: feedback("color"),
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) e.currentTarget.style.color = 'var(--text)'

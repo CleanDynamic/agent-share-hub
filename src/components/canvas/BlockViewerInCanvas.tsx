@@ -8,6 +8,7 @@ import { RenderBlockContent }
   from '@/components/ContentBlockViewer';
 import { MediaPopup, resolveVideoSources } from './MediaPopup';
 import { type } from "@/lib/theme/type";
+import { feedback } from '@/lib/theme/motion';
 
 interface BlockViewerInCanvasProps {
   block: CanvasBlock;
@@ -298,7 +299,7 @@ export function BlockViewerInCanvas({
             cursor: 'pointer',
             fontFamily: 'Figtree, sans-serif',
             fontWeight: 600,
-            transition: 'all 0.15s',
+            transition: feedback(),
             zIndex: 2,
           }}
         >

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Bell, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { feedback } from "@/lib/theme/motion";
 
 const PAGE_SIZE = 50;
 
@@ -566,7 +567,7 @@ const NotificationsPage = () => {
                       borderBottomStyle: 'solid',
                       borderBottomColor: 'var(--line)',
                       cursor: isSplitContest ? 'default' : 'pointer',
-                      transition: 'background 0.15s ease',
+                      transition: feedback("background-color"),
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--recess)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = !n.is_read ? 'var(--glass-2)' : 'transparent'; }}

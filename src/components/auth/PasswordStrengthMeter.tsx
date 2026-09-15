@@ -1,5 +1,6 @@
 import { t } from "@/lib/theme/tokens";
 import { data as dataText, tabular } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 export type PasswordStrength = "weak" | "fair" | "good" | "strong";
 
@@ -70,7 +71,7 @@ export function PasswordStrengthMeter({ strength }: PasswordStrengthMeterProps) 
                  into, which is what an empty meter is. `--line` would have been
                  a hairline stretched to four pixels. */
               background: segment <= config.filled ? config.colour : t.recess,
-              transition: "background-color 200ms ease",
+              transition: feedback("background-color"),
             }}
           />
         ))}

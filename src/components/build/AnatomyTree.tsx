@@ -12,6 +12,7 @@ import { NodeCard } from "./NodeCard";
 import type { ResolveMedia, ResolveNode } from "./renderers";
 import { t } from "@/lib/theme/tokens";
 import { body as bodyType, measure } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 interface AnatomyTreeProps {
   tree: NodeTree[];
@@ -60,7 +61,7 @@ function Chevron({ open }: { open: boolean }) {
       aria-hidden="true"
       style={{
         transform: open ? "rotate(90deg)" : "rotate(0deg)",
-        transition: "transform 120ms ease",
+        transition: feedback("transform"),
       }}
     >
       <path d="M3 1 L7 5 L3 9" fill="none" stroke="currentColor" strokeWidth="1.4" />

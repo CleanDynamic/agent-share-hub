@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>buildgallery.ai — Motion Audit · design-motion-principles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    /* ——— Fixed identity: COOL slate-graphite + chalk (near-achromatic) ——— */
+    --ink:        oklch(0.155 0.006 255);
+    --surface:    oklch(0.195 0.007 255);
+    --surface-2:  oklch(0.235 0.008 255);
+    --paper:      oklch(0.945 0.004 255);
+    --paper-dim:  oklch(0.800 0.006 255);
+    --muted:      oklch(0.680 0.008 255);
+    --faint:      oklch(0.505 0.008 255);
+    --line:       oklch(0.95 0.01 255 / 0.09);
+    --line-strong:oklch(0.95 0.01 255 / 0.16);
+
+    /* ——— Accent (NEUTRAL BY DEFAULT) ———
+       The report has no primary color. --accent aliases the contrast
+       neutral (--paper) so any element that historically wanted a brand
+       splash now reads as quiet chrome. An individual audit can repoint
+       these three to a sampled brand color if appropriate, but the
+       default — and the worked example — keeps the chrome neutral and
+       lets severity be the only color in the report. */
+    --accent:      var(--paper);
+    --accent-soft: var(--paper-dim);
+    --accent-tint: color-mix(in oklch, var(--paper) 12%, transparent);
+
+    /* ——— Severity (FIXED — never adaptive) ——— */
+    --crit:      oklch(0.655 0.185 25);
+    --crit-tint: oklch(0.655 0.185 25 / 0.15);
+    --imp:       oklch(0.805 0.125 78);
+    --imp-tint:  oklch(0.805 0.125 78 / 0.15);
+    --opp:       oklch(0.745 0.135 152);
+    --opp-tint:  oklch(0.745 0.135 152 / 0.15);
+
+    /* ——— Timing-budget ramp (FIXED — diagram + its legend only) ——— */
+    --t-good:  oklch(0.745 0.135 152);  /* instant + responsive */
+    --t-mid:   oklch(0.805 0.125 78);   /* deliberate           */
+    --t-slow:  oklch(0.655 0.185 25);   /* sluggish             */
+
+    /* ——— Verdict (FIXED — lens table) ——— */
+    --strong:  var(--opp);
+    --concern: var(--imp);
+    --problem: var(--crit);
+
+    /* ——— Spacing (4pt scale, semantic) ——— */
+    --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+    --s6:32px; --s7:48px; --s8:64px; --s9:96px;
+
+    --display: "Familjen Grotesk", "Hanken Grotesk", system-ui, sans-serif;
+    --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  /* ═══════════════ LIGHT-MODE OVERRIDES ═══════════════
+     Activated when the global theme toggle is set to Light. Every token
+     above gets a counterpart here — same hue, mirrored L — so the report
+     reads cleanly on light backgrounds. Hue stays 255 (cool slate) so the
+     identity is the same character, just inverted. */
+  :root:has(#theme-light:checked) {
+    --ink:        oklch(0.985 0.003 255);  /* light page bg */
+    --surface:    oklch(0.965 0.004 255);
+    --surface-2:  oklch(0.940 0.005 255);
+    --paper:      oklch(0.180 0.006 255);  /* dark text */
+    --paper-dim:  oklch(0.330 0.008 255);
+    --muted:      oklch(0.475 0.010 255);
+    --faint:      oklch(0.640 0.009 255);
+    --line:       oklch(0.180 0.010 255 / 0.12);
+    --line-strong:oklch(0.180 0.010 255 / 0.22);
+
+    /* Accent stays aliased to --paper (now the dark ink in light mode),
+       so chrome inverts automatically. No additional override needed. */
+
+    /* Severity: same hues, deeper L for legibility on light bg */
+    --crit:      oklch(0.555 0.195 25);
+    --crit-tint: oklch(0.555 0.195 25 / 0.12);
+    --imp:       oklch(0.580 0.155 78);
+    --imp-tint:  oklch(0.580 0.155 78 / 0.14);
+    --opp:       oklch(0.555 0.140 152);
+    --opp-tint:  oklch(0.555 0.140 152 / 0.13);
+
+    /* Timing ramp follows severity */
+    --t-good: oklch(0.555 0.140 152);
+    --t-mid:  oklch(0.580 0.155 78);
+    --t-slow: oklch(0.555 0.195 25);
+  }
+
+  /* SVG dot label: light text in light-mode (deeper dots), dark text in dark-mode (lighter dots) */
+  :root:has(#theme-light:checked) .tf-dot-text { fill: oklch(0.985 0.003 255); }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--accent-tint); }
+  a { color: var(--accent-soft); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 40px) 96px; }
+
+  /* shared micro-label */
+  .mono-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  code { font-family: var(--mono); font-size: 0.86em; color: var(--paper-dim); }
+
+  /* visually-hidden (theme + stage radios) */
+  .vh { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  /* ───────────── Global theme switch ───────────── */
+  .theme-switch { display: flex; justify-content: flex-end; margin-bottom: var(--s5); }
+  .theme-switch__pill { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--line-strong); border-radius: 100px; overflow: hidden; }
+  .theme-switch__pill label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 6px 14px; cursor: pointer; user-select: none; transition: background 0.15s ease, color 0.15s ease; }
+  #theme-dark:checked  ~ .theme-switch__pill label[for="theme-dark"],
+  #theme-light:checked ~ .theme-switch__pill label[for="theme-light"] { background: var(--accent-tint); color: var(--accent-soft); }
+
+  /* ───────────── Header ───────────── */
+  header.doc { padding-bottom: var(--s7); margin-bottom: var(--s8); border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); display: inline-flex; align-items: center; gap: var(--s3);
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 2px; background: var(--accent); display: inline-block; }
+  h1.title {
+    font-family: var(--display);
+    font-size: clamp(38px, 6vw, 60px);
+    font-weight: 700; letter-spacing: -0.025em; line-height: 1.02;
+    margin: var(--s5) 0 var(--s4); color: var(--paper); max-width: 17ch;
+  }
+  .lede { font-size: clamp(17px, 2.2vw, 19px); color: var(--paper-dim); max-width: 66ch; line-height: 1.6; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: var(--s6); margin-top: var(--s6); }
+  .meta-row .k { display: block; margin-bottom: 4px; }
+  .meta-row .v { font-size: 15px; color: var(--paper); }
+
+  .stats { display: flex; gap: clamp(20px, 4vw, 44px); margin-top: var(--s7); flex-wrap: wrap; }
+  .stat .num { font-family: var(--display); font-size: 40px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat.crit .num { color: var(--crit); }
+  .stat.imp .num  { color: var(--imp); }
+  .stat.opp .num  { color: var(--opp); }
+  .stat .lbl { margin-top: var(--s2); }
+  .stat a { color: inherit; text-decoration: none; }
+  .stat a:hover .num { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 2px; }
+
+  /* ───────────── Section scaffolding ───────────── */
+  section { margin-bottom: var(--s9); }
+  .sec-index { font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; color: var(--accent-soft); }
+  h2.section-title {
+    font-family: var(--display);
+    font-size: clamp(24px, 3.4vw, 32px);
+    font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+    margin: var(--s2) 0 var(--s4); color: var(--paper);
+  }
+  .section-sub { color: var(--paper-dim); max-width: 74ch; margin: 0 0 var(--s6); }
+  .section-sub em { color: var(--paper); font-style: italic; }
+
+  /* ───────────── Overall assessment ───────────── */
+  .assessment { border-top: 1px solid var(--line); padding-top: var(--s6); }
+  .assessment .mono-label { color: var(--accent-soft); }
+  .assessment p { font-family: var(--display); font-weight: 400; font-size: clamp(20px, 2.8vw, 26px); line-height: 1.42; letter-spacing: -0.01em; color: var(--paper); max-width: 34ch; margin: var(--s4) 0 0; }
+  .assessment p em { font-style: italic; color: var(--accent-soft); }
+
+  /* ───────────── Lens summary table ───────────── */
+  .lens-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
+  .lens-table th, .lens-table td { padding: var(--s4) var(--s5); text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .lens-table tr:last-child td { border-bottom: none; }
+  .lens-table thead th { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .lens-table tbody tr:hover { background: oklch(0.95 0.01 255 / 0.018); }
+  .lens-name { font-weight: 600; color: var(--paper); width: 28%; }
+  .lens-name .who { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; font-size: 13.5px; }
+  .lens-name .weight { display: inline-block; margin-top: 6px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-soft); }
+  .lens-read { color: var(--paper-dim); }
+  .lens-read em { color: var(--paper); font-style: italic; }
+  .verdict { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+  .verdict::before { content: ""; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .v-strong  { color: var(--strong); }  .v-strong::before  { background: var(--strong); }
+  .v-concern { color: var(--concern); } .v-concern::before { background: var(--concern); }
+  .v-problem { color: var(--problem); } .v-problem::before { background: var(--problem); }
+  .v-mixed   { color: var(--muted); }   .v-mixed::before   { background: var(--muted); }
+
+  /* ───────────── Timing-budget diagram ───────────── */
+  .timing-grid { display: grid; grid-template-columns: 1fr 320px; gap: clamp(28px, 5vw, 56px); align-items: start; }
+  @media (max-width: 860px) { .timing-grid { grid-template-columns: 1fr; } }
+  .timing-figure { width: 100%; height: auto; }
+  .timing-key h4 { margin: 0 0 var(--s4); }
+  .key-list { list-style: none; margin: 0 0 var(--s6); padding: 0; display: grid; gap: 2px; }
+  .key-list li { display: grid; grid-template-columns: 22px 1fr auto; align-items: baseline; gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
+  .key-list li:last-child { border-bottom: none; }
+  .key-list .kn { font-family: var(--mono); font-size: 12px; color: var(--paper); font-variant-numeric: tabular-nums; }
+  .key-list .ka { color: var(--paper-dim); }
+  .key-list .kt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+  .kt.good { color: var(--t-good); }
+  .kt.mid  { color: var(--t-mid); }
+  .kt.slow { color: var(--t-slow); }
+  .kt.none { color: var(--faint); }
+  .zone-defs { display: grid; gap: var(--s3); margin-top: var(--s5); }
+  .zone-def { display: grid; grid-template-columns: 12px 1fr; gap: var(--s3); align-items: start; }
+  .zone-def .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 6px; }
+  .zone-def .zt { font-weight: 600; color: var(--paper); }
+  .zone-def .zd { font-size: 13.5px; color: var(--muted); }
+  .whats-off { margin-top: var(--s5); padding-top: var(--s5); border-top: 1px solid var(--line); }
+  .whats-off .mono-label { color: var(--accent-soft); }
+  .whats-off p { margin: var(--s2) 0 0; color: var(--paper-dim); font-size: 14px; max-width: 60ch; }
+
+  /* ───────────── Per-lens sections ───────────── */
+  .lens-sec { margin-bottom: var(--s9); padding-top: var(--s6); border-top: 1px solid var(--line); }
+  .lens-sec__head { display: flex; align-items: baseline; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s2); }
+  .lens-sec__head h3 { font-family: var(--display); font-size: clamp(22px, 3vw, 28px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: 0; color: var(--paper); }
+  .lens-sec__weight { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-soft); border: 1px solid var(--line-strong); border-radius: 100px; padding: 4px 10px; }
+  .lens-sec__verdict { margin: 0 0 var(--s6); }
+
+  .lens-block { margin: var(--s6) 0; }
+  .lens-block > .mono-label { display: block; margin-bottom: var(--s4); }
+  .lens-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); max-width: 78ch; }
+  .lens-list li { display: grid; grid-template-columns: 22px 1fr; gap: var(--s2); align-items: start; color: var(--paper-dim); }
+  .lens-list .mk { font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+  .lens-list.good .mk { color: var(--strong); }
+  .lens-list.opp .mk  { color: var(--accent-soft); }
+  .lens-list li em { color: var(--paper); font-style: italic; }
+
+  .lens-take { margin-top: var(--s6); background: var(--surface-2); border-radius: 10px; padding: var(--s5); }
+  .lens-take .mono-label { color: var(--accent-soft); display: block; margin-bottom: var(--s2); }
+  .lens-take p { margin: 0; color: var(--paper); max-width: 70ch; }
+
+  .lens-empty { font-style: italic; color: var(--faint); padding: var(--s3) 0; }
+
+  /* ───────────── Finding rows (prose + live demo card) ───────────── */
+  .findings { display: flex; flex-direction: column; gap: var(--s5); }
+  .finding-row { display: grid; grid-template-columns: 1fr 380px; gap: clamp(24px, 3vw, 36px); align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: clamp(22px, 3vw, 30px); }
+  .finding-row[data-sev="crit"] { border-color: var(--crit-tint); }
+  @media (max-width: 860px) { .finding-row { grid-template-columns: 1fr; } }
+
+  .find-tags { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; margin-bottom: var(--s3); }
+  .severity { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; padding: 4px 9px; border-radius: 100px; }
+  .severity.crit { background: var(--crit-tint); color: var(--crit); }
+  .severity.imp  { background: var(--imp-tint);  color: var(--imp); }
+  .severity.opp  { background: var(--opp-tint);  color: var(--opp); }
+  .lens-chip { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 4px 9px; border: 1px solid var(--line-strong); border-radius: 100px; }
+  .find-title { font-family: var(--display); font-size: clamp(19px, 2.4vw, 23px); font-weight: 600; letter-spacing: -0.015em; line-height: 1.22; margin: 0 0 var(--s4); color: var(--paper); }
+  .find-body { display: grid; gap: var(--s4); }
+  .find-body p { margin: 0; color: var(--paper-dim); }
+  .find-body p em { color: var(--paper); font-style: italic; }
+  .find-body .label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 3px; }
+  .fix { background: var(--surface-2); border-radius: 8px; padding: var(--s4) var(--s5); }
+  .fix .label { color: var(--accent-soft); }
+  .fix p { color: var(--paper); }
+  .find-loc { font-size: 13px; }
+
+  /* ───────────── Demo card (the centerpiece) ───────────── */
+  .demo { position: relative; align-self: start; position: sticky; top: var(--s5); }
+  @media (max-width: 860px) { .demo { position: static; } }
+  .demo__bar { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+  .demo__meta { min-width: 0; }
+  .demo__title { display: block; font-size: 13.5px; font-weight: 600; color: var(--paper); line-height: 1.3; }
+  .demo__timing { display: block; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .demo__controls { display: flex; align-items: center; gap: var(--s3); flex-shrink: 0; }
+  .demo__loop { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+
+  /* segmented Auto/Light/Dark stage toggle (pure CSS).
+     Auto = follow global theme via theme tokens. Light/Dark = locked overrides. */
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 100px; overflow: hidden; }
+  .seg label { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 4px 9px; cursor: pointer; user-select: none; transition: background 0.15s ease, color 0.15s ease; }
+  .demo input[id$="-a"]:checked ~ .demo__bar .seg label[for$="-a"],
+  .demo input[id$="-l"]:checked ~ .demo__bar .seg label[for$="-l"],
+  .demo input[id$="-d"]:checked ~ .demo__bar .seg label[for$="-d"] { background: var(--accent-tint); color: var(--accent-soft); }
+
+  .demo__stage {
+    /* AUTO default — stage uses the report's elevated surface, follows theme */
+    --st-bg: var(--surface-2);
+    --st-fg: var(--paper);
+    --st-line: var(--line-strong);
+    --st-dim: color-mix(in oklch, var(--paper) 55%, transparent);
+    background: var(--st-bg); color: var(--st-fg);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: var(--s6) var(--s5); min-height: 168px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  /* Locked Light: hardcoded light, regardless of report theme */
+  .demo input[id$="-l"]:checked ~ .demo__stage {
+    --st-bg: oklch(0.985 0.003 255);
+    --st-fg: oklch(0.180 0.006 255);
+    --st-line: oklch(0.180 0.010 255 / 0.18);
+    --st-dim: oklch(0.180 0.010 255 / 0.45);
+  }
+  /* Locked Dark: hardcoded dark, regardless of report theme */
+  .demo input[id$="-d"]:checked ~ .demo__stage {
+    --st-bg: oklch(0.180 0.006 255);
+    --st-fg: oklch(0.985 0.003 255);
+    --st-line: oklch(0.985 0.010 255 / 0.18);
+    --st-dim: oklch(0.985 0.010 255 / 0.50);
+  }
+
+  /* generic demo primitives, themed by the stage vars
+     (intentionally follow --st-fg/--st-bg, NOT the page accent — so they
+     contrast correctly even when a stage is locked to a different theme
+     than the page). */
+  .ui-btn { display: inline-flex; align-items: center; justify-content: center; padding: 9px 18px; border-radius: 8px; background: var(--st-fg); color: var(--st-bg); font-family: var(--sans); font-size: 13px; font-weight: 600; }
+  .ui-card { background: var(--st-bg); border: 1px solid var(--st-line); border-radius: 10px; padding: 14px 16px; min-width: 180px; box-shadow: 0 8px 24px oklch(0 0 0 / 0.12); }
+  .ui-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--st-fg); }
+  .ui-check { width: 22px; height: 22px; border-radius: 7px; background: var(--st-fg); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ui-check svg { width: 13px; height: 13px; stroke: var(--st-bg); }
+  .ui-num { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--st-fg); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .ui-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--st-dim); }
+  /* milestone badge + sparks read off stage tokens (--st-fg disc, --st-bg ink),
+     set inline on the elements — same contract as every other stage primitive,
+     never --accent, correct in any locked stage. */
+
+  /* ───────────── Combined recommendations ───────────── */
+  .rec { margin-bottom: var(--s7); }
+  .rec .tier-label { display: flex; align-items: center; gap: var(--s4); margin: 0 0 var(--s4); }
+  .rec .tier-label .mono-label { white-space: nowrap; }
+  .rec .tier-label .rule { height: 1px; background: var(--line); flex: 1; }
+  .rec .tier-label .count { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .rec.crit .mono-label { color: var(--crit); }
+  .rec.imp  .mono-label { color: var(--imp); }
+  .rec.opp  .mono-label { color: var(--opp); }
+  .rec-table { width: 100%; border-collapse: collapse; border: 1px solid var(--line); font-size: 14px; }
+  .rec-table th, .rec-table td { text-align: left; padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); vertical-align: top; }
+  .rec-table tr:last-child td { border-bottom: none; }
+  .rec-table thead th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .rec-table td:first-child { color: var(--paper); }
+  .rec-table td:nth-child(2) { white-space: nowrap; }
+  .rec-table td { color: var(--paper-dim); }
+
+  /* ───────────── Reference summary (closing) ───────────── */
+  .ref-summary { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: clamp(24px, 4vw, 40px); }
+  .ref-summary .big { font-family: var(--display); font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; letter-spacing: -0.015em; color: var(--paper); margin: var(--s2) 0 0; }
+  .ref-summary .why { color: var(--paper-dim); margin: var(--s3) 0 var(--s6); max-width: 64ch; }
+  .ref-lean { display: grid; gap: var(--s3); margin: 0; padding: 0; list-style: none; }
+  .ref-lean li { display: grid; grid-template-columns: 130px 1fr; gap: var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--line); color: var(--paper-dim); font-size: 14px; }
+  .ref-lean .nm { font-weight: 600; color: var(--paper); }
+
+  footer.doc { margin-top: var(--s8); padding-top: var(--s5); border-top: 1px solid var(--line); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s3); }
+
+  /* ───────────── Narrow screens ───────────── */
+  @media (max-width: 600px) {
+    .lens-table { display: block; padding: var(--s2) var(--s4); }
+    .lens-table thead { display: none; }
+    .lens-table tbody, .lens-table tr, .lens-table td { display: block; }
+    .lens-table tr { padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+    .lens-table tr:last-child { border-bottom: none; }
+    .lens-table td { padding: 0; border: none; }
+    .lens-table .lens-name { width: auto; margin-bottom: var(--s2); }
+    .lens-table .verdict { margin-bottom: var(--s2); }
+    .ref-lean li { grid-template-columns: 1fr; gap: var(--s1); }
+  }
+
+  
+
+  /* ───────────── 02 · the before/after duration ramp ─────────────
+     This audit's analog of the template's dot plot. The finding is the SPREAD,
+     not where any one value sits, so the figure is two rows of chips rather
+     than a scale: nineteen values against four. */
+  .timing-before, .timing-after { padding: var(--s5) 0; }
+  .timing-before { border-bottom: 1px solid var(--line); }
+  .timing-figure .ramp { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s4) 0 var(--s4); }
+  .timing-figure .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    padding: 5px 9px; border-radius: 7px; border: 1px solid var(--line-strong);
+    color: var(--paper); white-space: nowrap;
+  }
+  .timing-figure .chip em { font-style: normal; color: var(--faint); margin-left: 5px; }
+  .timing-figure .chip.t-good { background: color-mix(in oklch, var(--t-good) 14%, transparent); border-color: color-mix(in oklch, var(--t-good) 40%, transparent); }
+  .timing-figure .chip.t-mid  { background: color-mix(in oklch, var(--t-mid)  14%, transparent); border-color: color-mix(in oklch, var(--t-mid)  40%, transparent); }
+  .timing-figure .chip.t-slow { background: color-mix(in oklch, var(--t-slow) 14%, transparent); border-color: color-mix(in oklch, var(--t-slow) 40%, transparent); }
+  .timing-figure .note { color: var(--paper-dim); font-size: 14px; max-width: 70ch; margin: 0; }
+  /* ───────────── The ONLY animation in the report: the demo cards ─────────────
+     One @keyframes and one motion-target rule per Critical/Important finding,
+     numbered by the finding's position across the whole report so nothing
+     collides. Each runs on the shell's 3s cadence — about 2s of motion, 1s of
+     hold — and each keyframe's 100% state matches the target's static
+     rendering, so the reduced-motion guard below shows the correct end state
+     rather than a frozen mid-frame. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lens-table tbody tr, .finding-row { transition: border-color 0.2s ease; }
+
+    /* 01 · transition: all — the named-property list, 150ms */
+    @keyframes motion-1-feedback {
+      0%   { background: var(--surface-2); border-color: var(--line); transform: translateY(0); }
+      22%  { background: var(--accent-tint); border-color: var(--line-strong); transform: translateY(-1px); }
+      66%  { background: var(--accent-tint); border-color: var(--line-strong); transform: translateY(-1px); }
+      100% { background: var(--surface-2); border-color: var(--line); transform: translateY(0); }
+    }
+    .demo-1__mt { animation: motion-1-feedback 3s ease-in-out infinite; }
+
+    /* 02 · the shadow, moved onto a pseudo-element's opacity */
+    @keyframes motion-2-shadow {
+      0%   { opacity: 0; }
+      22%  { opacity: 1; }
+      66%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .demo-2__mt { position: relative; }
+    .demo-2__mt::after {
+      content: ""; position: absolute; inset: 0; border-radius: 12px;
+      box-shadow: 0 6px 24px oklch(0 0 0 / 0.55); opacity: 0; pointer-events: none;
+      animation: motion-2-shadow 3s ease-in-out infinite;
+    }
+
+    /* 03 · a layout tween replaced by nothing — the bar simply lands */
+    @keyframes motion-3-jump {
+      0%, 32%   { transform: scaleX(0.35); }
+      34%, 66%  { transform: scaleX(0.78); }
+      68%, 100% { transform: scaleX(0.35); }
+    }
+    .demo-3__mt { transform-origin: left; animation: motion-3-jump 3s steps(1, end) infinite; }
+
+    /* 04 · the reveal: 450ms opacity + 14px rise, once */
+    @keyframes motion-4-reveal {
+      0%   { opacity: 0; transform: translateY(14px); }
+      30%  { opacity: 1; transform: none; }
+      66%  { opacity: 1; transform: none; }
+      100% { opacity: 1; transform: none; }
+    }
+    .demo-4__mt { animation: motion-4-reveal 3s cubic-bezier(.2,.6,.35,1) infinite; }
+
+    /* 05 · the demo IS the absence. A skill node that says "available" by being
+       drawn that way, with no loop at all — so there is deliberately no
+       @keyframes here, and the card shows the resting state the other nine
+       surfaces now also show. */
+
+    /* 06 · hover answered by opacity rather than size */
+    @keyframes motion-6-hover {
+      0%   { opacity: 1; }
+      22%  { opacity: 0.75; }
+      66%  { opacity: 0.75; }
+      100% { opacity: 1; }
+    }
+    .demo-6__mt { animation: motion-6-hover 3s ease-in-out infinite; }
+
+    /* 07 · the same hover, on a primary action, gated on a fine pointer */
+    @keyframes motion-7-gated {
+      0%   { opacity: 1; transform: translateY(0); }
+      22%  { opacity: 0.85; transform: translateY(-1px); }
+      66%  { opacity: 0.85; transform: translateY(-1px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .demo-7__mt { animation: motion-7-gated 3s ease-in-out infinite; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="theme-switch" role="radiogroup" aria-label="Report theme">
+    <input class="vh" type="radio" name="theme" id="theme-dark" checked>
+    <input class="vh" type="radio" name="theme" id="theme-light">
+    <div class="theme-switch__pill">
+      <label for="theme-dark">Dark</label>
+      <label for="theme-light">Light</label>
+    </div>
+  </div>
+
+  <header class="doc">
+    <div class="eyebrow">Motion audit · design-motion-principles</div>
+    <h1 class="title">buildgallery.ai — twelve prompts of motion, read as one system</h1>
+    <p class="lede">
+      A pass over every transition, keyframe and scroll in the product, run at the end of a
+      thirty-two-prompt visual remodel. The remodel added motion in a dozen separate prompts and
+      never once looked at the result together — which is precisely the condition that produces
+      scattered, AI-slop motion. This is what looking at it together found.
+    </p>
+    <div class="meta-row">
+      <div><span class="mono-label k">What it is</span><span class="v">A gallery of AI builds — a reading surface and an authoring workspace in one product</span></div>
+      <div><span class="mono-label k">Stack</span><span class="v">React 18 · TypeScript · Vite · Tailwind · no motion library</span></div>
+      <div><span class="mono-label k">Scanned</span><span class="v">822 transition sites across 278 files</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="num">9</div><div class="mono-label lbl">Findings</div></div>
+      <div class="stat crit"><a href="#rec-crit"><div class="num">4</div><div class="mono-label lbl">Critical</div></a></div>
+      <div class="stat imp"><a href="#rec-imp"><div class="num">3</div><div class="mono-label lbl">Important</div></a></div>
+      <div class="stat opp"><a href="#rec-opp"><div class="num">2</div><div class="mono-label lbl">Opportunities</div></a></div>
+    </div>
+  </header>
+
+  <section class="assessment">
+    <span class="mono-label">Overall</span>
+    <p>
+      The motion here was never badly <em>judged</em> — almost every individual choice is defensible.
+      It was never <em>decided</em>. Eleven durations and five easings had accumulated across 278 files,
+      each one arrived at by whichever prompt happened to be writing that surface, so the only answer to
+      "how fast is a hover in this product" was "open the file and see". That is the slop signature: not
+      one wrong value, but no system. Nine findings, seven of them mechanical and now fixed, two of them
+      about where the product should spend motion it currently does not.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-index">01</div>
+    <h2 class="section-title">How each practitioner reads the motion</h2>
+    <p class="section-sub">
+      Weighted for what this product is: a gallery you browse and a workspace you work in, sharing one
+      component kit. The reading half can afford a little pacing; the working half can afford none, and
+      the theme's own motion rules are already written in Emil's voice — ≤200ms, transform and opacity,
+      never <code>ease-in</code> on UI.
+    </p>
+    <table class="lens-table">
+      <thead><tr><th>Lens</th><th>Verdict</th><th>One-line read</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="lens-name">Restraint &amp; Speed <span class="who">Emil Kowalski</span><span class="weight">Primary</span></td>
+          <td><span class="verdict v-problem">Problem</span></td>
+          <td class="lens-read">83 <code>transition: all</code>, 26 animated layout properties and ten <code>box-shadow</code> tweens — the three things that cost frames — plus no shared duration at all.</td>
+        </tr>
+        <tr>
+          <td class="lens-name">Production Polish <span class="who">Jakub Krehel</span><span class="weight">Secondary</span></td>
+          <td><span class="verdict v-concern">Concern</span></td>
+          <td class="lens-read">The craft is high per surface and inconsistent across them. Hover was ungated on 563 utilities; reduced motion reached three selectors out of forty.</td>
+        </tr>
+        <tr>
+          <td class="lens-name">Experimentation &amp; Delight <span class="who">Jhey Tompkins</span><span class="weight">Selective</span></td>
+          <td><span class="verdict v-mixed">Mixed</span></td>
+          <td class="lens-read">Delight is spent in the wrong places — four ambient loops throbbing in persistent chrome — and withheld from the one place it is earned.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="sec-index">02</div>
+    <h2 class="section-title">Where the timings land</h2>
+    <p class="section-sub">
+      Every distinct duration the product used, before and after. The zones describe the cost of a
+      duration, not a rule: under 100ms reads as instant, 100–300ms as responsive, 300–500ms as
+      deliberate, beyond that as slow. The remodel's spread is the finding.
+    </p>
+
+    <div class="timing-figure">
+      <div class="timing-before">
+        <span class="mono-label">Before — eleven durations, five easings, no shared source</span>
+        <div class="ramp">
+          <span class="chip t-good">100</span><span class="chip t-good">120</span><span class="chip t-good">140</span>
+          <span class="chip t-good">150</span><span class="chip t-good">160</span><span class="chip t-good">180</span>
+          <span class="chip t-good">200</span><span class="chip t-good">220</span><span class="chip t-good">240</span>
+          <span class="chip t-good">280</span><span class="chip t-mid">300</span><span class="chip t-mid">320</span>
+          <span class="chip t-mid">400</span><span class="chip t-mid">450</span><span class="chip t-mid">480</span>
+          <span class="chip t-slow">500</span><span class="chip t-slow">600</span><span class="chip t-slow">700</span>
+          <span class="chip t-slow">1500</span>
+        </div>
+        <p class="note">
+          Nineteen values in live use. Six of the seven above 300ms were easing a layout property —
+          <code>width</code> on a progress bar, <code>max-height</code> on a disclosure panel — which is
+          the most expensive thing in this list and the reason those numbers are red twice over.
+        </p>
+      </div>
+
+      <div class="timing-after">
+        <span class="mono-label">After — three durations, one curve, one module</span>
+        <div class="ramp">
+          <span class="chip t-good">150 <em>fast</em></span>
+          <span class="chip t-good">180 <em>theme switch</em></span>
+          <span class="chip t-good">200 <em>base</em></span>
+          <span class="chip t-mid">450 <em>reveal</em></span>
+        </div>
+        <p class="note">
+          <code>fast</code> for anything a reader is waiting on, <code>base</code> at the theme's
+          ceiling for sheets and disclosure, <code>reveal</code> for the two surfaces permitted a scroll
+          entry, and the 180ms theme cross-fade BG-P02 fixed. One curve —
+          <code>cubic-bezier(.2,.6,.35,1)</code> — plus <code>linear</code> for continuous rotation,
+          where any easing makes a spinner stutter once a turn.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="lens-sec">
+    <div class="sec-index">03</div>
+    <div class="lens-sec__head">
+      <h3>Emil Kowalski — Restraint &amp; Speed</h3>
+      <span class="lens-sec__weight">Primary lens</span>
+    </div>
+    <p class="lens-sec__verdict"><span class="verdict v-problem">Problem</span></p>
+
+    <div class="lens-block">
+      <span class="mono-label">What's working well</span>
+      <ul class="lens-list good">
+        <li><span class="mk">✓</span><span>The control kit already refused to animate <code>box-shadow</code> and already wrote its property list out by hand, with the reason in a comment. It was the one surface doing this right, and the module is that decision generalised. <code>lib/theme/controls.ts:38</code></span></li>
+        <li><span class="mk">✓</span><span>No motion library, and none wanted. Every transition here is CSS the compositor can run without a frame of JavaScript.</span></li>
+        <li><span class="mk">✓</span><span>The theme switch was already right: 180ms, colour properties only, scoped to an attribute that exists only while a switch is in flight, so it cannot run on first paint. <code>contexts/ThemeContext.tsx:130</code></span></li>
+      </ul>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Issues to address</span>
+      <div class="findings">
+
+        <div class="finding-row" data-sev="crit" id="finding-1">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity crit">Critical</span><span class="lens-chip">Emil</span><span class="lens-chip">Jakub</span></div>
+            <h4 class="find-title"><code>transition: all</code>, 83 times, in three spellings</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>50 as Tailwind's <code>transition-all</code> and 33 as <code>transition: "all 0.15s"</code> inside inline style objects. The second group is the interesting one: it survived a first pass aimed squarely at removing it, because the guard's own regex required <code>all</code> to follow the colon directly and there was a quote in the way.</p>
+              <p><span class="label">Why it matters</span><code>all</code> subscribes to every property the element will ever have. It is not a shorthand for "the ones I'm changing" — it is a standing instruction to animate whatever a future class adds, including the layout properties. Six of these were already quietly easing <code>width</code> or <code>max-height</code> because something downstream had started setting them.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>Name the properties. <code>feedback()</code> returns the five a control actually changes — background-color, border-color, color, opacity, transform — at 150ms on the product's curve, and its parameter is a closed union, so <code>box-shadow</code> and the layout properties are a build error rather than a review comment.</p></div>
+              <p class="find-loc"><code>83 sites · CanvasToolbar.tsx, TopToolbar.tsx, Upload.tsx, BountyUpload.tsx, +17 more</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st1" id="st1-a" checked>
+            <input class="vh" type="radio" name="st1" id="st1-l">
+            <input class="vh" type="radio" name="st1" id="st1-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">Named properties, not <code>all</code></span><span class="demo__timing">150ms · cubic-bezier(.2,.6,.35,1)</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st1-a">Auto</label><label for="st1-l">Light</label><label for="st1-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-1__mt ui-card" style="min-width:150px;">
+                <div class="ui-label" style="margin-bottom:6px;">Filter</div>
+                <div class="ui-row">Published</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding-row" data-sev="crit" id="finding-3">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity crit">Critical</span><span class="lens-chip">Emil</span></div>
+            <h4 class="find-title">26 animated layout properties, six of them over 400ms</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>Twelve progress and XP bars easing <code>width</code> over 400–700ms, four disclosure panels easing <code>max-height</code> or <code>height</code>, four toggle thumbs and a crop box easing <code>left</code> and <code>top</code>, and four arbitrary <code>transition-[width,height,padding]</code> lists in the shadcn sidebar.</p>
+              <p><span class="label">Why it matters</span>Each of these invalidates layout for its whole subtree on every frame of the animation. A 700ms <code>width</code> tween on the XP bar is 42 forced reflows of the rail it sits in, for a bar whose value the reader has already been told in text beside it.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>None. The usual advice — animate <code>transform: scaleX()</code> instead — is not available here: this project's review rules forbid changing <code>width</code>, <code>height</code> or <code>position</code> on an existing layout element, and a pill-shaped bar distorts under <code>scaleX</code> anyway. The tween goes and the value stays, which is what the theme's "never animate a layout property" actually asks for.</p></div>
+              <p class="find-loc"><code>xp-bar.tsx:72 · MasteryRibbons.tsx:116 · feed-card.tsx:583 · ui/sidebar.tsx:185 · +22 more</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st3" id="st3-a" checked>
+            <input class="vh" type="radio" name="st3" id="st3-l">
+            <input class="vh" type="radio" name="st3" id="st3-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">The bar lands, it does not travel</span><span class="demo__timing">0ms · no layout tween</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st3-a">Auto</label><label for="st3-l">Light</label><label for="st3-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div style="width:78%;">
+                <div class="ui-label" style="margin-bottom:8px;">Level 7</div>
+                <div style="height:8px;border-radius:999px;background:var(--st-line);overflow:hidden;">
+                  <div class="demo-3__mt" style="height:100%;width:100%;border-radius:999px;background:var(--st-fg);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Opportunities</span>
+      <ul class="lens-list opp">
+        <li><span class="mk">💡</span><span>The unfold on a gallery card's thread is the product's one knowing layout animation — <code>grid-template-rows: 0fr → 1fr</code>, kept because it is the only way to open to a content-determined height without measuring in JavaScript. It is worth revisiting if that region ever grows: it is the one place a future performance problem will start. <code>gallery/CardThread.tsx:89</code></span></li>
+      </ul>
+    </div>
+
+    <p class="lens-take">Through Emil's lens: the product's motion rules were already written in his voice — the theme spec says ≤200ms, transform and opacity, never <code>ease-in</code> on UI — and almost nothing enforced them. The gap was never taste. It was that a rule with no assertion behind it is a comment.</p>
+  </section>
+
+  <section class="lens-sec">
+    <div class="sec-index">04</div>
+    <div class="lens-sec__head">
+      <h3>Jakub Krehel — Production Polish</h3>
+      <span class="lens-sec__weight">Secondary lens</span>
+    </div>
+    <p class="lens-sec__verdict"><span class="verdict v-concern">Concern</span></p>
+
+    <div class="lens-block">
+      <span class="mono-label">What's working well</span>
+      <ul class="lens-list good">
+        <li><span class="mk">✓</span><span>The gallery card's hover shadow was already on a pseudo-element animating opacity, already gated behind <code>(hover: hover) and (pointer: fine)</code>, with the reasoning written beside it. One surface had the whole pattern right. <code>index.css:795</code></span></li>
+        <li><span class="mk">✓</span><span>The skeleton is a directional sweep rather than <code>animate-pulse</code>, because a block fading in and out reads as broken rather than loading. That is a real craft distinction, made deliberately. <code>ui/skeleton.tsx:12</code></span></li>
+        <li><span class="mk">✓</span><span>The DM typing indicator moves opacity only. A bouncing dot would animate a layout property and pull the row's height with it — the comment says so.</span></li>
+      </ul>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Issues to address</span>
+      <div class="findings">
+
+        <div class="finding-row" data-sev="crit" id="finding-2">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity crit">Critical</span><span class="lens-chip">Jakub</span><span class="lens-chip">Emil</span></div>
+            <h4 class="find-title">Ten animated <code>box-shadow</code>s, four of them the same effect rewritten</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>A deep link landing, two block references jumping to their block, and a bounty solve arriving — four hand-rolled "look here" rings, none aware of the others, three easing <code>ease-in</code> on the way out. Plus six hover and selection shadows, and one hiding inside a <code>@keyframes</code> where a scanner reading <code>transition:</code> could never see it.</p>
+              <p><span class="label">Why it matters</span><code>box-shadow</code> is not compositable. Transitioning it re-rasterises the element on every frame — and the theme's own comment about this is on the gallery card, which has twenty-four instances in a grid. The four duplicate rings are the more telling half: four prompts each solved the same problem without knowing the others had.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>One <code>pulseRing</code> in the motion module, drawn with an <code>outline</code>: the same ring, no part in layout, and a colour that composites. Where a shadow genuinely changes on hover it moves to a pseudo-element whose opacity is animated — the pattern the gallery card already proved.</p></div>
+              <p class="find-loc"><code>lib/deepLink.ts:77 · BlockReferenceNode.tsx:56 · BlockRefNode.tsx:73 · ContentDetail.tsx:1772 · +6 more</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st2" id="st2-a" checked>
+            <input class="vh" type="radio" name="st2" id="st2-l">
+            <input class="vh" type="radio" name="st2" id="st2-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">Shadow on a pseudo-element's opacity</span><span class="demo__timing">150ms · opacity only</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st2-a">Auto</label><label for="st2-l">Light</label><label for="st2-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-2__mt ui-card" style="min-width:160px;box-shadow:none;">
+                <div class="ui-label" style="margin-bottom:6px;">Build</div>
+                <div class="ui-row">Inbox triage agent</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding-row" data-sev="crit" id="finding-7">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity crit">Critical</span><span class="lens-chip">Jakub</span></div>
+            <h4 class="find-title">Reduced motion reached three selectors; hover reached none</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>Two problems with one shape. <code>prefers-reduced-motion</code> was honoured on three CSS selectors and in eight modules — the streak flame, the skill tree, the typing indicator, the XP bar and everything four dependencies bring kept moving. And of 563 Tailwind <code>hover:</code> utilities plus 13 hand-written <code>:hover</code> rules, exactly two were gated on a fine pointer.</p>
+              <p><span class="label">Why it matters</span>A reader who asked for stillness and got it on five surfaces out of forty has not been answered. On the hover side, a touch device makes <code>:hover</code> stick after a tap, so every ungated hover leaves a control looking permanently pressed until something else is touched — on a product whose primary surface is a grid of tappable cards.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>One rule in <code>index.css</code> over <code>*</code>, <code>::before</code> and <code>::after</code>, collapsing durations to <strong>0.01ms rather than zero</strong> — a cancelled transition never fires <code>transitionend</code>, so anything waiting on that event to unmount a node would hang, for exactly the readers least able to work around it. For hover, Tailwind's <code>hoverOnlyWhenSupported</code> compiles all 563 utilities into the same media query: one decision instead of 563.</p></div>
+              <p class="find-loc"><code>index.css:840 · tailwind.config.ts:32 · lib/theme/motion.ts:287</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st7" id="st7-a" checked>
+            <input class="vh" type="radio" name="st7" id="st7-l">
+            <input class="vh" type="radio" name="st7" id="st7-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">Hover, gated on a fine pointer</span><span class="demo__timing">150ms · opacity</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st7-a">Auto</label><label for="st7-l">Light</label><label for="st7-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-7__mt ui-btn">Reproduce this build</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Opportunities</span>
+      <ul class="lens-list opp">
+        <li><span class="mk">💡</span><span>The composer's drag feedback is an inset ring that now appears instantly. It is correct and it is plain; a 150ms opacity fade on a pseudo-element ring would be the polished version, and is the one place in the workspace where a little arrival would not be decoration. <code>pages/ImportPage.tsx:522</code></span></li>
+      </ul>
+    </div>
+
+    <p class="lens-take">Through Jakub's lens: this is a codebase where individual surfaces are finished to a high standard and the product between them is not. Every gap found here is a gap between prompts — a rule one surface followed and the next did not know about — which is what a shared module and an assertion are for.</p>
+  </section>
+
+  <section class="lens-sec">
+    <div class="sec-index">05</div>
+    <div class="lens-sec__head">
+      <h3>Jhey Tompkins — Experimentation &amp; Delight</h3>
+      <span class="lens-sec__weight">Selective lens</span>
+    </div>
+    <p class="lens-sec__verdict"><span class="verdict v-mixed">Mixed</span></p>
+
+    <div class="lens-block">
+      <span class="mono-label">What's working well</span>
+      <ul class="lens-list good">
+        <li><span class="mk">✓</span><span>The claim button's particle burst and the level-up confetti are real celebration moments with per-particle <code>--dx</code>/<code>--dy</code> custom properties. This is the right instinct in the right place — the rare, earned event.</span></li>
+        <li><span class="mk">✓</span><span>The trophy strip's <code>cubic-bezier(0.34, 1.56, 0.64, 1)</code> overshoot is the only spring in the product, and it is on a reveal rather than on a dropdown. Kept deliberately: bounce belongs where something is being celebrated, not where something is being used. <code>trophies/pending-reveal-strip.tsx:44</code></span></li>
+        <li><span class="mk">✓</span><span>The gallery's stagger caps at eight steps, so the ripple crosses the first screen and stops. Without the cap card twenty-four would have waited 1.2s after scrolling into view — a page withholding its content.</span></li>
+      </ul>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Issues to address</span>
+      <div class="findings">
+
+        <div class="finding-row" data-sev="imp" id="finding-5">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity imp">Important</span><span class="lens-chip">Jhey</span><span class="lens-chip">Emil</span></div>
+            <h4 class="find-title">Delight spent on ambient loops instead of on the moments that earn it</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>Ten infinite animations. Four are decoration announcing something the colour already said: a skill node's "available" ring throbbing every 2s, the connector between two unlocked skills at 2.4s, the streak flame at 1.4s, and a sheen sweeping the XP bar forever. Three of the four sit in persistent chrome, where they never stop.</p>
+              <p><span class="label">Why it matters</span>This is the anti-checklist's first category, and the reason it says flag <em>any</em> instance: a pulse is a claim on attention, and a claim that is always being made is noise. The skill tree can show a dozen at once. Meanwhile the real moments — the reproduction landing, the bounty being solved — get nothing.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>Remove all four; the ring, the fill and the glyph colour already carry the state. The six loops that stay are the ones where the movement <em>is</em> the information: a spinner, two skeleton sweeps, the typing indicator, the text caret, and the canvas snap point that exists only while something is being dragged onto it.</p></div>
+              <p class="find-loc"><code>skilltree/skill-node.tsx:51 · skill-tree-canvas.tsx:130 · streaks/streak-flame.tsx:64 · xp-kit/xp-bar.tsx:87</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st5" id="st5-a" checked>
+            <input class="vh" type="radio" name="st5" id="st5-l">
+            <input class="vh" type="radio" name="st5" id="st5-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">State carried by colour, not by a throb</span><span class="demo__timing">0ms · no loop</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st5-a">Auto</label><label for="st5-l">Light</label><label for="st5-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-5__mt" style="display:flex;align-items:center;gap:10px;">
+                <span style="width:34px;height:34px;border-radius:50%;border:2px solid var(--st-fg);display:inline-block;"></span>
+                <span class="ui-label">Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding-row" data-sev="imp" id="finding-6">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity imp">Important</span><span class="lens-chip">Jhey</span><span class="lens-chip">Jakub</span></div>
+            <h4 class="find-title">Hover answered by growing things, in six components</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>Eight <code>hover:scale-*</code>, three of them byte-identical on three quest CTAs, the rest spread across a colour swatch, a star rating, two emoji pickers and a glass card that grew to 1.02.</p>
+              <p><span class="label">Why it matters</span>The anti-checklist's threshold is three distinct components sharing the same scale with no discriminating context; this is six. Scale-on-hover is the reflex answer, and a product that already has a hover vocabulary — colour, opacity, and a 1px lift — reaching for it anyway is a sign the vocabulary was not known rather than not liked.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>Spend the vocabulary. The CTAs take the colour change they already had; the four small pick targets take opacity, which says "this one" just as clearly at a fraction of the compositing cost and does not shift a neighbour's optical alignment.</p></div>
+              <p class="find-loc"><code>quest/challenges-panel.tsx:284 · StarRating.tsx:182 · dm/ThreadView.tsx:1070 · +5 more</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st6" id="st6-a" checked>
+            <input class="vh" type="radio" name="st6" id="st6-l">
+            <input class="vh" type="radio" name="st6" id="st6-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">Opacity, not size</span><span class="demo__timing">150ms · opacity</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st6-a">Auto</label><label for="st6-l">Light</label><label for="st6-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-6__mt" style="display:flex;gap:8px;font-size:22px;">
+                <span>★</span><span>★</span><span>★</span><span>★</span><span style="opacity:.3;">★</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding-row" data-sev="imp" id="finding-4">
+          <div class="finding-row__prose">
+            <div class="find-tags"><span class="severity imp">Important</span><span class="lens-chip">Jhey</span><span class="lens-chip">Jakub</span></div>
+            <h4 class="find-title">The build page — the product's most-read surface — arrived all at once</h4>
+            <div class="find-body">
+              <p><span class="label">What</span>The theme permits a scroll entry on exactly two surfaces. The gallery grid had one, hand-rolled with its own three constants. The build page, which is the thing the gallery exists to send people to, had none.</p>
+              <p><span class="label">Why it matters</span>This is the one place in the product where pacing is not decoration: a build page is a document with a provenance line, a header and a set of tabs, read top to bottom. Nothing else should get this — an app surface that withholds its content until you scroll to it is arguing with the person trying to use it — but this surface earns it.</p>
+              <div class="fix"><p><span class="label">Recommended motion</span>450ms opacity plus a 14px rise, IntersectionObserver, once, disconnecting on the first intersection. No stagger: a page's sections are already separated in time by the reader's own scrolling. The hook fails towards visible — under reduced motion, without IntersectionObserver, or before the effect runs, the element is already in its final state, because an element stuck at opacity 0 is worse than no animation.</p></div>
+              <p class="find-loc"><code>lib/theme/useReveal.ts · pages/BuildPage.tsx:293 · pages/Gallery.tsx:712</code></p>
+            </div>
+          </div>
+          <div class="demo">
+            <input class="vh" type="radio" name="st4" id="st4-a" checked>
+            <input class="vh" type="radio" name="st4" id="st4-l">
+            <input class="vh" type="radio" name="st4" id="st4-d">
+            <div class="demo__bar">
+              <div class="demo__meta"><span class="demo__title">Section reveal, once</span><span class="demo__timing">450ms · opacity + 14px</span></div>
+              <div class="demo__controls">
+                <div class="seg"><label for="st4-a">Auto</label><label for="st4-l">Light</label><label for="st4-d">Dark</label></div>
+                <span class="demo__loop">↻</span>
+              </div>
+            </div>
+            <div class="demo__stage">
+              <div class="demo-4__mt ui-card" style="min-width:170px;">
+                <div class="ui-label" style="margin-bottom:6px;">Anatomy</div>
+                <div class="ui-row">7 parts · 41 reproduced</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="lens-block">
+      <span class="mono-label">Opportunities</span>
+      <ul class="lens-list opp">
+        <li><span class="mk">💡</span><span>A reproduction landing is the highest-emotion moment this product has — someone else's build worked for you — and it currently just increments a number. It is the single place worth over-investing: a one-shot mark on the plaque, milestones only, in the register the claim button already uses. <code>build/ReproductionAction.tsx</code></span></li>
+        <li><span class="mk">💡</span><span>A gap being solved resolves a dashed border to a solid one. That transition is the product's own metaphor — an invitation being answered — and it happens with no motion at all. A 200ms border crossfade would cost nothing and say something. <code>brand/GapMarker.tsx</code></span></li>
+      </ul>
+    </div>
+
+    <p class="lens-take">Through Jhey's lens: the instinct is sound and the aim is off. The celebration machinery already exists and is good; it is pointed at ambient chrome that loops forever instead of at the two events a person actually came here for.</p>
+  </section>
+
+  <section>
+    <div class="sec-index">06</div>
+    <h2 class="section-title">In the order I'd fix them</h2>
+    <p class="section-sub">
+      Ordered by what a reader feels: <em>critical</em> (costs frames or excludes people on every use) →
+      <em>important</em> (motion aimed at the wrong thing) → <em>opportunity</em> (worth spending on next).
+      All seven critical and important findings were fixed in BG-P32 and each has an assertion behind it;
+      the two opportunities are deliberately left for a later prompt to decide on.
+    </p>
+
+    <div class="rec crit" id="rec-crit">
+      <div class="tier-label"><span class="mono-label">Critical · must fix</span><span class="rule"></span><span class="count">4</span></div>
+      <table class="rec-table">
+        <thead><tr><th>Issue</th><th>File</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>83 <code>transition: all</code>, in three spellings across Tailwind, CSS and style objects</td><td><code>23 files</code></td><td>Named property lists from <code>feedback()</code>; the parameter type makes the alternatives a build error</td></tr>
+          <tr><td>26 animated layout properties, six over 400ms</td><td><code>22 files</code></td><td>Drop the tween, keep the value — <code>scaleX</code> is unavailable under this project's own review rules</td></tr>
+          <tr><td>10 animated <code>box-shadow</code>s, four of them the same ring rewritten</td><td><code>8 files</code></td><td>One <code>pulseRing</code> drawn with an outline; hover shadows move to a pseudo-element's opacity</td></tr>
+          <tr><td>Reduced motion reached 3 selectors; hover was gated on 2 of 576 sites</td><td><code>index.css · tailwind.config.ts</code></td><td>One global rule at 0.01ms (so <code>transitionend</code> still fires) + <code>hoverOnlyWhenSupported</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rec imp" id="rec-imp">
+      <div class="tier-label"><span class="mono-label">Important · should fix</span><span class="rule"></span><span class="count">3</span></div>
+      <table class="rec-table">
+        <thead><tr><th>Issue</th><th>File</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Four decorative infinite pulses, three in persistent chrome</td><td><code>skill-node.tsx:51 · skill-tree-canvas.tsx:130 · streak-flame.tsx:64 · xp-bar.tsx:87</code></td><td>Removed — colour already carried the state; the six functional loops stay</td></tr>
+          <tr><td><code>hover:scale-*</code> across six components, three byte-identical</td><td><code>8 sites</code></td><td>Opacity and colour — the hover vocabulary the product already had</td></tr>
+          <tr><td>The build page, the most-read surface, had no section pacing</td><td><code>BuildPage.tsx:293</code></td><td>450ms opacity + 14px rise, once, via the shared <code>useReveal</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rec opp" id="rec-opp">
+      <div class="tier-label"><span class="mono-label">Opportunities · could enhance</span><span class="rule"></span><span class="count">2</span></div>
+      <table class="rec-table">
+        <thead><tr><th>Enhancement</th><th>Where</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>A reproduction landing is the product's highest-emotion moment and has no mark</td><td><code>build/ReproductionAction.tsx</code></td><td>One-shot plaque mark, milestones only — the machinery already exists on the claim button</td></tr>
+          <tr><td>A gap resolving from dashed to solid is the product's own metaphor, unanimated</td><td><code>brand/GapMarker.tsx</code></td><td>200ms border crossfade; costs nothing, says the thing the design is about</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section style="margin-bottom: var(--s6);">
+    <div class="sec-index">07</div>
+    <h2 class="section-title">Which lens carried this audit</h2>
+    <div class="ref-summary">
+      <span class="mono-label">Referenced most</span>
+      <p class="big">Emil Kowalski — Restraint &amp; Speed</p>
+      <p class="why">
+        Every critical finding was a cost finding: properties that cannot be composited, layout
+        invalidated on every frame, <code>all</code> subscribing to things nobody chose. That is Emil's
+        territory, and it is also, almost word for word, what this product's own theme document already
+        said — which is the most useful thing this audit found. The rules were written. Nothing enforced
+        them, so twelve prompts each re-derived motion from scratch and the result drifted exactly as far
+        as you would expect. Jakub's lens named the gaps between surfaces; Jhey's named the two moments
+        worth spending on next.
+      </p>
+      <ul class="ref-lean">
+        <li><span class="nm">Lean Emil</span><span>Treat the duration list as closed. If a surface wants a twelfth value, that is a conversation about the vocabulary, not a number to type into a component.</span></li>
+        <li><span class="nm">Lean Jakub</span><span>Assume any rule without an assertion behind it is already broken somewhere. Three of the four critical findings here were rules the codebase had written down and stopped following.</span></li>
+        <li><span class="nm">Lean Jhey</span><span>Spend the celebration budget on the reproduction and the solved gap. Both are rare, both are earned, and the particle machinery is already built.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="doc">
+    <span>buildgallery.ai motion audit · design-motion-principles · BG-P32</span>
+    <span>9 findings · 4 critical · 3 important · 2 opportunities</span>
+  </footer>
+
+</div>
+</body>
+</html>

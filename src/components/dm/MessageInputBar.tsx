@@ -479,7 +479,7 @@ export function MessageInputBar({
       {showEmoji && (
         <div className="px-3 py-2 border-t border-border flex flex-wrap gap-1.5">
           {COMMON_EMOJIS.map((e) => (
-            <button key={e} onClick={() => insertEmoji(e)} className="text-xl hover:scale-110 transition-transform p-0.5">
+            <button key={e} onClick={() => insertEmoji(e)} className="text-xl hover:opacity-75 transition-feedback p-0.5">
               {e}
             </button>
           ))}

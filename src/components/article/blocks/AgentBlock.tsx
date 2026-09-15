@@ -20,6 +20,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 type MemoryStrategy = 'none' | 'short' | 'long';
@@ -56,7 +57,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 function StatusDot({ status }: { status: BlockStatus }) {
@@ -157,7 +158,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className={cn('group relative rounded-lg p-2.5 backdrop-blur-md transition-all')}
+        className={cn('group relative rounded-lg p-2.5 backdrop-blur-md transition-feedback')}
         style={{
           width: 240,
           background: 'var(--recess)',

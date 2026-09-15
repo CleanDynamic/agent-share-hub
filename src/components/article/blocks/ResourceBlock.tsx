@@ -5,6 +5,7 @@ import { MoreHorizontal, Link2, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 interface ResourceBlockData {
   blockId: string;
@@ -20,7 +21,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 export function ResourceBlockNode({ id, data, selected }: NodeProps) {
@@ -105,7 +106,7 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
+      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-feedback"
       style={{
         width: 280,
         border: selected

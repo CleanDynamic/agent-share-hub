@@ -22,6 +22,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 type TabType = 'markdown' | 'json' | 'raw';
@@ -40,7 +41,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 function StatusDot({ status }: { status: BlockStatus }) {
@@ -431,7 +432,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-feedback"
         style={{
           width: 280,
           border: selected

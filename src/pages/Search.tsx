@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { FeedCard, type FeedPost } from '@/components/feed-card'
 import { resolvePostType } from '@/lib/content-types'
 import { FollowButton } from '@/components/FollowButton'
+import { feedback } from "@/lib/theme/motion";
 
 const SEARCH_TABS = ['Top', 'Latest', 'People', 'Collections']
 
@@ -238,7 +239,7 @@ export default function Search() {
                     ? 'var(--text)' : 'var(--text2)',
                   fontSize: 13, fontWeight: isActive ? 700 : 400,
                   cursor: 'pointer',
-                  transition: 'color 0.15s, border-color 0.15s',
+                  transition: feedback("color", "border-color"),
                 }}
               >
                 {t}

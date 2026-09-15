@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getPrimaryTypeLabel } from '@/lib/content-types';
 import { ChevronRight } from 'lucide-react';
 import { type } from "@/lib/theme/type";
+import { feedback } from '@/lib/theme/motion';
 
 // ─── Evidence types ──────────────────────────────
 export type EvidenceMediaType = 'photos' | 'video' | 'written';
@@ -57,7 +58,7 @@ function CollapsibleSection({
           style={{
             color: 'var(--text2)',
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 200ms',
+            transition: feedback("transform"),
             flexShrink: 0,
           }}
         />
@@ -266,7 +267,7 @@ export function CanvasHeader({
             padding: '12px 16px',
             lineHeight: 1.4,
             boxSizing: 'border-box' as const,
-            transition: 'border-color 200ms',
+            transition: feedback("border-color"),
           }}
         />
       </CollapsibleSection>
@@ -300,7 +301,7 @@ export function CanvasHeader({
             minHeight: 60,
             fontFamily: 'Figtree, sans-serif',
             boxSizing: 'border-box' as const,
-            transition: 'border-color 200ms',
+            transition: feedback("border-color"),
           }}
         />
         <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', textAlign: 'right', fontFamily: 'Figtree, sans-serif', marginTop: 4 }}>
@@ -364,7 +365,7 @@ function EvidenceEditor({
               border: `1px solid ${mediaType === t.value ? 'color-mix(in srgb, var(--action) 30%, transparent)' : 'var(--recess)'}`,
               color: mediaType === t.value ? 'var(--action)' : 'var(--text2)',
               fontFamily: 'Figtree, sans-serif',
-              transition: 'all 200ms',
+              transition: feedback(),
             }}
           >
             {t.label}

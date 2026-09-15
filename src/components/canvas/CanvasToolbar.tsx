@@ -11,6 +11,7 @@ import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import type { BlockPosition } from '@/lib/canvas-types';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 const BLOCK_TYPE_ICONS: Record<string, any> = {
   text: Type,
@@ -126,7 +127,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
     borderRadius: 6,
     color: 'var(--text2)',
     cursor: 'pointer',
-    transition: 'all 0.15s',
+    transition: feedback(),
   });
 
   const disabledNav: React.CSSProperties = {
@@ -231,7 +232,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       color: 'var(--text2)',
                       fontWeight: 500,
                       fontFamily: 'Figtree, sans-serif',
-                      transition: 'all 0.15s ease',
+                      transition: feedback(),
                       textAlign: 'left',
                     }}
                   >
@@ -344,14 +345,14 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             fontSize: 12, fontWeight: 500,
             fontFamily: 'Figtree, sans-serif',
             cursor: 'pointer',
-            transition: 'all 0.15s',
+            transition: feedback(),
             whiteSpace: 'nowrap',
           }}
         >
           <Plus size={13} /> Block
           <ChevronUp size={10} style={{
             transform: addBlockOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.15s',
+            transition: feedback("transform"),
             opacity: 0.5,
           }} />
         </button>
@@ -588,7 +589,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               fontFamily: 'Figtree, sans-serif',
               cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.6 : 1,
-              transition: 'all 0.15s',
+              transition: feedback(),
               whiteSpace: 'nowrap',
             }}
           >
@@ -615,7 +616,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               fontFamily: 'Figtree, sans-serif',
               cursor: submitting ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.7 : 1,
-              transition: 'all 0.15s',
+              transition: feedback(),
               whiteSpace: 'nowrap',
             }}
           >
@@ -643,7 +644,7 @@ function menuItem(hovered: boolean): React.CSSProperties {
     borderRadius: 6,
     cursor: 'pointer',
     textAlign: 'left' as const,
-    transition: 'background 0.1s',
+    transition: feedback("background-color"),
     whiteSpace: 'nowrap' as const,
   };
 }

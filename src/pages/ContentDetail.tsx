@@ -90,6 +90,8 @@ import RemixButton from "@/components/remix/RemixButton";
 import { useLineageParent, useRemixCount } from "@/lib/remix/hooks";
 import { createRemix } from "@/lib/remix/createRemix";
 import { REMIX_CREATE_ENABLED } from "@/lib/remix/flags";
+import { pulse } from "@/lib/theme/motion";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 const NORMALIZE_TYPE = (raw?: string | null): "blueprint" | "blog" | "bounty" => {
   if (raw === "blog") return "blog";
@@ -464,7 +466,7 @@ export default function ContentDetail() {
         window.setTimeout(run, 200);
         return;
       }
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       if (anchor || hash) {
         target.classList.add("excerpt-pulse");
         window.setTimeout(() => target?.classList.remove("excerpt-pulse"), 1100);
@@ -907,12 +909,12 @@ export default function ContentDetail() {
 
   const handleSubmitSolution = useCallback(() => {
     const el = document.querySelector("[data-bounty-solutions-anchor]") as HTMLElement | null;
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   }, []);
 
   const handleScrollToDiscussion = useCallback(() => {
     const el = document.querySelector("[data-bounty-discussion-anchor]") as HTMLElement | null;
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   }, []);
 
   const handleAskAuthor = useCallback(async () => {
@@ -1410,7 +1412,7 @@ export default function ContentDetail() {
       // Scroll to the solution and let the solutions section reveal it.
       const el = document.querySelector(`[data-solution-id="${solutionId}"]`);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       } else {
         const next = new URLSearchParams(searchParams);
         next.set("solution", solutionId);
@@ -1462,7 +1464,7 @@ export default function ContentDetail() {
       return next;
     });
     const t = window.setTimeout(() => {
-      document.getElementById(`solution-${sid}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(`solution-${sid}`)?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     }, 200);
     return () => window.clearTimeout(t);
   }, [isBounty, solutionsData]);
@@ -1628,7 +1630,7 @@ export default function ContentDetail() {
         onToggleExpand={() => setBylineExpanded((v) => !v)}
         onViewProvenance={() => {
           const el = document.querySelector("[data-provenance-overview]") as HTMLElement | null;
-          el?.scrollIntoView({ behavior: "smooth", block: "start" });
+          el?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
         }}
         onAuthorClick={(authorId) => navigate(`/profile/${shellAuthor?.handle || authorId}`)}
       />
@@ -1769,10 +1771,16 @@ export default function ContentDetail() {
           <div
             data-provenance-overview
             style={{
-              transition: "box-shadow 600ms ease-out",
-              boxShadow: solvedPulse
-                ? "0 0 0 2px color-mix(in srgb, var(--evidence) 55%, transparent), 0 0 32px color-mix(in srgb, var(--evidence) 35%, transparent)"
-                : "none",
+              /* BG-P32. Was an eased box-shadow — uncompositable, so every frame
+                 of the 600ms fade re-rasterised the panel. An outline draws the
+                 same ring, takes no part in layout, and its colour IS
+                 transitionable, which is what `pulse()` names. */
+              transition: pulse(),
+              outline: "2px solid",
+              outlineColor: solvedPulse
+                ? "color-mix(in srgb, var(--evidence) 55%, transparent)"
+                : "transparent",
+              outlineOffset: 2,
               borderRadius: 12,
             }}
           >

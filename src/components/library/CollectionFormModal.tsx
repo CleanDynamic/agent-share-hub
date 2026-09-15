@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { data as dataText } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * The accent a creator can pin to one of their collections.
@@ -158,7 +159,7 @@ export function CollectionFormModal({
                          ring vanished on Exhibition. */
                       border: `2px solid ${active ? t.text : t.line}`,
                       cursor: "pointer",
-                      transition: "transform 160ms cubic-bezier(.2,.6,.35,1)",
+                      transition: feedback("transform"),
                       transform: active ? "scale(1.05)" : "scale(1)",
                     }}
                   />

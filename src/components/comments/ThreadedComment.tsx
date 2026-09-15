@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Heart, MessageCircle, MoreHorizontal, X, ArrowRight } from "lucide-react";
 import type { CommentNode, ThreadedCommentProps } from "./types";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 const MAX_VISUAL_DEPTH = 4; // 0-indexed → 5 visual levels
 const INDENT_PX = 24;
@@ -177,7 +178,7 @@ function ReplyComposer({
             cursor: text.trim() ? "pointer" : "default",
             background: text.trim() ? "var(--action)" : "color-mix(in srgb, var(--action) 30%, transparent)",
             color: text.trim() ? "var(--text)" : "var(--text2)",
-            transition: "background 150ms ease",
+            transition: feedback("background-color"),
           }}
         >
           Post
@@ -329,7 +330,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
   // Deep-link scroll + highlight
   React.useEffect(() => {
     if (highlightedCommentId && highlightedCommentId === comment.id && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      cardRef.current.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
     }
   }, [highlightedCommentId, comment.id]);
 
@@ -428,7 +429,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             borderRadius: 10,
             padding: "12px 14px",
             marginBottom: 8,
-            transition: "border-color 300ms ease",
+            transition: feedback("border-color"),
             animation: isHighlighted ? "ns-deep-link-pulse 1.2s ease-out" : undefined,
           }}
         >
@@ -643,7 +644,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 cursor: "pointer",
                 padding: 0,
                 color: comment.hasLiked ? "var(--cat-breakage)" : "var(--text2)",
-                transition: "color 150ms ease",
+                transition: feedback("color"),
               }}
               aria-label={comment.hasLiked ? "Unlike" : "Like"}
             >

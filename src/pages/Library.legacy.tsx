@@ -273,7 +273,7 @@ export default function LibraryPage() {
               {activeFolder && activeFolder !== "root" && activeFolderObj && filtered.length >= 2 && (
                 <button
                   onClick={() => setPublishFolderId(activeFolder)}
-                  className="transition-all"
+                  className="transition-feedback"
                   style={{
                     fontSize: 12,
                     fontWeight: 500,

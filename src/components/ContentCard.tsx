@@ -16,6 +16,7 @@ import { AddToCollectionButton } from "@/components/AddToCollectionButton";
 import { GuestDownloadModal } from "@/components/GuestDownloadModal";
 import { AccountGateModal } from "@/components/AccountGateModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { feedback } from "@/lib/theme/motion";
 
 export interface ContentCardProps {
   id: string;
@@ -205,7 +206,7 @@ export function ContentCard({
           border: '1px solid var(--line)',
           borderRadius: 'var(--radius-card)',
           marginBottom: '8px',
-          transition: 'border-color 0.15s ease',
+          transition: feedback("border-color"),
           cursor: 'pointer',
         }}
         onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}

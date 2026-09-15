@@ -21,7 +21,7 @@ export function ComposerBar({ user }: { user?: User }) {
 
   return (
     <div
-      className="flex items-center gap-4 rounded-2xl transition-all duration-200"
+      className="flex items-center gap-4 rounded-2xl transition-feedback duration-base"
       style={{
         padding: '14px 16px',
         marginBottom: '0px',

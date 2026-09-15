@@ -156,6 +156,20 @@
   --r-panel: 16px;
   --r-full: 999px;
 
+  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
+     Theme-independent and declared in both blocks so a component reads every
+     root token from one place, exactly as the radius scale above does. The TS
+     module is the source of truth — it is what a style object spends; these
+     exist for the handful of rules that live in CSS because they cannot be
+     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
+     reset). motion.test.ts holds the two sides to each other, so a duration
+     cannot be changed here without being changed there. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-reveal: 450ms;
+  --motion-theme: 180ms;
+  --motion-ease: cubic-bezier(.2,.6,.35,1);
+
   /* BG-P04 — elevation. Exhibition's depth is a true shadow: the luminous grey
      room has a light source, so a surface above the page casts. Struck from
      --text rather than from black, so the shadow belongs to the room. `flat`
@@ -280,6 +294,20 @@
   --r-panel: 16px;
   --r-full: 999px;
 
+  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
+     Theme-independent and declared in both blocks so a component reads every
+     root token from one place, exactly as the radius scale above does. The TS
+     module is the source of truth — it is what a style object spends; these
+     exist for the handful of rules that live in CSS because they cannot be
+     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
+     reset). motion.test.ts holds the two sides to each other, so a duration
+     cannot be changed here without being changed there. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-reveal: 450ms;
+  --motion-theme: 180ms;
+  --motion-ease: cubic-bezier(.2,.6,.35,1);
+
   /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
      level pairs a deeper shadow with an inset --glass-hi top hairline: the
      surface's own edge catching the horizon. The hairline says "above", the
@@ -332,9 +360,9 @@
 :root[data-theme-changing] *::before,
 :root[data-theme-changing] *::after {
   transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    border-color 180ms ease !important;
+    background-color var(--motion-theme) var(--motion-ease),
+    color var(--motion-theme) var(--motion-ease),
+    border-color var(--motion-theme) var(--motion-ease) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -562,15 +590,37 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+/* ── BG-P32 — hover is gated on a fine pointer ────────────────────────────────
+   Every `:hover` rule below sits inside `(hover: hover) and (pointer: fine)`.
+   A touch reader has no hover, and an ungated `:hover` leaves the control
+   looking permanently pressed after a tap, until something else is touched.
+
+   Each rule is wrapped WHERE IT STANDS rather than collected into one block at
+   the end of the file, because several of them win over a neighbouring state
+   rule of equal specificity by document order alone — `.fs-nav-item:hover`
+   against `.fs-nav-item.active`, say. Moving them would silently flip which
+   one paints an active, hovered row.
+
+   The 563 Tailwind `hover:` utilities elsewhere in the product are gated by
+   `hoverOnlyWhenSupported` in tailwind.config.ts, which compiles them into
+   this same query; hover carried in a style object goes through `hoverIsFine()`
+   in src/lib/theme/motion.ts, which reads it too.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+}
 
 .mention-link {
   color: #E8571A;
   text-decoration: none;
   font-weight: 500;
 }
-.mention-link:hover {
-  text-decoration: underline;
+/* BG-P32 — gated: see the hover note above. */
+@media (hover: hover) and (pointer: fine) {
+  .mention-link:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Snap-point pulse animation for magnetized connection points */
@@ -612,7 +662,7 @@ input, textarea, select {
   border-radius: var(--r-control);
   color: var(--text) !important;
   outline: none;
-  transition: border-color 150ms ease;
+  transition: border-color var(--motion-fast) var(--motion-ease);
 }
 
 /* BG-P07. :focus-visible rather than :focus — a mouse click on a field should
@@ -685,21 +735,13 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { background-position: -100% 0; }
 }
 
-/* BG-P07. The theme requires prefers-reduced-motion to be honoured in CSS AND
-   in JavaScript-driven animation. src/lib/theme/controls.ts drops the animation
-   from the style object, which covers every render; this covers the gap that
-   leaves — a visitor who changes the setting while a skeleton is already on
-   screen, where nothing would re-render to notice.
-
-   Scoped to a data attribute the kit sets rather than to `*`, deliberately. A
-   global reduced-motion reset would reach every animation in the application,
-   including Radix's mount and unmount transitions, and that is a far larger
-   change than this prompt is making. */
-@media (prefers-reduced-motion: reduce) {
-  [data-bg-animated] {
-    animation: none !important;
-  }
-}
+/* BG-P07's per-surface reset, SUPERSEDED BY THE GLOBAL RULE at the end of this
+   file. It was scoped to `[data-bg-animated]` because a global reset "would
+   reach every animation in the application, including Radix's mount and unmount
+   transitions, and that is a far larger change than this prompt is making".
+   BG-P32 is the prompt that makes it: reaching every animation is now the
+   point, and the attribute survives only as the marker a component sets so its
+   own JavaScript half knows what it is suppressing. */
 
 /* BG-P27. The auth icon's entrance, moved out of a `<style>` tag injected by
    AuthEmailVerificationCard.tsx — the same relocation BG-P18 made for the
@@ -781,7 +823,7 @@ input[type="search"] { border-radius: var(--r-control); }
     box-shadow: var(--elev-raised);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 160ms cubic-bezier(.2,.6,.35,1);
+    transition: opacity var(--motion-fast) var(--motion-ease);
   }
 
   [data-visual-slot="gallery-card"]:hover::after {
@@ -789,16 +831,160 @@ input[type="search"] { border-radius: var(--r-control); }
   }
 }
 
-/* BG-P07's rule, applied to the card: reduced motion is answered TWICE. The
-   inline styles drop their transitions at render, which covers every render;
-   this covers the gap that leaves — a visitor who changes the setting while a
-   card is already on screen, where nothing would re-render to notice. The
-   unfold then snaps, which is the behaviour the theme asks for: the reader
-   still gets the thread, just not the travel. */
+/* ── BG-P32 — the keyframes twelve components were injecting ───────────────────
+   A keyframe is the one thing an inline style cannot express, so the theme puts
+   it here and a component references it by name. Ten components were shipping
+   their own `<style>` tag instead — which re-inserts the same rule on every
+   mount, puts the definition out of reach of the global reduced-motion rule's
+   companions, and in three separate cases defined `spin` locally. That last one
+   was a latent bug rather than a style problem: eight components animate
+   `spin`, only three defined it, and whether a spinner turned depended on
+   whether one of those three happened to be mounted.
+
+   Non-keyframe CSS stays where it was. StageCanvas's react-flow overrides and
+   ReferencePickerModal's scrollbar rules are third-party surface patches that
+   genuinely cannot be expressed inline, and they are not what this rule is
+   about.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* The one rotation in the product. Eight components reference it. */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* MetaBountyCreationFlow's spinner, kept under its own name because it is
+   referenced by that name in half a dozen places in that flow. */
+@keyframes mbcf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* A node arriving on the stage canvas. */
+@keyframes block-scale-in {
+  from { transform: scale(0.96); opacity: 0.6; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+/* The challenge-complete toast. */
+@keyframes ct-in {
+  0%   { transform: translateY(24px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* The claim button's two celebration pieces. `--dx`/`--dy` are set per particle
+   inline; a celebration is the one place this theme's restraint does not apply. */
+@keyframes qb-particle {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+@keyframes qb-float {
+  0%   { transform: translateY(0); opacity: 0; }
+  18%  { opacity: 1; }
+  100% { transform: translateY(-34px); opacity: 0; }
+}
+
+/* A quest item ticking off. */
+@keyframes qc-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* The level-up modal, and its confetti. */
+@keyframes levelup-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes levelup-confetti {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* The XP toast arriving. */
+@keyframes xptoast-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* A comment row flashing as it lands. */
+@keyframes tealFlash {
+  0%   { background-color: color-mix(in srgb, var(--evidence) 15%, transparent); }
+  100% { background-color: transparent; }
+}
+
+/* A deep link landing on a comment.
+
+   AN OUTLINE, NOT A BOX-SHADOW. This keyframe animated `box-shadow` from a 0px
+   ring to an 8px one — the uncompositable property the theme names, in the one
+   place a keyframe could hide it from a scanner that only reads `transition`.
+   An outline draws the same expanding ring, takes no part in layout, and its
+   colour composites; the geometry is fixed and only the colour moves, which is
+   the same shape `pulseRing` uses for the imperative version of this effect. */
+@keyframes ns-deep-link-pulse {
+  0%   { outline-color: color-mix(in srgb, var(--action) 55%, transparent); }
+  100% { outline-color: color-mix(in srgb, var(--action) 0%, transparent); }
+}
+
+.ns-comment-new-reply {
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+  animation: ns-deep-link-pulse 600ms var(--motion-ease);
+}
+
+/* ══ BG-P32 — the global reduced-motion guarantee ═════════════════════════════
+
+   ONE RULE, AND IT REACHES EVERYTHING. A visitor who has asked their operating
+   system for less motion gets a product where nothing moves: no transition, no
+   keyframe, no smooth scroll, anywhere, on any surface, including the ones this
+   prompt never opened and the ones added after it.
+
+   WHY `*` AND `!important`, WHICH ARE OTHERWISE NEVER RIGHT. Every other answer
+   is a list, and a list is a thing to forget to add to. The product carries
+   ~200 Tailwind transition utilities, 13 keyframes, four third-party animation
+   sources (Radix's mount/unmount, tailwindcss-animate, TipTap, dnd-kit) and a
+   dozen inline `animation` strings. Naming them is how the previous, narrower
+   rules ended up covering three selectors while the streak flame, the skill
+   tree and the typing indicator kept moving. A reader who asked for stillness
+   and got it on five surfaces out of forty has not been answered.
+
+   0.01ms RATHER THAN `none`, WHICH IS THE POINT OF THE ODD NUMBER. A duration
+   of zero cancels the transition outright, and a cancelled transition never
+   fires `transitionend` — so any component waiting on that event to unmount a
+   node, release a lock or advance a step would hang forever, on this code path
+   only, for exactly the readers least able to work around it. 0.01ms completes
+   within the same frame and still fires the event, so the application's own
+   state machines run unchanged and only the movement is gone. The same
+   reasoning gives `animation-iteration-count: 1`: an infinite loop that still
+   fires `animationend` once is a loop that has stopped.
+
+   `scroll-behavior: auto` IS NOT DECORATION EITHER. Smooth scrolling is
+   vestibular motion — it is the large-area movement reduced-motion users most
+   often cite — and this codebase asks for it in 37 places, each an explicit
+   `behavior: "smooth"` that CSS alone cannot reach. The declaration below
+   answers the CSS half; `prefersReducedMotion()` in src/lib/theme/motion.ts is
+   what the JavaScript half reads.
+
+   THIS IS THE CSS HALF OF A TWO-SIDED ANSWER, and both halves are needed.
+   The module returns "none" from every builder, which covers every render and
+   is what keeps a JavaScript-driven animation from ever starting. This covers
+   the gap that leaves: a visitor who changes the setting while a surface is
+   already on screen, where nothing would re-render to notice, and any animation
+   that reaches the page from a dependency this codebase does not author.
+   ════════════════════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
-  [data-visual-slot="gallery-card"],
-  [data-visual-slot="gallery-card"]::after,
-  [data-thread-region] {
-    transition: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-delay: -1ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto !important;
   }
 }

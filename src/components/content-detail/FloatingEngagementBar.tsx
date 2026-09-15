@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import ActionXpHint from "@/components/ambient/ActionXpHint";
+import { feedback } from "@/lib/theme/motion";
 
 interface Post {
   id: string;
@@ -116,7 +117,7 @@ function ActionButton({
           ? "var(--recess)"
           : "transparent",
         color: textColor,
-        transition: "background 150ms ease",
+        transition: feedback("background-color"),
       }}
     >
       {icon}
@@ -226,7 +227,7 @@ export function FloatingEngagementBar({
         alignItems: "center",
         opacity: effectivelyVisible ? 1 : 0,
         pointerEvents: effectivelyVisible ? "auto" : "none",
-        transition: "all 240ms cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: feedback(),
         zIndex: 40,
       }}
     >

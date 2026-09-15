@@ -3,6 +3,7 @@ import { supabase } from
   '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { type } from "@/lib/theme/type";
+import { feedback } from '@/lib/theme/motion';
 
 interface Version {
   id: string;
@@ -181,7 +182,7 @@ export function VersionHistory({
                     selected?.id === v.id
                       ? 'color-mix(in srgb, var(--action) 8%, transparent)'
                       : 'transparent',
-                  transition: 'background 0.1s',
+                  transition: feedback("background-color"),
                 }}
               >
                 <div style={{

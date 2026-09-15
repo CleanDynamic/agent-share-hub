@@ -39,7 +39,7 @@ export function BlueprintResultCard({ blueprint, onClick }: BlueprintResultCardP
           anchorEl: virtualAnchorFromPoint(e.clientX, e.clientY),
         });
       }}
-      className="cursor-pointer rounded-xl p-5 transition-all"
+      className="cursor-pointer rounded-xl p-5 transition-feedback"
       style={{
         background: "var(--glass)",
         border: "0.5px solid var(--line)",
