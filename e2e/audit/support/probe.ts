@@ -40,7 +40,7 @@ export interface Hit {
   fontPx: number;
   fontWeight: number;
   floor: number;
-  status: "pass" | "fail" | "image-beneath" | "hairline";
+  status: "pass" | "fail" | "image-beneath" | "hairline" | "exempt";
   note: string;
   count: number;
 }
@@ -247,10 +247,21 @@ export const collectContrast = (tokenNames: string[]) => {
         const fontPx = Math.round(parseFloat(s.fontSize) * 10) / 10;
         const weight = parseInt(s.fontWeight, 10) || 400;
         const large = fontPx >= 24 || (fontPx >= 18.66 && weight >= 700);
+        /* A DISABLED CONTROL IS EXEMPT, and the exemption is WCAG's own:
+           1.4.3 excludes "text or images of text that are part of an
+           inactive user interface component" and 1.4.11 excludes an
+           inactive component's boundary. It is not a loophole — the whole
+           point of the 50% wash this kit puts on a disabled control is that
+           it reads as unavailable BECAUSE it is harder to see. Reported so
+           the numbers are on the record, never failed. */
+        const inactive = !!el.closest(
+          '[disabled],[aria-disabled="true"],[data-disabled],[data-state="unavailable"]',
+        );
         const notes: string[] = [];
         if (large) notes.push("large-text");
         if (ground.glass) notes.push("glass");
         if (chain < 0.999) notes.push(`opacity ${Math.round(chain * 100) / 100}`);
+        if (inactive) notes.push("disabled — WCAG 1.4.3 exempts an inactive component");
         push({
           kind: "text",
           selector: describe(el),
@@ -260,8 +271,14 @@ export const collectContrast = (tokenNames: string[]) => {
           ratio: r,
           fontPx,
           fontWeight: weight,
-          floor: 4.5,
-          status: media ? "image-beneath" : r < 4.5 ? "fail" : "pass",
+          floor: inactive ? 0 : 4.5,
+          status: inactive
+            ? "exempt"
+            : media
+              ? "image-beneath"
+              : r < 4.5
+                ? "fail"
+                : "pass",
           note: notes.join(" "),
           count: 1,
         });
@@ -282,6 +299,9 @@ export const collectContrast = (tokenNames: string[]) => {
     if (chain < 0.06) continue;
     const outside = groundOf(el, false);
     const inside = groundOf(el, true);
+    /* Set by the border pass below: true when this element's own boundary
+       clears the 3.0:1 floor, which is what the control-fill check reads. */
+    let borderIdentifies = false;
     for (const side of SIDES) {
       const width = parseFloat(s[`border${side}Width` as keyof CSSStyleDeclaration] as string);
       const style = s[`border${side}Style` as keyof CSSStyleDeclaration] as string;
@@ -302,6 +322,7 @@ export const collectContrast = (tokenNames: string[]) => {
         el.getAttribute("aria-invalid") === "true" ||
         el.getAttribute("role") === "alert" ||
         (el.matches(INTERACTIVE) && width >= 1.5);
+      const inactive = !!el.closest('[disabled],[aria-disabled="true"],[data-disabled]');
       push({
         kind: "border",
         selector: describe(el) + ` border-${side.toLowerCase()}`,
@@ -311,11 +332,16 @@ export const collectContrast = (tokenNames: string[]) => {
         ratio: best,
         fontPx: 0,
         fontWeight: 0,
-        floor: isState ? 3 : 0,
-        status: isState ? (best < 3 ? "fail" : "pass") : "hairline",
-        note: isState ? "state-carrying" : "hairline",
+        floor: isState && !inactive ? 3 : 0,
+        status: inactive ? "exempt" : isState ? (best < 3 ? "fail" : "pass") : "hairline",
+        note: inactive
+          ? "disabled — WCAG 1.4.11 exempts an inactive component"
+          : isState
+            ? "state-carrying"
+            : "hairline",
         count: 1,
       });
+      borderIdentifies = isState && !inactive && best >= 3;
       break; // one row per element: four identical sides is three rows of noise
     }
 
@@ -338,6 +364,14 @@ export const collectContrast = (tokenNames: string[]) => {
            — has nothing but its shape, so its fill is the whole affordance
            and 3.0:1 is the floor it has to clear. */
         const labelled = (el.textContent || "").trim().length > 0;
+        const inactive = !!el.closest('[disabled],[aria-disabled="true"],[data-disabled]');
+        /* WCAG 1.4.11 floors the visual information REQUIRED to identify the
+           component, not every part of it. A control identified by its own
+           label, or by a boundary that already clears 3.0:1, does not also
+           need its fill to — and requiring both would mean no inset control
+           could ever sit on a surface one step from it, which is what
+           `--recess` is for. */
+        const identified = labelled || borderIdentifies;
         push({
           kind: "border",
           selector: describe(el) + " fill",
@@ -347,9 +381,15 @@ export const collectContrast = (tokenNames: string[]) => {
           ratio: r,
           fontPx: 0,
           fontWeight: 0,
-          floor: labelled ? 0 : 3,
-          status: labelled ? "hairline" : r < 3 ? "fail" : "pass",
-          note: labelled ? "control-fill (labelled — boundary not required)" : "control-fill",
+          floor: identified || inactive ? 0 : 3,
+          status: inactive ? "exempt" : identified ? "hairline" : r < 3 ? "fail" : "pass",
+          note: inactive
+            ? "disabled — WCAG 1.4.11 exempts an inactive component"
+            : labelled
+              ? "control-fill (identified by its label)"
+              : borderIdentifies
+                ? "control-fill (identified by its boundary)"
+                : "control-fill",
           count: 1,
         });
       }
@@ -457,7 +497,26 @@ export const collectFocus = async (limit: number) => {
        is a whole sweep of phantom findings. Two frames is one React commit
        plus one paint. */
     await settle();
-    const s = getComputedStyle(el);
+    let s = getComputedStyle(el);
+    let ringOn: Element = el;
+    /* THE RING IS NOT ALWAYS ON THE FOCUSED ELEMENT. The Explore rail draws it
+       on the wrapper around the field and its icon, so the ring encircles the
+       two as one object — which is the right call and would read as "no focus
+       indicator" to a probe that only ever looked at the input. So: if the
+       focused element has no outline, look up to three ancestors for one that
+       does. A ring drawn on a wrapper is still the ring. */
+    if (!(parseFloat(s.outlineWidth) > 0)) {
+      let up: Element | null = el.parentElement;
+      for (let i = 0; i < 3 && up; i++) {
+        const ancestor = getComputedStyle(up);
+        if (parseFloat(ancestor.outlineWidth) > 0 && ancestor.outlineStyle !== "none") {
+          s = ancestor;
+          ringOn = up;
+          break;
+        }
+        up = up.parentElement;
+      }
+    }
     let width = parseFloat(s.outlineWidth) || 0;
     const offset = parseFloat(s.outlineOffset) || 0;
     let colour = parse(s.outlineColor);
@@ -472,7 +531,7 @@ export const collectFocus = async (limit: number) => {
         width = 2;
       }
     }
-    const ground = groundOutside(el);
+    const ground = groundOutside(ringOn);
     const painted = over(colour, ground);
     const r = width > 0 ? ratio(painted, ground) : 0;
     /* `outline-style: auto` is CHROMIUM'S OWN RING, and it is not one colour:
@@ -488,7 +547,7 @@ export const collectFocus = async (limit: number) => {
     if (seen.has(key)) continue;
     seen.add(key);
     rows.push({
-      selector: describe(el),
+      selector: describe(el) + (ringOn === el ? "" : ` (ring on ${describe(ringOn)})`),
       ringColour: kind === "ua-default" ? "ua-auto" : hex(painted),
       ground: hex(ground),
       ratio: kind === "ua-default" ? 0 : r,

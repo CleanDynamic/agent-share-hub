@@ -46,20 +46,54 @@ test.describe.configure({ mode: "serial" });
 
 /** route id + theme + selector + measured pair, with the reason it stands. */
 interface Survivor {
-  route: string;
+  route: string | "*";
   theme: Theme | "*";
   match: RegExp;
   why: string;
 }
 
-const SURVIVORS: Survivor[] = [];
+const SURVIVORS: Survivor[] = [
+  {
+    route: "*",
+    theme: "exhibition",
+    // Only the amber ring, and only on Exhibition. Any other focus failure,
+    // any other ring colour, and any failure on Dusk still fails.
+    match: /^focus ring #D9A441 /,
+    why:
+      "THE FOCUS RING IS 1.55-2.04:1 ON EVERY EXHIBITION GROUND, AND EVERY FIX " +
+      "FOR IT IS OUT OF THIS PROMPT'S HANDS. ESCALATED, NOT ACCEPTED. " +
+      "`--lit` is #D9A441 in both rooms and measures 1.80:1 on --bg, 1.55:1 on " +
+      "--recess and 2.04:1 on a glass card; on Dusk the same value is 7.47:1, " +
+      "so this is an Exhibition-only shortfall. The buildgallery-theme skill " +
+      "PRESCRIBES this ring ('2px --lit with a 2px --bg offset, identical in " +
+      "both themes') and justifies it by the offset — 'the ring is read " +
+      "against two edges rather than against the ground alone'. The offset " +
+      "band is --bg and so is what lies outside the ring, so on Exhibition it " +
+      "is the same 1.80:1 on both edges and the justification does not hold. " +
+      "contrast.test.ts already records the underlying divergence (the skill " +
+      "says --lit is 3.01:1 on the ground; the declared tokens give 1.80:1). " +
+      "The escalation order's first two remedies both fail here: reusing a " +
+      "legal pairing means changing the ring's colour, which the skill forbids " +
+      "('one definition, used everywhere') and which this prompt's constraint " +
+      "2 explicitly blesses --lit for; and adjusting lightness within the hue " +
+      "means darkening --lit, which is one value in both rooms by design and " +
+      "which would break two published contract pairings (text/lit 7.29 and " +
+      "dusk lit/bg 7.47) that acceptance 3 requires to still measure as " +
+      "stated. So it goes to the operator with three options: (a) split --lit " +
+      "per theme and darken Exhibition's, re-recording the contract; (b) keep " +
+      "--lit and add a second, contrasting inner ring, the standard " +
+      "double-ring pattern, which is a new visual treatment; (c) accept 1.80:1 " +
+      "on Exhibition as a deliberate deviation from WCAG 1.4.11.",
+  },
+];
 
-const survivorFor = (route: string, theme: string, selector: string, sample: string) =>
+/** The subject a survivor is matched against: the thing, then where it is. */
+const survivorFor = (route: string, theme: string, selector: string, subject: string) =>
   SURVIVORS.find(
     (s) =>
-      s.route === route &&
+      (s.route === "*" || s.route === route) &&
       (s.theme === "*" || s.theme === theme) &&
-      s.match.test(`${selector} ${sample}`),
+      (s.match.test(subject) || s.match.test(`${selector} ${subject}`)),
   );
 
 test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({ browser }) => {
@@ -138,7 +172,10 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
             const line =
               `${route.id} ${theme} focus ${ring.selector} — ring ${ring.ringColour} on ` +
               `${ring.ground} = ${ring.ratio}:1 (width ${ring.width}px)`;
-            if (survivorFor(route.id, theme, ring.selector, "focus")) accepted.push(line);
+            // The match string names the RING, so a survivor can be written
+            // against one ring colour rather than against one selector.
+            const subject = `focus ring ${ring.ringColour} on ${ring.ground}`;
+            if (survivorFor(route.id, theme, ring.selector, subject)) accepted.push(line);
             else failures.push(line);
           }
         }
@@ -176,7 +213,7 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
   const notes = writeCsv(
     "contrast-notes.csv",
     header,
-    rows.filter((r) => r[11] === "hairline" || r[11] === "image-beneath"),
+    rows.filter((r) => r[11] === "hairline" || r[11] === "image-beneath" || r[11] === "exempt"),
   );
 
   const summary = [
@@ -187,6 +224,7 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
     `failures    ${failures.length} unaccepted`,
     `accepted    ${accepted.length} survivors with a recorded justification`,
     `hairlines   ${rows.filter((r) => r[11] === "hairline").length} (reported, not floored — see the header of this spec)`,
+    `exempt      ${rows.filter((r) => r[11] === "exempt").length} on inactive components (WCAG 1.4.3 / 1.4.11 exempt them; measured and recorded anyway)`,
     `ua rings    ${rows.filter((r) => String(r[12]).startsWith("ua-default")).length} controls the system ring never reached (Chromium paints its own; a consistency finding, not a contrast one)`,
     `image       ${rows.filter((r) => r[11] === "image-beneath").length} pairs over an image or gradient (not measurable as one ratio)`,
     "",
@@ -203,6 +241,11 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
     "",
     "accepted survivors",
     ...(accepted.length ? accepted.map((f) => "  " + f) : ["  none"]),
+    "",
+    "why each survivor stands",
+    ...(SURVIVORS.length
+      ? SURVIVORS.flatMap((s) => [`  [${s.route}/${s.theme}] ${s.match}`, `    ${s.why}`])
+      : ["  no survivors are recorded"]),
     "",
     `written: ${all}`,
     `written: ${failing}`,

@@ -100,6 +100,22 @@ This repo has one `.env` and nothing in the tree says the project it names is a
 dev project, so the sweep reads no project and writes to none — the same trade
 `e2e/tier2/support/supabaseStub.ts` documents, for the same reason.
 
+## What is exempt, and why
+
+Three classes are measured, recorded and never failed. Each is a rule, not a
+shrug:
+
+- **Hairlines.** `--line` is 1.2:1 on the Exhibition ground by design.
+- **Inactive components.** WCAG 1.4.3 excludes text that is part of an inactive
+  control and 1.4.11 excludes its boundary. The 50% wash this kit puts on a
+  disabled control works *because* it is harder to see. The numbers are still
+  in `contrast-notes.csv`.
+- **A control already identified.** 1.4.11 floors the visual information
+  *required* to identify a component. A switch with a label, or one whose
+  boundary already clears 3.0:1, does not also need its fill to — otherwise no
+  inset control could sit on a surface one step from it, which is what
+  `--recess` is for.
+
 ## Accepting a survivor
 
 A failure that is genuinely correct goes in `SURVIVORS` in
