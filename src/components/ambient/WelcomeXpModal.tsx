@@ -1,5 +1,6 @@
 import { Hammer, TrendingUp, Flame, X } from "lucide-react"
 import { tokens, xpColor, reputationColor, streakColor } from "./tokens"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface WelcomeXpModalProps {
   /** Fired when the user clicks "Start your quest". */
@@ -61,7 +62,7 @@ export default function WelcomeXpModal({
           border: tokens.borderStrong,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
+          boxShadow: "var(--elev-overlay)",
           padding: 24,
         }}
       >
@@ -112,8 +113,8 @@ export default function WelcomeXpModal({
                   width: 36,
                   height: 36,
                   borderRadius: tokens.radiusCard,
-                  background: `${color}1F`,
-                  border: `0.5px solid ${color}55`,
+                  background: `${colourAlpha(color, 0.122)}`,
+                  border: `0.5px solid ${colourAlpha(color, 0.333)}`,
                 }}
               >
                 <Icon size={18} color={color} />

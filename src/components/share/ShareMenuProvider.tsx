@@ -146,7 +146,7 @@ export function ShareMenuProvider({ children }: { children: ReactNode }) {
           targets.collections.map((c) => ({
             id: c.id,
             name: c.name,
-            accentColor: c.accentColor || "#9CA3AF",
+            accentColor: c.accentColor || "var(--text2)",
             itemCount: c.itemCount,
             containsThisItem: containing.has(c.id),
           }))

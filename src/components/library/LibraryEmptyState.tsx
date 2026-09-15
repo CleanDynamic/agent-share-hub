@@ -15,20 +15,20 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             width: 56,
             height: 56,
             borderRadius: 16,
-            background: "rgba(255, 255, 255, 0.12)",
-            border: "1px solid rgba(255, 255, 255, 0.14)",
+            background: "var(--recess)",
+            border: "1px solid var(--line)",
           }}
         >
           <Compass
             className="h-7 w-7"
-            style={{ color: "rgba(255,255,255,0.28)" }}
+            style={{ color: "var(--text2)" }}
           />
         </div>
         <p
           style={{
             fontSize: 15,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.90)",
+            color: "var(--text)",
             marginBottom: 6,
           }}
         >
@@ -38,7 +38,7 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
           style={{
             fontSize: 13,
             fontWeight: 300,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
           }}
         >
           Try adjusting your search or filters
@@ -51,10 +51,10 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div
         style={{
-          background: "rgba(16,16,24,0.72)",
+          background: "var(--recess)",
           backdropFilter: "blur(40px) saturate(180%)",
           WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          border: "1px solid var(--line)",
           borderRadius: 20,
           padding: "48px 40px",
           maxWidth: 420,
@@ -67,18 +67,18 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             width: 64,
             height: 64,
             borderRadius: 20,
-            background: "rgba(31,122,109,0.08)",
-            border: "1px solid rgba(31,122,109,0.2)",
+            background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--evidence) 20%, transparent)",
           }}
         >
-          <BookOpen className="h-8 w-8" style={{ color: "#1F7A6D" }} />
+          <BookOpen className="h-8 w-8" style={{ color: "var(--evidence)" }} />
         </div>
 
         <h3
           style={{
             fontSize: 18,
             fontWeight: 700,
-            color: "rgba(255,255,255,0.90)",
+            color: "var(--text)",
             marginBottom: 8,
           }}
         >
@@ -88,7 +88,7 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
           style={{
             fontSize: 13,
             fontWeight: 300,
-            color: "rgba(255,255,255,0.45)",
+            color: "var(--text2)",
             marginBottom: 28,
             lineHeight: 1.6,
           }}
@@ -103,13 +103,13 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             to="/browse"
             className="flex items-center gap-2 transition-all"
             style={{
-              background: "rgba(31,122,109,0.12)",
-              border: "1px solid rgba(31,122,109,0.3)",
+              background: "color-mix(in srgb, var(--evidence) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)",
               borderRadius: 10,
               padding: "10px 24px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#1F7A6D",
+              color: "var(--evidence)",
             }}
           >
             <Compass className="h-4 w-4" />
@@ -119,13 +119,13 @@ export function LibraryEmptyState({ isSearching }: LibraryEmptyStateProps) {
             to="/upload"
             className="flex items-center gap-2 transition-all"
             style={{
-              background: "rgba(139,69,19,0.10)",
-              border: "1px solid rgba(139,69,19,0.25)",
+              background: "color-mix(in srgb, var(--action) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--action) 25%, transparent)",
               borderRadius: 10,
               padding: "10px 24px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#8B4513",
+              color: "var(--action)",
             }}
           >
             <PenTool className="h-4 w-4" />

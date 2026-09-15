@@ -8,13 +8,13 @@ export interface ProgressTabBarProps {
   onChange: (id: string) => void;
 }
 
-const ORANGE = "#E8571A";
+const ORANGE = "var(--action)";
 
 export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) {
   const wrap: CSSProperties = {
     display: "flex",
     gap: 24,
-    borderBottom: "0.5px solid rgba(255,255,255,0.10)",
+    borderBottom: "0.5px solid var(--line)",
     padding: "0 4px",
     overflowX: "auto",
   };
@@ -34,7 +34,7 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
               fontFamily: "Figtree, sans-serif",
               fontSize: 14,
               fontWeight: isActive ? 600 : 500,
-              color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.55)",
+              color: isActive ? "var(--text)" : "var(--text2)",
               borderBottom: `2px solid ${isActive ? ORANGE : "transparent"}`,
               cursor: "pointer",
               marginBottom: -0.5,

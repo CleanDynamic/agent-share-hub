@@ -47,7 +47,7 @@ export default function TrackUndecidedState({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "rgba(255,255,255,0.05)",
+              background: "var(--glass-2)",
               border: tokens.borderSoft,
             }}
           >
@@ -87,7 +87,7 @@ export default function TrackUndecidedState({
           borderRadius: tokens.radiusPill,
           border: "none",
           background: tokens.brandGradient,
-          color: "#fff",
+          color: "var(--on-action)",
           fontSize: 13,
           fontWeight: 600,
           fontFamily: sans,

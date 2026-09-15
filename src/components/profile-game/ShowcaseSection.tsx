@@ -1,6 +1,7 @@
 import { Pin, Sparkles } from "lucide-react"
 import { tokens } from "./tokens"
 import ShowcaseStrip, { type ShowcaseItem } from "./ShowcaseStrip"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface ShowcaseSectionProps {
   items: ShowcaseItem[]
@@ -59,8 +60,8 @@ export default function ShowcaseSection({
                 height: 24,
                 padding: "0 10px",
                 borderRadius: tokens.radius.pill,
-                background: `${tokens.brand.orange}1f`,
-                border: `0.5px solid ${tokens.brand.orange}66`,
+                background: `${colourAlpha(tokens.brand.orange, 0.122)}`,
+                border: `0.5px solid ${colourAlpha(tokens.brand.orange, 0.4)}`,
                 fontFamily: tokens.font.sans,
                 fontSize: 11,
                 fontWeight: 600,

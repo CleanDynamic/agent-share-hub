@@ -82,29 +82,29 @@ const s = {
   page: {
     width: "210mm",
     minHeight: "297mm",
-    background: "#ffffff",
+    background: "var(--chrome-hi)",
     color: "#000",
     fontFamily: "'Figtree', -apple-system, sans-serif",
     padding: "20mm",
     boxSizing: "border-box" as const,
   },
-  topStrip: { display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e5e5e5", paddingBottom: 8, marginBottom: 16 },
+  topStrip: { display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--line)", paddingBottom: 8, marginBottom: 16 },
   brand: { fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const },
-  url: { fontSize: 10, color: "#6b7280" },
+  url: { fontSize: 10, color: "var(--text2)" },
   title: { fontSize: 22, fontWeight: 700, margin: "8px 0 4px" },
-  subtitle: { fontSize: 12, color: "#6b7280", marginBottom: 16 },
-  callout: { border: "1px solid #2EC4B6", borderRadius: 8, padding: 16, background: "rgba(46,196,182,0.05)", marginBottom: 16 },
-  calloutTitle: { fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "#2EC4B6", marginBottom: 8 },
+  subtitle: { fontSize: 12, color: "var(--text2)", marginBottom: 16 },
+  callout: { border: "1px solid var(--evidence)", borderRadius: 8, padding: 16, background: "color-mix(in srgb, var(--evidence) 5%, transparent)", marginBottom: 16 },
+  calloutTitle: { fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--evidence)", marginBottom: 8 },
   calloutBody: { fontSize: 11, lineHeight: 1.55 },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: 11, marginBottom: 16 },
-  trBorder: { borderBottom: "1px solid #e5e5e5" },
+  trBorder: { borderBottom: "1px solid var(--line)" },
   td: { padding: "8px 12px", verticalAlign: "top" as const },
-  tdLabel: { padding: "8px 12px", fontWeight: 600, color: "#374151", width: 140, background: "#f9fafb", verticalAlign: "top" as const },
-  section: { fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#6b7280", margin: "20px 0 10px" },
-  blockSubheader: { fontSize: 10, fontWeight: 500, color: "#374151", marginBottom: 4 },
+  tdLabel: { padding: "8px 12px", fontWeight: 600, color: "var(--text2)", width: 140, background: "var(--recess)", verticalAlign: "top" as const },
+  section: { fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "var(--text2)", margin: "20px 0 10px" },
+  blockSubheader: { fontSize: 10, fontWeight: 500, color: "var(--text2)", marginBottom: 4 },
   blockContent: { fontSize: 11, lineHeight: 1.6, marginBottom: 12, paddingLeft: 16 },
-  code: { fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 10, background: "#f3f4f6", padding: 12, borderRadius: 4, whiteSpace: "pre-wrap" as const, marginLeft: 16, marginBottom: 12, border: "1px solid #e5e5e5" },
-  quote: { fontStyle: "italic" as const, borderLeft: "3px solid #2EC4B6", paddingLeft: 12, marginLeft: 16, marginBottom: 12, color: "#374151" },
+  code: { fontFamily: "'JetBrains Mono','Fira Code',monospace", fontSize: 10, background: "var(--recess)", padding: 12, borderRadius: 4, whiteSpace: "pre-wrap" as const, marginLeft: 16, marginBottom: 12, border: "1px solid var(--line)" },
+  quote: { fontStyle: "italic" as const, borderLeft: "3px solid var(--evidence)", paddingLeft: 12, marginLeft: 16, marginBottom: 12, color: "var(--text2)" },
   pageBreak: { breakBefore: "page" as any, marginTop: 32 },
 };
 
@@ -232,7 +232,7 @@ export function AIPdfPreview({
           return (
             <div key={stage.id} style={{ marginBottom: 20 }}>
               <div style={s.section}>Stage: {stage.name}</div>
-              <div style={{ fontSize: 10, fontStyle: "italic", color: "#4b5563", marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontStyle: "italic", color: "var(--text2)", marginBottom: 12 }}>
                 Stage description: {desc}
               </div>
               {stage.blocks.map((b) => <BlockRenderer key={b.id} block={b} />)}

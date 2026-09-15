@@ -154,7 +154,7 @@ function MiniPreview({ template }: { template: StageTemplate }) {
           width={b.width}
           height={b.height}
           rx={8}
-          fill="rgba(20,20,28,0.85)"
+          fill="var(--recess)"
           stroke={colorFor[b.type] ?? 'var(--recess)'}
           strokeWidth={2}
         />

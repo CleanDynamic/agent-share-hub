@@ -4,6 +4,7 @@ import { MoreHorizontal, ChevronDown, Check, Plus, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 interface WorkflowStep {
   id: string;
@@ -99,13 +100,13 @@ export function WorkflowBlockNode({ id, data, selected }: NodeProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={selectThis}
-      className="group relative rounded-lg p-2.5 bg-[rgba(20,20,28,0.85)] backdrop-blur-md transition-all"
+      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
       style={{
         width: 300,
         border: selected
-          ? `1px solid ${TYPE_COLOR}99`
+          ? `1px solid ${colourAlpha(TYPE_COLOR, 0.6)}`
           : '1px solid var(--line)',
-        boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
+        boxShadow: selected ? `0 0 0 2px ${colourAlpha(TYPE_COLOR, 0.149)}` : 'none',
       }}
     >
       <Handle

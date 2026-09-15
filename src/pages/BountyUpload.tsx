@@ -402,7 +402,7 @@ export default function BountyUpload() {
             }
             style={{
               flex: 1, padding: '10px 0', borderRadius: 'var(--r-control)',
-              background: 'linear-gradient(135deg, var(--cat-breakage), #D97706)',
+              background: 'linear-gradient(135deg, var(--cat-breakage), var(--lit))',
               border: 'none', color: 'var(--text)',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'Figtree', opacity: submitting ? 0.6 : 1,

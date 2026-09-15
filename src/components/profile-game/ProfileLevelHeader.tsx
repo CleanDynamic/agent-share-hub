@@ -3,6 +3,7 @@ import { BadgeCheck } from "lucide-react"
 import { tokens, trackColors, type TrackName } from "./tokens"
 import LevelRing from "./LevelRing"
 import CreatorMarkChip, { type CreatorMark } from "./CreatorMarkChip"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface ProfileUser {
   name: string
@@ -102,8 +103,8 @@ function TrackRibbon({ track, tier, color }: { track: TrackName; tier?: number; 
         height: 26,
         padding: "0 14px",
         borderRadius: tokens.radius.pill,
-        background: `linear-gradient(135deg, ${color}33 0%, ${color}14 100%)`,
-        border: `0.5px solid ${color}66`,
+        background: `linear-gradient(135deg, ${colourAlpha(color, 0.2)} 0%, ${colourAlpha(color, 0.078)} 100%)`,
+        border: `0.5px solid ${colourAlpha(color, 0.4)}`,
         fontFamily: tokens.font.sans,
         fontSize: 12,
         fontWeight: 700,

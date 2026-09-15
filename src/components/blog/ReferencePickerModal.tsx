@@ -81,7 +81,7 @@ const styles = {
     WebkitBackdropFilter: "blur(24px)",
     border: "0.5px solid var(--line)",
     borderRadius: 12,
-    boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
+    boxShadow: "var(--elev-overlay)",
     display: "flex",
     flexDirection: "column" as const,
     overflow: "hidden",

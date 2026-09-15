@@ -9,7 +9,8 @@ import {
   Plus,
   ShieldCheck,
 } from "lucide-react";
-import { type } from "@/lib/theme/type";
+import { FIGTREE, type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface CommentAuthor {
@@ -356,8 +357,8 @@ function InlineReferenceChip({ reference }: { reference: InlineReference }) {
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded mx-1"
       style={{
-        background: `${c}15`,
-        border: `0.5px solid ${c}30`,
+        background: `${colourAlpha(c, 0.082)}`,
+        border: `0.5px solid ${colourAlpha(c, 0.188)}`,
         fontFamily: "Figtree, sans-serif",
         fontSize: 11,
       }}
@@ -443,7 +444,7 @@ function CommentCard({
               style={{
                 width: avatarSize,
                 height: avatarSize,
-                background: "linear-gradient(135deg, var(--cat-agents) 0%, var(--cat-agents) 100%)",
+                background: "var(--cat-agents)",
               }}
             >
               {comment.author.avatarUrl ? (

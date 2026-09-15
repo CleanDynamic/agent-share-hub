@@ -1,5 +1,6 @@
 import { Flame, Sparkles, ArrowUpRight } from "lucide-react"
 import { tokens, xpColor, streakColor } from "./tokens"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface DigestEntry {
   id: string
@@ -40,7 +41,7 @@ export default function DailyDigestCard({
         border: tokens.borderStrong,
         backdropFilter: tokens.glass,
         WebkitBackdropFilter: tokens.glass,
-        boxShadow: "0 14px 40px rgba(0,0,0,0.32)",
+        boxShadow: "var(--elev-overlay)",
         padding: 18,
       }}
     >
@@ -56,8 +57,8 @@ export default function DailyDigestCard({
           style={{
             padding: "5px 10px",
             borderRadius: tokens.radiusPill,
-            background: `${streakColor}1F`,
-            border: `0.5px solid ${streakColor}55`,
+            background: `${colourAlpha(streakColor, 0.122)}`,
+            border: `0.5px solid ${colourAlpha(streakColor, 0.333)}`,
           }}
         >
           <Flame size={13} color={streakColor} />

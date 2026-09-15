@@ -21,6 +21,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 type TabType = 'markdown' | 'json' | 'raw';
@@ -31,7 +32,7 @@ interface ResultBlockData {
   [key: string]: unknown;
 }
 
-const TYPE_COLOR = '#A855F7';
+const TYPE_COLOR = 'var(--cat-agents)';
 
 const PORT_STYLE: React.CSSProperties = {
   width: 8,
@@ -73,7 +74,7 @@ function JsonTreeNode({
   const renderKey = () =>
     keyName ? (
       <>
-        <span className="text-[#93C5FD]">{`"${keyName}"`}</span>
+        <span className="text-[var(--cat-data)]">{`"${keyName}"`}</span>
         <span className="text-muted-foreground">: </span>
       </>
     ) : null;
@@ -102,7 +103,7 @@ function JsonTreeNode({
     return (
       <div className="flex items-start gap-1 text-[11px] font-mono">
         {renderKey()}
-        <span className="text-[#FCD34D]">{data}</span>
+        <span className="text-[var(--lit)]">{data}</span>
         {!isLast && <span className="text-muted-foreground">,</span>}
       </div>
     );
@@ -112,7 +113,7 @@ function JsonTreeNode({
     return (
       <div className="flex items-start gap-1 text-[11px] font-mono">
         {renderKey()}
-        <span className="text-[#86EFAC]">{`"${data}"`}</span>
+        <span className="text-[var(--cat-configuration)]">{`"${data}"`}</span>
         {!isLast && <span className="text-muted-foreground">,</span>}
       </div>
     );
@@ -430,13 +431,13 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[rgba(20,20,28,0.85)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
         style={{
           width: 280,
           border: selected
-            ? `1px solid ${TYPE_COLOR}99`
+            ? `1px solid ${colourAlpha(TYPE_COLOR, 0.6)}`
             : '1px solid var(--line)',
-          boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
+          boxShadow: selected ? `0 0 0 2px ${colourAlpha(TYPE_COLOR, 0.149)}` : 'none',
         }}
       >
         <Handle
@@ -556,7 +557,7 @@ export function ResultBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
+          className="w-[560px] sm:max-w-[560px] bg-[var(--recess)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
             <SheetTitle className="text-foreground text-base">Result block</SheetTitle>

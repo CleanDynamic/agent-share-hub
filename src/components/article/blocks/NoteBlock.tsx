@@ -131,7 +131,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
             )}
           />
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 z-10 flex gap-1.5 p-2 bg-[rgba(22,22,30,0.95)] border border-border rounded-md shadow-lg">
+            <div className="absolute top-full left-0 mt-1 z-10 flex gap-1.5 p-2 bg-[var(--recess)] border border-border rounded-md shadow-lg">
               {(['yellow', 'pink', 'blue', 'green'] as NoteColor[]).map((c) => (
                 <button
                   key={c}
@@ -145,7 +145,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
                     'w-5 h-5 rounded-full transition-transform hover:scale-110',
                     dotColors[c],
                     c === color &&
-                      'ring-2 ring-border ring-offset-1 ring-offset-[rgba(22,22,30,0.95)]',
+                      'ring-2 ring-border ring-offset-1 ring-offset-[var(--recess)]',
                   )}
                 />
               ))}

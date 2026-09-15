@@ -27,7 +27,7 @@ export default function RespecDialog({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10,10,16,0.6)",
+        background: "var(--recess)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
         fontFamily: sans,
@@ -113,7 +113,7 @@ export default function RespecDialog({
               padding: "10px 0",
               borderRadius: tokens.radiusPill,
               border: tokens.border,
-              background: "rgba(255,255,255,0.06)",
+              background: "var(--glass-2)",
               color: tokens.text,
               fontSize: 13,
               fontWeight: 600,
@@ -134,8 +134,8 @@ export default function RespecDialog({
               border: "none",
               background: canRespec
                 ? tokens.brandGradient
-                : "rgba(255,255,255,0.08)",
-              color: canRespec ? "#fff" : tokens.textFaint,
+                : "var(--recess)",
+              color: canRespec ? "var(--on-action)" : tokens.textFaint,
               fontSize: 13,
               fontWeight: 600,
               fontFamily: sans,

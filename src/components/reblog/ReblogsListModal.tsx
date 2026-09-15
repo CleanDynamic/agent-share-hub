@@ -33,7 +33,7 @@ export function ReblogsListModal({ isOpen, onClose, postId }: ReblogsListModalPr
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-[#0F0F18] overflow-hidden"
+        className="w-full max-w-md max-h-[80vh] flex flex-col rounded-2xl border border-white/10 bg-[var(--recess)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center justify-between px-4 py-3 border-b border-white/8">

@@ -228,11 +228,11 @@ export function CanvasHeader({
             />
           </label>
         ) : (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 8px', borderRadius: 9999, background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 4px 2px 8px', borderRadius: 9999, background: 'var(--recess)', border: '1px solid var(--line)' }}>
             <img src={coverPreview} style={{ width: 16, height: 16, objectFit: 'cover', borderRadius: '50%' }} />
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>Cover</span>
+            <span style={{ fontSize: 10, color: 'var(--text2)' }}>Cover</span>
             <button type="button" onClick={() => onCoverChange?.(null, null)}
-              style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}>
+              style={{ fontSize: 11, color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }}>
               ×
             </button>
           </div>

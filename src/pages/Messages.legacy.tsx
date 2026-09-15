@@ -114,10 +114,10 @@ function SwipeableThreadRow({
       className="relative flex items-center gap-3 w-full px-4 cursor-pointer transition-colors"
       style={{
         height: 72,
-        background: isActive ? 'rgba(255,255,255,0.03)' : 'transparent',
-        borderLeft: isActive ? '2px solid #1F7A6D' : '2px solid transparent',
+        background: isActive ? 'var(--glass-2)' : 'transparent',
+        borderLeft: isActive ? '2px solid var(--evidence)' : '2px solid transparent',
       }}
-      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--glass-2)'; }}
       onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
       onClick={onClick}
     >
@@ -125,14 +125,14 @@ function SwipeableThreadRow({
       <div className="relative shrink-0">
         <Avatar className="shrink-0" style={{ width: 36, height: 36 }}>
           {thread.other_avatar_url && <AvatarImage src={thread.other_avatar_url} />}
-          <AvatarFallback style={{ fontSize: 11, fontWeight: 600, background: 'rgba(255, 255, 255, 0.14)', color: 'rgba(255,255,255,0.60)' }}>
+          <AvatarFallback style={{ fontSize: 11, fontWeight: 600, background: 'var(--recess)', color: 'var(--text2)' }}>
             {initials(thread.other_display_name)}
           </AvatarFallback>
         </Avatar>
         {thread.is_online && (
           <span
             className="absolute bottom-0 right-0 rounded-full"
-            style={{ width: 8, height: 8, background: '#22C55E', border: '1.5px solid rgba(8,8,12,1)' }}
+            style={{ width: 8, height: 8, background: 'var(--cat-configuration)', border: '1.5px solid var(--line)' }}
           />
         )}
       </div>
@@ -140,25 +140,25 @@ function SwipeableThreadRow({
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.90)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{thread.other_display_name}</span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }}>{timeAgo(thread.last_sent_at)}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{thread.other_display_name}</span>
+          <span style={{ fontSize: 11, color: 'var(--text2)', flexShrink: 0 }}>{timeAgo(thread.last_sent_at)}</span>
         </div>
         <div className="flex items-center mt-0.5" style={{ gap: 6 }}>
-          {thread.is_muted && <VolumeX style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.28)', flexShrink: 0 }} />}
+          {thread.is_muted && <VolumeX style={{ width: 10, height: 10, color: 'var(--text2)', flexShrink: 0 }} />}
           <p style={{
             fontSize: 12,
-            color: thread.unread_count > 0 ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.35)',
+            color: thread.unread_count > 0 ? 'var(--text)' : 'var(--text2)',
             fontWeight: thread.unread_count > 0 ? 500 : 400,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             flex: 1,
           }}>
-            {thread.last_sender_is_me && <span style={{ color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>You: </span>}
+            {thread.last_sender_is_me && <span style={{ color: 'var(--text2)', fontWeight: 400 }}>You: </span>}
             {thread.last_message || "Start a conversation"}
           </p>
           {thread.unread_count > 0 && (
-            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#1F7A6D', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: 'var(--evidence)', color: 'var(--on-action)', fontSize: 10, fontWeight: 700 }}>
               {thread.unread_count > 9 ? "9+" : thread.unread_count}
             </span>
           )}
@@ -167,7 +167,7 @@ function SwipeableThreadRow({
 
       {/* Pin icon */}
       {thread.is_pinned && (
-        <Pin className="absolute top-2 right-3" style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.28)' }} />
+        <Pin className="absolute top-2 right-3" style={{ width: 10, height: 10, color: 'var(--text2)' }} />
       )}
     </div>
   );
@@ -286,7 +286,7 @@ function NewMessageCompose({
       <DialogContent
         className="max-w-md"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle className="text-base font-bold text-foreground">New message</DialogTitle>
@@ -736,9 +736,9 @@ const MessagesPage = () => {
       <div className="flex items-center justify-end px-4 shrink-0" style={{ height: 52 }}>
         <button
           onClick={() => setComposeOpen(true)}
-          style={{ padding: 8, color: 'rgba(255,255,255,0.45)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 8 }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.80)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.background = 'transparent'; }}
+          style={{ padding: 8, color: 'var(--text2)', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 8 }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--recess)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text2)'; e.currentTarget.style.background = 'transparent'; }}
         >
           <Pencil className="h-5 w-5" />
         </button>
@@ -747,19 +747,19 @@ const MessagesPage = () => {
       {/* Search */}
       <div className="px-4 pb-2 shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.28)' }} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--text2)' }} />
           <input
             value={threadSearch}
             onChange={(e) => setThreadSearch(e.target.value)}
             placeholder="Search messages..."
             className="w-full outline-none"
-            style={{ height: 36, borderRadius: 100, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', paddingLeft: 36, paddingRight: 32, fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.80)' }}
+            style={{ height: 36, borderRadius: 100, background: 'var(--glass-2)', border: '1px solid var(--line)', paddingLeft: 36, paddingRight: 32, fontSize: 13, fontWeight: 300, color: 'var(--text)' }}
           />
           {threadSearch && (
             <button
               onClick={() => setThreadSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2"
-              style={{ color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -768,21 +768,21 @@ const MessagesPage = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 4 }}>
+      <div className="flex items-center gap-1 px-4 shrink-0" style={{ paddingBottom: 12, borderBottom: '1px solid var(--line)', marginBottom: 4 }}>
         <button
           onClick={() => setActiveTab("primary")}
-          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'rgba(31,122,109,0.08)' : 'transparent', color: activeTab === "primary" ? '#1F7A6D' : 'rgba(255,255,255,0.45)' }}
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', background: activeTab === "primary" ? 'color-mix(in srgb, var(--evidence) 8%, transparent)' : 'transparent', color: activeTab === "primary" ? 'var(--evidence)' : 'var(--text2)' }}
         >
           Primary
         </button>
         <button
           onClick={() => setActiveTab("requests")}
           className="flex items-center"
-          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', gap: 6, background: activeTab === "requests" ? 'rgba(31,122,109,0.08)' : 'transparent', color: activeTab === "requests" ? '#1F7A6D' : 'rgba(255,255,255,0.45)' }}
+          style={{ fontSize: 13, fontWeight: 500, padding: '5px 14px', borderRadius: 100, border: 'none', cursor: 'pointer', gap: 6, background: activeTab === "requests" ? 'color-mix(in srgb, var(--evidence) 8%, transparent)' : 'transparent', color: activeTab === "requests" ? 'var(--evidence)' : 'var(--text2)' }}
         >
           Requests
           {requestCount > 0 && (
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: '#1F7A6D', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, minWidth: 16, padding: '0 4px', borderRadius: 100, background: 'var(--evidence)', color: 'var(--on-action)', fontSize: 10, fontWeight: 700 }}>
               {requestCount}
             </span>
           )}

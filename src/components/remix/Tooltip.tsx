@@ -32,7 +32,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
           color: tokens.text,
           backdropFilter: tokens.glass,
           WebkitBackdropFilter: tokens.glass,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+          boxShadow: 'var(--elev-raised)',
         }}
       >
         {label}

@@ -406,8 +406,8 @@ export function InspectorDocument({
               borderRadius: "50%",
               backgroundColor:
                 status === "published"
-                  ? "rgba(74, 222, 128, 0.9)"
-                  : "rgba(250, 204, 21, 0.9)",
+                  ? "color-mix(in srgb, var(--cat-configuration) 90%, transparent)"
+                  : "color-mix(in srgb, var(--lit) 90%, transparent)",
             }}
           />
           <span
@@ -434,8 +434,17 @@ export function InspectorDocument({
             background: publishDisabled
               ? "var(--recess)"
               : isHoveringPublish
-                ? "linear-gradient(135deg, var(--action) 0%, #B23A0C 100%)"
-                : "linear-gradient(135deg, var(--action) 0%, var(--action) 100%)",
+                /* BG-P29. The hover was `linear-gradient(135deg, #E8571A, #B23A0C)`
+                   — the action stepped toward a deeper stop. `#B23A0C` has no
+                   token, and flattening both arms to `--action` would have left
+                   a hover that does nothing. So the step is DERIVED instead:
+                   --action mixed 12% toward --text, which darkens on Exhibition
+                   and lightens on Dusk, because --text inverts between the
+                   rooms. Measured: --on-action on it is 6.45:1 and 7.02:1, both
+                   ABOVE the resting 5.65:1 and 6.35:1, so the hover never
+                   reduces legibility. */
+                ? "color-mix(in srgb, var(--action) 88%, var(--text))"
+                : "var(--action)",
             border: "none",
             borderRadius: 8,
             cursor: publishDisabled ? "not-allowed" : "pointer",

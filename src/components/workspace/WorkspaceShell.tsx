@@ -79,7 +79,7 @@ const STAGE_MODE_ORDER: readonly WorkspaceToolId[] = [
 
 const TYPE_DOT_COLOR: Record<string, string> = {
   block: 'var(--action)',
-  stage: '#55E0D2',
+  stage: 'var(--evidence)',
   arrow: 'var(--cat-narrative)',
 };
 

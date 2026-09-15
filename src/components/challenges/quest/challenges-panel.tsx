@@ -200,7 +200,7 @@ function TabButton({
           style={{
             borderRadius: radius.pill,
             background: semantic.xp,
-            color: "#FFFFFF",
+            color: "var(--text)",
           }}
         >
           {badge}

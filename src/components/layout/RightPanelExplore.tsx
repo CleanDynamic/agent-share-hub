@@ -89,7 +89,7 @@ export function RightPanelExplore() {
             data-visual-slot="btn-secondary"
             style={{
               background: 'var(--recess)',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--line)',
               borderRadius: 'var(--radius-btn)',
               color: 'var(--legacy-text)',
             }}
@@ -101,10 +101,10 @@ export function RightPanelExplore() {
             className="flex items-center justify-center h-9 w-full text-sm font-semibold"
             data-visual-slot="btn-primary"
             style={{
-              background: '#111',
+              background: 'var(--action)',
               border: '1px solid var(--line)',
               borderRadius: 'var(--radius-btn)',
-              color: '#fff',
+              color: 'var(--on-action)',
               fontWeight: 600,
             }}
           >
@@ -195,10 +195,10 @@ function SearchSection() {
             <div className="p-2">
               <p className="px-2 pb-1 text-[10px] font-bold uppercase text-slate-500 tracking-widest">Users</p>
               {users.map((u: any) => (
-                <button key={u.id} onClick={() => go(`/creator/${u.username}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
+                <button key={u.id} onClick={() => go(`/creator/${u.username}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[var(--text2)]/60 transition-colors">
                   <Avatar className="h-6 w-6">
                     {u.avatar_url && <AvatarImage src={u.avatar_url} />}
-                    <AvatarFallback className="text-[10px] bg-[#353439] text-slate-300">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-[var(--text2)] text-slate-300">{(u.display_name || u.username || "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span className="truncate text-slate-200">{u.display_name || u.username}</span>
                   {u.username && <span className="text-xs text-slate-500">@{u.username}</span>}
@@ -212,7 +212,7 @@ function SearchSection() {
               {content.map((c: any) => {
                 const pt = getPostType(resolvePostType(null, c.content_type));
                 return (
-                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#353439]/60 transition-colors">
+                  <button key={c.id} onClick={() => go(`/content/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[var(--text2)]/60 transition-colors">
                     <span
                       className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
                       style={{ background: pt.bg, color: pt.color }}
@@ -230,7 +230,7 @@ function SearchSection() {
             <div className="p-2 border-t border-white/5">
               <button
                 onClick={() => go(`/search?q=${encodeURIComponent(query.trim())}`)}
-                className="w-full text-center text-xs text-[#55e0d2] hover:underline py-1.5"
+                className="w-full text-center text-xs text-[var(--evidence)] hover:underline py-1.5"
               >
                 See all results for "{query}"
               </button>
@@ -334,7 +334,7 @@ function WhoToFollow({ userId }: { userId: string }) {
         {suggestions.map((creator) => {
           const initials = (creator.display_name || creator.username || "?").slice(0, 2).toUpperCase();
           return (
-            <div key={creator.id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[#353439]/40 transition-colors" style={{ minHeight: 64 }}>
+            <div key={creator.id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-[var(--text2)]/40 transition-colors" style={{ minHeight: 64 }}>
               <Link to={`/creator/${creator.username}`}>
                 <Avatar className="h-10 w-10 shrink-0">
                   {creator.avatar_url && <AvatarImage src={creator.avatar_url} />}
@@ -400,7 +400,7 @@ function CuratorPicksSection({ navigate }: { navigate: ReturnType<typeof useNavi
             <button
               key={pick.id}
               onClick={() => navigate(`/content/${pick.content_id}`)}
-              className="w-full text-left rounded-xl px-3 py-2 transition-colors hover:bg-[#353439]/50 glass-level-1 border border-white/5"
+              className="w-full text-left rounded-xl px-3 py-2 transition-colors hover:bg-[var(--text2)]/50 glass-level-1 border border-white/5"
             >
               <div className="flex items-center gap-1.5 mb-1">
                 <span
@@ -455,7 +455,7 @@ function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof 
             <button
               key={col.slug}
               onClick={() => navigate(`/collections/${col.slug}`)}
-              className="flex flex-col w-full text-left rounded-xl px-3 py-2.5 transition-colors hover:bg-[#353439]/50"
+              className="flex flex-col w-full text-left rounded-xl px-3 py-2.5 transition-colors hover:bg-[var(--text2)]/50"
               style={{ minHeight: 56 }}
             >
               <span className="text-sm font-semibold text-slate-200 truncate">{col.title}</span>
@@ -465,7 +465,7 @@ function FeaturedCollectionsSection({ navigate }: { navigate: ReturnType<typeof 
           );
         })}
       </div>
-      <Link to="/browse?tab=collections" className="text-[11px] text-slate-500 hover:text-[#55e0d2] transition-colors mt-1.5 inline-block px-1">
+      <Link to="/browse?tab=collections" className="text-[11px] text-slate-500 hover:text-[var(--evidence)] transition-colors mt-1.5 inline-block px-1">
         Discover all →
       </Link>
     </div>

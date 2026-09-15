@@ -7,6 +7,7 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PostMeta {
@@ -132,8 +133,8 @@ function PostTypePill({
           fontWeight: 700,
           letterSpacing: 1,
           color,
-          background: `${color}1f`,
-          border: `1px solid ${color}40`,
+          background: `${colourAlpha(color, 0.122)}`,
+          border: `1px solid ${colourAlpha(color, 0.251)}`,
           padding: "4px 10px",
           borderRadius: 4,
         }}

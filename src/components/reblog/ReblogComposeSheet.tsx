@@ -95,7 +95,7 @@ function Avatar({
         height: size,
         borderRadius: "50%",
         background: showInitials
-          ? "linear-gradient(135deg, #3a3a4a 0%, #2a2a38 100%)"
+          ? "var(--recess)"
           : "transparent",
       }}
     >
@@ -159,7 +159,7 @@ function PostButton({
       disabled={disabled || isPosting}
       onClick={onClick}
       style={{
-        background: "linear-gradient(135deg, var(--cat-configuration) 0%, #15803D 100%)",
+        background: "var(--cat-configuration)",
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
         fontFamily: "Figtree, sans-serif",
@@ -404,7 +404,7 @@ export default function ReblogComposeSheet({
 
   if (!isOpen) return null
 
-  const sheetBackground = "rgba(40, 40, 52, 0.95)"
+  const sheetBackground = "var(--recess)"
   const sheetBorder = "0.5px solid var(--line)"
   const sheetBackdropFilter = "blur(40px) saturate(160%)"
 

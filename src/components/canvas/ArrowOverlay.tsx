@@ -4,6 +4,7 @@ import type { BlockArrow, CanvasBlock,
 import { ARROW_TYPE_META } from '@/lib/canvas-types';
 import { getEdgeMidpoint, nearestEdge, orthogonalPath }
   from '@/lib/canvas-utils';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 interface ArrowOverlayProps {
   arrows: BlockArrow[];
@@ -316,7 +317,7 @@ export function ArrowOverlay({
                   y={computed.midY - 9}
                   width={56} height={18}
                   rx={4}
-                  fill="rgba(10,10,16,0.90)"
+                  fill="var(--recess)"
                   stroke={arrow.color ?? meta.color}
                   strokeWidth={1}
                   strokeOpacity={0.4}
@@ -359,7 +360,7 @@ export function ArrowOverlay({
               cy={wp.y}
               r={4}
               fill="var(--action)"
-              stroke="rgba(6,6,10,0.90)"
+              stroke="var(--bg)"
               strokeWidth={2}
               pointerEvents="none"
             />
@@ -388,7 +389,7 @@ export function ArrowOverlay({
                 borderRadius: 10,
                 padding: 10,
                 boxShadow:
-                  '0 8px 32px rgba(0,0,0,0.60)',
+                  'var(--elev-raised)',
               }}
             >
               <div style={{
@@ -439,7 +440,7 @@ export function ArrowOverlay({
                         borderRadius: 4, fontSize: 10,
                         cursor: 'pointer',
                         background: isActive
-                          ? `${m.color}20`
+                          ? `${colourAlpha(m.color, 0.125)}`
                           : 'var(--recess)',
                         border: `1px solid ${isActive
                           ? m.color

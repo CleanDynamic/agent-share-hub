@@ -418,7 +418,7 @@ export function StageThumbnail({
                       right: 0,
                       width: 32,
                       background:
-                        'linear-gradient(to left, rgba(15,15,20,0.85), rgba(15,15,20,0))',
+                        'linear-gradient(to left, color-mix(in srgb, var(--recess) 85%, transparent), transparent)',
                     }}
                   />
                 ) : null}

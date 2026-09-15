@@ -44,7 +44,7 @@ export type ShellHeaderProps = {
 
 const FONT = "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 const ORANGE = "var(--action)";
-const ORANGE_GRADIENT = "linear-gradient(135deg, var(--action) 0%, #C44514 100%)";
+const ORANGE_GRADIENT = "var(--action)";
 
 export function ShellHeader({
   onBack,
@@ -135,7 +135,16 @@ export function ShellHeader({
                 borderRadius: 8,
                 background: ORANGE_GRADIENT,
                 border: "none",
-                color: "var(--text)",
+                /* BG-P29. Was `var(--text)`, which is the ROOM's ink and not
+                   the ink for a filled control: --text on --action measures
+                   2.73:1 on Exhibition and 2.24:1 on Dusk, both well under the
+                   4.5:1 text floor, on the one primary CTA in the header.
+                   --on-action is the measured pairing the theme publishes for
+                   exactly this — 5.65:1 and 6.35:1 — and it inverts with the
+                   room, which --text does in the wrong direction here. Found
+                   by the screenshot diff, which flagged this button when its
+                   gradient flattened and made the label worth re-measuring. */
+                color: "var(--on-action)",
                 fontFamily: FONT,
                 fontSize: 13,
                 fontWeight: 600,

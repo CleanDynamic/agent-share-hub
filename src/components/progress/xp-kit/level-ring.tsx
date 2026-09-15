@@ -56,7 +56,7 @@ export default function LevelRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.10)"
+          stroke="var(--text2)"
           strokeWidth={stroke}
         />
         <circle
@@ -110,15 +110,15 @@ export default function LevelRing({
           bottom: -2,
           right: -2,
           background: tokens.orangeGradient,
-          color: "#fff",
+          color: "var(--on-action)",
           fontFamily: tokens.fontSans,
           fontWeight: 700,
           fontSize: chipFont,
           lineHeight: 1,
           padding: chipPad,
           borderRadius: tokens.radiusPill,
-          border: "1.5px solid #25252F",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+          border: "1.5px solid var(--line)",
+          boxShadow: "var(--elev-raised)",
         }}
         aria-label={`Level ${level}`}
       >

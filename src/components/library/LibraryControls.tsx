@@ -23,8 +23,8 @@ export function LibraryControls({
     <div
       className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5"
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255, 255, 255, 0.14)",
+        background: "var(--glass-2)",
+        border: "1px solid var(--line)",
         borderRadius: 12,
         padding: "12px 16px",
       }}
@@ -35,9 +35,9 @@ export function LibraryControls({
         <div
           className="flex items-center"
           style={{
-            background: "rgba(255, 255, 255, 0.12)",
+            background: "var(--recess)",
             borderRadius: 8,
-            border: "1px solid rgba(255, 255, 255, 0.14)",
+            border: "1px solid var(--line)",
           }}
         >
           <button
@@ -46,12 +46,12 @@ export function LibraryControls({
             style={{
               background:
                 viewMode === "grid"
-                  ? "rgba(31,122,109,0.15)"
+                  ? "color-mix(in srgb, var(--evidence) 15%, transparent)"
                   : "transparent",
               color:
                 viewMode === "grid"
-                  ? "#1F7A6D"
-                  : "rgba(255,255,255,0.28)",
+                  ? "var(--evidence)"
+                  : "var(--text2)",
             }}
             aria-label="Grid view"
           >
@@ -63,12 +63,12 @@ export function LibraryControls({
             style={{
               background:
                 viewMode === "list"
-                  ? "rgba(31,122,109,0.15)"
+                  ? "color-mix(in srgb, var(--evidence) 15%, transparent)"
                   : "transparent",
               color:
                 viewMode === "list"
-                  ? "#1F7A6D"
-                  : "rgba(255,255,255,0.28)",
+                  ? "var(--evidence)"
+                  : "var(--text2)",
             }}
             aria-label="List view"
           >
@@ -89,15 +89,15 @@ export function LibraryControls({
                 letterSpacing: "0.04em",
                 background:
                   sortBy === s
-                    ? "rgba(31,122,109,0.12)"
+                    ? "color-mix(in srgb, var(--evidence) 12%, transparent)"
                     : "transparent",
                 color:
                   sortBy === s
-                    ? "#1F7A6D"
-                    : "rgba(255,255,255,0.45)",
+                    ? "var(--evidence)"
+                    : "var(--text2)",
                 border:
                   sortBy === s
-                    ? "1px solid rgba(31,122,109,0.3)"
+                    ? "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)"
                     : "1px solid transparent",
               }}
             >
@@ -113,21 +113,21 @@ export function LibraryControls({
         <div className="relative flex-1 sm:flex-none">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
-            style={{ color: "rgba(255,255,255,0.28)" }}
+            style={{ color: "var(--text2)" }}
           />
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search your library..."
-            className="w-full sm:w-52 outline-none placeholder:text-[rgba(255,255,255,0.28)]"
+            className="w-full sm:w-52 outline-none placeholder:text-[var(--text2)]"
             style={{
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.14)",
+              background: "var(--recess)",
+              border: "1px solid var(--line)",
               borderRadius: 8,
               padding: "7px 12px 7px 32px",
               fontSize: 13,
               fontWeight: 300,
-              color: "rgba(255,255,255,0.90)",
+              color: "var(--text)",
             }}
           />
         </div>
@@ -137,13 +137,13 @@ export function LibraryControls({
           onClick={onNewFolder}
           className="flex items-center gap-1.5 shrink-0 transition-all"
           style={{
-            background: "rgba(139,69,19,0.12)",
-            border: "1px solid rgba(139,69,19,0.3)",
+            background: "color-mix(in srgb, var(--action) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--action) 30%, transparent)",
             borderRadius: 8,
             padding: "7px 14px",
             fontSize: 12,
             fontWeight: 500,
-            color: "#8B4513",
+            color: "var(--action)",
             letterSpacing: "0.04em",
           }}
         >

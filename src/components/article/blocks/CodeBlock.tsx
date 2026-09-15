@@ -32,6 +32,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 
@@ -226,15 +227,15 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className="group relative rounded-lg p-2.5 bg-[rgba(20,20,28,0.85)] backdrop-blur-md transition-all"
+        className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
         style={{
           width: 280,
           border: selected
-            ? `1px solid ${TYPE_COLOR}99`
+            ? `1px solid ${colourAlpha(TYPE_COLOR, 0.6)}`
             : expandedSelection
-              ? `1px dashed ${TYPE_COLOR}73`
+              ? `1px dashed ${colourAlpha(TYPE_COLOR, 0.451)}`
               : '1px solid var(--line)',
-          boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
+          boxShadow: selected ? `0 0 0 2px ${colourAlpha(TYPE_COLOR, 0.149)}` : 'none',
         }}
       >
         <Handle
@@ -286,7 +287,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
               <ChevronDown size={10} />
             </button>
             {showLangDropdown && (
-              <div className="absolute top-full right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-20 min-w-[120px]">
+              <div className="absolute top-full right-0 mt-1 py-1 bg-[var(--recess)] border border-border/[0.08] rounded-md z-20 min-w-[120px]">
                 {SUPPORTED_LANGUAGES.map((l) => (
                   <button
                     key={l.value}
@@ -379,7 +380,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                 handleRun();
               }}
               className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-foreground"
-              style={{ background: `${TYPE_COLOR}E6` }}
+              style={{ background: `${colourAlpha(TYPE_COLOR, 0.902)}` }}
             >
               <Play size={10} className="fill-current" />
               Run
@@ -414,7 +415,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[560px] sm:max-w-[560px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
+          className="w-[560px] sm:max-w-[560px] bg-[var(--recess)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
             <SheetTitle className="text-foreground text-base">
@@ -518,7 +519,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                 style={{
                   background: 'var(--recess)',
                   border: '1px solid var(--line)',
-                  color: lastRun?.error ? '#fca5a5' : 'var(--text)',
+                  color: lastRun?.error ? 'var(--cat-breakage)' : 'var(--text)',
                   minHeight: 48,
                   fontFamily:
                     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
@@ -555,7 +556,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
                   onClick={handleRun}
                   disabled={!runnable}
                   className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  style={{ background: `${TYPE_COLOR}E6` }}
+                  style={{ background: `${colourAlpha(TYPE_COLOR, 0.902)}` }}
                   title={runnable ? 'Run code' : 'Only JavaScript and Python can be run'}
                 >
                   <Play className="w-3 h-3 fill-current" />

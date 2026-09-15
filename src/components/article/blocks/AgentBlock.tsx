@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 type MemoryStrategy = 'none' | 'short' | 'long';
@@ -161,11 +162,11 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
           width: 240,
           background: 'var(--recess)',
           border: selected
-            ? `1px solid ${AGENT_COLOR}99`
+            ? `1px solid ${colourAlpha(AGENT_COLOR, 0.6)}`
             : expandedSelection
-              ? `1px dashed ${AGENT_COLOR}73`
+              ? `1px dashed ${colourAlpha(AGENT_COLOR, 0.451)}`
               : '1px solid var(--line)',
-          boxShadow: selected ? `0 0 0 2px ${AGENT_COLOR}2E` : 'none',
+          boxShadow: selected ? `0 0 0 2px ${colourAlpha(AGENT_COLOR, 0.18)}` : 'none',
         }}
       >
         {/* React Flow handles */}
@@ -234,7 +235,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
               handleRun();
             }}
             className="nodrag flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-semibold text-foreground"
-            style={{ background: `${AGENT_COLOR}E6` }}
+            style={{ background: `${colourAlpha(AGENT_COLOR, 0.902)}` }}
           >
             <Play size={10} className="fill-current" />
             Run
@@ -264,7 +265,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
       >
         <SheetContent
           side="right"
-          className="w-[480px] sm:max-w-[480px] bg-[rgba(15,15,20,0.98)] border-border text-foreground overflow-y-auto"
+          className="w-[480px] sm:max-w-[480px] bg-[var(--recess)] border-border text-foreground overflow-y-auto"
         >
           <SheetHeader>
             <SheetTitle className="text-foreground text-base flex items-center gap-2">
@@ -310,7 +311,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                 <ChevronDown size={12} className="text-muted-foreground" />
               </button>
               {showModelDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[var(--recess)] border border-border/[0.08] rounded-md z-10">
                   {models.map((m) => (
                     <button
                       key={m.value}
@@ -343,7 +344,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                 <ChevronDown size={12} className="text-muted-foreground" />
               </button>
               {showToolsDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[rgba(22,22,30,0.98)] border border-border/[0.08] rounded-md z-10 max-h-[160px] overflow-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-[var(--recess)] border border-border/[0.08] rounded-md z-10 max-h-[160px] overflow-auto">
                   {availableTools.map((tool) => (
                     <button
                       key={tool.value}
@@ -380,7 +381,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                     <span
                       key={t}
                       className="px-2 py-0.5 text-[9px] font-medium rounded-full"
-                      style={{ color: AGENT_COLOR, background: `${AGENT_COLOR}1A` }}
+                      style={{ color: AGENT_COLOR, background: `${colourAlpha(AGENT_COLOR, 0.102)}` }}
                     >
                       {availableTools.find((at) => at.value === t)?.label ?? t}
                     </span>
@@ -411,8 +412,8 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                       style={
                         active
                           ? {
-                              background: `${AGENT_COLOR}33`,
-                              borderColor: `${AGENT_COLOR}4D`,
+                              background: `${colourAlpha(AGENT_COLOR, 0.2)}`,
+                              borderColor: `${colourAlpha(AGENT_COLOR, 0.302)}`,
                               color: AGENT_COLOR,
                             }
                           : undefined
@@ -451,7 +452,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
                 type="button"
                 onClick={handleRun}
                 className="flex items-center gap-2 px-4 py-2 text-foreground text-xs font-semibold rounded-full transition-colors"
-                style={{ background: `${AGENT_COLOR}E6` }}
+                style={{ background: `${colourAlpha(AGENT_COLOR, 0.902)}` }}
               >
                 <Play size={12} className="fill-current" />
                 Run Agent

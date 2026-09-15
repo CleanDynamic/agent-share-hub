@@ -62,7 +62,7 @@ export function ExistingBlueprintSearch({
   });
 
   return (
-    <div className="rounded-xl border border-border p-4 space-y-3" style={{ backgroundColor: "#111118" }}>
+    <div className="rounded-xl border border-border p-4 space-y-3" style={{ backgroundColor: "var(--recess)" }}>
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold text-foreground">Your published blueprints</h4>
         <button type="button" onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground">

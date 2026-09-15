@@ -92,6 +92,53 @@ describe("the .ns-* rules inherited from the retired shell", () => {
     ).toBe(false);
   });
 
+  /* BG-P29 — the audit this prompt was scheduled to act on, kept as a test
+     because it came back empty.
+
+     BG-P17's note in shared-ns.css said the four rules it recorded were "still
+     on the old colours" and left repointing them to BG-P29. BG-P28 did it
+     first, and did the rail's stylesheet in BG-P13 before that, so there was
+     nothing left for this prompt to repoint: every colour declaration across
+     both extracted stylesheets and `.ns-badge` already resolves through a
+     token. A finished sweep with no assertion behind it is one edit away from
+     being unfinished again, so the finding becomes the guard.
+
+     THIS IS NARROWER THAN compliance.test.ts ON PURPOSE. That guard covers all
+     of src/ and carries an allowlist. These two stylesheets are the extracted
+     shell rules specifically — the ones whose whole reason for existing is
+     that a live surface depends on them and no component can see them — and
+     they are allowlisted nowhere. A raw value here is always a regression.
+
+     index.css is NOT scanned wholesale, because the theme blocks in it are
+     where the token VALUES are declared and hexes are correct there. `.ns-badge`
+     is the one rule in that file this test owns, and it is checked by the
+     stronger condition: it names no colour at all. */
+  it("declares every colour through a token, in both extracted stylesheets", () => {
+    const HEX = /#[0-9a-fA-F]{6}\b/g;
+    // rgb()/rgba() with hardcoded channels. `rgba(var(--x), …)` is a token.
+    const RAW_RGBA = /\brgba?\(\s*[0-9.]/g;
+    for (const sheet of [SHARED, RAIL]) {
+      const text = code(read(sheet));
+      expect(text.match(HEX) ?? [], `${sheet} declares a raw hex`).toEqual([]);
+      expect(text.match(RAW_RGBA) ?? [], `${sheet} declares a raw rgba()`).toEqual([]);
+    }
+  });
+
+  it("leaves .ns-badge naming no colour, so it follows its consumer", () => {
+    /* BG-P05 retired the thirteen `.ns-badge-*` colour rules and left the base
+       class, whose every declaration is layout — display, padding, font-size,
+       radius, border WIDTH. Its `border: 1px solid` names no colour on purpose,
+       so the border follows whatever `color` the consumer sets, which is now a
+       token. A colour appearing here would pin every badge in the app to it. */
+    const css = code(read("src/index.css"));
+    const rule = /\.ns-badge\s*\{([^}]*)\}/.exec(css);
+    expect(rule, ".ns-badge is no longer defined in index.css").not.toBeNull();
+    const body = rule![1];
+    expect(body.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
+    expect(body.match(/\brgba?\(/g) ?? []).toEqual([]);
+    expect(body).not.toMatch(/(^|[^-])color\s*:/);
+  });
+
   it("still finds nothing behind the three inert class names", () => {
     // .ns-btn-primary, .ns-btn-silver and .ns-right-cat are worn by live
     // markup but were never defined anywhere, including in the shell — they
@@ -99,7 +146,13 @@ describe("the .ns-* rules inherited from the retired shell", () => {
     // gains a rule, the surfaces wearing it change appearance, and whoever
     // adds it should have to come here and say so.
     const inert = ["ns-btn-primary", "ns-btn-silver", "ns-right-cat"];
-    const sheets = [SHARED, RAIL, "src/index.css", "src/components/shell/flat-shell.css", "src/App.css"];
+    /* BG-P29 deleted src/App.css from this list and from the repository. It
+       was the Vite starter template's stylesheet, imported by nothing — and it
+       carried a `#root { max-width: 1280px; padding: 2rem; text-align: center }`
+       rule that would have fought the app's own frame the moment anyone wired
+       it up, plus three hexes the colour sweep would otherwise have had to
+       allowlist as "dead file". */
+    const sheets = [SHARED, RAIL, "src/index.css", "src/components/shell/flat-shell.css"];
     for (const cls of inert) {
       for (const sheet of sheets) {
         expect(defines(read(sheet), cls), `${sheet} now defines .${cls}`).toBe(false);

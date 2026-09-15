@@ -12,6 +12,7 @@ import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, Clipboar
 // A local `type` binding in this file shadows the scale object, so the
 // roles are imported by name.
 import { cardTitle } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 // ─── Block icons ────────────────────────────────────────────
 
@@ -789,8 +790,8 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: '50%',
-                    background: `${color}20`,
-                    border: `2px solid ${color}50`,
+                    background: `${colourAlpha(color, 0.125)}`,
+                    border: `2px solid ${colourAlpha(color, 0.314)}`,
                     display: 'flex', alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 12, fontWeight: 700, color,
@@ -800,14 +801,14 @@ const WorkflowViewer = ({ block }: { block: BlockRow }) => {
                   {i < steps.length - 1 && (
                     <div style={{
                       width: 2, flex: 1, minHeight: 20,
-                      background: `${color}25`, margin: '4px 0',
+                      background: `${colourAlpha(color, 0.145)}`, margin: '4px 0',
                     }} />
                   )}
                 </div>
 
                 <div style={{
                   flex: 1, paddingBottom: 16,
-                  borderLeft: `2px solid ${color}15`,
+                  borderLeft: `2px solid ${colourAlpha(color, 0.082)}`,
                   paddingLeft: 12, marginLeft: -12,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

@@ -99,13 +99,13 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           onChange={e => handleFile(e.target.files?.[0] ?? null)}
           style={{
             fontSize: 12,
-            color: 'rgba(255,255,255,0.60)',
+            color: 'var(--text2)',
             fontFamily: 'Figtree, sans-serif',
           }}
         />
         {block.videoFileName && (
           <div style={{
-            fontSize: 11, color: 'rgba(255,255,255,0.45)',
+            fontSize: 11, color: 'var(--text2)',
             marginTop: 4,
           }}>
             {block.videoFileName}
@@ -233,9 +233,9 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
           placeholder="Write a note…"
           style={{
             width: '100%',
-            background: 'rgba(251,191,36,0.06)',
-            border: '1px solid rgba(251,191,36,0.25)',
-            borderLeft: '3px solid #FBBF24',
+            background: 'color-mix(in srgb, var(--lit) 6%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--lit) 25%, transparent)',
+            borderLeft: '3px solid var(--lit)',
             borderRadius: 6, outline: 'none',
             fontSize: 13, fontStyle: 'italic',
             color: 'var(--text2)',

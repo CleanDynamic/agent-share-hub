@@ -105,7 +105,7 @@ export default function SkillTreeCanvas({
             flexShrink: 0,
           }}
         >
-          <Sparkles size={26} color="#fff" strokeWidth={2} />
+          <Sparkles size={26} color="var(--on-action)" strokeWidth={2} />
         </div>
 
         {tiers.map((t, i) => {
@@ -122,7 +122,7 @@ export default function SkillTreeCanvas({
                   height: 1.5,
                   background: unlocked
                     ? trackColor
-                    : "rgba(255,255,255,0.12)",
+                    : "var(--recess)",
                   boxShadow: unlocked
                     ? `0 0 8px color-mix(in srgb, ${trackColor} 60%, transparent)`
                     : "none",

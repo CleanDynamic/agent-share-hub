@@ -57,23 +57,23 @@ export function LibrarySidebar({
   onToast,
 }: LibrarySidebarProps) {
   const sidebarItemStyle = (isActive: boolean) => ({
-    background: isActive ? "rgba(31,122,109,0.08)" : "transparent",
+    background: isActive ? "color-mix(in srgb, var(--evidence) 8%, transparent)" : "transparent",
     borderLeft: isActive
-      ? "2px solid #1F7A6D"
+      ? "2px solid var(--evidence)"
       : "2px solid transparent",
     borderRadius: 8,
     padding: "8px 12px",
     fontSize: 13,
     fontWeight: isActive ? 600 : 300,
     color: isActive
-      ? "#1F7A6D"
-      : "rgba(255,255,255,0.45)",
+      ? "var(--evidence)"
+      : "var(--text2)",
     transition: "all 0.15s ease",
   });
 
   const countStyle = {
     fontSize: 11,
-    color: "rgba(255,255,255,0.28)",
+    color: "var(--text2)",
     fontWeight: 400 as const,
   };
 
@@ -83,8 +83,8 @@ export function LibrarySidebar({
       <div
         className="hidden lg:block w-[200px] shrink-0"
         style={{
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.05)",
+          background: "var(--glass-2)",
+          border: "1px solid var(--line)",
           borderRadius: 14,
           padding: "14px 8px",
         }}
@@ -94,7 +94,7 @@ export function LibrarySidebar({
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.28)",
+            color: "var(--text2)",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
           }}
@@ -135,10 +135,10 @@ export function LibrarySidebar({
                   onChange={(e) => onEditNameChange(e.target.value.slice(0, 50))}
                   className="flex-1 h-7 rounded px-2 outline-none"
                   style={{
-                    background: "rgba(255, 255, 255, 0.14)",
-                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "var(--recess)",
+                    border: "1px solid var(--line)",
                     fontSize: 12,
-                    color: "rgba(255,255,255,0.90)",
+                    color: "var(--text)",
                   }}
                   autoFocus
                   onKeyDown={(e) => {
@@ -148,7 +148,7 @@ export function LibrarySidebar({
                 />
                 <button
                   onClick={() => onEditSave(folder.id)}
-                  style={{ fontSize: 11, color: "#1F7A6D", fontWeight: 500 }}
+                  style={{ fontSize: 11, color: "var(--evidence)", fontWeight: 500 }}
                 >
                   Save
                 </button>
@@ -173,8 +173,8 @@ export function LibrarySidebar({
                       fontWeight: 500,
                       padding: "1px 5px",
                       borderRadius: 4,
-                      background: "rgba(31,122,109,0.15)",
-                      color: "#1F7A6D",
+                      background: "color-mix(in srgb, var(--evidence) 15%, transparent)",
+                      color: "var(--evidence)",
                     }}
                   >
                     Live
@@ -191,14 +191,14 @@ export function LibrarySidebar({
                 <button
                   onClick={() => onEditStart(folder.id, folder.name)}
                   className="p-1 rounded transition-colors"
-                  style={{ color: "rgba(255,255,255,0.28)" }}
+                  style={{ color: "var(--text2)" }}
                 >
                   <Pencil className="h-3 w-3" />
                 </button>
                 <button
                   onClick={() => onDeleteRequest(folder.id)}
                   className="p-1 rounded transition-colors"
-                  style={{ color: "rgba(255,255,255,0.28)" }}
+                  style={{ color: "var(--text2)" }}
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -209,7 +209,7 @@ export function LibrarySidebar({
                     )
                   }
                   className="p-1 rounded transition-colors"
-                  style={{ color: "rgba(255,255,255,0.28)" }}
+                  style={{ color: "var(--text2)" }}
                   title="More options"
                 >
                   <MoreHorizontal className="h-3 w-3" />
@@ -222,12 +222,12 @@ export function LibrarySidebar({
               <div
                 className="absolute right-0 top-full z-20 mt-1 w-44 py-1"
                 style={{
-                  background: "rgba(16,16,24,0.95)",
+                  background: "var(--recess)",
                   backdropFilter: "blur(20px)",
                   WebkitBackdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid var(--line)",
                   borderRadius: 10,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  boxShadow: "var(--elev-raised)",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -237,7 +237,7 @@ export function LibrarySidebar({
                     onMenuToggle(null);
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 transition-colors"
-                  style={{ fontSize: 13, color: "rgba(255,255,255,0.90)" }}
+                  style={{ fontSize: 13, color: "var(--text)" }}
                 >
                   <Pencil className="h-3.5 w-3.5" /> Rename folder
                 </button>
@@ -247,13 +247,13 @@ export function LibrarySidebar({
                     onMenuToggle(null);
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 transition-colors"
-                  style={{ fontSize: 13, color: "#EF4444" }}
+                  style={{ fontSize: 13, color: "var(--cat-breakage)" }}
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Delete folder
                 </button>
                 <div
                   className="my-1"
-                  style={{ borderTop: "1px solid rgba(255, 255, 255, 0.14)" }}
+                  style={{ borderTop: "1px solid var(--line)" }}
                 />
                 <button
                   onClick={() => {
@@ -274,9 +274,9 @@ export function LibrarySidebar({
                 >
                   <Share2
                     className="h-3.5 w-3.5 shrink-0"
-                    style={{ color: "#1F7A6D" }}
+                    style={{ color: "var(--evidence)" }}
                   />
-                  <span style={{ color: "#1F7A6D" }}>
+                  <span style={{ color: "var(--evidence)" }}>
                     {folder.published_collection_id
                       ? "Update Collection"
                       : "Publish as Collection"}
@@ -292,7 +292,7 @@ export function LibrarySidebar({
           className="flex items-center gap-1.5 px-3 py-2 mt-2 w-full transition-colors"
           style={{
             fontSize: 12,
-            color: "rgba(255,255,255,0.28)",
+            color: "var(--text2)",
             fontWeight: 400,
           }}
         >
@@ -312,14 +312,14 @@ export function LibrarySidebar({
             fontSize: 12,
             fontWeight: !activeFolder ? 600 : 400,
             background: !activeFolder
-              ? "rgba(31,122,109,0.15)"
-              : "rgba(255, 255, 255, 0.12)",
+              ? "color-mix(in srgb, var(--evidence) 15%, transparent)"
+              : "var(--recess)",
             color: !activeFolder
-              ? "#1F7A6D"
-              : "rgba(255,255,255,0.45)",
+              ? "var(--evidence)"
+              : "var(--text2)",
             border: !activeFolder
-              ? "1px solid rgba(31,122,109,0.3)"
-              : "1px solid rgba(255, 255, 255, 0.14)",
+              ? "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)"
+              : "1px solid var(--line)",
           }}
         >
           All
@@ -332,16 +332,16 @@ export function LibrarySidebar({
             fontWeight: activeFolder === "root" ? 600 : 400,
             background:
               activeFolder === "root"
-                ? "rgba(31,122,109,0.15)"
-                : "rgba(255, 255, 255, 0.12)",
+                ? "color-mix(in srgb, var(--evidence) 15%, transparent)"
+                : "var(--recess)",
             color:
               activeFolder === "root"
-                ? "#1F7A6D"
-                : "rgba(255,255,255,0.45)",
+                ? "var(--evidence)"
+                : "var(--text2)",
             border:
               activeFolder === "root"
-                ? "1px solid rgba(31,122,109,0.3)"
-                : "1px solid rgba(255, 255, 255, 0.14)",
+                ? "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)"
+                : "1px solid var(--line)",
           }}
         >
           Unsorted
@@ -356,16 +356,16 @@ export function LibrarySidebar({
               fontWeight: activeFolder === folder.id ? 600 : 400,
               background:
                 activeFolder === folder.id
-                  ? "rgba(31,122,109,0.15)"
-                  : "rgba(255, 255, 255, 0.12)",
+                  ? "color-mix(in srgb, var(--evidence) 15%, transparent)"
+                  : "var(--recess)",
               color:
                 activeFolder === folder.id
-                  ? "#1F7A6D"
-                  : "rgba(255,255,255,0.45)",
+                  ? "var(--evidence)"
+                  : "var(--text2)",
               border:
                 activeFolder === folder.id
-                  ? "1px solid rgba(31,122,109,0.3)"
-                  : "1px solid rgba(255, 255, 255, 0.14)",
+                  ? "1px solid color-mix(in srgb, var(--evidence) 30%, transparent)"
+                  : "1px solid var(--line)",
             }}
           >
             {folder.emoji ? `${folder.emoji} ` : ""}

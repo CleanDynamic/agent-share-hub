@@ -127,7 +127,7 @@ export function SubmitToolModal({ open, onOpenChange }: Props) {
       <DialogContent
         className="sm:max-w-md"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         {success ? (
           <div className="flex flex-col items-center text-center gap-4 py-6">

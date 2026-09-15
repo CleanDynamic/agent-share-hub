@@ -75,7 +75,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
     <>
       <div
         className={cn(
-          'group relative rounded-xl border bg-[rgba(20,20,28,0.75)]',
+          'group relative rounded-xl border bg-[var(--recess)]',
           'backdrop-blur-md shadow-lg w-[240px]',
           selected ? 'border-white/30' : 'border-white/10',
         )}
@@ -131,7 +131,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
       </div>
 
       <Sheet open={expanded} onOpenChange={setExpanded}>
-        <SheetContent side="right" className="w-[420px] sm:max-w-[420px] bg-[rgba(20,20,28,0.95)] border-border text-foreground">
+        <SheetContent side="right" className="w-[420px] sm:max-w-[420px] bg-[var(--recess)] border-border text-foreground">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-foreground">
               <span
@@ -165,7 +165,7 @@ export function ModelBlockNode({ id, data, selected }: NodeProps) {
                   <ChevronDown size={12} className="text-muted-foreground" />
                 </button>
                 {showProviderDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-border rounded-md shadow-lg overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 z-10 bg-[var(--recess)] border border-border rounded-md shadow-lg overflow-hidden">
                     {providers.map((p) => (
                       <button
                         key={p.value}

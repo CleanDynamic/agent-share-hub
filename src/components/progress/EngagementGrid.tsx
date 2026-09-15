@@ -30,8 +30,8 @@ export function EngagementGrid({ counters }: EngagementGridProps) {
           <div
             key={key}
             style={{
-              background: "rgba(68,68,84,0.55)",
-              border: "0.5px solid rgba(255,255,255,0.10)",
+              background: "var(--glass-2)",
+              border: "0.5px solid var(--line)",
               borderRadius: 10,
               padding: 12,
               display: "flex",
@@ -39,11 +39,11 @@ export function EngagementGrid({ counters }: EngagementGridProps) {
               gap: 6,
             }}
           >
-            <Icon size={14} color="rgba(255,255,255,0.45)" />
-            <div style={{ fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.92)", fontFamily: "Figtree, sans-serif" }}>
+            <Icon size={14} color="var(--text2)" />
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", fontFamily: "Figtree, sans-serif" }}>
               {v.toLocaleString()}
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 11, color: "var(--text2)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
               {label}
             </div>
           </div>

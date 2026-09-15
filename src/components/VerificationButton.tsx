@@ -73,7 +73,7 @@ export function VerificationButton({
   return (
     <div className="space-y-2">
       {isVerified && (
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1D9E75]/10 text-[#1D9E75]">
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[var(--evidence)]/10 text-[var(--evidence)]">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span className="text-xs font-medium">
             Verified working by {verificationCount} {verificationCount === 1 ? "person" : "people"}
@@ -91,7 +91,7 @@ export function VerificationButton({
         <Button
           variant="outline"
           size="sm"
-          className="text-xs border-[#1D9E75]/40 text-[#1D9E75] hover:bg-[#1D9E75]/10"
+          className="text-xs border-[var(--evidence)]/40 text-[var(--evidence)] hover:bg-[var(--evidence)]/10"
           onClick={() => setShowConfirm(true)}
         >
           <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
@@ -132,7 +132,7 @@ export function VerificationButton({
 export function VerifiedBadgeInline({ isVerified }: { isVerified: boolean }) {
   if (!isVerified) return null;
   return (
-    <Badge className="bg-[#1D9E75] text-white border-transparent text-[11px] font-medium px-1.5 py-0">
+    <Badge className="bg-[var(--evidence)] text-white border-transparent text-[11px] font-medium px-1.5 py-0">
       ✓ Verified working
     </Badge>
   );

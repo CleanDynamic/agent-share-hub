@@ -30,8 +30,8 @@ export default function EligibilityNotice({
         gap: 14,
         padding: "16px 18px",
         borderRadius: tokens.radiusCard,
-        background: "rgba(232,87,26,0.08)",
-        border: "0.5px solid rgba(232,87,26,0.30)",
+        background: "color-mix(in srgb, var(--action) 8%, transparent)",
+        border: "0.5px solid color-mix(in srgb, var(--action) 30%, transparent)",
         fontFamily: tokens.fontSans,
       }}
       role="status"
@@ -44,7 +44,7 @@ export default function EligibilityNotice({
           width: 36,
           height: 36,
           borderRadius: 10,
-          background: "rgba(232,87,26,0.16)",
+          background: "color-mix(in srgb, var(--action) 16%, transparent)",
           flexShrink: 0,
         }}
       >
@@ -74,7 +74,7 @@ export default function EligibilityNotice({
               border: "none",
               cursor: "pointer",
               background: tokens.orangeGradient,
-              color: "#fff",
+              color: "var(--on-action)",
               fontFamily: tokens.fontSans,
               fontSize: 13,
               fontWeight: 600,

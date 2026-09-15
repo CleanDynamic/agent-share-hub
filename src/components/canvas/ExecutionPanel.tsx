@@ -135,7 +135,7 @@ export function ExecutionPanel({
         '1px solid var(--line)',
       zIndex: 300,
       display: 'flex', flexDirection: 'column',
-      boxShadow: '-8px 0 32px rgba(0,0,0,0.40)',
+      boxShadow: 'var(--elev-raised)',
     }}>
       {/* Header */}
       <div style={{

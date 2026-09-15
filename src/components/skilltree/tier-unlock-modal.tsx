@@ -33,7 +33,7 @@ export default function TierUnlockModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(10,10,16,0.6)",
+        background: "var(--recess)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
         fontFamily: sans,
@@ -64,7 +64,7 @@ export default function TierUnlockModal({
             position: "absolute",
             top: 16,
             right: 16,
-            background: "rgba(255,255,255,0.06)",
+            background: "var(--glass-2)",
             border: tokens.borderSoft,
             borderRadius: 8,
             width: 30,
@@ -139,7 +139,7 @@ export default function TierUnlockModal({
                     boxShadow: `0 0 14px color-mix(in srgb, ${color} 55%, transparent)`,
                   }}
                 >
-                  <Icon size={20} color="#fff" strokeWidth={2.25} />
+                  <Icon size={20} color="var(--on-action)" strokeWidth={2.25} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>
@@ -171,7 +171,7 @@ export default function TierUnlockModal({
             borderRadius: tokens.radiusPill,
             border: "none",
             background: tokens.brandGradient,
-            color: "#fff",
+            color: "var(--on-action)",
             fontSize: 14,
             fontWeight: 600,
             fontFamily: sans,

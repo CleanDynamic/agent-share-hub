@@ -309,7 +309,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
       <div className="px-4 flex justify-between items-start">
         {/* Avatar overlapping banner */}
         <div className="relative -mt-10">
-          <Avatar style={{ width: 72, height: 72, border: '3px solid rgba(8,8,12,1)' }}>
+          <Avatar style={{ width: 72, height: 72, border: '3px solid var(--line)' }}>
             {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
             <AvatarFallback className="bg-primary text-primary-foreground" style={{ fontSize: 18, fontWeight: 700 }}>{initials}</AvatarFallback>
           </Avatar>
@@ -353,7 +353,7 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
       <div className="px-4 mt-3">
         {/* Line 1: Name + badges */}
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{displayName}</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text)' }}>{displayName}</h1>
           {profile.is_creator && (
             <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">
               <BadgeCheck className="h-3 w-3 mr-1" /> Creator
@@ -367,11 +367,11 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
         </div>
 
         {/* Line 2: @username */}
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>@{profile.username}</p>
+        <p style={{ fontSize: 14, color: 'var(--text2)', marginTop: 2 }}>@{profile.username}</p>
 
         {/* Line 3: Bio */}
         {profile.bio && (
-          <p style={{ fontSize: 13, fontWeight: 300, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, marginTop: 8 }}>{profile.bio}</p>
+          <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--text2)', lineHeight: 1.5, marginTop: 8 }}>{profile.bio}</p>
         )}
 
         {/* Line 4: Website + Twitter */}
@@ -402,23 +402,23 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
         )}
 
         {/* Stats row: followers/following/blueprints inline */}
-        <div className="flex items-center flex-wrap" style={{ gap: 16, marginTop: 12, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+        <div className="flex items-center flex-wrap" style={{ gap: 16, marginTop: 12, fontSize: 13, color: 'var(--text2)' }}>
           <button onClick={() => setFollowingOpen(true)} className="hover:underline" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, fontSize: 'inherit' }}>
-            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followingCount}</span>{" "}Following
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{followingCount}</span>{" "}Following
           </button>
           <button onClick={() => setFollowersOpen(true)} className="hover:underline" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, fontSize: 'inherit' }}>
-            <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{followerCount}</span>{" "}Followers
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{followerCount}</span>{" "}Followers
           </button>
-          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{contentItems?.length ?? 0}</span> blueprints</span>
-          <span><span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.90)' }}>{totalDownloads.toLocaleString()}</span> downloads</span>
+          <span><span style={{ fontWeight: 600, color: 'var(--text)' }}>{contentItems?.length ?? 0}</span> blueprints</span>
+          <span><span style={{ fontWeight: 600, color: 'var(--text)' }}>{totalDownloads.toLocaleString()}</span> downloads</span>
           {(profile.bounties_solved ?? 0) > 0 && (
-            <span style={{ color: '#1F7A6D' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> solved</span>
+            <span style={{ color: 'var(--evidence)' }}>★ <span style={{ fontWeight: 600 }}>{profile.bounties_solved}</span> solved</span>
           )}
         </div>
       </div>
 
       {/* TAB BAR */}
-      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'rgba(8,8,12,0.80)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.14)', marginBottom: 20 }}>
+      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: 'var(--recess)', backdropFilter: 'blur(12px)', paddingBottom: 12, borderBottom: '1px solid var(--line)', marginBottom: 20 }}>
         {allTabs.map((tab) => (
           <button
             key={tab.key}
@@ -430,8 +430,8 @@ function ProfileView({ profileData, isOwnProfile, currentUserId, onProfileUpdate
               borderRadius: 100,
               border: 'none',
               cursor: 'pointer',
-              background: activeTab === tab.key ? 'rgba(139,69,19,0.08)' : 'transparent',
-              color: activeTab === tab.key ? '#8B4513' : 'rgba(255,255,255,0.45)',
+              background: activeTab === tab.key ? 'color-mix(in srgb, var(--action) 8%, transparent)' : 'transparent',
+              color: activeTab === tab.key ? 'var(--action)' : 'var(--text2)',
               whiteSpace: 'nowrap',
             }}
           >
@@ -796,7 +796,7 @@ function EditProfileModal({
       <DialogContent
         className="sm:max-w-lg"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle>Edit profile</DialogTitle>
@@ -904,7 +904,7 @@ function FollowListModal({
       <DialogContent
         className="sm:max-w-sm"
         data-visual-slot="modal-surface"
-        style={{ background: '#0E0E16', border: '1px solid var(--border)' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
       >
         <DialogHeader>
           <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>

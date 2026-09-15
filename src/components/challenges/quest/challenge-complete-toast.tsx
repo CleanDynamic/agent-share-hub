@@ -49,7 +49,7 @@ export default function ChallengeCompleteToast({
       style={{
         ...shellSurface,
         minWidth: 280,
-        boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+        boxShadow: "var(--elev-overlay)",
         animation: reduced
           ? "none"
           : "ct-in 0.45s cubic-bezier(0.34,1.56,0.64,1) both",
@@ -63,7 +63,7 @@ export default function ChallengeCompleteToast({
           boxShadow: `0 6px 18px ${withAlpha(colors.orange, 0.4)}`,
         }}
       >
-        <CheckCircle2 size={20} color="#FFFFFF" strokeWidth={2} />
+        <CheckCircle2 size={20} color="var(--text)" strokeWidth={2} />
       </span>
 
       <div className="min-w-0 flex-1">

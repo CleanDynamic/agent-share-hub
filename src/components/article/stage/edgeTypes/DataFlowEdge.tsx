@@ -153,7 +153,7 @@ export function DataFlowEdge(props: EdgeProps) {
             width={10}
             height={10}
             fill={COLOR.depends_on}
-            stroke="rgba(0,0,0,0.4)"
+            stroke="var(--line)"
             strokeWidth={0.5}
           />
         </g>

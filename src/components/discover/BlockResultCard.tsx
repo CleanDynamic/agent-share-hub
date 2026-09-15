@@ -3,6 +3,7 @@ import { ShareTrigger } from "@/components/share/ShareTrigger";
 import { useShareMenu, virtualAnchorFromPoint } from "@/components/share/ShareMenuProvider";
 import { CollectionBookmarkButton } from "@/components/library/CollectionBookmarkButton";
 import { type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 /* THE FOURTEEN LEGACY BADGE COLOURS ARE RETIRED (BG-P28).
    What stood here was seventeen invented hues — #FFE66D, #FCBAD3, #F5F5DC and
@@ -169,9 +170,9 @@ export function BlockResultCard({
               width: 36, height: 36, borderRadius: "50%",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 600, flexShrink: 0,
-              background: `${color}26`,
+              background: `${colourAlpha(color, 0.149)}`,
               color: color,
-              border: `1px solid ${color}4D`,
+              border: `1px solid ${colourAlpha(color, 0.302)}`,
             }}
           >
             {initials}
@@ -190,9 +191,9 @@ export function BlockResultCard({
                 padding: "1px 6px", borderRadius: 4,
                 fontSize: 9, fontWeight: 700,
                 textTransform: "uppercase", letterSpacing: "0.05em",
-                background: `${color}26`,
+                background: `${colourAlpha(color, 0.149)}`,
                 color: color,
-                border: `1px solid ${color}4D`,
+                border: `1px solid ${colourAlpha(color, 0.302)}`,
               }}
             >
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: color, display: "inline-block" }} />

@@ -57,7 +57,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl border bg-[rgba(20,20,28,0.75)]',
+        'group relative rounded-xl border bg-[var(--recess)]',
         'backdrop-blur-md shadow-lg w-[320px]',
         selected ? 'border-white/30' : 'border-white/10',
       )}
@@ -92,7 +92,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
             {level.toUpperCase()}
           </button>
           {showLevelPicker && (
-            <div className="absolute top-full left-0 mt-1 z-10 bg-[rgba(20,20,28,0.95)] border border-border rounded-md shadow-lg overflow-hidden min-w-[60px]">
+            <div className="absolute top-full left-0 mt-1 z-10 bg-[var(--recess)] border border-border rounded-md shadow-lg overflow-hidden min-w-[60px]">
               {(['h1', 'h2', 'h3'] as HeadingLevel[]).map((l) => (
                 <button
                   key={l}

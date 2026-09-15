@@ -51,6 +51,7 @@ import RemixComposerBanner from "@/components/remix/RemixComposerBanner";
 import { useLineageParent } from "@/lib/remix/hooks";
 import { coverImageFromRow, resultsFromJson, type CoverImage, type ResultBlock } from "@/types/blueprintMedia";
 import { type } from "@/lib/theme/type";
+import { colourAlpha } from "@/lib/theme/tokens";
 
 // ─── Post type display config (mirrors ContentDetail) ─────────
 const POST_TYPE_DISPLAY: Record<string, {
@@ -1642,15 +1643,15 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
         {draftMeta && (
           <div
             className="mb-5 flex items-center justify-between gap-3"
-            style={{ background: 'rgba(186,117,23,0.08)', border: '1px solid rgba(186,117,23,0.30)', borderRadius: 10, padding: '10px 16px' }}
+            style={{ background: 'color-mix(in srgb, var(--lit) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--lit) 30%, transparent)', borderRadius: 10, padding: '10px 16px' }}
           >
-            <p style={{ fontSize: 13, fontWeight: 300, color: '#EF9F27' }}>
+            <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--lit)' }}>
               Editing draft — <span style={{ fontWeight: 600 }}>{draftMeta.name}</span>
               <span className="opacity-70 ml-2">· {lastAutosaveRef.current
                 ? `Autosaved ${formatDistanceToNow(lastAutosaveRef.current, { addSuffix: true })}`
                 : `Last saved ${formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}`}</span>
             </p>
-            <button onClick={discardDraft} className="hover:underline shrink-0" style={{ fontSize: 12, color: '#EF9F27', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <button onClick={discardDraft} className="hover:underline shrink-0" style={{ fontSize: 12, color: 'var(--lit)', background: 'none', border: 'none', cursor: 'pointer' }}>
               Discard draft
             </button>
           </div>
@@ -1777,8 +1778,8 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       textAlign: 'left',
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.background = `${card.accent}10`;
-                      (e.currentTarget as HTMLElement).style.borderColor = `${card.accent}50`;
+                      (e.currentTarget as HTMLElement).style.background = `${colourAlpha(card.accent, 0.063)}`;
+                      (e.currentTarget as HTMLElement).style.borderColor = `${colourAlpha(card.accent, 0.314)}`;
                       (e.currentTarget as HTMLElement).style.borderLeft = `3px solid ${card.accent}`;
                     }}
                     onMouseLeave={e => {
@@ -2114,7 +2115,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               {customTags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {customTags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "var(--recess)", color: "#9999AA" }}>
+                    <span key={tag} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl" style={{ backgroundColor: "var(--recess)", color: "var(--text2)" }}>
                       #{tag}
                       <button type="button" onClick={() => setCustomTags(customTags.filter((t) => t !== tag))} className="ml-0.5 hover:text-foreground transition-colors">×</button>
                     </span>
@@ -2607,9 +2608,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     maxLength={2000}
                     style={{
                       width: '100%',
-                      background: `${cfg.color}08`,
-                      border: `1px solid ${cfg.color}20`,
-                      borderLeft: `3px solid ${cfg.color}50`,
+                      background: `${colourAlpha(cfg.color, 0.031)}`,
+                      border: `1px solid ${colourAlpha(cfg.color, 0.125)}`,
+                      borderLeft: `3px solid ${colourAlpha(cfg.color, 0.314)}`,
                       borderRadius: 8, padding: '12px 14px',
                       fontSize: 14, color: 'var(--text2)',
                       outline: 'none', resize: 'vertical' as const,
@@ -2746,7 +2747,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       <span
                         key={tag}
                         className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-2xl"
-                        style={{ backgroundColor: "var(--recess)", color: "#9999AA" }}
+                        style={{ backgroundColor: "var(--recess)", color: "var(--text2)" }}
                       >
                         #{tag}
                         <button
@@ -3057,7 +3058,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             position: 'relative', zIndex: 1, background: 'var(--bg)',
             border: '1px solid var(--line)', borderRadius: 16,
             padding: '28px 32px', maxWidth: 400, width: '90%',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.60)',
+            boxShadow: 'var(--elev-overlay)',
           }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
               Save before leaving?

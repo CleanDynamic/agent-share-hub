@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import { Lock } from "lucide-react"
 import { tokens } from "./tokens"
+import { colourAlpha } from "@/lib/theme/tokens";
 
 export interface MasteryRibbon {
   id: string
@@ -67,8 +68,8 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
                   width: 32,
                   height: 32,
                   borderRadius: tokens.radius.card,
-                  background: `${color}1f`,
-                  border: `0.5px solid ${color}55`,
+                  background: `${colourAlpha(color, 0.122)}`,
+                  border: `0.5px solid ${colourAlpha(color, 0.333)}`,
                 }}
               >
                 {ribbon.locked ? (

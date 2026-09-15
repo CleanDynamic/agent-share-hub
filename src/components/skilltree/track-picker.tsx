@@ -149,7 +149,7 @@ export default function TrackPicker({
                       padding: "3px 8px",
                       borderRadius: tokens.radiusPill,
                       color: tokens.textDim,
-                      background: "rgba(255,255,255,0.06)",
+                      background: "var(--glass-2)",
                       border: tokens.borderSoft,
                     }}
                   >
@@ -174,10 +174,10 @@ export default function TrackPicker({
                   fontSize: 13,
                   fontWeight: 600,
                   fontFamily: sans,
-                  color: "#fff",
+                  color: "var(--on-action)",
                   background: isSel
                     ? tokens.brandGradient
-                    : "rgba(255,255,255,0.08)",
+                    : "var(--recess)",
                 }}
               >
                 Choose

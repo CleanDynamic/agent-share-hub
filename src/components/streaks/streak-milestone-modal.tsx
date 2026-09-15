@@ -49,7 +49,7 @@ export default function StreakMilestoneModal({
           textAlign: "center",
           backdropFilter: "blur(28px) saturate(160%)",
           WebkitBackdropFilter: "blur(28px) saturate(160%)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+          boxShadow: "var(--elev-overlay)",
           position: "relative",
         }}
       >

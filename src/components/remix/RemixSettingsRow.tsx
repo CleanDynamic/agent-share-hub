@@ -39,7 +39,7 @@ function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
           height: 18,
           borderRadius: '50%',
           background: 'var(--text)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+          boxShadow: 'var(--elev-raised)',
           transition: 'left 160ms ease',
         }}
       />

@@ -107,12 +107,12 @@ export function QuotableSelectionOverlay({
         transform: "translateX(-50%)",
         zIndex: 60,
         padding: "6px 8px",
-        background: "rgba(40, 40, 52, 0.95)",
+        background: "var(--recess)",
         backdropFilter: "blur(40px) saturate(160%)",
         WebkitBackdropFilter: "blur(40px) saturate(160%)",
-        border: "0.5px solid rgba(255, 255, 255, 0.14)",
+        border: "0.5px solid var(--line)",
         borderRadius: "100px",
-        boxShadow: "0 12px 32px rgba(0, 0, 0, 0.40)",
+        boxShadow: "var(--elev-raised)",
         animation: "overlay-in 120ms ease-out forwards",
       }}
       onMouseDown={(e) => e.preventDefault()}
@@ -131,7 +131,7 @@ export function QuotableSelectionOverlay({
       >
         <polygon
           points={`0,0 ${arrowSize.w / 2},${arrowSize.h} ${arrowSize.w},0`}
-          fill="rgba(40, 40, 52, 0.95)"
+          fill="var(--recess)"
         />
       </svg>
 
@@ -173,10 +173,10 @@ function ActionButton({
           border: "none",
           cursor: "pointer",
           transition: "background 100ms ease",
-          color: "rgba(255, 255, 255, 0.9)",
+          color: "var(--text)",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+          e.currentTarget.style.background = "var(--glass-2)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = "transparent";
@@ -192,9 +192,9 @@ function ActionButton({
           borderRadius: 6,
           fontSize: 12,
           lineHeight: "16px",
-          color: "rgba(255, 255, 255, 0.85)",
-          background: "rgba(24, 24, 32, 0.95)",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+          color: "var(--text)",
+          background: "var(--recess)",
+          boxShadow: "var(--elev-raised)",
         }}
       >
         {label}

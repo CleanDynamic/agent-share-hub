@@ -67,6 +67,33 @@ describe("index.css mirrors shadcn.ts", () => {
     for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, duskShadcn[n]]);
   });
 
+  /* BG-P29. The bridge has a THIRD declaration: the layered original inside
+     `@layer base`, which BG-P28 left on the dark shell's palette because
+     unlayered declarations beat layered ones and so it never wins against the
+     theme blocks. It is repointed at Exhibition now — bare `:root` IS
+     Exhibition — and held here so the three declarations cannot drift apart.
+     Without this, the block a reader lands on when they search `--primary` is
+     the one nothing checks. */
+  it("the @layer base fallback declares Exhibition's bridge", () => {
+    // The parse helper above keys off the selector text, which cannot
+    // distinguish this `:root` from the unlayered ones; slice the layer first.
+    const layer = css.slice(css.indexOf("@layer base {\n  :root {"));
+    const inner = layer.slice(layer.indexOf("{", layer.indexOf(":root")) + 1);
+    const got: Record<string, string> = {};
+    for (const line of inner.slice(0, inner.indexOf("}")).split("\n")) {
+      const m = /^\s*--([a-z0-9-]+):\s*(.+);\s*$/.exec(line);
+      if (m) got[m[1]] = m[2];
+    }
+    for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, exhibitionShadcn[n]]);
+    // --radius is not a colour and is not part of the bridge, but it lives in
+    // this block and is live: tailwind.config.ts spends it as `rounded-lg`,
+    // with `rounded-md`/`rounded-sm` as calc() steps off it. 0.75rem was 12px,
+    // which is --r-control exactly, so pointing it at the scale moves no
+    // measurement and stops the number being a fourth opinion.
+    expect(got["radius"]).toBe("var(--r-control)");
+    expect(RADIUS["r-control"]).toBe("12px");
+  });
+
   it("gives the two rooms different values", () => {
     // Being fixed across both themes is the bug this replaced: one set of
     // values declared once, painting Exhibition in the dark shell's colours.

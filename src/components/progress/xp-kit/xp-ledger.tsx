@@ -123,7 +123,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                   borderRadius: tokens.radiusCard,
                   background: tokens.shell,
                   border: tokens.borderStrong,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  boxShadow: "var(--elev-raised)",
                   zIndex: 20,
                   ...tokens.glass,
                 }}
@@ -181,7 +181,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                       width: 30,
                       height: 30,
                       borderRadius: 8,
-                      background: "rgba(255,255,255,0.06)",
+                      background: "var(--glass-2)",
                       flexShrink: 0,
                       color: tokens.text,
                     }}

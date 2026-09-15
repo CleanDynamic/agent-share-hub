@@ -64,7 +64,7 @@ export default function TrackCard({
           className="flex size-11 items-center justify-center"
           style={{
             background: locked
-              ? withAlpha("#ffffff", 0.06)
+              ? withAlpha("var(--chrome-hi)", 0.06)
               : withAlpha(accent, 0.16),
             border: `0.5px solid ${
               locked ? colors.borderSoft : withAlpha(accent, 0.4)
@@ -108,7 +108,7 @@ export default function TrackCard({
           <div
             className="relative h-2 w-full overflow-hidden"
             style={{
-              background: withAlpha("#000000", 0.25),
+              background: colors.borderSoft,
               borderRadius: radius.pill,
             }}
           >

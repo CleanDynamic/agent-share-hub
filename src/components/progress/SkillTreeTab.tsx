@@ -107,14 +107,14 @@ export default function SkillTreeTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
+        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--text2)" }}>
           Track: <span style={{ color: meta.color, fontWeight: 600 }}>{meta.name}</span>
         </div>
         <button
           onClick={() => setRespecOpen(true)}
           style={{
             background: "transparent", border: 0, padding: 0,
-            color: "rgba(255,255,255,0.45)", fontSize: 12, cursor: "pointer",
+            color: "var(--text2)", fontSize: 12, cursor: "pointer",
             textDecoration: "underline",
           }}
         >

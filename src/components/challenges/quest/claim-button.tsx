@@ -57,7 +57,7 @@ export default function ClaimButton({
     const burst: Particle[] = Array.from({ length: 14 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.4
       const dist = 26 + Math.random() * 30
-      const palette = [colors.orange, colors.amber, semantic.xp, "#FFFFFF"]
+      const palette = [colors.orange, colors.amber, semantic.xp, "var(--chrome-hi)"]
       return {
         id: seq.current++,
         dx: Math.cos(angle) * dist,
@@ -91,16 +91,16 @@ export default function ClaimButton({
         className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold transition-transform"
         style={{
           borderRadius: radius.pill,
-          color: claimed ? colors.textSecondary : "#FFFFFF",
+          color: claimed ? colors.textSecondary : "var(--text)",
           background: claimed ? colors.input : orangeGradient,
           border: claimed
             ? `0.5px solid ${colors.borderSoft}`
-            : "0.5px solid rgba(255,255,255,0.18)",
+            : "0.5px solid var(--line)",
           cursor: claimed ? "default" : "pointer",
           transform: pressing ? "scale(0.94)" : "scale(1)",
           boxShadow: claimed
             ? "none"
-            : "0 4px 14px rgba(232,87,26,0.35)",
+            : "0 4px 14px color-mix(in srgb, var(--action) 35%, transparent)",
         }}
       >
         {claimed ? (

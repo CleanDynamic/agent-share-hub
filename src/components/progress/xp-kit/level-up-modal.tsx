@@ -20,7 +20,7 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-const CONFETTI_COLORS = [tokens.orange, tokens.amber, tokens.teal, "#fff"]
+const CONFETTI_COLORS = [tokens.orange, tokens.amber, tokens.teal, "var(--chrome-hi)"]
 
 /** Celebration modal shown on level-up with a scaling number and confetti burst. */
 export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModalProps) {
@@ -56,7 +56,7 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(15,15,20,0.62)",
+        background: "var(--recess)",
         ...tokens.glass,
         fontFamily: tokens.fontSans,
       }}
@@ -110,7 +110,7 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
           borderRadius: tokens.radiusPanel,
           background: tokens.card,
           border: tokens.borderStrong,
-          boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+          boxShadow: "var(--elev-overlay)",
           textAlign: "center",
           ...tokens.glass,
         }}
@@ -126,7 +126,7 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
             height: 320,
             borderRadius: "50%",
             background:
-              "radial-gradient(circle, rgba(232,87,26,0.45) 0%, rgba(232,87,26,0.10) 45%, transparent 70%)",
+              "radial-gradient(circle, color-mix(in srgb, var(--action) 45%, transparent) 0%, color-mix(in srgb, var(--action) 10%, transparent) 45%, transparent 70%)",
             pointerEvents: "none",
           }}
         />
@@ -139,7 +139,7 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
             fontSize: 72,
             lineHeight: 1,
             color: tokens.orange,
-            textShadow: "0 4px 24px rgba(232,87,26,0.5)",
+            textShadow: "0 4px 24px color-mix(in srgb, var(--action) 50%, transparent)",
             animation: reduced ? undefined : "levelup-pop 700ms cubic-bezier(0.34,1.56,0.64,1) both",
           }}
         >
@@ -178,7 +178,7 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
                   gap: 9,
                   padding: "9px 12px",
                   borderRadius: tokens.radiusCard,
-                  background: "rgba(255,255,255,0.05)",
+                  background: "var(--glass-2)",
                   border: tokens.borderSoft,
                   fontSize: 13,
                   color: tokens.text,
@@ -202,11 +202,11 @@ export default function LevelUpModal({ newLevel, unlocks, onClose }: LevelUpModa
             border: "none",
             cursor: "pointer",
             background: tokens.orangeGradient,
-            color: "#fff",
+            color: "var(--on-action)",
             fontFamily: tokens.fontSans,
             fontSize: 14,
             fontWeight: 600,
-            boxShadow: "0 6px 18px rgba(232,87,26,0.4)",
+            boxShadow: "0 6px 18px color-mix(in srgb, var(--action) 40%, transparent)",
           }}
         >
           Continue

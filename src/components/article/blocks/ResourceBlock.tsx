@@ -4,6 +4,7 @@ import { MoreHorizontal, Link2, ExternalLink, Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { colourAlpha } from "@/lib/theme/tokens";
 
 interface ResourceBlockData {
   blockId: string;
@@ -104,13 +105,13 @@ export function ResourceBlockNode({ id, data, selected }: NodeProps) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group relative rounded-lg p-2.5 bg-[rgba(20,20,28,0.85)] backdrop-blur-md transition-all"
+      className="group relative rounded-lg p-2.5 bg-[var(--recess)] backdrop-blur-md transition-all"
       style={{
         width: 280,
         border: selected
-          ? `1px solid ${TYPE_COLOR}99`
+          ? `1px solid ${colourAlpha(TYPE_COLOR, 0.6)}`
           : '1px solid var(--line)',
-        boxShadow: selected ? `0 0 0 2px ${TYPE_COLOR}26` : 'none',
+        boxShadow: selected ? `0 0 0 2px ${colourAlpha(TYPE_COLOR, 0.149)}` : 'none',
       }}
     >
       <Handle

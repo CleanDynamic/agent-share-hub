@@ -250,7 +250,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       data-visual-slot="feed-card"
       style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--line)',
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,
         padding: '18px 20px',
@@ -258,7 +258,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
     >
       {/* LINE 1 — Header row */}
       <div className="flex items-center gap-2" style={{ height: 34 }}>
@@ -325,7 +325,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
 
       {/* LINE 4.25 — What to Expect teaser (non-blogs only) */}
       {!isBlog && wteTeaser && (
-        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "#55e0d2" }}>
+        <p className="text-[12px] italic mt-0.5 truncate" style={{ color: "var(--evidence)" }}>
           <Eye className="inline h-[10px] w-[10px] mr-1" style={{ verticalAlign: "middle" }} />
           <span className="opacity-70">Expect: </span>
           {wteTeaser}

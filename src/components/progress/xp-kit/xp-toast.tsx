@@ -134,7 +134,7 @@ export default function XpToast({ events, onDismiss }: XpToastProps) {
             borderRadius: tokens.radiusPill,
             background: tokens.shell,
             border: tokens.borderStrong,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+            boxShadow: "var(--elev-raised)",
             color: tokens.text,
             fontFamily: tokens.fontSans,
             fontSize: 13,
@@ -155,7 +155,7 @@ export default function XpToast({ events, onDismiss }: XpToastProps) {
               width: 22,
               height: 22,
               borderRadius: "50%",
-              background: "rgba(232,87,26,0.18)",
+              background: "color-mix(in srgb, var(--action) 18%, transparent)",
               flexShrink: 0,
             }}
           >
