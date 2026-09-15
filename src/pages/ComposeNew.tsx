@@ -994,7 +994,14 @@ export default function ComposeNew() {
             border: "none",
             padding: 0,
             cursor: busy ? "wait" : "pointer",
-            color: TEAL,
+            /* BG-P30. Was TEAL — `--evidence` — which measures 4.23:1 on the
+               intake panel's `--recess` ground, under the 4.5:1 floor, at
+               12px/500. Its own neighbour two elements up ("Choose a file")
+               already spends TEXT_SECONDARY on the same ground at the same
+               size, so the legal pairing was sitting beside it: text2/recess
+               is 4.55:1 on Exhibition and 5.73:1 on Dusk. It is also what the
+               theme prescribes for a tertiary action. */
+            color: TEXT_SECONDARY,
             textDecoration: "underline",
             textUnderlineOffset: 3,
           }}
