@@ -264,3 +264,37 @@ function countBraces(source: string): number {
   }
   return depth;
 }
+
+describe("scroll reveals live on the two sanctioned surfaces only", () => {
+  /* `buildgallery-theme` §Motion: "Only on the gallery grid and build-page
+     sections. App surfaces get list entrances and skeletons — never scroll
+     storytelling." A working surface that withholds its content until you
+     scroll to it is a surface arguing with the person trying to use it, and
+     this is the assertion that keeps the third one from being added quietly. */
+  const SANCTIONED = ["src/pages/BuildPage.tsx", "src/pages/Gallery.tsx"];
+
+  it("is imported by exactly those two", () => {
+    const importers = SCANNED.filter((file) => /from ["'][^"']*useReveal["']/.test(file.code))
+      .map((file) => file.rel)
+      .sort();
+    expect(importers).toEqual(SANCTIONED);
+  });
+
+  it("is the only IntersectionObserver-driven entrance in the product", () => {
+    /* An observer used for anything ELSE is fine and there are three: a read
+       receipt in the DM bubble, infinite scroll on a profile, and a sticky
+       upload header. What would be a reveal gone around this hook is an
+       observer whose own callback sets opacity or a translate, so only the
+       callback is scanned rather than the whole file — scanning the file
+       flags all three of those for mentioning `opacity` elsewhere. */
+    const offenders = SCANNED.filter((file) => {
+      if (SANCTIONED.includes(file.rel) || file.rel.endsWith("lib/theme/useReveal.ts")) return false;
+      for (const match of file.code.matchAll(/new IntersectionObserver/g)) {
+        const callback = file.code.slice(match.index, (match.index ?? 0) + 400);
+        if (/opacity|translateY|setShown|setRevealed/.test(callback)) return true;
+      }
+      return false;
+    }).map((file) => file.rel);
+    expect(offenders).toEqual([]);
+  });
+});

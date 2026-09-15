@@ -87,7 +87,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { prefersReducedMotion } from "@/lib/theme/controls";
+import { useReveal } from "@/lib/theme/useReveal";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
@@ -664,17 +664,14 @@ function GalleryGrid({
     firstPaint.current = false;
   }, []);
 
-  /* Reduced motion is answered by never entering the hidden state at all — the
-     end state is identical, it simply arrives at once — and so is a runtime
-     without IntersectionObserver, where a card that started at opacity 0 would
-     have nothing to bring it back. */
-  const canReveal =
-    !prefersReducedMotion() && typeof IntersectionObserver !== "undefined";
-
+  /* Reduced motion and a runtime without IntersectionObserver are both
+     answered inside `useReveal`, by never entering the hidden state at all:
+     the end state is identical, it simply arrives at once. What is decided
+     here is only whether this render is the grid's first. */
   return (
     <div className="fs-grid" data-visual-slot="gallery-grid" data-testid="gallery-grid">
       {builds.map((build, index) => (
-        <Reveal key={build.id} index={index} animate={canReveal && firstPaint.current}>
+        <Reveal key={build.id} index={index} animate={firstPaint.current}>
           {/* The credit is the CARD's (BG-P11). It reads the two frozen
               snapshot columns off the record it was handed — they ride in on
               GALLERY_BUILD_COLUMNS like everything else the card shows — so the
@@ -689,9 +686,11 @@ function GalleryGrid({
 
 /* ── The stagger ──────────────────────────────────────────────────────────── */
 
-/** The theme's scroll-entry figures, and the only two it gives. */
-const REVEAL_MS = 450;
-const REVEAL_SHIFT = 14;
+/* BG-P32. The theme's two scroll-entry figures — 450ms and 14px — and the
+   easing used to live here as three local constants. They are `REVEAL`,
+   `REVEAL_SHIFT` and `STANDARD` in src/lib/theme/motion.ts now, spent through
+   the `useReveal` hook this grid and the build page share. What stays local is
+   the only thing that is genuinely this grid's: how far apart the cards are. */
 
 /** Between one card and the next. */
 const REVEAL_STEP = 50;
@@ -706,21 +705,14 @@ const REVEAL_STEP = 50;
  */
 const REVEAL_MAX_STEPS = 8;
 
-/** Never `ease-in` on an entrance: it reads as the page hesitating. */
-const REVEAL_EASING = "cubic-bezier(.2,.6,.35,1)";
-
 /**
  * One grid cell, revealed once when it first comes near the viewport.
  *
- * `transform` and `opacity` only, which are the two properties that composite;
- * the observer disconnects on the first intersection, so nothing here is still
- * watching once the page has settled.
- *
- * AFTER THE REVEAL THE TRANSFORM IS `none` RATHER THAN `translateY(0)`. A
- * lingering transform makes the cell a containing block, and the card inside it
- * carries a `backdrop-filter` — which would then sample the cell rather than
- * the page, and quietly change what the glass is made of. `none` interpolates
- * from a translate exactly as `translateY(0)` does and leaves nothing behind.
+ * BG-P32 — THE MECHANISM MOVED, THE BEHAVIOUR DID NOT. The observer, the
+ * once-only disconnect, the two composited properties and the fail-towards-
+ * visible defaults are all in `useReveal` now, shared with the build page's
+ * section reveals. This component is what is left once that is factored out:
+ * the grid cell, its slot attribute, and the stagger step that is its own.
  */
 function Reveal({
   index,
@@ -731,47 +723,17 @@ function Reveal({
   animate: boolean;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [shown, setShown] = useState(!animate);
-
-  useEffect(() => {
-    if (!animate) return;
-    const element = ref.current;
-    if (!element || typeof IntersectionObserver === "undefined") {
-      setShown(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        setShown(true);
-        observer.disconnect();
-      }
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [animate]);
-
-  const delay = Math.min(index, REVEAL_MAX_STEPS) * REVEAL_STEP;
+  const { ref, style, shown } = useReveal({
+    enabled: animate,
+    delayMs: Math.min(index, REVEAL_MAX_STEPS) * REVEAL_STEP,
+  });
 
   return (
     <div
       ref={ref}
       data-visual-slot="gallery-grid-cell"
-      data-revealed={!animate || shown ? "" : undefined}
-      style={
-        animate
-          ? shown
-            ? {
-                opacity: 1,
-                transform: "none",
-                transition:
-                  `opacity ${REVEAL_MS}ms ${REVEAL_EASING} ${delay}ms, ` +
-                  `transform ${REVEAL_MS}ms ${REVEAL_EASING} ${delay}ms`,
-              }
-            : { opacity: 0, transform: `translateY(${REVEAL_SHIFT}px)` }
-          : undefined
-      }
+      data-revealed={shown ? "" : undefined}
+      style={style}
     >
       {children}
     </div>

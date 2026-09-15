@@ -71,6 +71,8 @@ import {
   measure,
   sectionHead,
 } from "@/lib/theme/type";
+import { scrollBehavior } from "@/lib/theme/motion";
+import { useReveal } from "@/lib/theme/useReveal";
 
 /** The app's QueryClient defaults to staleTime 0. A build record does not
  *  change while a reader is looking at it, so refetching on focus is waste. */
@@ -289,6 +291,40 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * One build-page section, revealed once as the reader reaches it.
+ *
+ * BG-P32 — ONE OF THE TWO SURFACES THE THEME ALLOWS A SCROLL ENTRY ON. The
+ * other is the gallery grid, and both spend the same `useReveal`: 450ms of
+ * opacity and a 14px rise, fired once by an IntersectionObserver that
+ * disconnects on the first intersection. Every other surface in the product
+ * gets list entrances and skeletons and no scroll storytelling at all, which is
+ * the theme's rule and is asserted in motion.test.ts.
+ *
+ * NO STAGGER HERE, DELIBERATELY. The gallery's cards arrive together in a grid
+ * and a step across them reads as one movement; a page's sections are already
+ * separated in time by the reader's own scrolling, so a delay on top of that is
+ * the page hesitating rather than the page arriving.
+ *
+ * NO `display` OR ANY OTHER STRUCTURAL PROPERTY. The wrapper carries opacity
+ * and transform only, inside a flex column that already spaces its children —
+ * a div with no styling of its own is a flex item exactly as the section it
+ * wraps was.
+ */
+function Section({ children }: { children: React.ReactNode }) {
+  const { ref, style, shown } = useReveal();
+  return (
+    <div
+      ref={ref}
+      data-visual-slot="build-page-section"
+      data-revealed={shown ? "" : undefined}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
  * The page's two dead ends: a record that could not be read, and no record at
  * this address.
  *
@@ -502,7 +538,7 @@ export default function BuildPage() {
       const card = document.querySelector(`[data-node-id="${escaped}"]`);
       // jsdom has no layout, so scrollIntoView is not always there to call.
       if (card && typeof card.scrollIntoView === "function") {
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        card.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       }
       setPendingNodeId(null);
     });
@@ -871,95 +907,101 @@ export default function BuildPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Above the build, not under it: a reader meets the provenance before
             they meet the work. */}
-        <ForkAttribution build={data.build} record={data} />
-        <BuildHeader
-          build={data.build}
-          tree={treeWithHero}
-          nodeTypes={data.nodeTypes}
-          hero={hero}
-          actions={
-            <>
-              <PortableExport record={data} />
-              <ForkControl state={forkState} />
-            </>
-          }
-          reproduction={
-            <ReproductionAction
-              build={data.build}
-              onRecorded={onReproductionRecorded}
-            />
-          }
-          rebuilds={
-            <RebuildCount
-              count={rebuildCount}
-              onOpen={() => setTab("rebuilds")}
-            />
-          }
-        />
-        <BuildTabs
-          active={tab}
-          onActiveChange={setTab}
-          watch={
-            <Replay
-              build={data.build}
-              events={data.events}
-              nodeTypes={data.nodeTypes}
-              resolveNode={resolveNode}
-              resolveMedia={resolveMedia}
-              focusOrdinal={jumpTo}
-              onFork={forkState.fork}
-              forkPending={forkState.pending}
-              divergences={rebuilds}
-              onOpenRebuild={openRebuild}
-            />
-          }
-          run={
-            runLayer ? (
-              <RunItPanel
-                sequence={
-                  <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
-                }
-                layer={runLayer}
-                resolveNode={resolveNode}
-                onOpenNode={openNodeInAnatomy}
+        <Section>
+          <ForkAttribution build={data.build} record={data} />
+        </Section>
+        <Section>
+          <BuildHeader
+            build={data.build}
+            tree={treeWithHero}
+            nodeTypes={data.nodeTypes}
+            hero={hero}
+            actions={
+              <>
+                <PortableExport record={data} />
+                <ForkControl state={forkState} />
+              </>
+            }
+            reproduction={
+              <ReproductionAction
+                build={data.build}
+                onRecorded={onReproductionRecorded}
               />
-            ) : (
-              <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
-            )
-          }
-          understand={
-            understandLayer ? (
-              <LayerView
-                layer={understandLayer}
-                resolveNode={resolveNode}
-                onOpenNode={openNodeInAnatomy}
+            }
+            rebuilds={
+              <RebuildCount
+                count={rebuildCount}
+                onOpen={() => setTab("rebuilds")}
               />
-            ) : undefined
-          }
-          rebuilds={
-            (rebuilds ?? []).length > 0 ? <RebuildsTab rebuilds={rebuilds ?? []} /> : undefined
-          }
-          broke={
-            <BreakageView
-              build={data.build}
-              events={data.events}
+            }
+          />
+        </Section>
+        <Section>
+          <BuildTabs
+            active={tab}
+            onActiveChange={setTab}
+            watch={
+              <Replay
+                build={data.build}
+                events={data.events}
+                nodeTypes={data.nodeTypes}
+                resolveNode={resolveNode}
+                resolveMedia={resolveMedia}
+                focusOrdinal={jumpTo}
+                onFork={forkState.fork}
+                forkPending={forkState.pending}
+                divergences={rebuilds}
+                onOpenRebuild={openRebuild}
+              />
+            }
+            run={
+              runLayer ? (
+                <RunItPanel
+                  sequence={
+                    <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
+                  }
+                  layer={runLayer}
+                  resolveNode={resolveNode}
+                  onOpenNode={openNodeInAnatomy}
+                />
+              ) : (
+                <RunView tree={data.tree} nodeTypes={data.nodeTypes} build={data.build} />
+              )
+            }
+            understand={
+              understandLayer ? (
+                <LayerView
+                  layer={understandLayer}
+                  resolveNode={resolveNode}
+                  onOpenNode={openNodeInAnatomy}
+                />
+              ) : undefined
+            }
+            rebuilds={
+              (rebuilds ?? []).length > 0 ? <RebuildsTab rebuilds={rebuilds ?? []} /> : undefined
+            }
+            broke={
+              <BreakageView
+                build={data.build}
+                events={data.events}
+                tree={data.tree}
+                nodeTypes={data.nodeTypes}
+                resolveNode={resolveNode}
+                resolveMedia={resolveMedia}
+                onOpenReplay={openReplayAt}
+              />
+            }
+          >
+            <AnatomyTree
               tree={data.tree}
               nodeTypes={data.nodeTypes}
+              build={data.build}
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
-              onOpenReplay={openReplayAt}
+              renderFooter={renderNodeFooter}
             />
-          }
-        >
-          <AnatomyTree
-            tree={data.tree}
-            nodeTypes={data.nodeTypes}
-            build={data.build}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            renderFooter={renderNodeFooter}
-          />
-        </BuildTabs>
+          </BuildTabs>
+        </Section>
       </div>
     </Frame>
   );
