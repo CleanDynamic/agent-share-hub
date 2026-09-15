@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { GitFork, Lock } from 'lucide-react'
 import { tokens } from './tokens'
+import { feedback } from '@/lib/theme/motion';
 
 export interface AttributionChipProps {
   /** Original author handle, e.g. "ada". Omit when original was deleted. */
@@ -41,7 +42,7 @@ export default function AttributionChip({
         color: isFallback ? tokens.locked : tokens.textMuted,
         fontSize: 12.5,
         cursor: isFallback ? 'default' : 'pointer',
-        transition: 'border 140ms ease, color 140ms ease',
+        transition: feedback("border-color", "color"),
       }}
     >
       {isFallback ? (

@@ -42,7 +42,7 @@ import {
 import { toast } from 'sonner';
 import { useDocumentStore } from '@/lib/documentStore';
 import type { Block } from '@/types/document';
-import { scrollBehavior } from '@/lib/theme/motion';
+import { scrollBehavior, feedback } from '@/lib/theme/motion';
 
 export interface SlashCommandItem {
   id: string;
@@ -370,7 +370,7 @@ export function SlashCommandMenu({
                       cursor: 'pointer',
                       background: isSelected ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'transparent',
                       borderLeft: isSelected ? '2px solid hsl(var(--secondary))' : '2px solid transparent',
-                      transition: 'background 0.1s ease',
+                      transition: feedback("background-color"),
                     }}
                     onMouseOver={(event) => {
                       if (!isSelected) event.currentTarget.style.background = 'var(--recess)';

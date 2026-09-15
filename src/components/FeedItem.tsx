@@ -14,6 +14,7 @@ import { REBLOG_COMPOSE_ENABLED } from "@/lib/reblog/flags";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { feedback } from "@/lib/theme/motion";
 
 /* ---- Helpers ---- */
 
@@ -254,7 +255,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,
         padding: '18px 20px',
-        transition: 'border-color 0.2s ease',
+        transition: feedback("border-color"),
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}

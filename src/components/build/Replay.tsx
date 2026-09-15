@@ -58,6 +58,7 @@ import {
   measure,
   tabular,
 } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 /** One event per this many milliseconds while playing. */
 export const PLAY_INTERVAL_MS = 1500;
@@ -618,7 +619,7 @@ export function Replay({
                     // Opacity on the tick itself gets the same three steps out of
                     // one colour, and is a visual property, not a layout one.
                     opacity: reached && !active ? 0.45 : 1,
-                    transition: "height 120ms ease, background 120ms ease",
+                    transition: feedback("background-color"),
                   }}
                 />
               );

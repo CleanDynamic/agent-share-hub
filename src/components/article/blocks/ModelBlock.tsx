@@ -10,6 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { feedback } from '@/lib/theme/motion';
 
 type Provider = 'openai' | 'anthropic' | 'google' | 'groq' | 'custom';
 
@@ -35,7 +36,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 export function ModelBlockNode({ id, data, selected }: NodeProps) {

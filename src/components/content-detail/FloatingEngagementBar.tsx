@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import ActionXpHint from "@/components/ambient/ActionXpHint";
+import { feedback } from "@/lib/theme/motion";
 
 interface Post {
   id: string;
@@ -116,7 +117,7 @@ function ActionButton({
           ? "var(--recess)"
           : "transparent",
         color: textColor,
-        transition: "background 150ms ease",
+        transition: feedback("background-color"),
       }}
     >
       {icon}

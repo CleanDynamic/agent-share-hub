@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Sparkles } from "lucide-react"
 import { tokens } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface XpEvent {
   id: string
@@ -143,7 +144,7 @@ export default function XpToast({ events, onDismiss }: XpToastProps) {
             animation: t.leaving ? undefined : "xptoast-in 200ms ease-out",
             opacity: t.leaving ? 0 : 1,
             transform: t.leaving ? "translateY(14px)" : "translateY(0)",
-            transition: "opacity 200ms ease-out, transform 200ms ease-out",
+            transition: feedback("opacity", "transform"),
             pointerEvents: "auto",
           }}
         >

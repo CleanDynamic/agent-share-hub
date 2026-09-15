@@ -16,6 +16,7 @@ import {
 import type { CollectionItemKind } from "@/lib/library/types";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 interface CollectionBookmarkButtonProps {
   contentType: ShareableType; // "blueprint" | "blog" | "bounty" | "stage" | "block"
@@ -228,7 +229,7 @@ export function CollectionBookmarkButton({
         padding: variant === "subtle" ? 4 : 2,
         cursor: "pointer",
         color: isSaved ? SAVED : t.text2,
-        transition: "color 160ms cubic-bezier(.2,.6,.35,1), background 160ms cubic-bezier(.2,.6,.35,1)",
+        transition: feedback("color", "background-color"),
       }}
     >
       <Bookmark
@@ -237,7 +238,7 @@ export function CollectionBookmarkButton({
         style={{
           fill: isSaved ? SAVED : "transparent",
           color: isSaved ? SAVED : "currentColor",
-          transition: "fill 0.15s, color 0.15s",
+          transition: feedback("fill", "color"),
         }}
       />
     </button>

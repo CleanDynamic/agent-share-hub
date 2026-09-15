@@ -662,7 +662,7 @@ input, textarea, select {
   border-radius: var(--r-control);
   color: var(--text) !important;
   outline: none;
-  transition: border-color 150ms ease;
+  transition: border-color var(--motion-fast) var(--motion-ease);
 }
 
 /* BG-P07. :focus-visible rather than :focus — a mouse click on a field should

@@ -26,6 +26,7 @@ import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, DM_MONO, tabular } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 /** A block type's hue, through the one resolver. "stage" is a narrative step. */
 const typeColourFor = (type: string | undefined, isStage: boolean) =>
@@ -156,7 +157,7 @@ function PrimitiveCard({
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 160ms cubic-bezier(.2,.6,.35,1)",
+        transition: feedback("border-color"),
         flexShrink: 0,
       }}
       onMouseEnter={(e) => {

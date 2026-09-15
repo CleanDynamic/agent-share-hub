@@ -195,7 +195,7 @@ function rowStyle(kept: boolean): CSSProperties {
     gap: 10,
     padding: "9px 11px",
     opacity: kept ? 1 : 0.42,
-    transition: "opacity 120ms ease",
+    transition: feedback("opacity"),
   };
 }
 

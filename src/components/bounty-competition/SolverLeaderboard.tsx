@@ -33,6 +33,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { feedback } from "@/lib/theme/motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface LeaderboardUser {
@@ -213,7 +214,7 @@ function ContributorRow({
         cursor: "pointer",
         backgroundColor: baseBg,
         borderRadius: r.control,
-        transition: "background-color 600ms ease, transform 400ms ease",
+        transition: feedback("background-color", "transform"),
         minWidth: variant === "narrow" ? 240 : undefined,
         boxShadow: isHighlighted ? `0 0 0 1px ${tok.action}` : "none",
       }}
@@ -276,7 +277,7 @@ function EmptyState({ onCTA }: { onCTA: () => void }) {
           ...labelText,
           fontWeight: 600,
           cursor: "pointer",
-          transition: "background-color 150ms ease",
+          transition: feedback("background-color"),
         }}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = tokenAlpha("action", 0.1); }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}

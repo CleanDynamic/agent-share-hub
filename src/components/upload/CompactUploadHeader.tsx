@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { UploadSectionToggle } from "./UploadSectionToggle";
 import { CoverImageField } from "./CoverImageField";
 import type { CoverImage } from "@/types/blueprintMedia";
-import { scrollBehavior } from "@/lib/theme/motion";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 interface CompactUploadHeaderProps {
   postType: "blueprint" | "blog" | "bounty";
@@ -182,7 +182,7 @@ export function CompactUploadHeader({
           top: 0,
           opacity: isSticky ? 1 : 0,
           pointerEvents: isSticky ? "auto" : "none",
-          transition: "opacity 160ms ease-out",
+          transition: feedback("opacity"),
         }}
       >
         <div

@@ -325,7 +325,7 @@ export function BountyCompetitionHeader({
             </div>
             {bounty.deadline && deadlineState.type !== "past" && deadlineState.type !== "open_ended" && (
               <div style={{ marginTop: 8, height: 4, background: "var(--recess)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ width: `${timeProgress}%`, height: "100%", background: deadlineState.color as string, transition: "width 1s ease-out" }} />
+                <div style={{ width: `${timeProgress}%`, height: "100%", background: deadlineState.color as string, transition: "none" }} />
               </div>
             )}
           </div>
@@ -387,7 +387,7 @@ export function BountyCompetitionHeader({
           {(bounty.status === "open" || bounty.status === "partially_solved") && (
             <>
               <div style={{ height: 6, background: "var(--recess)", borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
-                <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, var(--evidence), var(--cat-data))", transition: "width 0.6s ease-out" }} />
+                <div style={{ width: `${slotProgress}%`, height: "100%", background: "linear-gradient(90deg, var(--evidence), var(--cat-data))", transition: "none" }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                 <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>

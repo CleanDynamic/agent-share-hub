@@ -54,6 +54,7 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, measure, tabular, type } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 interface ProfileHeaderProps {
   profile: ProfileSummary;
@@ -619,7 +620,7 @@ function StatButton({
         style={{
           ...dataText,
           color: hovered && hasViewList ? t.text : t.text2,
-          transition: "color 160ms cubic-bezier(.2,.6,.35,1)",
+          transition: feedback("color"),
         }}
       >
         {label}

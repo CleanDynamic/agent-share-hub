@@ -119,7 +119,7 @@ export default function TrackCard({
                 background: accent,
                 borderRadius: radius.pill,
                 boxShadow: `0 0 10px ${withAlpha(accent, 0.55)}`,
-                transition: "width 600ms ease",
+                transition: "none",
               }}
             />
           </div>

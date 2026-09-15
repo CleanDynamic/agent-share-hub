@@ -753,7 +753,7 @@ export function MetaBountyCreationFlow({
                         position: "absolute",
                         top: 3,
                         left: formState.anonymousPledgesAllowed ? 23 : 3,
-                        transition: "left 0.2s ease",
+                        transition: "none",
                         boxShadow: "0 1px 3px color-mix(in srgb, var(--porthole) 62%, transparent)",
                       }}
                     />

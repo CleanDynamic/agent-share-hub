@@ -4,6 +4,7 @@ import { MoreHorizontal, GripVertical, Columns2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { feedback } from '@/lib/theme/motion';
 
 interface CompareBlockData {
   blockId: string;
@@ -19,7 +20,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 function DropZone({

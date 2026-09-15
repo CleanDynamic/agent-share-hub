@@ -38,6 +38,7 @@ import { BlockLibraryTool } from './tools/BlockLibraryTool';
 import { OutlineTool } from './tools/OutlineTool';
 import { CommentsTool } from './tools/CommentsTool';
 import { VersionHistoryTool } from './tools/VersionHistoryTool';
+import { feedback } from '@/lib/theme/motion';
 
 interface ToolDefinition {
   id: WorkspaceToolId;
@@ -309,7 +310,7 @@ function WorkspaceTabButton({ tool, active, iconVisible, onClick }: WorkspaceTab
             style={{
               color: iconColor,
               opacity: iconVisible ? 1 : 0,
-              transition: 'opacity 150ms ease',
+              transition: feedback("opacity"),
             }}
           />
         </button>
@@ -406,7 +407,7 @@ function NavTool() {
                 fontSize: 13,
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'background 120ms ease',
+                transition: feedback("background-color"),
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--recess)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}

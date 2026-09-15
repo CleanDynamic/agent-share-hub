@@ -47,9 +47,9 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode 
 import { aspectOf, type GalleryMedia, type PostEntry } from "@/lib/build";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 import { body as bodyText, data as dataText, tabular } from "@/lib/theme/type";
 import { stillFor, type MediaSrcMap } from "./cardMedia";
+import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 
 /* ────────────────────────────────────────────────────────────────────────────
    The measurements. Every one of them is a number this file needs twice — once

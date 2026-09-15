@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Bold, Italic, Underline, Strikethrough, Link, Code, Highlighter, MessageCircle } from 'lucide-react';
 import type { Editor } from '@tiptap/react';
+import { feedback } from '@/lib/theme/motion';
 
 interface BubbleToolbarProps {
   editor: Editor | null;
@@ -164,7 +165,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
         fontFamily: 'Figtree, sans-serif',
         fontSize: 13,
         opacity: visible ? 1 : 0,
-        transition: 'opacity 150ms',
+        transition: feedback("opacity"),
         pointerEvents: visible ? 'auto' : 'none',
       }}
     >

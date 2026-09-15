@@ -11,6 +11,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { eyebrow } from "@/lib/theme/type";
 import "./right-rail-explore.css";
+import { feedback } from "@/lib/theme/motion";
 
 /* ────────────────────────────────────────────────
    RightRailExplore — the Explore panel content for the right rail.
@@ -128,7 +129,7 @@ function RailRow({
         fontWeight: 500,
         textAlign: "left",
         cursor: "pointer",
-        transition: "background 0.15s ease",
+        transition: feedback("background-color"),
       }}
     >
       <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

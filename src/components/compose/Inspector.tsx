@@ -64,6 +64,7 @@ import {
   focusControl,
   helpStyle,
 } from "@/components/compose/fields";
+import { feedback } from "@/lib/theme/motion";
 
 /** Enough of a UUID to recognise a node in a log or an export. */
 const ID_PREFIX_LENGTH = 8;
@@ -258,7 +259,7 @@ function GapControl({
             border: `1px solid ${isGap ? t.catBreakage : t.line}`,
             background: isGap ? t.catBreakage : t.recess,
             cursor: "pointer",
-            transition: "background 160ms cubic-bezier(.2,.6,.35,1)",
+            transition: feedback("background-color"),
           }}
         >
           <span
@@ -274,7 +275,7 @@ function GapControl({
               /* --on-action is the measured ink for a filled control; "var(--bg)"
                  was the old void, invisible on a red track in the light room. */
               background: isGap ? t.onAction : t.text2,
-              transition: "left 160ms cubic-bezier(.2,.6,.35,1)",
+              transition: "none",
             }}
           />
         </button>

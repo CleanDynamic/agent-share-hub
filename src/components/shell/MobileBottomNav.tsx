@@ -4,6 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 export type MobileRoute = "home" | "discover" | "upload" | "messages" | "profile";
 
@@ -67,7 +68,7 @@ function BarItem({
         borderRadius: isUpload ? r.control : 0,
         margin: isUpload ? "0 4px" : 0,
         transform: pressed ? "scale(0.95)" : "scale(1)",
-        transition: "transform 100ms ease-out, background-color 100ms ease-out",
+        transition: feedback("transform", "background-color"),
         color: isUpload ? t.onAction : active ? ACTIVE : INACTIVE,
       }}
     >

@@ -6,6 +6,7 @@ import { Eye, MessageSquare } from "lucide-react";
 import { TYPE_COLORS, TYPE_COLOR_FALLBACK, displayContentType } from "@/lib/content-types";
 import { timeAgo, formatNum, difficultyColor } from "@/components/FeedItem";
 import { useLegacyMeTooCount } from "@/lib/bounty/legacyMeToo";
+import { feedback } from "@/lib/theme/motion";
 
 /* ── Helpers ────────────────────────────────────────────────── */
 
@@ -69,7 +70,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
         borderLeft: `3px solid ${sc.border}`,
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,
-        transition: 'border-color 0.2s ease',
+        transition: feedback("border-color"),
         cursor: 'pointer',
       }}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}

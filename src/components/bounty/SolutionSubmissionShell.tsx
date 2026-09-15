@@ -125,7 +125,7 @@ export function SolutionSubmissionShell({
             borderRadius: "var(--r-control)",
             padding: "12px 16px",
             overflow: "hidden",
-            transition: "max-height 0.2s ease-out",
+            transition: "none",
           }}
         >
           <div className="flex items-center cursor-pointer" onClick={onToggleAcceptance} style={{ gap: 8 }}>

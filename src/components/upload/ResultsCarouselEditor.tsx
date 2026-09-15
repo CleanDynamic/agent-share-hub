@@ -14,6 +14,7 @@ import {
   Play,
   Loader2,
 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 export interface Slide {
   id: string;
@@ -631,7 +632,7 @@ export function ResultsCarouselEditor({
                     border: "none",
                     padding: 0,
                     cursor: "pointer",
-                    transition: "background 0.2s ease",
+                    transition: feedback("background-color"),
                   }}
                 />
               ))}
@@ -673,7 +674,7 @@ export function ResultsCarouselEditor({
                       ? "1px solid var(--action)"
                       : "1px solid transparent",
                   opacity: draggedThumbnailId === slide.id ? 0.5 : 1,
-                  transition: "opacity 0.2s ease",
+                  transition: feedback("opacity"),
                   background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
                 }}
               >

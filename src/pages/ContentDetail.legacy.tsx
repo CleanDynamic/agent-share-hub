@@ -102,7 +102,7 @@ import { insertNotification } from "@/lib/notifications";
 import { ReblogDetailView } from "@/components/ReblogDetailView";
 import { ReblogCard } from "@/components/ReblogCard";
 import { type } from "@/lib/theme/type";
-import { scrollBehavior } from "@/lib/theme/motion";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 // BG-P05. Difficulty is not a part category and carries no colour: one
 // uncoloured mono label, defined once in @/lib/content-types.
@@ -206,7 +206,7 @@ function SaveButton({ contentId }: { contentId: string }) {
         color: saved ? 'var(--action)' : 'var(--text2)',
         background: 'none', border: 'none',
         cursor: 'pointer', padding: '4px 8px',
-        borderRadius: 6, transition: 'color 0.15s',
+        borderRadius: 6, transition: feedback("color"),
       }}
       title={saved ? 'Unsave' : 'Save'}
     >
@@ -836,7 +836,7 @@ const ContentDetail = () => {
             fontSize: 12, color: 'var(--text2)',
             background: 'none', border: 'none',
             cursor: 'pointer', padding: '0 0 16px 0',
-            transition: 'color 0.15s',
+            transition: feedback("color"),
           }}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement)
             .style.color = 'var(--text2)'}
@@ -1171,7 +1171,7 @@ const ContentDetail = () => {
                     display: 'flex', alignItems: 'center', gap: 4,
                     fontSize: 12, color: 'var(--text2)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s',
+                    padding: '4px 8px', borderRadius: 6, transition: feedback("color"),
                   }}
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
@@ -1189,7 +1189,7 @@ const ContentDetail = () => {
                 background: 'none', border: 'none', cursor: 'pointer',
                 padding: '4px 8px',
                 borderRadius: 6,
-                transition: 'color 0.15s',
+                transition: feedback("color"),
               }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'}
@@ -1252,7 +1252,7 @@ const ContentDetail = () => {
                         : 'var(--text2)',
                       paddingLeft: (entry as any).isHeading ? 0 : 14,
                       fontSize: (entry as any).isHeading ? 13 : 12,
-                      transition: 'color 0.15s',
+                      transition: feedback("color"),
                     }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--text)')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = (entry as any).isHeading ? 'var(--text)' : 'var(--text2)')}
@@ -2086,7 +2086,7 @@ function WhatToExpectSection({ item }: { item: any }) {
                   style={{
                     width: '100%', height: '100%',
                     objectFit: 'cover', display: 'block',
-                    transition: 'opacity 0.3s ease',
+                    transition: feedback("opacity"),
                   }}
                 />
               );

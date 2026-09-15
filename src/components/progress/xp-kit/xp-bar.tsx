@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { tokens } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface XpBarProps {
   level: number
@@ -72,7 +73,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
             width: `${fill}%`,
             background: tokens.orangeGradient,
             borderRadius: tokens.radiusPill,
-            transition: "width 700ms cubic-bezier(0.16,1,0.3,1)",
+            transition: "none",
             overflow: "hidden",
           }}
         >
@@ -101,7 +102,7 @@ export default function XpBar({ level, xpInLevel, xpForNext }: XpBarProps) {
             color: "var(--on-action)",
             textShadow: "0 1px 3px rgba(0,0,0,0.6)",
             opacity: hover ? 1 : 0,
-            transition: "opacity 150ms ease-out",
+            transition: feedback("opacity"),
             pointerEvents: "none",
           }}
         >

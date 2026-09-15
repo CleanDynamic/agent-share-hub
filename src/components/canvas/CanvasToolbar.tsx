@@ -11,6 +11,7 @@ import type { useCanvasDocument } from '@/hooks/useCanvasDocument';
 import type { BlockPosition } from '@/lib/canvas-types';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from '@/lib/theme/motion';
 
 const BLOCK_TYPE_ICONS: Record<string, any> = {
   text: Type,
@@ -351,7 +352,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           <Plus size={13} /> Block
           <ChevronUp size={10} style={{
             transform: addBlockOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.15s',
+            transition: feedback("transform"),
             opacity: 0.5,
           }} />
         </button>
@@ -643,7 +644,7 @@ function menuItem(hovered: boolean): React.CSSProperties {
     borderRadius: 6,
     cursor: 'pointer',
     textAlign: 'left' as const,
-    transition: 'background 0.1s',
+    transition: feedback("background-color"),
     whiteSpace: 'nowrap' as const,
   };
 }

@@ -28,6 +28,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
 import { label as labelType } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 interface BuildTabsProps {
   /** The Anatomy panel. */
@@ -100,7 +101,7 @@ const tabBase: CSSProperties = {
   alignItems: "flex-start",
   textAlign: "left",
   whiteSpace: "nowrap",
-  transition: "color 160ms cubic-bezier(.2,.6,.35,1), border-color 160ms cubic-bezier(.2,.6,.35,1)",
+  transition: feedback("color", "border-color"),
 };
 
 export function BuildTabs({

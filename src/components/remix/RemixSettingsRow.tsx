@@ -1,5 +1,6 @@
 import { GitFork, ShieldCheck, LayoutTemplate, Crown } from 'lucide-react'
 import { tokens } from './tokens'
+import { feedback } from '@/lib/theme/motion';
 
 interface ToggleProps {
   checked: boolean
@@ -26,7 +27,7 @@ function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
         position: 'relative',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
-        transition: 'background 160ms ease',
+        transition: feedback("background-color"),
         flexShrink: 0,
       }}
     >
@@ -40,7 +41,7 @@ function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
           borderRadius: '50%',
           background: 'var(--text)',
           boxShadow: 'var(--elev-raised)',
-          transition: 'left 160ms ease',
+          transition: 'none',
         }}
       />
     </button>

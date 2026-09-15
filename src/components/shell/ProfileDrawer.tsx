@@ -6,6 +6,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
 import { useProgress } from "@/hooks/useProgress";
+import { feedback } from "@/lib/theme/motion";
 
 
 export interface DrawerUser {
@@ -101,7 +102,7 @@ export function ProfileDrawer({
           background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
           zIndex: 1100,
           opacity: isOpen ? 1 : 0,
-          transition: "opacity 200ms ease-out",
+          transition: feedback("opacity"),
         }}
       />
 

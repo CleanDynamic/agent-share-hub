@@ -24,6 +24,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { DIFFICULTY_LABEL_CLASS, ORDERED_CONTENT_TYPES, POST_TYPES, SLUG_TO_TYPE, TOPICS, displayContentType, resolvePostType } from "@/lib/content-types";
+import { feedback } from "@/lib/theme/motion";
 
 const ALL = "all";
 const CONTENT_TYPES = ORDERED_CONTENT_TYPES;
@@ -920,7 +921,7 @@ const DiscoverLegacy = () => {
               fontWeight: 300,
               color: 'var(--text)',
               outline: 'none',
-              transition: 'border-color 200ms',
+              transition: feedback("border-color"),
             }}
             onFocus={e => (e.target as HTMLInputElement).style.borderColor = 'var(--line)'}
             onBlur={e => (e.target as HTMLInputElement).style.borderColor = 'var(--line)'}

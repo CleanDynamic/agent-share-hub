@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useDocumentStore } from '@/lib/documentStore';
 
 import { PANEL_CARD_BACKGROUND, PANEL_DIVIDER } from './toolPanelStyles';
+import { feedback } from '@/lib/theme/motion';
 
 type OutlineEntry = {
   id: string;
@@ -228,7 +229,7 @@ export function OutlineTool({
                   : 'var(--text2)',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'background-color 120ms ease, color 120ms ease, border-color 120ms ease',
+                transition: feedback("background-color", "color", "border-color"),
               }}
               onMouseEnter={(e) => {
                 if (isStage) return;

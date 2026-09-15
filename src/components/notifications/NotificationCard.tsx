@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { data as dataType, eyebrow, tabular } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 // ── Types ────────────────────────────────────────────────────────────────
 export type NotificationKind =
@@ -411,7 +412,7 @@ export function NotificationCard({
         borderRadius: r["r-control"],
         border: `0.5px solid ${tok.line}`,
         borderLeft: `2px solid ${leftRule}`,
-        transition: "background 280ms ease, border-color 600ms ease, opacity 200ms ease",
+        transition: feedback("background-color", "border-color", "opacity"),
       }}
     >
       {/* Left — icon/avatar */}
@@ -529,7 +530,7 @@ export function NotificationCard({
             color: tok.text2,
             cursor: "pointer",
             opacity: hovered ? 1 : 0,
-            transition: "opacity 160ms ease",
+            transition: feedback("opacity"),
             padding: 0,
           }}
         >

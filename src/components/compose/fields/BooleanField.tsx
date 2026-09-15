@@ -8,6 +8,7 @@ import { FieldShell } from "../SchemaForm";
 import { CONTROL_BORDER, TEAL_TRACK, type FieldWidgetProps } from "./index";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 const TRACK_WIDTH = 34;
 const TRACK_HEIGHT = 20;
@@ -51,7 +52,7 @@ export function BooleanField({
           border: `1px solid ${checked ? TEAL_TRACK : CONTROL_BORDER}`,
           background: checked ? TEAL_TRACK : t.recess,
           cursor: "pointer",
-          transition: "background 160ms cubic-bezier(.2,.6,.35,1)",
+          transition: feedback("background-color"),
         }}
       >
         <span
@@ -67,7 +68,7 @@ export function BooleanField({
             /* --on-action is the measured ink on a filled control. "#08080C" was
                the old void: invisible on the track in the light room. */
             background: checked ? t.onAction : t.text2,
-            transition: "left 160ms cubic-bezier(.2,.6,.35,1)",
+            transition: "none",
           }}
         />
       </button>

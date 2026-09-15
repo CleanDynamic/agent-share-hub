@@ -801,6 +801,7 @@ const menuItemStyle: React.CSSProperties = {
   borderRadius: 4,
 };
 import type { Comment as TCComment, CommentNode as TCNode } from "@/components/comments/types";
+import { feedback } from "@/lib/theme/motion";
 
 function toThreadedNode(c: Comment, postAuthorId: string): TCNode {
   const tc: TCComment = {
@@ -1009,7 +1010,7 @@ export function PrimitiveCommentDrawer({
           display: "flex",
           flexDirection: "column",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.25s ease-out",
+          transition: feedback("transform"),
         }}
       >
         <div

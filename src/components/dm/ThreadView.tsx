@@ -20,7 +20,7 @@ import { data as dataType, tabular } from "@/lib/theme/type";
 import { prefersReducedMotion, uiTransition } from "@/lib/theme/controls";
 import { TypingIndicator } from "@/components/dm/TypingIndicator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { scrollBehavior } from "@/lib/theme/motion";
+import { scrollBehavior, feedback } from "@/lib/theme/motion";
 
 const initials = (name: string) => (name || "?").slice(0, 2).toUpperCase();
 
@@ -135,7 +135,7 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
           // Dusk. The unplayed bars drop to 30% of the same hue so the track
           // reads as one object at two states, not as two colours.
           backgroundColor: filled ? t.evidence : tokenAlpha("evidence", 0.3),
-          transition: "background-color 0.1s",
+          transition: feedback("background-color"),
         }}
       />
     );
@@ -381,7 +381,7 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
         src={src}
         alt=""
         className="max-w-[90vw] max-h-[90vh] object-contain select-none"
-        style={{ transform: `scale(${scale})`, transition: "transform 0.15s" }}
+        style={{ transform: `scale(${scale})`, transition: feedback("transform") }}
         onClick={(e) => e.stopPropagation()}
         onDoubleClick={() => setScale(s => s === 1 ? 2 : 1)}
       />

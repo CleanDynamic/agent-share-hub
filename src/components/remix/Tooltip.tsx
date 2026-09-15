@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { tokens } from './tokens'
+import { feedback } from '@/lib/theme/motion';
 
 export interface TooltipProps {
   label: string
@@ -24,7 +25,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
         style={{
           transform: `translateX(-50%) translateY(${open ? '0' : '4px'})`,
           opacity: open ? 1 : 0,
-          transition: 'opacity 140ms ease, transform 140ms ease',
+          transition: feedback("opacity", "transform"),
           padding: '6px 10px',
           borderRadius: 8,
           background: 'var(--bg)',

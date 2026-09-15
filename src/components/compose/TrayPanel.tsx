@@ -39,6 +39,7 @@ import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { body, data as dataType, eyebrow } from "@/lib/theme/type";
 import { TypePill } from "./TreeNode";
 import { TRAY_DROP_ID, type NodeDrag } from "./useNodeDrag";
+import { feedback } from "@/lib/theme/motion";
 
 /** Long enough to recognise the thing, short enough to stay one or two lines. */
 const SUMMARY_LIMIT = 110;
@@ -135,7 +136,7 @@ function TrayItem({
     fontFamily: "inherit",
     width: "100%",
     /* transform and opacity only; a colour change is cheap but a shadow is not. */
-    transition: "opacity 200ms cubic-bezier(.2,.6,.35,1)",
+    transition: feedback("opacity"),
   };
 
   return (
@@ -220,7 +221,7 @@ export function TrayPanel({
            surface the page is cut into, which is what a target should look like
            while something is held over it. */
         background: isOver ? t.recess : "transparent",
-        transition: "background 200ms cubic-bezier(.2,.6,.35,1)",
+        transition: feedback("background-color"),
       }}
     >
       {/* The whole panel when the tray is empty: a count, in the quietest

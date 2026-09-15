@@ -13,6 +13,7 @@ import { FileText, Download, Loader2, Eye, MessageCircle, ChevronRight, Clipboar
 // roles are imported by name.
 import { cardTitle } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 // ─── Block icons ────────────────────────────────────────────
 
@@ -1159,7 +1160,7 @@ const ResourceViewer = ({ block }: { block: BlockRow }) => {
         background: 'color-mix(in srgb, var(--cat-agents) 6%, transparent)',
         border: '1px solid color-mix(in srgb, var(--cat-agents) 20%, transparent)',
         borderRadius: 10, cursor: 'pointer',
-        transition: 'border-color 0.15s',
+        transition: feedback("border-color"),
       }}
         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'color-mix(in srgb, var(--cat-agents) 40%, transparent)'}
         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'color-mix(in srgb, var(--cat-agents) 20%, transparent)'}

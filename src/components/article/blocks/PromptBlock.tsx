@@ -31,6 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { feedback } from '@/lib/theme/motion';
 
 type BlockStatus = 'idle' | 'running' | 'success' | 'error';
 
@@ -55,7 +56,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 function StatusDot({ status }: { status: BlockStatus }) {
@@ -313,7 +314,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
           width: isExpanded ? 480 : 240,
           zIndex: isExpanded ? 10 : 'auto',
           position: 'relative',
-          transition: 'width 200ms ease, height 200ms ease',
+          transition: 'none',
           border: selected
             ? '1px solid color-mix(in srgb, var(--action) 60%, transparent)'
             : isExpanded

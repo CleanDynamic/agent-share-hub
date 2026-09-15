@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { searchPluginKey } from './SearchHighlight';
 import { useDocumentStore } from '@/lib/documentStore';
+import { feedback } from '@/lib/theme/motion';
 
 interface FindReplaceBarProps {
   editor: Editor | null;
@@ -288,7 +289,7 @@ export function FindReplaceBar({
             cursor: 'pointer',
             padding: 0,
             transform: showReplace ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 120ms ease',
+            transition: feedback("transform"),
           }}
         >
           <ChevronRight size={14} />

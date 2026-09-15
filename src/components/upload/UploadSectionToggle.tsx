@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 interface UploadSectionToggleProps {
   label: string;
@@ -44,7 +45,7 @@ export function UploadSectionToggle({
         border: `1px solid ${hover || open ? 'var(--text2)' : 'var(--line)'}`,
         borderRadius: "10px",
         overflow: "hidden",
-        transition: "border-color 160ms ease-out",
+        transition: feedback("border-color"),
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -103,7 +104,7 @@ export function UploadSectionToggle({
           size={16}
           color="var(--text2)"
           style={{
-            transition: "transform 160ms ease-out",
+            transition: feedback("transform"),
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
           }}
         />
@@ -112,7 +113,7 @@ export function UploadSectionToggle({
       <div
         style={{
           height: open ? contentHeight : 0,
-          transition: "height 200ms ease-out",
+          transition: "none",
           overflow: "hidden",
         }}
       >

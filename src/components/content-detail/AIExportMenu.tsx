@@ -10,6 +10,7 @@ import {
   ClipboardCopy,
   Loader2,
 } from "lucide-react";
+import { feedback } from "@/lib/theme/motion";
 
 export type ExportFormat =
   | "markdown"
@@ -221,7 +222,7 @@ function MenuItemRow({
         border: item.isEmphasized ? "0.5px solid color-mix(in srgb, var(--evidence) 20%, transparent)" : "0.5px solid transparent",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled && !busy ? 0.5 : 1,
-        transition: "background 0.15s ease",
+        transition: feedback("background-color"),
       }}
     >
       <span className="flex items-center justify-center shrink-0" style={{ width: 20, color: item.isTeal ? "var(--evidence)" : "var(--text2)" }}>

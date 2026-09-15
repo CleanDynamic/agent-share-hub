@@ -214,6 +214,94 @@ describe("no animated box-shadow, anywhere in src/", () => {
     const offenders = SCANNED.filter((file) => utility.test(file.code)).map((file) => file.rel);
     expect(offenders).toEqual([]);
   });
+
+  it("does not hide one behind Tailwind's BARE `transition` either", () => {
+    /* THE ONE THAT GOT PAST THE FIRST VERSION OF THIS TEST. Tailwind's
+       suffix-less `transition` class is not a harmless shorthand: its property
+       list is color, background-color, border-color, text-decoration-color,
+       fill, stroke, opacity, BOX-SHADOW, transform, filter and
+       backdrop-filter. Three of those cannot be composited. It read as
+       innocuous in a className and the shadow scanners above could not see it,
+       which is exactly why it is worth its own assertion. */
+    const bare = /(?:^|[\s"'`])transition(?:[\s"'`]|$)/;
+    const offenders = SCANNED.flatMap((file) =>
+      file.code
+        .split("\n")
+        .map((line, index) => [index + 1, line] as const)
+        .filter(([, line]) => /className|cva\(|cn\(|"/.test(line) && bare.test(line))
+        .map(([number, line]) => `${file.rel}:${number} — ${line.trim().slice(0, 100)}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("no layout property is animated", () => {
+  /* Hard constraint: width, height, top, left, margin and padding invalidate
+     layout for the whole subtree on every frame. `transition-[width,height]`
+     and friends are the Tailwind spelling, and four of them were hiding in the
+     shadcn sidebar. CardThread's `grid-template-rows` unfold is the one
+     knowing exception and is allowed by name — see the note at UNFOLD_MS. */
+  const LAYOUT = /^(max-|min-)?(width|height|top|left|right|bottom|margin|padding|inset|flex-basis)/;
+
+  it("finds none in a Tailwind arbitrary transition-property", () => {
+    const offenders = SCANNED.flatMap((file) =>
+      [...file.code.matchAll(/transition-\[([^\]]+)\]/g)]
+        .filter((m) => LAYOUT.test(m[1]))
+        .map((m) => `${file.rel} — transition-[${m[1]}]`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("finds none in a CSS or inline transition, bar the one named exception", () => {
+    /* THE PROPERTY LIST IS PARSED, NOT GREPPED FOR. A line-level match reports
+       `transition: 'color 0.15s'` sitting beside `padding: '4px 8px'`, and
+       `opacity ${isDesktop ? 200 : 280}ms` for the `top` inside `isDesktop`.
+       Only the first token of each comma-separated part of the transition's own
+       value is a property name, so only that is checked.
+
+       `stroke-width` is not on the list: it is an SVG paint attribute and
+       reflows nothing. `grid-template-rows` is the one knowing exception, and
+       it is named at UNFOLD_MS in CardThread rather than waved through here. */
+    const value = /transition(?:-property)?\s*[:=]\s*(["'`])([^"'`]*)\1/g;
+
+    const offenders = SCANNED.flatMap((file) => {
+      const found: string[] = [];
+      for (const [index, line] of file.code.split("\n").entries()) {
+        for (const match of line.matchAll(value)) {
+          for (const part of match[2].split(",")) {
+            const property = part.trim().split(/\s+/)[0];
+            if (property === "grid-template-rows" || property === "stroke-width") continue;
+            if (LAYOUT.test(property)) {
+              found.push(`${file.rel}:${index + 1} — transition on \`${property}\``);
+            }
+          }
+        }
+      }
+      return found;
+    });
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("no stylesheet declares its own duration", () => {
+  /* The four .css files are the only place a transition can be written without
+     going through motion.ts, so they read the `--motion-*` custom properties
+     the module mirrors. A literal here is a twelfth duration waiting to happen.
+     0.01ms in the global reduced-motion reset is the deliberate exception and
+     is matched by name. */
+  it("every transition in a .css file spends a --motion token", () => {
+    const offenders = SCANNED.filter((file) => file.rel.endsWith(".css")).flatMap((file) =>
+      file.code
+        .split("\n")
+        .map((line, index) => [index + 1, line] as const)
+        .filter(([, line]) => /transition(?:-duration)?\s*:/.test(line))
+        .filter(([, line]) => /[0-9]/.test(line))
+        .filter(([, line]) => !line.includes("0.01ms") && !line.includes("0s"))
+        .filter(([, line]) => !line.includes("var(--motion-"))
+        .map(([number, line]) => `${file.rel}:${number} — ${line.trim().slice(0, 100)}`),
+    );
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe("every hover effect is pointer-gated", () => {

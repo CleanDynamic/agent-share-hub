@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Users, Shield, ExternalLink } from "lucide-react";
 import type { SolverInfo } from "./BountyByline";
+import { feedback } from "@/lib/theme/motion";
 
 interface Author {
   id: string;
@@ -155,7 +156,7 @@ export function ProvenanceOverview({
               padding: 12,
               cursor: "pointer",
               textAlign: "left",
-              transition: "background 0.15s ease",
+              transition: feedback("background-color"),
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "color-mix(in srgb, var(--evidence) 5%, transparent)";

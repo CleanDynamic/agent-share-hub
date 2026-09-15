@@ -47,7 +47,7 @@ export function BadgeTile({ badge, onSelect }: BadgeTileProps) {
 
       <span
         className={cn(
-          "relative flex size-12 items-center justify-center rounded-full ring-1 transition",
+          "relative flex size-12 items-center justify-center rounded-full ring-1 transition-feedback",
           badge.earned ? "ring-border" : "ring-border/50",
         )}
         style={{

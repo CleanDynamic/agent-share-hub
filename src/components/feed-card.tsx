@@ -594,7 +594,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                      rather than as restraint. */
                   objectFit: 'cover',
                   display: 'block',
-                  transition: 'transform 0.7s ease',
+                  transition: feedback("transform"),
                 }}
               />
             )}
@@ -617,7 +617,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             overflow: "hidden",
             maxHeight: expandStage >= 1 ? "400px" : "0px",
             opacity: expandStage >= 1 ? 1 : 0,
-            transition: "max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.45s ease",
+            transition: feedback("opacity"),
           }}
         >
           <p style={{ fontSize: 13, color: t.text2, lineHeight: 1.6 }}>
@@ -649,7 +649,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             overflow: "hidden",
             maxHeight: expandStage >= 2 ? "500px" : "0px",
             opacity: expandStage >= 2 ? 1 : 0,
-            transition: "max-height 0.65s cubic-bezier(0.4,0,0.2,1), opacity 0.50s ease",
+            transition: feedback("opacity"),
           }}
         >
           <hr style={{ border: "none", borderTop: `1px solid ${t.line}`, margin: "12px 0" }} />
@@ -704,7 +704,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                A second red here would also read as breakage, which a like is
                not. */
             color: liked ? t.action : t.text2,
-            transition: "color 0.15s",
+            transition: feedback("color"),
             padding: '4px 6px', borderRadius: r.chip,
           }}
           onClick={e => {
@@ -726,7 +726,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             display: "flex", alignItems: "center", gap: 6,
             fontSize: 13, background: "none", border: "none", cursor: "pointer",
             color: t.text2,
-            transition: "color 0.15s",
+            transition: feedback("color"),
             padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
@@ -750,7 +750,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             fontSize: 13,
             color: userHasReblogged ? t.action : t.text2,
             background: "none", border: "none", cursor: "pointer",
-            transition: "color 0.15s, background 0.15s",
+            transition: feedback("color", "background-color"),
             padding: '4px 8px', borderRadius: r.chip,
             marginLeft: 14,
           }}
@@ -812,7 +812,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             fontSize: 13, background: 'none', border: 'none',
             cursor: 'pointer',
             color: saved ? t.action : t.text2,
-            transition: 'color 0.15s',
+            transition: feedback("color"),
             padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
@@ -845,7 +845,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
             /* `--evidence` is the token for "it worked", which is the whole
                of what a copy confirmation says. */
             color: copied ? t.evidence : t.text2,
-            transition: 'color 0.15s',
+            transition: feedback("color"),
             padding: '4px 6px', borderRadius: r.chip,
             marginLeft: 14,
           }}
@@ -920,7 +920,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                     fontSize: 13,
                     color: t.text2,
                     cursor: 'pointer',
-                    transition: 'background 0.1s',
+                    transition: feedback("background-color"),
                   }}
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLElement).style.background = 'var(--recess)';

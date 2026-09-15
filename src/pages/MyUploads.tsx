@@ -19,6 +19,7 @@ import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, tabular, type } from "@/lib/theme/type";
+import { feedback } from "@/lib/theme/motion";
 
 function roundedStars(avg: number, count: number): number {
   if (count === 0) return 0;
@@ -201,7 +202,7 @@ export default function MyUploads() {
                   borderBottom: `2px solid ${active ? t.action : "transparent"}`,
                   color: active ? t.text : t.text2,
                   cursor: "pointer",
-                  transition: "color 160ms cubic-bezier(.2,.6,.35,1)",
+                  transition: feedback("color"),
                 }}
               >
                 {key === "content" ? "Content" : "Projects"}

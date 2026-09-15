@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { feedback } from "@/lib/theme/motion";
 
 export interface EmbeddedOriginalCardPost {
   id: string;
@@ -165,7 +166,7 @@ export function EmbeddedOriginalCard({
         borderRadius: "var(--r-media)",
         padding,
         cursor: "pointer",
-        transition: "background 0.15s ease, border-color 0.15s ease",
+        transition: feedback("background-color", "border-color"),
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;

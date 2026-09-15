@@ -1,4 +1,5 @@
 import { tokens } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface DiminishingMeterProps {
   /** e.g. "like", "download", "comment" */
@@ -49,7 +50,7 @@ export default function DiminishingMeter({
               height: 5,
               borderRadius: tokens.radiusPill,
               background: i < activeSegments ? color : "var(--text2)",
-              transition: "background 200ms ease-out",
+              transition: feedback("background-color"),
             }}
           />
         ))}

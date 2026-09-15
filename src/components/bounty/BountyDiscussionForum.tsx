@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { FIGTREE, type } from "@/lib/theme/type";
 import { colourAlpha } from "@/lib/theme/tokens";
+import { feedback } from "@/lib/theme/motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface CommentAuthor {
@@ -427,7 +428,7 @@ function CommentCard({
              evidence hue stays reserved for the two role marks below, which
              are claims about who someone is. */
           background: flash ? "color-mix(in srgb, var(--action) 8%, transparent)" : "transparent",
-          transition: "background 600ms ease-out",
+          transition: feedback("background-color"),
         }}
       >
         {comment.isUnread && (

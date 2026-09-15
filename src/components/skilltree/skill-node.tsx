@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Lock, type LucideIcon } from "lucide-react"
 import { tokens, sans, type NodeState } from "./tokens"
+import { feedback } from "@/lib/theme/motion";
 
 export interface SkillNodeProps {
   state: NodeState
@@ -29,7 +30,7 @@ export default function SkillNode({
     justifyContent: "center",
     cursor: "pointer",
     position: "relative",
-    transition: "transform 0.15s ease",
+    transition: feedback("transform"),
     transform: hover ? "scale(1.06)" : "scale(1)",
   }
 

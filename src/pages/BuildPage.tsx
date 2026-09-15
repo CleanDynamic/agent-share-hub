@@ -71,8 +71,8 @@ import {
   measure,
   sectionHead,
 } from "@/lib/theme/type";
-import { scrollBehavior } from "@/lib/theme/motion";
 import { useReveal } from "@/lib/theme/useReveal";
+import { scrollBehavior } from "@/lib/theme/motion";
 
 /** The app's QueryClient defaults to staleTime 0. A build record does not
  *  change while a reader is looking at it, so refetching on focus is waste. */

@@ -1,3 +1,4 @@
+import { PULSE_MS, pulseRing } from "@/lib/theme/motion";
 /**
  * Deep-link helpers for blueprint viewer.
  *
@@ -11,7 +12,6 @@
  * segment.
  */
 
-import { PULSE_MS, pulseRing } from "@/lib/theme/motion";
 
 export function blueprintUrl(contentId: string): string {
   return `/content/${contentId}`;

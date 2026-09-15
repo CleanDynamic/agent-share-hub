@@ -9,8 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-
 import { prefersReducedMotion, THEME_SWITCH } from "@/lib/theme/motion";
+
 
 /* ────────────────────────────────────────────────
    ThemeContext — the mechanism that flips the theme.

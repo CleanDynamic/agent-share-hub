@@ -2,6 +2,7 @@ import { ChevronLeft, type LucideIcon } from "lucide-react";
 import type { ReactNode, CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { feedback } from "@/lib/theme/motion";
 
 /**
  * ShellHeader
@@ -96,7 +97,7 @@ export function ShellHeader({
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
-                transition: "color 0.15s, background 0.15s",
+                transition: feedback("color", "background-color"),
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = "var(--text)";
@@ -150,7 +151,7 @@ export function ShellHeader({
                 fontWeight: 600,
                 cursor: primaryAction.disabled ? "not-allowed" : "pointer",
                 opacity: primaryAction.disabled ? 0.5 : 1,
-                transition: "transform 0.15s, opacity 0.15s",
+                transition: feedback("transform", "opacity"),
               }}
               onMouseEnter={(e) => {
                 if (!primaryAction.disabled) e.currentTarget.style.transform = "scale(1.02)";
@@ -222,7 +223,7 @@ export function ShellHeader({
                       fontWeight: 500,
                       color: isActive ? ORANGE : "var(--recess)",
                       cursor: "pointer",
-                      transition: "color 0.15s",
+                      transition: feedback("color"),
                     }}
                   >
                     {t.label}

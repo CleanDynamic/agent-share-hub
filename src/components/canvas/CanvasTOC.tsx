@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { buildCanvasTOC, type TOCEntry } from '@/lib/canvas-utils';
 import type { CanvasBlock, CanvasStage } from '@/lib/canvas-types';
+import { feedback } from '@/lib/theme/motion';
 
 interface CanvasTOCProps {
   open: boolean;
@@ -198,7 +199,7 @@ export function CanvasTOC({
       <div style={{
         width: open ? 220 : 32,
         flexShrink: 0,
-        transition: 'width 0.20s ease',
+        transition: 'none',
         display: 'flex',
         flexDirection: 'column',
         borderRight: '1px solid var(--line)',
@@ -225,7 +226,7 @@ export function CanvasTOC({
             textTransform: 'uppercase',
             padding: '4px',
             zIndex: 2,
-            transition: 'color 0.15s',
+            transition: feedback("color"),
             whiteSpace: 'nowrap',
           }}
           title={open ? 'Close TOC' : 'Open TOC'}
@@ -391,7 +392,7 @@ export function CanvasTOC({
             padding: isStage
               ? '5px 12px' : '3px 12px 3px 20px',
             cursor: 'pointer',
-            transition: 'background 0.1s',
+            transition: feedback("background-color"),
           }}
           onMouseEnter={e =>
             ((e.currentTarget as HTMLElement).style.background = 'var(--recess)')
@@ -563,7 +564,7 @@ export function CanvasTOC({
             gap: 5,
             padding: `3px 12px 3px ${baseIndent + depthIndent}px`,
             cursor: 'pointer',
-            transition: 'background 0.1s',
+            transition: feedback("background-color"),
             position: 'relative',
           }}
           onMouseEnter={e => {
@@ -657,7 +658,7 @@ export function CanvasTOC({
                 display: 'flex',
                 gap: 2,
                 opacity: 0,
-                transition: 'opacity 0.15s',
+                transition: feedback("opacity"),
                 flexShrink: 0,
               }}
             >

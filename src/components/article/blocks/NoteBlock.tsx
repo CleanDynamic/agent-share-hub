@@ -4,6 +4,7 @@ import { MoreHorizontal, StickyNote } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/lib/documentStore';
+import { feedback } from '@/lib/theme/motion';
 
 type NoteColor = 'yellow' | 'pink' | 'blue' | 'green';
 
@@ -55,7 +56,7 @@ const PORT_STYLE: React.CSSProperties = {
   background: 'var(--evidence)',
   border: '2px solid white',
   opacity: 0,
-  transition: 'opacity 150ms ease',
+  transition: feedback("opacity"),
 };
 
 export function NoteBlockNode({ id, data, selected }: NodeProps) {
