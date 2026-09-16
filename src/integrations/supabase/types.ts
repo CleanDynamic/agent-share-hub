@@ -530,8 +530,6 @@ export type Database = {
           mime: string | null
           node_id: string | null
           path: string
-          post_position: number | null
-          post_text: string | null
           poster_path: string | null
           width: number | null
         }
@@ -550,8 +548,6 @@ export type Database = {
           mime?: string | null
           node_id?: string | null
           path: string
-          post_position?: number | null
-          post_text?: string | null
           poster_path?: string | null
           width?: number | null
         }
@@ -570,8 +566,6 @@ export type Database = {
           mime?: string | null
           node_id?: string | null
           path?: string
-          post_position?: number | null
-          post_text?: string | null
           poster_path?: string | null
           width?: number | null
         }
@@ -716,7 +710,6 @@ export type Database = {
       builds: {
         Row: {
           completeness: number | null
-          cover_media_id: string | null
           cost_monthly: number | null
           cost_setup: number | null
           created_at: string
@@ -749,7 +742,6 @@ export type Database = {
         }
         Insert: {
           completeness?: number | null
-          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -782,7 +774,6 @@ export type Database = {
         }
         Update: {
           completeness?: number | null
-          cover_media_id?: string | null
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
@@ -814,13 +805,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "builds_cover_media_id_fkey"
-            columns: ["cover_media_id"]
-            isOneToOne: false
-            referencedRelation: "build_media"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "builds_creator_id_fkey"
             columns: ["creator_id"]
@@ -5233,10 +5217,6 @@ export type Database = {
           similarity: number
           title: string
         }[]
-      }
-      set_build_post_media: {
-        Args: { p_build_id: string; p_media_ids: string[] }
-        Returns: Database["public"]["Tables"]["build_media"]["Row"][]
       }
       set_user_track: { Args: { _track: string }; Returns: undefined }
       soft_delete_primitive_comment: {
