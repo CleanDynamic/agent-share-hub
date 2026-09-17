@@ -378,6 +378,63 @@ decision, taken in their browser, with their session.
 
 ---
 
+## The secret scanner
+
+Line 3 of the architecture is `supabase/functions/_shared/redact`, one pure
+function: `redactSecrets(text)` returns `{ text, findings }`. No I/O, no Deno
+API, no imports from anywhere — the same discipline as `_shared/intake`, so it
+is tested with a string and nothing running.
+
+**When it runs.** Once, inside `buildgallery_finish_import`, on the assembled
+text — after the chunks are joined in numeric order and **before** the intake
+reader, the content hash, or anything else reads that string. Chunks are not
+scanned as they arrive: a key wrapped across a chunk boundary is only whole
+after assembly. Nothing downstream of line 3 ever sees the unredacted text.
+
+**What it catches.** Each match is replaced in place with `[REDACTED:<kind>]`,
+and no part of the value survives — not a prefix, not a suffix, not its length.
+
+| kind | catches |
+|---|---|
+| `openai_key` | `sk-…`, `sk-proj-…` |
+| `anthropic_key` | `sk-ant-…` |
+| `github_token` | `ghp_…`, `gho_…`, `github_pat_…` and the other `gh?_` forms |
+| `aws_access_key` | `AKIA…`, `ASIA…` |
+| `google_api_key` | `AIza…` |
+| `stripe_key` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…` (never `pk_`, which is publishable) |
+| `slack_token` | `xox?-…` |
+| `supabase_secret_key` | `sb_secret_…` (never `sb_publishable_`, which is public) |
+| `service_role_jwt` | any JWT whose decoded payload carries `"role":"service_role"` (an anon-role JWT is public and stays) |
+| `private_key_block` | `-----BEGIN … PRIVATE KEY-----` through `-----END … PRIVATE KEY-----`, inclusive |
+| `database_url` | `postgres://user:pass@…`, `mysql://`, `mongodb://`, `mongodb+srv://`, `redis://`, `amqp://`, `mssql://` when a password is present; the whole URL goes |
+| `bearer_token` | `Authorization: Bearer` followed by 20 or more characters; the token goes, the word Bearer stays |
+| `generic_assignment` | `api_key=`, `apikey:`, `secret=`, `token=`, `password=`, and any longer name ending in one of those (`OPENAI_API_KEY=`, `access_token:`), followed by 16 or more non-space characters; the value goes, the name stays |
+
+A key split across one line break inside a code block is caught whole. A wrap
+is taken only when the next line does not begin another key and carries
+nothing after the fragment but punctuation, so an env file of one key per
+line is reported as that many keys, not one.
+
+**What it leaves alone**, and each has a negative test: a git commit hash, a
+UUID, a URL without credentials, a base64 image, a long import path, ordinary
+code (`const token = await refreshAccessToken(session)`,
+`process.env.DATABASE_PASSWORD`), placeholders (`<your-api-key-here>`,
+`${GITHUB_TOKEN}`), an anon-role JWT and a publishable key.
+
+**`secret_findings` never stores a value.** The findings array is
+`[{ kind, count }]` and nothing else — no match, no excerpt, no position, no
+length. That is what `import_sessions.secret_findings` holds, and it is why the
+scanner reports counts rather than matches: a findings column that carried the
+matched text would hand the secret straight back. When nothing is found,
+`findings` is empty and `text` is returned unchanged.
+
+This is the connector's own scanner. `scanForSecrets` in `src/lib/build/`
+(RECON answer 9) stays as it is: it warns a creator about a payload before a
+write and keeps an excerpt for that purpose; this one redacts and keeps
+nothing, because its output is stored. The two are not interchangeable.
+
+---
+
 ## Adding a reader
 
 Summarised from `supabase/functions/_shared/intake/README.md`. That file is the
@@ -548,6 +605,7 @@ Raised by EX-P00 and not resolved by EX-P01. Full detail in
    `Access-Control-Allow-Origin: *`, which is what the rule exists to prevent.
 4. **EX-P10 must account for `/import`**, not only `/compose/new` (RECON
    answer 1).
-5. **EX-P07's redaction cannot import `scanForSecrets` from `src/`** (RECON
-   answer 9). Moving or duplicating it into `supabase/functions/_shared/` is a
-   design decision.
+5. ~~**EX-P07's redaction cannot import `scanForSecrets` from `src/`** (RECON
+   answer 9).~~ Resolved by EX-P07: neither moved nor duplicated. The connector
+   has its own pure module at `supabase/functions/_shared/redact`, with a
+   different contract — see **The secret scanner**.
