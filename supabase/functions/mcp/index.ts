@@ -1,5 +1,5 @@
 // =============================================================================
-// buildgallery — mcp (EX-P02 the door skeleton, EX-P04 the lock, EX-P06 the pipe)
+// buildgallery — mcp (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse)
 // =============================================================================
 // The MCP door, locked, with a pipe behind it. Every request that is not OAuth
 // discovery must carry a valid user JWT, and every database and storage call
@@ -44,6 +44,26 @@
 // object at {user_id}/{import_id}/{seq}.txt and the row is recounted from the
 // bucket, so the counts a caller sees are what is actually stored.
 //
+// THE PARSE (EX-P08). buildgallery_finish_import is the one tool that reads
+// what the pipe carried. It claims the row (open -> assembling), lists the
+// chunks and refuses a partial import, reads them in NUMERIC order (10 after
+// 9, never after 1), redacts secrets from the assembled text BEFORE anything
+// else reads it, hashes the redacted text and refuses a second copy of a
+// conversation already waiting, routes the text through _shared/intake, and
+// parks the envelope unchanged on import_sessions.proposal. Then the chunk
+// objects go. Every path out of `assembling` writes a terminal state — parsed,
+// duplicate, failed, or back to open — inside one try/catch, so the row can
+// never be left mid-assembly by a thrown error.
+//
+// TWO DEPARTURES FROM THE STEP'S LETTER, both recorded in HANDOVER. First, a
+// missing chunk returns the row to `open` rather than `failed`: the required
+// wording tells the caller to resend with append_chunk and finish again, and
+// append_chunk only accepts an open import, so `failed` would make the
+// message's own instruction impossible. Second, routing is registry.route()
+// followed by reader.parse() rather than registry.read(): the same code path,
+// but read() discards the detection reason this step records, and a separate
+// detect() would parse a 400,000-character transcript a third time.
+//
 // PROTOCOL. @modelcontextprotocol/server negotiates 2025-11-25 and below. The
 // contract (.claude/skills/buildgallery-extractor/SKILL.md) is written against
 // 2026-07-28; that revision is NOT in this package's SUPPORTED_PROTOCOL_VERSIONS,
@@ -69,8 +89,19 @@ import { withOAuthProtectedResource, withSupabase } from "@supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod/v4";
 
+// The substrate and the scanner: pure modules, a string in and a value out. No
+// I/O and no Deno API behind either import, which is what lets finish_import
+// be tested against a fake client with nothing running. Nothing here imports
+// from src/lib/build/ — that is the browser's data layer, and the connector
+// never writes a build.
+import { intakeFile, READ_OUTCOME } from "../_shared/intake/index.ts";
+import { intakeRegistry } from "../_shared/intake/readers/index.ts";
+import { redactSecrets } from "../_shared/redact/index.ts";
+import type { RedactFinding } from "../_shared/redact/index.ts";
+
 import {
   CHUNK_SIZE_CHARS,
+  COMPOSE_NEW_HTTPS_URL,
   COMPOSE_NEW_URL,
   CONNECTOR_STATEMENT,
   DEFAULT_PAGE_SIZE,
@@ -80,10 +111,13 @@ import {
   MAX_TOTAL_CHARS,
   SERVER_NAME,
   SERVER_VERSION,
+  SHORTFALL_WARNING_RATIO,
   STORAGE_LIST_PAGE_SIZE,
   VERBATIM_INSTRUCTION,
 } from "./constants.ts";
 import type { Database } from "./database.types.ts";
+
+type ImportSessionPatch = Database["public"]["Tables"]["import_sessions"]["Update"];
 
 /** The caller's own client. Every database and storage call here uses this. */
 export type CallerClient = SupabaseClient<Database>;
@@ -269,6 +303,69 @@ function missingSeqs(chunks: StoredChunk[], upTo: number | null): number[] {
   return missing;
 }
 
+/**
+ * The text of each numbered object, in the order of `seqs`. The reads run in
+ * parallel; the ORDER is the caller's, and the caller passes numeric order.
+ * Throws on any failed read — a partial conversation is not one to parse.
+ */
+async function readChunks(
+  supabase: CallerClient,
+  userId: string,
+  importId: string,
+  seqs: number[],
+): Promise<string[]> {
+  return await Promise.all(
+    seqs.map(async (seq) => {
+      const { data, error } = await supabase.storage
+        .from(IMPORTS_BUCKET)
+        .download(chunkPath(userId, importId, seq));
+      if (error || !data) throw error ?? new Error("empty download");
+      return await data.text();
+    }),
+  );
+}
+
+/**
+ * Removes the numbered objects once the text has landed elsewhere. False on a
+ * storage error, logged by code: the parse stands either way, and a leftover
+ * object expires with its import rather than undoing a proposal.
+ */
+async function removeChunks(
+  supabase: CallerClient,
+  userId: string,
+  importId: string,
+  seqs: number[],
+): Promise<boolean> {
+  if (seqs.length === 0) return true;
+  const { error } = await supabase.storage
+    .from(IMPORTS_BUCKET)
+    .remove(seqs.map((seq) => chunkPath(userId, importId, seq)));
+  if (error) {
+    logFailure("finish_import: remove chunks", error);
+    return false;
+  }
+  return true;
+}
+
+/** Lowercase hex SHA-256 of the UTF-8 text, through Web Crypto. */
+async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const SMALL_NUMBERS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/** 2 -> "two", 14 -> "14": the way the error table counts things to resend. */
+function countWord(n: number): string {
+  return SMALL_NUMBERS[n] ?? String(n);
+}
+
+/** [3, 9] -> "3 and 9"; [2, 5, 8] -> "2, 5 and 8". */
+function listNumbers(ns: number[]): string {
+  if (ns.length <= 1) return ns.join("");
+  return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
+}
+
 /** One line per failure, code only. Never a message, never content. */
 function logFailure(where: string, error: unknown): void {
   const code = (error as { code?: string; name?: string } | null)?.code ??
@@ -291,6 +388,23 @@ function errTotalExceeded(projected: number): string {
     "Send the remainder as a second import, or ask the creator to export the conversation as a " +
     `file and drop it on ${COMPOSE_NEW_URL}, which has no such limit.`;
 }
+
+function errChunksMissing(missing: number[], declared: number): string {
+  const one = missing.length === 1;
+  return `Chunk${one ? "" : "s"} ${listNumbers(missing)} ${one ? "is" : "are"} missing; ` +
+    `${declared} ${declared === 1 ? "was" : "were"} declared. ` +
+    `Resend ${one ? "it" : `those ${countWord(missing.length)}`} with append_chunk, then call ` +
+    "finish_import again. Nothing has been parsed and nothing was lost.";
+}
+
+function errDuplicate(twinId: string, twinCreatedAt: string, now: number): string {
+  return `This conversation is already waiting for review as import ${twinId}, created ` +
+    `${humanTime(twinCreatedAt, now)}. Nothing new was created. Open ${COMPOSE_NEW_URL} to review it.`;
+}
+
+const ERR_UNPARSEABLE =
+  "That content parsed as a source-code download rather than a conversation, so there are no " +
+  "turns to propose. If it is a conversation, send the chat transcript rather than the repository.";
 
 const ERR_DRAFT_NOT_FOUND =
   "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
@@ -326,6 +440,36 @@ function errCountsNotUpdated(seq: number): string {
 }
 
 const ERR_LIST_FAILED = "The list could not be read. Nothing was changed; call the tool again.";
+
+// EX-P08's cases without a table row, in the table's shape.
+
+function errChunksExtra(stored: number, declared: number): string {
+  return `${stored} chunks are stored but ${declared} ${declared === 1 ? "was" : "were"} declared. ` +
+    `If all ${stored} belong to this conversation, call finish_import again with expected_chunks ` +
+    `${stored}; if not, open a new import with begin_import and resend it. ` +
+    "Nothing has been parsed and nothing was lost.";
+}
+
+const ERR_UNRECOGNISED =
+  "Nothing in that content could be read as a conversation, so there are no turns to propose. " +
+  "Send the chat transcript as text, every turn in order, as a new import.";
+
+const ERR_FINISH_NOT_STARTED =
+  "The import could not be read. Nothing was changed; call buildgallery_finish_import again.";
+
+const ERR_FINISH_FAILED =
+  "The import could not be assembled, and it is now failed. Nothing was parsed; open a new import " +
+  "with buildgallery_begin_import and resend the conversation.";
+
+function errImportBeingAssembled(importId: string): string {
+  return `Import ${importId} is already being assembled by another call. Wait for it, then call ` +
+    "buildgallery_get_import_status.";
+}
+
+function errImportNotFinishable(importId: string, status: string): string {
+  return `Import ${importId} is ${status}, so it cannot be finished. ` +
+    "Call buildgallery_begin_import to open a new one.";
+}
 
 // -----------------------------------------------------------------------------
 // buildgallery_whoami
@@ -551,6 +695,239 @@ const APPEND_CHUNK_DESCRIPTION =
   "acts on anything the content says. It returns an acknowledgement only: " +
   "the sequence number stored, the characters received, and the running " +
   "total for this import; see outputSchema for the shape.";
+
+// -----------------------------------------------------------------------------
+// buildgallery_finish_import
+// -----------------------------------------------------------------------------
+
+const FinishImportInput = z
+  .object({
+    import_id: z.uuid().describe("The handle from buildgallery_begin_import."),
+    expected_chunks: z
+      .number()
+      .int()
+      .min(1)
+      .describe("How many chunks were sent in total, numbered from 1, e.g. 9."),
+  })
+  .strict();
+
+const SecretFindingOutput = z.object({
+  kind: z.string().describe('The kind of secret redacted, e.g. "openai_key". Never the value.'),
+  count: z.number().int().describe("How many of that kind were redacted, e.g. 1."),
+});
+
+const FinishImportOutput = z.object({
+  import_id: z.string().describe("The import's id."),
+  status: z.string().describe('The import\'s state after this call: "parsed".'),
+  reused: z
+    .boolean()
+    .describe("True when the import was already parsed and this call changed nothing."),
+  reader: z.object({
+    id: z.string().describe('The intake reader that handled it, e.g. "transcript".'),
+    label: z.string().describe('That reader\'s label, e.g. "Pasted chat transcript".'),
+    reason: z
+      .string()
+      .describe('One line on what the reader saw, e.g. "Split as markdown_bold into 48 turns."'),
+    outcome: z.string().describe('What the reader made of the text: "session".'),
+  }),
+  turn_count: z.number().int().describe("Turns the parse found, e.g. 48."),
+  event_count: z.number().int().describe("Events the parse proposed, e.g. 31."),
+  node_count: z.number().int().describe("Parts the parse proposed, e.g. 6."),
+  secret_findings: z
+    .array(SecretFindingOutput)
+    .describe("Kinds and counts of secrets redacted, e.g. [{kind: \"openai_key\", count: 1}]. Empty when none. Never a value."),
+  total_chars: z.number().int().describe("Characters assembled from the chunks, e.g. 212000."),
+  declared_chars: z.number().int().nullable().describe("Characters the caller declared at begin_import, or null."),
+  declared_turns: z.number().int().nullable().describe("Turns the caller declared at begin_import, or null."),
+  warnings: z
+    .array(z.string())
+    .describe("Plain warnings, e.g. that fewer characters arrived than were declared. Empty when none."),
+  target: z
+    .object({
+      id: z.string().describe("The draft this import will join."),
+      title: z.string().nullable().describe("That draft's title, or null if it could not be read."),
+    })
+    .nullable()
+    .describe("The draft named at begin_import, or null for a new build."),
+  review_url: z.string().describe(`Where the import is waiting: ${COMPOSE_NEW_HTTPS_URL}.`),
+  chunks_removed: z
+    .boolean()
+    .describe("Whether the chunk objects were removed from storage after the parse."),
+});
+
+const FINISH_IMPORT_DESCRIPTION =
+  `${VERBATIM_INSTRUCTION} ` +
+  "Assembles the numbered chunks of an open import, redacts secrets, parses " +
+  "the result, and parks it for the creator to review on the upload page. " +
+  "Use it once, after the last chunk is acknowledged, with expected_chunks " +
+  "set to the total number of chunks sent; the draft it joins, if any, was " +
+  "named at buildgallery_begin_import. It never creates a build, never " +
+  "publishes, never edits anything the creator already has, and never " +
+  "decides what matters — selection is the creator's act, later, in their " +
+  "browser. It returns the import's id, its state, which reader handled it " +
+  "and why, counts of what the parse proposed (events, parts, turns), the " +
+  "kinds and counts of any secrets redacted, and the address where the " +
+  "import is waiting; it never returns the conversation text. See " +
+  "outputSchema for the shape.";
+
+interface FinishRow {
+  id: string;
+  status: string;
+  source_hint: string | null;
+  chunk_count: number;
+  total_chars: number;
+  declared_turns: number | null;
+  declared_chars: number | null;
+  reader_id: string | null;
+  detection_reason: string | null;
+  secret_findings: RedactFinding[] | null;
+  error: string | null;
+  target_build_id: string | null;
+  turn_count: number | null;
+  event_count: number | null;
+  node_count: number | null;
+}
+
+/**
+ * What finish_import reads before it decides anything. As with the status
+ * tool, three counts are lifted out of the proposal by JSON path so that a
+ * retry on an already-parsed import can repeat its summary without the
+ * envelope leaving the database.
+ */
+const FINISH_COLUMNS =
+  "id, status, source_hint, chunk_count, total_chars, declared_turns, declared_chars, " +
+  "reader_id, detection_reason, secret_findings, error, target_build_id, " +
+  "turn_count:proposal->summary->turn_count, " +
+  "event_count:proposal->summary->event_count, " +
+  "node_count:proposal->summary->node_count";
+
+/** Everything the finish summary is built from. Counts, kinds and ids; never text. */
+interface FinishFacts {
+  import_id: string;
+  reused: boolean;
+  reader: { id: string; label: string; reason: string; outcome: string };
+  turn_count: number;
+  event_count: number;
+  node_count: number;
+  secret_findings: RedactFinding[];
+  total_chars: number;
+  declared_chars: number | null;
+  declared_turns: number | null;
+  target: { id: string; title: string | null } | null;
+  chunks_removed: boolean;
+}
+
+/**
+ * The plain warning the step asks for when what arrived is more than the
+ * ratio short of what the caller declared. Null when nothing was declared or
+ * the shortfall is within the ratio.
+ */
+function shortfallWarning(what: string, got: number, declared: number | null): string | null {
+  if (declared === null || declared <= 0) return null;
+  if (got >= declared * (1 - SHORTFALL_WARNING_RATIO)) return null;
+  const percent = Math.round((1 - got / declared) * 100);
+  return `Warning: ${fmt(got)} ${what} arrived but ${fmt(declared)} were declared, ${percent}% short. ` +
+    "The calling tool may have shortened the conversation; if so, send it again from the file as a new import.";
+}
+
+/** The markdown face and the structured face of a finished import, together. */
+function finishSummary(facts: FinishFacts) {
+  const warnings = [
+    shortfallWarning("characters", facts.total_chars, facts.declared_chars),
+    shortfallWarning("turns", facts.turn_count, facts.declared_turns),
+  ].filter((w): w is string => w !== null);
+
+  const output = {
+    import_id: facts.import_id,
+    status: "parsed",
+    reused: facts.reused,
+    reader: facts.reader,
+    turn_count: facts.turn_count,
+    event_count: facts.event_count,
+    node_count: facts.node_count,
+    secret_findings: facts.secret_findings,
+    total_chars: facts.total_chars,
+    declared_chars: facts.declared_chars,
+    declared_turns: facts.declared_turns,
+    warnings,
+    target: facts.target,
+    review_url: COMPOSE_NEW_HTTPS_URL,
+    chunks_removed: facts.chunks_removed,
+  };
+
+  const findings = facts.secret_findings.length
+    ? facts.secret_findings.map((f) => `${f.kind} ×${f.count}`).join(", ")
+    : "none";
+  const declaredChars = facts.declared_chars === null ? "not declared" : `${fmt(facts.declared_chars)} declared`;
+  const declaredTurns = facts.declared_turns === null ? "not declared" : `${facts.declared_turns} declared`;
+  const parts = `${facts.node_count} part${facts.node_count === 1 ? "" : "s"}`;
+  const lines = [
+    facts.reused
+      ? `# Import ${facts.import_id} was already parsed and is waiting for review; nothing was changed`
+      : `# Import ${facts.import_id} is parsed and waiting for review`,
+    "",
+    `- **Reader**: ${facts.reader.label} (${facts.reader.id}) — ${facts.reader.reason}`,
+    `- **Proposed**: ${facts.event_count} events, ${parts} from ${facts.turn_count} turns`,
+    `- **Secrets redacted**: ${findings}`,
+    `- **Characters**: ${fmt(facts.total_chars)} assembled, ${declaredChars}`,
+    `- **Turns**: ${facts.turn_count} found, ${declaredTurns}`,
+    `- **Target**: ${
+      facts.target
+        ? `draft ${facts.target.title === null ? "" : `"${facts.target.title}" `}(${facts.target.id})`
+        : "a new build"
+    }`,
+  ];
+  for (const warning of warnings) lines.push("", warning);
+  if (!facts.chunks_removed) {
+    lines.push("", "The chunk objects could not be removed from storage; they expire with the import.");
+  }
+  lines.push("", `Review it at ${COMPOSE_NEW_HTTPS_URL}`);
+
+  return ok(lines.join("\n"), output);
+}
+
+/** The target draft's title, through the caller's own client; null when it cannot be read. */
+async function readTargetTitle(supabase: CallerClient, targetId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("builds")
+    .select("id, title")
+    .eq("id", targetId)
+    .maybeSingle();
+  if (error) {
+    logFailure("finish_import: target read", error);
+    return null;
+  }
+  return data?.title ?? null;
+}
+
+interface WaitingTwin {
+  id: string;
+  created_at: string;
+}
+
+/**
+ * IDEMPOTENCY, MECHANISM THREE. Another of the caller's imports with the same
+ * content hash that is still waiting for review. RLS scopes the read to the
+ * caller; the status filter is what "waiting" means, and it matches the
+ * partial unique index that backs this check under a race.
+ */
+async function findWaitingTwin(
+  supabase: CallerClient,
+  contentHash: string,
+  importId: string,
+): Promise<WaitingTwin | null> {
+  const { data, error } = await supabase
+    .from("import_sessions")
+    .select("id, created_at")
+    .eq("content_hash", contentHash)
+    .eq("status", "parsed")
+    .neq("id", importId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
 
 // -----------------------------------------------------------------------------
 // buildgallery_get_import_status
@@ -980,6 +1357,226 @@ export function buildServer(
       const text_ = `Chunk ${seq} stored (${fmt(chars)} characters). ` +
         `${chunks_so_far} chunk${chunks_so_far === 1 ? "" : "s"}, ${fmt(chars_so_far)} characters so far.`;
       return ok(text_, output);
+    },
+  );
+
+  // --- buildgallery_finish_import --------------------------------------------
+  server.registerTool(
+    "buildgallery_finish_import",
+    {
+      title: "Finish an import into buildgallery",
+      description: FINISH_IMPORT_DESCRIPTION,
+      inputSchema: FinishImportInput,
+      outputSchema: FinishImportOutput,
+      annotations: write,
+    },
+    async ({ import_id, expected_chunks }) => {
+      const { data: row, error: readError } = await supabase
+        .from("import_sessions")
+        .select(FINISH_COLUMNS)
+        .eq("id", import_id)
+        .maybeSingle()
+        .overrideTypes<FinishRow, { merge: false }>();
+
+      if (readError) {
+        logFailure("finish_import: import read", readError);
+        return fail(ERR_FINISH_NOT_STARTED);
+      }
+      if (!row) return fail(ERR_IMPORT_NOT_FOUND);
+
+      const stamp = () => new Date(now()).toISOString();
+      const registry = intakeRegistry();
+
+      // A finish retried on an import already parsed repeats its summary and
+      // changes nothing: the chunks are gone and the proposal is waiting.
+      if (row.status === "parsed") {
+        let chunks_removed = false;
+        try {
+          chunks_removed = (await listChunks(supabase, caller.id, import_id)).length === 0;
+        } catch (listError) {
+          logFailure("finish_import: replay list", listError);
+        }
+        const readerId = row.reader_id ?? "unknown";
+        return finishSummary({
+          import_id,
+          reused: true,
+          reader: {
+            id: readerId,
+            label: registry.reader(readerId)?.label ?? readerId,
+            reason: row.detection_reason ?? "",
+            outcome: READ_OUTCOME.SESSION,
+          },
+          turn_count: row.turn_count ?? 0,
+          event_count: row.event_count ?? 0,
+          node_count: row.node_count ?? 0,
+          secret_findings: row.secret_findings ?? [],
+          total_chars: row.total_chars,
+          declared_chars: row.declared_chars,
+          declared_turns: row.declared_turns,
+          target: row.target_build_id
+            ? { id: row.target_build_id, title: await readTargetTitle(supabase, row.target_build_id) }
+            : null,
+          chunks_removed,
+        });
+      }
+      if (row.status === "assembling") return fail(errImportBeingAssembled(import_id));
+      if (row.status !== "open") {
+        // A failed or duplicate row already carries its creator-facing line,
+        // which names the next action; anything else gets the generic one.
+        return fail(row.error ?? errImportNotFinishable(import_id, row.status));
+      }
+
+      // THE CLAIM. open -> assembling, conditioned on the row still being
+      // open, so two finishes racing on one import cannot both assemble it:
+      // the second sees no row come back and is told to wait.
+      const { data: claimed, error: claimError } = await supabase
+        .from("import_sessions")
+        .update({ status: "assembling", expected_chunks, error: null, updated_at: stamp() })
+        .eq("id", import_id)
+        .eq("status", "open")
+        .select("id")
+        .maybeSingle();
+
+      if (claimError) {
+        logFailure("finish_import: claim", claimError);
+        return fail(ERR_FINISH_NOT_STARTED);
+      }
+      if (!claimed) return fail(errImportBeingAssembled(import_id));
+
+      // From here the row is `assembling` and this call owns it. Every exit
+      // below writes a terminal state through settle(); the catch at the end
+      // writes `failed` for anything that throws, so nothing leaves the row
+      // mid-assembly.
+      const settle = async (patch: ImportSessionPatch): Promise<void> => {
+        const { error } = await supabase
+          .from("import_sessions")
+          .update({ ...patch, updated_at: stamp() })
+          .eq("id", import_id);
+        if (error) throw error;
+      };
+      // What was measured so far, written onto a failed or duplicate row too:
+      // counts, kinds and a hash, never the text.
+      let measured: ImportSessionPatch = {};
+      const failWith = async (why: string): Promise<ReturnType<typeof fail>> => {
+        await settle({ ...measured, status: "failed", error: why });
+        return fail(why);
+      };
+      const duplicateOf = async (twin: WaitingTwin, seqs: number[]) => {
+        const why = errDuplicate(twin.id, twin.created_at, now());
+        await settle({ ...measured, status: "duplicate", error: why });
+        await removeChunks(supabase, caller.id, import_id, seqs);
+        return fail(why);
+      };
+
+      try {
+        // 1. Every declared chunk, and nothing else. A gap or a surplus sends
+        // the row BACK TO OPEN — not to failed — with the table's wording,
+        // because that wording tells the caller to resend with append_chunk,
+        // and append_chunk accepts only an open import. Nothing is parsed.
+        const chunks = await listChunks(supabase, caller.id, import_id);
+        const missing = missingSeqs(chunks, expected_chunks);
+        if (missing.length > 0 || chunks.length !== expected_chunks) {
+          const why = missing.length > 0
+            ? errChunksMissing(missing, expected_chunks)
+            : errChunksExtra(chunks.length, expected_chunks);
+          await settle({ status: "open", error: why });
+          return fail(why);
+        }
+
+        // 2. Numeric order — listChunks sorted by seq as a number, never as a
+        // string — and one string. The ceiling is enforced on characters of
+        // the assembled text; the bucket measured bytes.
+        const seqs = chunks.map((c) => c.seq);
+        const assembled = (await readChunks(supabase, caller.id, import_id, seqs)).join("");
+        const assembledChars = assembled.length;
+        measured = { chunk_count: chunks.length };
+        if (assembledChars > MAX_TOTAL_CHARS) return await failWith(errTotalExceeded(assembledChars));
+        measured = { ...measured, total_chars: assembledChars };
+
+        // 3. Redact, once, before the reader, the hash or anything else reads
+        // the text. From here `assembled` is not used again.
+        const { text: redacted, findings } = redactSecrets(assembled);
+        measured = { ...measured, secret_findings: findings };
+
+        // 4. Hash the redacted text. The same conversation already waiting for
+        // review is a duplicate: this row is marked, its chunks go, and the
+        // caller is pointed at the import that is already there.
+        const contentHash = await sha256Hex(redacted);
+        measured = { ...measured, content_hash: contentHash };
+        const twin = await findWaitingTwin(supabase, contentHash, import_id);
+        if (twin) return await duplicateOf(twin, seqs);
+
+        // 5. Route. route() then parse() rather than read(), so the winning
+        // bid's reason is kept for the row and the summary without a third
+        // pass over the text. No filename: detection reads content only.
+        const file = intakeFile(redacted);
+        const routing = registry.route(file);
+        if (!routing) return await failWith(ERR_UNRECOGNISED);
+        const result = routing.reader.parse(file, {
+          session_id: import_id,
+          source_hint: row.source_hint,
+        });
+        measured = {
+          ...measured,
+          reader_id: result.reader.id,
+          detection_reason: routing.detection.reason,
+        };
+        if (result.outcome === READ_OUTCOME.SOURCE_ONLY) return await failWith(ERR_UNPARSEABLE);
+        if (result.outcome === READ_OUTCOME.UNRECOGNISED) return await failWith(ERR_UNRECOGNISED);
+
+        // 6. Park the envelope unchanged. If the partial unique index refuses
+        // the hash, a twin landed between the lookup and this write: that is
+        // the duplicate case, found again rather than reported as an error.
+        const { error: parsedError } = await supabase
+          .from("import_sessions")
+          .update({
+            ...measured,
+            status: "parsed",
+            proposal: result.envelope,
+            error: null,
+            updated_at: stamp(),
+          })
+          .eq("id", import_id);
+        if (parsedError) {
+          if (parsedError.code === UNIQUE_VIOLATION) {
+            const late = await findWaitingTwin(supabase, contentHash, import_id);
+            if (late) return await duplicateOf(late, seqs);
+          }
+          throw parsedError;
+        }
+        const chunks_removed = await removeChunks(supabase, caller.id, import_id, seqs);
+
+        // 7. The summary: counts, kinds, a reason and an address. Never text.
+        return finishSummary({
+          import_id,
+          reused: false,
+          reader: {
+            id: result.reader.id,
+            label: result.reader.label,
+            reason: routing.detection.reason,
+            outcome: result.outcome,
+          },
+          turn_count: result.envelope.summary.turn_count,
+          event_count: result.envelope.summary.event_count,
+          node_count: result.envelope.summary.node_count,
+          secret_findings: findings,
+          total_chars: assembledChars,
+          declared_chars: row.declared_chars,
+          declared_turns: row.declared_turns,
+          target: row.target_build_id
+            ? { id: row.target_build_id, title: await readTargetTitle(supabase, row.target_build_id) }
+            : null,
+          chunks_removed,
+        });
+      } catch (error) {
+        logFailure("finish_import", error);
+        try {
+          await settle({ ...measured, status: "failed", error: ERR_FINISH_FAILED });
+        } catch (settleError) {
+          logFailure("finish_import: settle", settleError);
+        }
+        return fail(ERR_FINISH_FAILED);
+      }
     },
   );
 

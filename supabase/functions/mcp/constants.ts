@@ -12,13 +12,16 @@
 // EX-P06 adds the strings and sizes the pipe needs beside them: the verbatim
 // instruction, the bucket name, the storage listing page size, and the one
 // web address the error table carries. Same rule — one home, imported.
+//
+// EX-P08 adds the same address with its scheme, for the finish summary, and
+// the shortfall ratio finish_import warns at. Same rule again.
 // =============================================================================
 
 /** Server name. Lowercase with hyphens, no version number. */
 export const SERVER_NAME = "buildgallery-mcp-server";
 
 /** Server version, bumped when the tool surface changes. */
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.3.0";
 
 /**
  * What this connector is, in one line, for a caller deciding whether to use it.
@@ -50,6 +53,13 @@ export const VERBATIM_INSTRUCTION =
  */
 export const COMPOSE_NEW_URL = "agent-share-hub.lovable.app/compose/new";
 
+/**
+ * The same page as a full address, for the finish_import summary, which tells
+ * the caller where the import is waiting. Derived, not retyped, so the domain
+ * substitution above stays the one place to change.
+ */
+export const COMPOSE_NEW_HTTPS_URL = `https://${COMPOSE_NEW_URL}`;
+
 /** The private bucket the numbered chunks land in. Created by EX-P05. */
 export const IMPORTS_BUCKET = "imports";
 
@@ -77,6 +87,15 @@ export const MAX_OPEN_IMPORTS = 5;
 
 /** How long a waiting import survives before it expires. */
 export const IMPORT_TTL_DAYS = 7;
+
+/**
+ * finish_import warns when what arrived is more than this fraction short of
+ * what the caller declared — characters against declared_chars, turns against
+ * declared_turns. 0.05 is 5%: a few dozen characters of whitespace drift is
+ * not a shortfall; a client that regenerated the conversation and lost a
+ * tenth of it is.
+ */
+export const SHORTFALL_WARNING_RATIO = 0.05;
 
 /** Default page size for both list tools. */
 export const DEFAULT_PAGE_SIZE = 20;
