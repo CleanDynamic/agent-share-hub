@@ -44,6 +44,15 @@
 // writes it through the same materialiseProposal; skipping leaves the import
 // waiting, because nothing was created for it yet.
 //
+// THE SECOND DESTINATION (EX-P10). Review now asks one question before the tick
+// boxes: a new build, or a draft the creator already has. A draft the chat
+// named (target_build_id) is pre-selected when it is still theirs and still a
+// draft; otherwise the step falls back to a new build and says why. Confirming
+// into an existing draft calls the same claimImport with that draft's id and
+// no createBuild — the writer appends after what the draft holds and skips
+// what it already wrote (docs/connector/RECON.md answer 3), so nothing in the
+// draft is touched by this page.
+//
 // ORDER. On paste or drop the draft build is created FIRST, then the parser is
 // called with its id. The parser needs a real build to check ownership against,
 // and creating first means a parser failure leaves the creator with a usable
@@ -53,7 +62,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { createBuild } from "@/lib/build";
+import { createBuild, getBuildHeader } from "@/lib/build";
 import {
   MAX_RAW_TEXT_CHARS,
   keepEverything,
@@ -61,6 +70,7 @@ import {
   requestProposal,
   type IntakeArrival,
   type IntakeSelectionState,
+  type MaterialiseCounts,
   type TranscriptProposal,
 } from "@/lib/build/intake";
 import {
@@ -80,12 +90,19 @@ import {
 import {
   claimImport,
   discardImport,
+  listClaimTargets,
   listWaitingImports,
   loadImportProposal,
+  type ClaimTarget,
   type WaitingImport,
 } from "@/lib/build/imports";
 import { IntakeProposal } from "@/components/compose/IntakeProposal";
-import { WaitingImports } from "@/components/compose/WaitingImports";
+import { WaitingImports, importToolName } from "@/components/compose/WaitingImports";
+import {
+  ImportDestination,
+  type DestinationPreset,
+  type ImportDestinationChoice,
+} from "@/components/compose/ImportDestination";
 import { IntakeProgress } from "@/components/compose/IntakeProgress";
 import { BuildFileIntake } from "@/components/compose/BuildFileIntake";
 import {
@@ -135,18 +152,41 @@ type Stage =
   /** Undecidable input. Asked once, answered once, and never recorded. */
   | { name: "asking"; rawText: string; sourceLabel: string }
   /**
+   * The destination question a waiting import is asked before its review
+   * (EX-P10): a new build, or one of the creator's drafts. The proposal is
+   * already loaded, so Continue costs no read; Back leaves the import waiting.
+   */
+  | {
+      name: "destination";
+      importId: string;
+      proposal: TranscriptProposal;
+      sourceLine: string;
+      /** "Claude Code", for the sentence saying where a named draft came from. */
+      sentBy: string | null;
+      targets: ClaimTarget[];
+      preset: DestinationPreset;
+      /** The drafts could not be read; a new build is still on offer. */
+      targetsError: string | null;
+    }
+  /**
    * One review stage, two origins. A PARSED proposal already has its draft —
    * the build was created before the parser ran — and `repoUrl` is set only on
    * the repo path, for the header facts the shared writer deliberately knows
-   * nothing about. A waiting IMPORT has no draft yet: claimImport creates it at
-   * confirm time, so a review that ends in Skip leaves nothing behind.
+   * nothing about. A waiting IMPORT has no draft yet unless the creator chose
+   * an existing one: claimImport creates a new draft at confirm time or writes
+   * into the chosen one, so a review that ends in Skip leaves nothing behind.
    */
   | {
       name: "review";
       proposal: TranscriptProposal;
       origin:
         | { kind: "parsed"; buildId: string; repoUrl: string | null }
-        | { kind: "import"; importId: string; sourceLine: string };
+        | {
+            kind: "import";
+            importId: string;
+            sourceLine: string;
+            destination: ImportDestinationChoice;
+          };
     };
 
 function looksAcceptable(file: File): boolean {
@@ -161,6 +201,78 @@ function looksAcceptable(file: File): boolean {
 
 function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
+}
+
+/**
+ * Where the chat asked for the import to go, checked against what the creator
+ * has now (EX-P10). A named draft still in the list is pre-selected; one that
+ * is still a draft but beyond the list's first page is read by id and put at
+ * the top of it, uncounted; one published or deleted since falls back to a new
+ * build, and the step says which. Nothing is trusted from the import itself
+ * beyond the id: the header is read through the data layer, under RLS.
+ */
+async function resolveDestination(
+  targetId: string | null,
+  targets: ClaimTarget[],
+): Promise<{ preset: DestinationPreset; targets: ClaimTarget[] }> {
+  if (!targetId) return { preset: { kind: "none" }, targets };
+  if (targets.some((target) => target.id === targetId)) {
+    return { preset: { kind: "draft", buildId: targetId }, targets };
+  }
+  const header = await getBuildHeader(targetId);
+  if (!header) return { preset: { kind: "missing" }, targets };
+  if (header.status !== "draft") return { preset: { kind: "published" }, targets };
+  return {
+    preset: { kind: "draft", buildId: targetId },
+    targets: [
+      {
+        id: header.id,
+        title: header.title,
+        updated_at: header.updated_at,
+        part_count: null,
+        step_count: null,
+      },
+      ...targets,
+    ],
+  };
+}
+
+/**
+ * The review's destination sentence for an existing draft, in place of the
+ * default "lands in the tray, unplaced": the same tray, and it already holds
+ * things, which the creator should hear before they confirm.
+ */
+function joinedDraftNote(title: string): string {
+  return (
+    `Everything you keep is added to the tray of “${title}”, alongside what is ` +
+    "already there, for you to arrange. Nothing already in it changes."
+  );
+}
+
+/**
+ * The arrival line for a draft that already held work: what the writer WROTE,
+ * not what was ticked, because a draft that already carried this conversation
+ * gets nothing added and is told so rather than congratulated.
+ */
+function joinedDraftMessage(title: string, counts: MaterialiseCounts): string {
+  const landed = counts.events + counts.nodes;
+  if (landed === 0) {
+    return counts.alreadyMaterialised
+      ? `“${title}” already held this conversation, so nothing was added.`
+      : `Nothing kept. “${title}” is as it was.`;
+  }
+  const added = [
+    counts.nodes > 0 ? `${counts.nodes} ${counts.nodes === 1 ? "item" : "items"} in the tray` : null,
+    counts.events > 0
+      ? `${counts.events} ${counts.events === 1 ? "prompt" : "prompts"} at the end of the sequence`
+      : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" and ");
+  return (
+    `Added to “${title}”: ${added}` +
+    (counts.nodes > 0 ? " — drag from the tray into the build to place them." : ".")
+  );
 }
 
 /**
@@ -494,14 +606,27 @@ export default function ComposeNew() {
 
     try {
       let buildId: string;
-      let counts: { events: number; nodes: number };
+      let counts: MaterialiseCounts;
+      /** The existing draft this went into, when it did not start a new one. */
+      let joined: string | null = null;
 
       if (stage.origin.kind === "import") {
-        // The draft is created now, by claimImport, and written through the
-        // same materialiseProposal. What was kept is what the creator ticked;
-        // a new build holds nothing for the writer to skip.
-        buildId = await claimImport(stage.origin.importId, stage.proposal, selection);
-        counts = { events: selection.eventOrdinals.size, nodes: selection.nodeLocalIds.size };
+        // A new draft is created now, by claimImport, or the chosen one is
+        // written into; either way through the same materialiseProposal. The
+        // counts are the writer's own — for an existing draft, what was
+        // ticked and what was written can differ.
+        const { destination } = stage.origin;
+        const claimed = await claimImport(
+          stage.origin.importId,
+          stage.proposal,
+          selection,
+          destination.kind === "existing"
+            ? { kind: "existing", buildId: destination.buildId }
+            : { kind: "new", title: DRAFT_TITLE },
+        );
+        buildId = claimed.buildId;
+        counts = claimed.counts;
+        if (destination.kind === "existing") joined = destination.title;
       } else {
         buildId = stage.origin.buildId;
         counts = await materialiseProposal(buildId, stage.proposal, selection);
@@ -522,8 +647,9 @@ export default function ComposeNew() {
       const landed = counts.events + counts.nodes;
       goToWorkspace(buildId, {
         tone: "settled",
-        message:
-          landed === 0
+        message: joined
+          ? joinedDraftMessage(joined, counts)
+          : landed === 0
             ? "Nothing kept. Add your first node from the panel on the left."
             : counts.events === 0
               // A repository has no sequence, so naming an empty one would read
@@ -557,9 +683,11 @@ export default function ComposeNew() {
   }, [goToWorkspace, stage]);
 
   /**
-   * Open a waiting import on the review surface. The stored proposal is read
-   * only now — the list carries counts, never the envelope — and everything
-   * defaults to keep, as it does after a parse.
+   * Open a waiting import: first the destination question, then the review.
+   * The stored proposal is read only now — the list carries counts, never the
+   * envelope — and the creator's drafts with it, so the step opens with both in
+   * hand. A drafts read that fails is not a reason to refuse the import: the
+   * step still offers a new build and says why the drafts are missing.
    */
   const reviewImport = useCallback(
     async (item: WaitingImport, sourceLine: string) => {
@@ -570,11 +698,23 @@ export default function ComposeNew() {
 
       try {
         const proposal = await loadImportProposal(item.id);
-        setSelection(keepEverything(proposal));
+        let targets: ClaimTarget[] = [];
+        let targetsError: string | null = null;
+        try {
+          targets = await listClaimTargets();
+        } catch (cause) {
+          targetsError = `Your drafts could not be read: ${messageOf(cause)}`;
+        }
+        const resolved = await resolveDestination(item.target_build_id, targets);
         setStage({
-          name: "review",
+          name: "destination",
+          importId: item.id,
           proposal,
-          origin: { kind: "import", importId: item.id, sourceLine },
+          sourceLine,
+          sentBy: importToolName(item),
+          targets: resolved.targets,
+          preset: resolved.preset,
+          targetsError,
         });
       } catch (cause) {
         setWaitingError(`That conversation could not be opened: ${messageOf(cause)}`);
@@ -584,6 +724,35 @@ export default function ComposeNew() {
     },
     [discardingId, openingId]
   );
+
+  /**
+   * The destination is chosen: on to the review, with everything defaulting to
+   * keep as it does after a parse. Nothing has been written.
+   */
+  const chooseDestination = useCallback(
+    (choice: ImportDestinationChoice) => {
+      if (stage.name !== "destination") return;
+      setSelection(keepEverything(stage.proposal));
+      setError(null);
+      setStage({
+        name: "review",
+        proposal: stage.proposal,
+        origin: {
+          kind: "import",
+          importId: stage.importId,
+          sourceLine: stage.sourceLine,
+          destination: choice,
+        },
+      });
+    },
+    [stage]
+  );
+
+  /** Back from the destination step. The import stays in the list, waiting. */
+  const leaveDestination = useCallback(() => {
+    setError(null);
+    setStage({ name: "idle" });
+  }, []);
 
   /** Bin a waiting import. The panel has already asked once. */
   const discardWaiting = useCallback(
@@ -713,6 +882,22 @@ export default function ComposeNew() {
     );
   }
 
+  if (stage.name === "destination") {
+    return (
+      <Shell>
+        <ImportDestination
+          sourceLine={stage.sourceLine}
+          sentBy={stage.sentBy}
+          targets={stage.targets}
+          preset={stage.preset}
+          targetsError={stage.targetsError}
+          onContinue={chooseDestination}
+          onBack={leaveDestination}
+        />
+      </Shell>
+    );
+  }
+
   if (stage.name === "review" && selection) {
     return (
       <Shell>
@@ -729,6 +914,11 @@ export default function ComposeNew() {
                 sourceLine: stage.origin.sourceLine,
                 testId: "waiting-import-proposal",
                 confirmTestId: "waiting-import-confirm",
+                // The one difference on the tick-box screen for an existing
+                // draft: where the kept parts land, said plainly.
+                ...(stage.origin.destination.kind === "existing"
+                  ? { arrivalNote: joinedDraftNote(stage.origin.destination.title) }
+                  : {}),
               }
             : {})}
         />

@@ -1548,3 +1548,105 @@ Deno.test("humanTime writes timestamps the way the contract asks", () => {
   assertEquals(humanTime("2026-09-24T10:00:00Z", NOW), "24 Sep");
   assertEquals(humanTime("not a date", NOW), "unknown");
 });
+
+// -----------------------------------------------------------------------------
+// EX-P10 — the destination choice
+// -----------------------------------------------------------------------------
+
+const OTHER_USER = "8e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b";
+const OTHERS_DRAFT = "aa1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+const OWN_PUBLISHED = "bb1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+
+/**
+ * A builds table of three rows, answered the way PostgREST would: only the
+ * rows matching every filter the query carries. That is what proves a refusal
+ * comes from the creator_id filter — and RLS behind it — rather than from a
+ * fake that always says no.
+ */
+function buildsWorld(): Respond {
+  const rows: Array<Record<string, unknown>> = [
+    { id: OTHERS_DRAFT, creator_id: OTHER_USER, status: "draft", title: "Someone else's draft" },
+    { id: OWN_PUBLISHED, creator_id: CALLER.id, status: "published", title: "Shipped" },
+    { id: DRAFT_ID, creator_id: CALLER.id, status: "draft", title: "Invoice chaser agent" },
+  ];
+  return (q) => {
+    if (q.table === "builds") {
+      const match = rows.filter((row) =>
+        q.filters.every((f) => f.kind === "eq" && row[f.column] === f.value)
+      );
+      return { data: q.single ? match[0] ?? null : match };
+    }
+    if (q.op === "insert") {
+      const target = (q.payload?.target_build_id as string | null | undefined) ?? null;
+      return { data: { ...created, target_build_id: target } };
+    }
+    return { data: null };
+  };
+}
+
+Deno.test("EX-P10: begin_import refuses a target_build_id that belongs to another account, and creates nothing", async () => {
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    { target_build_id: OTHERS_DRAFT },
+    buildsWorld(),
+  );
+
+  assertEquals(result?.isError, true);
+  assertEquals(
+    text(result),
+    "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
+      "available drafts, or omit target_build_id to create a new build.",
+  );
+  assertEquals(queries.filter((q) => q.op === "insert").length, 0, "no import was opened");
+  // The row exists; it was refused because the read named the caller's own creator_id.
+  assertEquals(queries[0].table, "builds");
+  assertEquals(queries[0].filters.find((f) => f.column === "creator_id")?.value, CALLER.id);
+});
+
+Deno.test("EX-P10: begin_import refuses the caller's own published build, and creates nothing", async () => {
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    { target_build_id: OWN_PUBLISHED },
+    buildsWorld(),
+  );
+
+  assertEquals(result?.isError, true);
+  assertEquals(
+    text(result),
+    "That build is published, and the connector only adds to drafts. Choose a draft, or omit " +
+      "target_build_id to create a new build.",
+  );
+  assertEquals(queries.filter((q) => q.op === "insert").length, 0, "no import was opened");
+});
+
+Deno.test("EX-P10: begin_import accepts the caller's own draft and opens the import against it", async () => {
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    { client: "claude-code", target_build_id: DRAFT_ID },
+    buildsWorld(),
+  );
+
+  assertEquals(result?.isError, undefined, text(result));
+  assertEquals(result!.structuredContent!.target, DRAFT_ID);
+  assertStringIncludes(text(result), `draft ${DRAFT_ID}`);
+  const insert = queries.find((q) => q.op === "insert")!;
+  assertEquals(insert.table, "import_sessions");
+  assertEquals(insert.payload!.target_build_id, DRAFT_ID);
+  assertEquals(insert.payload!.client, "claude-code");
+});
+
+Deno.test("EX-P10: list_drafts tells the model when to call it, what to pass on, and that the creator decides on the upload page", async () => {
+  const tools = await listTools();
+  const description = tools.find((t) => t.name === "buildgallery_list_drafts")!.description as string;
+  for (const phrase of [
+    "already have",
+    "target_build_id",
+    "buildgallery_begin_import",
+    "change the destination on the upload page",
+    "never insist",
+  ]) {
+    assertStringIncludes(description, phrase);
+  }
+  assert(description.startsWith(VERBATIM_INSTRUCTION), "still opens with the verbatim instruction");
+  assert(description.length < 1500, `${description.length} characters`);
+});

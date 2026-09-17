@@ -1,4 +1,4 @@
-// imports.ts — the browser's half of the extractive connector (EX-P09).
+// imports.ts — the browser's half of the extractive connector (EX-P09, EX-P10).
 //
 // What is under test is the ORDER and the CONDITIONS, because those are what
 // the e2e stub cannot prove: that the draft is created before the import row
@@ -6,6 +6,12 @@
 // that a claim that finds no row says so rather than writing twice, and that a
 // discard sweeps whatever chunk objects finish_import left behind. The client
 // is mocked at the one boundary this module talks through.
+//
+// EX-P10 adds the second destination: a claim into an EXISTING draft never
+// creates a build, checks the draft is the creator's own and still a draft
+// before anything is written, and refuses with the connector's own wording
+// when it is not. The writer is mocked, so what is proved here is that it is
+// called with the chosen draft and nothing else is written around it.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TranscriptProposal } from "./intake";
@@ -22,7 +28,7 @@ interface Call {
  */
 function chain(result: { data: unknown; error: unknown }, calls: Call[]) {
   const builder: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "neq", "order", "limit", "update", "maybeSingle"]) {
+  for (const method of ["select", "eq", "neq", "in", "order", "limit", "update", "maybeSingle"]) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return builder;
@@ -38,10 +44,12 @@ const fromTable = vi.fn();
 
 const storageList = vi.fn();
 const storageRemove = vi.fn();
+const getSession = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (table: string) => fromTable(table),
+    auth: { getSession: () => getSession() },
     storage: {
       from: () => ({
         list: (...args: unknown[]) => storageList(...args),
@@ -52,8 +60,12 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 const createBuild = vi.fn();
+const getBuildHeader = vi.fn();
+const listDraftBuildsByCreator = vi.fn();
 vi.mock("./builds", () => ({
   createBuild: (...args: unknown[]) => createBuild(...args),
+  getBuildHeader: (...args: unknown[]) => getBuildHeader(...args),
+  listDraftBuildsByCreator: (...args: unknown[]) => listDraftBuildsByCreator(...args),
 }));
 
 const materialiseProposal = vi.fn();
@@ -64,6 +76,7 @@ vi.mock("./intake", () => ({
 import {
   claimImport,
   discardImport,
+  listClaimTargets,
   listWaitingImports,
   loadImportProposal,
 } from "./imports";
@@ -71,6 +84,25 @@ import {
 const IMPORT_ID = "11111111-0000-4000-8000-000000000001";
 const USER_ID = "22222222-0000-4000-8000-000000000002";
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
+const OTHER_BUILD_ID = "44444444-0000-4000-8000-000000000004";
+const OTHER_USER_ID = "55555555-0000-4000-8000-000000000005";
+
+const NEW_BUILD = { kind: "new", title: "Untitled build" } as const;
+const INTO_DRAFT = { kind: "existing", buildId: BUILD_ID } as const;
+
+/** What the writer reports. The claim hands it back unchanged. */
+const WRITTEN = {
+  events: 1,
+  nodes: 0,
+  titleApplied: false,
+  outcomeApplied: false,
+  alreadyMaterialised: false,
+};
+
+/** A build header as getBuildHeader returns it, with only what the check reads. */
+function header(overrides: Record<string, unknown> = {}) {
+  return { id: BUILD_ID, creator_id: USER_ID, status: "draft", title: "Inbox triage agent", ...overrides };
+}
 
 const proposal: TranscriptProposal = {
   events: [
@@ -126,8 +158,14 @@ beforeEach(() => {
   });
   createBuild.mockReset();
   createBuild.mockResolvedValue({ id: BUILD_ID });
+  getBuildHeader.mockReset();
+  getBuildHeader.mockResolvedValue(header());
+  listDraftBuildsByCreator.mockReset();
+  listDraftBuildsByCreator.mockResolvedValue([]);
+  getSession.mockReset();
+  getSession.mockResolvedValue({ data: { session: { user: { id: USER_ID } } }, error: null });
   materialiseProposal.mockReset();
-  materialiseProposal.mockResolvedValue({ events: 1, nodes: 0 });
+  materialiseProposal.mockResolvedValue(WRITTEN);
   storageList.mockReset();
   storageList.mockResolvedValue({ data: [], error: null });
   storageRemove.mockReset();
@@ -198,14 +236,15 @@ describe("loadImportProposal", () => {
   });
 });
 
-describe("claimImport", () => {
+describe("claimImport into a new build", () => {
   it("creates the draft, writes it, then marks the row claimed — in that order", async () => {
     answer({ data: [{ id: IMPORT_ID }], error: null });
 
-    const buildId = await claimImport(IMPORT_ID, proposal, selections);
+    const claimed = await claimImport(IMPORT_ID, proposal, selections, NEW_BUILD);
 
-    expect(buildId).toBe(BUILD_ID);
+    expect(claimed).toEqual({ buildId: BUILD_ID, counts: WRITTEN });
     expect(createBuild).toHaveBeenCalledWith({ title: "Untitled build" });
+    expect(getBuildHeader).not.toHaveBeenCalled();
     expect(materialiseProposal).toHaveBeenCalledWith(BUILD_ID, proposal, selections);
     // The row is touched only after the build exists and is written.
     expect(createBuild.mock.invocationCallOrder[0]).toBeLessThan(
@@ -226,12 +265,135 @@ describe("claimImport", () => {
 
   it("says so when the row was already claimed, instead of pretending", async () => {
     answer({ data: [], error: null });
-    await expect(claimImport(IMPORT_ID, proposal, selections)).rejects.toThrow(/already claimed/);
+    await expect(claimImport(IMPORT_ID, proposal, selections, NEW_BUILD)).rejects.toThrow(
+      /already claimed/,
+    );
   });
 
   it("does not touch the row when the write fails", async () => {
     materialiseProposal.mockRejectedValueOnce(new Error("insert refused"));
-    await expect(claimImport(IMPORT_ID, proposal, selections)).rejects.toThrow(/insert refused/);
+    await expect(claimImport(IMPORT_ID, proposal, selections, NEW_BUILD)).rejects.toThrow(
+      /insert refused/,
+    );
+    expect(fromTable).not.toHaveBeenCalled();
+  });
+});
+
+describe("claimImport into an existing draft", () => {
+  it("never creates a build: it checks the draft, writes through the same writer, and marks the row with that draft", async () => {
+    answer({ data: [{ id: IMPORT_ID }], error: null });
+
+    const claimed = await claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT);
+
+    expect(claimed).toEqual({ buildId: BUILD_ID, counts: WRITTEN });
+    expect(createBuild).not.toHaveBeenCalled();
+    expect(getBuildHeader).toHaveBeenCalledWith(BUILD_ID);
+    expect(materialiseProposal).toHaveBeenCalledWith(BUILD_ID, proposal, selections);
+    // The draft is checked before anything is written, and the row is touched last.
+    expect(getBuildHeader.mock.invocationCallOrder[0]).toBeLessThan(
+      materialiseProposal.mock.invocationCallOrder[0],
+    );
+    expect(materialiseProposal.mock.invocationCallOrder[0]).toBeLessThan(
+      fromTable.mock.invocationCallOrder[0],
+    );
+
+    expect(callOf("update")?.args[0]).toMatchObject({ status: "claimed", build_id: BUILD_ID });
+    const eqs = tableCalls.filter((call) => call.method === "eq").map((call) => call.args);
+    expect(eqs).toEqual([
+      ["id", IMPORT_ID],
+      ["status", "parsed"],
+    ]);
+    expect(methods()).toEqual(["from", "update", "eq", "eq", "select"]);
+  });
+
+  it("hands back what the writer wrote, so a draft that already held the conversation reports nothing added", async () => {
+    answer({ data: [{ id: IMPORT_ID }], error: null });
+    const nothing = { ...WRITTEN, events: 0, alreadyMaterialised: true };
+    materialiseProposal.mockResolvedValueOnce(nothing);
+
+    const claimed = await claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT);
+
+    expect(claimed.counts).toEqual(nothing);
+  });
+
+  it("refuses a draft that does not exist with the connector's wording, and writes nothing", async () => {
+    getBuildHeader.mockResolvedValueOnce(null);
+
+    await expect(claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT)).rejects.toThrow(
+      "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
+        "available drafts, or omit target_build_id to create a new build.",
+    );
+    expect(createBuild).not.toHaveBeenCalled();
+    expect(materialiseProposal).not.toHaveBeenCalled();
+    expect(fromTable).not.toHaveBeenCalled();
+  });
+
+  it("refuses a draft that belongs to someone else exactly as it refuses a missing one", async () => {
+    getBuildHeader.mockResolvedValueOnce(header({ id: OTHER_BUILD_ID, creator_id: OTHER_USER_ID }));
+
+    await expect(
+      claimImport(IMPORT_ID, proposal, selections, { kind: "existing", buildId: OTHER_BUILD_ID }),
+    ).rejects.toThrow(/No draft with that id belongs to this account/);
+    expect(materialiseProposal).not.toHaveBeenCalled();
+    expect(fromTable).not.toHaveBeenCalled();
+  });
+
+  it("refuses a published build with the connector's wording, and writes nothing", async () => {
+    getBuildHeader.mockResolvedValueOnce(header({ status: "published" }));
+
+    await expect(claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT)).rejects.toThrow(
+      "That build is published, and the connector only adds to drafts. Choose a draft, or omit " +
+        "target_build_id to create a new build.",
+    );
+    expect(materialiseProposal).not.toHaveBeenCalled();
+    expect(fromTable).not.toHaveBeenCalled();
+  });
+
+  it("refuses to check anything without a signed-in creator", async () => {
+    getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+
+    await expect(claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT)).rejects.toThrow(
+      /no signed-in user/,
+    );
+    expect(getBuildHeader).not.toHaveBeenCalled();
+    expect(materialiseProposal).not.toHaveBeenCalled();
+  });
+});
+
+describe("listClaimTargets", () => {
+  it("reuses listDraftBuildsByCreator for the signed-in creator and adds each draft's counts by named columns", async () => {
+    listDraftBuildsByCreator.mockResolvedValueOnce([
+      { id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z" },
+      { id: OTHER_BUILD_ID, title: "Older notes", updated_at: "2026-09-12T10:00:00Z" },
+    ]);
+    answer({
+      data: [
+        { id: OTHER_BUILD_ID, build_nodes: [{ count: 0 }], build_events: [] },
+        { id: BUILD_ID, build_nodes: [{ count: 4 }], build_events: [{ count: 12 }] },
+      ],
+      error: null,
+    });
+
+    const targets = await listClaimTargets();
+
+    expect(listDraftBuildsByCreator).toHaveBeenCalledWith(USER_ID);
+    expect(callOf("from")?.args).toEqual(["builds"]);
+    const select = String(callOf("select")?.args[0]);
+    expect(select).not.toContain("*");
+    expect(select).toBe("id, build_nodes(count), build_events(count)");
+    expect(callOf("in")?.args).toEqual(["id", [BUILD_ID, OTHER_BUILD_ID]]);
+    expect(callOf("limit")?.args).toEqual([2]);
+
+    // The drafts keep their order — most recently worked on first — whatever
+    // order the counts came back in, and an absent count is zero.
+    expect(targets).toEqual([
+      { id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z", part_count: 4, step_count: 12 },
+      { id: OTHER_BUILD_ID, title: "Older notes", updated_at: "2026-09-12T10:00:00Z", part_count: 0, step_count: 0 },
+    ]);
+  });
+
+  it("reads no counts when the creator has no drafts", async () => {
+    await expect(listClaimTargets()).resolves.toEqual([]);
     expect(fromTable).not.toHaveBeenCalled();
   });
 });
