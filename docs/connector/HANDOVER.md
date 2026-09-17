@@ -47,6 +47,18 @@ cannot speak `2026-07-28`) still blocks EX-P02.
 
 ## EX-P02 — The door skeleton
 
+`supabase/functions/mcp/` exists and speaks MCP. Built on
+`@modelcontextprotocol/server@^2.0.0` (not `@modelcontextprotocol/sdk`), whose
+`SUPPORTED_PROTOCOL_VERSIONS` tops out at **2025-11-25** — so **open question 1
+narrows but stays open**: the 2026-07-28 vocabulary ships as schemas
+(`server/discover`, the result `_meta` object, tasks, subscriptions), the
+handshake does not. Constants live in `constants.ts` as the contract requires,
+declared now and consumed from EX-P05. `[functions.mcp] verify_jwt = false` in
+`config.toml`, uniquely and deliberately — the gate is code, not gateway; the
+comment there says why. The verbatim instruction sentence is NOT yet in the
+server instructions: it tells a caller to send a conversation, and no tool
+accepts one until EX-P06. Add it there.
+
 ## EX-P03 — The consent page
 
 `/oauth/consent` is live in the app: `src/pages/OAuthConsent.tsx` on `AuthShell`,
@@ -61,6 +73,33 @@ authorization path is already set to `/oauth/consent` in the backend, so this
 goes live on the merge to main that the table above marks for this step.
 
 ## EX-P04 — The lock
+
+`pipeline([withOAuthProtectedResource(), withSupabase<Database>({ auth: 'user' })],
+handler)`. No token or a bad token is a 401 carrying
+`WWW-Authenticate: Bearer resource_metadata="…"`; discovery answers
+unauthenticated at `.../functions/v1/mcp/oauth-protected-resource`. Neither URL
+is configured by hand — the middleware derives both from `SUPABASE_FUNCTION_SLUG`,
+which the platform sets. **Tests must set that variable**, or the derivation
+falls back to composing a path from the request and doubles the `/functions/v1`
+prefix, proving the wrong branch.
+
+`buildgallery_whoami` now returns the signed-in account's id, email and display
+name, plus one line on what the connector does and cannot do, in both markdown
+and `structuredContent`. Email comes from `ctx.userClaims` (the verified JWT);
+display name from `profiles` through `ctx.supabase` with named columns, falling
+back to `username`, then `null`. No migration: `profiles` is already
+`SELECT USING (true)`, so **this step adds no RLS policy** and the
+`(select auth.uid())` rule has nothing to bind to here.
+
+**Two things for the next session.** First, `ctx.supabaseAdmin` exists on the
+middleware context — a client that bypasses RLS. This function must never touch
+it; it is built lazily, so leaving it alone means the service-role key is never
+read. A test enforces this by scanning the non-comment source. Second,
+`database.types.ts` is deliberately partial — `profiles` and three columns.
+Widen it by exactly the tables each step adds, never before the migration lands.
+
+`@supabase/server@1.7.0` was hours old when this was pinned; the caret range
+resolves to newest-at-deploy either way, so there is no lockfile to age out.
 
 ## EX-P05 — The import tables and the bucket
 
