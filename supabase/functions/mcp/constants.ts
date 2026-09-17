@@ -8,13 +8,17 @@
 // The ceilings below are declared here in EX-P02 because this is the file the
 // contract names as their single home. They are consumed from EX-P05 onward,
 // when the import tables and the write tools exist to enforce them.
+//
+// EX-P06 adds the strings and sizes the pipe needs beside them: the verbatim
+// instruction, the bucket name, the storage listing page size, and the one
+// web address the error table carries. Same rule — one home, imported.
 // =============================================================================
 
 /** Server name. Lowercase with hyphens, no version number. */
 export const SERVER_NAME = "buildgallery-mcp-server";
 
 /** Server version, bumped when the tool surface changes. */
-export const SERVER_VERSION = "0.1.0";
+export const SERVER_VERSION = "0.2.0";
 
 /**
  * What this connector is, in one line, for a caller deciding whether to use it.
@@ -27,6 +31,34 @@ export const CONNECTOR_STATEMENT =
   "This connector carries a conversation verbatim into a waiting import for " +
   "you to review on buildgallery; it never publishes, never edits or deletes " +
   "anything you already have, and never reads the content of a build.";
+
+/**
+ * The verbatim instruction. Word for word from the contract; it appears in the
+ * server instructions and at the head of every tool description, and is not
+ * paraphrased anywhere.
+ */
+export const VERBATIM_INSTRUCTION =
+  "Send the conversation verbatim and complete, in order, every user and " +
+  "assistant turn, including code blocks and errors. Do not summarise, " +
+  "shorten, tidy or omit anything. If you can read the conversation from a " +
+  "file or transcript on disk, send that rather than reproducing it from memory.";
+
+/**
+ * The upload page, as the error table names it. The manual writes
+ * buildgallery.ai here; until the custom domain is connected the address is
+ * the Lovable one, and this constant is the only place the substitution lives.
+ */
+export const COMPOSE_NEW_URL = "agent-share-hub.lovable.app/compose/new";
+
+/** The private bucket the numbered chunks land in. Created by EX-P05. */
+export const IMPORTS_BUCKET = "imports";
+
+/**
+ * Page size when listing one import's folder in the bucket. The listing is
+ * paged until a page comes back short, so this bounds one request, not the
+ * number of chunks an import may hold.
+ */
+export const STORAGE_LIST_PAGE_SIZE = 1_000;
 
 /** The chunk size `buildgallery_begin_import` recommends, in characters. */
 export const CHUNK_SIZE_CHARS = 24_000;
