@@ -36,13 +36,21 @@
 // transcript and Lovable readers as it always has, and a file dropped on the
 // Build File card, or anywhere else on the page, is read by the local parser.
 //
+// A SIXTH WAY IN (EX-P09): a conversation the buildgallery connector sent from
+// the creator's AI chat. It is already parsed and parked on import_sessions,
+// so it needs no zone and no parser — a panel at the top of the offer lists
+// what is waiting, and Review opens the SAME tick-box screen a paste gets, with
+// the stored proposal in place of a fresh one. Confirming creates the draft and
+// writes it through the same materialiseProposal; skipping leaves the import
+// waiting, because nothing was created for it yet.
+//
 // ORDER. On paste or drop the draft build is created FIRST, then the parser is
 // called with its id. The parser needs a real build to check ownership against,
 // and creating first means a parser failure leaves the creator with a usable
 // empty draft rather than with nothing — which is the whole difference between
 // a bad minute and a lost submission.
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBuild } from "@/lib/build";
@@ -69,7 +77,15 @@ import {
   requestRepoProposal,
   type RepoProposal,
 } from "@/lib/build/repo";
+import {
+  claimImport,
+  discardImport,
+  listWaitingImports,
+  loadImportProposal,
+  type WaitingImport,
+} from "@/lib/build/imports";
 import { IntakeProposal } from "@/components/compose/IntakeProposal";
+import { WaitingImports } from "@/components/compose/WaitingImports";
 import { IntakeProgress } from "@/components/compose/IntakeProgress";
 import { BuildFileIntake } from "@/components/compose/BuildFileIntake";
 import {
@@ -119,15 +135,18 @@ type Stage =
   /** Undecidable input. Asked once, answered once, and never recorded. */
   | { name: "asking"; rawText: string; sourceLabel: string }
   /**
-   * `repoUrl` is set only on the repo path. It is what the confirm step needs
-   * to apply builds.repo_url and the proposal's made_with — two header facts
-   * the shared writer deliberately knows nothing about.
+   * One review stage, two origins. A PARSED proposal already has its draft —
+   * the build was created before the parser ran — and `repoUrl` is set only on
+   * the repo path, for the header facts the shared writer deliberately knows
+   * nothing about. A waiting IMPORT has no draft yet: claimImport creates it at
+   * confirm time, so a review that ends in Skip leaves nothing behind.
    */
   | {
       name: "review";
-      buildId: string;
       proposal: TranscriptProposal;
-      repoUrl: string | null;
+      origin:
+        | { kind: "parsed"; buildId: string; repoUrl: string | null }
+        | { kind: "import"; importId: string; sourceLine: string };
     };
 
 function looksAcceptable(file: File): boolean {
@@ -219,6 +238,12 @@ export default function ComposeNew() {
   const [isDragging, setDragging] = useState(false);
   const [isStarting, setStarting] = useState(false);
 
+  /** What the connector left waiting. null until the first read answers. */
+  const [waiting, setWaiting] = useState<WaitingImport[] | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
+  const [waitingError, setWaitingError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const buildFileInputRef = useRef<HTMLInputElement | null>(null);
   /** One build per intake, whatever the creator clicks twice. */
@@ -238,6 +263,28 @@ export default function ComposeNew() {
     },
     [navigate]
   );
+
+  /**
+   * The waiting list, read once the session is known. A read failure is not a
+   * reason to hide the four ways in that need no list, so it is shown on the
+   * panel's own line rather than as the page's error.
+   */
+  useEffect(() => {
+    if (authLoading || !isLoggedIn) return;
+    let cancelled = false;
+    listWaitingImports()
+      .then((rows) => {
+        if (!cancelled) setWaiting(rows);
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        setWaiting([]);
+        setWaitingError(`Your waiting imports could not be read: ${messageOf(cause)}`);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isLoggedIn]);
 
   /** Start empty. One click, one build, straight into the workspace. */
   const startEmpty = useCallback(async () => {
@@ -312,7 +359,7 @@ export default function ComposeNew() {
             : await requestProposal(buildId, rawText, sourceLabel);
         busyRef.current = false;
         setSelection(keepEverything(proposal));
-        setStage({ name: "review", buildId, proposal, repoUrl: null });
+        setStage({ name: "review", proposal, origin: { kind: "parsed", buildId, repoUrl: null } });
       } catch (cause) {
         // The draft is already real. Hand it over with the reason attached.
         busyRef.current = false;
@@ -380,7 +427,11 @@ export default function ComposeNew() {
         const proposal = await requestRepoProposal(buildId, trimmed, label);
         busyRef.current = false;
         setSelection(keepEverything(proposal));
-        setStage({ name: "review", buildId, proposal, repoUrl: trimmed });
+        setStage({
+          name: "review",
+          proposal,
+          origin: { kind: "parsed", buildId, repoUrl: trimmed },
+        });
       } catch (cause) {
         // The draft is already real. Hand it over with the reason attached.
         busyRef.current = false;
@@ -442,22 +493,34 @@ export default function ComposeNew() {
     setError(null);
 
     try {
-      const counts = await materialiseProposal(stage.buildId, stage.proposal, selection);
+      let buildId: string;
+      let counts: { events: number; nodes: number };
 
-      // The repo path only. builds.repo_url and the proposal's made_with are
-      // header facts materialiseProposal deliberately knows nothing about, and
-      // neither is worth losing the written rows over: a failure here leaves a
-      // creator with everything that matters and two fields to set by hand.
-      if (stage.repoUrl) {
-        try {
-          await applyRepoHeader(stage.buildId, stage.proposal as RepoProposal, stage.repoUrl);
-        } catch {
-          // Deliberately swallowed. The tray is written; the header is a nicety.
+      if (stage.origin.kind === "import") {
+        // The draft is created now, by claimImport, and written through the
+        // same materialiseProposal. What was kept is what the creator ticked;
+        // a new build holds nothing for the writer to skip.
+        buildId = await claimImport(stage.origin.importId, stage.proposal, selection);
+        counts = { events: selection.eventOrdinals.size, nodes: selection.nodeLocalIds.size };
+      } else {
+        buildId = stage.origin.buildId;
+        counts = await materialiseProposal(buildId, stage.proposal, selection);
+
+        // The repo path only. builds.repo_url and the proposal's made_with are
+        // header facts materialiseProposal deliberately knows nothing about, and
+        // neither is worth losing the written rows over: a failure here leaves a
+        // creator with everything that matters and two fields to set by hand.
+        if (stage.origin.repoUrl) {
+          try {
+            await applyRepoHeader(buildId, stage.proposal as RepoProposal, stage.origin.repoUrl);
+          } catch {
+            // Deliberately swallowed. The tray is written; the header is a nicety.
+          }
         }
       }
 
       const landed = counts.events + counts.nodes;
-      goToWorkspace(stage.buildId, {
+      goToWorkspace(buildId, {
         tone: "settled",
         message:
           landed === 0
@@ -479,11 +542,67 @@ export default function ComposeNew() {
 
   const skipProposal = useCallback(() => {
     if (stage.name !== "review") return;
-    goToWorkspace(stage.buildId, {
+    if (stage.origin.kind === "import") {
+      // No draft was made for it, so there is nothing to go to. The import
+      // stays in the list, waiting, exactly as it was.
+      setSelection(null);
+      setError(null);
+      setStage({ name: "idle" });
+      return;
+    }
+    goToWorkspace(stage.origin.buildId, {
       tone: "settled",
       message: "Empty draft. Add your first node from the panel on the left.",
     });
   }, [goToWorkspace, stage]);
+
+  /**
+   * Open a waiting import on the review surface. The stored proposal is read
+   * only now — the list carries counts, never the envelope — and everything
+   * defaults to keep, as it does after a parse.
+   */
+  const reviewImport = useCallback(
+    async (item: WaitingImport, sourceLine: string) => {
+      if (busyRef.current || openingId || discardingId) return;
+      setOpeningId(item.id);
+      setWaitingError(null);
+      setError(null);
+
+      try {
+        const proposal = await loadImportProposal(item.id);
+        setSelection(keepEverything(proposal));
+        setStage({
+          name: "review",
+          proposal,
+          origin: { kind: "import", importId: item.id, sourceLine },
+        });
+      } catch (cause) {
+        setWaitingError(`That conversation could not be opened: ${messageOf(cause)}`);
+      } finally {
+        setOpeningId(null);
+      }
+    },
+    [discardingId, openingId]
+  );
+
+  /** Bin a waiting import. The panel has already asked once. */
+  const discardWaiting = useCallback(
+    async (item: WaitingImport) => {
+      if (busyRef.current || openingId || discardingId) return;
+      setDiscardingId(item.id);
+      setWaitingError(null);
+
+      try {
+        await discardImport(item.id);
+        setWaiting((rows) => (rows ?? []).filter((row) => row.id !== item.id));
+      } catch (cause) {
+        setWaitingError(`That conversation could not be discarded: ${messageOf(cause)}`);
+      } finally {
+        setDiscardingId(null);
+      }
+    },
+    [discardingId, openingId]
+  );
 
   // --- gates -----------------------------------------------------------------
 
@@ -605,6 +724,13 @@ export default function ComposeNew() {
           onSkip={skipProposal}
           isWriting={isWriting}
           error={error}
+          {...(stage.origin.kind === "import"
+            ? {
+                sourceLine: stage.origin.sourceLine,
+                testId: "waiting-import-proposal",
+                confirmTestId: "waiting-import-confirm",
+              }
+            : {})}
         />
       </Shell>
     );
@@ -626,6 +752,21 @@ export default function ComposeNew() {
           prerequisites and what it says it does.
         </p>
       </div>
+
+      {/* EX-P09. What the connector left waiting, above the fold so a creator
+          who sent a conversation from their chat finds it before they are
+          offered a paste box. Its own block in the same column: nothing already
+          on this page moved to make room for it, and it renders nothing at all
+          when the list is empty. */}
+      <WaitingImports
+        imports={waiting ?? []}
+        busy={busy}
+        openingId={openingId}
+        discardingId={discardingId}
+        onReview={(item, sourceLine) => void reviewImport(item, sourceLine)}
+        onDiscard={(item) => void discardWaiting(item)}
+        error={waitingError}
+      />
 
       {/* A PEER OF THE PASTE ZONE, not a control inside it (NS-P21).
           A URL is decided by looking at it; a transcript is decided by reading
