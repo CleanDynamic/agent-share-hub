@@ -147,6 +147,17 @@ exists, so the widening belongs with the code that needs it.
 
 ## EX-P07 — The secret scanner
 
+`supabase/functions/_shared/redact/index.ts` exports `redactSecrets(text)`:
+thirteen kinds, `[REDACTED:<kind>]` in place, findings as `[{kind, count}]`
+only. Pure — no I/O, no Deno API, no imports — and covered by 27 `deno test`
+cases beside it, including every negative the step named and a key wrapped
+across a line break. **Nothing calls it yet.** EX-P08 wires it in: once, on the
+assembled text inside `finish_import`, before the reader and before the content
+hash, and writes its findings to `import_sessions.secret_findings`. The skill's
+new section **The secret scanner** is the contract; open question 5 is closed.
+The EX-P06 heading above is blank because that session wrote no line — the
+pipe itself landed in commit `830ac3a`.
+
 ## EX-P08 — The parse
 
 ## EX-P09 — The pickup
