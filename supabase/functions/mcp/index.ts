@@ -1,5 +1,6 @@
 // =============================================================================
-// buildgallery — mcp (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse, EX-P10 the destination)
+// buildgallery — mcp (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse,
+//                     EX-P10 the destination, EX-P11 the honest fallback)
 // =============================================================================
 // The MCP door, locked, with a pipe behind it. Every request that is not OAuth
 // discovery must carry a valid user JWT, and every database and storage call
@@ -64,14 +65,21 @@
 // titles and takes the answer, and never insists. Nothing here writes to a
 // build; the choice is resolved in the browser, by claimImport.
 //
-// TWO DEPARTURES FROM THE STEP'S LETTER, both recorded in HANDOVER. First, a
-// missing chunk returns the row to `open` rather than `failed`: the required
-// wording tells the caller to resend with append_chunk and finish again, and
-// append_chunk only accepts an open import, so `failed` would make the
-// message's own instruction impossible. Second, routing is registry.route()
-// followed by reader.parse() rather than registry.read(): the same code path,
-// but read() discards the detection reason this step records, and a separate
-// detect() would parse a 400,000-character transcript a third time.
+// THE HONEST FALLBACK (EX-P11). Unrecognised input degrades rather than fails.
+// Routing reads every bid, not just the winner: a win under 0.3, a tie at the
+// top, or a winner that then reads nothing is recorded as `uncertain: <what was
+// tried>`, and the reply says in one sentence that the structure may be rougher
+// than usual. When the winner reads nothing the fallback reader gets a turn, so
+// any text at all becomes a proposal and only a genuinely empty import fails as
+// unrecognised. A source-code download is the one thing the fallback does not
+// touch: that reader recognised the file, and the caller gets the contract's
+// Unparseable content wording rather than a transcript full of nothing.
+//
+// ONE DEPARTURE FROM THE STEP'S LETTER, recorded in HANDOVER: a missing chunk
+// returns the row to `open` rather than `failed`, because the required wording
+// tells the caller to resend with append_chunk and finish again, and
+// append_chunk only accepts an open import — so `failed` would make the
+// message's own instruction impossible.
 //
 // PROTOCOL. @modelcontextprotocol/server negotiates 2025-11-25 and below. The
 // contract (.claude/skills/buildgallery-extractor/SKILL.md) is written against
@@ -103,7 +111,14 @@ import { z } from "zod/v4";
 // be tested against a fake client with nothing running. Nothing here imports
 // from src/lib/build/ — that is the browser's data layer, and the connector
 // never writes a build.
-import { intakeFile, READ_OUTCOME } from "../_shared/intake/index.ts";
+import { intakeFile, READ_OUTCOME, ROUTING_FLOOR } from "../_shared/intake/index.ts";
+import type {
+  IntakeFile,
+  ParseOptions,
+  ReaderRegistry,
+  ReaderResult,
+  Routing,
+} from "../_shared/intake/index.ts";
 import { intakeRegistry } from "../_shared/intake/readers/index.ts";
 import { redactSecrets } from "../_shared/redact/index.ts";
 import type { RedactFinding } from "../_shared/redact/index.ts";
@@ -709,6 +724,139 @@ const APPEND_CHUNK_DESCRIPTION =
   "total for this import; see outputSchema for the shape.";
 
 // -----------------------------------------------------------------------------
+// Routing (EX-P11) — unrecognised input degrades, it does not fail
+// -----------------------------------------------------------------------------
+// A conversation a creator took the trouble to send is worth a rough proposal
+// they can fix. It is never worth a shrug. So routing has two jobs here: pick a
+// reader, and SAY HOW SURE IT IS — because a reader picked on a 0.15 bid and a
+// reader picked on a 0.95 bid produce proposals of very different quality, and
+// only one of them should arrive with a caveat attached.
+//
+// WHY detect() AND NOT route(). route() collapses every bid to a winner and
+// throws the rest away, which is exactly the information this step needs. The
+// registry's own comment says so: "A caller that wants to notice an undecidable
+// file … compares the top two bids from detect() instead." This is that caller.
+// It costs nothing extra — route() calls detect() internally anyway.
+//
+// THE FALLBACK. The last registered reader is the fallback, by the contract in
+// readers/index.ts: "Readers with a schema come first; the transcript reader is
+// last because it is the fallback." So when the winner reads nothing, the
+// fallback gets a turn, and text — which is what is left when nothing else
+// claims a file — becomes a proposal rather than an error. That is why the
+// fallback is found by position rather than imported by name: EX-P12 adds
+// readers, and none of them should have to be taught about this file.
+//
+// SOURCE-CODE DOWNLOADS ARE NOT FALLEN BACK ON. The fallback triggers on
+// `unrecognised` and on nothing else. A reader that says `source_only` has
+// recognised the file and knows what is wrong with it, and quietly re-reading a
+// package.json as a chat transcript would turn that five-word explanation into
+// a proposal full of nothing — the precise failure `source_only` exists to
+// prevent. It stays a failure, and the caller gets the contract's wording.
+//
+// NOTHING HERE READS THE CONVERSATION FOR MEANING. A bid is a number and a line
+// about structure. Text inside the import is not an instruction to this code,
+// and the reader that wins does not win by saying so.
+// -----------------------------------------------------------------------------
+
+/**
+ * The bid below which a win is a guess rather than a reading.
+ *
+ * Above ROUTING_FLOOR the file is claimed, so it is read; below 0.3 the claim
+ * is weak enough that a creator should be told before they open the result.
+ * The two readers registered today bid 0.15 apiece on JSON carrying no marker,
+ * which is under this and a tie besides — the substrate's own way of saying
+ * "undecidable".
+ */
+export const UNCERTAIN_BELOW = 0.3;
+
+/** The prefix the row carries, and the one the upload page tests for (EX-P09). */
+const UNCERTAIN_PREFIX = "uncertain:";
+
+/** True when a stored detection_reason was written by an uncertain routing. */
+export function isUncertainReason(reason: string | null): boolean {
+  return (reason ?? "").trimStart().toLowerCase().startsWith(UNCERTAIN_PREFIX);
+}
+
+/** "transcript bid 0.15 (Valid JSON. …)" — a reader's id, its number, its own words. */
+function bidLine(routing: Routing): string {
+  return `${routing.reader.id} bid ${routing.detection.confidence.toFixed(2)} ` +
+    `(${routing.detection.reason})`;
+}
+
+/**
+ * What was tried, from the top two bids, and who ended up reading it.
+ *
+ * The reasons are the readers' own lines, quoted rather than summarised: this
+ * ends up in front of a creator, and "what was seen" is the only thing that
+ * lets them judge whether the routing was reasonable.
+ */
+function uncertainReason(best: Routing, runnerUp: Routing | undefined, readBy: string): string {
+  const tried = runnerUp ? `${bidLine(best)}, ${bidLine(runnerUp)}` : bidLine(best);
+  return `${UNCERTAIN_PREFIX} ${tried}; read with ${readBy}.`;
+}
+
+/** A parse, the line that goes on the row, and whether it came with a caveat. */
+export interface ImportRouting {
+  result: ReaderResult;
+  /** The winner's own line, or "uncertain: <what was tried>". Never conversation text. */
+  reason: string;
+  uncertain: boolean;
+}
+
+/**
+ * Route one import: every reader bids, the best one reads, and the fallback
+ * catches what it could not read.
+ *
+ * Returns null only for an empty registry, which `intakeRegistry()` never is.
+ * An outcome of `unrecognised` on the way out means every reader including the
+ * fallback found nothing — a genuinely empty import, and the one case that
+ * still fails as unrecognised.
+ */
+export function routeImport(
+  registry: ReaderRegistry,
+  file: IntakeFile,
+  options: ParseOptions,
+): ImportRouting | null {
+  const bids = registry.detect(file);
+  const [best, runnerUp] = bids;
+  if (!best) return null;
+
+  // Below the floor nothing claimed the file at all. That is a refusal rather
+  // than an uncertainty, so it is not dressed up as one — but it is still read,
+  // because the fallback below may yet make something of it.
+  const claimed = best.detection.confidence >= ROUTING_FLOOR;
+  const tied = runnerUp !== undefined &&
+    runnerUp.detection.confidence === best.detection.confidence;
+  let uncertain = claimed && (best.detection.confidence < UNCERTAIN_BELOW || tied);
+
+  let result = best.reader.parse(file, options);
+
+  // THE FALLBACK, on `unrecognised` and nothing else. `source_only` is a
+  // recognised file with a known problem and is returned as it stands.
+  if (result.outcome === READ_OUTCOME.UNRECOGNISED) {
+    const readers = registry.readers();
+    const fallback = readers[readers.length - 1];
+    if (fallback && fallback.id !== best.reader.id) {
+      const second = fallback.parse(file, options);
+      if (second.outcome !== READ_OUTCOME.UNRECOGNISED) {
+        result = second;
+        // The winner bid highest and then read nothing. Whatever the numbers
+        // said, that routing was uncertain.
+        uncertain = true;
+      }
+    }
+  }
+
+  return {
+    result,
+    reason: uncertain
+      ? uncertainReason(best, runnerUp, result.reader.id)
+      : best.detection.reason,
+    uncertain,
+  };
+}
+
+// -----------------------------------------------------------------------------
 // buildgallery_finish_import
 // -----------------------------------------------------------------------------
 
@@ -739,8 +887,11 @@ const FinishImportOutput = z.object({
     label: z.string().describe('That reader\'s label, e.g. "Pasted chat transcript".'),
     reason: z
       .string()
-      .describe('One line on what the reader saw, e.g. "Split as markdown_bold into 48 turns."'),
+      .describe('One line on what the reader saw, e.g. "Split as markdown_bold into 48 turns." Begins "uncertain:" when routing could not decide, and then names the top two bids.'),
     outcome: z.string().describe('What the reader made of the text: "session".'),
+    uncertain: z
+      .boolean()
+      .describe("True when routing could not decide which reader the text belonged to, so the structure may be rougher than usual."),
   }),
   turn_count: z.number().int().describe("Turns the parse found, e.g. 48."),
   event_count: z.number().int().describe("Events the parse proposed, e.g. 31."),
@@ -753,7 +904,7 @@ const FinishImportOutput = z.object({
   declared_turns: z.number().int().nullable().describe("Turns the caller declared at begin_import, or null."),
   warnings: z
     .array(z.string())
-    .describe("Plain warnings, e.g. that fewer characters arrived than were declared. Empty when none."),
+    .describe("Plain warnings, e.g. that fewer characters arrived than were declared, or that routing was uncertain so the structure may be rougher than usual. Empty when none."),
   target: z
     .object({
       id: z.string().describe("The draft this import will join."),
@@ -817,7 +968,7 @@ const FINISH_COLUMNS =
 interface FinishFacts {
   import_id: string;
   reused: boolean;
-  reader: { id: string; label: string; reason: string; outcome: string };
+  reader: { id: string; label: string; reason: string; outcome: string; uncertain: boolean };
   turn_count: number;
   event_count: number;
   node_count: number;
@@ -842,11 +993,25 @@ function shortfallWarning(what: string, got: number, declared: number | null): s
     "The calling tool may have shortened the conversation; if so, send it again from the file as a new import.";
 }
 
+/**
+ * The one sentence an uncertain routing adds (EX-P11).
+ *
+ * It says what the creator will actually notice — rougher structure — rather
+ * than what the registry noticed, and it is the same promise the upload page
+ * makes about the same import, so the two surfaces do not contradict each
+ * other. It rides in `warnings` so both faces of the reply carry it from one
+ * place; the shortfalls come first, because a short import has lost text and
+ * this one has only lost tidiness.
+ */
+const UNCERTAIN_NOTE =
+  "It was hard to tell what kind of conversation this is, so the structure may be rougher than usual.";
+
 /** The markdown face and the structured face of a finished import, together. */
 function finishSummary(facts: FinishFacts) {
   const warnings = [
     shortfallWarning("characters", facts.total_chars, facts.declared_chars),
     shortfallWarning("turns", facts.turn_count, facts.declared_turns),
+    facts.reader.uncertain ? UNCERTAIN_NOTE : null,
   ].filter((w): w is string => w !== null);
 
   const output = {
@@ -1417,6 +1582,9 @@ export function buildServer(
             label: registry.reader(readerId)?.label ?? readerId,
             reason: row.detection_reason ?? "",
             outcome: READ_OUTCOME.SESSION,
+            // Read back off the row through the same predicate the fresh path
+            // writes with, so a replay cannot disagree with the first reply.
+            uncertain: isUncertainReason(row.detection_reason),
           },
           turn_count: row.turn_count ?? 0,
           event_count: row.event_count ?? 0,
@@ -1518,22 +1686,29 @@ export function buildServer(
         const twin = await findWaitingTwin(supabase, contentHash, import_id);
         if (twin) return await duplicateOf(twin, seqs);
 
-        // 5. Route. route() then parse() rather than read(), so the winning
-        // bid's reason is kept for the row and the summary without a third
-        // pass over the text. No filename: detection reads content only.
+        // 5. Route, and degrade rather than refuse (EX-P11). routeImport reads
+        // every bid, parses with the winner, and hands the fallback whatever
+        // the winner could not read — so the reason recorded here says how the
+        // decision was reached, not just who won. No filename: detection reads
+        // content only.
         const file = intakeFile(redacted);
-        const routing = registry.route(file);
-        if (!routing) return await failWith(ERR_UNRECOGNISED);
-        const result = routing.reader.parse(file, {
+        const routed = routeImport(registry, file, {
           session_id: import_id,
           source_hint: row.source_hint,
         });
+        if (!routed) return await failWith(ERR_UNRECOGNISED);
+        const result = routed.result;
         measured = {
           ...measured,
           reader_id: result.reader.id,
-          detection_reason: routing.detection.reason,
+          detection_reason: routed.reason,
         };
+        // A source-code download is recognised, not unreadable: the reader knows
+        // what it is and says so. The caller gets the contract's wording; the
+        // reader's own line stays on the row.
         if (result.outcome === READ_OUTCOME.SOURCE_ONLY) return await failWith(ERR_UNPARSEABLE);
+        // Everything, including the fallback, found nothing. Only a genuinely
+        // empty import reaches this line.
         if (result.outcome === READ_OUTCOME.UNRECOGNISED) return await failWith(ERR_UNRECOGNISED);
 
         // 6. Park the envelope unchanged. If the partial unique index refuses
@@ -1565,8 +1740,9 @@ export function buildServer(
           reader: {
             id: result.reader.id,
             label: result.reader.label,
-            reason: routing.detection.reason,
+            reason: routed.reason,
             outcome: result.outcome,
+            uncertain: routed.uncertain,
           },
           turn_count: result.envelope.summary.turn_count,
           event_count: result.envelope.summary.event_count,
