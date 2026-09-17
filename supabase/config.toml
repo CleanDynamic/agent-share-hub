@@ -55,3 +55,22 @@ verify_jwt = true
 # Deliberately true. NS-P13 proposes a draft against a build the caller must own,
 # so the gateway must reject an unauthenticated call before the function runs.
 verify_jwt = true
+
+[functions.mcp]
+# Deliberately false, and the only function in this repo that should be.
+#
+# The gateway must NOT reject an unauthenticated request here, for two reasons.
+# First, the OAuth discovery endpoint this function serves — GET
+# .../mcp/.well-known/oauth-protected-resource — has to be reachable without a
+# token, because it is how a client learns where to get one. Second, the
+# @supabase/server middleware does the verification itself, and does it better
+# than the gateway can: it returns a 401 carrying the WWW-Authenticate header
+# that sends the client to that endpoint, which is what makes the connector
+# discoverable rather than merely closed.
+#
+# This is NOT the pattern the seed functions set. Those are verify_jwt = false
+# and genuinely open, which is a known defect. This one is gated in code, by
+# withSupabase({ auth: 'user' }) in index.ts, on every request that is not
+# discovery. Removing that middleware opens the door; removing this line only
+# breaks discovery.
+verify_jwt = false
