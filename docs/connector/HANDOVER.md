@@ -166,6 +166,36 @@ pipe itself landed in commit `830ac3a`.
 
 ## EX-P11 — The honest fallback
 
+`routeImport` in `supabase/functions/mcp/index.ts` replaces `registry.route()`
+inside `finish_import`: it reads every bid, parses with the winner, and hands
+the fallback — **the last registered reader, by position, not by name** — what
+the winner could not read. A win under `UNCERTAIN_BELOW` (0.3), a tie at the
+top, or a winner that then reads nothing records
+`detection_reason` as `uncertain: <top two bids, in the readers' own words>;
+read with <who read it>`, and the reply gains one sentence: "It was hard to tell
+what kind of conversation this is, so the structure may be rougher than usual."
+`FinishImportOutput.reader` gained `uncertain: boolean`; the already-parsed
+replay derives it from the stored reason through `isUncertainReason`, so the two
+faces cannot drift. **No migration** — `detection_reason` has been TEXT since
+EX-P05, so this step adds no RLS policy and the `(select auth.uid())` rule has
+nothing to bind to.
+
+**Three things for the next session.** First, **`source_only` is never handed to
+the fallback**, only `unrecognised` is: a reader that says `source_only` has
+recognised the file, and re-reading a package.json as a transcript would turn
+its explanation into a proposal full of nothing. The caller still gets the
+contract's Unparseable content wording byte for byte; the reader's own line goes
+on the row and no further. Second, **only a genuinely empty import now fails as
+unrecognised**, because `parseTranscript` returns zero turns only for
+empty-or-whitespace text — every other string becomes at least one event. A
+non-text import cannot actually arrive here: chunks come over JSON-RPC as
+strings. Third, **EX-P09's panel needed no change** — it already tested
+`detection_reason` for the `uncertain` prefix and rendered its own rougher-
+structure sentence, and `e2e/tier3/waiting-imports.spec.ts` already asserted it
+against an `uncertain: …` fixture. EX-P12 adding readers needs to know only that
+the fallback is found by position, so a new reader registered before the
+transcript reader inherits this behaviour without being taught about it.
+
 ## EX-P12 — Readers, one per tool
 
 ## EX-P13 — Ceilings, idempotency and expiry

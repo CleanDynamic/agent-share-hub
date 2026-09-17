@@ -1,5 +1,6 @@
 // =============================================================================
-// buildgallery — mcp tests (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse)
+// buildgallery — mcp tests (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse,
+//                           EX-P10 the destination, EX-P11 the honest fallback)
 // =============================================================================
 // Run with:
 //   SUPABASE_FUNCTION_SLUG=mcp \
@@ -26,7 +27,13 @@
 
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@^1.0.0";
 
-import door, { buildServer, humanTime } from "./index.ts";
+import door, {
+  buildServer,
+  humanTime,
+  isUncertainReason,
+  routeImport,
+  UNCERTAIN_BELOW,
+} from "./index.ts";
 import type { CallerClient, CallerIdentity } from "./index.ts";
 import {
   CHUNK_SIZE_CHARS,
@@ -40,6 +47,8 @@ import {
   VERBATIM_INSTRUCTION,
 } from "./constants.ts";
 import { redactSecrets } from "../_shared/redact/index.ts";
+import { intakeFile } from "../_shared/intake/index.ts";
+import { intakeRegistry } from "../_shared/intake/readers/index.ts";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 
 const PROJECT = "https://zybdotagjwektucfdkri.supabase.co";
@@ -1649,4 +1658,164 @@ Deno.test("EX-P10: list_drafts tells the model when to call it, what to pass on,
   }
   assert(description.startsWith(VERBATIM_INSTRUCTION), "still opens with the verbatim instruction");
   assert(description.length < 1500, `${description.length} characters`);
+});
+
+// -----------------------------------------------------------------------------
+// EX-P11 — the honest fallback
+// -----------------------------------------------------------------------------
+// Two paths, two fixtures, and the line between them.
+//
+// UNCERTAIN. A JSON document carrying no reader's marker is the case the
+// substrate built deliberately: the Lovable reader and the transcript reader
+// bid 0.15 apiece, which is both under the threshold and a tie, and the tie
+// goes to registration order — so Lovable wins it and then reads nothing. The
+// fallback picks the file up, a proposal is parked, and the row says so in
+// words rather than pretending the routing was confident.
+//
+// SOURCE_ONLY. A project manifest is the case the fallback must NOT touch. The
+// Lovable reader recognises it at 0.6 and knows exactly what is wrong with it,
+// so the import fails: re-reading a package.json as a chat transcript would
+// turn that explanation into a proposal full of nothing. The caller's message
+// is the contract's Unparseable content wording, byte for byte; the reader's
+// own line goes on the row and no further.
+
+/** A JSON document no registered reader has a marker for. Small on purpose. */
+const UNDECIDABLE_JSON = JSON.stringify({ notes: ["a thought", "another"], version: 2 });
+
+/** A Lovable code download: a manifest and a file list, and no session at all. */
+const SOURCE_ONLY_JSON = JSON.stringify({
+  name: "my-app",
+  dependencies: { react: "18" },
+  files: { "src/App.tsx": "" },
+});
+
+Deno.test("EX-P11: routeImport parses an undecidable file with the fallback and says the routing was uncertain", () => {
+  const registry = intakeRegistry();
+  const routed = routeImport(registry, intakeFile(UNDECIDABLE_JSON), { session_id: IMPORT_ID })!;
+
+  // The bids this rests on: a tie, under the threshold, decided by position.
+  const bids = registry.detect(intakeFile(UNDECIDABLE_JSON));
+  assertEquals(bids[0].detection.confidence, bids[1].detection.confidence, "a tie");
+  assert(bids[0].detection.confidence < UNCERTAIN_BELOW, "under the threshold");
+  assertEquals(bids[0].reader.id, "lovable", "the tie goes to registration order");
+
+  // The winner read nothing, so the fallback read it, and a proposal exists.
+  assertEquals(routed.result.reader.id, "transcript");
+  assertEquals(routed.result.outcome, "session");
+  assert(routed.result.envelope.summary.turn_count > 0, "any text at all produces a proposal");
+
+  // The reason names what was tried, from the top two bids, and who read it.
+  assertEquals(routed.uncertain, true);
+  assert(isUncertainReason(routed.reason), routed.reason);
+  assertStringIncludes(routed.reason, "lovable bid 0.15");
+  assertStringIncludes(routed.reason, "transcript bid 0.15");
+  assertStringIncludes(routed.reason, "read with transcript.");
+});
+
+Deno.test("EX-P11: routeImport never falls back on a source-code download, and reads a claimed file with its own reader", () => {
+  const registry = intakeRegistry();
+
+  const source = routeImport(registry, intakeFile(SOURCE_ONLY_JSON), { session_id: IMPORT_ID })!;
+  assertEquals(source.result.outcome, "source_only");
+  assertEquals(source.result.reader.id, "lovable", "not handed to the fallback");
+  assertEquals(source.uncertain, false, "0.6 is a reading, not a guess");
+  assertStringIncludes(source.reason, "Lovable code download");
+  assert(!isUncertainReason(source.reason), source.reason);
+
+  // A confident win is left alone: its own reason, no caveat, no fallback.
+  const labelled = routeImport(registry, intakeFile(chunkText(1)), { session_id: IMPORT_ID })!;
+  assertEquals(labelled.result.reader.id, "transcript");
+  assertEquals(labelled.uncertain, false);
+  assertStringIncludes(labelled.reason, "Split as labelled_colon");
+
+  // Nothing at all is the one case that still reads as unrecognised.
+  const empty = routeImport(registry, intakeFile("   \n  "), { session_id: IMPORT_ID })!;
+  assertEquals(empty.result.outcome, "unrecognised");
+  assertEquals(empty.uncertain, false, "a refusal is not an uncertainty");
+});
+
+Deno.test("EX-P11: finish_import parks an undecidable import, records the uncertain reason, and says the structure may be rougher", async () => {
+  const undeclared = { row: { declared_chars: null, declared_turns: null } };
+  const { result, last, updates } = await finish(1, { 1: UNDECIDABLE_JSON }, undeclared);
+
+  // It parked rather than failed: any text at all produces a proposal.
+  assertEquals(result?.isError, undefined, text(result));
+  assertEquals(last.payload!.status, "parsed");
+  assert(updates.every((u) => u.payload!.status !== "failed"), "degraded, did not fail");
+  assert((last.payload!.proposal as { events: unknown[] }).events.length > 0, "a proposal exists");
+
+  // The row carries the fallback that read it and the reason routing was hard.
+  assertEquals(last.payload!.reader_id, "transcript");
+  const reason = last.payload!.detection_reason as string;
+  assert(isUncertainReason(reason), reason);
+  assertStringIncludes(reason, "lovable bid 0.15");
+  assertStringIncludes(reason, "transcript bid 0.15");
+
+  // The reply names the reader, and adds the one sentence.
+  const out = result!.structuredContent!;
+  const reader = out.reader as Record<string, unknown>;
+  assertEquals(reader.id, "transcript");
+  assertEquals(reader.uncertain, true);
+  assertEquals(reader.reason, reason);
+  assertEquals(out.warnings, [
+    "It was hard to tell what kind of conversation this is, so the structure may be rougher than usual.",
+  ]);
+  const reply = text(result);
+  assertStringIncludes(reply, "Pasted chat transcript (transcript)");
+  assertStringIncludes(reply, "the structure may be rougher than usual.");
+  assert(!reply.includes("a thought"), "never echoes the conversation");
+});
+
+Deno.test("EX-P11: a confident import carries no uncertain reason and no rougher-structure sentence", async () => {
+  const { result, last } = await finish(2, chunkSet(2), {
+    row: { declared_chars: null, declared_turns: null },
+  });
+  assertEquals(result?.isError, undefined, text(result));
+  const reader = result!.structuredContent!.reader as Record<string, unknown>;
+  assertEquals(reader.uncertain, false);
+  assert(!isUncertainReason(last.payload!.detection_reason as string));
+  assertEquals(result!.structuredContent!.warnings, []);
+  assert(!text(result).includes("rougher than usual"), "the caveat is not on every import");
+});
+
+Deno.test("EX-P11: finish_import fails a source-code download with the contract's wording, and does not fall back to the transcript reader", async () => {
+  const { result, last, updates } = await finish(1, { 1: SOURCE_ONLY_JSON });
+
+  assertEquals(result?.isError, true);
+  assertEquals(
+    text(result),
+    "That content parsed as a source-code download rather than a conversation, so there are no " +
+      "turns to propose. If it is a conversation, send the chat transcript rather than the repository.",
+  );
+  assertEquals(last.payload!.status, "failed");
+  assertEquals(last.payload!.error, text(result));
+  assertEquals(last.payload!.reader_id, "lovable", "never re-read as a transcript");
+  assertEquals(last.payload!.proposal, undefined, "no proposal for a recognised wrong file");
+  assert(updates.every((u) => u.payload!.status !== "parsed"), "nothing was parsed");
+
+  // The reader's own line goes on the row, and never into the caller's message.
+  assertStringIncludes(last.payload!.detection_reason as string, "Lovable code download");
+  assert(!text(result).includes("Lovable code download"), "the row explains, the error does not");
+});
+
+Deno.test("EX-P11: a replayed uncertain import repeats the caveat rather than losing it", async () => {
+  const stored = "uncertain: lovable bid 0.15 (Valid JSON with no Lovable marker in it.), " +
+    "transcript bid 0.15 (Valid JSON.); read with transcript.";
+  const { result, updates } = await finish(1, {}, {
+    row: {
+      status: "parsed",
+      chunk_count: 1,
+      total_chars: 120,
+      reader_id: "transcript",
+      detection_reason: stored,
+      turn_count: 1,
+      event_count: 1,
+      node_count: 0,
+    },
+  });
+  assertEquals(result?.isError, undefined, text(result));
+  assertEquals(updates.length, 0, "nothing written");
+  const reader = result!.structuredContent!.reader as Record<string, unknown>;
+  assertEquals(reader.uncertain, true, "read back off the row, not recomputed");
+  assertStringIncludes(text(result), "the structure may be rougher than usual.");
 });
