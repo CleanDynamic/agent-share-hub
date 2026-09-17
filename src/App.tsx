@@ -85,6 +85,11 @@ const ImportPage = lazy(() => import("./pages/ImportPage"));
 // the affordance belongs on the creator's post page, and ContentDetail is on
 // the existing content path, which this rebuild does not edit.
 const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
+// EX-P03 — the OAuth consent screen. Its own chunk: the backend's authorization
+// path points every third-party application here, but a reader who never
+// authorizes one should not carry the page, and nothing in the application links
+// to it — it is arrived at from somebody else's product.
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 /* BG-P07 — /dev/kit, the control-kit review page.
 
@@ -294,6 +299,25 @@ const App = () => (
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />
               <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildRoute /></Suspense>} />
               <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}><ConvertPrompt /></Suspense>} />
+              {/* ── EX-P03 — /oauth/consent.
+
+                  OUT HERE FOR A DIFFERENT REASON THAN THE FOUR ABOVE. They are
+                  authoring workspaces that drop navigation because a tray, a
+                  tree and an inspector cannot share a viewport with two rails.
+                  This is a decision with two answers, arrived at mid-way through
+                  somebody else's sign-in flow — a frame offering somewhere else
+                  to go is an invitation to abandon an OAuth exchange that the
+                  application which sent the visitor here is still waiting on.
+
+                  It renders its own AuthShell, exactly as /login and /signup do
+                  through Layout's auth passthrough. Registering it here rather
+                  than adding a sixth prefix to that list keeps Layout untouched
+                  and puts the route where its Suspense boundary already lives.
+
+                  THE FALLBACK IS `--bg` AND FULL-VIEWPORT, matching the
+                  authoring routes above: this page has no frame already on
+                  screen to fill around, so the fallback is the whole room. ── */}
+              <Route path="/oauth/consent" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><OAuthConsent /></Suspense>} />
               {Kit && (
                 <Route
                   path="/dev/kit"

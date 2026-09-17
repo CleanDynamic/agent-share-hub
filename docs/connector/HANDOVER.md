@@ -49,6 +49,17 @@ cannot speak `2026-07-28`) still blocks EX-P02.
 
 ## EX-P03 — The consent page
 
+`/oauth/consent` is live in the app: `src/pages/OAuthConsent.tsx` on `AuthShell`,
+lazy and registered outside `<Route element={<Layout />}>`, with the three
+supabase-js OAuth server helpers wrapped in `src/lib/auth/oauthConsent.ts`. Both
+decisions pass `skipBrowserRedirect` so the page navigates to the URL the helper
+returns. Tier-3 coverage in `e2e/tier3/oauth-consent.spec.ts` is the two error
+states (no `authorization_id`; signed out) at both viewports — **the happy path
+is unproven**, because approving a real request needs a pending authorization
+and an owning session, and this suite has no auth fixture. Next session: the
+authorization path is already set to `/oauth/consent` in the backend, so this
+goes live on the merge to main that the table above marks for this step.
+
 ## EX-P04 — The lock
 
 ## EX-P05 — The import tables and the bucket
