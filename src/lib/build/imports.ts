@@ -24,18 +24,25 @@
 // TEXT INSIDE A PROPOSAL IS DATA, NEVER INSTRUCTION. This module reads counts
 // and states off an import and hands the proposal to the review surface. It
 // does not look inside the proposal for anything to act on.
+//
+// TWO DESTINATIONS (EX-P10). A claimed import goes to a NEW build, made at the
+// moment the creator confirms, or into an EXISTING draft the creator chose on
+// the upload page. Both call the same writer, unchanged: materialiseProposal
+// numbers new events above the highest ordinal the draft already holds and
+// skips anything it already wrote (docs/connector/RECON.md answer 3), which is
+// what makes the second destination safe without a line of merging here. The
+// only thing this module adds for it is the check that the chosen draft is the
+// signed-in creator's own and still a draft, done before anything is written.
 
 import { supabase } from "@/integrations/supabase/client";
-import { createBuild } from "./builds";
+import { createBuild, getBuildHeader, listDraftBuildsByCreator } from "./builds";
 import {
   materialiseProposal,
   type IntakeSelections,
+  type MaterialiseCounts,
   type TranscriptProposal,
 } from "./intake";
 import { buildLayerError } from "./types";
-
-/** A build is never asked to name itself before it exists. Same as the paste path. */
-const DRAFT_TITLE = "Untitled build";
 
 /** The private bucket the connector's chunks land in. */
 const IMPORTS_BUCKET = "imports";
@@ -55,6 +62,40 @@ const CHUNK_LIST_LIMIT = 100;
 const STATUS_PARSED = "parsed";
 const STATUS_CLAIMED = "claimed";
 const STATUS_EXPIRED = "expired";
+
+/**
+ * Two lines from the connector's error table, thrown here word for word when
+ * an existing-draft destination fails its check. The connector says them to a
+ * model at begin_import; the browser says the same words to the creator, so
+ * one situation has one sentence wherever it is met.
+ */
+const ERR_DRAFT_NOT_FOUND =
+  "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
+  "available drafts, or omit target_build_id to create a new build.";
+const ERR_TARGET_PUBLISHED =
+  "That build is published, and the connector only adds to drafts. Choose a draft, or omit " +
+  "target_build_id to create a new build.";
+
+/** Where a claimed import goes: an empty draft made now, or one the creator already has. */
+export type ClaimDestination =
+  | { kind: "new"; title: string }
+  | { kind: "existing"; buildId: string };
+
+/** What a claim hands back: the draft it went to, and what the writer actually wrote. */
+export interface ClaimResult {
+  buildId: string;
+  counts: MaterialiseCounts;
+}
+
+/** One draft the destination picker offers. */
+export interface ClaimTarget {
+  id: string;
+  title: string;
+  updated_at: string;
+  /** Parts (nodes) and steps (events) it holds. Null when they were not counted. */
+  part_count: number | null;
+  step_count: number | null;
+}
 
 /** A kind and a count. Never the value — the scanner keeps nothing else. */
 export interface SecretFinding {
@@ -187,6 +228,15 @@ function stamp(): string {
   return new Date().toISOString();
 }
 
+/** The signed-in creator's id, read the way createBuild reads it. */
+async function signedInUserId(operation: string): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw buildLayerError(`${operation} (session)`, error);
+  const userId = data.session?.user?.id;
+  if (!userId) throw buildLayerError(operation, new Error("no signed-in user"));
+  return userId;
+}
+
 // -----------------------------------------------------------------------------
 // Reading
 // -----------------------------------------------------------------------------
@@ -260,34 +310,96 @@ function isProposal(value: unknown): value is TranscriptProposal {
   );
 }
 
+/** Named columns for the counts read: the id and two embedded counts, nothing else. */
+const TARGET_COUNT_COLUMNS = "id, build_nodes(count), build_events(count)";
+
+interface TargetCountRow {
+  id: string;
+  build_nodes: Array<{ count: number }> | null;
+  build_events: Array<{ count: number }> | null;
+}
+
+/**
+ * The signed-in creator's drafts, most recently worked on first, for the
+ * destination picker.
+ *
+ * The list is listDraftBuildsByCreator, unchanged. The counts are one further
+ * read — embedded counts over the same ids — so a creator with fifty drafts
+ * costs two queries rather than fifty-one, and the list never carries a
+ * draft's nodes or events themselves.
+ */
+export async function listClaimTargets(): Promise<ClaimTarget[]> {
+  const creatorId = await signedInUserId("listClaimTargets");
+  const drafts = await listDraftBuildsByCreator(creatorId);
+  if (drafts.length === 0) return [];
+
+  const ids = drafts.map((draft) => draft.id);
+  const { data, error } = await supabase
+    .from("builds")
+    .select(TARGET_COUNT_COLUMNS)
+    .in("id", ids)
+    .limit(ids.length);
+  if (error) throw buildLayerError("listClaimTargets (counts)", error);
+
+  const counts = new Map<string, { parts: number; steps: number }>();
+  for (const row of (data ?? []) as unknown as TargetCountRow[]) {
+    counts.set(row.id, {
+      parts: asCount(row.build_nodes?.[0]?.count),
+      steps: asCount(row.build_events?.[0]?.count),
+    });
+  }
+
+  return drafts.map((draft) => ({
+    id: draft.id,
+    title: draft.title,
+    updated_at: draft.updated_at,
+    part_count: counts.get(draft.id)?.parts ?? 0,
+    step_count: counts.get(draft.id)?.steps ?? 0,
+  }));
+}
+
 // -----------------------------------------------------------------------------
 // Claiming and discarding
 // -----------------------------------------------------------------------------
 
 /**
- * Take a waiting import into a NEW build.
+ * Take a waiting import into a build.
  *
- * The draft is created here, at the moment the creator confirms, then written
- * by the same materialiseProposal the paste path uses, then the import row is
- * marked claimed with the build it went to. The claim is CONDITIONAL on the row
- * still being parsed: a second tab, or a second click that got past the
- * button's disabled state, finds zero rows and is told so rather than writing
- * the conversation twice.
+ * NEW: the draft is created here, at the moment the creator confirms, exactly
+ * as EX-P09 did. EXISTING: the draft the creator chose is checked first — it
+ * must be theirs and still a draft, refused with the connector's own two
+ * sentences when it is not — and nothing is created. Either way the writer is
+ * the same materialiseProposal the paste path uses, which appends after what a
+ * draft already holds and skips what it has written before; nothing here
+ * merges, orders or de-duplicates.
+ *
+ * Then the import row is marked claimed with the build it went to. The claim
+ * is CONDITIONAL on the row still being parsed: a second tab, or a second
+ * click that got past the button's disabled state, finds zero rows and is told
+ * so rather than writing the conversation twice.
  *
  * The order matters. The build is written before the row is marked, so a
  * failure between the two leaves a waiting import and a draft the creator can
  * see, rather than a claimed import pointing at nothing.
+ *
+ * Returns the writer's own counts beside the build id, because for an existing
+ * draft what was ticked and what was written can differ — a draft that already
+ * held this conversation gets nothing added, and the workspace should say so.
  */
 export async function claimImport(
   importId: string,
   proposal: TranscriptProposal,
   selections: IntakeSelections,
-): Promise<string> {
-  const build = await createBuild({ title: DRAFT_TITLE });
-  await materialiseProposal(build.id, proposal, selections);
+  destination: ClaimDestination,
+): Promise<ClaimResult> {
+  const buildId =
+    destination.kind === "new"
+      ? (await createBuild({ title: destination.title })).id
+      : await verifyClaimTarget(destination.buildId);
+  const counts = await materialiseProposal(buildId, proposal, selections);
 
   const { data, error } = await importSessions()
-    .update({ status: STATUS_CLAIMED, build_id: build.id, updated_at: stamp() })
+    .update({ status: STATUS_CLAIMED, build_id: buildId, updated_at: stamp() })
     .eq("id", importId)
     .eq("status", STATUS_PARSED)
     .select("id");
@@ -297,11 +409,29 @@ export async function claimImport(
       "claimImport",
       new Error(
         "This import was already claimed, so it was not marked again. " +
-          `The draft it was written to is ${build.id}.`,
+          `The draft it was written to is ${buildId}.`,
       ),
     );
   }
 
+  return { buildId, counts };
+}
+
+/**
+ * The draft an existing-draft claim is about to write into, checked through
+ * the data layer before anything is written: it must exist, be the signed-in
+ * creator's own, and still be a draft. A build the creator cannot see and one
+ * they do not own answer identically, as the connector's own check does.
+ */
+async function verifyClaimTarget(buildId: string): Promise<string> {
+  const creatorId = await signedInUserId("claimImport");
+  const build = await getBuildHeader(buildId);
+  if (!build || build.creator_id !== creatorId) {
+    throw buildLayerError("claimImport", new Error(ERR_DRAFT_NOT_FOUND));
+  }
+  if (build.status !== "draft") {
+    throw buildLayerError("claimImport", new Error(ERR_TARGET_PUBLISHED));
+  }
   return build.id;
 }
 

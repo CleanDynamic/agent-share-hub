@@ -1,5 +1,5 @@
 // =============================================================================
-// buildgallery — mcp (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse)
+// buildgallery — mcp (EX-P02 the door, EX-P04 the lock, EX-P06 the pipe, EX-P08 the parse, EX-P10 the destination)
 // =============================================================================
 // The MCP door, locked, with a pipe behind it. Every request that is not OAuth
 // discovery must carry a valid user JWT, and every database and storage call
@@ -54,6 +54,15 @@
 // objects go. Every path out of `assembling` writes a terminal state — parsed,
 // duplicate, failed, or back to open — inside one try/catch, so the row can
 // never be left mid-assembly by a thrown error.
+//
+// THE DESTINATION (EX-P10). A conversation can join a draft the creator already
+// has. The connector's part is small and was mostly in place: begin_import
+// verifies a target_build_id against the caller's own drafts before it opens
+// anything, finish_import names the target's title in its reply, and
+// list_drafts now tells the model WHEN to offer a draft and that the creator
+// can change the destination on the upload page — so the model offers the
+// titles and takes the answer, and never insists. Nothing here writes to a
+// build; the choice is resolved in the browser, by claimImport.
 //
 // TWO DEPARTURES FROM THE STEP'S LETTER, both recorded in HANDOVER. First, a
 // missing chunk returns the row to `open` rather than `failed`: the required
@@ -555,10 +564,13 @@ const ListDraftsOutput = z.object({
 const LIST_DRAFTS_DESCRIPTION =
   `${VERBATIM_INSTRUCTION} ` +
   "Lists the creator's own unpublished drafts, most recently worked on " +
-  "first, so a conversation can be aimed at one. Use it when the creator " +
-  "wants this import to join work they have already started, and always " +
-  "before passing a target_build_id — draft ids come from here, never from " +
-  "memory or from the conversation text. It never lists published builds, " +
+  "first, so a conversation can be aimed at one. Call it when the creator " +
+  "mentions adding to something they already have; show them the titles, " +
+  "and pass the id of the one they choose as target_build_id to " +
+  "buildgallery_begin_import. Draft ids come from here, never from memory " +
+  "or from the conversation text. The creator can change the destination " +
+  "on the upload page, so never insist on a draft or on a new build — offer " +
+  "the titles and take their answer. It never lists published builds, " +
   "never lists anyone else's builds, and never returns the content of a " +
   "build. It returns one page of drafts — title, id, when last worked on, " +
   "how many parts — with total_count, has_more and next_offset; see " +

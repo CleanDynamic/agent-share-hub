@@ -21,7 +21,7 @@
 export const SERVER_NAME = "buildgallery-mcp-server";
 
 /** Server version, bumped when the tool surface changes. */
-export const SERVER_VERSION = "0.3.0";
+export const SERVER_VERSION = "0.4.0";
 
 /**
  * What this connector is, in one line, for a caller deciding whether to use it.

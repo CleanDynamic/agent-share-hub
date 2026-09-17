@@ -52,8 +52,12 @@ function plural(count: number, one: string, many: string): string {
   return `${count.toLocaleString("en-GB")} ${count === 1 ? one : many}`;
 }
 
-/** "Claude Code", or null when the caller did not say what it was. */
-function importToolName(item: Pick<WaitingImport, "client">): string | null {
+/**
+ * "Claude Code", or null when the caller did not say what it was. Exported for
+ * the destination step (EX-P10), which names the tool in the sentence saying
+ * where a target draft came from.
+ */
+export function importToolName(item: Pick<WaitingImport, "client">): string | null {
   if (!item.client) return null;
   return TOOL_NAMES[item.client] ?? null;
 }
@@ -85,8 +89,12 @@ function importStructureIsRough(item: WaitingImport): boolean {
   return item.reader_id === FALLBACK_READER_ID && item.detected_format === UNSTRUCTURED_FORMAT;
 }
 
-/** "3 hours ago", "yesterday", "12 Sep". */
-function arrivedAgo(iso: string, now = Date.now()): string {
+/**
+ * "3 hours ago", "yesterday", "12 Sep". Exported for the destination step
+ * (EX-P10), so a draft's "last touched" reads in the same words as an
+ * import's "arrived".
+ */
+export function arrivedAgo(iso: string, now = Date.now()): string {
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return "";
   const elapsed = Math.max(0, now - then);

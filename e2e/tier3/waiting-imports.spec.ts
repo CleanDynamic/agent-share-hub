@@ -454,6 +454,11 @@ for (const viewport of WIDTHS) {
 
       await rowFor(page, IMPORT).getByRole("button", { name: "Review" }).click();
 
+      // EX-P10: the destination question comes first. Nothing here seeds a
+      // draft, so a new build is the only answer and Continue is the whole step.
+      await expect(page.getByTestId("import-destination")).toBeVisible();
+      await page.getByTestId("import-destination-continue").click();
+
       const review = page.getByTestId("waiting-import-proposal");
       await expect(review).toBeVisible();
       await expect(page.getByRole("heading", { name: "Here is what it found" })).toBeVisible();
@@ -483,6 +488,9 @@ for (const viewport of WIDTHS) {
       await openIntake(page, db);
 
       await rowFor(page, IMPORT).getByRole("button", { name: "Review" }).click();
+      // EX-P10: through the destination step, with a new build pre-selected.
+      await expect(page.getByTestId("import-destination-new")).toBeChecked();
+      await page.getByTestId("import-destination-continue").click();
       await expect(page.getByTestId("waiting-import-proposal")).toBeVisible();
 
       // Untick the second prompt, so "kept" is a choice rather than a default.
