@@ -103,6 +103,46 @@ resolves to newest-at-deploy either way, so there is no lockfile to age out.
 
 ## EX-P05 — The import tables and the bucket
 
+`supabase/migrations/20260917120000_import_sessions.sql` creates
+`public.import_sessions`, the private `imports` bucket (50,000 bytes,
+`text/plain`), five indexes and eight policies. RLS is owner-only in all four
+directions on the table and on the bucket's objects, and every one of the
+twelve `auth.uid()` calls across those eight policies is `(select auth.uid())`.
+`anon` is explicitly REVOKEd: Supabase's default privileges grant a new public
+table to `anon` at creation, so "grant nothing to anon" needs saying out loud
+rather than being left to RLS. No trigger, no function, no view — `updated_at`
+is the writer's job until something adds one.
+
+Acceptance is `supabase/tests/ex-p05-import-sessions.sql`, seven checks.
+**Not run against the live backend**, per the environment rule; it was run
+against a local PostgreSQL 16.13 replay of this repository's migrations, where
+all seven passed and four deliberate sabotages were each caught by the right
+check. The first run against project `zybdotagjwektucfdkri` is still ahead.
+
+**Three things for the next session.**
+
+First, **`client` carries a CHECK constraint** over the six values
+(`claude`, `claude-code`, `chatgpt`, `cursor`, `web`, `unknown`); NULL also
+passes. **EX-P06's `begin_import` must map any value outside those six to
+`'unknown'`** before it inserts. A caller naming a seventh client is not an
+error to report — it is a value to normalise — and without that mapping an
+unexpected `client` makes the insert fail instead.
+
+Second, **the first path segment in the imports bucket is the `user_id`**, not
+the `import_id`: objects live at `{user_id}/{import_id}/{seq}.txt` and the
+object policies compare segment 1 against `(select auth.uid())::text`. **This
+replaces `docs/connector/RECON.md` answer 13 point 4**, which proposed the
+import id there; later steps follow the spec, not that line. RECON is left as
+written — it is the record of what EX-P00 found, not a live specification. The
+practical gain is that a storage policy needs no subquery against
+`import_sessions` to decide anything.
+
+Third, **`supabase/functions/mcp/database.types.ts` still needs
+`import_sessions` adding, in EX-P06.** EX-P04's rule is to widen it by exactly
+the tables each step adds and never before the migration lands. The migration
+has now landed, but nothing in the function reads the table until the pipe
+exists, so the widening belongs with the code that needs it.
+
 ## EX-P06 — The pipe
 
 ## EX-P07 — The secret scanner
