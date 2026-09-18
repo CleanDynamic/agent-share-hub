@@ -15,6 +15,16 @@
 // a cold Vite dev start is slower again. Tight navigation timeouts here produce
 // failures that say nothing about correctness.
 //
+// THE AUDIT SWEEPS ARE NOT THIS CONFIG'S TESTS. `e2e/audit` is a second harness
+// with its own config, `playwright.audit.config.ts`: one desktop viewport swept
+// serially, a fifteen-minute budget because the contrast and glass sweeps visit
+// thirty pages inside a single test, and reports assembled in one place. Run
+// under the settings below they did the opposite of testing anything — all
+// three sweeps died on the 60s timeout on every run, main included, and the
+// perf spec wrote `e2e/audit/out/performance.txt` from Vite's dev server, which
+// its own README says is not the thing being measured. `AUDIT` below keeps them
+// out of a plain `npx playwright test`; they are run by `npm run audit`.
+//
 // NO TEST SIGNS IN THROUGH THE UI, but not via a storage-state setup project —
 // the `setup` project below matches `*.setup.ts` and there is no such file, so
 // it contributes nothing. Tier 3 needs no auth at all. Tier 2 injects its own
@@ -24,11 +34,16 @@
 
 import { defineConfig, devices } from "@playwright/test";
 
+/** Everything under `e2e/audit`, matched on an absolute path on either slash. */
+const AUDIT = /[\\/]e2e[\\/]audit[\\/]/;
+
 const PORT = Number(process.env.E2E_PORT ?? 5173);
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Inherited by any project that does not set its own `testIgnore`.
+  testIgnore: AUDIT,
   // Independent and runnable in any order, so parallel is safe. CI pins workers
   // for reproducibility rather than speed.
   fullyParallel: true,
@@ -56,7 +71,10 @@ export default defineConfig({
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
       dependencies: ["setup"],
-      testIgnore: /.*\.setup\.ts/,
+      // A project's `testIgnore` REPLACES the config-level one rather than
+      // adding to it, so the audit pattern is repeated here. Drop it and the
+      // sweeps come back, because desktop is the project that was running them.
+      testIgnore: [/.*\.setup\.ts/, AUDIT],
     },
     {
       // Pixel 7 is 412x915 — comfortably under the 768px breakpoint, so the

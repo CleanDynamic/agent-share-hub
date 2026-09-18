@@ -19,6 +19,13 @@ npm run audit:glass      # BG-P31 — the glass census and budget
 npm run audit:perf       # BG-P31 — load timing, Core Web Vitals, CLS, theme switch
 ```
 
+A plain `npx playwright test` does not run these. They are the only specs under
+`e2e/` that `playwright.config.ts` ignores, because they are written for the
+budget in `playwright.audit.config.ts` — fifteen minutes, one worker, one
+viewport — and under the e2e config's 60s timeout all three sweeps failed on
+every run, on main too, while `audit:perf` overwrote `out/performance.txt` with
+dev-server numbers. Reach them through the scripts above.
+
 `audit:perf` compares against a baseline taken on a BUILT bundle, so give it
 one or the numbers are about Vite's dev server rather than about the product:
 
