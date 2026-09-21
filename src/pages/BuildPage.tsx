@@ -37,6 +37,7 @@ import type {
   NodeTree,
   RebuildSummary,
 } from "@/lib/build";
+import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
 import {
   listBuildBounties,
   listSolutionBuilds,
@@ -55,6 +56,7 @@ import {
 import { BuildHeader, type HeroMedia } from "@/components/build/BuildHeader";
 import { BreakageView } from "@/components/build/BreakageView";
 import { BuildTabs } from "@/components/build/BuildTabs";
+import { CreatedViaLine } from "@/components/build/CreatedViaLine";
 import { ForkAttribution } from "@/components/build/ForkAttribution";
 import { LayerView, RunItPanel } from "@/components/build/LayerView";
 import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
@@ -650,6 +652,26 @@ export default function BuildPage() {
     refetchOnWindowFocus: false,
   });
 
+  /**
+   * How this build arrived (EX-P14).
+   *
+   * ITS OWN QUERY RATHER THAN A COLUMN ON THE RECORD, because builds.created_via
+   * is deliberately absent from BUILD_COLUMNS: that list is spent by the
+   * gallery, the drafts list and every profile's builds, and none of them has a
+   * provenance line to draw. One page's caption is one page's read.
+   *
+   * It never fails loudly — getCreatedVia answers null on an unreadable row —
+   * so a build whose provenance cannot be read renders exactly as a build that
+   * has none, which is most of them.
+   */
+  const { data: createdVia } = useQuery<CreatedVia | null>({
+    queryKey: ["build-created-via", buildId],
+    queryFn: () => getCreatedVia(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   const runLayer = layerOf(layers ?? [], "run");
   const understandLayer = layerOf(layers ?? [], "understand");
 
@@ -910,6 +932,22 @@ export default function BuildPage() {
         <Section>
           <ForkAttribution build={data.build} record={data} />
         </Section>
+        {/* The other half of the same answer. A fork's credit says which build
+            this one came from; this says how the record itself was drafted, and
+            that a person reviewed it. Both belong above the work, for the same
+            reason.
+
+            THE GUARD IS OUTSIDE THE SECTION, not inside the component. The
+            column above spaces its children with `gap: 32`, and an empty
+            <Section> is still a flex item — so a component that rendered null
+            inside one would cost 32px of blank page to every build that has no
+            provenance, which is every build made before this step. Most pages
+            render no element here at all. */}
+        {createdVia ? (
+          <Section>
+            <CreatedViaLine createdVia={createdVia} />
+          </Section>
+        ) : null}
         <Section>
           <BuildHeader
             build={data.build}

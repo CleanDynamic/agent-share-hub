@@ -597,9 +597,23 @@ for (const viewport of WIDTHS) {
       await expect(arrival(page)).toContainText("1 item in the tray");
       await expect(arrival(page)).toContainText("2 prompts at the end of the sequence");
 
-      // No build was created, and no build header was touched.
-      expect(stepWrites(db).filter((w) => w.table === "builds")).toHaveLength(0);
-      expect(db.tables.builds).toEqual(buildsBefore);
+      // No build was created. The header is touched exactly once, and only by
+      // EX-P14's provenance patch: a draft the creator had already started, now
+      // joined by an import, is `mixed` and carries the id of what joined it.
+      // Before EX-P14 this assertion was `toHaveLength(0)`; the write it now
+      // allows is the one that step adds, and the two assertions below are what
+      // keep "no build header was touched" true of everything else.
+      const headerWrites = stepWrites(db).filter((w) => w.table === "builds");
+      expect(headerWrites).toHaveLength(1);
+      expect(headerWrites[0].method).toBe("PATCH");
+      expect(headerWrites[0].body).toEqual({
+        created_via: { source: "mixed", imports: [IMPORT] },
+      });
+
+      // Every other column of every build row is exactly as it was.
+      const withoutProvenance = (rows: Row[]) =>
+        rows.map(({ created_via: _created_via, ...rest }) => rest);
+      expect(withoutProvenance(db.tables.builds)).toEqual(withoutProvenance(buildsBefore));
 
       // Every part and step the draft already held is still there, unchanged.
       for (const before of nodesBefore) {
