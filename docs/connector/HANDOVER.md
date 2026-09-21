@@ -198,6 +198,65 @@ transcript reader inherits this behaviour without being taught about it.
 
 ## EX-P12 — Readers, one per tool
 
+`supabase/functions/_shared/intake/readers/claude.ts` reads the Claude.ai
+account export (`conversations.json`), registered between `lovableReader` and
+`transcriptReader` so the fallback is still last by position. It is **not an
+adapter** — there is no parse-claude function to front — so the parse lives in
+the reader, built on the substrate helpers, and nothing else in the substrate
+changed. 21 `deno test` cases beside it, on two fixtures under `readers/fixtures/`
+whose shape is a real export's and whose every word is invented.
+
+**Five mapping decisions, each confirmed before the code was written**, each
+marked on the event it affects rather than done silently: several conversations
+become one envelope with a warning naming them (the connector never selects —
+the creator does, on the upload page); thinking is dropped because this format
+ships it already empty (`thinking: ""`, `thinking_hidden: true`) and its
+`summaries` are the platform's own summary; tool calls fold to one line naming
+the tool and whether it failed, never their inputs or results; an
+`injected_prompt_block` is left out because Claude.ai wrote it and the creator
+did not; `attachments[].extracted_content` is carried under a marker and
+`files[]` is names only, because the export holds no file bytes and this
+connector does not reach into Claude.ai to fetch them. **No migration**, so the
+`(select auth.uid())` rule has nothing to bind to here.
+
+**Four things for the next session.**
+
+First, **the file drop is NOT the escape hatch the contract says it is.** The
+skill's ceiling error tells a creator to drop the file on
+`agent-share-hub.lovable.app/compose/new`, "which has no such limit". It has the
+same limit: `src/pages/ComposeNew.tsx:438` rejects anything over
+`MAX_RAW_TEXT_CHARS` (`src/lib/build/intake.ts:113`, 400,000) before the build is
+created, and `parse-transcript/index.ts:107` and `parse-lovable/index.ts:103`
+repeat it as a 413. Those two error strings are the ones to fix, and fixing them
+is a Part 4 change.
+
+Second, **the ceiling bites on the raw file, not on what the reader keeps.** The
+captured 10-conversation export is 3,106,403 characters — 7.8x the ceiling — and
+three of its ten conversations are over 400,000 on their own, almost entirely
+tool payloads. Parsed, the whole thing is a 171,990-character envelope, well
+under. So **checking the size after the reader has folded, rather than before it
+runs, would admit the file the feature exists for.** That and letting a creator
+pick one conversation from a multi-conversation export in the browser are the
+two pieces of work this reader is waiting on.
+
+Third, **`parse-lovable`'s detect claims a Claude export.** It reads a top-level
+JSON array as its message list and calls it `lovable_trajectory` when the objects
+carry `created_at` — which every conversation in a Claude export does — so it
+bids 0.95 on one and would win the tie on registration order, reading a whole
+conversation as one message. This reader bids **0.98**, above it deliberately and
+for a reason written out at the constant: a named schema (`chat_messages`, senders
+of human/assistant, typed content blocks) against a structural guess from one
+common key. The cleaner fix is in `parse-lovable`'s detect, which EX-P12 was not
+allowed to touch. A test pins the collision so it cannot regress quietly.
+
+Fourth, **`message.text` is a trap and the reader never reads it.** It is a
+flattened display string: in the captured export, 28 of 113 messages had it
+carrying "This block is not supported on your current device yet." in place of
+every block the renderer could not draw. Turns are built from the `text` blocks
+inside `content`, joined with a blank line — joining matters too, since
+consecutive blocks are separate utterances and concatenation runs their
+sentences together.
+
 ## EX-P13 — Ceilings, idempotency and expiry
 
 ## EX-P14 — Provenance
