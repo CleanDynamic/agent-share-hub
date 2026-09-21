@@ -20,14 +20,16 @@
 // =============================================================================
 
 import { createReaderRegistry, ReaderRegistry } from "../registry.ts";
+import { claudeReader } from "./claude.ts";
 import { lovableReader } from "./lovable.ts";
 import { transcriptReader } from "./transcript.ts";
 
+export { claudeReader } from "./claude.ts";
 export { lovableReader } from "./lovable.ts";
 export { transcriptReader } from "./transcript.ts";
 
 /** Every reader NeoScale reads intake with, most specific first. */
-export const INTAKE_READERS = [lovableReader, transcriptReader];
+export const INTAKE_READERS = [lovableReader, claudeReader, transcriptReader];
 
 /**
  * The registry the platform routes with.
