@@ -259,6 +259,98 @@ sentences together.
 
 ## EX-P13 — Ceilings, idempotency and expiry
 
+**NOT YET DEPLOYED OR CHECKED ON THE LIVE BACKEND.** The Lovable deploys for
+EX-P05 onwards are still pending, so nothing below has run against project
+`zybdotagjwektucfdkri`. Everything claimed here was proved against a local
+PostgreSQL 16.13 replay and `deno test`; the first run on the real backend is
+still ahead, and the pg_cron half in particular is unproven there.
+
+Two migrations, **in this apply order**:
+
+1. `supabase/migrations/20260921120000_import_ceilings.sql` — the ceilings
+2. `supabase/migrations/20260921120100_import_expiry_cron.sql` — the expiry
+
+`enforce_import_ceilings()` is a BEFORE INSERT FOR EACH ROW trigger on
+`import_sessions`, SECURITY INVOKER with `SET search_path = ''`. It takes both
+counts — the inserting user's rows created since UTC midnight, and their rows in
+`open` or `assembling` — as two `FILTER` aggregates over **one** index scan on
+`idx_import_sessions_user_status_created`, whose leading `user_id` column is the
+whole predicate (measured: Bitmap Index Scan, 125 rows, 0.183 ms over 5,000 rows
+/ 40 users). No quota table. It raises the contract's error-table wording
+**verbatim** under a dedicated SQLSTATE, `BGCAP`, and `begin_import` returns that
+message to the caller **unchanged** — matched on the code, never on the text,
+because the text is the payload. Every other database error still becomes the
+generic wording.
+
+**The trigger takes a transaction-scoped advisory lock on the creator first**,
+two keys (a feature namespace and the user id). Without it the trigger is still
+a read followed by an insert: under READ COMMITTED two concurrent opens can each
+count 19 and each insert a 20th, which is the exact failure the contract moved
+these ceilings into the database to avoid. It serialises one creator's opens
+only; two creators never wait on each other.
+
+**Expiry is two sweeps, and they are not redundant.** `begin_import` expires the
+caller's own overdue rows under the caller's own client **before** the insert the
+ceiling counts — mark first with one `UPDATE ... RETURNING`, then bin the chunk
+objects, never the other way round, because a failed mark after a delete would
+strip chunks off a still-open import. It is bounded (`EXPIRY_SWEEP_LIMIT`, 25
+object sweeps per open; only `open`/`assembling` can still hold objects, since
+`finish_import` clears them) and **best-effort**: a sweep that fails is logged by
+code and never fails the open. The nightly pg_cron job is the other sweep — for
+everyone, including the creator who never comes back — and **touches no storage
+at all**, because a cron job has no session to reach the storage API with and the
+service-role key that would give it one is contract prohibition 2.
+
+**On pg_cron.** It is already installed on this project
+(`20260318160154_...sql`), so scheduling is expected to work. It is not assumed:
+migration 2 resolves the extension's schema from `pg_extension` rather than
+naming `cron` or `extensions` (this project installed it `WITH SCHEMA
+extensions`), and if pg_cron is absent it raises a **WARNING naming the fact that
+no job was scheduled** rather than failing the deploy or passing silently. The
+job is `expire-import-sessions`, `20 3 * * *` UTC. **pg_cron is not installed in
+the replay container**, so the scheduling branch was exercised against a stub
+`cron` schema; the schedule itself is unverified until Lovable applies this.
+
+**THE THING THE NEXT SESSION MUST NOT UNDO.** `expire_import_sessions()` is
+SECURITY INVOKER and a pg_cron job runs as whichever role scheduled it, so that
+role must be exempt from RLS on `import_sessions` or **the job runs every night,
+raises nothing, and expires nothing**. Exemption comes from owning the table with
+FORCE ROW LEVEL SECURITY off — EX-P05 enabled RLS and did not FORCE it. This was
+proved in the replay against a role that owns the table and holds
+`rolbypassrls = f` (not the local superuser, whose BYPASSRLS would have proved
+the wrong mechanism): user A's overdue row was expired by that role with no JWT
+claim set. The negative was proved too — with FORCE on, the same call expires
+**0 rows and raises nothing**. So migration 2 **asserts the condition at apply
+time and ABORTS** if the applying role cannot bypass RLS. If that abort ever
+fires on Lovable, it is a design conversation: **do not reach for SECURITY
+DEFINER to get round it.** Check 7 of the SQL test pins both halves.
+
+`supabase/tests/ex-p13-ceilings-and-expiry.sql`, eight checks: the trigger's
+posture; the 21st insert of the day raises; the 6th live import raises
+(`assembling` counts as open — a test written against `status = 'open'` alone
+would miss it); positive controls for both, so a table that refused everything
+could not pass; **the EX-P05 `total_chars <= 400000` CHECK confirmed still in
+place** (EX-P13 confirms it, it did not add it); the expiry function's posture
+and grants; the job-role check above; and that the nightly job leaves terminal
+and not-yet-due rows alone. All eight passed on the replay, and five deliberate
+sabotages were each caught by the right check. **Not run against the live
+backend.**
+
+**Two things for the next session.** First, **there was no in-memory counter in
+the mcp function to remove.** The step asked for one; a scan for module-scope
+mutable state (`let`, `var`, `Map`, `globalThis`) found none — every module-level
+`const` is a schema, a string or a number. The only in-memory limiter in the repo
+is `ipCounts` / `rateLimit` at `supabase/functions/public-api/index.ts:10`, which
+is a different function on a different path and was **deliberately left alone**.
+
+Second, **the ceilings are now written in two languages**. SQL cannot import
+`constants.ts`, so the trigger carries its own `20`, `5` and `7`. The guard is a
+test, not a comment: "the migration's ceilings are the constants file's ceilings"
+in `supabase/functions/mcp/index.test.ts` reads both files and fails if they
+disagree. Change one, change both. Note also that `EXPIRY_SWEEP_LIMIT` and
+`CEILING_ERRCODE` joined `constants.ts`, and `LIVE_STATUSES` in `index.ts` was
+reused rather than copied there.
+
 ## EX-P14 — Provenance
 
 ## EX-P15 — Hostile content

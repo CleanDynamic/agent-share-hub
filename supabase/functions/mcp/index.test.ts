@@ -36,11 +36,16 @@ import door, {
 } from "./index.ts";
 import type { CallerClient, CallerIdentity } from "./index.ts";
 import {
+  CEILING_ERRCODE,
   CHUNK_SIZE_CHARS,
   COMPOSE_NEW_HTTPS_URL,
   CONNECTOR_STATEMENT,
   DEFAULT_PAGE_SIZE,
+  EXPIRY_SWEEP_LIMIT,
+  IMPORT_TTL_DAYS,
   MAX_CHUNK_CHARS,
+  MAX_IMPORTS_PER_DAY,
+  MAX_OPEN_IMPORTS,
   MAX_PAGE_SIZE,
   MAX_TOTAL_CHARS,
   SERVER_NAME,
@@ -215,6 +220,7 @@ interface Builder extends PromiseLike<{ data: unknown; error: unknown; count: nu
   eq(column: string, value: unknown): Builder;
   neq(column: string, value: unknown): Builder;
   in(column: string, value: unknown): Builder;
+  lt(column: string, value: unknown): Builder;
   order(column: string, options: { ascending: boolean }): Builder;
   range(from: number, to: number): Builder;
   limit(n: number): Builder;
@@ -259,6 +265,10 @@ function fakeClient(respond: Respond, bucket = new FakeBucket()): {
         },
         in(column, value) {
           q.filters.push({ kind: "in", column, value });
+          return builder;
+        },
+        lt(column, value) {
+          q.filters.push({ kind: "lt", column, value });
           return builder;
         },
         order(column, options) {
@@ -329,6 +339,32 @@ async function listTools() {
 
 function text(result: ToolResult | undefined): string {
   return result?.content.map((c) => c.text).join("\n") ?? "";
+}
+
+/**
+ * EX-P13. Every begin_import now opens with the expiry sweep, so the queries a
+ * begin_import test is actually about start at index 1.
+ *
+ * This asserts the sweep ran and is shaped correctly, then hands back the rest.
+ * Putting it here rather than in one dedicated test means EVERY begin_import
+ * test checks that the sweep is still there and still scoped to the caller —
+ * a sweep that quietly stopped running, or quietly widened to every account,
+ * would fail eight tests rather than none.
+ */
+function afterSweep(queries: Query[]): Query[] {
+  const sweep = queries[0];
+  assertEquals(sweep?.table, "import_sessions", "begin_import must sweep before anything else");
+  assertEquals(sweep.op, "update");
+  assertEquals(sweep.payload!.status, "expired");
+  assert(
+    sweep.filters.some((f) => f.kind === "eq" && f.column === "user_id"),
+    "the sweep must be scoped to the caller, not left to RLS alone",
+  );
+  assert(
+    sweep.filters.some((f) => f.kind === "lt" && f.column === "expires_at"),
+    "the sweep must only touch rows past expires_at",
+  );
+  return queries.slice(1);
 }
 
 /** A well-formed open import row, for tests that need one to exist. */
@@ -605,10 +641,11 @@ Deno.test("begin_import opens an import for the caller and returns the handle an
   assertStringIncludes(instructions, "from 1");
   assertStringIncludes(instructions, "buildgallery_finish_import");
 
-  assertEquals(queries.length, 1);
-  assertEquals(queries[0].table, "import_sessions");
-  assertEquals(queries[0].op, "insert");
-  assertEquals(queries[0].payload, {
+  const opened = afterSweep(queries);
+  assertEquals(opened.length, 1);
+  assertEquals(opened[0].table, "import_sessions");
+  assertEquals(opened[0].op, "insert");
+  assertEquals(opened[0].payload, {
     user_id: CALLER.id,
     client: "claude",
     source_hint: "claude-export",
@@ -618,7 +655,7 @@ Deno.test("begin_import opens an import for the caller and returns the handle an
     target_build_id: null,
     status: "open",
   });
-  assertEquals(queries[0].columns, "id, target_build_id, created_at");
+  assertEquals(opened[0].columns, "id, target_build_id, created_at");
 });
 
 Deno.test("begin_import maps a client outside the six the CHECK admits to unknown", async () => {
@@ -627,10 +664,10 @@ Deno.test("begin_import maps a client outside the six the CHECK admits to unknow
     { client: "claude-desktop" },
     (q) => (q.op === "insert" ? { data: created } : { data: null }),
   );
-  assertEquals(queries[0].payload!.client, "unknown");
+  assertEquals(afterSweep(queries)[0].payload!.client, "unknown");
 
   const absent = await call("buildgallery_begin_import", {}, (q) => (q.op === "insert" ? { data: created } : { data: null }));
-  assertEquals(absent.queries[0].payload!.client, null);
+  assertEquals(afterSweep(absent.queries)[0].payload!.client, null);
 });
 
 Deno.test("begin_import returns the existing live import for the same fingerprint, and says so", async () => {
@@ -647,13 +684,14 @@ Deno.test("begin_import returns the existing live import for the same fingerprin
   assertStringIncludes(text(result), "already open");
   assertStringIncludes(text(result), "2 hours ago");
 
-  assertEquals(queries.length, 1, "no insert");
-  assertEquals(queries[0].op, "select");
-  assertEquals(queries[0].filters, [
+  const lookup = afterSweep(queries);
+  assertEquals(lookup.length, 1, "no insert");
+  assertEquals(lookup[0].op, "select");
+  assertEquals(lookup[0].filters, [
     { kind: "eq", column: "fingerprint", value: "conv-123" },
     { kind: "in", column: "status", value: ["open", "assembling", "parsed"] },
   ]);
-  assert(queries[0].filters.every((f) => f.column !== "user_id"), "ownership is RLS's job");
+  assert(lookup[0].filters.every((f) => f.column !== "user_id"), "ownership is RLS's job");
 });
 
 Deno.test("begin_import survives losing the race to the unique fingerprint index", async () => {
@@ -663,6 +701,8 @@ Deno.test("begin_import survives losing the race to the unique fingerprint index
     "buildgallery_begin_import",
     { fingerprint: "conv-123" },
     (q) => {
+      // The EX-P13 sweep is an update and is not one of this test's lookups.
+      if (q.op === "update") return { data: [] };
       if (q.op === "insert") return { data: null, error: { code: "23505" } };
       lookups += 1;
       return { data: lookups === 1 ? null : existing };
@@ -671,7 +711,7 @@ Deno.test("begin_import survives losing the race to the unique fingerprint index
 
   assertEquals(result!.structuredContent!.import_id, IMPORT_ID);
   assertEquals(result!.structuredContent!.reused, true);
-  assertEquals(queries.map((q) => q.op), ["select", "insert", "select"]);
+  assertEquals(afterSweep(queries).map((q) => q.op), ["select", "insert", "select"]);
 });
 
 Deno.test("begin_import refuses a target that is not the caller's draft, and creates nothing", async () => {
@@ -687,10 +727,11 @@ Deno.test("begin_import refuses a target that is not the caller's draft, and cre
     "No draft with that id belongs to this account. Call buildgallery_list_drafts to see the " +
       "available drafts, or omit target_build_id to create a new build.",
   );
-  assertEquals(queries.length, 1);
-  assertEquals(queries[0].table, "builds");
-  assertEquals(queries[0].columns, "id, status");
-  assertEquals(queries[0].filters, [
+  const checked = afterSweep(queries);
+  assertEquals(checked.length, 1);
+  assertEquals(checked[0].table, "builds");
+  assertEquals(checked[0].columns, "id, status");
+  assertEquals(checked[0].filters, [
     { kind: "eq", column: "id", value: DRAFT_ID },
     { kind: "eq", column: "creator_id", value: CALLER.id },
   ]);
@@ -709,7 +750,7 @@ Deno.test("begin_import refuses a published target, and creates nothing", async 
     "That build is published, and the connector only adds to drafts. Choose a draft, or omit " +
       "target_build_id to create a new build.",
   );
-  assertEquals(queries.length, 1, "no insert");
+  assertEquals(afterSweep(queries).length, 1, "no insert");
 });
 
 Deno.test("begin_import records a draft target and reports it", async () => {
@@ -724,8 +765,9 @@ Deno.test("begin_import records a draft target and reports it", async () => {
 
   assertEquals(result!.structuredContent!.target, DRAFT_ID);
   assertStringIncludes(result!.structuredContent!.instructions as string, DRAFT_ID);
-  assertEquals(queries[1].op, "insert");
-  assertEquals(queries[1].payload!.target_build_id, DRAFT_ID);
+  const withTarget = afterSweep(queries);
+  assertEquals(withTarget[1].op, "insert");
+  assertEquals(withTarget[1].payload!.target_build_id, DRAFT_ID);
 });
 
 Deno.test("begin_import never lets a database message reach the caller", async () => {
@@ -1608,8 +1650,9 @@ Deno.test("EX-P10: begin_import refuses a target_build_id that belongs to anothe
   );
   assertEquals(queries.filter((q) => q.op === "insert").length, 0, "no import was opened");
   // The row exists; it was refused because the read named the caller's own creator_id.
-  assertEquals(queries[0].table, "builds");
-  assertEquals(queries[0].filters.find((f) => f.column === "creator_id")?.value, CALLER.id);
+  const checked = afterSweep(queries);
+  assertEquals(checked[0].table, "builds");
+  assertEquals(checked[0].filters.find((f) => f.column === "creator_id")?.value, CALLER.id);
 });
 
 Deno.test("EX-P10: begin_import refuses the caller's own published build, and creates nothing", async () => {
@@ -1818,4 +1861,395 @@ Deno.test("EX-P11: a replayed uncertain import repeats the caveat rather than lo
   const reader = result!.structuredContent!.reader as Record<string, unknown>;
   assertEquals(reader.uncertain, true, "read back off the row, not recomputed");
   assertStringIncludes(text(result), "the structure may be rougher than usual.");
+});
+
+// -----------------------------------------------------------------------------
+// EX-P13 — durable ceilings and expiry
+// -----------------------------------------------------------------------------
+// The ceilings themselves are facts about Postgres and are proved in
+// supabase/tests/ex-p13-ceilings-and-expiry.sql, not here. What is proved here
+// is the half that lives in TypeScript: that begin_import sweeps before it
+// inserts, that the sweep is scoped and bounded and best-effort, and that a
+// ceiling refusal reaches the caller as the trigger wrote it.
+
+/**
+ * A row as the sweep's UPDATE ... RETURNING really hands it back.
+ *
+ * status is 'expired' on EVERY row and is not a parameter, because RETURNING
+ * returns the row AFTER the update. Writing the pre-update status here — which
+ * an earlier draft of these tests did — makes the fake disagree with PostgREST
+ * and lets a sweep that keys off the old status look as though it works.
+ * chunk_count is what survives the statement, so it is what varies.
+ */
+function sweptRow(id: string, chunkCount: number): Record<string, unknown> {
+  return { id, chunk_count: chunkCount, status: "expired" };
+}
+
+const OVERDUE_A = "1a1a1a1a-1111-4111-8111-111111111111";
+const OVERDUE_B = "2b2b2b2b-2222-4222-8222-222222222222";
+
+Deno.test("EX-P13: begin_import expires the caller's overdue imports before the insert the ceiling counts", async () => {
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: [sweptRow(OVERDUE_A, 3)] };
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+  );
+
+  assertEquals(result?.isError, undefined);
+
+  // Order is the whole point: sweeping after the insert would count the stale
+  // rows and refuse the very import the sweep was about to make room for.
+  assertEquals(queries[0].op, "update");
+  assertEquals(queries[1].op, "insert");
+});
+
+Deno.test("EX-P13: the sweep only touches the caller's own rows, only live ones, only past expires_at", async () => {
+  const { queries } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => (q.op === "insert" ? { data: created } : { data: [] }),
+  );
+
+  const sweep = queries[0];
+  assertEquals(sweep.table, "import_sessions");
+  assertEquals(sweep.op, "update");
+
+  // Scoped to the caller explicitly. RLS would do it too, but a sweep that
+  // relies only on RLS is one policy change away from expiring the world.
+  assertEquals(sweep.filters.find((f) => f.column === "user_id")?.value, CALLER.id);
+
+  // Only the three live states. A claimed, failed or already-expired row is
+  // terminal — re-expiring it would churn updated_at for ever.
+  assertEquals(sweep.filters.find((f) => f.column === "status"), {
+    kind: "in",
+    column: "status",
+    value: ["open", "assembling", "parsed"],
+  });
+
+  // Past expires_at, measured on the injected clock so this is pinnable.
+  assertEquals(sweep.filters.find((f) => f.column === "expires_at"), {
+    kind: "lt",
+    column: "expires_at",
+    value: new Date(NOW).toISOString(),
+  });
+
+  // Status and stamp, and nothing a creator would have to undo.
+  assertEquals(sweep.payload, { status: "expired", updated_at: new Date(NOW).toISOString() });
+
+  // chunk_count, not status: RETURNING gives the row AFTER the update, so the
+  // status these rows used to have is not available to read back.
+  assertEquals(sweep.columns, "id, chunk_count");
+});
+
+Deno.test("EX-P13: the sweep bins the chunk objects of the imports it expired", async () => {
+  const bucket = new FakeBucket();
+  bucket.seed(CALLER.id, OVERDUE_A, { 1: 100, 2: 200 });
+  bucket.seed(CALLER.id, OVERDUE_B, { 1: 50 });
+
+  await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") {
+        return { data: [sweptRow(OVERDUE_A, 2), sweptRow(OVERDUE_B, 1)] };
+      }
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+    bucket,
+  );
+
+  assertEquals(bucket.removed.sort(), [
+    `${CALLER.id}/${OVERDUE_A}/1.txt`,
+    `${CALLER.id}/${OVERDUE_A}/2.txt`,
+    `${CALLER.id}/${OVERDUE_B}/1.txt`,
+  ]);
+  assertEquals(bucket.objects.size, 0);
+});
+
+Deno.test("EX-P13: an import that never stored a chunk costs no storage round trip", async () => {
+  const bucket = new FakeBucket();
+
+  await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      // The common abandoned import: opened, never fed, never finished.
+      if (q.op === "update") return { data: [sweptRow(OVERDUE_A, 0)] };
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+    bucket,
+  );
+
+  assertEquals(bucket.lists.length, 0, "chunk_count 0 means there is no folder to list");
+  assertEquals(bucket.removed.length, 0);
+});
+
+Deno.test("EX-P13: a sweep that fails never fails the open", async () => {
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: null, error: { code: "42501", message: "permission denied" } };
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+  );
+
+  // The import still opens. A housekeeping failure must not become a refusal
+  // to accept a conversation.
+  assertEquals(result?.isError, undefined);
+  assertEquals(result!.structuredContent!.import_id, IMPORT_ID);
+  assertEquals(queries[1].op, "insert");
+  assert(!text(result).includes("permission denied"), "no database message reaches the caller");
+});
+
+Deno.test("EX-P13: a storage failure during the sweep never fails the open either", async () => {
+  const bucket = new FakeBucket();
+  bucket.seed(CALLER.id, OVERDUE_A, { 1: 100 });
+  bucket.failRemove = true;
+
+  const { result } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: [sweptRow(OVERDUE_A, 1)] };
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+    bucket,
+  );
+
+  assertEquals(result?.isError, undefined);
+  assertEquals(result!.structuredContent!.import_id, IMPORT_ID);
+});
+
+Deno.test("EX-P13: the object sweep is bounded, so a long backlog cannot stall one open", async () => {
+  const bucket = new FakeBucket();
+  const many: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < EXPIRY_SWEEP_LIMIT + 10; i += 1) {
+    const id = `3c3c3c3c-3333-4333-8333-${String(i).padStart(12, "0")}`;
+    many.push(sweptRow(id, 1));
+    bucket.seed(CALLER.id, id, { 1: 10 });
+  }
+
+  await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: many };
+      if (q.op === "insert") return { data: created };
+      return { data: null };
+    },
+    bucket,
+  );
+
+  assertEquals(bucket.lists.length, EXPIRY_SWEEP_LIMIT);
+  // The rows beyond the cap are already 'expired', so they are out of the
+  // ceiling's way; only their objects wait for the next open.
+  assertEquals(bucket.objects.size, 10);
+});
+
+Deno.test("EX-P13: a ceiling refusal reaches the caller as the trigger wrote it, word for word", async () => {
+  const daily =
+    "You have opened 20 imports today, which is the limit. It resets at midnight UTC. " +
+    "Existing waiting imports are unaffected.";
+
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: [] };
+      if (q.op === "insert") return { data: null, error: { code: "BGCAP", message: daily } };
+      return { data: null };
+    },
+  );
+
+  assertEquals(result?.isError, true);
+  // Unchanged: not re-composed here, not prefixed, not summarised.
+  assertEquals(text(result), daily);
+  assertEquals(queries.filter((q) => q.op === "insert").length, 1, "it was attempted, then refused");
+});
+
+Deno.test("EX-P13: the open-imports refusal is passed through the same way", async () => {
+  const open =
+    "You have 5 imports still open. Finish or abandon one before starting another; " +
+    "open imports expire after 7 days.";
+
+  const { result } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: [] };
+      if (q.op === "insert") return { data: null, error: { code: CEILING_ERRCODE, message: open } };
+      return { data: null };
+    },
+  );
+
+  assertEquals(result?.isError, true);
+  assertEquals(text(result), open);
+});
+
+Deno.test("EX-P13: a ceiling refusal never fails silently and never half-writes", async () => {
+  const bucket = new FakeBucket();
+  const { result, queries } = await call(
+    "buildgallery_begin_import",
+    { fingerprint: "conv-999", target_build_id: undefined },
+    (q) => {
+      if (q.op === "update") return { data: [] };
+      if (q.op === "insert") return { data: null, error: { code: CEILING_ERRCODE, message: "You have 5 imports still open." } };
+      return { data: null };
+    },
+    bucket,
+  );
+
+  // Told, not swallowed.
+  assertEquals(result?.isError, true);
+  assert(text(result).length > 0);
+
+  // Nothing written: the insert raised, and no second insert was attempted to
+  // "recover" from it.
+  assertEquals(queries.filter((q) => q.op === "insert").length, 1);
+  assertEquals(bucket.uploads.length, 0);
+  assertEquals(bucket.objects.size, 0);
+});
+
+Deno.test("EX-P13: only SQLSTATE BGCAP is passed through; every other database error is still generic", async () => {
+  for (const code of ["23505", "42P01", "P0001", "42501", undefined]) {
+    const { result } = await call(
+      "buildgallery_begin_import",
+      {},
+      (q) => {
+        if (q.op === "update") return { data: [] };
+        if (q.op === "insert") {
+          return { data: null, error: { code, message: "relation \"import_sessions\" does not exist" } };
+        }
+        return { data: null };
+      },
+    );
+
+    assertEquals(result?.isError, true, `code ${code}`);
+    assertEquals(
+      text(result),
+      "The import could not be opened. Nothing was created; call buildgallery_begin_import again.",
+      `code ${code} must not leak its message`,
+    );
+  }
+});
+
+Deno.test("EX-P13: a ceiling error carrying no message falls back to the generic wording", async () => {
+  // Defensive: an empty message must not become an empty tool error.
+  const { result } = await call(
+    "buildgallery_begin_import",
+    {},
+    (q) => {
+      if (q.op === "update") return { data: [] };
+      if (q.op === "insert") return { data: null, error: { code: CEILING_ERRCODE, message: "  " } };
+      return { data: null };
+    },
+  );
+
+  assertEquals(result?.isError, true);
+  assertEquals(
+    text(result),
+    "The import could not be opened. Nothing was created; call buildgallery_begin_import again.",
+  );
+});
+
+Deno.test("EX-P13: the migration's ceilings are the constants file's ceilings", async () => {
+  // SQL cannot import constants.ts, so the trigger carries its own copy of
+  // MAX_IMPORTS_PER_DAY and MAX_OPEN_IMPORTS. That makes them a second copy of
+  // a number the contract says has one home. This is the guard: change one
+  // without the other and this test goes red.
+  const migration = await Deno.readTextFile(
+    new URL("../../migrations/20260921120000_import_ceilings.sql", import.meta.url),
+  );
+
+  const perDay = migration.match(/_max_per_day\s+CONSTANT INTEGER := (\d+);/);
+  const maxOpen = migration.match(/_max_open\s+CONSTANT INTEGER := (\d+);/);
+  const ttlDays = migration.match(/_ttl_days\s+CONSTANT INTEGER := (\d+);/);
+
+  assert(perDay, "the migration must declare _max_per_day");
+  assert(maxOpen, "the migration must declare _max_open");
+  assert(ttlDays, "the migration must declare _ttl_days");
+
+  assertEquals(Number(perDay![1]), MAX_IMPORTS_PER_DAY);
+  assertEquals(Number(maxOpen![1]), MAX_OPEN_IMPORTS);
+  assertEquals(Number(ttlDays![1]), IMPORT_TTL_DAYS);
+
+  // And the SQLSTATE the function matches on is the one the migration raises.
+  assertStringIncludes(migration, `USING ERRCODE = '${CEILING_ERRCODE}'`);
+});
+
+/**
+ * A migration with its prose removed: `--` comments and single-quoted string
+ * literals both go.
+ *
+ * Both matter. These migrations EXPLAIN in comments why they are not SECURITY
+ * DEFINER, and migration 2 raises an exception whose text tells the next reader
+ * not to reach for it — so a naive grep for the phrase finds the warning
+ * against it and calls that a violation. What is being asserted is what the
+ * SQL does, not what it says about itself.
+ */
+function sqlCode(migration: string): string {
+  return migration
+    .replace(/^\s*--.*$/gm, "")
+    .replace(/'(?:[^']|'')*'/g, "''");
+}
+
+Deno.test("EX-P13: the ceiling trigger is SECURITY INVOKER with an empty search_path", async () => {
+  const migration = await Deno.readTextFile(
+    new URL("../../migrations/20260921120000_import_ceilings.sql", import.meta.url),
+  );
+  const code = sqlCode(migration);
+
+  assertStringIncludes(code, "SECURITY INVOKER");
+  assertStringIncludes(migration, "SET search_path = ''");
+  assertStringIncludes(code, "BEFORE INSERT ON public.import_sessions");
+  assert(!/SECURITY DEFINER/.test(code), "the ceiling function must never be SECURITY DEFINER");
+});
+
+Deno.test("EX-P13: the nightly job touches no storage and is never SECURITY DEFINER", async () => {
+  const migration = await Deno.readTextFile(
+    new URL("../../migrations/20260921120100_import_expiry_cron.sql", import.meta.url),
+  );
+  const code = sqlCode(migration);
+
+  assertStringIncludes(code, "SECURITY INVOKER");
+  assertStringIncludes(migration, "SET search_path = ''");
+  assert(!/SECURITY DEFINER/.test(code), "never SECURITY DEFINER");
+
+  // Status only. A cron job has no session to reach the storage API with, and
+  // the service-role key that would give it one is contract prohibition 2.
+  assert(!/storage\./.test(code), "the nightly job must not touch storage");
+  // The KEY, not the role name: the migration REVOKEs from the service_role
+  // role, which is the opposite of using its key and must not trip this.
+  assert(!/service[_-]?role[_-]?key/i.test(code), "no service-role key, ever");
+  assert(
+    !/GRANT[^;]*\bservice_role\b/i.test(code),
+    "nothing is granted to service_role; it holds no part of this feature",
+  );
+
+  // It flips status and stamps updated_at, and nothing else.
+  assertStringIncludes(code, "UPDATE public.import_sessions");
+  assert(!/\bDELETE\b/i.test(code), "the nightly job deletes nothing");
+});
+
+Deno.test("EX-P13: the mcp function still reaches for no service-role key after this step", async () => {
+  // EX-P04's rule, re-asserted because EX-P13 added database-side work and the
+  // obvious wrong way to do expiry is an admin client.
+  const source = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  const executable = source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("//"))
+    .join("\n");
+
+  assert(!/supabaseAdmin/.test(executable), "supabaseAdmin must never be touched");
+  assert(!/SERVICE_ROLE/i.test(executable), "no service-role key");
 });
