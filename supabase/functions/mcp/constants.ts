@@ -89,6 +89,30 @@ export const MAX_OPEN_IMPORTS = 5;
 export const IMPORT_TTL_DAYS = 7;
 
 /**
+ * The SQLSTATE the ceiling trigger raises with, from
+ * supabase/migrations/20260921120000_import_ceilings.sql.
+ *
+ * A dedicated code rather than the P0001 a bare RAISE EXCEPTION gives, because
+ * P0001 is what EVERY user-defined exception in every function gives: catching
+ * it would mean catching anything. begin_import matches on this code and then
+ * returns the trigger's message untouched, so the wording lives in the
+ * migration alone and is never re-derived here.
+ */
+export const CEILING_ERRCODE = "BGCAP";
+
+/**
+ * How many of a caller's overdue imports one begin_import sweep will expire.
+ *
+ * Bounded because the sweep also deletes each swept import's chunk objects, and
+ * that is one storage round trip per import. The worst honest backlog is
+ * MAX_IMPORTS_PER_DAY x IMPORT_TTL_DAYS = 140 rows, so a cap of 25 drains a
+ * full backlog in six opens and a realistic one in a single sweep. Anything
+ * left over is still overdue on the next call, so the sweep converges rather
+ * than leaking.
+ */
+export const EXPIRY_SWEEP_LIMIT = 25;
+
+/**
  * finish_import warns when what arrived is more than this fraction short of
  * what the caller declared — characters against declared_chars, turns against
  * declared_turns. 0.05 is 5%: a few dozen characters of whitespace drift is

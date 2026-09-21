@@ -124,11 +124,13 @@ import { redactSecrets } from "../_shared/redact/index.ts";
 import type { RedactFinding } from "../_shared/redact/index.ts";
 
 import {
+  CEILING_ERRCODE,
   CHUNK_SIZE_CHARS,
   COMPOSE_NEW_HTTPS_URL,
   COMPOSE_NEW_URL,
   CONNECTOR_STATEMENT,
   DEFAULT_PAGE_SIZE,
+  EXPIRY_SWEEP_LIMIT,
   IMPORTS_BUCKET,
   MAX_CHUNK_CHARS,
   MAX_PAGE_SIZE,
@@ -371,6 +373,98 @@ async function removeChunks(
   return true;
 }
 
+/**
+ * Expires the CALLER'S OWN overdue imports and bins their chunk objects.
+ *
+ * EX-P13, sweep one of two. The nightly pg_cron job
+ * (20260921120100_import_expiry_cron.sql) is the other, and the two are not
+ * redundant: the job runs for everyone but has no session, so it can only flip
+ * status; this one has the caller's session, so it can also reach storage. A
+ * creator who never returns is handled by the job; a creator who does return
+ * gets their objects collected here.
+ *
+ * WHY IT RUNS AT THE TOP OF begin_import. The open-imports ceiling is counted
+ * by a BEFORE INSERT trigger on the very next statement. Expiring first is what
+ * stops five abandoned imports from locking a creator out for ever: by the time
+ * the trigger counts, the overdue ones are no longer 'open'.
+ *
+ * ONE STATEMENT MARKS THEM. The UPDATE returns the rows it changed, so there is
+ * no read-then-write window in which a row could be claimed between being seen
+ * and being expired. There is deliberately no .limit() on it: this is an UPDATE
+ * against one caller's already-overdue rows, not a list query, and PostgREST's
+ * limited-update needs an explicit order it would otherwise be given for no
+ * reason. What IS bounded is the storage work below.
+ *
+ * IT ASKS FOR chunk_count, NOT status. UPDATE ... RETURNING hands back the row
+ * AFTER the update, so every row in `data` reads status = 'expired' and a
+ * filter on the status these rows USED to have would match nothing and delete
+ * nothing. chunk_count is untouched by this statement — and by finish_import's
+ * own cleanup, which removes the objects and leaves the count as the record of
+ * what arrived — so it is the stable fact to work from. chunk_count = 0 means
+ * no object was ever stored under this import, which is the common case for an
+ * abandoned one: opened, never fed, never finished.
+ *
+ * MARK FIRST, DELETE SECOND, and never the other way round. If the delete fails
+ * after the mark, the row is correctly expired and some objects linger in a
+ * private bucket until the creator bins the import — harmless. If the mark
+ * failed after a delete, a still-'open' import would have had its chunks
+ * stripped out from under it, and finish_import would report missing chunks for
+ * a conversation the caller sent correctly.
+ *
+ * IT NEVER FAILS THE OPEN. A sweep that cannot run leaves the ceiling stricter
+ * than it should be, and the ceiling's own error already tells the creator what
+ * to do about that. Failing begin_import instead would turn a housekeeping
+ * problem into a refusal to accept a conversation. The failure is logged by
+ * code, never returned.
+ *
+ * Returns how many rows it expired, for the caller's log line only.
+ */
+async function expireOverdueImports(
+  supabase: CallerClient,
+  userId: string,
+  stamp: string,
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from("import_sessions")
+      .update({ status: "expired", updated_at: stamp })
+      .eq("user_id", userId)
+      .in("status", [...LIVE_STATUSES])
+      .lt("expires_at", stamp)
+      .select("id, chunk_count");
+
+    if (error) throw error;
+
+    const expired = data ?? [];
+    if (expired.length === 0) return 0;
+
+    // An import that never stored a chunk has no folder to list. Capped so one
+    // open cannot turn into an unbounded run of storage round trips; whatever
+    // is left is already 'expired', so it is out of the ceiling's way and only
+    // its objects wait for the next sweep.
+    const withChunks = expired
+      .filter((row) => (row.chunk_count ?? 0) > 0)
+      .slice(0, EXPIRY_SWEEP_LIMIT);
+
+    for (const row of withChunks) {
+      try {
+        const chunks = await listChunks(supabase, userId, row.id);
+        if (chunks.length > 0) {
+          await removeChunks(supabase, userId, row.id, chunks.map((c) => c.seq));
+        }
+      } catch (error) {
+        // One import's objects failing is not the next import's problem.
+        logFailure("begin_import: expire sweep objects", error);
+      }
+    }
+
+    return expired.length;
+  } catch (error) {
+    logFailure("begin_import: expire sweep", error);
+    return 0;
+  }
+}
+
 /** Lowercase hex SHA-256 of the UTF-8 text, through Web Crypto. */
 async function sha256Hex(text: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -388,6 +482,24 @@ function countWord(n: number): string {
 function listNumbers(ns: number[]): string {
   if (ns.length <= 1) return ns.join("");
   return `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`;
+}
+
+/**
+ * The ceiling trigger's own message, when this error is a ceiling refusal.
+ *
+ * EX-P13. Matched on SQLSTATE BGCAP, which
+ * 20260921120000_import_ceilings.sql raises with and nothing else does. The
+ * message is returned EXACTLY as the trigger wrote it: it is already the
+ * contract's error-table wording, with the creator's real counts in it, and
+ * re-composing it here would put a second copy of that wording in a second
+ * language. Null for anything else, so every other error takes the generic
+ * path.
+ */
+function ceilingMessage(error: unknown): string | null {
+  const e = error as { code?: string; message?: string } | null;
+  if (e?.code !== CEILING_ERRCODE) return null;
+  const message = e.message?.trim();
+  return message ? message : null;
 }
 
 /** One line per failure, code only. Never a message, never content. */
@@ -1364,6 +1476,12 @@ export function buildServer(
       annotations: write,
     },
     async ({ client, source_hint, fingerprint, declared_turns, declared_chars, target_build_id }) => {
+      // EX-P13. Expire the caller's own overdue imports FIRST, so the ceiling
+      // trigger on the insert below counts a current picture rather than a
+      // stale one. It is best-effort and never fails the open; see
+      // expireOverdueImports.
+      await expireOverdueImports(supabase, caller.id, new Date(now()).toISOString());
+
       // A target is verified before anything is written: it must exist, be
       // the caller's own, and still be a draft. Anything else is one of the
       // two draft errors, and no row is created.
@@ -1443,6 +1561,23 @@ export function buildServer(
 
         return respond(created, false);
       } catch (error) {
+        // EX-P13. A ceiling refusal is the ONE database error whose message is
+        // safe — and required — to hand back untouched, because the trigger
+        // raises the contract's error-table wording itself. Recognised by its
+        // SQLSTATE, never by matching the text: the text is the payload.
+        //
+        // This is not a hole in "no internal errors to the caller". The
+        // migration owns that string; nothing of Postgres's own is in it, no
+        // detail, no hint, no position, and no conversation content can reach
+        // it because the trigger sees only counts. Every other error still
+        // becomes the table's generic wording below.
+        //
+        // The insert raised, so the statement wrote nothing: no half-written
+        // row, and no silent success either — the caller is told the ceiling
+        // and what to do about it.
+        const ceiling = ceilingMessage(error);
+        if (ceiling) return fail(ceiling);
+
         logFailure("begin_import", error);
         return fail(ERR_IMPORT_NOT_OPENED);
       }
