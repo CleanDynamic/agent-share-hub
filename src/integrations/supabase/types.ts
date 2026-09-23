@@ -713,6 +713,7 @@ export type Database = {
           cost_monthly: number | null
           cost_setup: number | null
           created_at: string
+          created_via: Json | null
           creator_id: string
           currency: string | null
           donation_enabled: boolean | null
@@ -745,6 +746,7 @@ export type Database = {
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
+          created_via?: Json | null
           creator_id: string
           currency?: string | null
           donation_enabled?: boolean | null
@@ -777,6 +779,7 @@ export type Database = {
           cost_monthly?: number | null
           cost_setup?: number | null
           created_at?: string
+          created_via?: Json | null
           creator_id?: string
           currency?: string | null
           donation_enabled?: boolean | null
