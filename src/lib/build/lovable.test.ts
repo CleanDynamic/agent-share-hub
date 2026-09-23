@@ -204,10 +204,10 @@ describe("the shared envelope (NS-P13 <-> NS-P20)", () => {
 
   async function both() {
     const { parseTranscript } = await import(
-      "../../../supabase/functions/parse-transcript/parse.ts"
+      "../../../supabase/functions/_shared/intake/parsers/transcript.ts"
     );
     const { parseLovable } = await import(
-      "../../../supabase/functions/parse-lovable/parse.ts"
+      "../../../supabase/functions/_shared/intake/parsers/lovable.ts"
     );
     const transcript = parseTranscript(TRANSCRIPT, { session_id: "t" });
     const lovable = parseLovable(WITH_CODE, { session_id: "l" });
@@ -252,7 +252,7 @@ describe("the shared envelope (NS-P13 <-> NS-P20)", () => {
     // than throwing — that is what lets the intake surface route on the
     // parser's own answer instead of on an exception.
     const { parseLovable } = await import(
-      "../../../supabase/functions/parse-lovable/parse.ts"
+      "../../../supabase/functions/_shared/intake/parsers/lovable.ts"
     );
     const refused = parseLovable("You said:\nhello", { session_id: "l" });
     expect(refused.summary.detected_format).toBe("unrecognised");

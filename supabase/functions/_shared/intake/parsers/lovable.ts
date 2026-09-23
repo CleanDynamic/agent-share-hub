@@ -1,5 +1,6 @@
 // =============================================================================
 // NeoScale — parse-lovable (NS-P20): the reading
+// Moved from parse-lovable/parse.ts by EX-P16-fix so mcp can bundle it.
 // =============================================================================
 // Pure. Imports only the shared intake substrate, touches no Deno API, performs
 // no I/O. A string in, a ParseResult out — which is what lets this be exercised
@@ -58,15 +59,15 @@ import type {
   ProposedField as SharedProposedField,
   ProposedNode as SharedProposedNode,
   SourceRef as SharedSourceRef,
-} from "../_shared/intake/envelope.ts";
+} from "../envelope.ts";
 
 // The pipeline both readers share. NS-P20a moved these out of this file rather
 // than reimplementing them: rule 1 (every item carries source_ref) and rule 2
 // (anything guessed says so, with a reason) now have one implementation each.
-import { guessed, mark, verbatim } from "../_shared/intake/inferred.ts";
-import { createLocalIdMinter, renumberLocalIds } from "../_shared/intake/local-id.ts";
-import { createOrdinalCounter } from "../_shared/intake/ordinals.ts";
-import { sourceRefFor } from "../_shared/intake/source-ref.ts";
+import { guessed, mark, verbatim } from "../inferred.ts";
+import { createLocalIdMinter, renumberLocalIds } from "../local-id.ts";
+import { createOrdinalCounter } from "../ordinals.ts";
+import { sourceRefFor } from "../source-ref.ts";
 
 export type DetectedFormat =
   /** The Chrome extension's JSON: {exportedAt, url, messageCount, messages[]}. */
@@ -204,10 +205,10 @@ import {
   readAnchor,
   readTimestamp,
   RELATIVE_TIMESTAMP_REASON,
-} from "../_shared/intake/timestamps.ts";
+} from "../timestamps.ts";
 
 export { readTimestamp };
-export type { TimestampReading } from "../_shared/intake/timestamps.ts";
+export type { TimestampReading } from "../timestamps.ts";
 
 // -----------------------------------------------------------------------------
 // Fenced code

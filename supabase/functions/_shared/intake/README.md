@@ -18,7 +18,20 @@ reader.ts        the reader interface, outcomes, version and provenance tags
 registry.ts      readers -> detect results -> a routed file
 index.ts         the barrel
 readers/         the registered readers: one adapter per parser function
+parsers/         the parsers of parse-lovable and parse-transcript, which the readers adapt
 ```
+
+### Why the parsers live here
+
+Lovable bundles an edge function from its own folder and `_shared/`, and from
+nowhere else. The Lovable and transcript readers used to import their parsers
+from the `parse-lovable` and `parse-transcript` function folders, so `mcp`,
+which bundles the readers, failed to deploy with "Module not found". EX-P16-fix
+moved both parsers into `parsers/`, changing nothing but their import paths and
+a one-line note saying so; the two functions import them from here, as the
+readers do. **Nothing under
+`_shared/` may import from a function's folder**, and
+`src/test/edgeBundles.test.ts` fails if anything does.
 
 ---
 
@@ -243,7 +256,7 @@ becomes a suggestion.
 ## Still duplicated
 
 Recorded rather than fixed, because NS-P20a was not allowed to edit
-`parse-transcript/parse.ts`:
+`parse-transcript/parse.ts`, which is `parsers/transcript.ts` since EX-P16-fix:
 
 - **Fence handling.** `fenceMask`, `extractFences`, the language alias table and
   `excerpt` exist in both parsers. They are module-private in parse-transcript

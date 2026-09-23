@@ -34,8 +34,8 @@ import type {
   ReaderResult,
   SchemaProvenance,
 } from "../reader.ts";
-import { parseTranscript } from "../../../parse-transcript/parse.ts";
-import type { DetectedFormat } from "../../../parse-transcript/parse.ts";
+import { parseTranscript } from "../parsers/transcript.ts";
+import type { DetectedFormat } from "../parsers/transcript.ts";
 
 /** See the Lovable reader for the bump rule. Same rule, same reason. */
 export const READER_VERSION = "1.0.0";

@@ -120,7 +120,7 @@ export const SCHEMA_PROVENANCE: SchemaProvenance[] = [
  *
  * parse-lovable's `detect` takes a top-level JSON array as its message list and
  * calls the shape `lovable_trajectory` when the objects in it carry a
- * `createdAt` or a `created_at` (parse-lovable/parse.ts, the `trajectoryish`
+ * `createdAt` or a `created_at` (parsers/lovable.ts, the `trajectoryish`
  * count). A Claude.ai export is a top-level array of conversation objects and
  * every one of them carries `created_at` — so the Lovable reader bids 0.95 on
  * one, reading the whole conversation as a single message. At an equal bid the

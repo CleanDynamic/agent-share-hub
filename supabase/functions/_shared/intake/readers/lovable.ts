@@ -32,8 +32,8 @@ import type {
 import {
   detect as detectLovableShape,
   parseLovable,
-} from "../../../parse-lovable/parse.ts";
-import type { DetectedFormat } from "../../../parse-lovable/parse.ts";
+} from "../parsers/lovable.ts";
+import type { DetectedFormat } from "../parsers/lovable.ts";
 
 /**
  * Bump when what this reader DOES changes — a third shape read, a rule changed,

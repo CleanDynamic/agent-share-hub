@@ -4,7 +4,7 @@
 // One source of truth for the shape every intake reader returns. These
 // declarations were MOVED here from supabase/functions/parse-transcript/parse.ts
 // — NS-P13 wrote them, NS-P13's meanings are unchanged, and parse-transcript
-// still exports every one of them by its original name from its original path.
+// still exports every one of them by its original name, from parsers/transcript.ts.
 // Nothing was redefined and nothing was renamed.
 //
 // WHY GENERICS. NS-P13 declared `source: "transcript"` and NS-P20 declared

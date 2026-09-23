@@ -1,5 +1,6 @@
 // =============================================================================
 // NeoScale — transcript intake parser (NS-P13)
+// Moved from parse-transcript/parse.ts by EX-P16-fix so mcp can bundle it.
 // =============================================================================
 // Pure, dependency-free splitting and extraction. No network, no database, no
 // Deno APIs — index.ts owns the HTTP shell, the auth check and the ownership
@@ -49,7 +50,7 @@ import type {
   ProposedField as SharedProposedField,
   ProposedNode as SharedProposedNode,
   SourceRef as SharedSourceRef,
-} from "../_shared/intake/envelope.ts";
+} from "../envelope.ts";
 
 export type TurnRole = "user" | "assistant";
 
