@@ -98,9 +98,17 @@
 // and no conversation content reaches a log or an error. Sizes, counts, states
 // and ids only. Tool errors travel as `isError` results carrying the wording
 // from the contract's error table.
+//
+// OBSERVABILITY (EX-P16). Every tool runs inside a guard that reports a throw
+// by its class and code and answers the caller with generic wording, where the
+// SDK would have sent the raw message back and told no one. Every
+// finish_import writes one line — how it ended, the step it stopped at, its
+// counts, how long it took — and one that ends failed, is refused for missing
+// chunks, or is stuck in assembling is also reported to the monitor
+// (monitor.ts, which carries ids, counts, states and times, and nothing else).
 // =============================================================================
 
-import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
+import { createMcpHandler, McpServer, type ServerContext } from "@modelcontextprotocol/server";
 import { pipeline } from "@supabase/middleware";
 import { withOAuthProtectedResource, withSupabase } from "@supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -142,6 +150,8 @@ import {
   VERBATIM_INSTRUCTION,
 } from "./constants.ts";
 import type { Database } from "./database.types.ts";
+import { createMonitor, errorFacts, FinishCall, traceFrom } from "./monitor.ts";
+import type { ErrorFacts, FinishReason, Monitor, TraceFacts } from "./monitor.ts";
 
 type ImportSessionPatch = Database["public"]["Tables"]["import_sessions"]["Update"];
 
@@ -213,6 +223,9 @@ function ok<T extends Record<string, unknown>>(
 function fail(text: string): { isError: true; content: ToolText[] } {
   return { isError: true, content: [{ type: "text", text }] };
 }
+
+/** Either of the two above: what every tool answers with. */
+type ToolReply = { content: ToolText[]; structuredContent?: Record<string, unknown>; isError?: true };
 
 /** 61204 -> "61,204", the way the error table writes numbers. */
 function fmt(n: number): string {
@@ -605,6 +618,16 @@ function errImportBeingAssembled(importId: string): string {
 function errImportNotFinishable(importId: string, status: string): string {
   return `Import ${importId} is ${status}, so it cannot be finished. ` +
     "Call buildgallery_begin_import to open a new one.";
+}
+
+// EX-P16. A tool that threw: the one case no other line here anticipated. The
+// next action is safe because every tool is idempotent — a retry lands in the
+// same slot, returns the same import, or repeats the same summary.
+
+function errUnexpected(tool: string): string {
+  return "That call could not be completed because of an unexpected error on buildgallery's side, " +
+    `and it has been logged. Calling ${tool} again is safe: no buildgallery tool makes a second ` +
+    "copy when it is retried.";
 }
 
 // -----------------------------------------------------------------------------
@@ -1352,6 +1375,18 @@ const IMPORT_LIST_COLUMNS =
 // The server
 // -----------------------------------------------------------------------------
 
+/** What the guard hands a tool: the caller's trace context, and finish_import's record. */
+interface CallProbe {
+  trace: TraceFacts | null;
+  /** Opens the record the guard emits however the call ends. finish_import calls it once. */
+  finish(importId: string, expectedChunks: number): FinishCall;
+}
+
+/** The import a call's arguments name, read by that one key; the monitor drops anything but a uuid. */
+function importIdOf(args: unknown): unknown {
+  return typeof args === "object" && args !== null ? (args as Record<string, unknown>).import_id : undefined;
+}
+
 /**
  * Builds the server for one request, closed over that request's caller.
  *
@@ -1359,12 +1394,14 @@ const IMPORT_LIST_COLUMNS =
  * handshake is gone and nothing is held between exchanges. The client is
  * passed in rather than reached for, so a tool cannot acquire a wider one.
  * Tools are registered in the contract's order, so tools/list is
- * deterministic.
+ * deterministic. The monitor is passed in too (EX-P16); by default it is the
+ * real one, configured from the environment.
  */
 export function buildServer(
   supabase: CallerClient,
   caller: CallerIdentity,
   now: () => number = Date.now,
+  monitor: Monitor = createMonitor(),
 ): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
@@ -1379,6 +1416,45 @@ export function buildServer(
   };
   const write = { ...readOnly, readOnlyHint: false };
 
+  // THE GUARD (EX-P16). Every tool runs inside it. The SDK answers a tool that
+  // throws by itself, with the raw error message as the tool's text, and passes
+  // nothing to onerror — so a throw would put an internal message in front of
+  // the caller and be reported nowhere. Here it is reported by class and code,
+  // with the caller's id and the import the call named, and the caller gets
+  // errUnexpected. The guard also reads the caller's trace context off _meta
+  // once, and emits finish_import's record in `finally`, so every finish_import
+  // writes its line however it ends. It never reads an argument but import_id.
+  function guard<A>(tool: string, run: (args: A, probe: CallProbe) => Promise<ToolReply>) {
+    return async (args: A, ctx: ServerContext): Promise<ToolReply> => {
+      const trace = traceFrom(ctx?.mcpReq?._meta);
+      const opened: { call?: FinishCall } = {};
+      const probe: CallProbe = {
+        trace,
+        finish: (importId, expectedChunks) =>
+          (opened.call = new FinishCall(importId, caller.id, expectedChunks, trace)),
+      };
+
+      try {
+        return await run(args, probe);
+      } catch (error) {
+        // A finish_import that threw before it set an outcome had not claimed
+        // the row — everything after the claim has its own catch — so nothing
+        // was changed.
+        if (opened.call && opened.call.outcome === null) opened.call.end("rejected", "internal", error);
+        await monitor.unhandled({
+          where: tool,
+          user_id: caller.id,
+          import_id: importIdOf(args),
+          error: errorFacts(error),
+          trace,
+        });
+        return fail(errUnexpected(tool));
+      } finally {
+        if (opened.call) await monitor.finishCall(opened.call);
+      }
+    };
+  }
+
   // --- buildgallery_whoami ---------------------------------------------------
   server.registerTool(
     "buildgallery_whoami",
@@ -1389,7 +1465,7 @@ export function buildServer(
       outputSchema: WhoamiOutput,
       annotations: readOnly,
     },
-    async () => {
+    guard("buildgallery_whoami", async () => {
       const displayName = await readDisplayName(supabase, caller.id);
 
       const output = {
@@ -1410,7 +1486,7 @@ export function buildServer(
       ].join("\n");
 
       return ok(text, output);
-    },
+    }),
   );
 
   // --- buildgallery_list_drafts ----------------------------------------------
@@ -1423,7 +1499,7 @@ export function buildServer(
       outputSchema: ListDraftsOutput,
       annotations: readOnly,
     },
-    async ({ limit, offset, response_format }) => {
+    guard("buildgallery_list_drafts", async ({ limit, offset, response_format }) => {
       // Their own creator_id and status = 'draft', through their own client:
       // RLS would hide other people's drafts anyway, but the filter is what
       // keeps published work — readable by everyone — out of this list.
@@ -1462,7 +1538,7 @@ export function buildServer(
       if (output.has_more) lines.push("", `More: pass offset ${output.next_offset} for the next page.`);
 
       return ok(lines.join("\n"), output);
-    },
+    }),
   );
 
   // --- buildgallery_begin_import ---------------------------------------------
@@ -1475,7 +1551,7 @@ export function buildServer(
       outputSchema: BeginImportOutput,
       annotations: write,
     },
-    async ({ client, source_hint, fingerprint, declared_turns, declared_chars, target_build_id }) => {
+    guard("buildgallery_begin_import", async ({ client, source_hint, fingerprint, declared_turns, declared_chars, target_build_id }) => {
       // EX-P13. Expire the caller's own overdue imports FIRST, so the ceiling
       // trigger on the insert below counts a current picture rather than a
       // stale one. It is best-effort and never fails the open; see
@@ -1581,7 +1657,7 @@ export function buildServer(
         logFailure("begin_import", error);
         return fail(ERR_IMPORT_NOT_OPENED);
       }
-    },
+    }),
   );
 
   // --- buildgallery_append_chunk ---------------------------------------------
@@ -1594,7 +1670,7 @@ export function buildServer(
       outputSchema: AppendChunkOutput,
       annotations: write,
     },
-    async ({ import_id, seq, text }) => {
+    guard("buildgallery_append_chunk", async ({ import_id, seq, text }) => {
       const chars = text.length;
       if (chars > MAX_CHUNK_CHARS) return fail(errChunkTooLarge(seq, chars));
 
@@ -1669,7 +1745,7 @@ export function buildServer(
       const text_ = `Chunk ${seq} stored (${fmt(chars)} characters). ` +
         `${chunks_so_far} chunk${chunks_so_far === 1 ? "" : "s"}, ${fmt(chars_so_far)} characters so far.`;
       return ok(text_, output);
-    },
+    }),
   );
 
   // --- buildgallery_finish_import --------------------------------------------
@@ -1682,7 +1758,11 @@ export function buildServer(
       outputSchema: FinishImportOutput,
       annotations: write,
     },
-    async ({ import_id, expected_chunks }) => {
+    guard("buildgallery_finish_import", async ({ import_id, expected_chunks }, probe) => {
+      // EX-P16. This call's record: how it ended, the step it stopped at, its
+      // counts and how long it took. The guard emits it however the call ends.
+      const call = probe.finish(import_id, expected_chunks);
+
       const { data: row, error: readError } = await supabase
         .from("import_sessions")
         .select(FINISH_COLUMNS)
@@ -1692,9 +1772,14 @@ export function buildServer(
 
       if (readError) {
         logFailure("finish_import: import read", readError);
+        call.end("rejected", "read_failed", readError);
         return fail(ERR_FINISH_NOT_STARTED);
       }
-      if (!row) return fail(ERR_IMPORT_NOT_FOUND);
+      if (!row) {
+        call.end("rejected", "not_found");
+        return fail(ERR_IMPORT_NOT_FOUND);
+      }
+      call.see(row);
 
       const stamp = () => new Date(now()).toISOString();
       const registry = intakeRegistry();
@@ -1702,6 +1787,7 @@ export function buildServer(
       // A finish retried on an import already parsed repeats its summary and
       // changes nothing: the chunks are gone and the proposal is waiting.
       if (row.status === "parsed") {
+        call.end("replayed", null);
         let chunks_removed = false;
         try {
           chunks_removed = (await listChunks(supabase, caller.id, import_id)).length === 0;
@@ -1734,8 +1820,12 @@ export function buildServer(
           chunks_removed,
         });
       }
-      if (row.status === "assembling") return fail(errImportBeingAssembled(import_id));
+      if (row.status === "assembling") {
+        call.end("rejected", "being_assembled");
+        return fail(errImportBeingAssembled(import_id));
+      }
       if (row.status !== "open") {
+        call.end("rejected", "not_finishable");
         // A failed or duplicate row already carries its creator-facing line,
         // which names the next action; anything else gets the generic one.
         return fail(row.error ?? errImportNotFinishable(import_id, row.status));
@@ -1744,6 +1834,7 @@ export function buildServer(
       // THE CLAIM. open -> assembling, conditioned on the row still being
       // open, so two finishes racing on one import cannot both assemble it:
       // the second sees no row come back and is told to wait.
+      call.stage = "claiming";
       const { data: claimed, error: claimError } = await supabase
         .from("import_sessions")
         .update({ status: "assembling", expected_chunks, error: null, updated_at: stamp() })
@@ -1754,9 +1845,13 @@ export function buildServer(
 
       if (claimError) {
         logFailure("finish_import: claim", claimError);
+        call.end("rejected", "claim_failed", claimError);
         return fail(ERR_FINISH_NOT_STARTED);
       }
-      if (!claimed) return fail(errImportBeingAssembled(import_id));
+      if (!claimed) {
+        call.end("rejected", "being_assembled");
+        return fail(errImportBeingAssembled(import_id));
+      }
 
       // From here the row is `assembling` and this call owns it. Every exit
       // below writes a terminal state through settle(); the catch at the end
@@ -1772,13 +1867,15 @@ export function buildServer(
       // What was measured so far, written onto a failed or duplicate row too:
       // counts, kinds and a hash, never the text.
       let measured: ImportSessionPatch = {};
-      const failWith = async (why: string): Promise<ReturnType<typeof fail>> => {
+      const failWith = async (why: string, reason: FinishReason): Promise<ReturnType<typeof fail>> => {
         await settle({ ...measured, status: "failed", error: why });
+        call.end("failed", reason);
         return fail(why);
       };
       const duplicateOf = async (twin: WaitingTwin, seqs: number[]) => {
         const why = errDuplicate(twin.id, twin.created_at, now());
         await settle({ ...measured, status: "duplicate", error: why });
+        call.end("duplicate", null);
         await removeChunks(supabase, caller.id, import_id, seqs);
         return fail(why);
       };
@@ -1788,34 +1885,42 @@ export function buildServer(
         // the row BACK TO OPEN — not to failed — with the table's wording,
         // because that wording tells the caller to resend with append_chunk,
         // and append_chunk accepts only an open import. Nothing is parsed.
+        call.stage = "checking chunks";
         const chunks = await listChunks(supabase, caller.id, import_id);
         const missing = missingSeqs(chunks, expected_chunks);
+        call.see({ chunk_count: chunks.length, total_chars: sumSizes(chunks) });
         if (missing.length > 0 || chunks.length !== expected_chunks) {
           const why = missing.length > 0
             ? errChunksMissing(missing, expected_chunks)
             : errChunksExtra(chunks.length, expected_chunks);
           await settle({ status: "open", error: why });
+          call.end("refused", missing.length > 0 ? "chunks_missing" : "chunks_extra");
           return fail(why);
         }
 
         // 2. Numeric order — listChunks sorted by seq as a number, never as a
         // string — and one string. The ceiling is enforced on characters of
         // the assembled text; the bucket measured bytes.
+        call.stage = "joining chunks";
         const seqs = chunks.map((c) => c.seq);
         const assembled = (await readChunks(supabase, caller.id, import_id, seqs)).join("");
         const assembledChars = assembled.length;
+        call.see({ total_chars: assembledChars });
         measured = { chunk_count: chunks.length };
-        if (assembledChars > MAX_TOTAL_CHARS) return await failWith(errTotalExceeded(assembledChars));
+        if (assembledChars > MAX_TOTAL_CHARS) return await failWith(errTotalExceeded(assembledChars), "too_large");
         measured = { ...measured, total_chars: assembledChars };
 
         // 3. Redact, once, before the reader, the hash or anything else reads
-        // the text. From here `assembled` is not used again.
-        const { text: redacted, findings } = redactSecrets(assembled);
+        // the text. From here `assembled` is not used again. Timed: this and
+        // the parse are where the CPU goes.
+        call.stage = "redacting";
+        const { text: redacted, findings } = call.compute(() => redactSecrets(assembled));
         measured = { ...measured, secret_findings: findings };
 
         // 4. Hash the redacted text. The same conversation already waiting for
         // review is a duplicate: this row is marked, its chunks go, and the
         // caller is pointed at the import that is already there.
+        call.stage = "hashing";
         const contentHash = await sha256Hex(redacted);
         measured = { ...measured, content_hash: contentHash };
         const twin = await findWaitingTwin(supabase, contentHash, import_id);
@@ -1826,13 +1931,17 @@ export function buildServer(
         // the winner could not read — so the reason recorded here says how the
         // decision was reached, not just who won. No filename: detection reads
         // content only.
+        call.stage = "routing";
         const file = intakeFile(redacted);
-        const routed = routeImport(registry, file, {
-          session_id: import_id,
-          source_hint: row.source_hint,
-        });
-        if (!routed) return await failWith(ERR_UNRECOGNISED);
+        const routed = call.compute(() =>
+          routeImport(registry, file, {
+            session_id: import_id,
+            source_hint: row.source_hint,
+          })
+        );
+        if (!routed) return await failWith(ERR_UNRECOGNISED, "unrecognised");
         const result = routed.result;
+        call.see({ reader_id: result.reader.id });
         measured = {
           ...measured,
           reader_id: result.reader.id,
@@ -1841,14 +1950,15 @@ export function buildServer(
         // A source-code download is recognised, not unreadable: the reader knows
         // what it is and says so. The caller gets the contract's wording; the
         // reader's own line stays on the row.
-        if (result.outcome === READ_OUTCOME.SOURCE_ONLY) return await failWith(ERR_UNPARSEABLE);
+        if (result.outcome === READ_OUTCOME.SOURCE_ONLY) return await failWith(ERR_UNPARSEABLE, "source_only");
         // Everything, including the fallback, found nothing. Only a genuinely
         // empty import reaches this line.
-        if (result.outcome === READ_OUTCOME.UNRECOGNISED) return await failWith(ERR_UNRECOGNISED);
+        if (result.outcome === READ_OUTCOME.UNRECOGNISED) return await failWith(ERR_UNRECOGNISED, "unrecognised");
 
         // 6. Park the envelope unchanged. If the partial unique index refuses
         // the hash, a twin landed between the lookup and this write: that is
         // the duplicate case, found again rather than reported as an error.
+        call.stage = "parking";
         const { error: parsedError } = await supabase
           .from("import_sessions")
           .update({
@@ -1866,9 +1976,11 @@ export function buildServer(
           }
           throw parsedError;
         }
+        call.end("parsed", null);
         const chunks_removed = await removeChunks(supabase, caller.id, import_id, seqs);
 
         // 7. The summary: counts, kinds, a reason and an address. Never text.
+        call.stage = "summarising";
         return finishSummary({
           import_id,
           reused: false,
@@ -1895,12 +2007,16 @@ export function buildServer(
         logFailure("finish_import", error);
         try {
           await settle({ ...measured, status: "failed", error: ERR_FINISH_FAILED });
+          call.end("failed", "internal", error);
         } catch (settleError) {
           logFailure("finish_import: settle", settleError);
+          // The row could not be moved out of assembling: the stuck import
+          // Part 8 of the manual describes, reported as exactly that.
+          call.end("stuck", "internal", error);
         }
         return fail(ERR_FINISH_FAILED);
       }
-    },
+    }),
   );
 
   // --- buildgallery_get_import_status ----------------------------------------
@@ -1914,7 +2030,7 @@ export function buildServer(
       annotations: readOnly,
       _meta: { "anthropic/maxResultSizeChars": 20000 },
     },
-    async ({ import_id }) => {
+    guard("buildgallery_get_import_status", async ({ import_id }) => {
       const { data: row, error } = await supabase
         .from("import_sessions")
         .select(STATUS_COLUMNS)
@@ -1986,7 +2102,7 @@ export function buildServer(
       );
 
       return ok(lines.join("\n"), output);
-    },
+    }),
   );
 
   // --- buildgallery_list_imports ---------------------------------------------
@@ -1999,7 +2115,7 @@ export function buildServer(
       outputSchema: ListImportsOutput,
       annotations: readOnly,
     },
-    async ({ limit, offset, response_format }) => {
+    guard("buildgallery_list_imports", async ({ limit, offset, response_format }) => {
       // No user_id filter: the SELECT policy is the filter, and the planner
       // applies it against the (user_id, status, created_at) index.
       const { data, error, count } = await supabase
@@ -2045,10 +2161,64 @@ export function buildServer(
       if (output.has_more) lines.push("", `More: pass offset ${output.next_offset} for the next page.`);
 
       return ok(lines.join("\n"), output);
-    },
+    }),
   );
 
   return server;
+}
+
+/**
+ * One authenticated request, from the verified caller to the MCP response.
+ *
+ * EX-P16. Two failures land here that no tool sees: the SDK failing to handle
+ * a request, which it answers itself with a 5xx after telling onerror, and
+ * anything thrown out of the handler altogether. Both are reported as
+ * unhandled, with the caller's id and the error's class and code. A client's
+ * malformed request — a 4xx — is logged by class as before and not reported:
+ * it is the client's fault, and reporting it would bury ours. This is split
+ * out of the default export so the path can be tested without a real token;
+ * `build` is there for the same reason.
+ */
+export async function serveCaller(
+  req: Request,
+  supabase: CallerClient,
+  caller: CallerIdentity,
+  monitor: Monitor = createMonitor(),
+  build: typeof buildServer = buildServer,
+): Promise<Response> {
+  const seen: ErrorFacts[] = [];
+  try {
+    const handler = createMcpHandler(
+      () => build(supabase, caller, Date.now, monitor),
+      {
+        // Sizes, counts, states and ids only. Never conversation content.
+        onerror: (error: unknown) => {
+          console.error(
+            "mcp request failed",
+            error instanceof Error ? error.name : "unknown",
+          );
+          seen.push(errorFacts(error));
+        },
+      },
+    );
+
+    const res = await handler.fetch(req);
+    if (res.status >= 500) {
+      await monitor.unhandled({
+        where: "request",
+        user_id: caller.id,
+        error: seen[seen.length - 1] ?? null,
+        http_status: res.status,
+      });
+    }
+    return res;
+  } catch (error) {
+    await monitor.unhandled({ where: "request", user_id: caller.id, error: errorFacts(error), http_status: 500 });
+    return Response.json(
+      { jsonrpc: "2.0", id: null, error: { code: -32603, message: "Internal error" } },
+      { status: 500 },
+    );
+  }
 }
 
 export default {
@@ -2073,20 +2243,7 @@ export default {
         email: ctx.userClaims?.email ?? null,
       };
 
-      const handler = createMcpHandler(
-        () => buildServer(ctx.supabase, caller),
-        {
-          // Sizes, counts, states and ids only. Never conversation content.
-          onerror: (error: unknown) => {
-            console.error(
-              "mcp request failed",
-              error instanceof Error ? error.name : "unknown",
-            );
-          },
-        },
-      );
-
-      return await handler.fetch(req);
+      return await serveCaller(req, ctx.supabase, caller);
     },
   ),
 };

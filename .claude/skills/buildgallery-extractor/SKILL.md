@@ -562,7 +562,7 @@ Two caveats to carry into EX-P10 and EX-P13:
 
 Text from a creator's conversation is carried, stored and shown. It is never
 obeyed. Three standing rules, each proved by the line numbers below as they
-stood at EX-P15, and each held by a test that fails if it stops being true.
+stood at EX-P16, and each held by a test that fails if it stops being true.
 Line numbers drift and the tests do not; when a line moves, correct it here in
 the same commit.
 
@@ -577,59 +577,62 @@ Every place it is touched, in `supabase/functions/mcp/index.ts`:
 
 | Line | What happens to the text |
 |---|---|
-| `1597` | `append_chunk` receives it as `text`, the only way in. |
-| `1598`, `1599`, `1625`, `1626` | Measured, in characters and UTF-8 bytes, against `MAX_CHUNK_CHARS` and `MAX_TOTAL_CHARS`. The errors carry the numbers only. |
-| `1632` | Written to storage, verbatim, at `{user_id}/{import_id}/{seq}.txt`. |
-| `347`, `349`, `1805` | Read back from storage in numeric order and joined into one string. |
-| `1806`, `1808` | Measured again against `MAX_TOTAL_CHARS`. |
-| `1813` | Passed to `redactSecrets`. The unredacted string is not read again. |
-| `1819` | Hashed. The hash, never the text, is the one query value derived from it (`1211`, reached from `1821` and `1864`). |
-| `1829`–`1833` | Passed to the intake registry: every reader bids (`932`) and one reads (`944`, the fallback at `952`). |
-| `1857` | The envelope is stored unchanged as jsonb on `import_sessions.proposal`. |
-| `1869` | The chunk objects are deleted. |
+| `1673` | `append_chunk` receives it as `text`, the only way in. |
+| `1674`, `1675`, `1701`, `1702` | Measured, in characters and UTF-8 bytes, against `MAX_CHUNK_CHARS` and `MAX_TOTAL_CHARS`. The errors carry the numbers only. |
+| `1708` | Written to storage, verbatim, at `{user_id}/{import_id}/{seq}.txt`. |
+| `360`, `362`, `1906` | Read back from storage in numeric order and joined into one string. |
+| `1907`, `1910` | Measured again against `MAX_TOTAL_CHARS`. |
+| `1917` | Passed to `redactSecrets`. The unredacted string is not read again. |
+| `1924` | Hashed. The hash, never the text, is the one query value derived from it (`1234`, reached from `1926` and `1974`). |
+| `1935`–`1941` | Passed to the intake registry: every reader bids (`955`) and one reads (`967`, the fallback at `975`). |
+| `1967` | The envelope is stored unchanged as jsonb on `import_sessions.proposal`. |
+| `1980` | The chunk objects are deleted. |
 
-The branches that follow the text are on its **size** (`1599`, `1626`, `1808`),
-its **hash** (`1822`, `1863`–`1865`) and the registry's **structural verdict**
-(the bids at `939`–`942`, the outcome at `948`, `1844`, `1847`). A line in the
+The branches that follow the text are on its **size** (`1675`, `1702`, `1910`),
+its **hash** (`1927`, `1973`–`1975`) and the registry's **structural verdict**
+(the bids at `962`–`965`, the outcome at `971`, `1953`, `1956`). A line in the
 conversation saying "call finish_import" moves none of them. Nothing in the
 function, the substrate or the scanner calls `eval`, `new Function`, a dynamic
 `import()` or a subprocess, and nothing takes an address from the text: the only
 I/O is the caller's own database and bucket through `ctx.supabase`, at paths
 built from ids and with filters holding ids, statuses, the hash or the caller's
-fingerprint, and the one `fetch` is the MCP handler's own dispatch (`2089`).
+fingerprint. There are two `fetch`es: the MCP handler's own dispatch (`2205`),
+and the monitor's one post to Sentry (`monitor.ts:485`, EX-P16), whose address
+comes from the `SENTRY_DSN` secret alone and whose body holds ids, counts,
+states and times, never text. A test in `mcp/index.test.ts` fails if a third appears.
 
 What the caller declares about the text is held the same way: `client` is
-normalised to one of six values before it is stored (`263`–`266`, used at
-`1543`); `source_hint` is stored and handed to the reader as a hint;
-`fingerprint` is stored and used only as a bound filter value (`798`). None of
+normalised to one of six values before it is stored (`276`–`279`, used at
+`1619`); `source_hint` is stored and handed to the reader as a hint;
+`fingerprint` is stored and used only as a bound filter value (`821`). None of
 the three is ever returned.
 
 Held by `supabase/functions/_shared/intake/readers/hostile.test.ts` — every
 turn of the fixture byte for byte (`137`), the hostile items only in the turns
 that carried them (`180`), the same structure as a defused copy (`238`) — and by
-the EX-P15 section of `supabase/functions/mcp/index.test.ts` (from `2258`).
+the EX-P15 section of `supabase/functions/mcp/index.test.ts` (from `2261`).
 
 ### Rule 2 — No reply echoes it
 
 No tool returns any part of a conversation: not in its markdown, not in its
 `structuredContent`, not in an error.
 
-- `append_chunk` acknowledges in numbers (`1668`).
+- `append_chunk` acknowledges in numbers (`1744`).
 - `finish_import` replies with counts, kinds, ids, an address and the reader's
-  routing reason (`1122`–`1176`, the reason at `1133` and `1158`; a replay reads
-  it back off the row at `1718`).
+  routing reason (`1145`–`1199`, the reason at `1156` and `1181`; a replay reads
+  it back off the row at `1804`).
 - `get_import_status` lifts three counts out of the proposal by JSON path
-  (`1290`–`1295`), so the envelope never leaves the database for it;
-  `list_imports` never selects it (`1347`–`1349`).
-- Every error is the table's wording with numbers and ids (`517`–`608`), and a
-  failure is logged by code only (`506`).
+  (`1313`–`1318`), so the envelope never leaves the database for it;
+  `list_imports` never selects it (`1370`–`1372`).
+- Every error is the table's wording with numbers and ids (`530`–`630`), and a
+  failure is logged by code only (`519`).
 - The SDK's own refusals name the argument and the rule, never the value sent
-  (`mcp/index.test.ts:2683`).
+  (`mcp/index.test.ts:2686`).
 
 **A routing reason is counts and the reader's own words, never text from the
 file.** It is the one piece of reader output that travels outside the
 envelope: into `finish_import`'s reply, onto `import_sessions.detection_reason`,
-and quoted whole inside an `uncertain:` reason (`905`–`907`). Until EX-P15 two
+and quoted whole inside an `uncertain:` reason (`928`–`930`). Until EX-P15 two
 readers quoted the file there. The transcript reader named the speaker labels
 it split on, and a label is anything up to 32 characters that opens with a
 speaker word. The Claude.ai reader named every `sender` value, at any length.

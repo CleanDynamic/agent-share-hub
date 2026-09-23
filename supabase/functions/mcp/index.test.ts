@@ -32,6 +32,7 @@ import door, {
   humanTime,
   isUncertainReason,
   routeImport,
+  serveCaller,
   UNCERTAIN_BELOW,
 } from "./index.ts";
 import type { CallerClient, CallerIdentity } from "./index.ts";
@@ -51,6 +52,8 @@ import {
   SERVER_NAME,
   VERBATIM_INSTRUCTION,
 } from "./constants.ts";
+import { createMonitor } from "./monitor.ts";
+import type { Monitor, MonitorEnv } from "./monitor.ts";
 import { redactSecrets } from "../_shared/redact/index.ts";
 import { intakeFile } from "../_shared/intake/index.ts";
 import { intakeRegistry } from "../_shared/intake/readers/index.ts";
@@ -2711,4 +2714,431 @@ Deno.test("EX-P15: the SDK's own refusals name what was wrong, never the value s
     const said = await (await post(raw)).text();
     assertEquals(ECHO_FRAGMENTS.filter((f) => said.includes(f)), [], said.slice(0, 200));
   }
+});
+
+// -----------------------------------------------------------------------------
+// EX-P16 — observability: failures reported, every finish timed, nothing said
+// -----------------------------------------------------------------------------
+// monitor.test.ts proves what the monitor does with what it is given. These
+// prove what the tools give it: that every finish_import writes exactly one
+// line however it ends; that a failure, a refusal and a stuck import are each
+// reported with the import, the user, the reader, the step and the counts;
+// that a tool which throws is reported and answered with generic wording; and,
+// through all of it, that the hostile fixture, the fake key and every database
+// message stay out of both the log and the monitor.
+//
+// The monitor here is the real one with its transport and its log recorded, so
+// a test sees exactly the bytes that would be written and sent.
+
+const WATCHED_ENV: MonitorEnv = {
+  dsn: "https://0123456789abcdef0123456789abcdef@o4508.ingest.us.sentry.io/4509",
+  region: "eu-west-2",
+  execution_id: "3a7f0c1e-9d2b-4c8e-a1f0-5b6c7d8e9f00",
+  deployment_id: null,
+};
+
+const TRACEPARENT = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+
+/** A database error whose message quotes the row, the way Postgres's can. */
+const DB_QUOTE = "Failing row contains";
+const DB_ERROR = { code: "23514", message: `${DB_QUOTE} (${HOSTILE_LINE})`, details: FAKE_KEY };
+
+/** Every line the monitor wrote and every event it sent, parsed, and the raw bytes of both. */
+interface Watched {
+  lines: Array<Record<string, unknown>>;
+  events: Array<Record<string, unknown>>;
+  raw: string[];
+}
+
+function watcher(): { monitor: Monitor; seen: Watched } {
+  const seen: Watched = { lines: [], events: [], raw: [] };
+  const monitor = createMonitor({
+    env: WATCHED_ENV,
+    transport: (_url, envelope) => {
+      seen.raw.push(envelope);
+      seen.events.push(JSON.parse(envelope.split("\n")[2]));
+      return Promise.resolve(200);
+    },
+    log: (_level, line) => {
+      seen.raw.push(line);
+      seen.lines.push(JSON.parse(line));
+    },
+    now: () => NOW,
+    background: (delivery) => delivery,
+  });
+  return { monitor, seen };
+}
+
+/** call(), with the monitor watched and, when given, _meta on the request. */
+async function watchedCall(
+  name: string,
+  args: Record<string, unknown>,
+  respond: Respond = NOTHING,
+  bucket = new FakeBucket(),
+  meta?: Record<string, unknown>,
+) {
+  const { monitor, seen } = watcher();
+  const fake = fakeClient(respond, bucket);
+  const handler = createMcpHandler(() => buildServer(fake.client, CALLER, () => NOW, monitor));
+  const res = await handler.fetch(rpc("tools/call", { name, arguments: args, ...(meta ? { _meta: meta } : {}) }));
+  const payload = await body(res);
+  return { payload, result: payload.result as ToolResult | undefined, queries: fake.queries, seen };
+}
+
+/** finish(), watched. */
+async function watchedFinish(
+  expected_chunks: number,
+  texts: Record<number, string>,
+  respond: Respond = finishRespond(),
+  bucket = new FakeBucket(),
+  meta?: Record<string, unknown>,
+) {
+  bucket.seedText(CALLER.id, IMPORT_ID, texts);
+  return await watchedCall("buildgallery_finish_import", { import_id: IMPORT_ID, expected_chunks }, respond, bucket, meta);
+}
+
+/** The one finish_import line a call wrote. */
+function finishLine(seen: Watched): Record<string, unknown> {
+  const lines = seen.lines.filter((l) => l.mcp === "finish_import");
+  assertEquals(lines.length, 1, "every finish_import writes exactly one line");
+  return lines[0];
+}
+
+/** The one event a call sent, with its tags and user. */
+function onlyEvent(seen: Watched): { event: Record<string, unknown>; tags: Record<string, string> } {
+  assertEquals(seen.events.length, 1, "exactly one report");
+  return { event: seen.events[0], tags: seen.events[0].tags as Record<string, string> };
+}
+
+/** Nothing from the conversation, the key or a database message, in anything written or sent. */
+function assertNothingLeaked(seen: Watched, where: string): void {
+  const all = seen.raw.join("\n");
+  const leaked = [...ECHO_FRAGMENTS, FAKE_KEY, "abc123FAKE", "sk-proj", DB_QUOTE].filter((f) => all.includes(f));
+  assertEquals(leaked, [], `${where} let ${JSON.stringify(leaked)} out`);
+}
+
+/** The hostile fixture with a key in it, as two chunks. */
+function hostileKeyedChunks(): Record<number, string> {
+  const chunks = hostileChunks();
+  return { 1: chunks[1], 2: `${chunks[2]}\nOPENAI_API_KEY=${FAKE_KEY}\n` };
+}
+
+/** finishRespond, except that settling the row as failed fails too: the stuck import. */
+function stuckRespond(world: FinishWorld = {}): Respond {
+  const base = finishRespond(world);
+  return (q) => q.op === "update" && q.payload?.status === "failed" ? { error: DB_ERROR } : base(q);
+}
+
+Deno.test("EX-P16: one chunk sent and three declared is refused, left open for the resend, and reported as a warning with no text in it", async () => {
+  // The step's own Check, with the hostile fixture and a key as the one chunk.
+  const chunk = `${hostileChunks()[1]}OPENAI_API_KEY=${FAKE_KEY}\n`;
+  const { result, queries, seen } = await watchedFinish(3, { 1: chunk });
+
+  assertEquals(result?.isError, true);
+  assertStringIncludes(text(result), "Chunks 2 and 3 are missing; 3 were declared.");
+  const updates = queries.filter((q) => q.op === "update");
+  assertEquals(updates[updates.length - 1].payload!.status, "open", "EX-P08: back to open, so the resend can land");
+
+  const line = finishLine(seen);
+  assertEquals(line.outcome, "refused");
+  assertEquals(line.reason, "chunks_missing");
+  assertEquals(line.failed_at, "checking chunks");
+  assertEquals(line.status, "open");
+  assertEquals(line.import_id, IMPORT_ID);
+  assertEquals(line.user_id, CALLER.id);
+  assertEquals(line.reader_id, null, "nothing was routed");
+  assertEquals(line.chunk_count, 1);
+  assertEquals(line.total_chars, new TextEncoder().encode(chunk).byteLength, "as stored, before assembly");
+  assertEquals(line.expected_chunks, 3);
+
+  const { event, tags } = onlyEvent(seen);
+  assertEquals(event.level, "warning");
+  assertEquals(tags.failed_at, "checking chunks");
+  assertEquals(tags.import_id, IMPORT_ID);
+  assertEquals(event.user, { id: CALLER.id });
+  assertNothingLeaked(seen, "a refused finish");
+});
+
+Deno.test("EX-P16: every way finish_import can end in failed is reported, with the import, the user, the reader, where it stopped and the counts", async () => {
+  const downloadFails = new FakeBucket();
+  downloadFails.failDownload = true;
+  const cases: Array<{
+    name: string;
+    expected: number;
+    texts: Record<number, string>;
+    respond?: Respond;
+    bucket?: FakeBucket;
+    reason: string;
+    failed_at: string;
+    reader: string | null | "any";
+    total_chars?: number;
+    error_name?: string;
+    error_code?: string;
+  }> = [
+    { name: "a source-code download", expected: 1, texts: { 1: SOURCE_ONLY_JSON }, reason: "source_only", failed_at: "routing", reader: "lovable", total_chars: SOURCE_ONLY_JSON.length },
+    { name: "an empty import", expected: 1, texts: { 1: "  \n\t \n" }, reason: "unrecognised", failed_at: "routing", reader: "any", total_chars: 6 },
+    { name: "an import over the ceiling", expected: 2, texts: { 1: "a".repeat(200_001), 2: "b".repeat(200_000) }, reason: "too_large", failed_at: "joining chunks", reader: null, total_chars: 400_001 },
+    { name: "a chunk that cannot be read", expected: 2, texts: hostileKeyedChunks(), bucket: downloadFails, reason: "internal", failed_at: "joining chunks", reader: null, error_name: "StorageApiError" },
+    { name: "a database error while parking", expected: 2, texts: hostileKeyedChunks(), respond: finishRespond({ parsedError: DB_ERROR }), reason: "internal", failed_at: "parking", reader: "any", error_code: "23514" },
+  ];
+
+  for (const c of cases) {
+    const { result, seen } = await watchedFinish(c.expected, c.texts, c.respond, c.bucket);
+    assertEquals(result?.isError, true, c.name);
+
+    const line = finishLine(seen);
+    assertEquals(line.outcome, "failed", c.name);
+    assertEquals(line.reason, c.reason, c.name);
+    assertEquals(line.failed_at, c.failed_at, c.name);
+    assertEquals(line.status, "failed", c.name);
+    assertEquals(line.import_id, IMPORT_ID, c.name);
+    assertEquals(line.user_id, CALLER.id, c.name);
+    if (c.reader === "any") assert(typeof line.reader_id === "string", `${c.name}: a reader was chosen`);
+    else assertEquals(line.reader_id, c.reader, c.name);
+    assertEquals(line.chunk_count, c.expected, c.name);
+    if (c.total_chars !== undefined) assertEquals(line.total_chars, c.total_chars, c.name);
+    if (c.error_name) assertEquals(line.error_name, c.error_name, c.name);
+    if (c.error_code) assertEquals(line.error_code, c.error_code, c.name);
+    assertEquals(typeof line.duration_ms, "number", c.name);
+
+    const { event, tags } = onlyEvent(seen);
+    assertEquals(event.level, "error", c.name);
+    assertEquals(event.message, `finish_import failed at ${c.failed_at}: ${c.reason}`, c.name);
+    assertEquals(tags.import_id, IMPORT_ID, c.name);
+    assertEquals(event.user, { id: CALLER.id }, c.name);
+    assertNothingLeaked(seen, c.name);
+  }
+});
+
+Deno.test("EX-P16: an import left stuck in assembling is reported as stuck, and the database's message stays out", async () => {
+  const bucket = new FakeBucket();
+  bucket.failDownload = true;
+  const { result, seen } = await watchedFinish(2, hostileKeyedChunks(), stuckRespond(), bucket);
+
+  assertStringIncludes(text(result), "could not be assembled");
+  const line = finishLine(seen);
+  assertEquals(line.outcome, "stuck");
+  assertEquals(line.status, "assembling");
+  assertEquals(line.failed_at, "joining chunks");
+  assertEquals(line.reason, "internal");
+  assertEquals(line.error_name, "StorageApiError", "the failure that started it, not the one that stranded it");
+
+  const { event } = onlyEvent(seen);
+  assertEquals(event.level, "error");
+  assertEquals(event.message, "finish_import stuck in assembling after failing at joining chunks: internal");
+  assertNothingLeaked(seen, "a stuck import");
+});
+
+Deno.test("EX-P16: a finish that parks, repeats or finds a duplicate is logged with its timings and reported to no one", async () => {
+  const texts = hostileKeyedChunks();
+  const parked = await watchedFinish(2, texts);
+  const line = finishLine(parked.seen);
+  assertEquals(line.outcome, "parsed");
+  assertEquals(line.status, "parsed");
+  assertEquals(line.failed_at, null);
+  assertEquals(line.reader_id, "transcript");
+  assertEquals(line.chunk_count, 2);
+  assertEquals(line.total_chars, Object.values(texts).join("").length);
+  assert(typeof line.duration_ms === "number" && typeof line.compute_ms === "number");
+  assert((line.compute_ms as number) <= (line.duration_ms as number), "compute is part of the call");
+  assertEquals(parked.seen.events.length, 0);
+  assertNothingLeaked(parked.seen, "a parsed finish");
+
+  const replayed = await watchedFinish(2, {}, finishRespond({ row: { status: "parsed", reader_id: "transcript", chunk_count: 2, total_chars: 5400 } }));
+  const again = finishLine(replayed.seen);
+  assertEquals([again.outcome, again.status, again.chunk_count, again.total_chars], ["replayed", "parsed", 2, 5400]);
+  assertEquals(replayed.seen.events.length, 0);
+
+  const duplicate = await watchedFinish(2, hostileKeyedChunks(), finishRespond({ twin: { id: TWIN_ID, created_at: "2026-09-17T10:00:00Z" } }));
+  const twin = finishLine(duplicate.seen);
+  assertEquals([twin.outcome, twin.status, twin.failed_at], ["duplicate", "duplicate", null]);
+  assertEquals(duplicate.seen.events.length, 0);
+  assertNothingLeaked(duplicate.seen, "a duplicate finish");
+});
+
+Deno.test("EX-P16: a finish that changes nothing is logged as rejected, says why, and is reported to no one", async () => {
+  const cases: Array<[string, Respond, Record<string, unknown>]> = [
+    ["not found", NOTHING, { reason: "not_found", failed_at: "reading", status: null }],
+    ["unreadable", () => ({ error: DB_ERROR }), { reason: "read_failed", failed_at: "reading", status: null, error_code: "23514" }],
+    ["already assembling", finishRespond({ row: { status: "assembling" } }), { reason: "being_assembled", failed_at: "reading", status: "assembling" }],
+    ["already claimed", finishRespond({ row: { status: "claimed" } }), { reason: "not_finishable", failed_at: "reading", status: "claimed" }],
+    ["claim lost to a racing call", finishRespond({ claimLost: true }), { reason: "being_assembled", failed_at: "claiming", status: "open" }],
+  ];
+  for (const [name, respond, expected] of cases) {
+    const { result, seen } = await watchedFinish(2, {}, respond);
+    assertEquals(result?.isError, true, name);
+    const line = finishLine(seen);
+    assertEquals(line.outcome, "rejected", name);
+    for (const [key, value] of Object.entries(expected)) assertEquals(line[key], value, `${name}: ${key}`);
+    assertEquals(seen.events.length, 0, name);
+    assertNothingLeaked(seen, name);
+  }
+});
+
+Deno.test("EX-P16: a tool that throws is reported by its class, and its caller gets generic wording, not the thrown message", async () => {
+  const throwing: Respond = () => {
+    throw new TypeError(`boom: ${HOSTILE_LINE} ${FAKE_KEY}`);
+  };
+  const cases: Array<[string, Record<string, unknown>, string | null]> = [
+    ["buildgallery_whoami", {}, null],
+    ["buildgallery_list_drafts", {}, null],
+    ["buildgallery_append_chunk", { import_id: IMPORT_ID, seq: 1, text: hostileChunks()[1] }, IMPORT_ID],
+    ["buildgallery_finish_import", { import_id: IMPORT_ID, expected_chunks: 2 }, IMPORT_ID],
+    ["buildgallery_get_import_status", { import_id: IMPORT_ID }, IMPORT_ID],
+    ["buildgallery_list_imports", {}, null],
+  ];
+  for (const [tool, args, importId] of cases) {
+    const { payload, result, seen } = await watchedCall(tool, args, throwing);
+
+    assertEquals(result?.isError, true, tool);
+    assertEquals(
+      text(result),
+      "That call could not be completed because of an unexpected error on buildgallery's side, and it has been " +
+        `logged. Calling ${tool} again is safe: no buildgallery tool makes a second copy when it is retried.`,
+      tool,
+    );
+    assertNoEcho(payload, tool);
+
+    const unhandled = seen.lines.filter((l) => l.mcp === "unhandled");
+    assertEquals(unhandled.length, 1, tool);
+    assertEquals(unhandled[0].where, tool);
+    assertEquals(unhandled[0].user_id, CALLER.id, tool);
+    assertEquals(unhandled[0].import_id, importId, tool);
+    assertEquals(unhandled[0].error_name, "TypeError", tool);
+
+    const { event, tags } = onlyEvent(seen);
+    assertEquals(event.message, `Unhandled error in ${tool} (TypeError)`, tool);
+    assertEquals(tags.where, tool);
+    assertNothingLeaked(seen, tool);
+
+    // finish_import still writes its line: it changed nothing, for a reason it could not name.
+    if (tool === "buildgallery_finish_import") {
+      const line = finishLine(seen);
+      assertEquals([line.outcome, line.reason, line.error_name], ["rejected", "internal", "TypeError"]);
+    }
+  }
+});
+
+Deno.test("EX-P16: the caller's trace context rides on the report; tracestate and baggage are counted, never forwarded", async () => {
+  const meta = {
+    traceparent: TRACEPARENT,
+    tracestate: "rojo=00f067aa0ba902b7,congo=t61rcWkgMzE",
+    baggage: "userId=alice,serverRegion=us-east-1",
+  };
+  const { seen } = await watchedFinish(1, { 1: SOURCE_ONLY_JSON }, finishRespond(), new FakeBucket(), meta);
+
+  assertEquals(finishLine(seen).trace_id, "4bf92f3577b34da6a3ce929d0e0e4736");
+  const { event } = onlyEvent(seen);
+  const trace = (event.contexts as { trace: Record<string, string> }).trace;
+  assertEquals(trace.trace_id, "4bf92f3577b34da6a3ce929d0e0e4736");
+  assertEquals(trace.parent_span_id, "00f067aa0ba902b7");
+  const extra = event.extra as Record<string, number>;
+  assertEquals([extra.tracestate_members, extra.baggage_members], [2, 2]);
+  for (const value of ["rojo", "t61rcWkgMzE", "alice", "us-east-1"]) {
+    assert(!seen.raw.join("\n").includes(value), `${value} is counted, never forwarded`);
+  }
+
+  // A traceparent that is not one is ignored: no trace, and nothing of it said.
+  const bad = await watchedFinish(1, { 1: SOURCE_ONLY_JSON }, finishRespond(), new FakeBucket(), {
+    traceparent: HOSTILE_LINE,
+  });
+  assertEquals(finishLine(bad.seen).trace_id, null);
+  assertEquals(onlyEvent(bad.seen).event.contexts, undefined);
+  assertNothingLeaked(bad.seen, "a hostile traceparent");
+});
+
+Deno.test("EX-P16: a request the SDK cannot handle is reported as unhandled; a good one and a client's bad one are not", async () => {
+  const { client } = fakeClient(NOTHING);
+
+  const good = watcher();
+  const ok = await serveCaller(rpc("tools/list"), client, CALLER, good.monitor);
+  assertEquals(ok.status, 200);
+  await ok.body?.cancel();
+  assertEquals(good.seen.raw, []);
+
+  // A client's malformed request is the client's fault: a 4xx, logged as before, not reported.
+  const junk = watcher();
+  const malformed = await serveCaller(
+    new Request(ENDPOINT, { method: "POST", headers: { "content-type": "text/plain" }, body: HOSTILE_LINE }),
+    client,
+    CALLER,
+    junk.monitor,
+  );
+  assert(malformed.status >= 400 && malformed.status < 500, String(malformed.status));
+  await malformed.body?.cancel();
+  assertEquals(junk.seen.raw, []);
+
+  // A server that cannot even be built is ours.
+  const broken = watcher();
+  const res = await serveCaller(rpc("tools/list"), client, CALLER, broken.monitor, () => {
+    throw new TypeError(`cannot build: ${HOSTILE_LINE}`);
+  });
+  assertEquals(res.status, 500);
+  const said = await res.text();
+  assertEquals(ECHO_FRAGMENTS.filter((f) => said.includes(f)), [], said);
+
+  const unhandled = broken.seen.lines.filter((l) => l.mcp === "unhandled");
+  assertEquals(unhandled.length, 1);
+  assertEquals(unhandled[0].where, "request");
+  assertEquals(unhandled[0].user_id, CALLER.id);
+  assertEquals(unhandled[0].http_status, 500);
+  assertEquals(unhandled[0].error_name, "TypeError");
+  assertEquals(onlyEvent(broken.seen).event.message, "Unhandled error while handling the request (TypeError)");
+  assertNothingLeaked(broken.seen, "an unbuildable server");
+});
+
+Deno.test("EX-P16: across every exit, the hostile fixture and the key reach neither the monitor nor the console", async () => {
+  // The monitor's own log is recorded by the watcher; logFailure and the SDK's
+  // onerror still print to the console by code, so the console is caught too.
+  const printed: string[] = [];
+  const original = { log: console.log, warn: console.warn, error: console.error };
+  const keep = (...parts: unknown[]) => printed.push(parts.map(String).join(" "));
+  console.log = keep;
+  console.warn = keep;
+  console.error = keep;
+  const watched: Watched[] = [];
+  try {
+    const downloadFails = new FakeBucket();
+    downloadFails.failDownload = true;
+    const stuckBucket = new FakeBucket();
+    stuckBucket.failDownload = true;
+    const runs = [
+      await watchedFinish(2, hostileKeyedChunks()),
+      await watchedFinish(3, hostileKeyedChunks()),
+      await watchedFinish(2, hostileKeyedChunks(), finishRespond({ twin: { id: TWIN_ID, created_at: "2026-09-17T10:00:00Z" } })),
+      await watchedFinish(2, hostileKeyedChunks(), finishRespond(), downloadFails),
+      await watchedFinish(2, hostileKeyedChunks(), finishRespond({ parsedError: DB_ERROR })),
+      await watchedFinish(2, hostileKeyedChunks(), stuckRespond(), stuckBucket),
+      await watchedFinish(2, {}, () => ({ error: DB_ERROR })),
+      await watchedCall("buildgallery_append_chunk", { import_id: IMPORT_ID, seq: 1, text: HOSTILE_FIXTURE.slice(0, 4000) }, () => {
+        throw new Error(`${DB_QUOTE} ${HOSTILE_LINE}`);
+      }),
+    ];
+    for (const run of runs) watched.push(run.seen);
+  } finally {
+    console.log = original.log;
+    console.warn = original.warn;
+    console.error = original.error;
+  }
+
+  const outcomes = watched.map((seen) => seen.lines.find((l) => l.mcp === "finish_import")?.outcome ?? "unhandled");
+  assertEquals(outcomes, ["parsed", "refused", "duplicate", "failed", "failed", "stuck", "rejected", "unhandled"]);
+  watched.forEach((seen, i) => assertNothingLeaked(seen, `exit ${i + 1} (${outcomes[i]})`));
+  const console_ = printed.join("\n");
+  const leaked = [...ECHO_FRAGMENTS, FAKE_KEY, "abc123FAKE", "sk-proj", DB_QUOTE].filter((f) => console_.includes(f));
+  assertEquals(leaked, [], `the console let ${JSON.stringify(leaked)} out`);
+});
+
+Deno.test("EX-P16: the monitor's post is the one request the function makes of its own; the other is the MCP dispatch", async () => {
+  // Rule 1 of "Imported content is data" in the contract: nothing takes an
+  // address from the text. The monitor's address comes from the SENTRY_DSN
+  // secret through sentryTarget, and this pins that there is no third caller.
+  const here = new URL(".", import.meta.url).pathname;
+  const callers: string[] = [];
+  for await (const entry of Deno.readDir(here)) {
+    if (!entry.isFile || !entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
+    const code = stripComments(await Deno.readTextFile(`${here}${entry.name}`));
+    for (const _ of code.matchAll(/\bfetch\(/g)) callers.push(entry.name);
+  }
+  assertEquals(callers.sort(), ["index.ts", "monitor.ts"], "handler.fetch(req) in index.ts, and one post in monitor.ts");
 });

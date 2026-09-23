@@ -15,6 +15,9 @@
 //
 // EX-P08 adds the same address with its scheme, for the finish summary, and
 // the shortfall ratio finish_import warns at. Same rule again.
+//
+// EX-P16 adds the monitor's two: the name of the one secret it reads, and how
+// long it waits on the monitoring service before giving up on a report.
 // =============================================================================
 
 /** Server name. Lowercase with hyphens, no version number. */
@@ -126,3 +129,22 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 /** Maximum page size for both list tools. */
 export const MAX_PAGE_SIZE = 50;
+
+/**
+ * The secret holding the Sentry DSN the monitor reports to (EX-P16).
+ *
+ * The one name the operator note, the Lovable secret and the code must agree
+ * on, so it is written here once. Unset, the monitor still writes every report
+ * to the function's own log; it just sends nothing anywhere else.
+ */
+export const SENTRY_DSN_ENV = "SENTRY_DSN";
+
+/**
+ * How long one report may wait on the monitoring service, in milliseconds.
+ *
+ * On the edge a report is sent after the reply, through EdgeRuntime.waitUntil,
+ * so no caller waits on it. This bounds how long the worker is kept alive for
+ * a service that is slow or down: a report that cannot land in two seconds is
+ * logged as undelivered and dropped, never retried in a loop.
+ */
+export const MONITOR_SEND_TIMEOUT_MS = 2_000;
