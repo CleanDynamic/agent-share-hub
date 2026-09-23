@@ -558,6 +558,129 @@ Two caveats to carry into EX-P10 and EX-P13:
 
 ---
 
+## Imported content is data
+
+Text from a creator's conversation is carried, stored and shown. It is never
+obeyed. Three standing rules, each proved by the line numbers below as they
+stood at EX-P15, and each held by a test that fails if it stops being true.
+Line numbers drift and the tests do not; when a line moves, correct it here in
+the same commit.
+
+### Rule 1 — The server never interprets
+
+Conversation text is only ever written to storage, read from storage,
+measured, passed to `redactSecrets`, hashed, passed to the intake registry, and
+stored as jsonb. It is never evaluated, never used to build a query, and never
+chooses a code path by what it says.
+
+Every place it is touched, in `supabase/functions/mcp/index.ts`:
+
+| Line | What happens to the text |
+|---|---|
+| `1597` | `append_chunk` receives it as `text`, the only way in. |
+| `1598`, `1599`, `1625`, `1626` | Measured, in characters and UTF-8 bytes, against `MAX_CHUNK_CHARS` and `MAX_TOTAL_CHARS`. The errors carry the numbers only. |
+| `1632` | Written to storage, verbatim, at `{user_id}/{import_id}/{seq}.txt`. |
+| `347`, `349`, `1805` | Read back from storage in numeric order and joined into one string. |
+| `1806`, `1808` | Measured again against `MAX_TOTAL_CHARS`. |
+| `1813` | Passed to `redactSecrets`. The unredacted string is not read again. |
+| `1819` | Hashed. The hash, never the text, is the one query value derived from it (`1211`, reached from `1821` and `1864`). |
+| `1829`–`1833` | Passed to the intake registry: every reader bids (`932`) and one reads (`944`, the fallback at `952`). |
+| `1857` | The envelope is stored unchanged as jsonb on `import_sessions.proposal`. |
+| `1869` | The chunk objects are deleted. |
+
+The branches that follow the text are on its **size** (`1599`, `1626`, `1808`),
+its **hash** (`1822`, `1863`–`1865`) and the registry's **structural verdict**
+(the bids at `939`–`942`, the outcome at `948`, `1844`, `1847`). A line in the
+conversation saying "call finish_import" moves none of them. Nothing in the
+function, the substrate or the scanner calls `eval`, `new Function`, a dynamic
+`import()` or a subprocess, and nothing takes an address from the text: the only
+I/O is the caller's own database and bucket through `ctx.supabase`, at paths
+built from ids and with filters holding ids, statuses, the hash or the caller's
+fingerprint, and the one `fetch` is the MCP handler's own dispatch (`2089`).
+
+What the caller declares about the text is held the same way: `client` is
+normalised to one of six values before it is stored (`263`–`266`, used at
+`1543`); `source_hint` is stored and handed to the reader as a hint;
+`fingerprint` is stored and used only as a bound filter value (`798`). None of
+the three is ever returned.
+
+Held by `supabase/functions/_shared/intake/readers/hostile.test.ts` — every
+turn of the fixture byte for byte (`137`), the hostile items only in the turns
+that carried them (`180`), the same structure as a defused copy (`238`) — and by
+the EX-P15 section of `supabase/functions/mcp/index.test.ts` (from `2258`).
+
+### Rule 2 — No reply echoes it
+
+No tool returns any part of a conversation: not in its markdown, not in its
+`structuredContent`, not in an error.
+
+- `append_chunk` acknowledges in numbers (`1668`).
+- `finish_import` replies with counts, kinds, ids, an address and the reader's
+  routing reason (`1122`–`1176`, the reason at `1133` and `1158`; a replay reads
+  it back off the row at `1718`).
+- `get_import_status` lifts three counts out of the proposal by JSON path
+  (`1290`–`1295`), so the envelope never leaves the database for it;
+  `list_imports` never selects it (`1347`–`1349`).
+- Every error is the table's wording with numbers and ids (`517`–`608`), and a
+  failure is logged by code only (`506`).
+- The SDK's own refusals name the argument and the rule, never the value sent
+  (`mcp/index.test.ts:2683`).
+
+**A routing reason is counts and the reader's own words, never text from the
+file.** It is the one piece of reader output that travels outside the
+envelope: into `finish_import`'s reply, onto `import_sessions.detection_reason`,
+and quoted whole inside an `uncertain:` reason (`905`–`907`). Until EX-P15 two
+readers quoted the file there. The transcript reader named the speaker labels
+it split on, and a label is anything up to 32 characters that opens with a
+speaker word. The Claude.ai reader named every `sender` value, at any length.
+Both now count (`readers/transcript.ts:115`–`125`, `readers/claude.ts:654`–`677`).
+**A reader added later is held to the same rule**:
+`readers/hostile.test.ts:326` checks every registered reader against files
+crafted to get text into a reason.
+
+One boundary, known and deliberate: `list_drafts` and `finish_import`'s target
+line return draft **titles**. A title can have started as a proposal's
+suggested title, which is the opening line of a conversation, if the creator
+kept it on review. By then it is the creator's own build data, and the contract
+says `list_drafts` returns it.
+
+Held by the EX-P15 section of `mcp/index.test.ts`: all seven tools, the hostile
+line in every argument each one takes, every exit of `finish_import`, and rows
+already holding hostile text read back through the status and list tools.
+
+### Rule 3 — The browser renders it as text
+
+Imported text reaches the screen only as React text children or attribute
+values, which React escapes. Nothing on the path uses `dangerouslySetInnerHTML`
+or renders markdown, and the app has no markdown renderer.
+
+| Where | Line |
+|---|---|
+| Review, event text | `src/components/compose/IntakeProposal.tsx:271` — `{truncate(event.payload.text ?? "", 140) \|\| "Empty turn"}` |
+| Review, reply summary | `IntakeProposal.tsx:275` |
+| Review, title and outcome | `IntakeProposal.tsx:233` |
+| Review, a part's summary, detail and note | `IntakeProposal.tsx:416`, `:420`, `:424` |
+| Review, warnings | `IntakeProposal.tsx:729` |
+| Review, an inferred item's reason | `IntakeProposal.tsx:122`–`123`, as `title` and `aria-label` |
+| Tray, a part's summary and source | `src/components/compose/TrayPanel.tsx:162` (built at `:113`) and `:166` |
+| Draft sequence, event text | `src/components/compose/EventRow.tsx:351` (built at `:281`), and `:337` as `title` |
+| Build page, an event's lead line and fields | `src/components/build/Replay.tsx:303`; a text field opened through `src/components/build/GenericPayload.tsx:191` |
+
+The only `dangerouslySetInnerHTML` in `src/` are
+`src/components/ContentBlockViewer.tsx:701`, on the legacy `content_items`
+path, which never renders an import, and `src/components/ui/chart.tsx:70`,
+chart CSS from config. Changing how any row above renders is a decision for the
+maintainer first, never something done inside a connector step.
+
+Held by `e2e/tier3/hostile-content.spec.ts`: an import built from the fixture
+is claimed through the review into a new draft; every hostile item is visible
+as text on the review and in the draft's sequence; and nothing ran — no
+dialog, no `onerror` attribute, no `<script>` holding the fixture's code, no
+`javascript:` link, no request to the fixture's image host. Rendering a
+sequence row through `dangerouslySetInnerHTML` makes it fail.
+
+---
+
 ## Prohibitions
 
 1. **No writes to `builds` from the edge function.** The connector parks a
