@@ -2,10 +2,15 @@
 # All published posts are available for AI agent consumption.
 # User profiles, drafts, and private surfaces are not.
 # Structured JSON for any post is available at /b/{slug}.json
+#
+# Connector (MCP server) for Claude, Claude Code, ChatGPT and Cursor:
+# https://zybdotagjwektucfdkri.supabase.co/functions/v1/mcp
+# Setup instructions for each AI tool: /connect
 
 User-agent: GPTBot
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages
@@ -16,6 +21,7 @@ Disallow: /profile
 User-agent: ClaudeBot
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages
@@ -26,6 +32,7 @@ Disallow: /profile
 User-agent: PerplexityBot
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages
@@ -36,6 +43,7 @@ Disallow: /profile
 User-agent: Google-Extended
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages
@@ -46,6 +54,7 @@ Disallow: /profile
 User-agent: CCBot
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages
@@ -57,6 +66,7 @@ Disallow: /profile
 User-agent: *
 Allow: /b/
 Allow: /content/
+Allow: /connect
 Disallow: /upload
 Disallow: /drafts
 Disallow: /messages

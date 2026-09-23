@@ -90,6 +90,10 @@ const ConvertPrompt = lazy(() => import("./components/build/ConvertPrompt"));
 // authorizes one should not carry the page, and nothing in the application links
 // to it — it is arrived at from somebody else's product.
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+// EX-P17 — how to add the connector to each AI tool. Its own chunk, like the
+// consent screen it leads to: a reader who never connects a tool should not
+// carry the instructions.
+const Connect = lazy(() => import("./pages/Connect"));
 
 /* BG-P07 — /dev/kit, the control-kit review page.
 
@@ -318,6 +322,16 @@ const App = () => (
                   authoring routes above: this page has no frame already on
                   screen to fill around, so the fallback is the whole room. ── */}
               <Route path="/oauth/consent" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><OAuthConsent /></Suspense>} />
+              {/* ── EX-P17 — /connect.
+
+                  BESIDE /oauth/consent, which it leads to: this page says how to
+                  add the connector, and the AI tool then sends the visitor to
+                  the consent screen to allow it. It is instructions for a job
+                  done inside somebody else's product, so it renders without the
+                  frame, carries its own wordmark home, and takes the same
+                  full-viewport `--bg` fallback as the route above. Public: it
+                  reads nothing and asks nobody to sign in. ── */}
+              <Route path="/connect" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Connect /></Suspense>} />
               {Kit && (
                 <Route
                   path="/dev/kit"
