@@ -56,7 +56,7 @@ Deno.test("EX-P12: detect reads the content and says what it saw, not what it de
   assertEquals(seen.confidence, 0.98);
   assertStringIncludes(seen.reason, "1 conversation carrying chat_messages");
   assertStringIncludes(seen.reason, "8 messages");
-  assertStringIncludes(seen.reason, "sender assistant / human");
+  assertStringIncludes(seen.reason, "4 from human and 4 from assistant");
 
   // And the same file under the name of something else entirely.
   assertEquals(claudeReader.detect(intakeFile(ONE, "recipes.zip")).confidence, 0.98);

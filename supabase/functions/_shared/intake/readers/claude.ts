@@ -651,18 +651,30 @@ export const claudeReader: IntakeReader<DetectedFormat, "claude", "prompt"> = {
       );
     }
 
-    const messages = conversations.reduce((total, one) => total + one.messages.length, 0);
-    const senders = new Set<string>();
+    // Counted, never quoted (EX-P15). `sender` is a string the file supplies, and
+    // this reason travels into the connector's reply and onto the import row. So
+    // the two senders this format defines are named in this reader's own words,
+    // and any other value is reduced to a count — never written back out.
+    let human = 0;
+    let assistant = 0;
+    let other = 0;
     for (const conversation of conversations) {
-      for (const message of conversation.messages) senders.add(message.sender);
+      for (const message of conversation.messages) {
+        if (message.sender === "human") human += 1;
+        else if (message.sender === "assistant") assistant += 1;
+        else other += 1;
+      }
     }
-    const named = [...senders].filter((sender) => sender !== "").sort();
+    const messages = human + assistant + other;
+    const bySender = [`${human} from human`, `${assistant} from assistant`];
+    if (other > 0) bySender.push(`${other} from another sender`);
+    const said = `${bySender.slice(0, -1).join(", ")} and ${bySender[bySender.length - 1]}`;
 
     return detection(
       SESSION_CONFIDENCE,
       `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"} ` +
         `carrying chat_messages, ${messages} ${messages === 1 ? "message" : "messages"}` +
-        (named.length > 0 ? ` with sender ${named.join(" / ")}.` : "."),
+        (messages > 0 ? `: ${said}.` : "."),
     );
   },
 

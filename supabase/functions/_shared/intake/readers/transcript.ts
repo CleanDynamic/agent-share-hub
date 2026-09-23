@@ -112,12 +112,17 @@ export const transcriptReader: IntakeReader<DetectedFormat, "transcript", "promp
         "No speaker convention matched. Readable as prose, and kept whole as one event rather than split on a guess.",
       );
     }
-    const labels = [...summary.detected_labels.user, ...summary.detected_labels.assistant];
+    // Counted, never quoted (EX-P15). A detected label is the file's own text —
+    // anything up to 32 characters that opens with a speaker word — and this
+    // reason travels into the connector's reply and onto the import row. So it
+    // says how many labels the split followed; the labels stay in the envelope.
+    const labels =
+      summary.detected_labels.user.length + summary.detected_labels.assistant.length;
     return detection(
       SPLIT_CONFIDENCE,
       `Split as ${summary.detected_format} into ${summary.turn_count} ` +
         `${summary.turn_count === 1 ? "turn" : "turns"}` +
-        (labels.length > 0 ? ` on ${labels.join(" / ")}.` : "."),
+        (labels > 0 ? ` on ${labels} speaker ${labels === 1 ? "label" : "labels"}.` : "."),
     );
   },
 
