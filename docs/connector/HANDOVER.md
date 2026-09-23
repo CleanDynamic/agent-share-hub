@@ -420,6 +420,35 @@ round-tripping. **Not run against project `zybdotagjwektucfdkri`.**
 
 ## EX-P16 — Observability
 
+## EX-P16-fix — Bundle-safe shared readers
+
+**`mcp` could not deploy.** Lovable bundles a function from its own folder and
+`_shared/` only, and `_shared/intake/readers/lovable.ts` and
+`readers/transcript.ts` imported their parsers from the `parse-lovable` and
+`parse-transcript` folders. Both parsers now live in `_shared/intake/parsers/`,
+unchanged apart from their import paths and a one-line note. In each function's
+folder the only change besides `parse.ts` moving out is the one import line in
+`index.ts`. Proven identical three ways: the moved files equal the originals once
+the import paths are rewritten; a 115-input snapshot of both parsers, all three
+readers and the registry was byte-identical before and after; and the new
+`e2e/tier3/paste-transcript.spec.ts` recorded identical exchanges before and
+after, meaning the same request, proposal, review text and database writes, at
+both widths. `src/test/edgeBundles.test.ts` fails if anything under `mcp/` or
+`_shared/` imports from outside again. **The first `mcp` deploy is still ahead,
+on the merge to main.**
+
+**Three things for the next session.** First, prohibition 4 now names
+`_shared/intake/parsers/transcript.ts` explicitly: it is `parse-transcript`'s
+parser, and the move did not free it. Second, three places still name the old
+paths and were left alone because this step could not touch them:
+`src/lib/build/intake.ts:37` (prohibition 4) and the file lists in
+`parse-lovable/README.md` and `parse-transcript/README.md`. Third, running the
+e2e suite in a cloud container needs Vite started on 127.0.0.1, because
+`vite.config.ts` listens on `::` and the container has no IPv6. It also needs a
+local Playwright config pointing `launchOptions.executablePath` at
+`/opt/pw-browsers/chromium`, because the container's Chromium 1194 is older than
+the 1208 that Playwright 1.58.2 expects. Neither was committed.
+
 ## EX-P17 — The connect page
 
 ## EX-P18 — Evaluations

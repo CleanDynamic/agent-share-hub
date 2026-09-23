@@ -28,7 +28,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { MAX_RAW_TEXT_CHARS, parseTranscript } from "./parse.ts";
+import { MAX_RAW_TEXT_CHARS, parseTranscript } from "../_shared/intake/parsers/transcript.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

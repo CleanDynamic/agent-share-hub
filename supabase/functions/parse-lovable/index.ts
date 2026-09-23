@@ -24,7 +24,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { MAX_RAW_TEXT_CHARS, parseLovable } from "./parse.ts";
+import { MAX_RAW_TEXT_CHARS, parseLovable } from "../_shared/intake/parsers/lovable.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

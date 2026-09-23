@@ -405,7 +405,7 @@ describe("a Lovable proposal (NS-P20)", () => {
   });
 
   async function lovableProposal(): Promise<TranscriptProposal> {
-    const { parseLovable } = await import("../../supabase/functions/parse-lovable/parse.ts");
+    const { parseLovable } = await import("../../supabase/functions/_shared/intake/parsers/lovable.ts");
     return parseLovable(LOVABLE_EXPORT, {
       session_id: SESSION,
       source_hint: "lovable export",
