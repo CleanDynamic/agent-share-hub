@@ -5204,6 +5204,41 @@ export type Database = {
       }
       claim_challenge: { Args: { _challenge_id: string }; Returns: Json }
       gallery_facets: { Args: { thresholds?: Json }; Returns: Json }
+      get_build_feed: {
+        Args: { before?: string; page_size?: number }
+        Returns: {
+          build_id: string
+          cover_bucket: string
+          cover_kind: string
+          cover_media_id: string
+          cover_path: string
+          cover_poster_path: string
+          creator_avatar: string
+          creator_display: string
+          creator_id: string
+          creator_username: string
+          item_at: string
+          item_kind: string
+          last_confirmed_at: string
+          last_confirmed_model: string
+          made_for: string[]
+          outcome: string
+          parent_build_id: string
+          rebuild_count: number
+          rebuild_note: string
+          repro_model: string
+          repro_note: string
+          repro_user_username: string
+          repro_worked: boolean
+          reproduction_count: number
+          shape: string
+          slug: string
+          source_handle_at_fork: string
+          source_title_at_fork: string
+          status: string
+          title: string
+        }[]
+      }
       get_email_by_username: { Args: { _username: string }; Returns: string }
       get_post_lineage: {
         Args: { _root_id: string }

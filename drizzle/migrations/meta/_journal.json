@@ -15,6 +15,13 @@
       "when": 1790172920288,
       "tag": "0001_build_cover_media_and_rebuild_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790172985048,
+      "tag": "0002_node_type_help_copy_and_build_feed",
+      "breakpoints": true
     }
   ]
 }
