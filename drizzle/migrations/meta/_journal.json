@@ -29,6 +29,13 @@
       "when": 1790190274275,
       "tag": "0003_bounties_header_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790190407914,
+      "tag": "0004_repoint_solutions_at_bounties",
+      "breakpoints": true
     }
   ]
 }

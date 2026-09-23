@@ -276,6 +276,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bounties_accepted_solution_id_fkey"
+            columns: ["accepted_solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bounties_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
@@ -3611,6 +3618,36 @@ export type Database = {
           },
         ]
       }
+      ns_p46_migration_map_acceptance_log: {
+        Row: {
+          id: string
+          old_bounty_id: string | null
+        }
+        Insert: {
+          id: string
+          old_bounty_id?: string | null
+        }
+        Update: {
+          id?: string
+          old_bounty_id?: string | null
+        }
+        Relationships: []
+      }
+      ns_p46_migration_map_solutions: {
+        Row: {
+          id: string
+          old_bounty_id: string | null
+        }
+        Insert: {
+          id: string
+          old_bounty_id?: string | null
+        }
+        Update: {
+          id?: string
+          old_bounty_id?: string | null
+        }
+        Relationships: []
+      }
       perks: {
         Row: {
           description: string
@@ -4499,6 +4536,7 @@ export type Database = {
           bounty_author_id: string
           bounty_id: string
           id: string
+          legacy_bounty_item_id: string | null
           slot_id: string
           slot_kind: string
           solution_id: string
@@ -4509,6 +4547,7 @@ export type Database = {
           bounty_author_id: string
           bounty_id: string
           id?: string
+          legacy_bounty_item_id?: string | null
           slot_id: string
           slot_kind: string
           solution_id: string
@@ -4519,6 +4558,7 @@ export type Database = {
           bounty_author_id?: string
           bounty_id?: string
           id?: string
+          legacy_bounty_item_id?: string | null
           slot_id?: string
           slot_kind?: string
           solution_id?: string
@@ -4528,6 +4568,13 @@ export type Database = {
           {
             foreignKeyName: "solution_acceptance_log_bounty_id_fkey"
             columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_acceptance_log_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
             isOneToOne: false
             referencedRelation: "content_items"
             referencedColumns: ["id"]
@@ -4626,6 +4673,7 @@ export type Database = {
           created_at: string
           i_would_implement_count: number
           id: string
+          legacy_bounty_item_id: string | null
           slot_id: string
           slot_kind: string
           solver_id: string
@@ -4642,6 +4690,7 @@ export type Database = {
           created_at?: string
           i_would_implement_count?: number
           id?: string
+          legacy_bounty_item_id?: string | null
           slot_id: string
           slot_kind: string
           solver_id: string
@@ -4658,6 +4707,7 @@ export type Database = {
           created_at?: string
           i_would_implement_count?: number
           id?: string
+          legacy_bounty_item_id?: string | null
           slot_id?: string
           slot_kind?: string
           solver_id?: string
@@ -4671,6 +4721,13 @@ export type Database = {
           {
             foreignKeyName: "solutions_bounty_id_fkey"
             columns: ["bounty_id"]
+            isOneToOne: false
+            referencedRelation: "bounties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solutions_legacy_bounty_item_id_fkey"
+            columns: ["legacy_bounty_item_id"]
             isOneToOne: false
             referencedRelation: "content_items"
             referencedColumns: ["id"]
