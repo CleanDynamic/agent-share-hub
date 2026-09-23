@@ -8,6 +8,13 @@
       "when": 1790172814123,
       "tag": "0000_builds_created_via",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790172920288,
+      "tag": "0001_build_cover_media_and_rebuild_columns",
+      "breakpoints": true
     }
   ]
 }

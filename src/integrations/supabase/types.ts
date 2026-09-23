@@ -712,6 +712,7 @@ export type Database = {
           completeness: number | null
           cost_monthly: number | null
           cost_setup: number | null
+          cover_media_id: string | null
           created_at: string
           created_via: Json | null
           creator_id: string
@@ -730,12 +731,17 @@ export type Database = {
           parent_build_id: string | null
           price_gbp: number | null
           published_at: string | null
+          rebuild_count: number
+          rebuild_note: string | null
           repo_url: string | null
           reproduction_count: number
           root_build_id: string | null
           shape: string
           slug: string
+          solves_node_id: string | null
           source_content_item_id: string | null
+          source_handle_at_fork: string | null
+          source_title_at_fork: string | null
           status: string
           time_to_first_result: number | null
           title: string
@@ -745,6 +751,7 @@ export type Database = {
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
+          cover_media_id?: string | null
           created_at?: string
           created_via?: Json | null
           creator_id: string
@@ -763,12 +770,17 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
+          rebuild_count?: number
+          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug: string
+          solves_node_id?: string | null
           source_content_item_id?: string | null
+          source_handle_at_fork?: string | null
+          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title: string
@@ -778,6 +790,7 @@ export type Database = {
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
+          cover_media_id?: string | null
           created_at?: string
           created_via?: Json | null
           creator_id?: string
@@ -796,18 +809,30 @@ export type Database = {
           parent_build_id?: string | null
           price_gbp?: number | null
           published_at?: string | null
+          rebuild_count?: number
+          rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
           shape?: string
           slug?: string
+          solves_node_id?: string | null
           source_content_item_id?: string | null
+          source_handle_at_fork?: string | null
+          source_title_at_fork?: string | null
           status?: string
           time_to_first_result?: number | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "builds_cover_media_id_fkey"
+            columns: ["cover_media_id"]
+            isOneToOne: false
+            referencedRelation: "build_media"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "builds_creator_id_fkey"
             columns: ["creator_id"]
@@ -848,6 +873,13 @@ export type Database = {
             columns: ["root_build_id"]
             isOneToOne: false
             referencedRelation: "builds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "builds_solves_node_id_fkey"
+            columns: ["solves_node_id"]
+            isOneToOne: false
+            referencedRelation: "build_nodes"
             referencedColumns: ["id"]
           },
           {
