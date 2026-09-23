@@ -5437,6 +5437,7 @@ export type Database = {
       }
     }
     Functions: {
+      __tmp_apply_migration: { Args: { sql_text: string }; Returns: undefined }
       award_xp: {
         Args: {
           _amount: number

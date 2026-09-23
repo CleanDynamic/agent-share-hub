@@ -43,6 +43,13 @@
       "when": 1790190514747,
       "tag": "0005_repoint_bounty_satellites",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790190558332,
+      "tag": "0006_temp_admin_apply_migration_helper",
+      "breakpoints": true
     }
   ]
 }
