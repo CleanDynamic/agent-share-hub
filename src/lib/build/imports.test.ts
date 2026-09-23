@@ -12,6 +12,12 @@
 // before anything is written, and refuses with the connector's own wording
 // when it is not. The writer is mocked, so what is proved here is that it is
 // called with the chosen draft and nothing else is written around it.
+//
+// EX-P14 adds the provenance record, and it is mocked for the same reason: what
+// belongs here is that the claim calls it LAST, with the destination the
+// creator actually took and the two values read back off the row it was already
+// updating. What it then stores, and that it never throws, are
+// provenance.test.ts's subject.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TranscriptProposal } from "./intake";
@@ -73,6 +79,16 @@ vi.mock("./intake", () => ({
   materialiseProposal: (...args: unknown[]) => materialiseProposal(...args),
 }));
 
+/**
+ * The provenance write is mocked, so what is proved here is that the claim
+ * CALLS it, with the destination it actually took and the two values it read
+ * back off the row. What it then stores is provenance.test.ts's subject.
+ */
+const recordCreatedVia = vi.fn();
+vi.mock("./provenance", () => ({
+  recordCreatedVia: (...args: unknown[]) => recordCreatedVia(...args),
+}));
+
 import {
   claimImport,
   discardImport,
@@ -89,6 +105,13 @@ const OTHER_USER_ID = "55555555-0000-4000-8000-000000000005";
 
 const NEW_BUILD = { kind: "new", title: "Untitled build" } as const;
 const INTO_DRAFT = { kind: "existing", buildId: BUILD_ID } as const;
+
+/**
+ * What the claim's UPDATE returns. `client` and `reader_id` ride the RETURNING
+ * clause of a write that was happening anyway, so the provenance record costs
+ * no second read of a row this function has already touched.
+ */
+const CLAIMED_ROW = { id: IMPORT_ID, client: "claude-code", reader_id: "claude" };
 
 /** What the writer reports. The claim hands it back unchanged. */
 const WRITTEN = {
@@ -166,6 +189,8 @@ beforeEach(() => {
   getSession.mockResolvedValue({ data: { session: { user: { id: USER_ID } } }, error: null });
   materialiseProposal.mockReset();
   materialiseProposal.mockResolvedValue(WRITTEN);
+  recordCreatedVia.mockReset();
+  recordCreatedVia.mockResolvedValue(undefined);
   storageList.mockReset();
   storageList.mockResolvedValue({ data: [], error: null });
   storageRemove.mockReset();
@@ -238,7 +263,7 @@ describe("loadImportProposal", () => {
 
 describe("claimImport into a new build", () => {
   it("creates the draft, writes it, then marks the row claimed — in that order", async () => {
-    answer({ data: [{ id: IMPORT_ID }], error: null });
+    answer({ data: [CLAIMED_ROW], error: null });
 
     const claimed = await claimImport(IMPORT_ID, proposal, selections, NEW_BUILD);
 
@@ -261,6 +286,37 @@ describe("claimImport into a new build", () => {
       ["status", "parsed"],
     ]);
     expect(methods()).toEqual(["from", "update", "eq", "eq", "select"]);
+    expect(callOf("select")?.args).toEqual(["id, client, reader_id"]);
+  });
+
+  it("records the provenance last, naming the client and reader off the row", async () => {
+    answer({ data: [CLAIMED_ROW], error: null });
+
+    await claimImport(IMPORT_ID, proposal, selections, NEW_BUILD);
+
+    expect(recordCreatedVia).toHaveBeenCalledWith(BUILD_ID, {
+      destination: "new",
+      importId: IMPORT_ID,
+      client: "claude-code",
+      readerId: "claude",
+    });
+    // Last: everything that matters is written before the label is attempted.
+    expect(fromTable.mock.invocationCallOrder[0]).toBeLessThan(
+      recordCreatedVia.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("records nulls rather than inventing a client the row did not carry", async () => {
+    answer({ data: [{ id: IMPORT_ID }], error: null });
+
+    await claimImport(IMPORT_ID, proposal, selections, NEW_BUILD);
+
+    expect(recordCreatedVia).toHaveBeenCalledWith(BUILD_ID, {
+      destination: "new",
+      importId: IMPORT_ID,
+      client: null,
+      readerId: null,
+    });
   });
 
   it("says so when the row was already claimed, instead of pretending", async () => {
@@ -281,7 +337,7 @@ describe("claimImport into a new build", () => {
 
 describe("claimImport into an existing draft", () => {
   it("never creates a build: it checks the draft, writes through the same writer, and marks the row with that draft", async () => {
-    answer({ data: [{ id: IMPORT_ID }], error: null });
+    answer({ data: [CLAIMED_ROW], error: null });
 
     const claimed = await claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT);
 
@@ -306,8 +362,43 @@ describe("claimImport into an existing draft", () => {
     expect(methods()).toEqual(["from", "update", "eq", "eq", "select"]);
   });
 
+  /**
+   * The destination is passed through as the creator chose it, because that is
+   * the whole difference between the two shapes provenance stores: a new build
+   * states the connector record, an existing draft appends to whatever it has.
+   */
+  it("records the provenance against the chosen draft, as an existing destination", async () => {
+    answer({ data: [CLAIMED_ROW], error: null });
+
+    await claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT);
+
+    expect(recordCreatedVia).toHaveBeenCalledWith(BUILD_ID, {
+      destination: "existing",
+      importId: IMPORT_ID,
+      client: "claude-code",
+      readerId: "claude",
+    });
+  });
+
+  /**
+   * The label is the last thing and the least of them: by the time it runs the
+   * conversation is in the draft and the import is marked claimed, so a failure
+   * there must not become a failed claim. THAT GUARANTEE LIVES IN
+   * recordCreatedVia, WHICH DOES NOT THROW, and it is proved in
+   * provenance.test.ts rather than here — this file mocks the function away, so
+   * a test here could only prove something about the mock.
+   */
+  it("hands back the claim once the provenance record has settled", async () => {
+    answer({ data: [CLAIMED_ROW], error: null });
+
+    const claimed = await claimImport(IMPORT_ID, proposal, selections, INTO_DRAFT);
+
+    expect(claimed).toEqual({ buildId: BUILD_ID, counts: WRITTEN });
+    expect(recordCreatedVia).toHaveBeenCalledTimes(1);
+  });
+
   it("hands back what the writer wrote, so a draft that already held the conversation reports nothing added", async () => {
-    answer({ data: [{ id: IMPORT_ID }], error: null });
+    answer({ data: [CLAIMED_ROW], error: null });
     const nothing = { ...WRITTEN, events: 0, alreadyMaterialised: true };
     materialiseProposal.mockResolvedValueOnce(nothing);
 

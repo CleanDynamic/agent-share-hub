@@ -33,6 +33,11 @@
 // what makes the second destination safe without a line of merging here. The
 // only thing this module adds for it is the check that the chosen draft is the
 // signed-in creator's own and still a draft, done before anything is written.
+//
+// PROVENANCE (EX-P14). A claim also records HOW the build arrived, on
+// builds.created_via, through ./provenance. It is the last thing the claim
+// does, it never throws, and it is a label: no signal reads it, completeness
+// does not count it, and the gallery neither ranks nor gates on it.
 
 import { supabase } from "@/integrations/supabase/client";
 import { createBuild, getBuildHeader, listDraftBuildsByCreator } from "./builds";
@@ -42,6 +47,7 @@ import {
   type MaterialiseCounts,
   type TranscriptProposal,
 } from "./intake";
+import { recordCreatedVia } from "./provenance";
 import { buildLayerError } from "./types";
 
 /** The private bucket the connector's chunks land in. */
@@ -158,11 +164,24 @@ interface ProposalRow {
   proposal: unknown;
 }
 
-/** What an update hands back: the one column each caller asks for. */
+/** What an update hands back: the columns each caller asks for. */
 interface UpdatedRow {
   id?: string;
   user_id?: string;
+  /** Read by the claim alone, for the provenance line — see CLAIMED_COLUMNS. */
+  client?: string | null;
+  reader_id?: string | null;
 }
+
+/**
+ * What the claim's UPDATE returns.
+ *
+ * `id` proves a row was still parsed when it was marked. The other two are for
+ * EX-P14's provenance record and are taken from the RETURNING clause of a write
+ * that was happening anyway, rather than from a second read of a row this
+ * function has already touched.
+ */
+const CLAIMED_COLUMNS = "id, client, reader_id";
 
 type RowResult<Row> = PromiseLike<{ data: Row[] | null; error: unknown }>;
 type SingleResult<Row> = PromiseLike<{ data: Row | null; error: unknown }>;
@@ -402,7 +421,7 @@ export async function claimImport(
     .update({ status: STATUS_CLAIMED, build_id: buildId, updated_at: stamp() })
     .eq("id", importId)
     .eq("status", STATUS_PARSED)
-    .select("id");
+    .select(CLAIMED_COLUMNS);
   if (error) throw buildLayerError("claimImport", error);
   if (!data || data.length === 0) {
     throw buildLayerError(
@@ -413,6 +432,25 @@ export async function claimImport(
       ),
     );
   }
+
+  // EX-P14 — how this build arrived, recorded last and on purpose.
+  //
+  // LAST, because everything that matters is already written by this point: the
+  // creator's conversation is in their draft and the import is marked claimed.
+  // What is left is a sentence on the build page, and recordCreatedVia does not
+  // throw — a claim that reported failure after succeeding would be a worse
+  // fault than a missing caption. This is the trade the paste path already
+  // makes for applyRepoHeader in ComposeNew.
+  //
+  // The two values come from the RETURNING clause above rather than a second
+  // read, and neither is conversation content: `client` is one of the
+  // connector's six names and `reader_id` is an intake reader's id.
+  await recordCreatedVia(buildId, {
+    destination: destination.kind,
+    importId,
+    client: data[0]?.client ?? null,
+    readerId: data[0]?.reader_id ?? null,
+  });
 
   return { buildId, counts };
 }

@@ -353,6 +353,69 @@ reused rather than copied there.
 
 ## EX-P14 — Provenance
 
+**NOT YET DEPLOYED OR CHECKED ON THE LIVE BACKEND**, like EX-P05 onwards.
+`supabase/migrations/20260921130000_builds_created_via.sql` adds one nullable
+JSONB column, `public.builds.created_via`, with a comment and nothing else — no
+default, no backfill, no index, **no policy change and therefore no new
+`auth.uid()` of either form**. The four policies on `builds` are column-agnostic
+and already right: a visitor reads it because the published row is readable, and
+a creator writes it because their own row is writable. `ADD COLUMN` with no
+default is catalogue-only on PG11+, so it applies in constant time.
+
+`claimImport` records it **last**, after the rows are written and after the
+import is marked claimed, through `src/lib/build/provenance.ts`. **This is a
+browser write through the data layer, with the creator's own session** — not an
+edge-function write, so prohibitions 1 and 2 are untouched and the `mcp`
+function was not opened. The `client` and `reader_id` it stores ride the
+RETURNING clause of the claim's existing UPDATE (`id, client, reader_id`), so
+provenance costs **no extra read** on the new-build path and one on the existing-
+draft path, where the current value has to be read before it can be appended to.
+
+`recordCreatedVia` **never throws**, and that is the design, not an oversight:
+by the time it runs the creator's conversation is already in their draft, so a
+claim that reported failure over a caption would be lying about the part that
+mattered. It is the trade `applyRepoHeader` already makes on the paste path. A
+failure logs **a code and the build id and nothing else** — the database's own
+error code, never its message, because a message can quote a value.
+
+**Three things for the next session.**
+
+First, **the append is read-then-write and is not atomic.** Two claims into the
+same draft at the same moment could each read the same array, and the later write
+wins, so one import id would be missing from the label. Making it atomic needs
+the append done in SQL by a database function; for a caption, on a race a single
+creator has to open two tabs to cause, that was judged more surface than the
+fault is worth. Written down here so the next person meets it as a decision
+rather than a bug.
+
+Second, **`created_via` is deliberately NOT in `BUILD_COLUMNS`.** That list is
+spent by the gallery, the drafts list and every profile's builds, and none of
+them draws a provenance line — so the build page reads the one column for the
+one build in its own query (`getCreatedVia`), and no list pays for a JSONB blob
+it will not render. Resist adding it to the shared list; the page already has
+four small queries of exactly this shape.
+
+Third, **nothing reads it but the page, and that was checked rather than
+assumed.** `grep -n created_via src/lib/build/signals.ts src/lib/build/
+gallery.ts` returns nothing, which is the whole point: completeness does not
+count it, the gallery neither ranks nor gates on it, and a provenance mark that
+moved a build up a list would be a reason to game how work arrived instead of
+what it is. The line is `--text2` body prose in its own element — **never a
+badge, never a warning colour** — and the guard that decides whether to render
+it sits OUTSIDE the `<Section>` wrapper, because an empty flex item in a
+`gap: 32` column would cost 32px of blank page to every build made before this
+step. A tier-3 spec measures that.
+
+Coverage: 24 unit tests on `provenance.ts` (the three shapes, the unknown-key
+preservation, the no-duplicate-id guard, and that the log carries only a code
+and an id), 25 on the line's copy, 4 added to `imports.test.ts`, and
+`e2e/tier3/provenance-line.spec.ts` — 11 browser tests: the copy end to end and
+the muted token resolved in BOTH themes, no sideways scroll at 390/768/1400
+with the line present, and the two no-provenance cases. The migration itself was
+applied to a local PostgreSQL 16.13 and checked for the column's type and
+nullability, the comment, zero policies, zero new indexes and the three shapes
+round-tripping. **Not run against project `zybdotagjwektucfdkri`.**
+
 ## EX-P15 — Hostile content
 
 ## EX-P16 — Observability

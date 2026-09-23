@@ -46,6 +46,20 @@ vi.mock("@/lib/bounty", async (importOriginal) => {
  * cannot sign anything. The stub keeps the transform visible in the URL so the
  * width each slot asks for can be asserted.
  */
+/**
+ * The provenance read is stubbed to "nothing recorded" (EX-P14).
+ *
+ * The page asks it how this build arrived; every build in this file arrived
+ * some other way, so the honest answer is null and no line renders. It is
+ * stubbed rather than left real because the real one talks to PostgREST, and a
+ * page test should not depend on a network call to decide it draws no caption.
+ * The line's own behaviour is src/components/build/CreatedViaLine.test.tsx.
+ */
+const getCreatedVia = vi.fn().mockResolvedValue(null);
+vi.mock("@/lib/build/provenance", () => ({
+  getCreatedVia: (buildId: string) => getCreatedVia(buildId),
+}));
+
 vi.mock("@/lib/build", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/build")>();
   return {
