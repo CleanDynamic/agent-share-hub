@@ -22,6 +22,13 @@
       "when": 1790172985048,
       "tag": "0002_node_type_help_copy_and_build_feed",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790190274275,
+      "tag": "0003_bounties_header_table",
+      "breakpoints": true
     }
   ]
 }
