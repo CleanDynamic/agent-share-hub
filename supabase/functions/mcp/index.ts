@@ -1505,7 +1505,7 @@ export function buildServer(
       // keeps published work — readable by everyone — out of this list.
       const { data, error, count } = await supabase
         .from("builds")
-        .select("id, title, updated_at, build_nodes(count)", { count: "exact" })
+        .select("id, title, updated_at, build_nodes!build_nodes_build_id_fkey(count)", { count: "exact" })
         .eq("creator_id", caller.id)
         .eq("status", "draft")
         .order("updated_at", { ascending: false })

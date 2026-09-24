@@ -1139,7 +1139,7 @@ Deno.test("list_drafts reads the caller's own drafts through their own client, n
   assertEquals(queries.length, 1);
   const q = queries[0];
   assertEquals(q.table, "builds");
-  assertEquals(q.columns, "id, title, updated_at, build_nodes(count)");
+  assertEquals(q.columns, "id, title, updated_at, build_nodes!build_nodes_build_id_fkey(count)");
   assertEquals(q.options, { count: "exact" });
   assertEquals(q.filters, [
     { kind: "eq", column: "creator_id", value: CALLER.id },
@@ -3141,4 +3141,49 @@ Deno.test("EX-P16: the monitor's post is the one request the function makes of i
     for (const _ of code.matchAll(/\bfetch\(/g)) callers.push(entry.name);
   }
   assertEquals(callers.sort(), ["index.ts", "monitor.ts"], "handler.fetch(req) in index.ts, and one post in monitor.ts");
+});
+
+// -----------------------------------------------------------------------------
+// EX-P18-fix — list_drafts names the link it counts parts through
+// -----------------------------------------------------------------------------
+// builds and build_nodes are joined three ways: a build's parts
+// (build_nodes.build_id), its hero (builds.hero_node_id) and the gap it solves
+// (builds.solves_node_id). PostgREST refuses an embed that does not say which
+// one it means, with PGRST201, before it reads a single row — so a bare
+// build_nodes(count) failed list_drafts for every caller. builds and
+// build_events are joined two ways (build_events.build_id and
+// builds.forked_from_event_id), with the same result. Every other test's fake
+// answers whatever it is asked, which is how the bare embed passed them; this
+// one refuses it the way PostgREST does.
+
+/** PostgREST's answer to an embed from builds that names no foreign key. */
+function refuseUnnamedEmbeds(q: Query): Answer | null {
+  if (q.table !== "builds") return null;
+  // bare, aliased (parts:build_nodes) or with only a join modifier (!inner)
+  const bare = (q.columns ?? "").match(/(?:^|[\s,:])(build_nodes|build_events)(?:!(?:inner|left))?\(/);
+  if (!bare) return null;
+  return {
+    error: {
+      code: "PGRST201",
+      message: `Could not embed because more than one relationship was found for 'builds' and '${bare[1]}'`,
+    },
+  };
+}
+
+Deno.test("EX-P18-fix: list_drafts counts parts through the build's own foreign key, which PostgREST can resolve", async () => {
+  const rows = [
+    { id: DRAFT_ID, title: "Invoice chaser agent", updated_at: "2026-09-17T09:00:00Z", build_nodes: [{ count: 4 }] },
+  ];
+  const { result, queries } = await call(
+    "buildgallery_list_drafts",
+    { response_format: "json" },
+    (q) => refuseUnnamedEmbeds(q) ?? { data: rows, count: rows.length },
+  );
+
+  assertEquals(result?.isError, undefined, text(result));
+  assertEquals(result!.structuredContent!.drafts, [
+    { id: DRAFT_ID, title: "Invoice chaser agent", last_touched: "2026-09-17T09:00:00Z", part_count: 4 },
+  ]);
+  assertEquals(queries.length, 1);
+  assertStringIncludes(queries[0].columns ?? "", "build_nodes!build_nodes_build_id_fkey(count)");
 });
