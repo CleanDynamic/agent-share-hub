@@ -15,6 +15,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { useMemo } from "react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { Matcher, MatcherOptions } from "@testing-library/dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
