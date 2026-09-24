@@ -329,8 +329,18 @@ function isProposal(value: unknown): value is TranscriptProposal {
   );
 }
 
-/** Named columns for the counts read: the id and two embedded counts, nothing else. */
-const TARGET_COUNT_COLUMNS = "id, build_nodes(count), build_events(count)";
+/**
+ * Named columns for the counts read: the id and two embedded counts, nothing else.
+ *
+ * Each embed names the foreign key it counts through. builds is joined to
+ * build_nodes three ways (a build's parts, hero_node_id, solves_node_id) and to
+ * build_events two ways (a build's steps, forked_from_event_id), and PostgREST
+ * refuses an embed that does not say which with PGRST201, before it reads a
+ * row. The gallery and the connector's list_drafts name build_nodes' key the
+ * same way.
+ */
+const TARGET_COUNT_COLUMNS =
+  "id, build_nodes!build_nodes_build_id_fkey(count), build_events!build_events_build_id_fkey(count)";
 
 interface TargetCountRow {
   id: string;

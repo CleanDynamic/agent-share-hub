@@ -471,7 +471,9 @@ describe("listClaimTargets", () => {
     expect(callOf("from")?.args).toEqual(["builds"]);
     const select = String(callOf("select")?.args[0]);
     expect(select).not.toContain("*");
-    expect(select).toBe("id, build_nodes(count), build_events(count)");
+    expect(select).toBe(
+      "id, build_nodes!build_nodes_build_id_fkey(count), build_events!build_events_build_id_fkey(count)",
+    );
     expect(callOf("in")?.args).toEqual(["id", [BUILD_ID, OTHER_BUILD_ID]]);
     expect(callOf("limit")?.args).toEqual([2]);
 
@@ -487,7 +489,89 @@ describe("listClaimTargets", () => {
     await expect(listClaimTargets()).resolves.toEqual([]);
     expect(fromTable).not.toHaveBeenCalled();
   });
+
+  // EX-P18-fix2 — the counts read names the links it counts through. builds
+  // and build_nodes are joined three ways (a build's parts, its hero, the gap
+  // it solves) and builds and build_events two (its steps, the event it was
+  // forked from), and PostgREST refuses an embed that does not say which with
+  // PGRST201 before it reads a row — so the bare embeds emptied the picker for
+  // every creator with a draft. The recording chain answers whatever it is
+  // asked, which is how they passed; answerAsPostgrest answers the way
+  // PostgREST does.
+
+  it("EX-P18-fix2: counts each draft's parts and steps through its own foreign keys, which PostgREST can resolve", async () => {
+    listDraftBuildsByCreator.mockResolvedValueOnce([
+      { id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z" },
+    ]);
+    answerAsPostgrest([{ id: BUILD_ID, build_nodes: [{ count: 4 }], build_events: [{ count: 12 }] }]);
+
+    await expect(listClaimTargets()).resolves.toEqual([
+      { id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z", part_count: 4, step_count: 12 },
+    ]);
+  });
+
+  it("EX-P18-fix2: offers each creator their own drafts and never another creator's", async () => {
+    // A draft each. The counts read answers for BOTH, the way an admin's
+    // session could read them, so what keeps the other one out is this
+    // function and not the database.
+    const draftsOf: Record<string, unknown[]> = {
+      [USER_ID]: [{ id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z" }],
+      [OTHER_USER_ID]: [{ id: OTHER_BUILD_ID, title: "Their private notes", updated_at: "2026-09-17T10:00:00Z" }],
+    };
+    listDraftBuildsByCreator.mockImplementation(async (creatorId: string) => draftsOf[creatorId] ?? []);
+    const bothCounted = [
+      { id: OTHER_BUILD_ID, build_nodes: [{ count: 9 }], build_events: [{ count: 9 }] },
+      { id: BUILD_ID, build_nodes: [{ count: 1 }], build_events: [{ count: 2 }] },
+    ];
+
+    answerAsPostgrest(bothCounted);
+    const mine = await listClaimTargets();
+
+    expect(listDraftBuildsByCreator).toHaveBeenLastCalledWith(USER_ID);
+    expect(callOf("in")?.args).toEqual(["id", [BUILD_ID]]);
+    expect(mine).toEqual([
+      { id: BUILD_ID, title: "Inbox triage agent", updated_at: "2026-09-16T10:00:00Z", part_count: 1, step_count: 2 },
+    ]);
+
+    // And the same from the other creator's side.
+    tableCalls.length = 0;
+    getSession.mockResolvedValueOnce({ data: { session: { user: { id: OTHER_USER_ID } } }, error: null });
+    answerAsPostgrest(bothCounted);
+    const theirs = await listClaimTargets();
+
+    expect(listDraftBuildsByCreator).toHaveBeenLastCalledWith(OTHER_USER_ID);
+    expect(callOf("in")?.args).toEqual(["id", [OTHER_BUILD_ID]]);
+    expect(theirs.map((target) => target.id)).toEqual([OTHER_BUILD_ID]);
+  });
 });
+
+/**
+ * The next table read, answered the way PostgREST answers it: an embed of
+ * build_nodes or build_events that names no foreign key — bare, aliased, or
+ * with only a join modifier — is refused with the live PGRST201 wording, and
+ * anything else gets `rows`.
+ */
+function answerAsPostgrest(rows: unknown[]) {
+  fromTable.mockImplementationOnce((table: string) => {
+    tableCalls.push({ method: "from", args: [table] });
+    const builder = chain({ data: null, error: null }, tableCalls);
+    builder.then = (resolve: (value: unknown) => unknown) => {
+      const columns = String(callOf("select")?.args[0] ?? "");
+      const bare = /(?:^|[\s,:])(build_nodes|build_events)(?:!(?:inner|left))?\(/.exec(columns);
+      const result = bare
+        ? {
+            data: null,
+            error: {
+              code: "PGRST201",
+              message: `Could not embed because more than one relationship was found for 'builds' and '${bare[1]}'`,
+            },
+          }
+        : { data: rows, error: null };
+      return Promise.resolve(result).then(resolve);
+    };
+    return builder;
+  });
+}
 
 describe("discardImport", () => {
   it("marks the row expired while it is still parsed, then sweeps the owner's chunk folder", async () => {
