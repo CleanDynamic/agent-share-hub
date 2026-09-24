@@ -990,12 +990,12 @@ export default function Kit() {
       <Section title="Switch, checkbox, radio">
         <Row label="switch">
           <Switch checked={switched} onCheckedChange={setSwitched} aria-label="Switch" />
-          <Switch checked={false} aria-label="Switch, off" readOnly />
+          <Switch checked={false} onCheckedChange={() => {}} aria-label="Switch, off" />
           <Switch disabled aria-label="Switch, disabled" />
         </Row>
         <Row label="checkbox">
           <Checkbox checked={checked} onCheckedChange={(v) => setChecked(v === true)} aria-label="Checkbox" />
-          <Checkbox checked={false} aria-label="Checkbox, off" readOnly />
+          <Checkbox checked={false} onCheckedChange={() => {}} aria-label="Checkbox, off" />
           <Checkbox disabled aria-label="Checkbox, disabled" />
         </Row>
         <Row label="radio">

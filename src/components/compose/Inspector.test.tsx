@@ -15,6 +15,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { useMemo } from "react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { Matcher, MatcherOptions } from "@testing-library/dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -274,7 +275,9 @@ function renderInspector(node: BuildNode, nodeTypes: NodeType[] = [PROMPT_TYPE, 
  * would rather than asserting against a panel no creator sees. A type with a
  * short optional tail has no expander and this is a no-op.
  */
-function openMoreDetail(view: { queryByTestId: typeof screen.queryByTestId } = screen) {
+function openMoreDetail(
+  view: { queryByTestId: (id: Matcher, options?: MatcherOptions) => HTMLElement | null } = screen
+) {
   const toggle = view.queryByTestId("inspector-more-detail");
   if (toggle) fireEvent.click(toggle);
 }

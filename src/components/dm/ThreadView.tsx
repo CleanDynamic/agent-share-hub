@@ -180,8 +180,7 @@ function PostShareCard({ contentId }: { contentId: string }) {
   return (
     <div
       className="overflow-hidden cursor-pointer"
-      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}` }}
-      style={{ maxWidth: 260 }}
+      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}`, maxWidth: 260 }}
       onClick={(e) => { e.stopPropagation(); navigate(`/content/${content.id}`); }}
     >
       {content.cover_image_url && (
@@ -212,8 +211,7 @@ function ReblogShareCard({ reblogId, meta }: { reblogId: string | null; meta: an
   return (
     <div
       className="overflow-hidden cursor-pointer"
-      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}` }}
-      style={{ maxWidth: 260 }}
+      style={{ borderRadius: r["r-media"], border: `1px solid ${t.line}`, maxWidth: 260 }}
       onClick={(e) => {
         e.stopPropagation();
         if (slug) navigate(`/b/${slug}`);

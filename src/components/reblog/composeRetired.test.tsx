@@ -215,6 +215,7 @@ describe("no UI path opens the reblog composer", () => {
     const onReblogClick = vi.fn();
     const { container } = mount(
       <ReblogFeedCard
+        variant="feed"
         reblog={{
           id: "reblog-1",
           slug: "a-published-post-rb-0001",
@@ -314,6 +315,7 @@ describe("an existing reblog is untouched below the removed button", () => {
     const onBookmarkClick = vi.fn();
     mount(
       <ReblogFeedCard
+        variant="feed"
         reblog={{
           id: "reblog-1",
           slug: "a-published-post-rb-0001",
