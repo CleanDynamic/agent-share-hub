@@ -210,17 +210,23 @@ function messageOf(cause: unknown): string {
  * the top of it, uncounted; one published or deleted since falls back to a new
  * build, and the step says which. Nothing is trusted from the import itself
  * beyond the id: the header is read through the data layer, under RLS.
+ *
+ * EX-P18-fix2b: RLS is not the owner check, because an admin can read every
+ * draft. A build that is not the signed-in creator's own answers exactly as
+ * one that does not exist, checked before its status as verifyClaimTarget
+ * checks it, so the step never offers, names or describes someone else's.
  */
 async function resolveDestination(
   targetId: string | null,
   targets: ClaimTarget[],
+  creatorId: string | null,
 ): Promise<{ preset: DestinationPreset; targets: ClaimTarget[] }> {
   if (!targetId) return { preset: { kind: "none" }, targets };
   if (targets.some((target) => target.id === targetId)) {
     return { preset: { kind: "draft", buildId: targetId }, targets };
   }
   const header = await getBuildHeader(targetId);
-  if (!header) return { preset: { kind: "missing" }, targets };
+  if (!header || header.creator_id !== creatorId) return { preset: { kind: "missing" }, targets };
   if (header.status !== "draft") return { preset: { kind: "published" }, targets };
   return {
     preset: { kind: "draft", buildId: targetId },
@@ -339,7 +345,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 export default function ComposeNew() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isLoggedIn, loading: authLoading } = useAuth();
+  const { isLoggedIn, loading: authLoading, user } = useAuth();
+  const creatorId = user?.id ?? null;
 
   const [stage, setStage] = useState<Stage>({ name: "idle" });
   const [text, setText] = useState("");
@@ -705,7 +712,7 @@ export default function ComposeNew() {
         } catch (cause) {
           targetsError = `Your drafts could not be read: ${messageOf(cause)}`;
         }
-        const resolved = await resolveDestination(item.target_build_id, targets);
+        const resolved = await resolveDestination(item.target_build_id, targets, creatorId);
         setStage({
           name: "destination",
           importId: item.id,
@@ -722,7 +729,7 @@ export default function ComposeNew() {
         setOpeningId(null);
       }
     },
-    [discardingId, openingId]
+    [creatorId, discardingId, openingId]
   );
 
   /**
