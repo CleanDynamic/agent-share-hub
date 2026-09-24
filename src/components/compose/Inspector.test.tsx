@@ -274,7 +274,9 @@ function renderInspector(node: BuildNode, nodeTypes: NodeType[] = [PROMPT_TYPE, 
  * would rather than asserting against a panel no creator sees. A type with a
  * short optional tail has no expander and this is a no-op.
  */
-function openMoreDetail(view: { queryByTestId: typeof screen.queryByTestId } = screen) {
+function openMoreDetail(
+  view: { queryByTestId: (id: Matcher, options?: MatcherOptions) => HTMLElement | null } = screen
+) {
   const toggle = view.queryByTestId("inspector-more-detail");
   if (toggle) fireEvent.click(toggle);
 }

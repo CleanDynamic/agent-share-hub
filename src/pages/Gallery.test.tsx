@@ -89,6 +89,7 @@ class ObserverStub implements IntersectionObserver {
   static instances: ObserverStub[] = [];
   readonly root = null;
   readonly rootMargin = "";
+  readonly scrollMargin = 0;
   readonly thresholds: readonly number[] = [];
   readonly observed: Element[] = [];
   disconnected = false;
