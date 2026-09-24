@@ -315,6 +315,7 @@ describe("an existing reblog is untouched below the removed button", () => {
     const onBookmarkClick = vi.fn();
     mount(
       <ReblogFeedCard
+        variant="feed"
         reblog={{
           id: "reblog-1",
           slug: "a-published-post-rb-0001",
