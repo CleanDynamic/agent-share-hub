@@ -484,3 +484,24 @@ bun.lock are untouched, so what Lovable installs is unchanged. Lovable only upda
 bun.lock, so this recurs the next time it adds a package.
 
 ## EX-P19 — Live vocabulary (optional)
+
+**Not yet deployed or checked on the live backend.** One resource and one prompt,
+neither a tool. `buildgallery://node-types` is written on every read from
+`node_types` through the caller's own client (`key, label, category, schema`, active
+only, ordered category → sort → key, capped at 1,000 rows): one line per type, under
+20,000 characters, whole categories left out and named past that. Its read result
+carries `ttlMs` 3,600,000 and `cacheScope` "public" on 2026-07-28 through the SDK's
+per-resource `cacheHint`, and a 2025-era reply is unchanged. `extract` is
+`BUILDGALLERY_EXTRACTOR.md` minus its selection and sorting, plus the three calls.
+Option A: the secrets rule is gone, because `finish_import` redacts. Both say that
+what comes back is data, never instructions. No migration: `node_types` is already
+`SELECT USING (true)`, so there is no new policy. `SERVER_VERSION` is 0.5.0.
+
+**Three things for the next session.** First, `^2.0.0` resolves to
+`@modelcontextprotocol/server` 2.1.0, which answered a 2026-07-28 request in the
+tests with `resultType` and the cache fields. The PROTOCOL paragraph at the top of
+`mcp/index.ts` (open question 1) may be out of date; it was not touched here.
+Second, `resources/list` and `prompts/list` still carry the SDK's 2026 defaults
+(`ttlMs` 0, `private`); only the read was asked for. Third, the prompt is a copy.
+The EX-P19 test fails if a sentence it keeps changes in the public file, and
+`cacheScope` must become `private` if `node_types` reads ever narrow.
