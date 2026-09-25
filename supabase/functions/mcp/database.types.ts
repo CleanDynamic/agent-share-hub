@@ -19,6 +19,9 @@
 //   EX-P06  import_sessions the pipe, in full — 20260917120000_import_sessions.sql
 //           builds          begin_import verifies a target; list_drafts lists
 //           build_nodes     list_drafts counts a draft's parts
+//   EX-P19  node_types      the vocabulary resource reads four columns, filters
+//                           on is_active and orders by sort — from
+//                           20260823120000_build_record_core_schema.sql
 // =============================================================================
 
 export interface Database {
@@ -163,6 +166,33 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      node_types: {
+        Row: {
+          key: string;
+          label: string;
+          category: string;
+          schema: unknown;
+          is_active: boolean;
+          sort: number;
+        };
+        Insert: {
+          key: string;
+          label: string;
+          category: string;
+          schema?: unknown;
+          is_active?: boolean;
+          sort?: number;
+        };
+        Update: {
+          key?: string;
+          label?: string;
+          category?: string;
+          schema?: unknown;
+          is_active?: boolean;
+          sort?: number;
+        };
+        Relationships: [];
       };
     };
     Views: Record<never, never>;
