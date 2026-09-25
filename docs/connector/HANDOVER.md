@@ -464,4 +464,13 @@ drafts could not be read" and offered none. Both embeds now name their
 and the tier-3 stub now refuse an unnamed embed the way PostgREST does — both had
 answered it, which is how it passed.
 
+## EX-P18-fix2b — Draft owner check on the destination step
+
+**Not yet checked on the live site.** `resolveDestination` in `src/pages/ComposeNew.tsx`
+read a named `target_build_id` by id and offered it if it was a draft, trusting RLS —
+but an admin can read every draft, so an admin whose own import row named someone
+else's (a hand-edited row; the connector stores only the caller's own) saw its title.
+It now checks `creator_id` against `useAuth()` first and answers "no longer exists",
+as `verifyClaimTarget` already refused the claim itself.
+
 ## EX-P19 — Live vocabulary (optional)

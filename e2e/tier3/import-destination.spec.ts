@@ -879,5 +879,43 @@ for (const viewport of WIDTHS) {
       expect(stepWrites(db)).toHaveLength(0);
       expect(await overflowsX(page)).toBe(false);
     });
+
+    test("EX-P18-fix2b: someone else's draft never reaches the picker, even when the import row names it", async ({
+      page,
+    }) => {
+      // The creator's own import row names another creator's draft. The
+      // connector never stores such a target — it checks the caller owns it —
+      // so this is a row edited by hand. The stub, like an admin's session,
+      // hands that draft's header over when it is asked for by id: what keeps
+      // it out of the picker is the page.
+      const db = seedDb([importRow(IMPORT, { target_build_id: THEIR_DRAFT })]);
+      addAnotherCreator(db);
+      await openIntake(page, db);
+
+      await rowFor(page, IMPORT).getByRole("button", { name: "Review" }).click();
+      const step = page.getByTestId("import-destination");
+      await expect(step).toBeVisible();
+
+      // Answered exactly as a draft that no longer exists: nothing of theirs is
+      // pre-selected, and a new build is the answer on offer.
+      await expect(page.getByTestId("import-destination-note")).toHaveText(
+        "Claude Code sent this to a draft that no longer exists, so it will start a new build instead."
+      );
+      await expect(page.getByTestId("import-destination-new")).toBeChecked();
+      await expect(page.getByTestId("import-destination-existing")).not.toBeChecked();
+
+      // The drafts on offer are the creator's own two, and only those.
+      await page.getByTestId("import-destination-existing").check();
+      const drafts = page.getByTestId("import-destination-draft");
+      await expect(drafts).toHaveCount(2);
+      await expect(drafts.nth(0)).toHaveAttribute("data-build-id", DRAFT);
+      await expect(drafts.nth(1)).toHaveAttribute("data-build-id", OLDER_DRAFT);
+      await expect(draftOption(page, THEIR_DRAFT)).toHaveCount(0);
+      await expect(draftOption(page, THEIR_OTHER_DRAFT)).toHaveCount(0);
+      await expect(step).not.toContainText("Their private notes");
+      await expect(step).not.toContainText("Their unpublished agent");
+      expect(stepWrites(db)).toHaveLength(0);
+      expect(await overflowsX(page)).toBe(false);
+    });
   });
 }
