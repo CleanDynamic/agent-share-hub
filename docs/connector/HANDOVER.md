@@ -473,4 +473,14 @@ else's (a hand-edited row; the connector stores only the caller's own) saw its t
 It now checks `creator_id` against `useAuth()` first and answers "no longer exists",
 as `verifyClaimTarget` already refused the claim itself.
 
+## EX-P18-fix3 — Repair npm ci
+
+`npm ci` failed on main from `87b970f` ("Applied 16 migrations"): Lovable's `04d2824`
+added drizzle-kit, drizzle-orm and postgres (tsx comes with drizzle-kit) to package.json
+and bun.lock for its own migration tooling, `drizzle.config.ts` and `drizzle/`, and left
+package-lock.json alone. npm regenerated package-lock.json: 62 dev-only entries added,
+nothing else moved, so both lockfiles list the same 697 packages. package.json and
+bun.lock are untouched, so what Lovable installs is unchanged. Lovable only updates
+bun.lock, so this recurs the next time it adds a package.
+
 ## EX-P19 — Live vocabulary (optional)
