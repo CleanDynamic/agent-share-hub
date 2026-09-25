@@ -9,11 +9,15 @@
 // proves what a creator's draft looks like afterwards, row by row.
 //
 // THE DATABASE IS AN IN-MEMORY POSTGREST, seeded per test — the same stub the
-// EX-P09 spec uses, with one addition: a `builds` select that asks for
-// `build_nodes(count)` and `build_events(count)` gets the embedded counts the
-// real PostgREST would answer with, because the picker shows what each draft
-// holds. Writes change what later reads return, so the rows asserted on below
-// are the rows the page wrote, not what the page claimed to write.
+// EX-P09 spec uses, with one addition: a `builds` select that embeds
+// build_nodes and build_events counts is answered as the real PostgREST
+// answers it — the counts, when each embed names its build_id foreign key, and
+// a PGRST201 refusal when it does not, because builds is joined to each of
+// those tables more than one way (EX-P18-fix2). Writes change what later reads
+// return, so the rows asserted on below are the rows the page wrote, not what
+// the page claimed to write. It applies no row-level security, as an admin's
+// session would not, so one creator's drafts are kept from another by the page
+// itself — which is what the EX-P18-fix2 test holds it to.
 //
 // BOTH VIEWPORTS, SET PER TEST, as the EX-P09 spec does it. SELECTORS ARE
 // ROLE, NAME AND data-testid: no `.ns-*` class, no Tailwind utility.
@@ -28,6 +32,10 @@ const DRAFT = "22222222-0000-4000-8000-000000000002";
 const OLDER_DRAFT = "22222222-0000-4000-8000-000000000003";
 const PUBLISHED = "22222222-0000-4000-8000-000000000004";
 const GONE = "22222222-0000-4000-8000-000000000009";
+/** Another creator, and two drafts of theirs. */
+const OTHER_CREATOR = "99999999-0000-4000-8000-000000000001";
+const THEIR_DRAFT = "22222222-0000-4000-8000-000000000011";
+const THEIR_OTHER_DRAFT = "22222222-0000-4000-8000-000000000012";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -222,6 +230,8 @@ interface Db {
   tables: Record<string, Row[]>;
   /** Every non-GET the page issued, in order. */
   writes: { method: string; table: string; body: unknown }[];
+  /** The id of every row any read handed to the page, in order. */
+  served: string[];
   storage: string[];
 }
 
@@ -320,8 +330,67 @@ function seedDb(imports: Row[] = [importRow(IMPORT)]): Db {
       profiles: [{ id: USER, username: "creator", display_name: "A creator", avatar_url: null }],
     },
     writes: [],
+    served: [],
     storage: [],
   };
+}
+
+/**
+ * A second creator with two drafts of their own, one already holding work,
+ * both touched more recently than anything of the first creator's — so a list
+ * that let them through would put them at its top.
+ */
+function addAnotherCreator(db: Db) {
+  const now = Date.now();
+  const stamp = new Date(now - HOUR).toISOString();
+  db.tables.builds.push(
+    buildRow(THEIR_DRAFT, {
+      creator_id: OTHER_CREATOR,
+      title: "Their private notes",
+      slug: "their-private-notes",
+      updated_at: new Date(now - HOUR).toISOString(),
+    }),
+    buildRow(THEIR_OTHER_DRAFT, {
+      creator_id: OTHER_CREATOR,
+      title: "Their unpublished agent",
+      slug: "their-unpublished-agent",
+      updated_at: new Date(now - 2 * HOUR).toISOString(),
+    })
+  );
+  db.tables.build_nodes.push({
+    id: "n-theirs",
+    build_id: THEIR_DRAFT,
+    parent_id: null,
+    position: 0,
+    type: "prompt",
+    title: "Their first part",
+    note: null,
+    payload: { text: "Not yours to see." },
+    source_ref: null,
+    event_id: null,
+    is_gap: false,
+    created_at: stamp,
+    updated_at: stamp,
+  });
+  db.tables.build_events.push({
+    id: "e-theirs",
+    build_id: THEIR_DRAFT,
+    ordinal: 1,
+    kind: "prompt",
+    occurred_at: null,
+    payload: { text: "Their first ask" },
+    phase: null,
+    phase_title: null,
+    visibility: "kept",
+    produced_node_id: null,
+    created_at: stamp,
+  });
+  db.tables.profiles.push({
+    id: OTHER_CREATOR,
+    username: "someone-else",
+    display_name: "Someone else",
+    avatar_url: null,
+  });
 }
 
 /* ───────────────────────── a small PostgREST ───────────────────────── */
@@ -365,19 +434,43 @@ function orderAndPage(rows: Row[], url: URL): Row[] {
 }
 
 /**
- * The one embedding this step asks for: `build_nodes(count)` and
- * `build_events(count)` on a builds select, answered as PostgREST answers
- * them — one object holding the count, per row.
+ * PostgREST's answer to an embed from builds of build_nodes or build_events
+ * that names no foreign key — bare, aliased, or with only a join modifier.
+ * builds is joined to build_nodes three ways (a build's parts, its hero, the
+ * gap it solves) and to build_events two (its steps, the event it was forked
+ * from), so the real one refuses with PGRST201, as HTTP 300, before it reads a
+ * row. Null when the select is one it can resolve.
+ */
+function refuseUnnamedEmbed(table: string, url: URL): Row | null {
+  if (table !== "builds") return null;
+  const select = url.searchParams.get("select") ?? "";
+  const bare = /(?:^|[\s,:])(build_nodes|build_events)(?:!(?:inner|left))?\(/.exec(select);
+  if (!bare) return null;
+  return {
+    code: "PGRST201",
+    details: null,
+    hint: null,
+    message: `Could not embed because more than one relationship was found for 'builds' and '${bare[1]}'`,
+  };
+}
+
+/**
+ * The one embedding this step asks for — each draft's parts and steps, counted
+ * through the build_id foreign keys — answered as PostgREST answers it: one
+ * object holding the count, per row.
  */
 function embedCounts(table: string, rows: Row[], url: URL, db: Db): Row[] {
   const select = url.searchParams.get("select") ?? "";
-  if (table !== "builds" || !select.includes("(count)")) return rows;
+  if (table !== "builds") return rows;
+  const parts = select.includes("build_nodes!build_nodes_build_id_fkey(count)");
+  const steps = select.includes("build_events!build_events_build_id_fkey(count)");
+  if (!parts && !steps) return rows;
   return rows.map((row) => ({
     ...row,
-    ...(select.includes("build_nodes(count)")
+    ...(parts
       ? { build_nodes: [{ count: db.tables.build_nodes.filter((n) => n.build_id === row.id).length }] }
       : {}),
-    ...(select.includes("build_events(count)")
+    ...(steps
       ? { build_events: [{ count: db.tables.build_events.filter((e) => e.build_id === row.id).length }] }
       : {}),
   }));
@@ -465,8 +558,13 @@ async function openIntake(page: Page, db: Db) {
       return json(200, matched);
     }
 
+    const refusal = refuseUnnamedEmbed(table, url);
+    if (refusal) return json(300, refusal);
+
     const matched = applyFilters(rows, url);
     const paged = embedCounts(table, orderAndPage(matched, url), url, db);
+    const handedBack = method === "HEAD" ? [] : single ? paged.slice(0, 1) : paged;
+    db.served.push(...handedBack.filter((row) => row.id !== undefined).map((row) => String(row.id)));
     const prefer = request.headers()["prefer"] ?? "";
     const headers: Record<string, string> = { "access-control-expose-headers": "content-range" };
     if (prefer.includes("count=") || method === "HEAD") {
@@ -742,6 +840,43 @@ for (const viewport of WIDTHS) {
         "ChatGPT sent this to a draft that no longer exists, so it will start a new build instead."
       );
       await expect(page.getByTestId("import-destination-new")).toBeChecked();
+      expect(await overflowsX(page)).toBe(false);
+    });
+
+    test("EX-P18-fix2: the picker offers the creator's own drafts, counted, and never another creator's", async ({
+      page,
+    }) => {
+      const db = seedDb();
+      addAnotherCreator(db);
+      await openIntake(page, db);
+
+      await rowFor(page, IMPORT).getByRole("button", { name: "Review" }).click();
+      const step = page.getByTestId("import-destination");
+      await expect(step).toBeVisible();
+      // The drafts were read: no refusal, and the second option is open.
+      await expect(page.getByTestId("import-destination-error")).toHaveCount(0);
+      await page.getByTestId("import-destination-existing").check();
+
+      // Exactly the signed-in creator's two drafts, most recently worked on
+      // first, each with what it holds.
+      const drafts = page.getByTestId("import-destination-draft");
+      await expect(drafts).toHaveCount(2);
+      await expect(drafts.nth(0)).toHaveAttribute("data-build-id", DRAFT);
+      await expect(drafts.nth(0)).toContainText("2 parts");
+      await expect(drafts.nth(0)).toContainText("2 steps");
+      await expect(drafts.nth(1)).toHaveAttribute("data-build-id", OLDER_DRAFT);
+      await expect(drafts.nth(1)).toContainText("0 parts");
+
+      // Nothing of the other creator's is offered or named on the step, though
+      // theirs are the most recently touched drafts in the database...
+      await expect(draftOption(page, THEIR_DRAFT)).toHaveCount(0);
+      await expect(draftOption(page, THEIR_OTHER_DRAFT)).toHaveCount(0);
+      await expect(step).not.toContainText("Their private notes");
+      await expect(step).not.toContainText("Their unpublished agent");
+      // ...and no read handed either of them to the page at all.
+      expect(db.served).not.toContain(THEIR_DRAFT);
+      expect(db.served).not.toContain(THEIR_OTHER_DRAFT);
+      expect(stepWrites(db)).toHaveLength(0);
       expect(await overflowsX(page)).toBe(false);
     });
   });

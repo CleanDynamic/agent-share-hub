@@ -453,4 +453,15 @@ the 1208 that Playwright 1.58.2 expects. Neither was committed.
 
 ## EX-P18 — Evaluations
 
+## EX-P18-fix2 — The drafts picker
+
+**Not yet checked on the live site.** The destination step's counts read
+(`TARGET_COUNT_COLUMNS` in `src/lib/build/imports.ts`) embedded `build_nodes` and
+`build_events` without naming a foreign key; `builds` is joined to each more than one
+way, so PostgREST refused it (PGRST201) and every creator with a draft was told "Your
+drafts could not be read" and offered none. Both embeds now name their
+`*_build_id_fkey`, the hint `list_drafts` already uses for `build_nodes`. The unit fake
+and the tier-3 stub now refuse an unnamed embed the way PostgREST does — both had
+answered it, which is how it passed.
+
 ## EX-P19 — Live vocabulary (optional)
