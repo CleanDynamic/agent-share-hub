@@ -107,6 +107,13 @@ const CONTRACT: Pairing[] = [
   // BG-P09 — the card's two layers, measured here rather than published by the
   // skill, so `spec` IS the measurement this prompt reports.
   { theme: "exhibition", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.47, floor: TEXT_FLOOR },
+  // RC-P04b — the pairings docs/reconciliation/STATES.md adds, measured here in
+  // the same way, so `spec` IS the measurement. A border and an icon are UI
+  // marks, floored at 3.0:1; the same colours as text are floored at 4.5:1.
+  { theme: "exhibition", label: "text/recess", fg: "text", bg: "recess", spec: 11.33, floor: TEXT_FLOOR },
+  { theme: "exhibition", label: "text2/recess", fg: "text2", bg: "recess", spec: 4.55, floor: TEXT_FLOOR },
+  { theme: "exhibition", label: "text border/recess", fg: "text", bg: "recess", spec: 11.33, floor: UI_FLOOR },
+  { theme: "exhibition", label: "action icon/bg", fg: "action", bg: "bg", spec: 4.8, floor: UI_FLOOR },
   // Dusk
   { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.17, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 12.04, measured: 11.48, floor: TEXT_FLOOR },
@@ -117,6 +124,11 @@ const CONTRACT: Pairing[] = [
   { theme: "dusk", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 8.19, floor: TEXT_FLOOR },
   { theme: "dusk", label: "lit/bg", fg: "lit", bg: "bg", spec: 7.47, floor: UI_FLOOR },
   { theme: "dusk", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 11.48, floor: TEXT_FLOOR },
+  // RC-P04b, as above.
+  { theme: "dusk", label: "text/recess", fg: "text", bg: "recess", spec: 10.62, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text2/recess", fg: "text2", bg: "recess", spec: 5.73, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text border/recess", fg: "text", bg: "recess", spec: 10.62, floor: UI_FLOOR },
+  { theme: "dusk", label: "action icon/bg", fg: "action", bg: "bg", spec: 6.33, floor: UI_FLOOR },
 ];
 
 const CATEGORIES: TokenName[] = [

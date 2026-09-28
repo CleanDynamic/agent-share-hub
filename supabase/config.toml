@@ -12,16 +12,10 @@ verify_jwt = false
 [functions.create-pwyw-checkout-session]
 verify_jwt = false
 
-[functions.seed-demo-data]
-verify_jwt = false
-
 [functions.import-github-readme]
 verify_jwt = false
 
 [functions.public-api]
-verify_jwt = false
-
-[functions.seed-new-posts]
 verify_jwt = false
 
 [functions.post-json]
