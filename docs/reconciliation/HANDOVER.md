@@ -5,9 +5,8 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 ## Deploy queue
 1. Owed, needs direct access to the live project (RC-P03): delete the deployed edge functions seed-demo-data, seed-ecosystem, seed-new-posts and update-seed-data, then check that seed-demo-data answers 404 to an OPTIONS request (never GET or POST).
 2. Apply supabase/migrations/20261001123000_rc_rotate_demo_passwords.sql (RC-P03), then check that no demo account holds a session.
-3. Run docs/reconciliation/rc-recon.sql (RC-P01, read-only) and paste its rows into docs/reconciliation/CLEAR-RECON.md.
-4. Apply supabase/migrations/20261001120000_rc_backup_legacy.sql (RC-P02), then check that rc_backup._manifest lists public.content_items with the Q1 post count.
-5. Apply supabase/migrations/20261001130000_rc_clear_legacy_posts.sql (RC-P04), only once the backup is confirmed and the seed functions are gone. Rehearse it first in the same session with `set rc.dry_run = 'on';`, which ends in "RC-P04 DRY RUN OK: …" and changes nothing. A real error starts "RC-P04:" and is never retried, edited or worked around. Afterwards content_items is 0 and the other Q7 counts are unchanged.
+3. Apply supabase/migrations/20261001120000_rc_backup_legacy.sql (RC-P02), then check that rc_backup._manifest lists public.content_items with 87 rows, the Q1 post count. If it holds a different number, the live data has moved since RC-P01: run Q1 and Q7 of docs/reconciliation/rc-recon.sql again before item 4.
+4. Apply supabase/migrations/20261001130000_rc_clear_legacy_posts.sql (RC-P04), only once the backup is confirmed and the seed functions are gone. Rehearse it first in the same session with `set rc.dry_run = 'on';`, which ends in "RC-P04 DRY RUN OK: …" and changes nothing. A real error starts "RC-P04:" and is never retried, edited or worked around. Afterwards content_items is 0 and the Q7 counts are unchanged: profiles 24, builds 9, build_nodes 13, dm_messages 3, dm_threads 1, follows 80.
 
 ## Deferred to after the merge
 (empty)
@@ -68,6 +67,15 @@ Migrations queued: none
 Lovable messages owed: none
 Open: Every interface prompt from RC-P05 uses docs/reconciliation/STATES.md. Row 6 records the nav as built: the desktop rail's active label is --text on an --action wash, not --action. The notes under the map name the helpers it departs from: Button's secondary, outline and destructive paints, chipSelectedStyle, and the unthemed AlertDialog. The backup and the legacy clear (RC-P02, RC-P04) have not run. tsc PASS · unit tests 2065/2065, 0 new failures vs baseline · build PASS · audit:contrast PASS · audit:themes PASS.
 Next: RC-P05; RC-P02 and RC-P04 once live access exists
+
+## RC-P01 — Clear reconnaissance, live results (re-run after RC-P04b)
+Date: 2026-09-28 · Commits: CLEAR-8 · Head: ebfaecc7
+Landed: docs/reconciliation/CLEAR-RECON.md holds the owner's live Q1–Q7 results (a summary in the owner's words, not query rows) and every value derived from them. The recon left the Deploy queue; the backup and clear items now name the live numbers to check.
+Skills applied: ⟦buildgallery-repo-map › 4⟧ ⟦supabase-postgres-best-practices › references/schema-foreign-key-indexes.md; references/security-rls-basics.md⟧ ⟦neoscale-code-review › Review output format; Verification before completion⟧
+Migrations queued: none
+Lovable messages owed: none new; the Deploy queue stands
+Open: POSTS 87 · FK_BLOCKING 6 · SURVIVORS_OK yes · DEMO_ADMINS 0 · rebuild_count live · the ten keys Q2 names match supabase/migrations. The backup and the clear were rehearsed on a local Postgres 16 stand-in with Q2's 45 keys (blocking keys as NO ACTION, then as RESTRICT) and the Q1, Q3 and Q7 row counts: the backup copies 87 posts and changes nothing in public; the dry run changes nothing; the clear leaves content_items 0 and the HOLD_CONSTANT counts unchanged; a second run is refused (scratch harness, not committed). Committed on claude/legacy-posts-clear-recon-dzh1zs, this session's branch, not rc-reconcile (CONTRACT §1.1).
+Next: RC-P05
 
 ## RC-P05 — 
 
