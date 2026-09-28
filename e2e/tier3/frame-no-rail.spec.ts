@@ -113,9 +113,14 @@ test.describe("phone", () => {
     await expect(page.getByTestId("frame-left")).not.toBeVisible();
   });
 
-  test("the Search builds button opens the gallery's search", async ({ page }) => {
+  /* RC-P10 rewrote this (CONTRACT §3.4): the button still goes to
+     /gallery?focus=search, and the Gallery now acts on it, focusing its own
+     field and dropping the parameter, so the reader lands on /gallery with the
+     cursor in the search box. */
+  test("the Search builds button opens the gallery with its search field focused", async ({ page }) => {
     await openSignedIn(page, "/");
     await page.getByRole("button", { name: "Search builds", exact: true }).click();
-    await expect(page).toHaveURL(/\/gallery\?focus=search$/);
+    await expect(page.getByRole("searchbox", { name: "Search the gallery" })).toBeFocused();
+    await expect(page).toHaveURL(/\/gallery$/);
   });
 });

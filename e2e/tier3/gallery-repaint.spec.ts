@@ -285,9 +285,10 @@ test("BG-P19 — below 1024 the band is one control opening a sheet", async ({ p
   await trigger.click();
   const sheet = page.getByRole("dialog", { name: "Filters" });
   await expect(sheet).toBeVisible();
-  // The same chips, inside it.
+  // The same chips, inside it. RC-P10: Open bounties is the Unsolved lens
+  // now, on the page itself, so the sheet holds Made for and Made with only.
   await expect(sheet.getByTestId("facet-made-for-lawyer")).toBeVisible();
-  await expect(sheet.getByTestId("facet-bounties-open")).toBeVisible();
+  await expect(sheet.getByTestId("facet-bounties-open")).toHaveCount(0);
 
   // Choosing inside the sheet narrows the grid and shows up as a removable
   // chip on the page behind it.
@@ -359,6 +360,6 @@ test("BG-P19 — the empty state fits a phone without scrolling sideways", async
   await page.goto("/gallery");
 
   await expect(page.getByTestId("gallery-empty")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Write one up" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Show what you built" })).toBeVisible();
   expect(await overflowsX(page)).toBe(false);
 });

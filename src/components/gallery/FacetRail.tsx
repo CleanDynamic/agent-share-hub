@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { useId, useState } from "react";
+import { Check, ChevronDown, ChevronUp, SlidersHorizontal, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { chipType, ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
@@ -56,6 +58,26 @@ import { body, eyebrow, tabular } from "@/lib/theme/type";
    place a reader can see everything currently narrowing the grid without
    reading three rows of twenty chips, and it is the only place the collapsed
    layout can show it at all.
+
+   RC-P10 — TWO GROUPS, SIX OPTIONS EACH, THEN "MORE".
+
+   Made for and Made with are the only facet groups now ⟦hicks-law › Budgets:
+   facet groups ≤ 2⟧: Open bounties became the Unsolved lens, in the lens row
+   above this band. Each group shows at most six options, highest count first
+   ⟦hicks-law › Readers table: frequency⟧, and a selected option is always
+   among them. A group with more ends in a text control, "More" with a chevron
+   pointing down, that reveals the rest in place and becomes "Fewer" pointing
+   up ⟦law-of-continuity › Directional indicators⟧ ⟦better-layout › Hint at
+   hidden content⟧. It is the one split the budget sanctions: the second level
+   holds more of the same, so a reader knows what is behind it before opening.
+
+   On the band the two groups stand side by side, 40 apart, each a mono label
+   with its chips 8 under it ⟦law-of-proximity⟧. Those gaps live on wrappers
+   written for this band; the sheet below 1024 keeps its rows as they were.
+
+   The chips are STATES.md rows 4 and 5: an outline chip at rest; chosen, the
+   --recess fill, a --text border, a --text label and a 12px check before it.
+   The count rides inside in DM Mono, tabular.
    ──────────────────────────────────────────────────────────────────────────── */
 
 /** Chips are 28px tall here, as they were before the repaint. */
@@ -63,6 +85,9 @@ const CHIP_HEIGHT = 28;
 
 /** Below this the band becomes a "Filters" control and a sheet. */
 export const FACET_COLLAPSE_BELOW = 1024;
+
+/** How many options a group shows before "More" ⟦hicks-law › Budgets⟧. */
+export const FACET_VISIBLE_MAX = 6;
 
 export interface FacetOption {
   /** The value as stored, which is what the query filters on. */
@@ -84,16 +109,26 @@ export interface FacetGroup {
   loading: boolean;
   /** What the group says when creators have named nothing yet. */
   emptyText: string;
-  /**
-   * The one group that names a part category.
-   *
-   * Open bounties is the same fact as the card's dashed edge and the build
-   * page's gap panel, so its chip carries `--cat-breakage` as its ink in both
-   * states — a reader who has learnt what that red means on a card should not
-   * have to learn it again here. The other two groups name a role and a tool,
-   * neither of which is a part category, so neither may borrow a category hue.
-   */
-  tone?: "breakage";
+}
+
+/**
+ * The options a group shows: highest count first, at most FACET_VISIBLE_MAX
+ * while folded, every selected option among them. Ties keep the order they
+ * arrived in. More than six selected options are all shown: that many is the
+ * reader's own choice, and hiding one of them would hide part of the query.
+ */
+export function visibleOptions(
+  options: readonly FacetOption[],
+  expanded: boolean,
+): { shown: FacetOption[]; hidden: number } {
+  const ranked = [...options].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+  if (expanded || ranked.length <= FACET_VISIBLE_MAX) return { shown: ranked, hidden: 0 };
+
+  const chosen = ranked.filter((option) => option.selected);
+  const room = Math.max(0, FACET_VISIBLE_MAX - chosen.length);
+  const kept = new Set([...chosen, ...ranked.filter((option) => !option.selected).slice(0, room)]);
+  const shown = ranked.filter((option) => kept.has(option));
+  return { shown, hidden: ranked.length - shown.length };
 }
 
 export interface SelectedFacet {
@@ -133,11 +168,7 @@ export function FacetRail({ groups, selected, onClearAll }: FacetRailProps) {
       {collapsed ? (
         <CollapsedFacets groups={groups} activeCount={selected.length} />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
-          {groups.map((group) => (
-            <FacetGroupRow key={group.key} group={group} />
-          ))}
-        </div>
+        <FacetBand groups={groups} />
       )}
 
       {selected.length > 0 ? (
@@ -151,11 +182,148 @@ export function FacetRail({ groups, selected, onClearAll }: FacetRailProps) {
    The band
    ──────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * At 1024 and up: the groups side by side, 40 apart, wrapping under each other
+ * when the column is too narrow for both. Each is its label, then its chips 8
+ * below. Every element here is new to RC-P10.
+ */
+function FacetBand({ groups }: { groups: FacetGroup[] }) {
+  return (
+    <div
+      data-visual-slot="gallery-facet-groups"
+      style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: SPACE.lg }}
+    >
+      {groups.map((group) => (
+        <BandGroup key={group.key} group={group} />
+      ))}
+    </div>
+  );
+}
+
+function BandGroup({ group }: { group: FacetGroup }) {
+  const labelId = useId();
+  return (
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      data-facet-group={group.key}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: SPACE.xs,
+        flex: "1 1 280px",
+        minWidth: 0,
+      }}
+    >
+      <span id={labelId} style={{ ...eyebrow, color: t.text2 }}>
+        {group.label}
+      </span>
+      <FacetOptions group={group} />
+    </div>
+  );
+}
+
+/**
+ * A group's chips: at most six, highest count first, a selected one always
+ * among them, then More or Fewer when there are more than six. Shared by the
+ * band and the sheet, so both fold the same way.
+ */
+function FacetOptions({ group }: { group: FacetGroup }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+
+  if (group.loading) {
+    return <span style={{ ...body, fontSize: 14, color: t.text2 }}>Loading…</span>;
+  }
+  if (group.options.length === 0) {
+    return <span style={{ ...body, fontSize: 14, color: t.text2 }}>{group.emptyText}</span>;
+  }
+
+  const { shown, hidden } = visibleOptions(group.options, expanded);
+  const foldable = expanded || hidden > 0;
+
+  return (
+    <div
+      id={listId}
+      data-facet-options={group.key}
+      style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: SPACE.xs, minWidth: 0 }}
+    >
+      {shown.map((option) => (
+        <FacetChip
+          key={option.value}
+          option={option}
+          testId={`facet-${group.key}-${option.value}`}
+        />
+      ))}
+      {foldable ? (
+        <MoreToggle
+          expanded={expanded}
+          controls={listId}
+          testId={`facet-${group.key}-more`}
+          onToggle={() => setExpanded((open) => !open)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * "More" with a chevron pointing down; "Fewer" with it pointing up. Text, in
+ * --action, because it is a control that stays where it is rather than a chip
+ * that filters (action on --bg measures 4.80 on Exhibition, 6.33 on Dusk).
+ */
+function MoreToggle({
+  expanded,
+  controls,
+  testId,
+  onToggle,
+}: {
+  expanded: boolean;
+  controls: string;
+  testId: string;
+  onToggle: () => void;
+}) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const Chevron = expanded ? ChevronUp : ChevronDown;
+
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-controls={controls}
+      data-testid={testId}
+      onClick={onToggle}
+      {...handlers}
+      style={{
+        ...chipType,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        minHeight: CHIP_HEIGHT,
+        paddingInline: 4,
+        background: "transparent",
+        border: "none",
+        borderRadius: r.chip,
+        color: t.action,
+        cursor: "pointer",
+        textDecoration: state.hovered ? "underline" : "none",
+        textUnderlineOffset: "3px",
+        ...ring(state.focusVisible),
+      }}
+    >
+      {expanded ? "Fewer" : "More"}
+      <Chevron size={12} aria-hidden strokeWidth={2.25} />
+    </button>
+  );
+}
+
 /** One group: its mono label, then its chips, wrapping under themselves. */
 function FacetGroupRow({ group }: { group: FacetGroup }) {
   return (
     <div
       data-facet-group={group.key}
+      role="group"
+      aria-label={group.label}
       style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, flexWrap: "wrap" }}
     >
       <span
@@ -182,44 +350,24 @@ function FacetGroupRow({ group }: { group: FacetGroup }) {
           minWidth: 0,
         }}
       >
-        {group.loading ? (
-          <span style={{ ...body, fontSize: 14, color: t.text2 }}>Loading…</span>
-        ) : group.options.length === 0 ? (
-          <span style={{ ...body, fontSize: 14, color: t.text2 }}>{group.emptyText}</span>
-        ) : (
-          group.options.map((option) => (
-            <FacetChip
-              key={option.value}
-              option={option}
-              tone={group.tone}
-              testId={`facet-${group.key}-${option.value}`}
-            />
-          ))
-        )}
+        <FacetOptions group={group} />
       </div>
     </div>
   );
 }
 
 /**
- * One option, as BG-P07's selectable chip.
+ * One option, as BG-P07's selectable chip, painted as STATES.md rows 4 and 5.
  *
- * SELECTION IS THREE SIGNALS AT ONCE. `chipSelectedStyle` gives the `--action`
- * border, which at 12px in a row of twenty chips is a hairline the eye can
- * miss on its own. So a selected chip also takes a `--glass-2` fill and
- * darkens its label from `--text2` to `--text`. The fill is free HERE and
- * nowhere else: the theme forbids it on a category chip because there the fill
- * encodes the category, and an outline chip's fill encodes nothing.
+ * SELECTION IS FOUR SIGNALS AT ONCE (row 5): the --recess fill, a --text
+ * border, the label darkened from --text2 to --text, and a 12px check before
+ * it, so the state survives without colour. The fill is free HERE and nowhere
+ * else: the theme forbids it on a category chip because there the fill
+ * encodes the category, and an outline chip's fill encodes nothing. It is set
+ * after Badge's own selected border, which is --action and belongs to category
+ * chips (STATES.md note on row 5).
  */
-function FacetChip({
-  option,
-  tone,
-  testId,
-}: {
-  option: FacetOption;
-  tone?: "breakage";
-  testId: string;
-}) {
+function FacetChip({ option, testId }: { option: FacetOption; testId: string }) {
   return (
     <Badge
       variant="outline"
@@ -231,11 +379,10 @@ function FacetChip({
         minHeight: CHIP_HEIGHT,
         padding: "0 10px",
         gap: 6,
-        ...(option.selected ? { background: t.glass2, color: t.text } : {}),
-        /* After the selected ink, so the category's red survives selection. */
-        ...(tone === "breakage" ? { color: t.catBreakage } : {}),
+        ...(option.selected ? { background: t.recess, borderColor: t.text, color: t.text } : {}),
       }}
     >
+      {option.selected ? <Check size={12} aria-hidden strokeWidth={2.25} /> : null}
       {option.label}
       {option.count === null ? null : (
         <span style={{ ...tabular, color: t.text2 }}>{option.count}</span>
@@ -282,7 +429,9 @@ function SelectedRow({
             minHeight: CHIP_HEIGHT,
             padding: "0 8px 0 10px",
             gap: 6,
-            background: t.glass2,
+            /* Row 5, like the chosen chip it removes. */
+            background: t.recess,
+            borderColor: t.text,
             color: t.text,
           }}
         >

@@ -60,23 +60,49 @@
 //
 // Still lazy-loaded, and it still adds no navigation entry anywhere: reachable
 // directly and from the publish confirmation.
+//
+// ── RC-P10 — THE DISCOVERY HOME ─────────────────────────────────────────────
+//
+// THE ADDRESS IS THE STATE. Lens, Made for, Made with and the query are read
+// from the URL with parseGalleryParams, and every change writes the URL with
+// galleryHref; nothing about what the reader is looking at lives only here.
+// An address the gallery cannot read in full (an unknown lens, a one-letter
+// query, focus=search once it has been acted on) is replaced by the one it
+// can.
+//
+// THE LENS ROW, above the facet band: All, Proven, Rebuilt, Unsolved. Open
+// bounties left the facets to become Unsolved, so the band holds Made for and
+// Made with only, six options each before More.
+//
+// SEARCH IS THE GALLERY WITH A QUERY. The page's own field sits at the end of
+// the title row; with a query the grid narrows to what search_build_ids
+// matched, and up to three makers whose names match sit above it. The makers
+// are the one extra request, and only with a query.
+//
+// ONE SENTENCE, ONE ACTION when there is nothing to show (STATES.md row 19):
+// nothing published yet, or nothing matching. A refused read says so (row
+// 21) rather than passing for an empty gallery.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   GALLERY_PAGE_SIZE,
-  countOpenBountyBuilds,
+  galleryHref,
   galleryShortfall,
   galleryThreshold,
   getGalleryFacets,
   listGallery,
+  parseGalleryParams,
   requirementCopy,
   type GalleryBuild,
   type GalleryPage,
+  type GalleryParams,
   type MissingItem,
 } from "@/lib/build";
+import { isPermissionError } from "@/lib/errors/permission";
+import { searchMakers, type MakerHit } from "@/lib/profile/searchMakers";
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
@@ -84,6 +110,9 @@ import {
   type FacetGroup,
   type SelectedFacet,
 } from "@/components/gallery/FacetRail";
+import { LensRow } from "@/components/gallery/LensRow";
+import { NavSearch } from "@/components/shell/NavSearch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -94,7 +123,14 @@ import { t } from "@/lib/theme/tokens";
 /* `data` imported under a name, because this file also binds `data` off a
    query result and the scale module's own note says to rename rather than
    shadow. */
-import { body, cardTitle, data as dataText, measure, tabular } from "@/lib/theme/type";
+import {
+  body,
+  cardTitle,
+  data as dataText,
+  eyebrow,
+  measure,
+  tabular,
+} from "@/lib/theme/type";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
@@ -112,23 +148,51 @@ const LOADING_CARDS = 6;
 
 export default function Gallery() {
   const { user } = useAuth();
-  const [madeFor, setMadeFor] = useState<string[]>([]);
-  const [madeWith, setMadeWith] = useState<string[]>([]);
-  /** The third filter (NS-P52): only builds asking for help. */
-  const [openBounties, setOpenBounties] = useState(false);
-  const [page, setPage] = useState(0);
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // The address, read once per change; everything below derives from it.
+  const params = useMemo(() => parseGalleryParams(searchParams), [searchParams]);
+  const { lens, madeFor, madeWith, query } = params;
+
+  /** Every filter change writes the address; the query key follows it. */
+  const go = (next: Partial<GalleryParams>) => navigate(galleryHref({ ...params, ...next }));
+
+  /* focus=search, from the phone's "Search builds" and the nav: focus this
+     page's own field, then drop the parameter. Anything else the gallery
+     cannot read is dropped in the same replace, so the address always says
+     exactly what the page is showing. */
+  const searchField = useRef<HTMLInputElement | null>(null);
+  const wantsSearch = searchParams.get("focus") === "search";
+  const written = searchParams.toString();
+  useEffect(() => {
+    if (wantsSearch) searchField.current?.focus();
+    const canonical = galleryHref(params);
+    const current = written ? `${pathname}?${written}` : pathname;
+    if (current !== canonical) navigate(canonical, { replace: true });
+  }, [wantsSearch, written, pathname, params, navigate]);
+
+  /* The page number is not in the address: it belongs to one view, and a new
+     view starts at its first page. Keyed on the view, so a filter change
+     resets it without an effect. */
+  const view = galleryHref(params);
+  const [paging, setPaging] = useState({ view, page: 0 });
+  const page = paging.view === view ? paging.page : 0;
+  const setPage = (next: number) => setPaging({ view, page: next });
 
   const offset = page * GALLERY_PAGE_SIZE;
 
   const builds = useQuery<GalleryPage>({
     // The filters are IN THE KEY, which is what makes a filter change one
     // request rather than a client-side pass over everything already loaded.
-    queryKey: ["gallery", { madeFor, madeWith, openBounties, offset }],
+    queryKey: ["gallery", { lens, madeFor, madeWith, query, offset }],
     queryFn: () =>
       listGallery({
+        lens,
         madeFor,
         madeWith,
-        openBounties,
+        query: query ?? undefined,
         offset,
         limit: GALLERY_PAGE_SIZE,
       }),
@@ -143,19 +207,13 @@ export default function Gallery() {
     staleTime: FACETS_STALE_MS,
   });
 
-  /**
-   * How many gallery builds carry an open ask.
-   *
-   * Its own query rather than a fourth key on gallery_facets: that function
-   * counts values inside two array columns and knows nothing about bounties,
-   * and one head request costs less than teaching it. Cached beside the facets
-   * for the same reason they are — the options change far more slowly than the
-   * builds they describe — so toggling this filter still costs exactly one
-   * request.
-   */
-  const bountyCount = useQuery({
-    queryKey: ["gallery-bounty-count"],
-    queryFn: countOpenBountyBuilds,
+  /* Up to three makers whose names match the query ⟦hicks-law › Remedies 7
+     Add scent⟧. The page's one extra request, made only when there is a
+     query; a failure here costs the hint, never the grid. */
+  const makers = useQuery({
+    queryKey: ["gallery-makers", query],
+    queryFn: () => searchMakers(query as string),
+    enabled: query !== null,
     staleTime: FACETS_STALE_MS,
   });
 
@@ -167,30 +225,17 @@ export default function Gallery() {
   const mediaRows = useMemo(() => rows.flatMap(cardMedia), [rows]);
   const srcByPath = useSignedMedia(mediaRows);
 
-  const toggle = (
-    value: string,
-    current: string[],
-    set: (next: string[]) => void
-  ) => {
-    set(
-      current.includes(value)
-        ? current.filter((entry) => entry !== value)
-        : [...current, value]
-    );
-    setPage(0);
-  };
+  const toggled = (current: string[], value: string) =>
+    current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
 
-  const clearAll = () => {
-    setMadeFor([]);
-    setMadeWith([]);
-    setOpenBounties(false);
-    setPage(0);
-  };
+  /** "Clear all" under the band clears the facets; the lens and query stay. */
+  const clearFacets = () => go({ madeFor: [], madeWith: [] });
 
-  const filtered = madeFor.length > 0 || madeWith.length > 0 || openBounties;
+  /** Anything narrowing the gallery, which decides which empty state is honest. */
+  const narrowed = lens !== "all" || madeFor.length > 0 || madeWith.length > 0 || query !== null;
 
   /**
-   * The three groups, in one shape.
+   * The two groups, in one shape.
    *
    * Built here rather than inside the rail because the page owns the query
    * state and the rail owns the pixels: everything below is "what is on offer
@@ -210,7 +255,7 @@ export default function Gallery() {
         label: option.label ?? option.value,
         count: option.count,
         selected: madeFor.includes(option.value),
-        onToggle: () => toggle(option.value, madeFor, setMadeFor),
+        onToggle: () => go({ madeFor: toggled(madeFor, option.value) }),
       })),
     },
     {
@@ -223,31 +268,8 @@ export default function Gallery() {
         label: option.label ?? option.value,
         count: option.count,
         selected: madeWith.includes(option.value),
-        onToggle: () => toggle(option.value, madeWith, setMadeWith),
+        onToggle: () => go({ madeWith: toggled(madeWith, option.value) }),
       })),
-    },
-    {
-      key: "bounties",
-      label: "Unsolved",
-      loading: false,
-      emptyText: "",
-      // The one group that names a part category. See FacetGroup.tone.
-      tone: "breakage",
-      options: [
-        {
-          value: "open",
-          label: "Open bounties",
-          // The count is the number of BUILDS carrying an open ask, not the
-          // number of asks: it is the size of the grid this chip produces,
-          // which is the number a reader is deciding about.
-          count: bountyCount.isLoading ? null : (bountyCount.data ?? 0),
-          selected: openBounties,
-          onToggle: () => {
-            setOpenBounties((current) => !current);
-            setPage(0);
-          },
-        },
-      ],
     },
   ];
 
@@ -255,25 +277,13 @@ export default function Gallery() {
     ...madeFor.map((value) => ({
       id: `made-for-${value}`,
       label: labelFor(groups[0], value),
-      onRemove: () => toggle(value, madeFor, setMadeFor),
+      onRemove: () => go({ madeFor: toggled(madeFor, value) }),
     })),
     ...madeWith.map((value) => ({
       id: `made-with-${value}`,
       label: labelFor(groups[1], value),
-      onRemove: () => toggle(value, madeWith, setMadeWith),
+      onRemove: () => go({ madeWith: toggled(madeWith, value) }),
     })),
-    ...(openBounties
-      ? [
-          {
-            id: "bounties-open",
-            label: "Open bounties",
-            onRemove: () => {
-              setOpenBounties(false);
-              setPage(0);
-            },
-          },
-        ]
-      : []),
   ];
 
   return (
@@ -354,14 +364,41 @@ export default function Gallery() {
 
             So the section stays exactly where it was, a sibling directly
             under the header, and `actions` stays empty. The header gained a
-            page title; it did not gain the filters. */}
+            page title; it did not gain the filters.
+
+            RC-P10: `actions` now holds ONE thing, the page's own search field,
+            at the trailing end of the title row. It is NavSearch's field
+            without the "/" shortcut, writing q into this page's address. The
+            facets still stay out of the slot, for the reasons above. */}
         <PageHeader
           eyebrow="GALLERY"
           title="Builds worth running"
           description="Builds written down completely enough to follow, ordered by how many people other than their creator have run them and said what happened."
+          actions={
+            <div data-visual-slot="gallery-search" style={{ width: 320, maxWidth: "100%" }}>
+              <NavSearch
+                shortcut={false}
+                label="Search the gallery"
+                inputRef={searchField}
+                onSearch={(next) => go({ query: next })}
+              />
+            </div>
+          }
         />
 
-      <FacetRail groups={groups} selected={selected} onClearAll={clearAll} />
+      {/* RC-P10 — the lens row, above the facet band ⟦law-of-proximity⟧: 24
+          under the header's order sentence and 24 over the band. PageHeader
+          declares SPACE.lg under itself and is not this page's to change, so
+          this new wrapper's negative top margin collapses with it: 40 − 16 is
+          24. Its bottom margin is the 24 to the band. */}
+      <div
+        data-visual-slot="gallery-lens"
+        style={{ marginTop: SPACE.md - SPACE.lg, marginBottom: SPACE.md }}
+      >
+        <LensRow current={lens} hrefFor={(next) => galleryHref({ ...params, lens: next })} />
+      </div>
+
+      <FacetRail groups={groups} selected={selected} onClearAll={clearFacets} />
 
       {/* ── BG-P15 — PageHeader sits ABOVE this column, not inside it, and
           BG-P19 lifted the facet rail out of it too.
@@ -384,16 +421,17 @@ export default function Gallery() {
         }}
       >
 
+        {query !== null ? <MakersRow makers={makers.data ?? []} /> : null}
+
         <Results
           builds={rows}
           srcByPath={srcByPath}
           total={total}
           isLoading={builds.isLoading}
           error={(builds.error as Error | null) ?? null}
-          filtered={filtered}
+          narrowed={narrowed}
           viewerId={user?.id ?? null}
           onRetry={() => void builds.refetch()}
-          onClearAll={clearAll}
         />
 
         <Pagination
@@ -425,21 +463,41 @@ function Results({
   total,
   isLoading,
   error,
-  filtered,
+  narrowed,
   viewerId,
   onRetry,
-  onClearAll,
 }: {
   builds: GalleryBuild[];
   srcByPath: ReturnType<typeof useSignedMedia>;
   total: number | null;
   isLoading: boolean;
   error: Error | null;
-  filtered: boolean;
+  /** A lens, a facet or a query is narrowing the gallery. */
+  narrowed: boolean;
   viewerId: string | null;
   onRetry: () => void;
-  onClearAll: () => void;
 }) {
+  /* A refused read is its own state (STATES.md row 21), never an empty grid:
+     "nothing here" would tell the reader something false. */
+  if (error && isPermissionError(error)) {
+    return (
+      <StateLine
+        testId="gallery-no-access"
+        sentence="You don't have access to this."
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onRetry}
+            style={{ background: "transparent" }}
+          >
+            Try again
+          </Button>
+        }
+      />
+    );
+  }
+
   if (error) {
     return (
       <Notice
@@ -461,26 +519,29 @@ function Results({
 
   if (isLoading) return <LoadingGrid />;
 
+  /* STATES.md row 19: one sentence, one action ⟦hicks-law › Budgets: empty
+     state⟧, the action the likeliest next step. Secondary (row 2), because
+     nothing on this page is filled: the frame's own controls spend the
+     primary on the phone and signed out. Both actions navigate, so both are
+     links styled as the button. */
   if (builds.length === 0) {
-    return filtered ? (
-      <Notice
+    return narrowed ? (
+      <StateLine
         testId="gallery-empty-filtered"
-        heading="No builds match — clear a filter"
-        detail="Made for and Made with have to match together. Widening either one, or dropping the open-bounty filter, is usually enough."
+        sentence="No builds match that."
         action={
-          <Button type="button" variant="secondary" onClick={onClearAll}>
-            Clear all
+          <Button asChild variant="outline" style={{ background: "transparent" }}>
+            <Link to="/gallery">Clear filters</Link>
           </Button>
         }
       />
     ) : (
-      <Notice
+      <StateLine
         testId="gallery-empty"
-        heading="Nothing in the gallery yet"
-        detail="A build reaches the gallery once its record carries enough to follow — the outcome, the thing to run, the evidence, and who it is for."
+        sentence="Nothing has been shown here yet."
         action={
-          <Button type="button" variant="secondary" asChild>
-            <Link to="/compose/new">Write one up</Link>
+          <Button asChild variant="outline" style={{ background: "transparent" }}>
+            <Link to="/compose/new">Show what you built</Link>
           </Button>
         }
       />
@@ -565,6 +626,108 @@ function LoadingGrid() {
  * bordered box in an empty column reads as a card that failed to load rather
  * than as the page saying there is nothing to show.
  */
+/**
+ * STATES.md rows 19 and 21: one sentence in --text2, one action under it, on
+ * the same ground as the grid and with the same care ⟦aesthetic-usability ›
+ * Applying It 4⟧. The sentence is the body face at 16; nothing else is added,
+ * because a second line would be a second thing to read before the action.
+ */
+function StateLine({
+  testId,
+  sentence,
+  action,
+}: {
+  testId: string;
+  sentence: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <div
+      data-testid={testId}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: SPACE.sm,
+        paddingTop: SPACE.lg,
+        paddingBottom: SPACE.lg,
+      }}
+    >
+      <p style={{ ...body, margin: 0, color: t.text2 }}>{sentence}</p>
+      {action}
+    </div>
+  );
+}
+
+/**
+ * Up to three makers whose names match the query, above the results.
+ *
+ * SCENT, NOT A SECOND LIST ⟦hicks-law › Remedies 7 Add scent⟧: "maya" is as
+ * likely a person as a build, so the people it names are offered beside the
+ * builds without a tab to switch to. A maker with no handle has no profile
+ * address to link to and is left out. Nothing renders when nobody matched.
+ */
+function MakersRow({ makers }: { makers: MakerHit[] }) {
+  const linkable = makers.filter(
+    (maker): maker is MakerHit & { username: string } => Boolean(maker.username),
+  );
+  if (linkable.length === 0) return null;
+
+  return (
+    <section
+      aria-labelledby="gallery-makers-heading"
+      data-testid="gallery-makers"
+      style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}
+    >
+      <h2 id="gallery-makers-heading" style={{ ...eyebrow, margin: 0, color: t.text2 }}>
+        Makers
+      </h2>
+      <ul
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          columnGap: SPACE.md,
+          rowGap: SPACE.xs,
+        }}
+      >
+        {linkable.map((maker) => {
+          const name = maker.display_name?.trim() || maker.username;
+          return (
+            <li key={maker.id} style={{ minWidth: 0 }}>
+              <Link
+                to={`/profile/${encodeURIComponent(maker.username)}`}
+                data-testid="gallery-maker"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: SPACE.xs,
+                  minHeight: 44,
+                  color: t.text,
+                  textDecoration: "none",
+                }}
+              >
+                <Avatar style={{ width: 32, height: 32 }}>
+                  {maker.avatar_url ? <AvatarImage src={maker.avatar_url} alt="" /> : null}
+                  <AvatarFallback style={{ background: t.recess, color: t.text2, ...dataText }}>
+                    {name.slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <span style={{ ...body, color: t.text }}>{name}</span>
+                  <span style={{ ...dataText, color: t.text2 }}>@{maker.username}</span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function Notice({
   testId,
   heading,

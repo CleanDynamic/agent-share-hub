@@ -17,6 +17,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const listGallery = vi.fn();
 const getGalleryFacets = vi.fn();
 const countOpenBountyBuilds = vi.fn();
+const searchMakers = vi.fn();
+
+vi.mock("@/lib/profile/searchMakers", () => ({
+  searchMakers: (query: string) => searchMakers(query),
+}));
 
 vi.mock("@/lib/build", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/build")>();
@@ -188,12 +193,12 @@ function setViewport(width: number) {
   });
 }
 
-function renderGallery() {
+function renderGallery(entry = "/gallery") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <HelmetProvider>
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={["/gallery"]}>
+        <MemoryRouter initialEntries={[entry]}>
           <Gallery />
         </MemoryRouter>
       </QueryClientProvider>
@@ -216,6 +221,7 @@ describe("the gallery page", () => {
     }));
     getGalleryFacets.mockResolvedValue(FACETS);
     countOpenBountyBuilds.mockResolvedValue(0);
+    searchMakers.mockResolvedValue([]);
     listGallery.mockResolvedValue({ builds: [build()], total: 1 });
   });
 
@@ -226,9 +232,9 @@ describe("the gallery page", () => {
 
     expect(listGallery).toHaveBeenCalledTimes(1);
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
-    // NS-P52 adds one head request for the bounty chip's number, cached beside
-    // the facets and never refetched on a filter change. One, not one per card.
-    expect(countOpenBountyBuilds).toHaveBeenCalledTimes(1);
+    // RC-P10: the Open bounties chip became the Unsolved lens, which carries
+    // no count, so NS-P52's head request for the chip's number is gone.
+    expect(countOpenBountyBuilds).not.toHaveBeenCalled();
     // No media on these builds, so nothing is signed either. A card resolving
     // its own media would show up here as a third call and then some.
     expect(createSignedUrl).not.toHaveBeenCalled();
@@ -353,31 +359,28 @@ describe("the gallery page", () => {
   });
 
   // NS-P52 ACCEPTANCE 2
-  it("filters to builds carrying an open bounty, in one request", async () => {
-    countOpenBountyBuilds.mockResolvedValue(3);
+  it("filters to builds carrying an open bounty through the Unsolved lens, in one request", async () => {
     renderGallery();
     await screen.findByText("Inbox triage agent");
-    expect(listGallery.mock.calls[0][0]).toMatchObject({ openBounties: false });
+    expect(listGallery.mock.calls[0][0]).toMatchObject({ lens: "all" });
 
-    const chip = screen.getByTestId("facet-bounties-open");
-    expect(chip).toHaveTextContent("Open bounties");
-    // The number is the size of the grid the chip produces, not the number of
-    // asks: a reader is deciding about builds.
-    await waitFor(() => expect(chip).toHaveTextContent("3"));
+    // RC-P10: Open bounties left the facets and became the fourth lens.
+    expect(screen.queryByTestId("facet-bounties-open")).toBeNull();
+    const unsolved = screen.getByRole("radio", { name: "Unsolved" });
+    expect(unsolved).toHaveAttribute("aria-checked", "false");
 
-    fireEvent.click(chip);
+    fireEvent.click(unsolved);
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
-    expect(listGallery.mock.calls[1][0]).toMatchObject({ openBounties: true });
-    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(listGallery.mock.calls[1][0]).toMatchObject({ lens: "unsolved" });
+    expect(screen.getByRole("radio", { name: "Unsolved" })).toHaveAttribute("aria-checked", "true");
 
-    // The options are not the results: neither the facets nor the count is
-    // refetched because a filter moved.
+    // The options are not the results: the facets are not refetched because
+    // a lens moved.
     expect(getGalleryFacets).toHaveBeenCalledTimes(1);
-    expect(countOpenBountyBuilds).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByTestId("gallery-clear-all"));
+    fireEvent.click(screen.getByRole("radio", { name: "All" }));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
-    expect(listGallery.mock.calls[2][0]).toMatchObject({ openBounties: false });
+    expect(listGallery.mock.calls[2][0]).toMatchObject({ lens: "all" });
   });
 
   it("puts a red bounty pill on a card with an open ask, and none on one without", async () => {
@@ -488,19 +491,20 @@ describe("the gallery page", () => {
     expect(screen.queryByTestId("gallery-clear-all")).toBeNull();
 
     fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
-    fireEvent.click(screen.getByTestId("facet-bounties-open"));
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByTestId("facet-made-with-Claude"));
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
 
     const chip = screen.getByTestId("selected-facet-made-for-lawyer");
     expect(chip).toHaveAttribute("aria-label", "Remove filter lawyer");
-    expect(screen.getByTestId("selected-facet-bounties-open")).toBeInTheDocument();
+    expect(screen.getByTestId("selected-facet-made-with-Claude")).toBeInTheDocument();
 
     // One chip removes one facet and leaves the other in place.
     fireEvent.click(chip);
     await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(4));
     expect(listGallery.mock.calls[3][0]).toMatchObject({
       madeFor: [],
-      openBounties: true,
+      madeWith: ["Claude"],
     });
     expect(screen.queryByTestId("selected-facet-made-for-lawyer")).toBeNull();
 
@@ -509,7 +513,6 @@ describe("the gallery page", () => {
     expect(listGallery.mock.calls[4][0]).toMatchObject({
       madeFor: [],
       madeWith: [],
-      openBounties: false,
     });
     expect(screen.queryByTestId("gallery-selected-facets")).toBeNull();
   });
@@ -690,25 +693,26 @@ describe("the gallery page", () => {
 
   // BG-P19 ACCEPTANCE 5 — all four states
   describe("its four states", () => {
-    it("says the gallery is empty, and offers the one thing that fills it", async () => {
+    it("says the gallery is empty in one sentence, and offers the one thing that fills it", async () => {
       listGallery.mockResolvedValue({ builds: [], total: 0 });
       renderGallery();
 
       const empty = await screen.findByTestId("gallery-empty");
-      expect(empty).toHaveTextContent("Nothing in the gallery yet");
-      // SECONDARY, not primary: the frame's compose control is already
-      // spending this view's one primary action.
-      expect(screen.getByRole("link", { name: "Write one up" })).toHaveAttribute(
-        "href",
-        "/compose/new"
-      );
+      // STATES.md row 19: one sentence, one action.
+      expect(empty).toHaveTextContent("Nothing has been shown here yet.");
+      expect(within(empty).getAllByRole("link")).toHaveLength(1);
+      expect(within(empty).queryAllByRole("button")).toHaveLength(0);
+      // SECONDARY, not primary: nothing on this page is filled.
+      const action = within(empty).getByRole("link", { name: "Show what you built" });
+      expect(action).toHaveAttribute("href", "/compose/new");
+      expect(action).not.toHaveAttribute("data-visual-slot", "btn-primary");
       // Not the same sentence as the filtered case, which is the whole point
       // of having two: "nothing exists" and "nothing matches" are different
       // problems with different fixes.
       expect(screen.queryByTestId("gallery-empty-filtered")).toBeNull();
     });
 
-    it("says a filter is the reason, and clears it", async () => {
+    it("says nothing matches when a filter is on, and clears every filter", async () => {
       renderGallery();
       await screen.findByText("Inbox triage agent");
 
@@ -716,12 +720,34 @@ describe("the gallery page", () => {
       fireEvent.click(screen.getByTestId("facet-made-for-lawyer"));
 
       const empty = await screen.findByTestId("gallery-empty-filtered");
-      expect(empty).toHaveTextContent("No builds match — clear a filter");
+      expect(empty).toHaveTextContent("No builds match that.");
+      const clear = within(empty).getByRole("link", { name: "Clear filters" });
+      expect(clear).toHaveAttribute("href", "/gallery");
 
       listGallery.mockResolvedValue({ builds: [build()], total: 1 });
-      fireEvent.click(within(empty).getByRole("button", { name: "Clear all" }));
+      fireEvent.click(clear);
       await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(3));
-      expect(listGallery.mock.calls[2][0]).toMatchObject({ madeFor: [] });
+      expect(listGallery.mock.calls[2][0]).toMatchObject({ madeFor: [], lens: "all" });
+    });
+
+    it("says a lens or a query that matches nothing matches nothing", async () => {
+      listGallery.mockResolvedValue({ builds: [], total: 0 });
+      renderGallery("/gallery?lens=rebuilt");
+      expect(await screen.findByTestId("gallery-empty-filtered")).toHaveTextContent(
+        "No builds match that.",
+      );
+    });
+
+    it("says a refused read is a refusal, never an empty gallery", async () => {
+      const refused = new Error("listGallery failed: permission denied for table builds");
+      (refused as Error & { cause?: unknown }).cause = { code: "42501" };
+      listGallery.mockRejectedValue(refused);
+      renderGallery();
+
+      const state = await screen.findByTestId("gallery-no-access");
+      expect(state).toHaveTextContent("You don't have access to this.");
+      expect(within(state).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+      expect(screen.queryByTestId("gallery-empty")).toBeNull();
     });
 
     it("holds the grid's shape while it loads, at the card's own proportions", async () => {
@@ -763,5 +789,98 @@ describe("the gallery page", () => {
       await screen.findByText("Inbox triage agent");
       expect(getGalleryFacets).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("the gallery's address (RC-P10)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setViewport(1440);
+    auth = { user: null };
+    motion.reduced = false;
+    (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = ObserverStub;
+    getGalleryFacets.mockResolvedValue(FACETS);
+    searchMakers.mockResolvedValue([]);
+    listGallery.mockResolvedValue({ builds: [build()], total: 1 });
+  });
+
+  it("reads the lens, the facets and the query from the address", async () => {
+    renderGallery("/gallery?lens=proven&for=lawyer&with=Claude&q=inbox+agent");
+    await screen.findByText("Inbox triage agent");
+
+    expect(listGallery.mock.calls[0][0]).toMatchObject({
+      lens: "proven",
+      madeFor: ["lawyer"],
+      madeWith: ["Claude"],
+      query: "inbox agent",
+    });
+    expect(screen.getByRole("radio", { name: "Proven" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("facet-made-for-lawyer")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("links every lens chip to its own address, keeping the rest of the view", async () => {
+    renderGallery("/gallery?for=lawyer&q=inbox");
+    await screen.findByText("Inbox triage agent");
+
+    const lenses = within(screen.getByRole("radiogroup", { name: "Lens" })).getAllByRole("radio");
+    expect(lenses.map((lens) => lens.getAttribute("href"))).toEqual([
+      "/gallery?for=lawyer&q=inbox",
+      "/gallery?lens=proven&for=lawyer&q=inbox",
+      "/gallery?lens=rebuilt&for=lawyer&q=inbox",
+      "/gallery?lens=unsolved&for=lawyer&q=inbox",
+    ]);
+  });
+
+  it("reads a lens it has no name for as All", async () => {
+    renderGallery("/gallery?lens=trending");
+    await screen.findByText("Inbox triage agent");
+
+    expect(listGallery.mock.calls[0][0]).toMatchObject({ lens: "all" });
+    expect(screen.getByRole("radio", { name: "All" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("writes a search from its own field into the address", async () => {
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+
+    const field = screen.getByRole("searchbox", { name: "Search the gallery" });
+    fireEvent.change(field, { target: { value: "  invoice   chaser " } });
+    fireEvent.submit(field);
+
+    await waitFor(() => expect(listGallery).toHaveBeenCalledTimes(2));
+    expect(listGallery.mock.calls[1][0]).toMatchObject({ query: "invoice chaser" });
+  });
+
+  it("focuses its own field on focus=search", async () => {
+    renderGallery("/gallery?focus=search");
+    const field = await screen.findByRole("searchbox", { name: "Search the gallery" });
+    await waitFor(() => expect(field).toHaveFocus());
+  });
+
+  it("offers up to three makers above the results, only with a query", async () => {
+    searchMakers.mockResolvedValue([
+      { id: "u1", username: "maya", display_name: "Maya Okafor", avatar_url: null },
+      { id: "u2", username: "mayank", display_name: null, avatar_url: null },
+    ]);
+    renderGallery("/gallery?q=may");
+    await screen.findByText("Inbox triage agent");
+
+    const makers = await screen.findByTestId("gallery-makers");
+    expect(searchMakers).toHaveBeenCalledTimes(1);
+    expect(searchMakers).toHaveBeenCalledWith("may");
+    const links = within(makers).getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/profile/maya",
+      "/profile/mayank",
+    ]);
+    expect(links[0]).toHaveTextContent("Maya Okafor");
+    expect(links[0]).toHaveTextContent("@maya");
+  });
+
+  it("asks for no makers without a query, and shows no row when none match", async () => {
+    renderGallery();
+    await screen.findByText("Inbox triage agent");
+    expect(searchMakers).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("gallery-makers")).toBeNull();
   });
 });
