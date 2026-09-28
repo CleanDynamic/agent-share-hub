@@ -754,12 +754,14 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { transform: scale(1); opacity: 1; }
 }
 
-/* BG-P18. The mobile right rail's two keyframes, moved out of a `<style>` tag
-   injected by RightRailDrawer.tsx. A keyframe is the one thing an inline style
-   cannot express and the theme puts it here; the component references it by
-   name and drops it under reduced motion in its own style object, the same
-   two-sided answer the skeleton gives. Only `opacity` and `transform` move —
-   neither is a layout property. */
+/* BG-P18. The mobile Explore drawer's two keyframes, moved out of a `<style>`
+   tag the drawer injected. A keyframe is the one thing an inline style cannot
+   express and the theme puts it here. Only `opacity` and `transform` move —
+   neither is a layout property.
+
+   RC-P06 DELETED THE DRAWER, so nothing references these two now. They stay
+   because that prompt deletes only the class rules the rail's files used; a
+   later clean-up can take them. */
 @keyframes rrFade {
   from { opacity: 0; }
   to   { opacity: 1; }
