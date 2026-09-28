@@ -331,7 +331,11 @@ test.describe("the feed at four widths, in two themes", () => {
     });
   }
 
-  test("at 1024 the centre gives way and both rails stay on screen", async ({ page }) => {
+  /* RC-P06 rewrote this. It asserted that at 1024 the centre gave way so that
+     both rails stayed on screen; with the right rail gone the nav and a full
+     634 column fit, so the column keeps its measure and the nav stays on
+     screen. */
+  test("at 1024 the nav stays on screen and the centre keeps its 634", async ({ page }) => {
     await stubRestEmpty(page);
     await stubFeed(page);
     await page.setViewportSize({ width: 1024, height: 900 });
@@ -344,18 +348,15 @@ test.describe("the feed at four widths, in two themes", () => {
         left: box(".fs-left").width,
         leftEdge: box(".fs-left").left,
         centre: box(".fs-centre").width,
-        right: box(".fs-right").width,
-        rightEdge: box(".fs-right").right,
+        rails: document.querySelectorAll(".fs-right").length,
       };
     });
-    // The two rails never move. 240 and 300 are the frame's contract.
+    // The nav never moves: 240 is the frame's contract.
     expect(boxes.left).toBe(240);
-    expect(boxes.right).toBe(300);
-    // Both on screen — the left rail measured -82 before this change.
+    // On screen — the left rail measured -82 before BG-P18b.
     expect(boxes.leftEdge).toBeGreaterThanOrEqual(0);
-    expect(boxes.rightEdge).toBeLessThanOrEqual(1024);
-    // And the centre took what was left rather than holding its 634.
-    expect(boxes.centre).toBe(1024 - 240 - 300);
+    expect(boxes.centre).toBe(634);
+    expect(boxes.rails).toBe(0);
   });
 });
 

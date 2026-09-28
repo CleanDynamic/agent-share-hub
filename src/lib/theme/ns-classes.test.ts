@@ -5,9 +5,13 @@
  * .ns-* class names that block defined. Earlier prompts copied the rules those
  * components need into real stylesheets so the shell could go. This test is the
  * proof that the copy is complete and stays complete: if a stylesheet, one of
- * its rules, or one of the two imports that mount them is ever removed, a live
- * surface loses its styling silently — nothing throws, the class simply stops
+ * its rules, or the import that mounts it is ever removed, a live surface
+ * loses its styling silently — nothing throws, the class simply stops
  * resolving — and only an assertion like this one catches it.
+ *
+ * RC-P06 deleted the Explore rail and its stylesheet, which held fourteen of
+ * the names below. No live file wears them any more, so they left the map with
+ * it, and so did the checks that read that stylesheet.
  *
  * IT IS DELIBERATELY A LIST AND NOT A SCANNER. A scanner that harvested every
  * `ns-` token out of src would also collect the `ns-resize` cursor keyword and
@@ -34,26 +38,15 @@ const defines = (text: string, cls: string) =>
 
 /* Where every .ns-* class a live file wears is actually defined. */
 const SHARED = "src/styles/shared-ns.css";
-const RAIL = "src/components/shell/right-rail-explore.css";
 
 const DEFINITIONS: Record<string, string[]> = {
   [SHARED]: ["ns-back-btn", "ns-section-label", "ns-engagement-bar", "ns-comment-drawer"],
-  /* BG-P18b removed sixteen names from this list, and removed their rules from
-     the stylesheet in the same commit. This list is "where every class a LIVE
-     FILE WEARS is defined", so a class no live file wears any more does not
-     belong in it — keeping the name here would assert that a dead rule must
-     stay, which is the opposite of what the test is for. What went, and why, is
-     written at the top of the rail's stylesheet: the "EXPLORE" eyebrow, the
-     three Browse tiles, the Browse/Trending divider, the seven trending-row
-     classes, the second spelling of the section heading, the duplicated auth
-     pair, and the footer's container. */
-  [RAIL]: [
-    "ns-collection-item", "ns-curator-avatar", "ns-curator-item",
-    "ns-follow-avatar", "ns-follow-handle", "ns-follow-info", "ns-follow-item",
-    "ns-follow-name", "ns-footer-link", "ns-right-search",
-    "ns-right-search-results", "ns-search-result", "ns-search-result-badge",
-    "ns-search-result-title",
-  ],
+  /* This list is "where every class a LIVE FILE WEARS is defined", so a class
+     no live file wears any more does not belong in it — keeping the name here
+     would assert that a dead rule must stay, which is the opposite of what the
+     test is for. BG-P18b removed sixteen of the rail's names on that ground;
+     RC-P06 removed the other fourteen, and the rail's stylesheet, with the
+     rail. */
   /* BG-P32 moved `ns-comment-new-reply` here from the drawer's own injected
      <style> tag. It is a rule whose only job is to run a keyframe, and a
      keyframe is the one thing an inline style cannot express — so the theme
@@ -76,12 +69,9 @@ describe("the .ns-* rules inherited from the retired shell", () => {
     }
   });
 
-  it("keeps both extracted stylesheets mounted", () => {
+  it("keeps the extracted stylesheet mounted", () => {
     // A stylesheet nobody imports is the same as a stylesheet that was deleted.
     expect(read("src/main.tsx")).toMatch(/import\s+["']\.\/styles\/shared-ns\.css["']/);
-    expect(read("src/components/shell/RightRailExplore.tsx")).toMatch(
-      /import\s+["']\.\/right-rail-explore\.css["']/,
-    );
   });
 
   it("no longer resolves anything through NeoScaleShell", () => {
@@ -117,11 +107,11 @@ describe("the .ns-* rules inherited from the retired shell", () => {
      where the token VALUES are declared and hexes are correct there. `.ns-badge`
      is the one rule in that file this test owns, and it is checked by the
      stronger condition: it names no colour at all. */
-  it("declares every colour through a token, in both extracted stylesheets", () => {
+  it("declares every colour through a token, in the extracted stylesheet", () => {
     const HEX = /#[0-9a-fA-F]{6}\b/g;
     // rgb()/rgba() with hardcoded channels. `rgba(var(--x), …)` is a token.
     const RAW_RGBA = /\brgba?\(\s*[0-9.]/g;
-    for (const sheet of [SHARED, RAIL]) {
+    for (const sheet of [SHARED]) {
       const text = code(read(sheet));
       expect(text.match(HEX) ?? [], `${sheet} declares a raw hex`).toEqual([]);
       expect(text.match(RAW_RGBA) ?? [], `${sheet} declares a raw rgba()`).toEqual([]);
@@ -156,7 +146,7 @@ describe("the .ns-* rules inherited from the retired shell", () => {
        rule that would have fought the app's own frame the moment anyone wired
        it up, plus three hexes the colour sweep would otherwise have had to
        allowlist as "dead file". */
-    const sheets = [SHARED, RAIL, "src/index.css", "src/components/shell/flat-shell.css"];
+    const sheets = [SHARED, "src/index.css", "src/components/shell/flat-shell.css"];
     for (const cls of inert) {
       for (const sheet of sheets) {
         expect(defines(read(sheet), cls), `${sheet} now defines .${cls}`).toBe(false);

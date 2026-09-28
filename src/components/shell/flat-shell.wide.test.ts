@@ -249,12 +249,13 @@ describe("the wide mode's own measurements", () => {
     expect(mobile).toContain("grid-template-columns: 1fr");
   });
 
-  it("gives the optional right rail back below 1280", () => {
-    const below1280 = wideSection.slice(wideSection.indexOf("@media (max-width: 1279px)"));
-    expect(below1280).toContain(".fs-wide .fs-right");
-    expect(below1280).toContain("display: none");
-    /* Never at the cost of the blueprint editor's forced rail. */
-    expect(below1280).toContain(":not(.fs-right--force)");
+  /* RC-P06 rewrote this. It asserted that a wide route which asked for the
+     right rail gave it back below 1280; no route can ask any more, so the one
+     rule that handled it was deleted, and wide mode says nothing about the
+     right-hand slot at all. */
+  it("carries no rule for a right rail", () => {
+    expect(wideSection).not.toContain("@media (max-width: 1279px)");
+    expect(wideSection).not.toContain(".fs-right");
   });
 
   it("applies nothing at all below 768 except the one-column grid", () => {
@@ -263,7 +264,7 @@ describe("the wide mode's own measurements", () => {
        so a narrower viewport never sees them. */
     const guarded = wideSection.slice(
       wideSection.indexOf("@media (min-width: 768px)"),
-      wideSection.indexOf("@media (max-width: 1279px)"),
+      wideSection.indexOf(".fs-wide .fs-grid"),
     );
     expect(guarded).toContain(".fs-wide .fs-frame");
     expect(guarded).toContain(".fs-wide .fs-centre");

@@ -1,18 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
-
 import { PageHeader } from "@/components/shell/PageHeader";
 import { SPACE } from "@/lib/theme/space";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { body, cardTitle, data as dataText, eyebrow, label, tabular } from "@/lib/theme/type";
+import { body, cardTitle, data as dataText, eyebrow, tabular } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────────────────────────────────
    /dev/wide — the wide layout mode, rendered.
 
    WHAT THIS IS FOR. BG-P14 builds a layout capability and moves no route, so
    the mode needs somewhere to be looked at. This is that place: the real
-   frame, the real `.fs-grid`, the real `PageHeader`, twelve placeholders, and
-   a control for the one thing a wide route gets to decide.
+   frame, the real `.fs-grid`, the real `PageHeader` and twelve placeholders.
 
    IT IS GUARDED AT THE ROUTE by `import.meta.env.DEV`, not here, so the route
    and this module's chunk are both eliminated from a production build rather
@@ -21,13 +18,6 @@ import { body, cardTitle, data as dataText, eyebrow, label, tabular } from "@/li
 
    IT RENDERS INSIDE THE LAYOUT, unlike /dev/kit, and that is the whole point:
    the thing under test is the frame around the page, not the page.
-
-   THE RIGHT-RAIL CONTROL IS A LINK, NOT A PIECE OF STATE, because the rail is
-   not the page's to decide. It is decided by the route table, which is exactly
-   how BG-P15 will decide it for the gallery and the build page. So the control
-   navigates between two dev entries in that table — `/dev/wide` (suppressed)
-   and `/dev/wide/rail` (requested) — and what it demonstrates is the real
-   mechanism rather than a demo-only path into FlatShell that no route will use.
 
    THE CARDS ARE PLACEHOLDERS AND NOT `GalleryCard`. The real card needs a real
    build, and this page is about the room a card sits in: twelve boxes at the
@@ -80,9 +70,6 @@ function PlaceholderCard({ n, blurb }: { n: number; blurb: string }) {
 }
 
 export default function WideDemo() {
-  const { pathname } = useLocation();
-  const railOn = pathname === "/dev/wide/rail";
-
   return (
     /* THE PAGE PAINTS ITS OWN GROUND, and the reason is a pre-existing gap
        rather than anything this prompt built. The frame's centre column is
@@ -103,25 +90,7 @@ export default function WideDemo() {
       <PageHeader
         eyebrow={`${PLACEHOLDERS.length} placeholders`}
         title="Wide layout mode"
-        description="The frame at 1600px with the centre unpinned, an opt-in grid in auto-filled 320px columns, and a right rail the route decides on. Three across above 1280, two in the middle, one on a phone."
-        actions={
-          <Link
-            to={railOn ? "/dev/wide" : "/dev/wide/rail"}
-            style={{
-              ...label,
-              display: "inline-flex",
-              alignItems: "center",
-              padding: `${SPACE.xs}px ${SPACE.sm}px`,
-              borderRadius: r.control,
-              background: railOn ? t.action : t.glass2,
-              color: railOn ? t.onAction : t.text,
-              border: `1px solid ${railOn ? "transparent" : t.line}`,
-              textDecoration: "none",
-            }}
-          >
-            {railOn ? "Right rail: on" : "Right rail: off"}
-          </Link>
-        }
+        description="The frame at 1600px with the centre unpinned and an opt-in grid in auto-filled 320px columns. Three across above 1280, two in the middle, one on a phone."
       />
 
       <div className="fs-grid">

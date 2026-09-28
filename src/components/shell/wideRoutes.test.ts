@@ -10,18 +10,22 @@ import { WIDE_ROUTES, layoutForRoute, matchWideRoute } from "./wideRoutes";
    BG-P15 — MEMBERSHIP IS NOW ASSERTED BOTH WAYS. BG-P14's assertion was that
    the table is empty, which was its way of saying "no shipping page changed
    layout in that prompt". The equivalent guard now the table is populated is
-   the pair below: the three routes this prompt moved are wide with the
-   rail preference each one chose, and every OTHER route is still standard —
+   the pair below: the three routes this prompt moved are wide, and every
+   OTHER route is still standard —
    including the four compose surfaces BG-P16 owns, which keep reduced chrome
    deliberately and must not be swept in by a pattern that is too broad.
+
+   RC-P06 — NO ROUTE HAS A RIGHT RAIL, so the table no longer carries a rail
+   decision per route, and the dev page's second path, which existed to show
+   the rail, is gone.
 ──────────────────────────────────────────────── */
 
 describe("WIDE_ROUTES", () => {
-  it("holds the three routes BG-P15 moved, and their rail decisions", () => {
+  it("holds the three routes BG-P15 moved, and nothing else about them", () => {
     expect(WIDE_ROUTES).toEqual([
-      { pattern: "/gallery", rightRail: false },
-      { pattern: "/b2/*", rightRail: true },
-      { pattern: "/import", rightRail: false },
+      { pattern: "/gallery" },
+      { pattern: "/b2/*" },
+      { pattern: "/import" },
     ]);
   });
 
@@ -31,15 +35,18 @@ describe("WIDE_ROUTES", () => {
     }
   });
 
-  it("shows the right rail on the build page only", () => {
-    expect(matchWideRoute("/b2/some-build")?.rightRail).toBe(true);
-    expect(matchWideRoute("/gallery")?.rightRail).toBe(false);
-    expect(matchWideRoute("/import")?.rightRail).toBe(false);
+  /* Rewritten, not deleted: this used to assert the rail on the build page
+     only. RC-P06 took the rail off every route, so each entry is its pattern
+     and nothing more — a rail option coming back would fail here. */
+  it("offers no right rail on any wide route", () => {
+    expect(matchWideRoute("/b2/some-build")).toEqual({ pattern: "/b2/*" });
+    expect(matchWideRoute("/gallery")).toEqual({ pattern: "/gallery" });
+    expect(matchWideRoute("/import")).toEqual({ pattern: "/import" });
   });
 
   it("leaves every other route standard", () => {
     for (const path of [
-      "/", "/browse", "/discover", "/library", "/drafts", "/messages",
+      "/", "/browse", "/discover", "/bounties", "/library", "/drafts", "/messages",
       "/notifications", "/profile", "/analytics", "/upload", "/upload/blueprint",
       "/dev/kit",
       /* BG-P16's four. Reduced chrome is deliberate on these — if a prompt
@@ -74,14 +81,13 @@ describe("WIDE_ROUTES", () => {
 });
 
 describe("matchWideRoute", () => {
-  /* The dev entries are the only populated rows there are, so they are what
-     the matcher can be exercised against. They exist only under
-     import.meta.env.DEV, which vitest sets. */
-  it("matches the dev demo route and reads its rail preference", () => {
-    expect(matchWideRoute("/dev/wide")).toEqual({ pattern: "/dev/wide", rightRail: false });
-    expect(matchWideRoute("/dev/wide/rail")).toEqual({ pattern: "/dev/wide/rail", rightRail: true });
+  /* The dev entry exists only under import.meta.env.DEV, which vitest sets.
+     RC-P06 deleted its second path, /dev/wide/rail, with the rail it showed. */
+  it("matches the dev demo route, and no longer the path that showed the rail", () => {
+    expect(matchWideRoute("/dev/wide")).toEqual({ pattern: "/dev/wide" });
     expect(layoutForRoute("/dev/wide")).toBe("wide");
-    expect(layoutForRoute("/dev/wide/rail")).toBe("wide");
+    expect(matchWideRoute("/dev/wide/rail")).toBeNull();
+    expect(layoutForRoute("/dev/wide/rail")).toBe("standard");
   });
 
   it("returns null for an unlisted path", () => {
@@ -91,8 +97,8 @@ describe("matchWideRoute", () => {
   });
 
   it("is exact by default — a longer path does not match a bare pattern", () => {
-    /* "/dev/wide" must not swallow "/dev/wide/rail" by prefix, or the rail
-       toggle would never turn the rail on. */
-    expect(matchWideRoute("/dev/wide/rail")?.rightRail).toBe(true);
+    /* "/dev/wide" must not swallow a longer path by prefix. */
+    expect(matchWideRoute("/dev/wide/anything")).toBeNull();
+    expect(matchWideRoute("/gallery/anything")).toBeNull();
   });
 });

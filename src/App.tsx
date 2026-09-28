@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -17,10 +17,10 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
+import { RouteBoundary } from "@/components/routing/RouteBoundary";
+import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import Home from "./pages/Home";
 
-import Discover from "./pages/Discover";
-import DiscoverLegacy from "./pages/Discover.legacy";
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
 import BlogUpload from "./pages/BlogUpload";
@@ -44,10 +44,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import LibraryPage from "./pages/Library";
 import CollectionDetailRoute from "./pages/CollectionDetail";
-import Feed from "./pages/Feed";
 import MyUploads from "./pages/MyUploads";
-import RecentPage from "./pages/Recent";
-import FYPPage from "./pages/FYP";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
@@ -55,8 +52,6 @@ import CollectionDetail from "./pages/CollectionDetail";
 // LearningPathDetail removed from UI
 import Analytics from "./pages/Analytics";
 import Lineage from "./pages/Lineage";
-import Search from "@/pages/Search";
-import Category from "./pages/Category";
 import ApiDocs from "./pages/ApiDocs";
 
 import DraftsPage from "./pages/Drafts";
@@ -66,9 +61,12 @@ import ContentEditPage from "./pages/ContentEdit";
 import BountyUpload from "@/pages/BountyUpload";
 const BuildPage = lazy(() => import("./pages/BuildPage"));
 // The gallery. Its own chunk: a reader who never opens it never pays for the
-// card bodies, and it adds no navigation entry — reachable directly and from
-// the publish confirmation.
+// card bodies. Reachable from the primary navigation (RC-P05), directly, and
+// from the publish confirmation.
 const Gallery = lazy(() => import("./pages/Gallery"));
+// RC-P05 — the Bounties board. Its own chunk, like every route the RC series
+// adds (CONTRACT §2.6).
+const Bounties = lazy(() => import("./pages/Bounties"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -115,14 +113,10 @@ const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
    emitted at all.
 
    REGISTERED INSIDE <Layout />, UNLIKE /dev/kit, because the thing it exists
-   to show is the frame around the page. It is the only route that renders
-   wide: the wide-route table (src/components/shell/wideRoutes.ts) carries
-   these two paths under the same DEV guard and is otherwise empty, so no real
-   route's layout changed in BG-P14.
-
-   TWO PATHS, ONE PAGE. `/dev/wide/rail` is the same component with the right
-   rail requested; the page's rail control navigates between them, which
-   exercises the route table rather than a demo-only prop. */
+   to show is the frame around the page. The wide-route table
+   (src/components/shell/wideRoutes.ts) carries its path under the same DEV
+   guard. RC-P06 deleted its second path, /dev/wide/rail, with the right rail
+   it demonstrated. */
 const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")) : null;
 const queryClient = new QueryClient();
 
@@ -158,13 +152,18 @@ const App = () => (
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/browse" element={<Discover />} />
-                <Route path="/discover" element={<Discover />} />
-                <Route path="/discover-legacy" element={<DiscoverLegacy />} />
-                <Route path="/recent" element={<RecentPage />} />
-                <Route path="/fyp" element={<FYPPage />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/category/:slug" element={<Category />} />
+                {/* RC-P05 — the old discovery addresses. Each one duplicated
+                    the Gallery, so each now lands on it (hicks-law › Remedies
+                    1 Remove); the addresses stay reachable so a bookmark is
+                    not a 404. /search carries its query across. The page
+                    files stay until RC-P29 deletes them. */}
+                <Route path="/browse" element={<Navigate to="/gallery" replace />} />
+                <Route path="/discover" element={<Navigate to="/gallery" replace />} />
+                <Route path="/discover-legacy" element={<Navigate to="/gallery" replace />} />
+                <Route path="/recent" element={<Navigate to="/gallery" replace />} />
+                <Route path="/fyp" element={<Navigate to="/gallery" replace />} />
+                <Route path="/search" element={<SearchRedirect />} />
+                <Route path="/category/:slug" element={<Navigate to="/gallery" replace />} />
                 {/* The previous publishing tool. Still registered, still
                     saving, still publishing — wrapped in a banner that names
                     it as previous and links to the replacement. No redirect:
@@ -207,7 +206,7 @@ const App = () => (
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
-                <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                <Route path="/feed" element={<Navigate to="/gallery" replace />} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
@@ -224,16 +223,6 @@ const App = () => (
                 {WideDemo && (
                   <Route
                     path="/dev/wide"
-                    element={
-                      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
-                        <WideDemo />
-                      </Suspense>
-                    }
-                  />
-                )}
-                {WideDemo && (
-                  <Route
-                    path="/dev/wide/rail"
                     element={
                       <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
                         <WideDemo />
@@ -277,6 +266,11 @@ const App = () => (
                     already on screen and only the page is still coming. ── */}
                 <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildPage /></Suspense>} />
                 <Route path="/gallery" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Gallery /></Suspense>} />
+                {/* RC-P05 — the Bounties board's address, so the navigation has
+                    a destination before RC-P12 fills it. Lazy, with the
+                    Gallery's fallback, inside its own RouteBoundary
+                    (CONTRACT §2.6). */}
+                <Route path="/bounties" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Bounties /></Suspense></RouteBoundary>} />
                 <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.

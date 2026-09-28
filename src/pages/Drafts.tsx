@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,7 +100,6 @@ const TOOL_LABEL: Record<DraftSource, { label: string; filled: boolean }> = {
 export default function DraftsPage() {
   const { isLoggedIn, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -185,7 +183,7 @@ export default function DraftsPage() {
       <SeoHead title="Drafts — buildgallery.ai" description="Manage your draft posts." path="/drafts" noIndex />
       <ShellHeader
         onBack={() => navigate(-1)}
-        primaryAction={{ label: "New draft", icon: Plus, onClick: () => openUploadTypePicker() }}
+        primaryAction={{ label: "New draft", icon: Plus, onClick: () => navigate("/compose/new") }}
       />
       <div className="mx-auto max-w-3xl" style={{ paddingLeft: 24, paddingRight: 24 }}>
 
@@ -337,7 +335,7 @@ export default function DraftsPage() {
               Start a new post and save it as a draft to see it here.
             </p>
             <button
-              onClick={() => openUploadTypePicker()}
+              onClick={() => navigate("/compose/new")}
               /* The one way out of an empty view earns the primary. */
               style={{ ...buttonStyle("default"), ...body, fontSize: 13, fontWeight: 500, padding: '8px 20px' }}
             >

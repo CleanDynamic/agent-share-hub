@@ -26,54 +26,27 @@ export interface WideRoute {
    * two rules in it.
    */
   pattern: string;
-
-  /**
-   * Show the right rail on this route when the frame is wide.
-   *
-   * DEFAULT FALSE — suppressed. The two surfaces wide mode exists for want
-   * opposite things: the gallery wants the rail's 300px for another grid
-   * column, and the build page wants the rail. So the rail is a per-route
-   * decision rather than a property of the mode, and the quieter of the two
-   * answers is the default.
-   *
-   * A route that asks for it still loses it below 1280px, where a rail plus a
-   * grid leaves neither enough room — see `.fs-wide .fs-right` in
-   * flat-shell.css.
-   */
-  rightRail?: boolean;
 }
 
 /**
  * The routes that render in the wide frame.
  *
  * ADD TO THIS ARRAY TO MAKE A ROUTE WIDE. Nothing else has to change: the
- * layout prop, the frame's max-width, the centre's flex behaviour and the
- * right rail all follow from an entry here.
+ * layout prop, the frame's max-width and the centre's flex behaviour all
+ * follow from an entry here.
  */
 export const WIDE_ROUTES: readonly WideRoute[] = [
   /* The gallery — a grid of build cards, and the surface wide mode was
-     measured for. NO RIGHT RAIL: the grid's columns are auto-filled from a
-     320px floor, so the rail's 300px is very nearly one more column of
-     builds. Explore in the rail and a gallery of builds answer the same
-     question — "what else is there?" — and the grid answers it better,
-     because these are the builds themselves rather than links to them. */
-  { pattern: "/gallery", rightRail: false },
+     measured for. The grid's columns are auto-filled from a 320px floor. */
+  { pattern: "/gallery" },
 
-  /* The build page — one build, read top to bottom. RIGHT RAIL ON, the only
-     one of the three that asks for it. A reader who has finished a build
-     record is at the natural moment to be shown another, and Explore is
-     exactly that offer; on the gallery it would compete with the grid, and
-     here there is no grid to compete with. The centre is still the reading
-     column it was — the rail takes its 300px from the frame's new width, not
-     from the prose.
+  /* The build page — one build, read top to bottom.
 
      A PREFIX PATTERN, because `/b2/:slug` is one route per build and an exact
      pattern would match none of them. */
-  { pattern: "/b2/*", rightRail: true },
+  { pattern: "/b2/*" },
 
-  /* The import page — paste a document, get a Build File, drop it back. NO
-     RIGHT RAIL: it is a task with one path through it, and the rail's job is
-     to offer somewhere else to go.
+  /* The import page — paste a document, get a Build File, drop it back.
 
      IT IS THE WEAKEST OF THE THREE CLAIMS ON WIDE, and that is recorded here
      rather than dressed up. BG-P15 moves all three routes into wide mode as
@@ -84,7 +57,7 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
      illegible — it is under-filled, not broken — and re-laying it out is not
      this prompt's to do. The honest fix is either a measure on the step list
      or this route going back to standard; see BG-P15's handoff note. */
-  { pattern: "/import", rightRail: false },
+  { pattern: "/import" },
 ];
 
 /**
@@ -95,18 +68,10 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
  * for production, so this is a `false ? [...] : []` whose live branch Rollup
  * eliminates — the same guard, and for the same reason, as the `/dev/kit`
  * route in App.tsx. It is kept out of `WIDE_ROUTES` itself so that the
- * exported table BG-P15 edits stays empty and stays honest.
- *
- * TWO PATTERNS FOR ONE PAGE, which is how the demo's right-rail control works:
- * the page toggles the rail by navigating between them. That exercises the
- * real mechanism — a route table entry deciding the rail — rather than a
- * second, demo-only path into `FlatShell` that no real route would ever use.
+ * exported table holds only the routes that ship.
  */
 const DEV_WIDE_ROUTES: readonly WideRoute[] = import.meta.env?.DEV
-  ? [
-      { pattern: "/dev/wide", rightRail: false },
-      { pattern: "/dev/wide/rail", rightRail: true },
-    ]
+  ? [{ pattern: "/dev/wide" }]
   : [];
 
 /** True when `pathname` is matched by `pattern`. */
@@ -122,7 +87,7 @@ function matches(pathname: string, pattern: string): boolean {
  * The wide-route entry for `pathname`, or null when the route is standard.
  *
  * Exact patterns are considered before prefix patterns so a specific entry can
- * override a wildcard covering it — `/dev/wide/rail` wins over a hypothetical
+ * override a wildcard covering it — `/dev/wide` wins over a hypothetical
  * `/dev/*` — which is the only ordering rule the table has, and it is a rule
  * rather than "whichever was written first" so that adding an entry cannot
  * silently change what an existing one matches.

@@ -2,17 +2,16 @@ import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Home as HomeIcon,
-  Compass,
+  LayoutGrid,
+  Target,
   Book,
-  Upload as UploadIcon,
+  Plus,
   Edit3,
   MessageSquare,
   Bell,
   User as UserIcon,
-  BarChart2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
@@ -21,12 +20,11 @@ import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useProgress } from "@/hooks/useProgress";
 import { FlatShell, type FlatShellNavItem } from "@/components/shell/FlatShell";
 import { matchWideRoute } from "@/components/shell/wideRoutes";
-import { RightRailExplore } from "@/components/shell/RightRailExplore";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
 import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
-import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
+import { NavSearch } from "@/components/shell/NavSearch";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -41,10 +39,13 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
    where that behaviour came from, not pointing at a file to go and read.
 ──────────────────────────────────────────────── */
 
-/* Route ↔ nav-page mapping (carried over from the retired NeoScaleShell) */
+/* Route ↔ nav-page mapping (carried over from the retired NeoScaleShell).
+   RC-P05: a build page belongs to the Gallery, every way of starting or
+   bringing in a build belongs to New build, and Analytics — which left the
+   nav — is part of the reader's own profile. */
 const ROUTE_TO_NAV: Record<string, string> = {
   "/":              "home",
-  "/browse":        "discover",
+  "/gallery":       "gallery",
   "/library":       "library",
   "/saved":         "library",
   "/upload":        "upload",
@@ -52,41 +53,49 @@ const ROUTE_TO_NAV: Record<string, string> = {
   "/messages":      "messages",
   "/notifications": "notifications",
   "/drafts":        "drafts",
-  "/analytics":     "analytics",
+  "/analytics":     "profile",
 };
 
 function routeToNav(pathname: string): string {
-  if (pathname.startsWith("/upload")) return "upload";
+  if (pathname.startsWith("/b2/")) return "gallery";
+  if (pathname.startsWith("/bounties")) return "bounties";
+  if (
+    pathname.startsWith("/upload") ||
+    pathname.startsWith("/compose") ||
+    pathname.startsWith("/rebuild") ||
+    pathname.startsWith("/import")
+  ) return "upload";
   return ROUTE_TO_NAV[pathname] ?? "other";
 }
 
 const NAV_ICONS = {
   home: <HomeIcon size={20} strokeWidth={2} />,
-  discover: <Compass size={20} strokeWidth={2} />,
+  gallery: <LayoutGrid size={20} strokeWidth={2} />,
+  bounties: <Target size={20} strokeWidth={2} />,
   library: <Book size={20} strokeWidth={2} />,
-  upload: <UploadIcon size={20} strokeWidth={2} />,
+  upload: <Plus size={20} strokeWidth={2} />,
   drafts: <Edit3 size={20} strokeWidth={2} />,
   messages: <MessageSquare size={20} strokeWidth={2} />,
   notifications: <Bell size={20} strokeWidth={2} />,
   profile: <UserIcon size={20} strokeWidth={2} />,
-  analytics: <BarChart2 size={20} strokeWidth={2} />,
 };
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
 
-  const { isLoggedIn, profile, user, signOut, isCreator } = useAuth();
-  const { display: msgBadge } = useUnreadMessages();
-  const { display: notifBadge } = useUnreadNotifications();
+  const { isLoggedIn, profile, user, signOut } = useAuth();
+  /* The badges show text ("9+" above nine); the phone chrome's dots need the
+     number. Number("9+") is NaN, which hid the dots exactly when the most was
+     unread, so the counts are passed as counts. */
+  const { display: msgBadge, count: msgCount } = useUnreadMessages();
+  const { display: notifBadge, count: notifCount } = useUnreadNotifications();
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
   const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
-  const [isRightRailDrawerOpen, setRightRailDrawerOpen] = useState(false);
 
   const pathname = location.pathname;
   const activeKey = routeToNav(pathname);
@@ -100,38 +109,40 @@ export function AppShell() {
   const layout = wideRoute ? "wide" : "standard";
 
   /* ── Blueprint-editor special case (unchanged behaviour): on small
-     desktops the left rail hides and the right rail shows the editor
-     workspace instead of Explore. ── */
+     desktops the left rail hides and the right-hand slot shows the editor
+     workspace. ── */
   const isUploadEditor =
     pathname.startsWith("/upload/blueprint") ||
     pathname.startsWith("/upload/blog");
   const isSmallDesktop = breakpoint === "lg" || breakpoint === "md";
   const uploadEditorSmall = isUploadEditor && isSmallDesktop;
 
-  /* ── Nav items — same entries, filtering and badge sources as before ── */
-  type NavEntry = FlatShellNavItem & { authOnly?: boolean; creatorOnly?: boolean };
+  /* ── Nav items — RC-P05: nine destinations in four groups, grouped by the
+     reader's intent (hicks-law › Budgets): Browse (Home, Gallery, Bounties,
+     Library) · Make (New build, Drafts) · Talk (Messages, Notifications) · You
+     (Profile). The groups are the existing dividers and nothing else
+     (law-of-proximity). Discover and Analytics left: Discover duplicated the
+     Gallery, and Analytics is the progress chip's destination and a row of the
+     phone drawer, so a second entry to it added a choice and no place. Same
+     badge sources as before. ── */
+  type NavEntry = FlatShellNavItem & { authOnly?: boolean };
   const allNavItems: NavEntry[] = [
     { key: "home",     icon: NAV_ICONS.home,     label: "Home",      route: "/" },
-    { key: "discover", icon: NAV_ICONS.discover, label: "Discover",  route: "/browse" },
+    { key: "gallery",  icon: NAV_ICONS.gallery,  label: "Gallery",   route: "/gallery" },
+    { key: "bounties", icon: NAV_ICONS.bounties, label: "Bounties",  route: "/bounties" },
     { key: "library",  icon: NAV_ICONS.library,  label: "Library",   route: "/library",  authOnly: true, dot: hasUnseenSaves },
-    { key: "upload",   icon: NAV_ICONS.upload,   label: "Upload",    route: "/compose/new",   divider: true },
+    { key: "upload",   icon: NAV_ICONS.upload,   label: "New build", route: "/compose/new",   divider: true },
     { key: "drafts",   icon: NAV_ICONS.drafts,   label: "Drafts",    route: "/drafts",   authOnly: true, badge: draftBadge, badgeMuted: true },
     { key: "messages", icon: NAV_ICONS.messages, label: "Messages",  route: "/messages", authOnly: true, badge: msgBadge, divider: true },
     { key: "notifications", icon: NAV_ICONS.notifications, label: "Notifications", route: "/notifications", authOnly: true, badge: notifBadge },
-    { key: "profile",  icon: NAV_ICONS.profile,  label: "My Profile", route: "/profile", authOnly: true, divider: true },
-    { key: "analytics", icon: NAV_ICONS.analytics, label: "Analytics", route: "/analytics", authOnly: true, creatorOnly: true },
+    { key: "profile",  icon: NAV_ICONS.profile,  label: "Profile",   route: "/profile", authOnly: true, divider: true },
   ];
 
-  const navItems = allNavItems.filter((item) => {
-    if (item.authOnly && !isLoggedIn) return false;
-    if (item.creatorOnly && !isCreator) return false;
-    return true;
-  });
+  const navItems = allNavItems.filter((item) => !item.authOnly || isLoggedIn);
 
-  /* Upload used to intercept the click and open the type picker. It now
+  /* New build used to intercept the click and open the type picker. It now
      navigates like every other entry, so the nav lands in the build
-     workspace. The picker is still reachable from every other New
-     affordance — Cmd/Ctrl+N, the mobile drawer, the drafts page. */
+     workspace — as does every other new-build control since RC-P08. */
   const onNavClick = (item: FlatShellNavItem) => {
     navigate(item.route);
   };
@@ -159,32 +170,33 @@ export function AppShell() {
     navigate("/");
   };
 
-  /* ── Right rail: Explore panel, editor workspace, or hidden ── */
-  const railHiddenRoute =
-    pathname.startsWith("/publish/") ||
-    pathname === "/discover" ||
-    pathname === "/notifications";
+  /* ── RC-P06: no right rail. The frame is the left nav and the centre
+     column, on every route and at every width (CONTRACT §3.1). The slot
+     survives for one tenant, the legacy editor's workspace on
+     /upload/blueprint, which is connector-locked until RC-P08b removes it. ── */
   const rightRail = isUploadEditor && pathname.startsWith("/upload/blueprint")
     ? <WorkspaceShell showNavTab={uploadEditorSmall} />
-    : railHiddenRoute
-      ? null
-      : <RightRailExplore />;
+    : null;
 
-  /* ── Mobile chrome plumbing (carried over from the retired shell) ── */
+  /* ── Mobile chrome plumbing (carried over from the retired shell).
+     RC-P05: the bar's five destinations; everything that lives in the Profile
+     drawer lights the Profile item. ── */
   const mobileRoute: MobileRoute = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
-    if (p.startsWith("/upload")) return "upload";
-    if (p.startsWith("/messages")) return "messages";
-    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics")) return "profile";
+    if (p === "/gallery" || p.startsWith("/b2/")) return "gallery";
+    if (p.startsWith("/bounties")) return "bounties";
+    if (p.startsWith("/compose") || p.startsWith("/rebuild") || p.startsWith("/import") || p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics") || p.startsWith("/messages")) return "profile";
     return "home";
   })();
 
+  /* RC-P09c. The Gallery takes the default, the wordmark, as Home, Bounties
+     and Library do: each carries its own page heading. RC-P05 had given it
+     the context the old /discover used, whose title was "Discover". */
   const pageContextType: PageContextType = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
     if (p.startsWith("/messages")) return "messages";
     if (p.startsWith("/notifications")) return "notifications";
     if (p.startsWith("/upload")) return "upload";
@@ -195,10 +207,7 @@ export function AppShell() {
 
   const drawerRoute: DrawerRoute | null = (() => {
     const p = pathname;
-    if (p === "/") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
     if (p.startsWith("/library")) return "library";
-    if (p.startsWith("/upload")) return "upload";
     if (p.startsWith("/drafts")) return "drafts";
     if (p.startsWith("/messages")) return "messages";
     if (p.startsWith("/notifications")) return "notifications";
@@ -219,14 +228,9 @@ export function AppShell() {
     : null;
 
   const drawerNavigate = (r: DrawerRoute) => {
-    if (r === "upload") {
-      openUploadTypePicker();
-      return;
-    }
     const map: Record<DrawerRoute, string> = {
-      home: "/", discover: "/discover", library: "/library", upload: "/upload",
-      drafts: "/drafts", messages: "/messages", notifications: "/notifications",
-      analytics: "/analytics", about: "/about",
+      library: "/library", drafts: "/drafts", messages: "/messages",
+      notifications: "/notifications", analytics: "/analytics", about: "/about",
     };
     navigate(map[r]);
   };
@@ -236,12 +240,8 @@ export function AppShell() {
       setProfileDrawerOpen(true);
       return;
     }
-    if (r === "upload") {
-      openUploadTypePicker();
-      return;
-    }
     const map: Record<Exclude<MobileRoute, "profile">, string> = {
-      home: "/", discover: "/discover", upload: "/upload", messages: "/messages",
+      home: "/", gallery: "/gallery", upload: "/compose/new", bounties: "/bounties",
     };
     navigate(map[r]);
   };
@@ -262,7 +262,7 @@ export function AppShell() {
         hideLeftRail={uploadEditorSmall}
         forceRightRail={uploadEditorSmall}
         layout={layout}
-        wideRightRail={wideRoute?.rightRail ?? false}
+        searchSlot={<NavSearch />}
         beforeUserSlot={
           /* The left rail's slot immediately above the account block. BG-P02
              mounted the theme toggle here too; BG-P18b moved it to the
@@ -297,11 +297,11 @@ export function AppShell() {
           currentUserAvatarUrl={profile?.avatar_url || undefined}
           currentUserInitials={initialsSafe}
           unreadCounts={{
-            notifications: Number(notifBadge || 0),
-            messages: Number(msgBadge || 0),
+            notifications: notifCount ?? 0,
+            messages: msgCount ?? 0,
           }}
           onProfileDrawerOpen={() => setProfileDrawerOpen(true)}
-          onRightRailDrawerOpen={() => setRightRailDrawerOpen(true)}
+          onSearchOpen={() => navigate("/gallery?focus=search")}
           onNotificationsOpen={() => navigate("/notifications")}
           onBack={() => navigate(-1)}
         />
@@ -309,10 +309,8 @@ export function AppShell() {
       {isMobile && (
         <MobileBottomNav
           currentRoute={mobileRoute}
-          currentUserAvatarUrl={profile?.avatar_url || undefined}
-          currentUserInitials={initialsSafe}
-          unreadMessageCount={Number(msgBadge || 0)}
-          unreadNotificationCount={Number(notifBadge || 0)}
+          unreadMessageCount={msgCount ?? 0}
+          unreadNotificationCount={notifCount ?? 0}
           onNavigate={mobileBottomNavigate}
         />
       )}
@@ -327,14 +325,6 @@ export function AppShell() {
         onSignOut={async () => { await signOut(); navigate("/"); }}
       />
 
-      {/* RightRailDrawer — everywhere below xl, as before */}
-      {breakpoint !== "xl" && (
-        <RightRailDrawer
-          isOpen={isRightRailDrawerOpen}
-          onClose={() => setRightRailDrawerOpen(false)}
-          onNavigate={(path) => navigate(path)}
-        />
-      )}
     </>
   );
 }

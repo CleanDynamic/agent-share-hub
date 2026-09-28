@@ -30,7 +30,8 @@
    BG-P17 RETIRED NeoScaleShell, AND FOUND NOTHING LEFT TO EXTRACT. The audit
    that prompt ran resolved every .ns-* class referenced by a live file to a
    definition outside the shell: the four below, the Explore rail's thirty-one in
-   src/components/shell/right-rail-explore.css, .ns-badge in src/index.css, and
+   the rail's own stylesheet (deleted with the rail in RC-P06), .ns-badge in
+   src/index.css, and
    .ns-collections-grid, .ns-detail-grid and .ns-comment-new-reply in <style>
    blocks inside their own consumers. Three more — .ns-btn-primary,
    .ns-btn-silver and .ns-right-cat — are referenced but defined nowhere, and
@@ -67,9 +68,10 @@
 
    What it added instead is the assertion that was missing. A finished sweep
    with nothing holding it in place is one edit away from being unfinished
-   again, so `src/lib/theme/ns-classes.test.ts` now scans this file and the
-   rail's for a raw hex or a hardcoded rgba() and fails on either. Neither
-   stylesheet is allowlisted anywhere: these rules exist precisely because a
+   again, so `src/lib/theme/ns-classes.test.ts` now scans this file (and
+   scanned the rail's, until RC-P06 deleted it) for a raw hex or a hardcoded
+   rgba() and fails on either. It is
+   allowlisted nowhere: these rules exist precisely because a
    live surface depends on them and no component can see them, so a raw value
    here is always a regression and never a considered exception.
 ──────────────────────────────────────────────── */
@@ -113,7 +115,7 @@
     max-width: calc(100vw - 32px);
   }
 
-  /* Comment drawer: slide up from bottom (matching RightRailDrawer pattern). */
+  /* Comment drawer: slide up from the bottom, as a bottom sheet. */
   .ns-comment-drawer {
     top: auto !important;
     right: 0 !important;

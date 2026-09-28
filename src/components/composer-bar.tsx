@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useUploadPicker } from "@/contexts/UploadPickerContext"
+import { useNavigate } from "react-router-dom"
 
 interface User {
   display_name: string
@@ -7,7 +7,7 @@ interface User {
 }
 
 export function ComposerBar({ user }: { user?: User }) {
-  const { openUploadTypePicker } = useUploadPicker()
+  const navigate = useNavigate()
   const [isFocused] = useState(false)
 
   const userInitials = user?.display_name
@@ -42,7 +42,7 @@ export function ComposerBar({ user }: { user?: User }) {
       </div>
 
       <div
-        onClick={() => openUploadTypePicker()}
+        onClick={() => navigate("/compose/new")}
         style={{ flex: 1, color: "var(--text2)", fontSize: 14, cursor: "pointer" }}
       >
         Share something...

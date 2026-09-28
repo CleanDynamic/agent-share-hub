@@ -8,7 +8,6 @@ import { ShellHeader } from "@/components/shell/ShellHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Zap } from "lucide-react";
 import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { toast } from "@/hooks/use-toast";
 
 
@@ -61,7 +60,6 @@ export default function Analytics() {
   const [xpEventsQ, historyQ] = useXpEvents(50);
   const claim = useClaimChallenge();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
 
   if (authLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Skeleton className="h-8 w-48" /></div>;
@@ -135,7 +133,7 @@ export default function Analytics() {
         navigate("/discover");
         break;
       case "publish-draft":
-        openUploadTypePicker();
+        navigate("/compose/new");
         break;
       case "todays-nudge": {
         const el = document.getElementById("daily-nudge-anchor");

@@ -18,40 +18,75 @@
 //
 // ONE FILE, THREE ROUTES, because the thing under test is ONE change and the
 // assertions are the same four questions asked three times: is the frame
-// around it, is it wide, did the right rail go the way the route table says,
-// and is the back link gone. Three near-identical files would drift apart.
+// around it, is it wide, is there no right rail (RC-P06 removed it from every
+// route), and is the back link gone. Three near-identical files would drift
+// apart.
 //
 // IT NEEDS NO AUTH AND NO SEEDED DATA, which is deliberate and is what makes it
-// runnable anywhere. Every claim here is about the FRAME around the page, and
+// runnable anywhere. RC-P06 added the empty fake backend below: the spec used
+// to leave its requests to whatever project .env names, and CONTRACT §7 says a
+// tier-3 spec never points at the live project. Every claim here is about the FRAME around the page, and
 // the frame renders before the page's queries resolve — a /b2/:slug for a slug
 // that does not exist still renders the rails, which is exactly the assertion.
 // A spec that needed a seeded build to prove the left rail exists would go red
 // when nobody seeded the database, and a red suite that means "nobody seeded
 // the database" trains a maintainer to ignore red.
 //
-// SELECTORS. The right rail is `<aside aria-label="Explore">` and the layout
-// mode is the `data-layout` attribute FlatShell puts on its root — both are
-// role/attribute selectors, per the e2e skill. The left rail is matched on
+// SELECTORS. Any right-hand slot is an `<aside>`, the `complementary` role —
+// since RC-P06 only the legacy editor's workspace on /upload/blueprint renders
+// one — and the layout mode is the `data-layout` attribute FlatShell puts on
+// its root — both are role/attribute selectors, per the e2e skill. The left rail is matched on
 // `.fs-left` because at mobile widths MobileBottomNav also renders a
 // `<nav aria-label="Primary">`, so the accessible name alone cannot tell the
 // desktop rail from the phone bar. `.fs-*` are FlatShell's own frame classes,
 // not the `.ns-*` classes the skill forbids, and BG-P14's tier-1 spec already
 // measures the frame through them.
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 const THEMES = ["exhibition", "dusk"] as const;
 
-/**
- * The widths BG-P15's acceptance names, plus 1280.
- *
- * 1280 is not decoration: it is the width at which a wide route that asked for
- * the right rail gives it back (`.fs-wide .fs-right` in flat-shell.css), so the
- * build page's rail is asserted present above it and absent below.
- */
+/** The widths BG-P15's acceptance names. */
 const DESKTOP_WIDE = 1400;
-const RAIL_CUTOFF = 1280;
 const SWEEP = [390, 768, 1024, 1400];
+
+const wantsObject = (route: Route) =>
+  (route.request().headers()["accept"] ?? "").includes("pgrst.object");
+
+/** An empty, signed-out backend, as in e2e/audit/rc-baseline.spec.ts. */
+async function stubBackend(page: Page) {
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
+    route.request().url().includes("css2")
+      ? route.fulfill({ status: 200, contentType: "text/css", body: "" })
+      : route.fulfill({ status: 200, contentType: "font/woff2", body: "" }),
+  );
+  await page.route(/\/rest\/v1\//, (route) => {
+    const headers = { "content-range": "*/0", "access-control-expose-headers": "content-range" };
+    if (route.request().method() === "HEAD") return route.fulfill({ status: 200, headers, body: "" });
+    return route.fulfill({
+      status: 200,
+      contentType: wantsObject(route) ? "application/vnd.pgrst.object+json" : "application/json",
+      headers,
+      body: wantsObject(route) ? "null" : "[]",
+    });
+  });
+  await page.route(/\/auth\/v1\//, (route) =>
+    route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ msg: "no session" }) }),
+  );
+  await page.route(/\/storage\/v1\//, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await page.route(/\/functions\/v1\//, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+  );
+  await page.routeWebSocket(/\/realtime\/v1\//, () => {
+    /* deliberately silent: no broker is contacted */
+  });
+}
+
+test.beforeEach(async ({ page }) => {
+  await stubBackend(page);
+});
 
 /** Set the theme before first paint, the way index.html's boot script reads it. */
 async function withTheme(page: Page, theme: string) {
@@ -71,39 +106,23 @@ const overflowsX = (page: Page) =>
   );
 
 /**
- * Every route BG-P15 moved, with the rail answer its entry in WIDE_ROUTES
- * chose and why.
+ * Every route BG-P15 moved.
  *
  * `path` is a real URL in each case. The build page's slug need not exist: see
  * the note above on why this file asserts the frame and not the page.
+ *
+ * RC-P06 took the right rail off all three, including the build page, which
+ * was the one that had asked for it; the per-route rail answer is gone.
  */
 const MOVED = [
-  {
-    name: "the gallery",
-    path: "/gallery",
-    rightRail: false,
-    /** The grid wants the rail's 300px for another column of builds. */
-    why: "suppressed — the grid takes the width",
-  },
-  {
-    name: "the build page",
-    path: "/b2/does-not-need-to-exist",
-    rightRail: true,
-    /** A reader who has finished a build record is ready to be offered another. */
-    why: "shown — Explore answers the question a finished build raises",
-  },
-  {
-    name: "the import page",
-    path: "/import",
-    rightRail: false,
-    /** One path through one task; the rail's job is to offer somewhere else. */
-    why: "suppressed — a focused task",
-  },
+  { name: "the gallery", path: "/gallery" },
+  { name: "the build page", path: "/b2/does-not-need-to-exist" },
+  { name: "the import page", path: "/import" },
 ] as const;
 
 for (const route of MOVED) {
   test.describe(`BG-P15 — ${route.name} inside the frame`, () => {
-    test(`renders the application frame in wide mode (${route.why})`, async ({ page }) => {
+    test("renders the application frame in wide mode, with no right rail", async ({ page }) => {
       await page.setViewportSize({ width: DESKTOP_WIDE, height: 900 });
       await page.goto(route.path);
 
@@ -115,12 +134,8 @@ for (const route of MOVED) {
       // Wide, and from the route table rather than from the page.
       await expect(page.locator("[data-layout]")).toHaveAttribute("data-layout", "wide");
 
-      const rail = page.getByRole("complementary", { name: "Explore" });
-      if (route.rightRail) {
-        await expect(rail).toBeVisible();
-      } else {
-        await expect(rail).toHaveCount(0);
-      }
+      // RC-P06: no right-hand slot on any of them.
+      await expect(page.getByRole("complementary")).toHaveCount(0);
     });
 
     test("has no '← buildgallery' back link left on it", async ({ page }) => {
@@ -155,28 +170,28 @@ for (const route of MOVED) {
       // Below 768 the rails are gone and the mobile chrome is mounted — which
       // these three routes are getting for the first time.
       await expect(page.locator(".fs-left")).toBeHidden();
-      await expect(page.getByRole("complementary", { name: "Explore" })).toHaveCount(0);
+      await expect(page.getByRole("complementary")).toHaveCount(0);
       await expect(page.getByRole("navigation", { name: "Primary" })).toBeVisible();
     });
   });
 }
 
-test.describe("BG-P15 — the build page's rail, at the width it is traded away", () => {
+test.describe("BG-P15 — the build page's rail, at the width it used to be traded away", () => {
   /**
-   * The one route that asked for the rail is also the one that can lose it: a
-   * rail plus a reading column leaves neither enough room below 1280, so
-   * flat-shell.css takes it back there. Asserted from both sides because a rule
-   * that fired at every width would look identical at 1400.
+   * The build page was the one route that asked for the rail, and the one that
+   * gave it back below 1280. RC-P06 removed it, so this is rewritten to assert
+   * it on both sides of that old cut-off: absent at either width.
    */
-  test("shows above 1280 and is given back below it", async ({ page }) => {
-    const rail = page.getByRole("complementary", { name: "Explore" });
+  test("has no right rail above 1280 or below it", async ({ page }) => {
+    const rail = page.getByRole("complementary");
 
-    await page.setViewportSize({ width: RAIL_CUTOFF + 120, height: 900 });
+    await page.setViewportSize({ width: 1400, height: 900 });
     await page.goto("/b2/does-not-need-to-exist");
-    await expect(rail).toBeVisible();
+    await expect(page.locator(".fs-left")).toBeVisible();
+    await expect(rail).toHaveCount(0);
 
-    await page.setViewportSize({ width: RAIL_CUTOFF - 40, height: 900 });
-    await expect(rail).toBeHidden();
+    await page.setViewportSize({ width: 1240, height: 900 });
+    await expect(rail).toHaveCount(0);
   });
 });
 
@@ -234,17 +249,22 @@ test.describe("BG-P15 — the moved pages' own content survived the move", () =>
     expect(covered, "the mobile bottom bar is covering the drop target").toBe(false);
 
     // And the input behind it still takes a file. Asserted on the file's own
-    // name in the intake heading rather than on the "Reading" status word:
-    // the word appears twice once the intake mounts — as the step label and
-    // again inside its sentence — and the name proves more anyway, that THIS
-    // file reached the intake rather than that some state was entered.
+    // name rather than on the "Reading" status word: the word appears twice
+    // once the intake mounts — as the step label and again inside its
+    // sentence — and the name proves more anyway, that THIS file reached the
+    // intake rather than that some state was entered.
+    //
+    // RC-P06: on the name wherever the intake shows it, not on the reading
+    // state's heading. That heading lasts only while the node-type registry is
+    // loading; this file is not a Build File, so once the registry answers the
+    // intake refuses it, in an alert that names it. The assertion used to pass
+    // because the live backend it reached never answered in time; against the
+    // fake backend above it answers at once.
     await page.getByTestId("import-file-input").setInputFiles({
       name: "valid.neoscale.md",
       mimeType: "text/markdown",
       buffer: Buffer.from("# A build\n\nOutcome: it works.\n"),
     });
-    await expect(
-      page.getByRole("heading", { name: "valid.neoscale.md", level: 1 })
-    ).toBeVisible();
+    await expect(page.getByText("valid.neoscale.md", { exact: true })).toBeVisible();
   });
 });

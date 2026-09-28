@@ -153,8 +153,9 @@ test.describe("one ground", () => {
         expect([sel, await prop(page, sel, "background-color")]).toEqual([sel, GROUND[theme]]);
       }
 
-      // And the frame itself paints nothing at all.
-      for (const sel of [".fs-root", ".fs-frame", ".fs-left", ".fs-right", ".fs-centre"]) {
+      // And the frame itself paints nothing at all. (RC-P06: `.fs-right` left
+      // this list with the right rail.)
+      for (const sel of [".fs-root", ".fs-frame", ".fs-left", ".fs-centre"]) {
         expect([sel, await prop(page, sel, "background-color")]).toEqual([sel, "rgba(0, 0, 0, 0)"]);
       }
     });
@@ -197,7 +198,9 @@ test.describe("one ground", () => {
    2. One surface: three columns, two hairlines
    ──────────────────────────────────────────────────────────────────────────── */
 
-test.describe("the three columns read as one surface", () => {
+/* RC-P06 removed the right rail, so the three columns are two: the nav and the
+   centre. The measurements below are rewritten to that frame. */
+test.describe("the two columns read as one surface", () => {
   test("separates them with two hairlines and nothing else", async ({ page }) => {
     await open(page, "/", "exhibition");
 
@@ -226,22 +229,19 @@ test.describe("the three columns read as one surface", () => {
     expect(centre.right).toBe("1px rgb(198, 203, 209)");
     expect(centre.radius).toBe("0px");
 
-    // Neither rail carries one, and nothing sits between the columns.
-    for (const sel of [".fs-left", ".fs-right"]) {
-      expect([sel, await prop(page, sel, "border-top-width")]).toEqual([sel, "0px"]);
-      expect([sel, await prop(page, sel, "border-radius")]).toEqual([sel, "0px"]);
-      expect([sel, await prop(page, sel, "box-shadow")]).toEqual([sel, "none"]);
-    }
+    // The nav carries none, nothing sits between the columns, and there is no
+    // right rail for a line to separate.
+    expect(await prop(page, ".fs-left", "border-top-width")).toBe("0px");
+    expect(await prop(page, ".fs-left", "border-radius")).toBe("0px");
+    expect(await prop(page, ".fs-left", "box-shadow")).toBe("none");
     expect(await prop(page, ".fs-frame", "gap")).toBe("0px");
+    expect(await page.locator(".fs-right").count()).toBe(0);
 
-    const edges = await page.evaluate(() => {
+    const leftToCentre = await page.evaluate(() => {
       const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
-      return {
-        leftToCentre: Math.round(r(".fs-centre").left - r(".fs-left").right),
-        centreToRight: Math.round(r(".fs-right").left - r(".fs-centre").right),
-      };
+      return Math.round(r(".fs-centre").left - r(".fs-left").right);
     });
-    expect(edges).toEqual({ leftToCentre: 0, centreToRight: 0 });
+    expect(leftToCentre).toBe(0);
   });
 
   test("runs the hairlines to the bottom of the window with an empty feed", async ({ page }) => {
@@ -258,13 +258,11 @@ test.describe("the three columns read as one surface", () => {
     expect(centreBottom).toBeGreaterThanOrEqual(viewport - 1);
   });
 
-  test("holds both rails at the top of the window as sticky, full-height", async ({ page }) => {
+  test("holds the nav at the top of the window as sticky, full-height", async ({ page }) => {
     await open(page, "/", "exhibition");
-    for (const sel of [".fs-left", ".fs-right"]) {
-      expect([sel, await prop(page, sel, "position")]).toEqual([sel, "sticky"]);
-      const height = await page.locator(sel).evaluate((el) => el.getBoundingClientRect().height);
-      expect([sel, height]).toEqual([sel, 900]);
-    }
+    expect(await prop(page, ".fs-left", "position")).toBe("sticky");
+    const height = await page.locator(".fs-left").evaluate((el) => el.getBoundingClientRect().height);
+    expect(height).toBe(900);
   });
 });
 
@@ -523,56 +521,8 @@ test.describe("the left rail", () => {
   });
 });
 
-test.describe("the right rail", () => {
-  test("carries no sign-in controls", async ({ page }) => {
-    await open(page, "/", "exhibition");
-    const rail = page.locator(".fs-right");
-    await expect(rail).toBeVisible();
-    // THE DUPLICATION THIS REMOVES. The identical pair is in the left rail, on
-    // the same screen at every width this rail renders at.
-    await expect(rail.getByText("Join free", { exact: true })).toHaveCount(0);
-    await expect(rail.getByText("Sign in", { exact: true })).toHaveCount(0);
-  });
-
-  test("browses to somewhere, and has no Blogs row", async ({ page }) => {
-    await open(page, "/", "exhibition");
-    const rail = page.locator(".fs-right");
-    // Blog was retired in the NS series; the row navigated to "/" regardless.
-    await expect(rail.getByText("Blogs", { exact: true })).toHaveCount(0);
-    await expect(rail.getByTestId("rail-browse-gallery")).toBeVisible();
-    await expect(rail.getByTestId("rail-browse-bounties")).toBeVisible();
-
-    await rail.getByTestId("rail-browse-gallery").click();
-    await expect(page).toHaveURL(/\/gallery$/);
-  });
-
-  test("shows shimmer rows for trending rather than the word Loading", async ({ page }) => {
-    await withTheme(page, "exhibition");
-    await page.setViewportSize({ width: 1440, height: 900 });
-    // Hold every read open, so loading is the state on screen.
-    await page.route(REST, () => {});
-    await page.goto("/");
-    await expect(page.getByTestId("rail-trending-skeleton")).toBeVisible();
-    await expect(page.locator(".fs-right")).not.toContainText("Loading");
-  });
-
-  test("hides trending entirely when it comes back empty", async ({ page }) => {
-    await open(page, "/", "exhibition");
-    // A heading over a sentence saying there is nothing under it is two lines
-    // spent saying less than no lines would.
-    await expect(page.locator(".fs-right")).not.toContainText("Trending");
-  });
-
-  test("keeps everything inside the rail's 276px content width", async ({ page }) => {
-    await open(page, "/", "exhibition");
-    const over = await page.evaluate(() => {
-      const rail = document.querySelector(".fs-right")!;
-      const box = rail.getBoundingClientRect();
-      const inner = box.width - 24;
-      return [...rail.querySelectorAll("*")]
-        .filter((el) => el.getBoundingClientRect().width > inner + 1)
-        .map((el) => el.tagName);
-    });
-    expect(over).toEqual([]);
-  });
-});
+/* RC-P06 deleted the five tests that stood here under "the right rail": no
+   sign-in controls in it, its Browse rows, its trending skeleton, its empty
+   trending, and its 276px content width. Their only subject was the Explore
+   rail's own content, and the rail and its files are gone; its absence is
+   asserted above and in e2e/tier3/frame-no-rail.spec.ts. */
