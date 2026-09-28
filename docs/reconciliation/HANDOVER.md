@@ -14,7 +14,35 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 - UploadPickerContext, UploadTypePicker, UploadPickerProvider, still imported by src/pages/UploadTypeSelector.tsx and src/lib/bounty-legacy/legacyBountyCreateRetired.test.tsx; deleted in RC-P08b (RC-P08)
 
 ## Critique findings deferred
-(empty)
+From RC-P09c, docs/reconciliation/critique/phase-2.md. Two majors fall outside step 5's limits, each with its reason:
+- M4 · /, /bounties, /library, /notifications ↔ /gallery (every standard ↔ wide move) · critique-composition › Gestalt (continuity); hicks-law › Choice Audit (desktop nav) · the nav moves between layout modes: x 283 on standard routes, 24 on the Gallery at 1440 (259px sideways, 24 down); 51 at 1024, 179 at 1280, 339 at 1920. REASON: one nav edge needs structural CSS on .fs-frame and .fs-wide .fs-frame (flat-shell.css:68, :670), which CONTRACT §2.2 forbids short of an owner decision like §3.1. Options: (a) standard routes take the wide frame's 24px inset; (b) wide routes keep the standard nav position, about 260px less grid at 1440; (c) keep the jump. The owner decides.
+- M5 · /gallery, reached from the nav's search and the phone's magnifier · critique-affordance › Action Discoverability; hicks-law › Choice Audit (search field) · the Gallery ignores q and focus=search: the desktop shows the whole gallery under a field still holding the query; the phone's "Search builds" opens a page with no field. REASON: the fix is Gallery.tsx, outside the files RC-P05 to RC-P08 changed; it is RC-P10's first step (RC-P07, Open).
+Minor findings and LOW rows (route · skill · finding):
+- m1 · /bounties (phone; desktop signed out) · critique-visual-hierarchy › Emphasis · the empty state's filled "Browse the gallery" sits beside another primary (the bar's New build; the rail's Join free); STATES.md row 19 makes it secondary then (Bounties.tsx:47)
+- m2 · / (phone) · critique-visual-hierarchy › Emphasis · two filled controls open the composer: the compose strip's New and the bar's New build (FeedShell.tsx)
+- m3 · every route (phone) · hicks-law › Common Failure Patterns · the top bar's avatar opens the drawer the bar's Profile already opens (MobileTopBar.tsx:120; the v0 brief keeps it)
+- m4 · every route (phone drawer) · buildgallery-theme › Part-category hues · Sign out is painted --cat-breakage, which STATES.md row 16 forbids (ProfileDrawer.tsx:219)
+- m5 · /notifications (phone) · hicks-law › Familiarity · the top bar says "Alerts" where the nav and drawer say "Notifications" (MobileTopBar.tsx:82)
+- m6 · /upload (phone) · CONTRACT §13 · the top bar's title is "Upload" (MobileTopBar.tsx:84; the route retires in RC-P08b)
+- m7 · every route (desktop) · better-layout › Group with space (LOW) · 8px under the search field against 4px between rows and 21px between groups, so it reads as Browse's first row (FlatShell.tsx:189)
+- m8 · every route (desktop, Dusk) · buildgallery-theme › Tokens · the native search-clear × draws in the browser's blue while a query is typed (NavSearch.tsx, type="search")
+- m9 · / · critique-visual-hierarchy › Entry Point · Home opens on For You, empty for a reader who follows nobody, beside a populated Builds tab; six tabs where CONTRACT §14 sets two (Home.tsx:500; FeedShell.tsx)
+- m10 · / · critique-affordance › CTA Clarity · the empty For You and Following tabs offer "Open Discover", a retired destination (FeedShell.tsx:202, :207)
+- m11 · / · critique-composition › Whitespace · 382px of empty column at 1440 between the competitions card and the empty state (FeedShell.tsx)
+- m12 · / · buildgallery-theme › Part-category hues · the legacy competitions card's "Reward" chip is breakage red (FeedShell.tsx)
+- m13 · /library · CONTRACT §13; STATES.md row 19 · the empty state names blueprints, stages and blocks, at 13px, with no action (LibraryShell.tsx)
+- m14 · /notifications, /library (phone) · better-layout › Order by importance (LOW) · an 84px empty band between the top bar and the tabs (ShellHeader.tsx; LibraryShell.tsx)
+- m15 · /notifications, /library (desktop) · critique-visual-hierarchy › Entry Point · a filled --recess "Back" is the first element on pages reached from the nav (ShellHeader.tsx; LibraryShell.tsx)
+- m16 · /notifications · critique-visual-hierarchy › Weight · rows at 13px/500 over 12px/400 with 11px dates: flat, and under the 16px body size (Notifications.tsx)
+- m17 · /notifications · critique-affordance › Clickability Signals; buildgallery-theme › Radius · "View" is an 11px label on a 45×27 square-cornered button and says nothing the row does not (Notifications.tsx)
+- m18 · /gallery · hicks-law › Budgets · Made for shows 9 options and Made with 8, over "≤ 6 visible, then More" (FacetRail.tsx; RC-P10's gallery work)
+- m19 · /gallery · critique-composition › Rhythm · a row's cards end at different heights, 824, 851 and 828 at 1440 (the gallery grid)
+- m20 · /bounties, /library · critique-composition › Balance · the frame's two empty states sit differently: Bounties' at the top of the column (y 118), Library's centred (y 499) (Bounties.tsx)
+- m21 · / (390) · better-layout › Hint at hidden content (LOW) · the tab row clips "Trending"; Recent and Bounties scroll into reach with the clip as the only cue (FeedShell.tsx)
+- m22 · every route (desktop) · better-layout › Plan for growth (LOW) · nav rows are a fixed 40px with one-line labels (flat-shell.css:331); not verified with pseudo-localisation
+- m23 · every route (desktop) · better-layout › Logical properties (LOW) · the active edge is an inset shadow on the physical left (flat-shell.css:365); no RTL build to verify
+- m24 · every route (phone drawer) · critique-affordance › Clickability Signals · Close is 36×36 and View profile 35px tall, under the 44px minimum (ProfileDrawer.tsx)
+- m25 · every route (phone) · better-layout › Order by importance (LOW) · MobileTopBar and MobileBottomNav mount after <main>, so the top bar comes after the page for a screen reader and for Tab (AppShell.tsx:294, :309)
 
 ## RC-P00 — Set-up: skills check, contract, diary, baseline
 Date: 2026-09-28 · Commits: SETUP-1 · Head: e2db7e50
@@ -124,7 +152,14 @@ Lovable messages owed: none
 Open: labels changed to "New build": Category's empty-state "Upload". Left: Home's compose strip "New" (on the list, but its label is in FeedShell.tsx, outside the files step 4 allows), Drafts' "New draft" and "Start writing", ProjectDetail's "New blueprint", Analytics' "Publish your first post", Profile's "Publish your first build" (ProfileContentZones.tsx), the composer bar's "Share something...", and the phone bar, already "New build". The picker is not deleted (UploadTypeSelector.tsx and a bounty-legacy test still import it; Deferred), so its Cmd/Ctrl+N shortcut still opens it until RC-P08b. No test asserted the picker, so none broke; Drafts.test and AppShell.test now assert /compose/new, and four tests dropped a dead picker mock. tsc PASS · unit 2107/2107, 0 new failures · build PASS · tier1 92/92.
 Next: RC-P09c
 
-## RC-P09c — 
+## RC-P09c — Critique pass on the frame
+Date: 2026-09-28 · Commits: CRITIQUE-1, CRITIQUE-2, CRITIQUE-3, CRITIQUE-4 · Head: 6318bd3d
+Landed: docs/reconciliation/critique/phase-2.md, one section per skill. It draws on 40 screenshots and on browser probes. The screenshots come from e2e/audit/rc-critique.spec.ts over twelve synthetic builds in e2e/audit/fixtures/rcBuilds.ts; the folder is gitignored. Fixed, one commit per cause: the desktop nav's rows and wordmark are keyboard links with the theme's ring (CRITIQUE-1); the phone no longer titles the Gallery "Discover" (CRITIQUE-2); the search placeholder is --text2, 1.75:1 → 4.55:1 on Exhibition (CRITIQUE-3). Rated items: major 7 → 4, minor 7 → 9, pass 1 → 2. better-layout: Approve.
+Skills applied: ⟦critique-composition⟧ ⟦critique-visual-hierarchy⟧ ⟦critique-affordance⟧ ⟦law-of-figure-ground⟧ ⟦better-layout › Reporting⟧ ⟦responsive-design › Input Method Adaptation⟧ ⟦hicks-law › Choice Audit; Budgets⟧ ⟦aesthetic-usability › Applying It⟧ ⟦buildgallery-theme › The colour contract; Before you call it done⟧ ⟦neoscale-e2e-testing › Writing tests⟧ ⟦neoscale-code-review › Root cause, not symptom⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: TWO MAJORS ARE DEFERRED and are the owner's call before RC-P09b. M4: the nav jumps between standard and wide routes, 259px at 1440; the fix is structural (§2.2). M5: search lands on a Gallery that ignores q until RC-P10. Both are under Critique findings deferred, with 25 minor and LOW findings. tsc PASS · unit 2114/2114, 0 new failures · build PASS · tier1 92/92 · discovery-redirects 10/10 on each project · frame-no-rail 4 desktop, 2 phone.
+Next: RC-P09b (the picture), then RC-P10
 
 ## RC-P09b — 
 
