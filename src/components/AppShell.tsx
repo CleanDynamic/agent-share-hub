@@ -12,7 +12,6 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { useDraftCount } from "@/hooks/useDraftCount";
@@ -84,7 +83,6 @@ const NAV_ICONS = {
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
 
@@ -144,8 +142,7 @@ export function AppShell() {
 
   /* New build used to intercept the click and open the type picker. It now
      navigates like every other entry, so the nav lands in the build
-     workspace. The picker is still reachable from the other New affordances —
-     the phone bar's New build, Cmd/Ctrl+N, the drafts page — until RC-P08. */
+     workspace — as does every other new-build control since RC-P08. */
   const onNavClick = (item: FlatShellNavItem) => {
     navigate(item.route);
   };
@@ -241,12 +238,8 @@ export function AppShell() {
       setProfileDrawerOpen(true);
       return;
     }
-    if (r === "upload") {
-      openUploadTypePicker();
-      return;
-    }
-    const map: Record<Exclude<MobileRoute, "profile" | "upload">, string> = {
-      home: "/", gallery: "/gallery", bounties: "/bounties",
+    const map: Record<Exclude<MobileRoute, "profile">, string> = {
+      home: "/", gallery: "/gallery", upload: "/compose/new", bounties: "/bounties",
     };
     navigate(map[r]);
   };

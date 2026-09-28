@@ -24,10 +24,6 @@ vi.mock("@/contexts/AuthContext", () => ({
   }),
 }));
 
-vi.mock("@/contexts/UploadPickerContext", () => ({
-  useUploadPicker: () => ({ openUploadTypePicker: vi.fn() }),
-}));
-
 vi.mock("@/components/SeoHead", () => ({ SeoHead: () => null }));
 vi.mock("@/components/shell/ShellHeader", () => ({ ShellHeader: () => null }));
 
@@ -131,5 +127,17 @@ describe("Drafts — both tools in one list", () => {
 
     newRow.click();
     expect(navigate).toHaveBeenCalledWith("/compose/b-1");
+  });
+
+  /* RC-P08 — every new-build control opens the composer; none opens the old
+     Blueprint / Blog / Bounty type picker. */
+  it("starts a new build in the composer from the empty list", async () => {
+    listDraftBuildsByCreator.mockResolvedValue([]);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("No drafts yet.")).toBeTruthy());
+
+    screen.getByRole("button", { name: "Start writing" }).click();
+    expect(navigate).toHaveBeenCalledWith("/compose/new");
   });
 });

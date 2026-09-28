@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { FeedItem, timeAgo } from "@/components/FeedItem";
 import { FeedCard, type FeedPost } from "@/components/feed-card";
@@ -494,7 +493,6 @@ function formatDeadline(deadline: string | null): string {
 const Home = () => {
   const { isLoggedIn, profile, user } = useAuth();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -663,7 +661,7 @@ const Home = () => {
         hasNewPosts={hasNewPosts}
         newPostCount={newPostCount}
         onLoadNewPosts={onLoadNewPosts}
-        onComposeClick={() => openUploadTypePicker()}
+        onComposeClick={() => navigate("/compose/new")}
         isEmpty={tabData.isEmpty}
         isError={tabData.isError}
         errorMessage={tabData.errorMessage}

@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { useToast } from "@/hooks/use-toast";
 import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,7 +100,6 @@ export default function Profile() {
   const { user, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { openUploadTypePicker } = useUploadPicker();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
@@ -423,8 +421,8 @@ export default function Profile() {
   );
 
   const handleCreateBlueprint = useCallback(() => {
-    openUploadTypePicker();
-  }, [openUploadTypePicker]);
+    navigate("/compose/new");
+  }, [navigate]);
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {

@@ -3,7 +3,6 @@ import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUploadPicker } from "@/contexts/UploadPickerContext";
 import { SeoHead } from "@/components/SeoHead";
 import { ContentBlockViewer } from "@/components/ContentBlockViewer";
 import { BookmarkButton } from "@/components/BookmarkButton";
@@ -156,7 +155,6 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { openUploadTypePicker } = useUploadPicker();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { isLoggedIn, profile } = useAuth();
@@ -523,7 +521,7 @@ const ProjectDetail = () => {
                       <div className="flex gap-3">
                         <Button type="button" variant="outline" size="sm"
                           className="flex-1 gap-1.5 border-secondary text-secondary hover:bg-secondary/10"
-                          onClick={() => openUploadTypePicker()}>
+                          onClick={() => navigate("/compose/new")}>
                           <Plus className="h-3.5 w-3.5" /> New blueprint
                         </Button>
                         <Button type="button" variant="outline" size="sm"

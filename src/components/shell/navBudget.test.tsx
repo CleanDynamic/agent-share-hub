@@ -30,9 +30,6 @@ const authState: {
 let breakpoint = "xl";
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
-vi.mock("@/contexts/UploadPickerContext", () => ({
-  useUploadPicker: () => ({ openUploadTypePicker: vi.fn() }),
-}));
 vi.mock("@/hooks/useUnreadMessages", () => ({ useUnreadMessages: () => ({ display: "" }) }));
 vi.mock("@/hooks/useUnreadNotifications", () => ({ useUnreadNotifications: () => ({ display: "" }) }));
 vi.mock("@/hooks/useDraftCount", () => ({ useDraftCount: () => ({ display: "" }) }));

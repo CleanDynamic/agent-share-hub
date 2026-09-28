@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -38,9 +38,6 @@ const badges = { msg: "", notif: "", draft: "", hasUnseenSaves: false, msgCount:
 let breakpoint = "xl";
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
-vi.mock("@/contexts/UploadPickerContext", () => ({
-  useUploadPicker: () => ({ openUploadTypePicker: vi.fn() }),
-}));
 vi.mock("@/hooks/useUnreadMessages", () => ({
   useUnreadMessages: () => ({ display: badges.msg, count: badges.msgCount }),
 }));
@@ -60,9 +57,13 @@ vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => <div /> 
 vi.mock("@/components/shell/MobileTopBar", () => ({
   MobileTopBar: () => <div data-testid="mobile-top-bar" />,
 }));
-const bottomNavProps: { unreadMessageCount?: number; unreadNotificationCount?: number } = {};
+const bottomNavProps: {
+  unreadMessageCount?: number;
+  unreadNotificationCount?: number;
+  onNavigate?: (route: "home" | "gallery" | "upload" | "bounties" | "profile") => void;
+} = {};
 vi.mock("@/components/shell/MobileBottomNav", () => ({
-  MobileBottomNav: (props: { unreadMessageCount: number; unreadNotificationCount: number }) => {
+  MobileBottomNav: (props: typeof bottomNavProps) => {
     Object.assign(bottomNavProps, props);
     return <div data-testid="mobile-bottom-nav" />;
   },
@@ -90,6 +91,7 @@ function renderAt(path: string) {
           <Route path="/notifications" element={<div data-testid="page">notifications page</div>} />
           <Route path="/profile" element={<div data-testid="page">profile page</div>} />
           <Route path="/analytics" element={<div data-testid="page">analytics page</div>} />
+          <Route path="/compose/new" element={<div data-testid="page">composer</div>} />
         </Route>
       </Routes>
     </MemoryRouter>
@@ -248,6 +250,16 @@ describe("AppShell mobile mode", () => {
     renderAt("/");
     expect(bottomNavProps.unreadMessageCount).toBe(12);
     expect(bottomNavProps.unreadNotificationCount).toBe(30);
+  });
+
+  /* RC-P08 — the phone bar's New build opens the composer, not the old
+     Blueprint / Blog / Bounty type picker. */
+  it("opens the composer from the phone bar's New build", () => {
+    breakpoint = "mobile";
+    signIn(true);
+    renderAt("/");
+    act(() => bottomNavProps.onNavigate!("upload"));
+    expect(screen.getByTestId("page")).toHaveTextContent("composer");
   });
 
   it("does not mount mobile chrome on desktop", () => {

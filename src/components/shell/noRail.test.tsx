@@ -22,9 +22,6 @@ const authState: {
 } = { isLoggedIn: false, isCreator: false, profile: null, user: null, signOut: vi.fn() };
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
-vi.mock("@/contexts/UploadPickerContext", () => ({
-  useUploadPicker: () => ({ openUploadTypePicker: vi.fn() }),
-}));
 vi.mock("@/hooks/useUnreadMessages", () => ({ useUnreadMessages: () => ({ display: null, count: 0 }) }));
 vi.mock("@/hooks/useUnreadNotifications", () => ({
   useUnreadNotifications: () => ({ display: null, count: 0 }),
