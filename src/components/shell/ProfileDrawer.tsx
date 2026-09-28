@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
-  Home, Compass, Library, Upload, FileText, MessageCircle, Bell,
+  Library, FileText, MessageCircle, Bell,
   BarChart3, Info, LogOut, ChevronRight, X,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -18,9 +18,12 @@ export interface DrawerUser {
   followingCount: number;
 }
 
+/* RC-P05. The phone's second level holds one group the reader already
+   understands — their own things (hicks-law › Budgets, phone drawer ≤ 6).
+   Home, Discover and Upload left: the bottom bar carries Home and New build,
+   and Discover is the Gallery, also on the bar. */
 export type DrawerRoute =
-  | "home" | "discover" | "library" | "upload" | "drafts"
-  | "messages" | "notifications" | "analytics" | "about";
+  | "library" | "drafts" | "messages" | "notifications" | "analytics" | "about";
 
 export interface ProfileDrawerProps {
   isOpen: boolean;
@@ -34,10 +37,7 @@ export interface ProfileDrawerProps {
 const BRAND_ORANGE = "var(--action)";
 
 const NAV: { route: DrawerRoute; label: string; Icon: React.ElementType }[] = [
-  { route: "home", label: "Home", Icon: Home },
-  { route: "discover", label: "Discover", Icon: Compass },
   { route: "library", label: "Library", Icon: Library },
-  { route: "upload", label: "Upload", Icon: Upload },
   { route: "drafts", label: "Drafts", Icon: FileText },
   { route: "messages", label: "Messages", Icon: MessageCircle },
   { route: "notifications", label: "Notifications", Icon: Bell },

@@ -110,19 +110,14 @@ test.describe("the legacy meta surfaces after the repoint", () => {
     await expect(page.getByText(/pledged/i).first()).toBeVisible();
   });
 
-  test("the discover free-text search expands, then maps its matches back", async ({ page }) => {
-    const searches = recordSubDefinitionQueries(page);
-
-    // Any free-text bounty search runs expandBountySearchIds, whose rows are
-    // OR-included into a content_items id filter — so the headers it matches
-    // are mapped back through bounties.legacy_item_id before they get there.
+  /* RC-P05 — /discover is an address that lands on the Gallery now, so the
+     free-text bounty search this test followed no longer runs there. Rewritten
+     to assert the redirect rather than deleted while the address is reachable
+     (CONTRACT §3.4); left as it was, its loop over zero requests would pass
+     without checking anything. */
+  test("the old discover search address lands on the gallery", async ({ page }) => {
     await page.goto("/discover?q=bounty");
-    await page.waitForLoadState("networkidle");
-
-    for (const search of searches) {
-      expect(search).toContain("select=meta_bounty_id");
-      expect(search).not.toContain("legacy_meta_item_id");
-    }
+    await expect(page).toHaveURL(/\/gallery$/);
   });
 
   test("a legacy meta page lists its sub-bounties and links a spawned one to /content", async ({

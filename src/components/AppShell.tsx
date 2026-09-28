@@ -90,8 +90,11 @@ export function AppShell() {
   const isMobile = breakpoint === "mobile";
 
   const { isLoggedIn, profile, user, signOut } = useAuth();
-  const { display: msgBadge } = useUnreadMessages();
-  const { display: notifBadge } = useUnreadNotifications();
+  /* The badges show text ("9+" above nine); the phone chrome's dots need the
+     number. Number("9+") is NaN, which hid the dots exactly when the most was
+     unread, so the counts are passed as counts. */
+  const { display: msgBadge, count: msgCount } = useUnreadMessages();
+  const { display: notifBadge, count: notifCount } = useUnreadNotifications();
   const { display: draftBadge } = useDraftCount();
   const { hasUnseenSaves } = useNavBadges();
 
@@ -143,8 +146,8 @@ export function AppShell() {
 
   /* New build used to intercept the click and open the type picker. It now
      navigates like every other entry, so the nav lands in the build
-     workspace. The picker is still reachable from every other New
-     affordance — Cmd/Ctrl+N, the mobile drawer, the drafts page. */
+     workspace. The picker is still reachable from the other New affordances —
+     the phone bar's New build, Cmd/Ctrl+N, the drafts page — until RC-P08. */
   const onNavClick = (item: FlatShellNavItem) => {
     navigate(item.route);
   };
@@ -183,21 +186,23 @@ export function AppShell() {
       ? null
       : <RightRailExplore />;
 
-  /* ── Mobile chrome plumbing (carried over from the retired shell) ── */
+  /* ── Mobile chrome plumbing (carried over from the retired shell).
+     RC-P05: the bar's five destinations; everything that lives in the Profile
+     drawer lights the Profile item. ── */
   const mobileRoute: MobileRoute = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
-    if (p.startsWith("/upload")) return "upload";
-    if (p.startsWith("/messages")) return "messages";
-    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics")) return "profile";
+    if (p === "/gallery" || p.startsWith("/b2/")) return "gallery";
+    if (p.startsWith("/bounties")) return "bounties";
+    if (p.startsWith("/compose") || p.startsWith("/rebuild") || p.startsWith("/import") || p.startsWith("/upload")) return "upload";
+    if (p.startsWith("/profile") || p.startsWith("/notifications") || p.startsWith("/library") || p.startsWith("/drafts") || p.startsWith("/analytics") || p.startsWith("/messages")) return "profile";
     return "home";
   })();
 
   const pageContextType: PageContextType = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
+    if (p.startsWith("/gallery")) return "discover";
     if (p.startsWith("/messages")) return "messages";
     if (p.startsWith("/notifications")) return "notifications";
     if (p.startsWith("/upload")) return "upload";
@@ -208,10 +213,7 @@ export function AppShell() {
 
   const drawerRoute: DrawerRoute | null = (() => {
     const p = pathname;
-    if (p === "/") return "home";
-    if (p.startsWith("/discover") || p.startsWith("/browse") || p.startsWith("/search")) return "discover";
     if (p.startsWith("/library")) return "library";
-    if (p.startsWith("/upload")) return "upload";
     if (p.startsWith("/drafts")) return "drafts";
     if (p.startsWith("/messages")) return "messages";
     if (p.startsWith("/notifications")) return "notifications";
@@ -232,14 +234,9 @@ export function AppShell() {
     : null;
 
   const drawerNavigate = (r: DrawerRoute) => {
-    if (r === "upload") {
-      openUploadTypePicker();
-      return;
-    }
     const map: Record<DrawerRoute, string> = {
-      home: "/", discover: "/discover", library: "/library", upload: "/upload",
-      drafts: "/drafts", messages: "/messages", notifications: "/notifications",
-      analytics: "/analytics", about: "/about",
+      library: "/library", drafts: "/drafts", messages: "/messages",
+      notifications: "/notifications", analytics: "/analytics", about: "/about",
     };
     navigate(map[r]);
   };
@@ -253,8 +250,8 @@ export function AppShell() {
       openUploadTypePicker();
       return;
     }
-    const map: Record<Exclude<MobileRoute, "profile">, string> = {
-      home: "/", discover: "/discover", upload: "/upload", messages: "/messages",
+    const map: Record<Exclude<MobileRoute, "profile" | "upload">, string> = {
+      home: "/", gallery: "/gallery", bounties: "/bounties",
     };
     navigate(map[r]);
   };
@@ -310,8 +307,8 @@ export function AppShell() {
           currentUserAvatarUrl={profile?.avatar_url || undefined}
           currentUserInitials={initialsSafe}
           unreadCounts={{
-            notifications: Number(notifBadge || 0),
-            messages: Number(msgBadge || 0),
+            notifications: notifCount ?? 0,
+            messages: msgCount ?? 0,
           }}
           onProfileDrawerOpen={() => setProfileDrawerOpen(true)}
           onRightRailDrawerOpen={() => setRightRailDrawerOpen(true)}
@@ -322,10 +319,8 @@ export function AppShell() {
       {isMobile && (
         <MobileBottomNav
           currentRoute={mobileRoute}
-          currentUserAvatarUrl={profile?.avatar_url || undefined}
-          currentUserInitials={initialsSafe}
-          unreadMessageCount={Number(msgBadge || 0)}
-          unreadNotificationCount={Number(notifBadge || 0)}
+          unreadMessageCount={msgCount ?? 0}
+          unreadNotificationCount={notifCount ?? 0}
           onNavigate={mobileBottomNavigate}
         />
       )}

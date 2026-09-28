@@ -33,7 +33,7 @@ export default function Onboarding() {
     if (!loading && !isLoggedIn) navigate("/login", { replace: true });
     // Skip onboarding if user has already completed it
     if (!loading && isLoggedIn && profile && profile.user_interests && (profile.user_interests as string[]).length > 0) {
-      navigate("/browse", { replace: true });
+      navigate("/gallery", { replace: true });
     }
   }, [loading, isLoggedIn, profile, navigate]);
 
@@ -58,7 +58,7 @@ export default function Onboarding() {
   }
 
   async function finishUser() {
-    navigate("/browse");
+    navigate("/gallery");
   }
 
   async function finishCreator() {
@@ -71,7 +71,7 @@ export default function Onboarding() {
     } as any).eq("id", profile.id);
     await refreshProfile();
     setSaving(false);
-    navigate(`/creator/${profile.username}`);
+    navigate(`/profile/${profile.username}`);
   }
 
   if (loading) return null;

@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { Home, Search, PlusCircle, MessageCircle } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Home, LayoutGrid, Plus, Target, User } from "lucide-react";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { feedback } from "@/lib/theme/motion";
 
-export type MobileRoute = "home" | "discover" | "upload" | "messages" | "profile";
+/* RC-P05. hicks-law's phone budget: exactly five, in this order — Home,
+   Gallery, New build, Bounties, Profile. Messages moved into the Profile
+   drawer with the reader's other things, so the Profile item carries the
+   unread dot for both messages and notifications. The glyphs are the desktop
+   nav's, at the same 2px stroke (better-ui › Match icon stroke to text
+   weight), each one SVG recoloured per state through currentColor. */
+export type MobileRoute = "home" | "gallery" | "upload" | "bounties" | "profile";
 
 export interface MobileBottomNavProps {
   currentRoute: MobileRoute;
-  currentUserAvatarUrl?: string;
-  currentUserInitials: string;
   unreadMessageCount: number;
   unreadNotificationCount: number;
   onNavigate: (route: MobileRoute) => void;
@@ -119,8 +122,6 @@ function BarItem({
 
 export function MobileBottomNav({
   currentRoute,
-  currentUserAvatarUrl,
-  currentUserInitials,
   unreadMessageCount,
   unreadNotificationCount,
   onNavigate,
@@ -147,39 +148,24 @@ export function MobileBottomNav({
       }}
     >
       <BarItem active={currentRoute === "home"} label="Home" onClick={() => onNavigate("home")}>
-        <Home size={22} />
+        <Home size={22} strokeWidth={2} />
       </BarItem>
-      <BarItem active={currentRoute === "discover"} label="Discover" onClick={() => onNavigate("discover")}>
-        <Search size={22} />
+      <BarItem active={currentRoute === "gallery"} label="Gallery" onClick={() => onNavigate("gallery")}>
+        <LayoutGrid size={22} strokeWidth={2} />
       </BarItem>
-      <BarItem active={currentRoute === "upload"} label="Upload" isUpload onClick={() => onNavigate("upload")}>
-        <PlusCircle size={22} />
+      <BarItem active={currentRoute === "upload"} label="New build" isUpload onClick={() => onNavigate("upload")}>
+        <Plus size={22} strokeWidth={2} />
       </BarItem>
-      <BarItem
-        active={currentRoute === "messages"}
-        label="Messages"
-        showDot={unreadMessageCount > 0}
-        onClick={() => onNavigate("messages")}
-      >
-        <MessageCircle size={22} />
+      <BarItem active={currentRoute === "bounties"} label="Bounties" onClick={() => onNavigate("bounties")}>
+        <Target size={22} strokeWidth={2} />
       </BarItem>
       <BarItem
         active={currentRoute === "profile"}
         label="Profile"
-        showDot={unreadNotificationCount > 0}
+        showDot={unreadMessageCount + unreadNotificationCount > 0}
         onClick={() => onNavigate("profile")}
       >
-        <Avatar
-          className="h-6 w-6"
-          style={{
-            border: currentRoute === "profile" ? `1.5px solid ${ACTIVE}` : `1px solid ${t.line}`,
-          }}
-        >
-          {currentUserAvatarUrl && <AvatarImage src={currentUserAvatarUrl} />}
-          <AvatarFallback className="text-[10px]" style={{ background: t.recess, color: t.text }}>
-            {currentUserInitials}
-          </AvatarFallback>
-        </Avatar>
+        <User size={22} strokeWidth={2} />
       </BarItem>
     </nav>
   );

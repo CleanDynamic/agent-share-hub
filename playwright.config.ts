@@ -65,8 +65,9 @@ export default defineConfig({
       use: { ...devices["Pixel 7"] },
       dependencies: ["setup"],
       // Tier 3 is authored against the desktop compose surface; tier 1 is the
-      // suite required at both viewports.
-      testMatch: /e2e\/tier1\/.*\.spec\.ts/,
+      // suite required at both viewports. The RC series names the tier-3 specs
+      // about the frame itself, which the phone chrome changes, to run here too.
+      testMatch: [/e2e\/tier1\/.*\.spec\.ts/, /e2e\/tier3\/discovery-redirects\.spec\.ts/],
     },
   ],
 

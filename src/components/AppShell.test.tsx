@@ -34,15 +34,19 @@ const authState: {
   user: null,
   signOut: vi.fn(),
 };
-const badges = { msg: "", notif: "", draft: "", hasUnseenSaves: false };
+const badges = { msg: "", notif: "", draft: "", hasUnseenSaves: false, msgCount: 0, notifCount: 0 };
 let breakpoint = "xl";
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
 vi.mock("@/contexts/UploadPickerContext", () => ({
   useUploadPicker: () => ({ openUploadTypePicker: vi.fn() }),
 }));
-vi.mock("@/hooks/useUnreadMessages", () => ({ useUnreadMessages: () => ({ display: badges.msg }) }));
-vi.mock("@/hooks/useUnreadNotifications", () => ({ useUnreadNotifications: () => ({ display: badges.notif }) }));
+vi.mock("@/hooks/useUnreadMessages", () => ({
+  useUnreadMessages: () => ({ display: badges.msg, count: badges.msgCount }),
+}));
+vi.mock("@/hooks/useUnreadNotifications", () => ({
+  useUnreadNotifications: () => ({ display: badges.notif, count: badges.notifCount }),
+}));
 vi.mock("@/hooks/useDraftCount", () => ({ useDraftCount: () => ({ display: badges.draft }) }));
 vi.mock("@/hooks/useNavBadges", () => ({ useNavBadges: () => ({ hasUnseenSaves: badges.hasUnseenSaves }) }));
 vi.mock("@/hooks/useBreakpoint", () => ({ useBreakpoint: () => breakpoint }));
@@ -59,8 +63,12 @@ vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => <div /> 
 vi.mock("@/components/shell/MobileTopBar", () => ({
   MobileTopBar: () => <div data-testid="mobile-top-bar" />,
 }));
+const bottomNavProps: { unreadMessageCount?: number; unreadNotificationCount?: number } = {};
 vi.mock("@/components/shell/MobileBottomNav", () => ({
-  MobileBottomNav: () => <div data-testid="mobile-bottom-nav" />,
+  MobileBottomNav: (props: { unreadMessageCount: number; unreadNotificationCount: number }) => {
+    Object.assign(bottomNavProps, props);
+    return <div data-testid="mobile-bottom-nav" />;
+  },
 }));
 vi.mock("@/components/shell/ProfileDrawer", () => ({
   ProfileDrawer: () => <div data-testid="profile-drawer" />,
@@ -114,6 +122,8 @@ beforeEach(() => {
   badges.notif = "";
   badges.draft = "";
   badges.hasUnseenSaves = false;
+  badges.msgCount = 0;
+  badges.notifCount = 0;
   breakpoint = "xl";
 });
 
@@ -227,6 +237,21 @@ describe("AppShell mobile mode", () => {
 
     const centre = document.querySelector(".fs-page-body")!;
     expect(within(centre as HTMLElement).getByTestId("page")).toHaveTextContent("home page");
+  });
+
+  /* RC-P05. The Profile item's dot is lit by the two unread counts together.
+     The badges read "9+" above nine, and Number("9+") is NaN, so the dot went
+     dark exactly when the most was unread; the bar gets the counts. */
+  it("hands the phone bar the unread counts, not the badge text", () => {
+    breakpoint = "mobile";
+    signIn(true);
+    badges.msg = "9+";
+    badges.msgCount = 12;
+    badges.notif = "9+";
+    badges.notifCount = 30;
+    renderAt("/");
+    expect(bottomNavProps.unreadMessageCount).toBe(12);
+    expect(bottomNavProps.unreadNotificationCount).toBe(30);
   });
 
   it("does not mount mobile chrome on desktop", () => {
