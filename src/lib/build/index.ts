@@ -180,6 +180,7 @@ export {
 } from "./buildfile";
 export {
   GALLERY_BUILD_COLUMNS,
+  GALLERY_LENSES,
   GALLERY_MAX_THRESHOLD,
   GALLERY_NODE_TYPES,
   GALLERY_PAGE_SIZE,
@@ -197,11 +198,17 @@ export {
   type GalleryFacet,
   type GalleryFacets,
   type GalleryFilters,
+  type GalleryLens,
   type GalleryMedia,
   type GalleryNode,
   type GalleryPage,
   type ListGalleryOptions,
 } from "./gallery";
+export {
+  galleryHref,
+  parseGalleryParams,
+  type GalleryParams,
+} from "./galleryParams";
 export {
   LAYER_ATTRIBUTION,
   LAYER_BLURB,
