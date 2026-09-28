@@ -122,6 +122,16 @@ describe("navigation budgets (hicks-law › Budgets)", () => {
     expectNamedInOrder(bar, "button", ["Home", "Gallery", "New build", "Bounties", "Profile"]);
   });
 
+  /* RC-P07 — one search box, the same in every place (hicks-law ›
+     Familiarity): the desktop chrome carries exactly one. */
+  it("the desktop chrome has exactly one search field", () => {
+    signIn();
+    renderShell();
+    expect(screen.getAllByRole("search")).toHaveLength(1);
+    expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+    expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeInTheDocument();
+  });
+
   it("the profile drawer lists exactly 6 destinations", () => {
     breakpoint = "mobile";
     signIn();

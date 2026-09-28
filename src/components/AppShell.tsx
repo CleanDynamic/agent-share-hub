@@ -25,6 +25,7 @@ import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
 import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
+import { NavSearch } from "@/components/shell/NavSearch";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -266,6 +267,7 @@ export function AppShell() {
         hideLeftRail={uploadEditorSmall}
         forceRightRail={uploadEditorSmall}
         layout={layout}
+        searchSlot={<NavSearch />}
         beforeUserSlot={
           /* The left rail's slot immediately above the account block. BG-P02
              mounted the theme toggle here too; BG-P18b moved it to the

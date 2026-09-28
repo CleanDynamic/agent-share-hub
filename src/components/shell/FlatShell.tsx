@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LogOut } from "lucide-react";
+import { SPACE } from "@/lib/theme/space";
 import "./flat-shell.css";
 
 /* ────────────────────────────────────────────────
@@ -77,6 +78,12 @@ export interface FlatShellProps {
   /** Optional slot rendered above the user block (e.g. the XP progress chip). */
   beforeUserSlot?: ReactNode;
   /**
+   * RC-P07. The desktop search field, between the wordmark and the nav list.
+   * Rendered only when provided, in a wrapper of its own that sets the space
+   * under it; no existing element's style changes for it.
+   */
+  searchSlot?: ReactNode;
+  /**
    * BG-P18b. The theme control, at the very bottom of the left rail.
    *
    * A SLOT OF ITS OWN RATHER THAN `beforeUserSlot`, because the order is the
@@ -118,6 +125,7 @@ export function FlatShell({
   children,
   isMobile,
   beforeUserSlot,
+  searchSlot,
   themeControl,
   hideLeftRail,
   forceRightRail,
@@ -152,6 +160,9 @@ export function FlatShell({
         {!isMobile && !hideLeftRail && (
           <nav className="fs-rail fs-left" aria-label="Primary" data-testid="frame-left">
             <div className="fs-logo" onClick={onLogoClick}>buildgallery</div>
+            {searchSlot != null && (
+              <div style={{ paddingBlockEnd: SPACE.xs }}>{searchSlot}</div>
+            )}
             <ul className="fs-nav-list">
               {navItems.map((item, idx) => (
                 <li key={item.key}>

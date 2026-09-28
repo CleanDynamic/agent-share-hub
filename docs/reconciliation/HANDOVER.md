@@ -105,7 +105,14 @@ Lovable messages owed: none
 Open: requests on / 4 → 1, /gallery 3 → 3; JS bytes 4160385 → 4143211, largest chunk 3239939 → 3222765. Existing tests that asserted the rail were rewritten in the commit that removed it (FRAME-4, FRAME-5), so each commit is green; that includes e2e/tier1/wide-layout.spec.ts, e2e/tier3/home-ground.spec.ts and feed-repaint.spec.ts, which measured it. Deleted: five home-ground.spec.ts tests whose only subject was the Explore rail's content. moved-routes-frame.spec.ts now fakes the backend (§7), and its import-page file check no longer depends on a transient state. index.css keeps two unreferenced keyframes, rrFade and rrSlide. /dev/wide/rail is a 404. tsc PASS · unit 2084/2084, 0 new failures · build PASS · tier1 92/92.
 Next: RC-P07
 
-## RC-P07 — 
+## RC-P07 — One search, over builds
+Date: 2026-09-28 · Commits: SEARCH-1, SEARCH-2 · Head: c05429e1
+Landed: supabase/migrations/20261001140000_rc_search_builds.sql enables pg_trgm, adds three trigram GIN indexes and search_build_ids (SECURITY INVOKER, STABLE, search_path empty): published and gallery builds matched on title, outcome, made-for, made-with and placed-node titles, most reproduced first, then most recently published, at most 200. ITS SQL WAS WRITTEN IN THIS SESSION from the prompt's "SEARCH, EXACTLY" paragraph, because the prompt's SQL block arrived as an unfilled {{SQL_P07}}. src/lib/build/search.ts (SEARCH_MIN 2, SEARCH_MAX 80, normaliseQuery, searchBuildIds) and src/lib/profile/searchMakers.ts (at most 3 makers); neither puts query text in an error. The left nav's one search field: NavSearch, "/" focuses it, Enter opens /gallery?q=, and on /gallery it shows q.
+Skills applied: ⟦supabase-postgres-best-practices › references/query-index-types.md; references/advanced-full-text-search.md; references/security-rls-basics.md⟧ ⟦hicks-law › Remedies 7 Add scent; Familiarity⟧ ⟦neoscale-error-monitoring › Privacy⟧ ⟦responsive-design › Input Method Adaptation: Keyboard⟧ ⟦buildgallery-theme › Radius; Focus ring; Before you call it done⟧ ⟦neoscale-performance › Checklist for any new route⟧ ⟦neoscale-e2e-testing⟧ ⟦buildgallery-repo-map › 1; 4⟧ ⟦neoscale-code-review › Review output format⟧
+Migrations queued: 20261001140000_rc_search_builds.sql, Deploy queue item 5 (the prompt said "4."; the queue already held four)
+Lovable messages owed: L-P07-1, once the owner has read the SQL
+Open: RC-P10 makes /gallery read q and focus=search. Rehearsed on a local Postgres 16 stand-in with the real read policies: applies twice cleanly; a creator's own draft is never returned; tray-node titles never match (a node counts once placed); %, _ and \ match literally; both trigram indexes are chosen. searchMakers does not filter profiles.is_private (RLS governs; RC-P10's call); PostgREST reads a * in a maker search as a wildcard. The browser's native search-clear × draws in its own blue on Dusk; removing it needs a stylesheet rule (CONTRACT §2.1) or type=text (step 9). tsc PASS · unit 2104/2104, 0 new failures · build PASS · tier1 92/92 · audit:themes PASS.
+Next: RC-P08
 
 ## RC-P08 — 
 
