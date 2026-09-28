@@ -2,7 +2,7 @@
 
 2026-09-28
 
-The live results were not supplied. The RC-P01 message had no "LOVABLE RESULTS BELOW" section, and the owner said to continue without them. Nothing in this file is live data. Every value that needs Q1–Q7 reads "not supplied", and the only filled values come from the repository and say so.
+The live results were not supplied. The RC-P01 message had no "LOVABLE RESULTS BELOW" section, and the owner said to continue without them. The queries are now in docs/reconciliation/rc-recon.sql, ready to run against the live database. Nothing in this file is live data. Every value that needs Q1–Q7 reads "not supplied", and the only filled values come from the repository and say so.
 
 ## Q1
 
