@@ -61,8 +61,8 @@ import ContentEditPage from "./pages/ContentEdit";
 import BountyUpload from "@/pages/BountyUpload";
 const BuildPage = lazy(() => import("./pages/BuildPage"));
 // The gallery. Its own chunk: a reader who never opens it never pays for the
-// card bodies, and it adds no navigation entry — reachable directly and from
-// the publish confirmation.
+// card bodies. Reachable from the primary navigation (RC-P05), directly, and
+// from the publish confirmation.
 const Gallery = lazy(() => import("./pages/Gallery"));
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
