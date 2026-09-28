@@ -683,24 +683,6 @@
   }
 }
 
-/* ── The right rail in wide mode ──
-     OPTIONAL, AND SUPPRESSED BY DEFAULT. FlatShell does not mount it at all
-     unless the route asked for it (`wideRightRail`), because the two wide
-     surfaces want opposite things: the gallery wants the 300px for another
-     grid column, the build page wants the rail. This rule handles the other
-     half — a route that DID ask for it still gives the space back below 1280,
-     where a rail plus a grid leaves neither enough room. Above 1280 the rail
-     shows and the grid drops a column, which is the trade the route chose.
-
-     `:not(.fs-right--force)` so the blueprint editor's forced rail keeps
-     working if a wide route ever wants it; the two rules would otherwise have
-     equal specificity and this one, being later in the file, would win. ── */
-@media (max-width: 1279px) {
-  .fs-wide .fs-right:not(.fs-right--force) {
-    display: none;
-  }
-}
-
 /* ── The grid ──
      A CONTAINER PAGES OPT INTO, NOT SOMETHING IMPOSED. It is a class a wide
      page puts on a wrapper, not a rule on `.fs-centre`: a wide page that wants

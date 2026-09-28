@@ -43,8 +43,6 @@ vi.mock("@/hooks/useProgress", () => ({
 }));
 
 /* Leaves that read data. None of them is a destination being counted. */
-vi.mock("@/components/shell/RightRailExplore", () => ({ RightRailExplore: () => null }));
-vi.mock("@/components/shell/RightRailDrawer", () => ({ RightRailDrawer: () => null }));
 vi.mock("@/components/workspace/WorkspaceShell", () => ({ WorkspaceShell: () => null }));
 vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => null }));
 

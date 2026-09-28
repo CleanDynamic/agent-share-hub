@@ -21,12 +21,10 @@ import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useProgress } from "@/hooks/useProgress";
 import { FlatShell, type FlatShellNavItem } from "@/components/shell/FlatShell";
 import { matchWideRoute } from "@/components/shell/wideRoutes";
-import { RightRailExplore } from "@/components/shell/RightRailExplore";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 import { MobileTopBar, type PageContextType } from "@/components/shell/MobileTopBar";
 import { MobileBottomNav, type MobileRoute } from "@/components/shell/MobileBottomNav";
 import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawer";
-import { RightRailDrawer } from "@/components/shell/RightRailDrawer";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -99,7 +97,6 @@ export function AppShell() {
   const { hasUnseenSaves } = useNavBadges();
 
   const [isProfileDrawerOpen, setProfileDrawerOpen] = useState(false);
-  const [isRightRailDrawerOpen, setRightRailDrawerOpen] = useState(false);
 
   const pathname = location.pathname;
   const activeKey = routeToNav(pathname);
@@ -113,8 +110,8 @@ export function AppShell() {
   const layout = wideRoute ? "wide" : "standard";
 
   /* ── Blueprint-editor special case (unchanged behaviour): on small
-     desktops the left rail hides and the right rail shows the editor
-     workspace instead of Explore. ── */
+     desktops the left rail hides and the right-hand slot shows the editor
+     workspace. ── */
   const isUploadEditor =
     pathname.startsWith("/upload/blueprint") ||
     pathname.startsWith("/upload/blog");
@@ -175,16 +172,13 @@ export function AppShell() {
     navigate("/");
   };
 
-  /* ── Right rail: Explore panel, editor workspace, or hidden ── */
-  const railHiddenRoute =
-    pathname.startsWith("/publish/") ||
-    pathname === "/discover" ||
-    pathname === "/notifications";
+  /* ── RC-P06: no right rail. The frame is the left nav and the centre
+     column, on every route and at every width (CONTRACT §3.1). The slot
+     survives for one tenant, the legacy editor's workspace on
+     /upload/blueprint, which is connector-locked until RC-P08b removes it. ── */
   const rightRail = isUploadEditor && pathname.startsWith("/upload/blueprint")
     ? <WorkspaceShell showNavTab={uploadEditorSmall} />
-    : railHiddenRoute
-      ? null
-      : <RightRailExplore />;
+    : null;
 
   /* ── Mobile chrome plumbing (carried over from the retired shell).
      RC-P05: the bar's five destinations; everything that lives in the Profile
@@ -272,7 +266,6 @@ export function AppShell() {
         hideLeftRail={uploadEditorSmall}
         forceRightRail={uploadEditorSmall}
         layout={layout}
-        wideRightRail={wideRoute?.rightRail ?? false}
         beforeUserSlot={
           /* The left rail's slot immediately above the account block. BG-P02
              mounted the theme toggle here too; BG-P18b moved it to the
@@ -311,7 +304,7 @@ export function AppShell() {
             messages: msgCount ?? 0,
           }}
           onProfileDrawerOpen={() => setProfileDrawerOpen(true)}
-          onRightRailDrawerOpen={() => setRightRailDrawerOpen(true)}
+          onSearchOpen={() => navigate("/gallery?focus=search")}
           onNotificationsOpen={() => navigate("/notifications")}
           onBack={() => navigate(-1)}
         />
@@ -335,14 +328,6 @@ export function AppShell() {
         onSignOut={async () => { await signOut(); navigate("/"); }}
       />
 
-      {/* RightRailDrawer — everywhere below xl, as before */}
-      {breakpoint !== "xl" && (
-        <RightRailDrawer
-          isOpen={isRightRailDrawerOpen}
-          onClose={() => setRightRailDrawerOpen(false)}
-          onNavigate={(path) => navigate(path)}
-        />
-      )}
     </>
   );
 }

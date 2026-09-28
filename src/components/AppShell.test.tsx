@@ -55,9 +55,6 @@ vi.mock("@/hooks/useProgress", () => ({
 }));
 
 /* Heavy leaf components the frame mounts — stubbed to keep the test on the frame. */
-vi.mock("@/components/shell/RightRailExplore", () => ({
-  RightRailExplore: () => <div data-testid="right-rail-explore" />,
-}));
 vi.mock("@/components/workspace/WorkspaceShell", () => ({ WorkspaceShell: () => <div /> }));
 vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => <div /> }));
 vi.mock("@/components/shell/MobileTopBar", () => ({
@@ -72,9 +69,6 @@ vi.mock("@/components/shell/MobileBottomNav", () => ({
 }));
 vi.mock("@/components/shell/ProfileDrawer", () => ({
   ProfileDrawer: () => <div data-testid="profile-drawer" />,
-}));
-vi.mock("@/components/shell/RightRailDrawer", () => ({
-  RightRailDrawer: () => <div data-testid="right-rail-drawer" />,
 }));
 
 const { AppShell } = await import("@/components/AppShell");
@@ -209,16 +203,19 @@ describe("AppShell routing through a single outlet", () => {
   });
 });
 
+/* RC-P06 — the right rail is gone from every route (CONTRACT §3.1). These two
+   asserted that the Explore panel rendered on content routes and was hidden on
+   the routes that opted out; they are rewritten to the one answer that is left. */
 describe("AppShell right rail", () => {
-  it("renders the Explore panel on content routes", () => {
+  it("renders no right rail on content routes", () => {
     renderAt("/");
-    expect(screen.getByTestId("right-rail-explore")).toBeInTheDocument();
-    expect(document.querySelectorAll(".fs-rail").length).toBe(2);
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".fs-rail").length).toBe(1);
   });
 
-  it("hides the rail on routes that opted out", () => {
+  it("renders none on the routes that used to opt out either", () => {
     renderAt("/notifications");
-    expect(screen.queryByTestId("right-rail-explore")).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
     expect(document.querySelector(".fs-right")).toBeNull();
   });
 });
@@ -233,7 +230,6 @@ describe("AppShell mobile mode", () => {
     expect(screen.getByTestId("mobile-top-bar")).toBeInTheDocument();
     expect(screen.getByTestId("mobile-bottom-nav")).toBeInTheDocument();
     expect(screen.getByTestId("profile-drawer")).toBeInTheDocument();
-    expect(screen.getByTestId("right-rail-drawer")).toBeInTheDocument();
 
     const centre = document.querySelector(".fs-page-body")!;
     expect(within(centre as HTMLElement).getByTestId("page")).toHaveTextContent("home page");
@@ -323,8 +319,10 @@ describe("AppShell layout mode", () => {
     }
   });
 
-  it("keeps the right rail on a standard route, as it always did", () => {
+  /* RC-P06: rewritten from "keeps the right rail on a standard route". */
+  it("renders a standard route with no right rail", () => {
     renderAt("/");
-    expect(screen.getByTestId("right-rail-explore")).toBeInTheDocument();
+    expect(root().getAttribute("data-layout")).toBe("standard");
+    expect(document.querySelector(".fs-right")).toBeNull();
   });
 });

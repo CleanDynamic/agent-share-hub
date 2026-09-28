@@ -7,9 +7,14 @@ import { FlatShell, type FlatShellProps } from "./FlatShell";
 
    jsdom has no layout engine, so nothing here measures anything: these tests
    cover the half of the mode that is a component decision rather than a CSS
-   one — which class lands on the root, and whether the right rail is in the
-   DOM at all. The measurements are covered as stylesheet text in
+   one — which class lands on the root, and whether the right-hand slot is in
+   the DOM at all. The measurements are covered as stylesheet text in
    flat-shell.wide.test.ts and as rendered geometry in the browser sweep.
+
+   RC-P06 removed the right rail. The slot that held it survives for the legacy
+   editor's workspace on /upload/blueprint alone, so the tests below are about
+   when that slot may appear, and the wideRightRail prop they used to pass is
+   gone with the rail.
 ──────────────────────────────────────────────── */
 
 function renderShell(props: Partial<FlatShellProps> = {}) {
@@ -31,7 +36,7 @@ function renderShell(props: Partial<FlatShellProps> = {}) {
 }
 
 const root = () => document.querySelector(".fs-root")!;
-const rail = () => document.querySelector(".fs-right");
+const slot = () => document.querySelector(".fs-right");
 
 describe("FlatShell layout prop", () => {
   it("defaults to standard and adds no class", () => {
@@ -53,36 +58,37 @@ describe("FlatShell layout prop", () => {
   });
 });
 
-describe("the right rail across the two modes", () => {
-  it("standard mode renders the rail the container supplied, as it always did", () => {
+describe("the right-hand slot across the two modes (RC-P06)", () => {
+  it("standard mode renders what the container supplied, as it always did", () => {
     renderShell();
-    expect(rail()).not.toBeNull();
+    expect(slot()).not.toBeNull();
   });
 
-  it("standard mode ignores wideRightRail entirely", () => {
-    renderShell({ wideRightRail: false });
-    expect(rail()).not.toBeNull();
+  it("standard mode names the slot for its one tenant, the editor workspace", () => {
+    renderShell();
+    expect(slot()!.getAttribute("aria-label")).toBe("Editor workspace");
   });
 
-  it("wide mode suppresses the rail by default", () => {
+  it("wide mode never mounts the slot", () => {
     renderShell({ layout: "wide" });
-    expect(rail()).toBeNull();
+    expect(slot()).toBeNull();
   });
 
-  it("wide mode mounts the rail when the route asked for it", () => {
-    renderShell({ layout: "wide", wideRightRail: true });
-    expect(rail()).not.toBeNull();
+  it("wide mode leaves the left nav and the centre as the frame's only columns", () => {
+    renderShell({ layout: "wide" });
+    expect(document.querySelectorAll(".fs-rail")).toHaveLength(1);
+    expect(document.querySelector(".fs-centre")).not.toBeNull();
   });
 
-  it("never mounts either rail on mobile, in either mode", () => {
-    renderShell({ isMobile: true, layout: "wide", wideRightRail: true });
-    expect(rail()).toBeNull();
+  it("never mounts the slot or the nav on mobile, in either mode", () => {
+    renderShell({ isMobile: true, layout: "wide" });
+    expect(slot()).toBeNull();
     expect(document.querySelector(".fs-left")).toBeNull();
   });
 
-  it("still respects a container that supplied no rail", () => {
-    renderShell({ layout: "wide", wideRightRail: true, rightRail: null });
-    expect(rail()).toBeNull();
+  it("still respects a container that supplied nothing", () => {
+    renderShell({ rightRail: null });
+    expect(slot()).toBeNull();
   });
 });
 
@@ -90,6 +96,12 @@ describe("the left rail is untouched by the mode", () => {
   it("renders in wide mode exactly as in standard", () => {
     renderShell({ layout: "wide" });
     expect(document.querySelector(".fs-left")).not.toBeNull();
+  });
+
+  it("marks the two columns for browser tests to measure", () => {
+    const { getByTestId } = renderShell();
+    expect(getByTestId("frame-left")).toBe(document.querySelector(".fs-left"));
+    expect(getByTestId("frame-centre")).toBe(document.querySelector(".fs-centre"));
   });
 
   it("still honours hideLeftRail in wide mode", () => {

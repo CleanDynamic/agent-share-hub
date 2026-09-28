@@ -28,7 +28,8 @@ export interface MobileTopBarProps {
   currentUserInitials: string;
   unreadCounts?: UnreadCounts;
   onProfileDrawerOpen: () => void;
-  onRightRailDrawerOpen: () => void;
+  /** RC-P06. The magnifier: search is the Gallery with a query (CONTRACT §14). */
+  onSearchOpen: () => void;
   onBack?: () => void;
   onNotificationsOpen?: () => void;
 }
@@ -61,7 +62,7 @@ export function MobileTopBar({
   currentUserInitials,
   unreadCounts,
   onProfileDrawerOpen,
-  onRightRailDrawerOpen,
+  onSearchOpen,
   onBack,
   onNotificationsOpen,
 }: MobileTopBarProps) {
@@ -168,8 +169,8 @@ export function MobileTopBar({
       {/* Right: search or bell */}
       <button
         type="button"
-        onClick={showSearchIcon ? onRightRailDrawerOpen : onNotificationsOpen}
-        aria-label={showSearchIcon ? "Open explore" : "Notifications"}
+        onClick={showSearchIcon ? onSearchOpen : onNotificationsOpen}
+        aria-label={showSearchIcon ? "Search builds" : "Notifications"}
         style={{
           position: "relative",
           display: "flex",

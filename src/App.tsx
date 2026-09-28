@@ -113,14 +113,10 @@ const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
    emitted at all.
 
    REGISTERED INSIDE <Layout />, UNLIKE /dev/kit, because the thing it exists
-   to show is the frame around the page. It is the only route that renders
-   wide: the wide-route table (src/components/shell/wideRoutes.ts) carries
-   these two paths under the same DEV guard and is otherwise empty, so no real
-   route's layout changed in BG-P14.
-
-   TWO PATHS, ONE PAGE. `/dev/wide/rail` is the same component with the right
-   rail requested; the page's rail control navigates between them, which
-   exercises the route table rather than a demo-only prop. */
+   to show is the frame around the page. The wide-route table
+   (src/components/shell/wideRoutes.ts) carries its path under the same DEV
+   guard. RC-P06 deleted its second path, /dev/wide/rail, with the right rail
+   it demonstrated. */
 const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")) : null;
 const queryClient = new QueryClient();
 
@@ -227,16 +223,6 @@ const App = () => (
                 {WideDemo && (
                   <Route
                     path="/dev/wide"
-                    element={
-                      <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
-                        <WideDemo />
-                      </Suspense>
-                    }
-                  />
-                )}
-                {WideDemo && (
-                  <Route
-                    path="/dev/wide/rail"
                     element={
                       <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
                         <WideDemo />

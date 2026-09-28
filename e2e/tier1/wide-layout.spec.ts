@@ -84,15 +84,18 @@ async function open(page: Page, path: string, viewport: number, theme = "exhibit
    a hairline and 16px of padding on each side of the 600 a CARD is specified
    at, where the old 600 column plus the home wrapper's own 16px inset rendered
    568px cards. The frame, the two rails and the breakpoints are as they were,
-   and those are the numbers this file has always been for. */
+   and those are the numbers this file has always been for.
+
+   RC-P06 REMOVED THE RIGHT RAIL, so the 300 is gone from the measurement and
+   asserted absent instead: the frame is the left nav and the reading column. */
 test.describe("standard mode is the frame", () => {
-  test("keeps 1200 / 240 / 300, with a 634 reading column", async ({ page }) => {
+  test("keeps 1200 / 240, with a 634 reading column and no right rail", async ({ page }) => {
     await open(page, "/", 1400);
     expect(await page.locator(".fs-root.fs-wide").count()).toBe(0);
     expect(await width(page, ".fs-frame")).toBe(1200);
     expect(await width(page, ".fs-left")).toBe(240);
     expect(await width(page, ".fs-centre")).toBe(634);
-    expect(await width(page, ".fs-right")).toBe(300);
+    expect(await page.locator(".fs-right").count()).toBe(0);
   });
 
   test("puts a card at exactly 600 inside that column", async ({ page }) => {
@@ -159,40 +162,37 @@ test.describe("wide mode", () => {
   });
 });
 
-test.describe("the right rail is the route's decision", () => {
-  test("is absent by default, and present when the route asked", async ({ page }) => {
+/* RC-P06 REMOVED THE RIGHT RAIL FROM EVERY ROUTE. These four asserted that a
+   wide route decided it: absent unless asked for, costing the grid a column,
+   given back below 1280, and toggled from the demo page through
+   /dev/wide/rail. They are rewritten to what is true now rather than deleted:
+   no route has one, the grid keeps the room, the rail's demo path is gone,
+   and so is its control. */
+test.describe("the right rail is gone", () => {
+  test("is absent on a standard route and on a wide one", async ({ page }) => {
+    await open(page, "/", 1400);
+    expect(await page.locator(".fs-right").count()).toBe(0);
     await open(page, "/dev/wide", 1400);
     expect(await page.locator(".fs-right").count()).toBe(0);
-
-    await open(page, "/dev/wide/rail", 1400);
-    await expect(page.locator(".fs-right")).toBeVisible();
-    expect(await width(page, ".fs-right")).toBe(300);
   });
 
-  test("costs the grid a column rather than overflowing the frame", async ({ page }) => {
+  test("leaves the wide grid three across at 1400 without overflowing", async ({ page }) => {
     await open(page, "/dev/wide", 1400);
-    const without = await columns(page);
-    await open(page, "/dev/wide/rail", 1400);
-    const with_ = await columns(page);
-    expect(with_).toBeLessThan(without);
+    expect(await columns(page)).toBe(3);
     expect(await overflows(page)).toBe(false);
   });
 
-  test("gives the rail back below 1280, where a rail plus a grid fits neither", async ({ page }) => {
-    await open(page, "/dev/wide/rail", 1279);
-    await expect(page.locator(".fs-right")).toBeHidden();
-    await open(page, "/dev/wide/rail", 1280);
-    await expect(page.locator(".fs-right")).toBeVisible();
+  test("took the demo's rail path with it", async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto("/dev/wide/rail");
+    await expect(page.getByRole("heading", { level: 1, name: "404" })).toBeVisible();
+    expect(await page.locator(".fs-right").count()).toBe(0);
   });
 
-  test("toggling it from the page reflows without overflow", async ({ page }) => {
+  test("leaves the demo page with no rail control", async ({ page }) => {
     await open(page, "/dev/wide", 1400);
-    await page.getByRole("link", { name: "Right rail: off" }).click();
-    await expect(page.locator(".fs-right")).toBeVisible();
-    expect(await overflows(page)).toBe(false);
-
-    await page.getByRole("link", { name: "Right rail: on" }).click();
-    await expect(page.locator(".fs-right")).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 1, name: "Wide layout mode" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Right rail/ })).toHaveCount(0);
     expect(await overflows(page)).toBe(false);
   });
 });
