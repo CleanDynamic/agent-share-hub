@@ -35,7 +35,17 @@ import { body } from "@/lib/theme/type";
    single focus ring — never a pill (buildgallery-theme › Radius; Focus ring).
    The font is set on the form because index.css makes every input inherit its
    font size above 768px.
+
+   THE PLACEHOLDER IS --text2 (RC-P09c), through the one mechanism the kit has
+   for it: ::placeholder is a pseudo-element no inline style can reach, so it
+   takes the generated utility ui/input.tsx uses, whose note explains why that
+   is not a new class. Without it the placeholder kept the base stylesheet's
+   grey: 1.75:1 on Exhibition's --recess, where --text2 is 4.55:1 (5.73:1 on
+   Dusk).
    ──────────────────────────────────────────────────────────────────────────── */
+
+/** The kit's placeholder colour, spelled as ui/input.tsx spells it. */
+const PLACEHOLDER_CLASS = "placeholder:text-[color:var(--text2)]";
 
 /** True when the key press belongs to something the reader is typing into. */
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -84,6 +94,7 @@ export function NavSearch() {
         type="search"
         aria-label="Search builds"
         placeholder="Search builds"
+        className={PLACEHOLDER_CLASS}
         maxLength={SEARCH_MAX}
         value={value}
         onChange={(event) => setValue(event.target.value)}

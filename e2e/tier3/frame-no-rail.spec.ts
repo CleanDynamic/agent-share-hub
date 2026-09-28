@@ -8,7 +8,9 @@
 // /notifications, to the pixel ⟦layout-grid › Responsive Behavior: Fixed⟧.
 // At 1024 the nav is fully on screen and nothing scrolls sideways
 // ⟦responsive-design⟧; on a phone there is no nav rail, and the magnifier that
-// used to open the Explore drawer opens the Gallery's search.
+// used to open the Explore drawer opens the Gallery's search. RC-P09c adds the
+// one search field's placeholder, measured against the text floor in both
+// rooms ⟦buildgallery-theme › The colour contract⟧.
 //
 // BOTH PROJECTS. The mobile project runs this file as well as tier 1
 // (playwright.config.ts); each test says which project it belongs to.
@@ -19,7 +21,7 @@
 // Nothing reaches the network.
 //
 // SELECTORS: the frame's two data-testids, the role and name of the search
-// button, and the address bar.
+// button and of the search field, and the address bar.
 
 import { expect, test, type Page } from "@playwright/test";
 import { installStub, withSession, withTheme } from "../audit/support/harness";
@@ -59,6 +61,35 @@ test.describe("desktop", () => {
     expect(home).toEqual(reference);
     expect(home.centre.width).toBe(634);
   });
+
+  /* RC-P09c. The field's placeholder is its only visible label. It showed in
+     the browser's grey, 1.75:1 on Exhibition's --recess, until this pass. */
+  for (const theme of ["exhibition", "dusk"] as const) {
+    test(`the search field's placeholder reads at the text floor in ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await withTheme(page, theme);
+      await withSession(page);
+      await installStub(page);
+      await page.goto("/");
+      const field = page.getByRole("searchbox", { name: "Search builds" });
+      await field.waitFor({ timeout: READY_MS });
+
+      const ratio = await field.evaluate((el) => {
+        const channels = (colour: string) => (colour.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        const luminance = (colour: string) => {
+          const [r, g, b] = channels(colour).map((v) => {
+            const s = v / 255;
+            return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const ink = luminance(getComputedStyle(el, "::placeholder").color);
+        const ground = luminance(getComputedStyle(el).backgroundColor);
+        return (Math.max(ink, ground) + 0.05) / (Math.min(ink, ground) + 0.05);
+      });
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    });
+  }
 
   test("keeps the nav on screen at 1024 without scrolling sideways", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 800 });

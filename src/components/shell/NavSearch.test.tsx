@@ -79,6 +79,14 @@ describe("NavSearch", () => {
     expect(field().style.borderRadius).toBe("var(--r-control)");
   });
 
+  /* RC-P09c. jsdom computes no ::placeholder colour, so this holds the field
+     to the kit's placeholder utility; e2e/tier3/frame-no-rail.spec.ts measures
+     the colour the browser draws. */
+  it("paints its placeholder in --text2, as the kit's input does", () => {
+    renderAt("/");
+    expect(field()).toHaveClass("placeholder:text-[color:var(--text2)]");
+  });
+
   it("shows the gallery's query on the gallery", () => {
     renderAt("/gallery?q=inbox%20triage");
     expect(field()).toHaveValue("inbox triage");
