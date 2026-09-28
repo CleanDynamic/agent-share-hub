@@ -15,10 +15,9 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
    changing a budget is the owner's decision, recorded in the diary first.
 
    The phone bar and the drawer are the real components, mounted by the real
-   AppShell. The desktop rail's rows are list items with no role or name of
-   their own (FlatShell draws them), so the desktop tests read each list
-   item's text and find the groups at the divider FlatShell draws in the first
-   row of a group.
+   AppShell. The desktop rail's rows are links since RC-P09c, one to a list
+   item, so the desktop tests read each item's link by role and find the
+   groups at the divider FlatShell draws in the first row of a group.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const authState: {
@@ -78,7 +77,7 @@ function desktopGroups(): string[][] {
   const groups: string[][] = [];
   for (const row of within(rail).getAllByRole("listitem")) {
     if (groups.length === 0 || row.querySelector(".fs-nav-divider")) groups.push([]);
-    groups[groups.length - 1].push(row.textContent?.trim() ?? "");
+    groups[groups.length - 1].push(within(row).getByRole("link").textContent?.trim() ?? "");
   }
   return groups;
 }

@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -202,6 +202,42 @@ describe("AppShell routing through a single outlet", () => {
     expect(centre).toBeInTheDocument();
     expect(within(centre as HTMLElement).getByTestId("page")).toHaveTextContent(text);
     expect(document.querySelector(".fs-nav-item.active .fs-nav-label")).toHaveTextContent(activeLabel);
+  });
+});
+
+/* RC-P09c — the desktop nav from a keyboard. FlatShell drew each row and the
+   wordmark as a div with a click handler and nothing else, so Tab went from
+   the search field past all nine destinations. They are links now: in the tab
+   order, the current one marked, followed on Enter. */
+describe("AppShell desktop nav from the keyboard", () => {
+  const primaryNav = () => screen.getByRole("navigation", { name: "Primary" });
+
+  it("offers every destination as a link in the tab order, the current one marked", () => {
+    signIn(true);
+    renderAt("/gallery");
+    const rows = within(within(primaryNav()).getByRole("list")).getAllByRole("link");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "Home", "Gallery", "Bounties", "Library", "New build", "Drafts", "Messages", "Notifications", "Profile",
+    ]);
+    rows.forEach((row) => expect(row).toHaveAttribute("tabindex", "0"));
+    expect(within(primaryNav()).getByRole("link", { current: "page" })).toHaveTextContent("Gallery");
+  });
+
+  it("follows a row on Enter", () => {
+    signIn(true);
+    renderAt("/");
+    const gallery = within(primaryNav()).getByRole("link", { name: "Gallery" });
+    gallery.focus();
+    fireEvent.keyDown(gallery, { key: "Enter" });
+    expect(screen.getByTestId("page")).toHaveTextContent("gallery page");
+  });
+
+  it("takes the wordmark home on Enter", () => {
+    renderAt("/gallery");
+    const wordmark = within(primaryNav()).getByRole("link", { name: "buildgallery" });
+    expect(wordmark).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(wordmark, { key: "Enter" });
+    expect(screen.getByTestId("page")).toHaveTextContent("home page");
   });
 });
 

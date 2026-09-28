@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { LogOut } from "lucide-react";
+import { FOCUS_RING_CLASS } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
 import "./flat-shell.css";
 
@@ -112,6 +113,22 @@ export interface FlatShellProps {
   layout?: "standard" | "wide";
 }
 
+/**
+ * RC-P09c. Enter follows a nav row or the wordmark, as it follows a link.
+ *
+ * They are `div`s with a click handler, and a keyboard could not reach them:
+ * Tab went from the search field straight past all nine destinations. Each
+ * now says what it is (`role="link"`), takes a tab stop, answers Enter,
+ * and draws the theme's one focus ring through FOCUS_RING_CLASS — the kit's
+ * ring for elements that track no hover state in React, which these don't:
+ * their hover is `.fs-nav-item:hover`. The markup is otherwise unchanged.
+ */
+const followOnEnter = (follow: () => void) => (event: KeyboardEvent<HTMLDivElement>) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  follow();
+};
+
 export function FlatShell({
   navItems,
   activeKey,
@@ -159,7 +176,15 @@ export function FlatShell({
         {/* ═══ LEFT RAIL ═══ */}
         {!isMobile && !hideLeftRail && (
           <nav className="fs-rail fs-left" aria-label="Primary" data-testid="frame-left">
-            <div className="fs-logo" onClick={onLogoClick}>buildgallery</div>
+            <div
+              className={`fs-logo ${FOCUS_RING_CLASS}`}
+              role="link"
+              tabIndex={0}
+              onClick={onLogoClick}
+              onKeyDown={followOnEnter(onLogoClick)}
+            >
+              buildgallery
+            </div>
             {searchSlot != null && (
               <div style={{ paddingBlockEnd: SPACE.xs }}>{searchSlot}</div>
             )}
@@ -168,8 +193,12 @@ export function FlatShell({
                 <li key={item.key}>
                   {item.divider && idx > 0 && <div className="fs-nav-divider" />}
                   <div
-                    className={`fs-nav-item${activeKey === item.key ? " active" : ""}`}
+                    className={`fs-nav-item${activeKey === item.key ? " active" : ""} ${FOCUS_RING_CLASS}`}
+                    role="link"
+                    tabIndex={0}
+                    aria-current={activeKey === item.key ? "page" : undefined}
                     onClick={() => onNavClick(item)}
+                    onKeyDown={followOnEnter(() => onNavClick(item))}
                   >
                     <span className="fs-nav-icon">{item.icon}</span>
                     <span className="fs-nav-label">{item.label}</span>
