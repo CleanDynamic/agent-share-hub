@@ -11,9 +11,15 @@
 // test noticing: the backup writes nothing in public, the clear is one guarded
 // block that drops nothing and leaves storage alone, and the rotation carries
 // no password. These read the files and hold them to that.
+//
+// RC-P08 sent every new-build control to the composer. The old type picker
+// asked "Blueprint, Blog or Bounty?" before anything existed, and what it made
+// would refill content_items after the clear. Until RC-P08b deletes it, the
+// picker may be opened only from its own files, the legacy /upload page and
+// the frozen legacy-bounty code; anywhere else, a call to it is a regression.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SEED_FUNCTIONS = ["seed-demo-data", "seed-ecosystem", "seed-new-posts", "update-seed-data"];
@@ -24,6 +30,14 @@ const MIGRATIONS = join("supabase", "migrations");
 const BACKUP = join(MIGRATIONS, "20261001120000_rc_backup_legacy.sql");
 const ROTATION = join(MIGRATIONS, "20261001123000_rc_rotate_demo_passwords.sql");
 const CLEAR = join(MIGRATIONS, "20261001130000_rc_clear_legacy_posts.sql");
+
+/** The only files that may still open the type picker, until RC-P08b removes it. */
+const PICKER_FILES = [
+  join("src", "contexts", "UploadPickerContext.tsx"),
+  join("src", "components", "upload", "UploadTypePicker.tsx"),
+  join("src", "pages", "UploadTypeSelector.tsx"),
+];
+const BOUNTY_LEGACY = join("src", "lib", "bounty-legacy") + sep;
 
 /** A migration's SQL with its comments removed, so prose about a statement is not taken for one. */
 function statements(file: string): string {
@@ -77,6 +91,15 @@ describe("RC decisions", () => {
     const sql = statements(ROTATION);
     expect(sql).toContain("gen_random_bytes");
     expect(sql.match(/crypt\(\s*'/gi) ?? []).toEqual([]);
+  });
+
+  it("no new-build control opens a type picker", () => {
+    const openers = sourceFiles("src")
+      .filter((file) => !PICKER_FILES.includes(file))
+      .filter((file) => !file.startsWith(BOUNTY_LEGACY))
+      .filter((file) => !/\.test\.tsx?$/.test(file))
+      .filter((file) => readFileSync(file, "utf8").includes("openUploadTypePicker("));
+    expect(openers).toEqual([]);
   });
 
   it("none of the three calls auth.uid() bare", () => {

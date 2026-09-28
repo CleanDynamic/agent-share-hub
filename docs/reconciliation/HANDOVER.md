@@ -11,6 +11,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 
 ## Deferred to after the merge
 - FlatShell rightRail and forceRightRail, .fs-right CSS, AppShell's /upload/blueprint branch: removed in RC-P08b (RC-P06)
+- UploadPickerContext, UploadTypePicker, UploadPickerProvider, still imported by src/pages/UploadTypeSelector.tsx and src/lib/bounty-legacy/legacyBountyCreateRetired.test.tsx; deleted in RC-P08b (RC-P08)
 
 ## Critique findings deferred
 (empty)
@@ -114,7 +115,14 @@ Lovable messages owed: L-P07-1, once the owner has read the SQL
 Open: RC-P10 makes /gallery read q and focus=search. Rehearsed on a local Postgres 16 stand-in with the real read policies: applies twice cleanly; a creator's own draft is never returned; tray-node titles never match (a node counts once placed); %, _ and \ match literally; both trigram indexes are chosen. searchMakers does not filter profiles.is_private (RLS governs; RC-P10's call); PostgREST reads a * in a maker search as a wildcard. The browser's native search-clear × draws in its own blue on Dusk; removing it needs a stylesheet rule (CONTRACT §2.1) or type=text (step 9). tsc PASS · unit 2104/2104, 0 new failures · build PASS · tier1 92/92 · audit:themes PASS.
 Next: RC-P08
 
-## RC-P08 — 
+## RC-P08 — One way to start a build
+Date: 2026-09-28 · Commits: ENTRY-1, ENTRY-2 · Head: 98d18bdd
+Landed: every new-build control outside the legacy /upload page opens /compose/new: the phone bar's New build, the composer bar, the home compose strip, the profile's first-build button, the drafts page's New draft and empty state, the category empty state, the analytics quest step and the project page's new item. src/lib/rcGuards.test.ts fails if any other file calls openUploadTypePicker( again (it fails on the pre-ENTRY-1 tree, naming those eight files). L held 43 lines in 16 files, 10 of them calls outside the picker's own file.
+Skills applied: ⟦hicks-law › Remedies 2 Default; Common Failure Patterns⟧ ⟦critique-affordance › CTA Clarity⟧ ⟦neoscale-e2e-testing › Writing tests⟧ ⟦buildgallery-repo-map › 3⟧ ⟦neoscale-code-review › Review output format⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: labels changed to "New build": Category's empty-state "Upload". Left: Home's compose strip "New" (on the list, but its label is in FeedShell.tsx, outside the files step 4 allows), Drafts' "New draft" and "Start writing", ProjectDetail's "New blueprint", Analytics' "Publish your first post", Profile's "Publish your first build" (ProfileContentZones.tsx), the composer bar's "Share something...", and the phone bar, already "New build". The picker is not deleted (UploadTypeSelector.tsx and a bounty-legacy test still import it; Deferred), so its Cmd/Ctrl+N shortcut still opens it until RC-P08b. No test asserted the picker, so none broke; Drafts.test and AppShell.test now assert /compose/new, and four tests dropped a dead picker mock. tsc PASS · unit 2107/2107, 0 new failures · build PASS · tier1 92/92.
+Next: RC-P09c
 
 ## RC-P09c — 
 
