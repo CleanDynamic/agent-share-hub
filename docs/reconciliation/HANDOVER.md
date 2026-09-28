@@ -42,7 +42,14 @@ Next: RC-P04b; then RC-P02 and RC-P04 once live access exists
 
 ## RC-P04 — 
 
-## RC-P04b — 
+## RC-P04b — The state map, resolved to existing tokens and measured (run ahead of RC-P02 and RC-P04)
+Date: 2026-09-28 · Commits: TOKENS-1 · Head: 17d5299c
+Landed: docs/reconciliation/STATES.md maps the 22 states to 44 existing keys (72 citations), held by src/lib/theme/rcStates.test.ts; contrast.test.ts measures the four new pairings in both themes, all above floor (lowest: Exhibition --text2 on --recess, 4.55).
+Skills applied: ⟦buildgallery-theme⟧ ⟦color-system › Accessibility Requirements; Best Practices⟧ ⟦buildgallery-repo-map › 7⟧ ⟦neoscale-code-review › Review output format⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: Every interface prompt from RC-P05 uses docs/reconciliation/STATES.md. Row 6 records the nav as built: the desktop rail's active label is --text on an --action wash, not --action. The notes under the map name the helpers it departs from: Button's secondary, outline and destructive paints, chipSelectedStyle, and the unthemed AlertDialog. The backup and the legacy clear (RC-P02, RC-P04) have not run. tsc PASS · unit tests 2065/2065, 0 new failures vs baseline · build PASS · audit:contrast PASS · audit:themes PASS.
+Next: RC-P05; RC-P02 and RC-P04 once live access exists
 
 ## RC-P05 — 
 
