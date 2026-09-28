@@ -4,6 +4,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 
 ## Deploy queue
 1. Owed, needs direct access to the live project (RC-P03): delete the deployed edge functions seed-demo-data, seed-ecosystem, seed-new-posts and update-seed-data, then check that seed-demo-data answers 404 to an OPTIONS request (never GET or POST).
+2. Apply supabase/migrations/20261001120000_rc_backup_legacy.sql (RC-P02), then check that rc_backup._manifest lists public.content_items with the Q1 post count.
 
 ## Deferred to after the merge
 (empty)
@@ -29,7 +30,14 @@ Lovable messages owed: RC-P01 results for Q1–Q7
 Open: POSTS not supplied · FK_BLOCKING not supplied · SURVIVORS_OK not supplied (types.ts shows the dm_messages, dm_threads and builds references as nullable) · DEMO_ADMINS not supplied · rebuild_count in BUILD_COLUMNS_PRESENT not supplied (types.ts has it; the repo map's §4 note that it lacks it is out of date) · no live value exists until Q1–Q7 are pasted into CLEAR-RECON.md.
 Next: RC-P02
 
-## RC-P02 — 
+## RC-P02 — Private backup (written and tested locally; not yet applied)
+Date: 2026-09-28 · Commits: CLEAR-2 · Head: 675fc666
+Landed: supabase/migrations/20261001120000_rc_backup_legacy.sql copies into the private schema rc_backup every table the clear can touch, found from the live catalogue at run time: whole tables for what the clear deletes, only the linked rows for what keeps its rows. rc_backup._manifest lists each copy. Revoked from PUBLIC, anon and authenticated; it refuses to overwrite a backup.
+Skills applied: ⟦supabase-postgres-best-practices › references/security-privileges.md; references/lock-short-transactions.md⟧ ⟦buildgallery-repo-map › 4⟧ ⟦neoscale-code-review › Database⟧
+Migrations queued: 20261001120000_rc_backup_legacy.sql
+Lovable messages owed: none; applying it is owed to a session with direct access to the live project
+Open: written without live RC-P01 results, so it finds its own table list. Tested with the clear and the rotation against a local Postgres 16 stand-in holding every foreign-key shape supabase/migrations shows: all checks passed (scratch harness, not committed).
+Next: RC-P04
 
 ## RC-P03 — Retire the four seeders (repository half, run ahead of RC-P02)
 Date: 2026-09-28 · Commits: CLEAR-3, CLEAR-4 · Head: daf31d68
