@@ -3,7 +3,7 @@
 Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 
 ## Deploy queue
-(empty)
+1. Owed, needs direct access to the live project (RC-P03): delete the deployed edge functions seed-demo-data, seed-ecosystem, seed-new-posts and update-seed-data, then check that seed-demo-data answers 404 to an OPTIONS request (never GET or POST).
 
 ## Deferred to after the merge
 (empty)
@@ -31,7 +31,14 @@ Next: RC-P02
 
 ## RC-P02 — 
 
-## RC-P03 — 
+## RC-P03 — Retire the four seeders (repository half, run ahead of RC-P02)
+Date: 2026-09-28 · Commits: CLEAR-3, CLEAR-4 · Head: daf31d68
+Landed: the four seed function folders and their two config.toml blocks are gone ([functions.mcp] byte-identical); /admin loses its two seed buttons; src/lib/rcGuards.test.ts fails if a seeder folder or a call to one comes back; docs/retired-surfaces.md records the deletion and its rollback.
+Skills applied: ⟦neoscale-code-review › Automatic fail; Root cause, not symptom⟧ ⟦neoscale-error-monitoring › Privacy⟧ ⟦neoscale-e2e-testing › Writing tests⟧ ⟦buildgallery-repo-map › 3⟧
+Migrations queued: none
+Lovable messages owed: none. The live half, deleting the four deployed functions, is Deploy queue item 1 and waits for a session with direct access to the live project.
+Open: run ahead of RC-P02 by owner decision, because this session had no live access (no SUPABASE_ACCESS_TOKEN; the network policy denies api.supabase.com). CLEAR-2 stays reserved for RC-P02's backup. tsc PASS · unit tests 1983/1983, 0 new failures vs baseline · build PASS.
+Next: RC-P04b; then RC-P02 and RC-P04 once live access exists
 
 ## RC-P04 — 
 

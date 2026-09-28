@@ -10,77 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye, Database } from "lucide-react";
+import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
 
-function SeedDemoButton() {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
-  const handleSeed = async () => {
-    setLoading(true);
-    toast({ title: "Seeding demo data…", description: "This may take a minute." });
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-data`,
-        { method: "POST", headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
-      );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Seed failed");
-      toast({ title: json.message || "Demo data seeded!" });
-    } catch (err: any) {
-      toast({ title: "Seed failed", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Button variant="outline" className="border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10" onClick={handleSeed} disabled={loading}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-      Seed demo data
-    </Button>
-  );
-}
-
-function UpdateSeedButton() {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
-  const handleUpdate = async () => {
-    setLoading(true);
-    toast({ title: "Updating seed data…", description: "Adding WTE blocks, use instructions, and demo project." });
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-seed-data`,
-        { method: "POST", headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } }
-      );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Update failed");
-      toast({ title: "Seed data updated!", description: `WTE: ${json.what_to_expect_blocks_updated}, Instructions: ${json.use_instructions_added}, Projects: ${json.projects_created}` });
-    } catch (err: any) {
-      toast({ title: "Update failed", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Button variant="outline" className="border-primary text-primary hover:bg-primary/10" onClick={handleUpdate} disabled={loading}>
-      {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-      Update seed data
-    </Button>
-  );
-}
-
-function SeedButtonRow() {
-  return (
-    <div className="mb-6 flex justify-end gap-2">
-      <SeedDemoButton />
-      <UpdateSeedButton />
-    </div>
-  );
-}
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -435,9 +367,6 @@ const Admin = () => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Comments</p>
           </div>
         </div>
-
-        {/* Seed demo data */}
-        <SeedButtonRow />
 
         <Tabs defaultValue="content" className="space-y-6">
           <TabsList className="bg-card border border-border">

@@ -1737,3 +1737,7 @@ and a deletion that also repaints is a deletion nobody can bisect.
 
 The rail's stylesheet needs nothing: BG-P13 put every one of its colours on a
 token already.
+
+## Seed edge functions — deleted (RC-P03)
+
+RC-P03 deleted the four seed edge functions (`seed-demo-data`, `seed-ecosystem`, `seed-new-posts` and `update-seed-data`), their two blocks in `supabase/config.toml`, and the "Seed demo data" and "Update seed data" buttons on `/admin` that called two of them. They wrote with the service-role key and no guard of their own, two of them could be called by anyone, and any of them could refill `content_items` after the legacy clear. To roll back, `git revert` CLEAR-3 and redeploy the four functions; `src/lib/rcGuards.test.ts` then fails and must change in the same commit.
