@@ -7,6 +7,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 2. Apply supabase/migrations/20261001123000_rc_rotate_demo_passwords.sql (RC-P03), then check that no demo account holds a session.
 3. Apply supabase/migrations/20261001120000_rc_backup_legacy.sql (RC-P02), then check that rc_backup._manifest lists public.content_items with 87 rows, the Q1 post count. If it holds a different number, the live data has moved since RC-P01: run Q1 and Q7 of docs/reconciliation/rc-recon.sql again before item 4.
 4. Apply supabase/migrations/20261001130000_rc_clear_legacy_posts.sql (RC-P04), only once the backup is confirmed and the seed functions are gone. Rehearse it first in the same session with `set rc.dry_run = 'on';`, which ends in "RC-P04 DRY RUN OK: …" and changes nothing. A real error starts "RC-P04:" and is never retried, edited or worked around. Afterwards content_items is 0 and the Q7 counts are unchanged: profiles 24, builds 9, build_nodes 13, dm_messages 3, dm_threads 1, follows 80.
+5. 20261001140000_rc_search_builds.sql (RC-P07), by Lovable message L-P07-1. Its SQL was written in the RC-P07 session from the prompt's own specification, because the prompt's SQL block arrived as an unfilled placeholder; read it before sending L-P07-1. Rehearsed on a local Postgres 16 stand-in: applies twice cleanly, and `select count(*) from public.search_build_ids('ab');` runs.
 
 ## Deferred to after the merge
 - FlatShell rightRail and forceRightRail, .fs-right CSS, AppShell's /upload/blueprint branch: removed in RC-P08b (RC-P06)

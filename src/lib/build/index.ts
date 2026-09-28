@@ -294,3 +294,4 @@ export {
   type ShapeRequirement,
   type StalenessSource,
 } from "./signals";
+export { SEARCH_MAX, SEARCH_MIN, normaliseQuery, searchBuildIds } from "./search";
