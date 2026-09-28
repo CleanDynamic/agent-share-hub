@@ -54,8 +54,12 @@ vi.mock("@/hooks/useProgress", () => ({
 /* Heavy leaf components the frame mounts — stubbed to keep the test on the frame. */
 vi.mock("@/components/workspace/WorkspaceShell", () => ({ WorkspaceShell: () => <div /> }));
 vi.mock("@/components/ambient/NavProgressChip", () => ({ default: () => <div /> }));
+const topBarProps: { pageContext?: { type: string; title?: string } } = {};
 vi.mock("@/components/shell/MobileTopBar", () => ({
-  MobileTopBar: () => <div data-testid="mobile-top-bar" />,
+  MobileTopBar: (props: typeof topBarProps) => {
+    Object.assign(topBarProps, props);
+    return <div data-testid="mobile-top-bar" />;
+  },
 }));
 const bottomNavProps: {
   unreadMessageCount?: number;
@@ -296,6 +300,16 @@ describe("AppShell mobile mode", () => {
     renderAt("/");
     act(() => bottomNavProps.onNavigate!("upload"));
     expect(screen.getByTestId("page")).toHaveTextContent("composer");
+  });
+
+  /* RC-P09c — RC-P05 gave the Gallery the page context the old /discover
+     used, so a reader who tapped Gallery read "Discover" over it. The Gallery
+     takes the wordmark, as Home and Bounties do. */
+  it.each(["/gallery", "/b2/example", "/bounties"])("heads %s with the wordmark on the phone", (path) => {
+    breakpoint = "mobile";
+    signIn(true);
+    renderAt(path);
+    expect(topBarProps.pageContext?.type).toBe("home");
   });
 
   it("does not mount mobile chrome on desktop", () => {

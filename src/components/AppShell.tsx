@@ -191,10 +191,12 @@ export function AppShell() {
     return "home";
   })();
 
+  /* RC-P09c. The Gallery takes the default, the wordmark, as Home, Bounties
+     and Library do: each carries its own page heading. RC-P05 had given it
+     the context the old /discover used, whose title was "Discover". */
   const pageContextType: PageContextType = (() => {
     const p = pathname;
     if (p === "/" || p === "") return "home";
-    if (p.startsWith("/gallery")) return "discover";
     if (p.startsWith("/messages")) return "messages";
     if (p.startsWith("/notifications")) return "notifications";
     if (p.startsWith("/upload")) return "upload";

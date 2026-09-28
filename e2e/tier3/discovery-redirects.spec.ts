@@ -18,7 +18,7 @@
 // stubbed too.
 //
 // SELECTORS ARE ROLES AND NAMES: the Gallery's page heading, and the Bounties
-// page's.
+// page's; and one exact text, "Discover", which must not be there.
 
 import { expect, test, type Page, type Route } from "@playwright/test";
 
@@ -82,6 +82,14 @@ for (const path of ["/browse", "/discover", "/discover-legacy", "/recent", "/fyp
     await expectGallery(page, /\/gallery$/);
   });
 }
+
+// RC-P09c. The address survives; the word does not. On the phone the top bar
+// over the Gallery read "Discover" until this pass.
+test("the gallery an old /discover link lands on is never titled Discover", async ({ page }) => {
+  await page.goto("/discover");
+  await expectGallery(page, /\/gallery$/);
+  await expect(page.getByText("Discover", { exact: true })).toHaveCount(0);
+});
 
 test("/search?q=claude lands on the gallery with the query", async ({ page }) => {
   await page.goto("/search?q=claude");

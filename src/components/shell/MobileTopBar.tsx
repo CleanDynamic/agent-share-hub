@@ -5,7 +5,6 @@ import { BODONI, FIGTREE } from "@/lib/theme/type";
 
 export type PageContextType =
   | "home"
-  | "discover"
   | "messages"
   | "notifications"
   | "content-detail"
@@ -77,8 +76,6 @@ export function MobileTopBar({
         return (
           <span style={WORDMARK_STYLE}>buildgallery</span>
         );
-      case "discover":
-        return <span style={TITLE_STYLE}>Discover</span>;
       case "messages":
         return <span style={TITLE_STYLE}>Messages</span>;
       case "notifications":
