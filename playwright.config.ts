@@ -67,7 +67,11 @@ export default defineConfig({
       // Tier 3 is authored against the desktop compose surface; tier 1 is the
       // suite required at both viewports. The RC series names the tier-3 specs
       // about the frame itself, which the phone chrome changes, to run here too.
-      testMatch: [/e2e\/tier1\/.*\.spec\.ts/, /e2e\/tier3\/discovery-redirects\.spec\.ts/],
+      testMatch: [
+        /e2e\/tier1\/.*\.spec\.ts/,
+        /e2e\/tier3\/discovery-redirects\.spec\.ts/,
+        /e2e\/tier3\/frame-no-rail\.spec\.ts/,
+      ],
     },
   ],
 

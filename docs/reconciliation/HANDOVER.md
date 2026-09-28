@@ -9,7 +9,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 4. Apply supabase/migrations/20261001130000_rc_clear_legacy_posts.sql (RC-P04), only once the backup is confirmed and the seed functions are gone. Rehearse it first in the same session with `set rc.dry_run = 'on';`, which ends in "RC-P04 DRY RUN OK: …" and changes nothing. A real error starts "RC-P04:" and is never retried, edited or worked around. Afterwards content_items is 0 and the Q7 counts are unchanged: profiles 24, builds 9, build_nodes 13, dm_messages 3, dm_threads 1, follows 80.
 
 ## Deferred to after the merge
-(empty)
+- FlatShell rightRail and forceRightRail, .fs-right CSS, AppShell's /upload/blueprint branch: removed in RC-P08b (RC-P06)
 
 ## Critique findings deferred
 (empty)
@@ -86,9 +86,23 @@ Lovable messages owed: none
 Open: committed on claude/stoic-tesla-uejb2k, this session's branch (as RC-P01's re-run was), not rc-reconcile. AppShell.test.tsx's expectations (step 16a) moved into FRAME-2 so that commit is green. The bar's Profile item is the desktop User glyph now, per "icons as on desktop"; the avatar stays in the top bar. Its dot sums the unread counts, which AppShell now passes as counts: it passed the badge text through Number(), and Number("9+") is NaN, so above nine unread the phone's dots went dark (pre-existing; test in AppShell.test.tsx). playwright.config.ts's mobile project also matches discovery-redirects.spec.ts. Rewritten to assert the redirect (§3.4): e2e/tier3/legacy-meta-bounty.spec.ts "/discover?q=bounty" (skipped by default). e2e/audit/support/harness.ts still sweeps /discover-legacy, which now lands on /gallery (RC-P29). For RC-P09c: the rail's rows are not keyboard reachable (FlatShell), the top bar's avatar duplicates the bar's Profile, the drawer's Sign out is --cat-breakage, /gallery's phone title reads "Discover" (MobileTopBar). tsc PASS · unit 2076/2076, 0 new failures · build PASS · JS bytes 4290716 → 4160385 · tier1 92/92 · redirects 9/9 desktop, 9/9 mobile.
 Next: RC-P09 (the picture), then RC-P06
 
-## RC-P09 — 
+## RC-P09 — The frame without the rail, as a picture (owner's step)
+Date: 2026-09-28 · Commits: none · Head: 7c1b488c
+Landed: nothing in the repository. The brief is a v0 prompt the owner pastes and looks at; its code is never used. It was not run in this session.
+Skills applied: none (no code)
+Migrations queued: none
+Lovable messages owed: none
+Open: A or B is the owner's call. No preference for B was stated before RC-P06, so RC-P06 builds A: the left nav and the 634 column as one centred pair, which is how /notifications renders today.
+Next: RC-P06
 
-## RC-P06 — 
+## RC-P06 — Remove the right rail (the sanctioned structural change)
+Date: 2026-09-28 · Commits: FRAME-4, FRAME-5, FRAME-6 · Head: a503a529
+Landed: no route renders a right rail or an Explore drawer. The frame is the nav and the 634 column as one centred pair: at 1440, / and /notifications both put the nav at x 283 and the centre at x 523, 634 wide; at 1024 the nav is at x 75, no sideways scroll. The phone's magnifier is "Search builds" and opens /gallery?focus=search. RightRailExplore, its stylesheet, RightRailDrawer and useRightRailData are deleted; flat-shell.css lost one rule; index.css and shared-ns.css lost none (every candidate carries .ns-). /upload/blueprint keeps its "Editor workspace" slot. noRail.test.tsx 7/7; frame-no-rail.spec.ts 4/4 (2 desktop, 2 phone).
+Skills applied: ⟦neoscale-code-review › Automatic fail 2, 5⟧ ⟦neoscale-performance › Forbidden fixes 2; The four known causes 2⟧ ⟦layout-grid › Responsive Behavior: Fixed⟧ ⟦better-layout › Hold structure until it breaks; Content bleeds, controls float⟧ ⟦law-of-figure-ground⟧ ⟦responsive-design⟧ ⟦buildgallery-theme › Before you call it done 1, 10, 11⟧ ⟦neoscale-e2e-testing⟧ ⟦buildgallery-repo-map › 2; 3⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: requests on / 4 → 1, /gallery 3 → 3; JS bytes 4160385 → 4143211, largest chunk 3239939 → 3222765. Existing tests that asserted the rail were rewritten in the commit that removed it (FRAME-4, FRAME-5), so each commit is green; that includes e2e/tier1/wide-layout.spec.ts, e2e/tier3/home-ground.spec.ts and feed-repaint.spec.ts, which measured it. Deleted: five home-ground.spec.ts tests whose only subject was the Explore rail's content. moved-routes-frame.spec.ts now fakes the backend (§7), and its import-page file check no longer depends on a transient state. index.css keeps two unreferenced keyframes, rrFade and rrSlide. /dev/wide/rail is a 404. tsc PASS · unit 2084/2084, 0 new failures · build PASS · tier1 92/92.
+Next: RC-P07
 
 ## RC-P07 — 
 
