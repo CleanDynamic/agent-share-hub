@@ -6,10 +6,11 @@
 // legacy clear. A seeder folder that comes back is one deploy from being live
 // again, and a screen that calls one is a button that refills the clear.
 //
-// RC-P02 also ships a migration that runs against the live database, and it
-// made a promise a later edit could break without any test noticing: the
-// backup writes nothing in public and opens nothing to the API roles. This
-// reads the file and holds it to that.
+// RC-P02 and RC-P04 also ship migrations that run against the live database,
+// and each made promises a later edit could break without any test noticing:
+// the backup writes nothing in public, and the clear is one guarded block that
+// drops nothing and leaves storage alone. These read the files and hold them
+// to that.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,6 +22,7 @@ const THIS_FILE = join("src", "lib", "rcGuards.test.ts");
 
 const MIGRATIONS = join("supabase", "migrations");
 const BACKUP = join(MIGRATIONS, "20261001120000_rc_backup_legacy.sql");
+const CLEAR = join(MIGRATIONS, "20261001130000_rc_clear_legacy_posts.sql");
 
 /** A migration's SQL with its comments removed, so prose about a statement is not taken for one. */
 function statements(file: string): string {
@@ -57,5 +59,16 @@ describe("RC decisions", () => {
     expect(sql.match(/\binsert\s+into\s+(?!rc_backup\.)\S+/gi) ?? []).toEqual([]);
     expect(sql.match(/\b(update|delete\s+from|truncate|alter\s+table|drop\s+(table|schema|column))\b/gi) ?? []).toEqual([]);
     expect(sql.match(/\bgrant\b/gi) ?? []).toEqual([]);
+  });
+
+  it("the legacy clear is one guarded block that drops nothing and never touches storage", () => {
+    const sql = statements(CLEAR);
+    expect(sql.match(/\bdo\s+\$\$/gi) ?? []).toHaveLength(1);
+    expect(sql.trim().endsWith("END $$;")).toBe(true);
+    expect(sql.match(/\bdrop\s+(table|schema|column|index|view|function|trigger|policy|type)\b/gi) ?? []).toEqual([]);
+    expect(sql.match(/\bstorage\./gi) ?? []).toEqual([]);
+    expect(sql.match(/(^|;)\s*(commit|rollback)\s*;/gim) ?? []).toEqual([]);
+    expect(sql.match(/\bgrant\b/gi) ?? []).toEqual([]);
+    expect(sql.match(/raise\s+exception\s+'RC-P04:/gi)?.length ?? 0).toBeGreaterThanOrEqual(10);
   });
 });
