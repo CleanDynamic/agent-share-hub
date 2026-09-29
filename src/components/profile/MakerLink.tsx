@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText } from "@/lib/theme/type";
@@ -17,6 +20,9 @@ import type { LinkableMaker } from "@/lib/profile/searchMakers";
    The avatar is the existing avatar component, 32px, a circle (the one shape
    --r-full is for). The link is at least 44 tall ⟦responsive-design › Touch⟧.
    A maker with no handle has no profile address, so callers leave them out.
+   The theme's one focus ring is drawn on the link itself (RC-P13, when the
+   solvers board made it a column of them): the browser's own ring is a second
+   mark to learn ⟦buildgallery-theme › Focus ring⟧.
    ──────────────────────────────────────────────────────────────────────────── */
 
 export function MakerLink({
@@ -27,10 +33,12 @@ export function MakerLink({
   testId?: string;
 }) {
   const name = maker.display_name?.trim() || maker.username;
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link
       to={`/profile/${encodeURIComponent(maker.username)}`}
       data-testid={testId}
+      {...handlers}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -38,6 +46,8 @@ export function MakerLink({
         minHeight: 44,
         color: t.text,
         textDecoration: "none",
+        borderRadius: r.control,
+        ...ring(state.focusVisible),
       }}
     >
       <Avatar style={{ width: 32, height: 32 }}>

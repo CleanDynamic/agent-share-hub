@@ -64,6 +64,12 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
      reason the gallery is: the band and a three-column row want the room, and
      RC-P09b drew it that way. Exact, so /bounties/solvers decides for itself. */
   { pattern: "/bounties" },
+
+  /* The solvers board (RC-P13) — a 720 list under the bounties board. Wide
+     not for the room but for the frame: it is reached from /bounties, and a
+     standard frame would move the nav and the title between the two
+     (the M4 jump in docs/reconciliation/critique/phase-2.md). */
+  { pattern: "/bounties/solvers" },
 ];
 
 /**

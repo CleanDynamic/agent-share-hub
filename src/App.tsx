@@ -29,7 +29,6 @@ import { LegacyUploadRoute } from "@/components/upload/LegacyUploadNotice";
 import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
 import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
-import BountyLeaderboard from "./pages/BountyLeaderboard";
 import ProjectDetail from "./pages/ProjectDetail";
 import CreatorProfile from "./pages/CreatorProfile";
 import Admin from "./pages/Admin";
@@ -67,6 +66,8 @@ const Gallery = lazy(() => import("./pages/Gallery"));
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
 const Bounties = lazy(() => import("./pages/Bounties"));
+// RC-P13 — the solvers board, under the bounties board. Its own chunk.
+const Solvers = lazy(() => import("./pages/Solvers"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -177,7 +178,11 @@ const App = () => (
                 <Route path="/content/:id" element={<ContentDetail />} />
                 <Route path="/b/:id" element={<ContentOrReblogRoute />} />
                 <Route path="/b/:id/thread" element={<ContentOrReblogRoute mode="thread" />} />
-                <Route path="/b/:id/leaderboard" element={<BountyLeaderboard />} />
+                {/* RC-P13 — the legacy leaderboard ranked people against one
+                    legacy bounty post, and after the clear it reads nothing.
+                    Its address lands on the solvers board. The page file stays
+                    until the legacy bounty path is removed. */}
+                <Route path="/b/:id/leaderboard" element={<Navigate to="/bounties/solvers" replace />} />
                 <Route path="/b/:slug/lineage" element={<Lineage />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
@@ -271,6 +276,9 @@ const App = () => (
                     Gallery's fallback, inside its own RouteBoundary
                     (CONTRACT §2.6). */}
                 <Route path="/bounties" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Bounties /></Suspense></RouteBoundary>} />
+                {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
+                    like the board it sits under (CONTRACT §2.6). */}
+                <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
                 <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.

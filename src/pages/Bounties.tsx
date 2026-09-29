@@ -15,7 +15,8 @@ import {
   type OpenBountyCard,
 } from "@/lib/bounty";
 import { isPermissionError } from "@/lib/errors/permission";
-import { skeletonStyle } from "@/lib/theme/controls";
+import { ring, skeletonStyle } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
@@ -46,6 +47,10 @@ import { DM_MONO, body, bodyLarge, tabular } from "@/lib/theme/type";
 
    THREE REQUESTS A PAGE (listOpenBountyCards) plus the facets, cached; "Show
    more" asks for the next keyset page. No infinite scroll.
+
+   WHERE THE ANSWERS WENT (RC-P13): a "Solvers" text link at the trailing end
+   of the title row opens /bounties/solvers, the people whose solutions were
+   accepted.
    ──────────────────────────────────────────────────────────────────────────── */
 
 /** The facet options change slowly; one answer serves a visit. */
@@ -161,7 +166,11 @@ export default function Bounties() {
         <title>Bounties — buildgallery</title>
       </Helmet>
 
-      <PageHeader title="Bounties" description="Open asks on real builds. Newest first." />
+      <PageHeader
+        title="Bounties"
+        description="Open asks on real builds. Newest first."
+        actions={<SolversLink />}
+      />
 
       <FacetRail groups={groups} selected={selected} onClearAll={() => setMadeWith([])} />
 
@@ -191,6 +200,40 @@ export default function Bounties() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * The way to the solvers board (RC-P13): one text link at the trailing end of
+ * the title row. Not a button, and not a navigation entry ⟦hicks-law ›
+ * Budgets: nine destinations⟧: it is where this board's answers went.
+ * Underlined at rest, because a link told apart by colour alone fails WCAG
+ * 1.4.1 and a touch reader never gets a hover; 44 tall for a finger
+ * ⟦responsive-design › Input Method Adaptation⟧; the theme's one focus ring
+ * on the link itself.
+ */
+function SolversLink() {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link
+      to="/bounties/solvers"
+      data-testid="bounties-solvers-link"
+      {...handlers}
+      style={{
+        ...body,
+        display: "inline-flex",
+        alignItems: "center",
+        minHeight: 44,
+        color: t.text,
+        textDecoration: "underline",
+        textUnderlineOffset: "4px",
+        textDecorationThickness: "1px",
+        borderRadius: r.chip,
+        ...ring(state.focusVisible),
+      }}
+    >
+      Solvers
+    </Link>
   );
 }
 

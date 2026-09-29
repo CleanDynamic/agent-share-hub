@@ -97,6 +97,15 @@ export {
   type SubmittedSolution,
 } from "./solutions";
 
+// The solvers board (RC-P13): the people whose solutions were accepted on
+// bounties that live on a build, from top_solvers.
+export {
+  TOP_SOLVERS_LIMIT,
+  listTopSolvers,
+  type ListTopSolversOptions,
+  type Solver,
+} from "./solvers";
+
 // The reader's one-click answer to an open ask. Its table is NS-P52's and is
 // keyed at bounties; the generation-1 bounty_me_too is neither read nor
 // written here — see the header of meToo.ts.
