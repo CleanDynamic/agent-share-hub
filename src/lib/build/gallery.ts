@@ -288,11 +288,45 @@ const GALLERY_BOUNTY_COLUMNS = "id, reward_gbp, status";
  * a second string rather than a flag because PostgREST reads the modifier out
  * of the select and there is nothing to toggle at runtime.
  */
-function gallerySelect(openBountiesOnly: boolean): string {
+export function gallerySelect(openBountiesOnly: boolean): string {
   const bounties = openBountiesOnly
     ? `bounties!bounties_build_id_fkey!inner(${GALLERY_BOUNTY_COLUMNS})`
     : `bounties!bounties_build_id_fkey(${GALLERY_BOUNTY_COLUMNS})`;
   return `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS}), ${bounties}`;
+}
+
+/** The builder methods withCardEmbeds calls; every PostgREST filter builder has them. */
+interface CardEmbedQuery {
+  in(column: string, values: readonly unknown[]): CardEmbedQuery;
+  eq(column: string, value: unknown): CardEmbedQuery;
+  order(
+    column: string,
+    options: { referencedTable: string; ascending: boolean; nullsFirst: boolean },
+  ): CardEmbedQuery;
+  limit(count: number, options: { referencedTable: string }): CardEmbedQuery;
+}
+
+/**
+ * RC-P14c — the card's embedded filters and caps, for a list of cards that is
+ * not the gallery's.
+ *
+ * A card is the gallery's card only when it carries what the gallery's query
+ * gives it: the nodes its body reads, the pictures it shows, the open ask on
+ * its pill. Where next reads its rows with gallerySelect(false) and this, so a
+ * build looks the same at the foot of a build page as it does in the gallery
+ * ⟦law-of-similarity⟧. The filters and caps are listGallery's own, key for
+ * key; listGallery keeps its inline copy because its ORDER BY is locked
+ * (CONTRACT §4), and whereNext.test.ts holds the two equal.
+ */
+export function withCardEmbeds<Q>(query: Q): Q {
+  return (query as unknown as CardEmbedQuery)
+    .in("build_nodes.type", [...GALLERY_NODE_TYPES])
+    .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
+    .eq("bounties.status", "open")
+    .order("position", { referencedTable: "build_nodes", ascending: true, nullsFirst: false })
+    .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
+    .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" }) as unknown as Q;
 }
 
 /** A card's node: the embedded columns, nothing more. */
@@ -547,14 +581,14 @@ function galleryPredicate(): string {
 }
 
 /** The row as PostgREST returns it: embeds keyed by table name. */
-interface GalleryRow
+export interface GalleryRow
   extends Omit<GalleryBuild, "nodes" | "media" | "bounties"> {
   build_nodes: GalleryNode[] | null;
   build_media: GalleryMedia[] | null;
   bounties: GalleryBounty[] | null;
 }
 
-function toGalleryBuild(row: GalleryRow): GalleryBuild {
+export function toGalleryBuild(row: GalleryRow): GalleryBuild {
   const { build_nodes, build_media, bounties, ...header } = row;
   return {
     ...header,

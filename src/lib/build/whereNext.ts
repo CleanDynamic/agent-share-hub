@@ -20,14 +20,22 @@
 // second is not sent at all when the build names no tool. The third embeds the
 // maker's name, which its row heading needs and the build page never reads.
 //
-// CARD DATA, NOT GALLERY DATA. The rows select the card's header columns only,
-// not the gallery's node and media embeds, so each card draws its own text
-// body — title, credit, plaque, chips, outcome — and a foot-of-page section
-// costs no image signing. A card with no nodes and no media is a card the
-// gallery already renders (every body ends at the outcome).
+// THE GALLERY'S CARD DATA (RC-P14c). Each row selects what a gallery card is
+// given — gallerySelect(false): the header columns plus the nodes its body
+// reads, its pictures and its open ask, capped as listGallery caps them
+// (withCardEmbeds) — so a build looks the same here as in the gallery and on
+// Home ⟦law-of-similarity⟧. Until RC-P14c the rows carried the header columns
+// alone, and every card here drew its text body with no picture.
 
 import { supabase } from "@/integrations/supabase/client";
-import { GALLERY_BUILD_COLUMNS, GALLERY_THRESHOLD, type GalleryBuild } from "./gallery";
+import {
+  GALLERY_THRESHOLD,
+  gallerySelect,
+  toGalleryBuild,
+  withCardEmbeds,
+  type GalleryBuild,
+  type GalleryRow,
+} from "./gallery";
 import { buildLayerError, type BuildShape } from "./types";
 
 /** At most this many builds in a row. */
@@ -54,12 +62,8 @@ export interface WhereNext {
   makerName: string | null;
 }
 
-/** A card from header columns alone: no node or media rows, no bounty question asked. */
-type HeaderRow = Omit<GalleryBuild, "nodes" | "media" | "bounties">;
-
-function toCard(row: HeaderRow): GalleryBuild {
-  return { ...row, nodes: [], media: [] };
-}
+/** The card's select: the gallery's, with every open ask on the pill. */
+const CARD_SELECT = gallerySelect(false);
 
 /**
  * The gallery's eligibility rule, written from the same exported thresholds:
@@ -106,39 +110,45 @@ export async function getWhereNext({
 }: WhereNextInput): Promise<WhereNext> {
   const tool = firstTool(madeWith);
 
-  const rebuildsRequest = supabase
-    .from("builds")
-    .select(GALLERY_BUILD_COLUMNS)
-    .eq("parent_build_id", buildId)
-    .in("status", [...PUBLISHED])
-    .neq("id", buildId)
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(WHERE_NEXT_PER_ROW);
+  const rebuildsRequest = withCardEmbeds(
+    supabase
+      .from("builds")
+      .select(CARD_SELECT)
+      .eq("parent_build_id", buildId)
+      .in("status", [...PUBLISHED])
+      .neq("id", buildId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(WHERE_NEXT_PER_ROW),
+  );
 
   // The gallery's order, key for key: evidence, then freshness, then newest.
   const toolRequest =
     tool === null
       ? null
-      : supabase
-          .from("builds")
-          .select(GALLERY_BUILD_COLUMNS)
-          .in("status", [...PUBLISHED])
-          .or(galleryEligible())
-          .overlaps("made_with", [tool])
-          .neq("id", buildId)
-          .order("reproduction_count", { ascending: false })
-          .order("last_confirmed_at", { ascending: false, nullsFirst: false })
-          .order("published_at", { ascending: false, nullsFirst: false })
-          .limit(WHERE_NEXT_PER_ROW);
+      : withCardEmbeds(
+          supabase
+            .from("builds")
+            .select(CARD_SELECT)
+            .in("status", [...PUBLISHED])
+            .or(galleryEligible())
+            .overlaps("made_with", [tool])
+            .neq("id", buildId)
+            .order("reproduction_count", { ascending: false })
+            .order("last_confirmed_at", { ascending: false, nullsFirst: false })
+            .order("published_at", { ascending: false, nullsFirst: false })
+            .limit(WHERE_NEXT_PER_ROW),
+        );
 
-  const makerRequest = supabase
-    .from("builds")
-    .select(`${GALLERY_BUILD_COLUMNS}, maker:profiles!builds_creator_id_fkey(username, display_name)`)
-    .eq("creator_id", creatorId)
-    .in("status", [...PUBLISHED])
-    .neq("id", buildId)
-    .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(WHERE_NEXT_PER_ROW);
+  const makerRequest = withCardEmbeds(
+    supabase
+      .from("builds")
+      .select(`${CARD_SELECT}, maker:profiles!builds_creator_id_fkey(username, display_name)`)
+      .eq("creator_id", creatorId)
+      .in("status", [...PUBLISHED])
+      .neq("id", buildId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(WHERE_NEXT_PER_ROW),
+  );
 
   const [rebuilds, shared, maker] = await Promise.all([
     rebuildsRequest,
@@ -150,25 +160,16 @@ export async function getWhereNext({
   if (shared?.error) throw buildLayerError("getWhereNext (made with)", shared.error);
   if (maker.error) throw buildLayerError("getWhereNext (maker)", maker.error);
 
-  const notThis = (row: HeaderRow) => row.id !== buildId;
-  const makerRows = (maker.data ?? []) as unknown as Array<HeaderRow & { maker?: MakerEmbed | MakerEmbed[] | null }>;
+  const notThis = (row: GalleryRow) => row.id !== buildId;
+  const cards = (rows: GalleryRow[]) =>
+    rows.filter(notThis).slice(0, WHERE_NEXT_PER_ROW).map(toGalleryBuild);
+  const makerRows = (maker.data ?? []) as unknown as Array<GalleryRow & { maker?: MakerEmbed | MakerEmbed[] | null }>;
 
   return {
-    rebuilds: ((rebuilds.data ?? []) as unknown as HeaderRow[]).filter(notThis).slice(0, WHERE_NEXT_PER_ROW).map(toCard),
+    rebuilds: cards((rebuilds.data ?? []) as unknown as GalleryRow[]),
     sharedTool:
-      tool === null
-        ? null
-        : {
-            tool,
-            builds: ((shared?.data ?? []) as unknown as HeaderRow[])
-              .filter(notThis)
-              .slice(0, WHERE_NEXT_PER_ROW)
-              .map(toCard),
-          },
-    fromMaker: makerRows
-      .filter(notThis)
-      .slice(0, WHERE_NEXT_PER_ROW)
-      .map(({ maker: _maker, ...row }) => toCard(row)),
+      tool === null ? null : { tool, builds: cards((shared?.data ?? []) as unknown as GalleryRow[]) },
+    fromMaker: cards(makerRows.map(({ maker: _maker, ...row }) => row)),
     makerName: makerNameOf(makerRows[0]?.maker),
   };
 }

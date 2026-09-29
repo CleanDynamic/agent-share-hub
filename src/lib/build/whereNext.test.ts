@@ -43,7 +43,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: (table: string) => builder(table), rpc: vi.fn() },
 }));
 
-import { GALLERY_BUILD_COLUMNS, listGallery } from "@/lib/build/gallery";
+import { GALLERY_BUILD_COLUMNS, gallerySelect, listGallery } from "@/lib/build/gallery";
 import { WHERE_NEXT_PER_ROW, firstTool, galleryEligible, getWhereNext } from "@/lib/build/whereNext";
 
 const THIS = "build-this";
@@ -54,6 +54,20 @@ function header(id: string, over: Record<string, unknown> = {}) {
 
 const requests = () => calls.filter((call) => call.method === "request");
 const callsOf = (builderId: number) => calls.filter((call) => call.builder === builderId);
+/** The row order a request asks for: its own order calls, not an embed's. */
+const rowOrder = (own: Recorded[]) =>
+  own
+    .filter((call) => call.method === "order" && !(call.args[1] as { referencedTable?: string } | undefined)?.referencedTable)
+    .map((call) => call.args[0]);
+/** The calls that shape a request's embeds: filters on a dotted column, and referencedTable options. */
+const embedCalls = (own: Recorded[]) =>
+  own
+    .filter(
+      (call) =>
+        ((call.method === "in" || call.method === "eq") && String(call.args[0]).includes(".")) ||
+        Boolean((call.args[1] as { referencedTable?: string } | undefined)?.referencedTable),
+    )
+    .map((call) => [call.method, ...call.args]);
 
 beforeEach(() => {
   calls = [];
@@ -84,7 +98,7 @@ describe("getWhereNext", () => {
     await getWhereNext({ buildId: THIS, creatorId: "maker-1", madeWith: ["Claude"] });
     const own = callsOf(1);
     expect(own.find((call) => call.method === "eq")?.args).toEqual(["parent_build_id", THIS]);
-    expect(own.filter((call) => call.method === "order").map((call) => call.args[0])).toEqual(["published_at"]);
+    expect(rowOrder(own)).toEqual(["published_at"]);
   });
 
   it("asks for the first tool's gallery-eligible builds in the gallery's order", async () => {
@@ -92,11 +106,7 @@ describe("getWhereNext", () => {
     const own = callsOf(2);
     expect(own.find((call) => call.method === "overlaps")?.args).toEqual(["made_with", ["Claude"]]);
     expect(own.find((call) => call.method === "or")?.args[0]).toBe(galleryEligible());
-    expect(own.filter((call) => call.method === "order").map((call) => call.args[0])).toEqual([
-      "reproduction_count",
-      "last_confirmed_at",
-      "published_at",
-    ]);
+    expect(rowOrder(own)).toEqual(["reproduction_count", "last_confirmed_at", "published_at"]);
   });
 
   it("asks for the maker's other builds, newest first, with the maker's name", async () => {
@@ -141,6 +151,25 @@ describe("getWhereNext", () => {
     answers.maker = [{ ...header("m1"), maker: { username: "sam", display_name: null } }];
     const next = await getWhereNext({ buildId: THIS, creatorId: "maker-1", madeWith: [] });
     expect(next.makerName).toBe("@sam");
+  });
+});
+
+describe("the cards where next reads (RC-P14c)", () => {
+  it("are the gallery's cards: its select, and the embedded filters and caps listGallery sends", async () => {
+    await listGallery();
+    const gallery = callsOf(1);
+    const galleryEmbeds = embedCalls(gallery);
+    expect(galleryEmbeds.length).toBeGreaterThan(0);
+
+    calls = [];
+    builders = 0;
+    await getWhereNext({ buildId: THIS, creatorId: "maker-1", madeWith: ["Claude"] });
+
+    for (const id of [1, 2, 3]) {
+      const own = callsOf(id);
+      expect(String(own.find((call) => call.method === "select")?.args[0]).startsWith(gallerySelect(false))).toBe(true);
+      expect(embedCalls(own)).toEqual(galleryEmbeds);
+    }
   });
 });
 

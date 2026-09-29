@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { WHERE_NEXT_PER_ROW, firstTool, getWhereNext, type GalleryBuild } from "@/lib/build";
@@ -20,9 +20,10 @@ import { body, eyebrow } from "@/lib/theme/type";
    nothing: no heading and no empty state. Nothing here is personalised.
 
    THE SAME CARD AS THE GALLERY AND HOME ⟦law-of-similarity⟧, unchanged: a build
-   looks the same wherever it is offered. The rows carry the card's header
-   columns only (getWhereNext), so each card draws its text body and nothing on
-   this section signs an image.
+   looks the same wherever it is offered. The rows carry the gallery's card data
+   (getWhereNext), and the pictures are signed here the way the gallery signs
+   them, one request per picture a card can show, once the rows arrive
+   (RC-P14c: until then these cards drew their text body with no picture).
 
    ONE EDGE, ROWS 40 APART ⟦law-of-continuity⟧: every row's heading and first
    card start on the column's leading edge, and the larger gap between rows is
@@ -48,9 +49,6 @@ import { body, eyebrow } from "@/lib/theme/type";
 
 /** How far ahead of the viewport the section starts asking. */
 const NEAR_MARGIN = "400px";
-
-/** The rows ask for no pictures, so the cards have none to sign. */
-const NO_MEDIA: MediaSrcMap = new Map();
 
 /** Where-next answers change slowly; one answer serves a visit. */
 const WHERE_NEXT_STALE_MS = 5 * 60 * 1000;
@@ -164,6 +162,9 @@ const COLUMNS = {
 /** The rows, drawn. Rendered only when at least one row has a build in it. */
 function WhereNextRows({ rows }: { rows: Row[] }) {
   const columns = COLUMNS[useBreakpoint()];
+  /* Signed for the whole section at once, never per card: the gallery's rule. */
+  const mediaRows = useMemo(() => rows.flatMap((row) => row.builds).flatMap(cardMedia), [rows]);
+  const srcByPath = useSignedMedia(mediaRows);
 
   return (
     <section
@@ -197,7 +198,7 @@ function WhereNextRows({ rows }: { rows: Row[] }) {
           >
             {row.builds.map((build) => (
               <li key={build.id} data-testid="where-next-card" style={{ minWidth: 0 }}>
-                <GalleryCard build={build} srcByPath={NO_MEDIA} />
+                <GalleryCard build={build} srcByPath={srcByPath} />
               </li>
             ))}
           </ul>
