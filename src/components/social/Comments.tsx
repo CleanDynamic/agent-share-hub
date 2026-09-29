@@ -42,6 +42,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { updateEngagement } from "@/hooks/useEngagement";
+import { ReportDialog } from "@/components/moderation/ReportDialog";
 import {
   appendComment,
   bumpPartCount,
@@ -182,6 +183,8 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
 
   const [confirming, setConfirming] = useState<CommentThread | BuildComment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // RC-P17b: somebody else's comment, being reported.
+  const [reporting, setReporting] = useState<{ type: "comment"; id: string } | null>(null);
 
   const confirmDelete = async () => {
     if (!confirming) return;
@@ -246,6 +249,7 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
         onReply={async (parent, text) => posted(await addComment({ buildId: build.id, parentId: parent.id, body: text }))}
         onEdit={async (comment, text) => replaceComment(queryClient, build.id, await editComment(comment.id, text))}
         onDelete={(comment) => setConfirming(comment)}
+        onReport={(comment) => setReporting({ type: "comment", id: comment.id })}
         onRefused={refused}
       />
 
@@ -261,6 +265,8 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
           Show more comments
         </Button>
       ) : null}
+
+      <ReportDialog target={reporting} onClose={() => setReporting(null)} />
 
       <Dialog open={confirming !== null} onOpenChange={(open) => (!open && !deleting ? setConfirming(null) : undefined)}>
         <DialogContent style={{ maxWidth: 440 }}>
@@ -406,6 +412,8 @@ interface ListProps {
   onReply: (parent: CommentThread, text: string) => Promise<void>;
   onEdit: (comment: BuildComment, text: string) => Promise<void>;
   onDelete: (comment: CommentThread | BuildComment) => void;
+  /** RC-P17b: report somebody else's comment. */
+  onReport: (comment: BuildComment) => void;
   onRefused: (error: unknown) => void;
 }
 
@@ -528,18 +536,23 @@ function CommentItem({
   comment,
   parts,
   viewerId,
+  canWrite,
   onOpenPart,
   onEdit,
   onDelete,
+  onReport,
   onRefused,
   onReplyPress,
 }: {
   comment: BuildComment;
   onReplyPress?: () => void;
   onDelete: () => void;
-} & Pick<ListProps, "parts" | "viewerId" | "onOpenPart" | "onEdit" | "onRefused">) {
+} & Pick<ListProps, "parts" | "viewerId" | "canWrite" | "onOpenPart" | "onEdit" | "onReport" | "onRefused">) {
   const [editing, setEditing] = useState(false);
   const own = viewerId !== null && viewerId === comment.authorId;
+  // RC-P17b: a signed-in reader may report somebody else's comment, unless an
+  // admin has already hidden it.
+  const canReport = canWrite && !own && !comment.isHidden;
   const name = nameOf(comment);
   const username = comment.author?.username ?? null;
   const part = comment.nodeId ? parts.get(comment.nodeId) ?? null : null;
@@ -571,6 +584,8 @@ function CommentItem({
           >
             {commentTime(comment.createdAt)}
             {comment.editedAt ? " · edited" : ""}
+            {/* RC-P17b: only its author and admins still read a hidden comment. */}
+            {comment.isHidden ? " · hidden by an admin" : ""}
           </time>
         </div>
 
@@ -616,12 +631,14 @@ function CommentItem({
           </p>
         )}
 
-        {!editing && (onReplyPress || own) ? (
+        {!editing && (onReplyPress || own || canReport) ? (
           <div
             data-testid="comment-actions"
             style={{ display: "flex", alignItems: "center", flexWrap: "wrap", marginInlineStart: -SPACE.xs }}
           >
             {onReplyPress && comment.parentId === null ? <TextAction label="Reply" onPress={onReplyPress} /> : null}
+            {/* RC-P17b: somebody else's comment can be reported, after Reply. */}
+            {canReport ? <TextAction label="Report" onPress={() => onReport(comment)} /> : null}
             {own ? <TextAction label="Edit" onPress={() => setEditing(true)} /> : null}
             {own ? (
               // Destructive, last, and 16 further along (STATES.md row 16).

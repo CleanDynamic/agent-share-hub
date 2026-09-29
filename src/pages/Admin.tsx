@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut, CheckCircle, XCircle, Loader2, ExternalLink, Eye } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
+import { ReportsQueue } from "@/components/moderation/ReportsQueue";
 
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -25,7 +26,7 @@ const Admin = () => {
   const queryClient = useQueryClient();
 
   // ── Pending content ──
-  const { data: pendingItems, isLoading: pendingLoading } = useQuery({
+  const { data: pendingItems } = useQuery({
     queryKey: ["admin_pending_content"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,52 +36,6 @@ const Admin = () => {
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
-    },
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: async (contentId: string) => {
-      // Fetch content info before approving
-      const { data: contentRow } = await supabase
-        .from("content_items")
-        .select("creator_id, title")
-        .eq("id", contentId)
-        .maybeSingle();
-
-      const { error } = await supabase
-        .from("content_items")
-        .update({ status: "approved", approved_at: new Date().toISOString() })
-        .eq("id", contentId);
-      if (error) throw error;
-
-      // Send approval notification
-      if (contentRow) {
-        insertNotification({
-          recipient_id: contentRow.creator_id,
-          actor_id: null,
-          notification_type: "content_approved",
-          content_id: contentId,
-          metadata: { content_title: contentRow.title },
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_pending_content"] });
-      toast({ title: "Content approved" });
-    },
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: async (contentId: string) => {
-      const { error } = await supabase
-        .from("content_items")
-        .update({ status: "rejected" })
-        .eq("id", contentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin_pending_content"] });
-      toast({ title: "Content rejected" });
     },
   });
 
@@ -368,9 +323,9 @@ const Admin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="content" className="space-y-6">
+        <Tabs defaultValue="reports" className="space-y-6">
           <TabsList className="bg-card border border-border">
-            <TabsTrigger value="content">Content Queue</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="services">Service Listings</TabsTrigger>
             <TabsTrigger value="tools">AI Tools</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
@@ -378,58 +333,10 @@ const Admin = () => {
             <TabsTrigger value="curators">Curators</TabsTrigger>
           </TabsList>
 
-          {/* ── Content approval queue ── */}
-          <TabsContent value="content" className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Pending Submissions</h2>
-            {pendingLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-20 w-full rounded-xl" />
-                <Skeleton className="h-20 w-full rounded-xl" />
-              </div>
-            ) : !pendingItems || pendingItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-10 text-center">No pending submissions.</p>
-            ) : (
-              <div className="space-y-3">
-                {pendingItems.map((item) => {
-                  const creator = item.profiles as { username: string | null; display_name: string | null } | null;
-                  return (
-                    <div key={item.id} className="border border-border rounded-xl p-4 bg-card flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          by {creator?.display_name || creator?.username || "Unknown"} · {item.content_type} · {item.difficulty}
-                          {item.monetisation_type !== "free" && ` · ${item.monetisation_type}`}
-                        </p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
-                          onClick={() => approveMutation.mutate(item.id)}
-                          disabled={approveMutation.isPending}
-                        >
-                          {approveMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-8 border-destructive text-destructive hover:bg-destructive/10"
-                          onClick={() => rejectMutation.mutate(item.id)}
-                          disabled={rejectMutation.isPending}
-                        >
-                          {rejectMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3 mr-1" />}
-                          Reject
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          {/* ── RC-P17b: the reports queue. It takes the Content Queue's place:
+                 that tab moderated legacy posts, all of which the clear deletes. ── */}
+          <TabsContent value="reports">
+            <ReportsQueue />
           </TabsContent>
 
           {/* ── Service listings management ── */}

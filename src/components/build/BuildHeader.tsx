@@ -117,6 +117,12 @@ interface BuildHeaderProps {
    * the header is exactly what it was.
    */
   engagement?: RowEngagement;
+  /**
+   * RC-P17b — the credit line under the title and outcome: who made the build,
+   * and a quiet "Report" at its end for a signed-in reader who did not.
+   * Omitted, the title block is exactly what it was.
+   */
+  credit?: ReactNode;
 }
 
 /** A hero the page has already resolved: what it is, and where to get it. */
@@ -304,6 +310,7 @@ export function BuildHeader({
   rebuilds,
   hero,
   engagement,
+  credit,
 }: BuildHeaderProps) {
   const placed = flatten(tree);
   const heroNode = build.hero_node_id
@@ -378,6 +385,7 @@ export function BuildHeader({
             {build.outcome}
           </p>
         ) : null}
+        {credit ?? null}
       </div>
 
       {actions ? (

@@ -134,6 +134,17 @@ export interface BuildRecord {
   tray: BuildNode[];
   events: BuildEvent[];
   nodeTypes: NodeType[];
+  /**
+   * RC-P17b — who made it, for the build page's credit line. Read on the same
+   * request as the header (getBuildBySlug); absent from records composed any
+   * other way, and null when the maker's profile could not be read.
+   */
+  maker?: BuildMaker | null;
+}
+
+export interface BuildMaker {
+  username: string | null;
+  displayName: string | null;
 }
 
 // --- errors ------------------------------------------------------------------
