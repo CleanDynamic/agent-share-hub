@@ -47,6 +47,23 @@ Minor findings and LOW rows (route · skill · finding):
 - m24 · every route (phone drawer) · critique-affordance › Clickability Signals · Close is 36×36 and View profile 35px tall, under the 44px minimum (ProfileDrawer.tsx)
 - m25 · every route (phone) · better-layout › Order by importance (LOW) · MobileTopBar and MobileBottomNav mount after <main>, so the top bar comes after the page for a screen reader and for Tab (AppShell.tsx:294, :309)
 
+From RC-P14c, docs/reconciliation/critique/phase-3.md. No major is deferred: M1 (where-next cards had no pictures) and M2 (the lineage page could not open its own build) were fixed in CRITIQUE-5 and CRITIQUE-6. The IDs below are phase 3's own. Minor findings and LOW rows (route · skill · finding):
+- m1 · /gallery (desktop) · hicks-law › Common Failure Patterns · two identical "Search builds" fields, the nav's and the page's, both holding the query; the page's exists for the phone, where the nav has none (Gallery.tsx:382; NavSearch.tsx)
+- m2 · /gallery (390) · better-layout › Order by importance (MEDIUM); critique-information-density › Content Priority · about 640px of header before the first card, and the five-line description restates the order line (Gallery.tsx:376)
+- m3 · /gallery (390) · better-layout › Hold structure until it breaks (LOW) · the four lenses wrap three and one, Unsolved alone on a second line, so the single-select row reads as two groups (LensRow.tsx:96)
+- m4 · /gallery · hicks-law › Choice Audit (scent) · facet counts describe the whole gallery, not the lens: "Claude 10" leads to at most the 8 proven builds (gallery.ts:637, gallery_facets)
+- m5 · /gallery?q= · critique-information-density › Content Priority · the results line reads "2 builds · most reproduced first, …" and does not name the query (Gallery.tsx:578)
+- m6 · /gallery, / · critique-composition › Rhythm · a row's cards end at different heights (phase 2's m19, carried; the gallery grid)
+- m7 · / (phone) · critique-visual-hierarchy › Emphasis · two filled controls open the composer, the compose strip's New and the bar's New build (phase 2's m2, carried; FeedShell.tsx:238)
+- m8 · / (desktop) · better-layout › Plan for clipping (LOW); critique-composition › Whitespace · Home's tab strip starts at y 0 while the nav starts 24px down, so it reads as cut off (FeedShell.tsx)
+- m9 · every wide route · better-layout › Plan for clipping (LOW) · the document is 24px taller than the viewport (1440×924 at 900), a stray scroll (flat-shell.css:670; outside the phase's files)
+- m10 · /bounties (1440) · better-layout › Align to shared edges (MEDIUM); critique-composition › Balance · two right edges: the rows end at x 1272, the title row, "Solvers" and the facet rule at 1392 (Bounties.tsx:177)
+- m11 · /bounties/solvers (1440) · critique-composition › Balance (LOW) · the 720 list leaves the right half of the wide column empty (Solvers.tsx:99)
+- m12 · /b2/:slug, its foot (768–1023) · better-layout › Hold structure until it breaks (LOW); critique-composition › Rhythm · where-next cards are 192px at 768 and 205px at 1024 and titles clamp mid-phrase; already two columns there, three measured 120px (WhereNext.tsx:158)
+- m13 · /b2/:slug/lineage (390) · better-layout › Order by importance (LOW) · "Open the build" wraps between the headline and its sentence (Lineage.tsx:138)
+- m14 · test infrastructure · neoscale-e2e-testing › Writing tests · the audit harness answers every table with all its rows, so a build page opened through it renders "This build could not be loaded" (pre-existing, also at e5551793; e2e/audit/support/harness.ts). The phase-3 critique spec answers through e2e/audit/support/restFilter.ts; the sweeps (audit:contrast, audit:glass) still use the harness alone
+- m15 · /bounties, /b2/:slug/lineage, the Rebuilds tab, every maker link · better-ui › Every state needs a static cue (LOW) · text links have rest and focus states and no hover (Bounties.tsx:215; Lineage.tsx:138; RebuildTree.tsx:198; MakerLink.tsx:28)
+
 ## RC-P00 — Set-up: skills check, contract, diary, baseline
 Date: 2026-09-28 · Commits: SETUP-1 · Head: e2db7e50
 Landed: docs/reconciliation/CONTRACT.md, this diary (47 prompt headings) and e2e/audit/rc-baseline.spec.ts (anonymous request counts on / and /gallery, backend stubbed).
@@ -227,7 +244,14 @@ Lovable messages owed: none
 Open: TWO COLUMNS BETWEEN 768 AND 1023, three from 1024 as asked: at 768 three made 120px cards with titles cut to fragments (measured); two hold 192px, no narrower than three at 1024. The rows select header columns only, as asked, so cards draw their text body with no cover and nothing is signed. Row 2's eligibility string is rebuilt from GALLERY_THRESHOLD (galleryPredicate is locked and private); whereNext.test.ts holds it equal to listGallery's. DISCOVERY-4 WAS COMMITTED WITH motion.test.ts RED: WhereNext imported useReveal, which the theme sanctions in BuildPage.tsx and Gallery.tsx only; that commit's review ran the build-page suites, not the whole suite. DISCOVERY-5 removes the reveal and fixes the rows' gap (SPACE.xl is 64; SPACE.lg is 40), both caught by tests. Pre-existing, for RC-P14c: the audit harness's /b2/inbox-triage-agent renders "This build could not be loaded" (also at e5551793), so the sweeps never see a build page; the measurements here used the spec's own stub. tsc PASS · unit 2264/2264, 0 new failures · build PASS · tier1 92/92 on both projects · where-next 4/4 + 4/4 · build-page-repaint 17/17 · audit:glass PASS.
 Next: RC-P14c
 
-## RC-P14c — 
+## RC-P14c — Critique pass on discovery
+Date: 2026-09-29 · Commits: CRITIQUE-5, CRITIQUE-6, CRITIQUE-7, CRITIQUE-8 · Head: d06dc232
+Landed: docs/reconciliation/critique/phase-3.md, one section per skill, from 72 screenshots (nine addresses at 390, 768, 1024 and 1440 in both rooms, by e2e/audit/rc-critique.spec.ts re-pointed at phase 3) and browser probes. Fixed, one commit per cause: where-next cards drew no picture and now read the gallery's card select, embed caps and signed covers (CRITIQUE-5, M1); the lineage page names its build in the eyebrow and opens it with "Open the build" (CRITIQUE-6, M2). Dimensions: major 3 · minor 6 · pass 7 → major 0 · minor 6 · pass 10. better-ui Approve · better-layout Approve · the card identical on /gallery, / and where next: yes.
+Skills applied: ⟦critique-information-density⟧ ⟦critique-visual-hierarchy⟧ ⟦critique-affordance⟧ ⟦critique-composition⟧ ⟦hicks-law › Choice Audit; Budgets⟧ ⟦law-of-similarity⟧ ⟦better-ui › Reporting⟧ ⟦better-layout › Reporting⟧ ⟦responsive-design › Input Method Adaptation⟧ ⟦aesthetic-usability › Applying It⟧ ⟦buildgallery-theme › Before you call it done⟧ ⟦neoscale-e2e-testing › Writing tests; Running and reporting⟧ ⟦neoscale-code-review › Root cause, not symptom⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: Phase 3 complete. No major is deferred; phase 3's m1–m15 are under Critique findings deferred. THE VERIFICATION RUN CAUGHT A PRE-EXISTING RACE: tier3 gallery-repaint.spec.ts:207 (BG-P19) measured the cards while the stagger still moved them, failing 5 in 10 at d4412238 (before this phase) and 4 in 10 at 4389ef34; CRITIQUE-7 waits for the reveal's end state, test only, 20/20. The audit harness still answers every table unfiltered (m14): the critique spec answers through e2e/audit/support/restFilter.ts, and the sweeps still see no build page. The fixture gained a third generation (1 → 7 → 13), a no-reward ask, two solvers and the board's answers. tsc PASS · unit 2267/2267, 0 new failures · build PASS · tier1 92/92 on both projects · tier3 346/346 on both projects, 26 skipped by project · critique capture 18/18.
+Next: RC-P15
 
 ## RC-P15 — 
 
