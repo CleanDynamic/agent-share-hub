@@ -1,4 +1,4 @@
-// The Builds tab: the new path's own feed, in one request per page.
+// Home's feed, both tabs: the new path's own feed, in one request per page.
 //
 // LAZY ON PURPOSE, and default-exported so it can be. Home is the entry
 // bundle — the page every visitor loads before anything else — and this tab
@@ -21,10 +21,9 @@
 // that fetches a card-sized derivative rather than the original. One per cover
 // on an open HTTP/2 connection, issued together. See cardMedia.ts.
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { FeedEmptyState, FeedErrorState } from "@/components/feed/FeedShell";
+import { FeedErrorState } from "@/components/feed/FeedShell";
 import { BuildFeedItemView } from "@/components/feed/BuildFeedItems";
 import { GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
@@ -48,14 +47,24 @@ const PREFETCH_MARGIN = "600px";
 /** Nothing is refetched for half a minute; a feed is not a live ticker. */
 const FEED_STALE_MS = 30_000;
 
-export function BuildsTab() {
-  const navigate = useNavigate();
+/**
+ * RC-P11 — BOTH OF HOME'S TABS ARE THIS TAB. Everyone is the whole feed;
+ * Following passes `onlyFollowing` and gets the rows whose maker, reproducer or
+ * bounty author the reader follows. Paging and media signing are the same for
+ * both. The page supplies the empty state, because only the page knows WHY a
+ * tab is empty: nobody followed, a quiet week, or nothing published at all.
+ */
+export interface BuildsTabProps {
+  onlyFollowing?: boolean;
+  empty: ReactNode;
+}
 
+export function BuildsTab({ onlyFollowing = false, empty }: BuildsTabProps) {
   const feed = useInfiniteQuery({
-    queryKey: ["home_builds_feed"],
+    queryKey: ["home_builds_feed", onlyFollowing ? "following" : "everyone"],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
-      getBuildFeed({ before: pageParam, pageSize: FEED_PAGE_SIZE }),
+      getBuildFeed({ before: pageParam, pageSize: FEED_PAGE_SIZE, onlyFollowing }),
     // undefined, not null: react-query reads undefined as "there is no next
     // page" and stops asking. getBuildFeed returns null when the page came
     // back short, which is the same fact in the data layer's own vocabulary.
@@ -111,21 +120,14 @@ export function BuildsTab() {
   if (feed.isError) {
     return (
       <FeedErrorState
-        activeTab="builds"
+        activeTab={onlyFollowing ? "following" : "everyone"}
         message={(feed.error as Error)?.message}
         onRetry={() => void feed.refetch()}
       />
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <FeedEmptyState
-        activeTab="builds"
-        onEmptyCTAClick={() => navigate("/gallery")}
-      />
-    );
-  }
+  if (items.length === 0) return <>{empty}</>;
 
   return (
     <div data-testid="feed-builds">

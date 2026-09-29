@@ -317,7 +317,8 @@ test("BG-P31 — the feed reserves its slots under a slow network", async ({ bro
      shapes, and an unreserved row would come out at three different heights and
      jump as the pictures land. */
   const SURFACES = [
-    { id: "builds-tab", path: "/?tab=builds", reserves: "fixed 168px slot" },
+    // RC-P11: the Builds tab is Home's Everyone tab; same feed, same card.
+    { id: "builds-tab", path: "/?tab=everyone", reserves: "fixed 168px slot" },
     { id: "gallery-grid", path: "/gallery", reserves: "variable, from stored dimensions" },
   ];
   const results: Array<{

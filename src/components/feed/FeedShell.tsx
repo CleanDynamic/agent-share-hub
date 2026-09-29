@@ -1,5 +1,13 @@
-// The home feed's chrome: the compose strip, the competitions strip, the tab
-// bar, and the three things a tab shows when it has no items (BG-P18).
+// The home feed's chrome: the compose strip, the tab bar, and what a tab shows
+// when it has no items or its request failed (BG-P18).
+//
+// RC-P11 — TWO TABS ON ONE FEED. Following and Everyone both render the build
+// feed (BuildsTab, one request per page); Everyone is the whole feed and
+// Following is the rows whose maker, reproducer or bounty author the reader
+// follows. The five legacy tabs, the competitions strip, the realtime
+// new-posts pill and every prop and branch that served only them are gone
+// ⟦hicks-law › Budgets; Remedies 1 Remove⟧. Nothing that stayed changed its
+// layout.
 //
 // EVERYTHING HERE IS IN THE ENTRY BUNDLE, and that is the constraint that
 // decides half the decisions below. Home is the page every visitor loads before
@@ -29,14 +37,15 @@
 import React from "react";
 /* Five of the nine glyphs that were imported here went with the empty state's
    disc: Sparkles, Users, TrendingUp, Clock, Layers and RotateCw each stood for
-   one tab's "nothing here" and said no more than that tab's own sentence did. */
-import { PlusCircle, Trophy, ChevronUp } from "lucide-react";
+   one tab's "nothing here" and said no more than that tab's own sentence did.
+   RC-P11 took Trophy and ChevronUp with the competitions strip and the pill. */
+import { Link } from "react-router-dom";
+import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FOCUS_RING_CLASS,
   GLASS_BLUR,
-  chipStyle,
   prefersReducedMotion,
   uiTransition,
 } from "@/lib/theme/controls";
@@ -47,28 +56,11 @@ import {
   body as bodyText,
   cardTitle,
   data as dataText,
-  eyebrow as eyebrowText,
   label as labelText,
-  tabular,
 } from "@/lib/theme/type";
 
-export type FeedTabKey =
-  // NS-P41. First in the union and first in TABS below, additive: the five
-  // that follow it keep their order, their labels and their data paths.
-  | "builds"
-  | "foryou"
-  | "following"
-  | "trending"
-  | "recent"
-  | "bounties";
-
-export interface BountyPreview {
-  id: string;
-  slug?: string | null;
-  title: string;
-  reward: string;
-  endsIn: string;
-}
+/** RC-P11: exactly two ⟦hicks-law › Budgets: Home, 2 tabs⟧. */
+export type FeedTabKey = "following" | "everyone";
 
 export interface FeedCurrentUser {
   displayName: string;
@@ -77,42 +69,22 @@ export interface FeedCurrentUser {
   initials: string;
 }
 
+/**
+ * RC-P11. The loading, empty and error states are the tab's own: both tabs
+ * are BuildsTab, which draws all three from inside its lazy chunk, so the
+ * props that carried them for the legacy tabs are gone with those tabs.
+ */
 interface FeedShellProps {
   currentUser: FeedCurrentUser | null;
   activeTab: FeedTabKey;
   onTabChange: (tab: FeedTabKey) => void;
-  activeBounties: BountyPreview[];
-  onBountySeeAll?: () => void;
-  onBountyClick?: (b: BountyPreview) => void;
   feedCards: React.ReactNode[];
-  isLoading: boolean;
-  hasNewPosts: boolean;
-  newPostCount: number;
-  onLoadNewPosts: () => void;
   onComposeClick: () => void;
-  isEmpty: boolean;
-  onEmptyCTAClick: () => void;
-  /**
-   * BG-P18. The tab's own data failed.
-   *
-   * A tab that errors shows the error INSTEAD of an empty state, because
-   * "there is nothing here" and "we could not find out" are different facts
-   * and only one of them is a reason to send a reader somewhere else.
-   */
-  isError?: boolean;
-  /** What the data layer said, shown verbatim. Never invented. */
-  errorMessage?: string | null;
-  /** Asks the tab's queries again. Absent means no retry is offered. */
-  onRetry?: () => void;
 }
 
 const TABS: { key: FeedTabKey; label: string }[] = [
-  { key: "builds", label: "Builds" },
-  { key: "foryou", label: "For You" },
   { key: "following", label: "Following" },
-  { key: "trending", label: "Trending" },
-  { key: "recent", label: "Recent" },
-  { key: "bounties", label: "Bounties" },
+  { key: "everyone", label: "Everyone" },
 ];
 
 /** The tab's own name, for the one sentence that has to say which failed. */
@@ -126,7 +98,7 @@ const TAB_LABEL: Record<FeedTabKey, string> = TABS.reduce(
  *
  * `label` is the role — 13px Figtree 500 — spent two steps larger, which is the
  * one size in this file that is not the role's own. A tab is the page's primary
- * navigation and the six of them are the only thing in the bar; at 13 they read
+ * navigation and the tabs are the only thing in the bar; at 13 they read
  * as metadata beside the 16px body below them. 15 at weight 500 clears the
  * theme's weight floor (which binds anything under 18px to 400 or more), so the
  * step up is legal rather than a waiver.
@@ -139,7 +111,9 @@ const TAB_BAR_HEIGHT = 52;
 /**
  * The width a tab stops dividing at and starts scrolling from.
  *
- * Six of these is 576, which fits inside the 600px column and does not fit
+ * RC-P11: two tabs share the column now, so this floor is never reached; it
+ * stays because it is the bar's rule rather than a count. Six of these was 576,
+ * which fit inside the 600px column and did not fit
  * inside a phone — so the strip divides evenly on a desktop and scrolls on a
  * phone from one number rather than from a media query a style object cannot
  * write.
@@ -178,46 +152,35 @@ const TAB_LABEL_CLASS =
   "data-[state=active]:text-[color:var(--text)]";
 
 /**
- * What each tab says when it has nothing, in the platform's voice.
+ * Why a tab is empty, which decides what it says.
  *
- * QUIET, AND POINTING SOMEWHERE. Every one of these ends by naming a place with
- * more in it, because an empty feed is nearly always a reader who has not
- * followed anybody yet rather than a platform with nothing on it — and a dead
- * end teaches them the product is empty. None of them apologises, and none
- * suggests the reader did something wrong: an empty Following tab is a fact
- * about who they follow, not a fault.
+ * THREE, NOT TWO. Following is empty for two different reasons with two
+ * different fixes: a reader who follows nobody has nobody to hear from, and a
+ * reader whose makers have published nothing lately has a quiet week.
  */
-const EMPTY_STATES: Record<
-  FeedTabKey,
-  { headline: string; body: string; cta?: string }
-> = {
-  builds: {
-    headline: "Nothing here yet",
-    body: "Builds, rebuilds and the notes people leave after running one land here as they are published. The gallery has more.",
-    cta: "Open the gallery",
+export type FeedEmptyKind = "following-none" | "following-quiet" | "everyone";
+
+/**
+ * What each empty state says: STATES.md row 19, one sentence in --text2 and one
+ * action, the likeliest next step ⟦hicks-law › Budgets: empty state⟧. No
+ * ranking words and no apology; an empty Following tab is a fact about who the
+ * reader follows, not a fault.
+ */
+const EMPTY_STATES: Record<FeedEmptyKind, { sentence: string; action: string; to: string }> = {
+  "following-none": {
+    sentence: "Follow a maker and their work lands here.",
+    action: "Browse the gallery",
+    to: "/gallery",
   },
-  foryou: {
-    headline: "Nothing here yet",
-    body: "This fills as the people you follow publish, run and rebuild things. The gallery has more.",
-    cta: "Open Discover",
+  "following-quiet": {
+    sentence: "The makers you follow have been quiet.",
+    action: "See everyone",
+    to: "/?tab=everyone",
   },
-  following: {
-    headline: "Nothing here yet",
-    body: "When somebody you follow publishes, shares or comments, it lands here. The gallery has more.",
-    cta: "Open Discover",
-  },
-  trending: {
-    headline: "Nothing trending right now",
-    body: "Trending is recalculated through the day, so this is a lull rather than a wall. The gallery has more.",
-  },
-  recent: {
-    headline: "Nothing published recently",
-    body: "New builds, collections and rebuilds arrive here first. The gallery has more.",
-  },
-  bounties: {
-    headline: "No open bounties",
-    body: "A bounty is a part of a build somebody marked unsolved. None are open right now — and you can mark one on a build of your own.",
-    cta: "Start a bounty",
+  everyone: {
+    sentence: "Nothing has been published yet.",
+    action: "Show what you built",
+    to: "/compose/new",
   },
 };
 
@@ -303,106 +266,7 @@ function ComposeStrip({
 }
 
 /**
- * The open bounties, as a row of links above the feed.
- *
- * NO DASHED EDGE, AND THAT IS THE ONE DECISION HERE WORTH DEFENDING. The theme
- * gives a gap a 1.5px dashed `--cat-breakage` edge, and these tiles are not
- * gaps: they are LINKS to builds that have one. The dashed edge means "the thing
- * you are looking at has a hole in it", and spending it on a navigation tile
- * would teach a reader the wrong thing about the mark before they ever meet it
- * on a card. So a tile is an ordinary surface and the breakage hue appears only
- * on the reward, in `categoryFill`'s measured pair — which is also the only
- * ground that hue is legal as ink on.
- */
-function ActiveCompetitionsStrip({
-  bounties,
-  onSeeAll,
-  onBountyClick,
-}: {
-  bounties: BountyPreview[];
-  onSeeAll?: () => void;
-  onBountyClick?: (b: BountyPreview) => void;
-}) {
-  if (bounties.length === 0) return null;
-
-  return (
-    <div className="mb-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4" style={{ color: t.text2 }} />
-          <span style={{ ...eyebrowText, color: t.text2 }}>Active competitions</span>
-        </div>
-        <button
-          onClick={onSeeAll}
-          style={{
-            ...labelText,
-            color: t.text2,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            transition: uiTransition(),
-          }}
-        >
-          See all →
-        </button>
-      </div>
-      {/* `contain: inline-size` for the reason the tab row carries it: a
-          horizontal scroller's width must not be computed from the tiles inside
-          it, or eight 240px tiles push the frame's centre column past the left
-          rail at 768. See the longer note on the tab row. */}
-      <div
-        className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
-        style={{ contain: "inline-size" }}
-      >
-        {bounties.map((bounty) => (
-          <button
-            key={bounty.id}
-            onClick={() => onBountyClick?.(bounty)}
-            className="shrink-0 text-left"
-            style={{
-              width: 240,
-              padding: 14,
-              borderRadius: r.control,
-              background: t.glass,
-              ...elevation.flat,
-              cursor: "pointer",
-              transition: uiTransition(),
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span style={{ ...chipStyle("category", { category: "breakage" }), ...tabular, padding: "2px 8px" }}>
-                {bounty.reward}
-              </span>
-              <span style={{ ...dataText, ...tabular, color: t.text2 }}>
-                ends in {bounty.endsIn}
-              </span>
-            </div>
-            <div
-              style={{
-                ...labelText,
-                color: t.text,
-                marginBottom: 8,
-                lineHeight: 1.35,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {bounty.title}
-            </div>
-            <div style={{ ...dataText, color: t.text2 }}>
-              Submit a solution →
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * The six tabs.
+ * The tabs: Following and Everyone (RC-P11; there were six).
  *
  * THIS IS BG-P07's TAB, NOT A SECOND ONE THAT LOOKS LIKE IT. The row spends
  * `tabTriggerStyle` and `TAB_TRIGGER_CLASS` — the same two the kit's
@@ -449,7 +313,7 @@ function FeedTabBar({
 }) {
   const strip = React.useRef<HTMLDivElement>(null);
 
-  /* Task 4.3. Below 768 the six tabs do not fit and the strip scrolls, so a tab
+  /* Task 4.3. When the tabs do not fit the strip scrolls, so a tab
      made active by the URL — a link, a back button, the bounty CTA — can be
      off-screen the moment it becomes current. Scrolling it into view is the
      only part of "the reader can see which tab they are on" that CSS cannot do.
@@ -468,7 +332,7 @@ function FeedTabBar({
     <div
       ref={strip}
       /* `feed-tabs`, not `feed-tab-bar`, and the mark is `feed-active-mark`:
-         `getByTestId(/^feed-tab-/)` is how the tier-3 spec says "the six tabs",
+         `getByTestId(/^feed-tab-/)` is how the tier-3 spec says "the tabs",
          and two more elements answering to that prefix would silently change
          what that assertion counts. */
       data-testid="feed-tabs"
@@ -519,9 +383,9 @@ function FeedTabBar({
             aria-current={active ? "page" : undefined}
             className={`${TAB_LABEL_CLASS} ${FOCUS_RING_CLASS}`}
             style={{
-              /* `flex: 1 1 0` is what makes the six equal — a basis of `auto`
+              /* `flex: 1 1 0` is what makes the tabs equal — a basis of `auto`
                  would size each to its own label and hand "Following" more room
-                 than "Recent". 600 / 6 = 100 in the standard column. The
+                 than "Everyone". 600 / 2 = 300 in the standard column. The
                  min-width is the floor at which they stop dividing and start
                  scrolling, which is what happens below 768. */
               position: "relative",
@@ -570,80 +434,12 @@ function FeedTabBar({
   );
 }
 
-function NewPostsPill({
-  hasNewPosts,
-  newPostCount,
-  onLoadNewPosts,
-}: {
-  hasNewPosts: boolean;
-  newPostCount: number;
-  onLoadNewPosts: () => void;
-}) {
-  if (!hasNewPosts || newPostCount === 0) return null;
-  const display = newPostCount > 20 ? "20+" : String(newPostCount);
-  const noun = newPostCount === 1 ? "new post" : "new posts";
-  return (
-    <button
-      onClick={onLoadNewPosts}
-      className="fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5"
-      style={{
-        top: 90,
-        padding: "8px 16px",
-        // `--r-control`, not 999px: the capsule rule was dropped, and a floating
-        // control is still a control.
-        borderRadius: r.control,
-        background: t.action,
-        color: t.onAction,
-        border: "none",
-        ...labelText,
-        // The one raised surface in the feed, because it floats over the page
-        // rather than sitting in it.
-        ...elevation.raised,
-        cursor: "pointer",
-        transition: uiTransition(),
-      }}
-    >
-      <ChevronUp className="h-3.5 w-3.5" />
-      {display} {noun}
-    </button>
-  );
-}
-
-function FeedContentArea({
-  activeTab,
-  feedCards,
-  isLoading,
-  isEmpty,
-  isError,
-  errorMessage,
-  onRetry,
-  onEmptyCTAClick,
-}: {
-  activeTab: FeedTabKey;
-  feedCards: React.ReactNode[];
-  isLoading: boolean;
-  isEmpty: boolean;
-  isError?: boolean;
-  errorMessage?: string | null;
-  onRetry?: () => void;
-  onEmptyCTAClick: () => void;
-}) {
-  // An error outranks both of the others: a tab whose queries failed is not
-  // loading and is not empty, and saying either would be a claim nobody checked.
-  if (isError) {
-    return (
-      <FeedErrorState activeTab={activeTab} message={errorMessage} onRetry={onRetry} />
-    );
-  }
-
-  if (isLoading) return <FeedSkeleton />;
-
-  if (isEmpty) {
-    return (
-      <FeedEmptyState activeTab={activeTab} onEmptyCTAClick={onEmptyCTAClick} />
-    );
-  }
-
+/**
+ * The tab's content. RC-P11: always the list — both tabs are BuildsTab, which
+ * draws its own loading, empty and error states — so the three branches that
+ * drew them here for the legacy tabs are gone.
+ */
+function FeedContentArea({ feedCards }: { feedCards: React.ReactNode[] }) {
   return (
     <FeedList testId="feed-list">
       {feedCards.map((card, i) => (
@@ -704,7 +500,7 @@ function FeedList({
  * One row of the column, and the reason the gap is exactly 16 on every tab.
  *
  * THIS IS A MARGIN AND NOT A FLEX `gap`, AND THAT IS THE WHOLE POINT. Five of
- * the six tabs render the legacy cards — `feed-card.tsx` at `margin-bottom:
+ * the six tabs rendered the legacy cards before RC-P11 — `feed-card.tsx` at `margin-bottom:
  * 10px`, `FeedItem`, `CollectionFeedCard`, `ProjectFeedCard` and `ReblogCard`
  * at 12 — and the Builds tab renders `BuildFeedItems`' own frame at 12. Those
  * are shared components: `FeedCard` is also the card on Discover and Search, so
@@ -715,7 +511,7 @@ function FeedList({
  * bottom margin COLLAPSES with them — this wrapper is a bare block with no
  * padding, border or overflow, so its child's bottom margin and its own
  * collapse to the larger of the two — and 16 is larger than every one of them.
- * So the column measures 16 on all six tabs, and it keeps measuring 16 on the
+ * So the column measures 16 on every tab, and it keeps measuring 16 on the
  * day one of those cards drops its margin.
  */
 function FeedRow({ children }: { children: React.ReactNode }) {
@@ -855,7 +651,8 @@ function FeedNotice({
   testId,
   children,
 }: {
-  headline: string;
+  /** Absent for an empty state, which is one sentence (STATES.md row 19). */
+  headline?: string;
   body: React.ReactNode;
   testId?: string;
   children?: React.ReactNode;
@@ -878,9 +675,11 @@ function FeedNotice({
           didone's hairlines shimmer, worst on Dusk — and the `cardTitle` role
           this used to take is 22, which is a title inside a card rather than
           the one line on an otherwise empty screen. */}
-      <h2 style={{ ...NOTICE_TITLE, color: t.text, margin: 0, textWrap: "balance" }}>
-        {headline}
-      </h2>
+      {headline ? (
+        <h2 style={{ ...NOTICE_TITLE, color: t.text, margin: 0, textWrap: "balance" }}>
+          {headline}
+        </h2>
+      ) : null}
       <p
         style={{
           ...bodyText,
@@ -901,44 +700,41 @@ function FeedNotice({
 }
 
 /**
- * What a tab says when it has nothing.
+ * What a tab says when it has nothing: one sentence, one action (STATES.md
+ * row 19), and whatever the page puts under it — Home's suggestion row, when
+ * the reader follows nobody.
  *
- * Exported because the Builds tab draws its own — it is the thing that knows
- * when its own lazily loaded page has arrived — and two implementations of
- * "this tab is empty" would drift the first time either changed.
+ * Exported because BuildsTab draws it, from inside its own chunk: it is the
+ * thing that knows when its lazily loaded page has arrived, and two
+ * implementations of "this tab is empty" would drift the first time either
+ * changed.
+ *
+ * SECONDARY, NOT PRIMARY (row 2: transparent, a --line border). The compose
+ * strip's New is this view's one filled control for a signed-in reader, and the
+ * frame's own spends it otherwise. The action goes somewhere, so it is a link
+ * styled as the button.
  */
 export function FeedEmptyState({
-  activeTab,
-  onEmptyCTAClick,
+  kind,
+  children,
 }: {
-  activeTab: FeedTabKey;
-  onEmptyCTAClick: () => void;
+  kind: FeedEmptyKind;
+  children?: React.ReactNode;
 }) {
-  const e = EMPTY_STATES[activeTab];
+  const e = EMPTY_STATES[kind];
   return (
-    <FeedNotice headline={e.headline} body={e.body} testId="feed-empty">
-      {e.cta ? (
-        /* SECONDARY, NOT PRIMARY. The theme allows one primary action per view
-           and the compose strip at the top of the feed is already spending it;
-           an empty tab is a signpost, not a second call to action. It was an
-           `--action`-tinted capsule with a hand-written `.feed-empty-cta` hover
-           rule in an injected <style> — a class, which Tailwind's own output
-           beats at build time, and which is the one styling mechanism
-           `neoscale-ui` forbids outright. */
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onEmptyCTAClick}
-          /* 15px, not the kit's `text-sm`. Every other row and label on this
-             route is 15 or 16, and 14 on the one control in an empty column is
-             the smallest thing on the screen sitting under the largest. The
-             cva's size classes are the kit's and are not touched; this is one
-             inline override on one button. */
-          style={{ height: 40, borderRadius: r.control, fontSize: 15 }}
-        >
-          {e.cta}
-        </Button>
-      ) : null}
+    <FeedNotice body={e.sentence} testId="feed-empty">
+      <Button
+        asChild
+        variant="outline"
+        /* 15px, not the kit's `text-sm`: every other row and label on this
+           route is 15 or 16. One inline override on one button; the cva's size
+           classes are the kit's and are not touched. */
+        style={{ background: "transparent", height: 40, borderRadius: r.control, fontSize: 15 }}
+      >
+        <Link to={e.to}>{e.action}</Link>
+      </Button>
+      {children}
     </FeedNotice>
   );
 }
@@ -1008,20 +804,8 @@ export function FeedShell({
   currentUser,
   activeTab,
   onTabChange,
-  activeBounties,
-  onBountySeeAll,
-  onBountyClick,
   feedCards,
-  isLoading,
-  hasNewPosts,
-  newPostCount,
-  onLoadNewPosts,
   onComposeClick,
-  isEmpty,
-  onEmptyCTAClick,
-  isError,
-  errorMessage,
-  onRetry,
 }: FeedShellProps) {
   return (
     <div
@@ -1044,34 +828,15 @@ export function FeedShell({
       data-visual-slot="feed-shell"
       style={{ display: "flex", flexDirection: "column" }}
     >
-      <NewPostsPill
-        hasNewPosts={hasNewPosts}
-        newPostCount={newPostCount}
-        onLoadNewPosts={onLoadNewPosts}
-      />
       <FeedTabBar activeTab={activeTab} onTabChange={onTabChange} />
-      {/* 16px below the bar, and 16 between everything in the column. The two
-          strips are content and scroll under the bar like the cards do; the bar
-          is the one thing on this route that stays. */}
+      {/* 16px below the bar, and 16 between everything in the column. The
+          compose strip is content and scrolls under the bar like the cards do;
+          the bar is the one thing on this route that stays. */}
       <div style={{ display: "flex", flexDirection: "column", gap: FEED_GAP, paddingTop: FEED_GAP }}>
         {currentUser && (
           <ComposeStrip currentUser={currentUser} onComposeClick={onComposeClick} />
         )}
-        <ActiveCompetitionsStrip
-          bounties={activeBounties}
-          onSeeAll={onBountySeeAll}
-          onBountyClick={onBountyClick}
-        />
-        <FeedContentArea
-          activeTab={activeTab}
-          feedCards={feedCards}
-          isLoading={isLoading}
-          isEmpty={isEmpty}
-          isError={isError}
-          errorMessage={errorMessage}
-          onRetry={onRetry}
-          onEmptyCTAClick={onEmptyCTAClick}
-        />
+        <FeedContentArea feedCards={feedCards} />
       </div>
     </div>
   );

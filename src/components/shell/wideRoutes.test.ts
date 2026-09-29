@@ -21,18 +21,29 @@ import { WIDE_ROUTES, layoutForRoute, matchWideRoute } from "./wideRoutes";
 ──────────────────────────────────────────────── */
 
 describe("WIDE_ROUTES", () => {
-  it("holds the three routes BG-P15 moved, and nothing else about them", () => {
+  /* RC-P12 added /bounties and RC-P13 /bounties/solvers (CONTRACT §3.4:
+     rewritten, not deleted). */
+  it("holds the three routes BG-P15 moved and the two bounties boards, and nothing else", () => {
     expect(WIDE_ROUTES).toEqual([
       { pattern: "/gallery" },
       { pattern: "/b2/*" },
       { pattern: "/import" },
+      { pattern: "/bounties" },
+      { pattern: "/bounties/solvers" },
     ]);
   });
 
-  it("makes the three moved routes wide", () => {
-    for (const path of ["/gallery", "/import", "/b2/some-build"]) {
+  it("makes the moved routes and the two bounties boards wide", () => {
+    for (const path of ["/gallery", "/import", "/b2/some-build", "/bounties", "/bounties/solvers"]) {
       expect([path, layoutForRoute(path)]).toEqual([path, "wide"]);
     }
+  });
+
+  /* Both bounties entries are exact, so an address under the board that no
+     prompt has made wide stays standard rather than being swept in. */
+  it("does not widen an address under /bounties that is not in the table", () => {
+    expect(matchWideRoute("/bounties/solvers/extra")).toBeNull();
+    expect(matchWideRoute("/bounties/new")).toBeNull();
   });
 
   /* Rewritten, not deleted: this used to assert the rail on the build page
@@ -46,7 +57,7 @@ describe("WIDE_ROUTES", () => {
 
   it("leaves every other route standard", () => {
     for (const path of [
-      "/", "/browse", "/discover", "/bounties", "/library", "/drafts", "/messages",
+      "/", "/browse", "/discover", "/library", "/drafts", "/messages",
       "/notifications", "/profile", "/analytics", "/upload", "/upload/blueprint",
       "/dev/kit",
       /* BG-P16's four. Reduced chrome is deliberate on these — if a prompt

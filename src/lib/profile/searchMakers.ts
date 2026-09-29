@@ -29,6 +29,14 @@ export interface MakerHit {
   avatar_url: string | null;
 }
 
+/** A maker with a handle, so a profile address to link to. */
+export type LinkableMaker = MakerHit & { username: string };
+
+/** The makers a caller can link to: those with a handle (RC-P11). */
+export function linkableMakers(makers: MakerHit[]): LinkableMaker[] {
+  return makers.filter((maker): maker is LinkableMaker => Boolean(maker.username));
+}
+
 /** How many makers a search offers. */
 const MAKER_HITS_MAX = 3;
 

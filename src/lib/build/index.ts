@@ -180,6 +180,7 @@ export {
 } from "./buildfile";
 export {
   GALLERY_BUILD_COLUMNS,
+  GALLERY_LENSES,
   GALLERY_MAX_THRESHOLD,
   GALLERY_NODE_TYPES,
   GALLERY_PAGE_SIZE,
@@ -197,11 +198,17 @@ export {
   type GalleryFacet,
   type GalleryFacets,
   type GalleryFilters,
+  type GalleryLens,
   type GalleryMedia,
   type GalleryNode,
   type GalleryPage,
   type ListGalleryOptions,
 } from "./gallery";
+export {
+  galleryHref,
+  parseGalleryParams,
+  type GalleryParams,
+} from "./galleryParams";
 export {
   LAYER_ATTRIBUTION,
   LAYER_BLURB,
@@ -270,6 +277,25 @@ export {
   type RebuildSummary,
   type StartRebuildInput,
 } from "./rebuild";
+export {
+  REBUILD_TREE_DEPTH_CAP,
+  REBUILD_TREE_ROW_CAP,
+  buildTree,
+  flattenFamily,
+  getBuildFamily,
+  getRebuildTree,
+  type GetBuildFamilyInput,
+  type RebuildTreeMaker,
+  type RebuildTreeNode,
+  type RebuildTreeRow,
+} from "./lineage";
+export {
+  WHERE_NEXT_PER_ROW,
+  firstTool,
+  getWhereNext,
+  type WhereNext,
+  type WhereNextInput,
+} from "./whereNext";
 export {
   MINIMUM_PUBLISHABLE_KEYS,
   MINIMUM_PUBLISHABLE_SCORE,

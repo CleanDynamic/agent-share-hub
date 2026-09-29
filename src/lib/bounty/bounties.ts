@@ -385,6 +385,202 @@ async function getBountyRow(bountyId: string, operation: string): Promise<Bounty
 }
 
 // =============================================================================
+// The open bounties board (RC-P12)
+// =============================================================================
+
+/** One row of the board: the ask, the build it is on, whose it is, its answers. */
+export interface OpenBountyCard {
+  bounty: Bounty;
+  build: { id: string; slug: string; title: string; made_with: string[] };
+  /** The build's maker. Null fields when their profile cannot be read. */
+  author: { username: string | null; display_name: string | null; avatar_url: string | null };
+  /** The gap node's title, or null for a build-level ask that names no node. */
+  gapTitle: string | null;
+  /** Submitted and accepted solutions. */
+  solutions: number;
+}
+
+export interface ListOpenBountyCardsOptions {
+  limit?: number;
+  /** Keyset cursor: the created_at of the last card of the previous page. */
+  before?: string | null;
+  /** Tools from the build's made_with; several are an OR. */
+  madeWith?: string[];
+}
+
+export interface OpenBountyCardsPage {
+  cards: OpenBountyCard[];
+  /** Pass as `before` for the next page. Null when this page is the last one. */
+  nextCursor: string | null;
+}
+
+/** The embedded build, as the board's select returns it. */
+interface BoardRow extends Bounty {
+  builds: {
+    id: string;
+    slug: string;
+    title: string;
+    made_with: string[] | null;
+    creator_id: string;
+  } | null;
+  build_nodes: { title: string | null } | null;
+}
+
+/**
+ * The columns the board's one select names: the bounty, its build and, when it
+ * names one, its gap node. `!inner` on the build, so an ask whose build this
+ * reader cannot read never takes a place on the page, and the made_with filter
+ * narrows the asks rather than blanking their builds.
+ */
+const BOARD_SELECT =
+  `${BOUNTY_COLUMNS}, builds!bounties_build_id_fkey!inner(id, slug, title, made_with, creator_id), ` +
+  "build_nodes!bounties_gap_node_id_fkey(title)";
+
+/**
+ * One page of the open bounties board: every open ask on a build, newest first.
+ *
+ * THREE REQUESTS A PAGE, NONE IN A LOOP ⟦supabase-postgres-best-practices ›
+ * references/data-n-plus-one.md⟧: the asks with their builds and gap titles
+ * embedded; then, together, one batched count of their solutions and one batched
+ * read of their makers' profiles. KEYSET on created_at, read one row long to
+ * learn whether there is a next page without a count ⟦references/
+ * data-pagination.md⟧ — the same rule listOpenBounties uses, for the same
+ * reason: something is filed while a reader is on page two.
+ *
+ * NEVER A DRAFT'S ASK. The build's own read policy would show a creator the
+ * asks on their unpublished builds; the board is public, so it holds the same
+ * rule the feed's bounty arm does: published or gallery builds only.
+ */
+export async function listOpenBountyCards({
+  limit = OPEN_BOUNTIES_PAGE_SIZE,
+  before = null,
+  madeWith = [],
+}: ListOpenBountyCardsOptions = {}): Promise<OpenBountyCardsPage> {
+  const size = Math.min(Math.max(1, limit), OPEN_BOUNTIES_MAX);
+
+  let query = supabase
+    .from("bounties")
+    .select(BOARD_SELECT)
+    .eq("status", "open")
+    .not("build_id", "is", null)
+    .in("builds.status", ["published", "gallery"]);
+
+  const tools = [...new Set(madeWith.map((tool) => tool.trim()).filter(Boolean))];
+  if (tools.length > 0) query = query.overlaps("builds.made_with", tools);
+  if (before) query = query.lt("created_at", before);
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(size + 1);
+  if (error) throw bountyLayerError("listOpenBountyCards", error);
+
+  const rows = (data ?? []) as unknown as BoardRow[];
+  const page = rows.slice(0, size);
+  // A row can lose its build only if the embed came back empty anyway; it has
+  // nothing to link to, so it is dropped rather than drawn half.
+  const kept = page.filter((row) => Boolean(row.builds));
+
+  const ids = kept.map((row) => row.id);
+  const creatorIds = [...new Set(kept.map((row) => row.builds!.creator_id))];
+
+  const [solutions, profiles] = await Promise.all([
+    countSolutionsByBounty(ids),
+    creatorIds.length === 0
+      ? Promise.resolve({ data: [], error: null })
+      : supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .in("id", creatorIds)
+          .limit(creatorIds.length),
+  ]);
+  if (profiles.error) throw bountyLayerError("listOpenBountyCards (makers)", profiles.error);
+
+  const makers = new Map<string, OpenBountyCard["author"]>();
+  for (const row of (profiles.data ?? []) as Array<{ id: string } & OpenBountyCard["author"]>) {
+    makers.set(row.id, {
+      username: row.username,
+      display_name: row.display_name,
+      avatar_url: row.avatar_url,
+    });
+  }
+
+  const cards: OpenBountyCard[] = kept.map((row) => {
+    const { builds, build_nodes, ...bounty } = row;
+    return {
+      bounty: bounty as Bounty,
+      build: {
+        id: builds!.id,
+        slug: builds!.slug,
+        title: builds!.title,
+        made_with: builds!.made_with ?? [],
+      },
+      author: makers.get(builds!.creator_id) ?? {
+        username: null,
+        display_name: null,
+        avatar_url: null,
+      },
+      gapTitle: build_nodes?.title?.trim() || null,
+      solutions: solutions.get(row.id) ?? 0,
+    };
+  });
+
+  // The last card's created_at when a (size + 1)th row came back. The page's
+  // last row stands in only if every row on it was dropped, so a page of
+  // unreadable asks cannot end the board early.
+  const nextCursor =
+    rows.length > size && page.length > 0
+      ? cards[cards.length - 1]?.bounty.created_at ?? page[page.length - 1].created_at
+      : null;
+
+  return { cards, nextCursor };
+}
+
+/** One Made with option on the board: the tool, and how many open asks carry it. */
+export interface BountyFacet {
+  value: string;
+  count: number;
+}
+
+/** At most this many options come back; the board shows six and "More". */
+const BOUNTY_FACETS_MAX = 12;
+
+/**
+ * How many open asks there are before the counts below are undercounts. A
+ * board of more open bounties than this has outgrown a client-side tally, and
+ * its counts err low rather than failing.
+ */
+const BOUNTY_FACET_SCAN = 1000;
+
+/**
+ * The Made with values worth offering on the board, counted over open asks on
+ * published builds only — the same set the board lists — highest count first,
+ * at most twelve. ONE REQUEST: the asks' builds' made_with arrays, tallied here.
+ */
+export async function bountyFacetsMadeWith(): Promise<BountyFacet[]> {
+  const { data, error } = await supabase
+    .from("bounties")
+    .select("id, builds!bounties_build_id_fkey!inner(made_with)")
+    .eq("status", "open")
+    .not("build_id", "is", null)
+    .in("builds.status", ["published", "gallery"])
+    .limit(BOUNTY_FACET_SCAN);
+  if (error) throw bountyLayerError("bountyFacetsMadeWith", error);
+
+  const tally = new Map<string, number>();
+  for (const row of (data ?? []) as unknown as Array<{ builds: { made_with: string[] | null } | null }>) {
+    for (const tool of new Set(row.builds?.made_with ?? [])) {
+      const value = tool.trim();
+      if (value) tally.set(value, (tally.get(value) ?? 0) + 1);
+    }
+  }
+
+  return [...tally.entries()]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .slice(0, BOUNTY_FACETS_MAX);
+}
+
+// =============================================================================
 // What the build page's gap panels need
 // =============================================================================
 

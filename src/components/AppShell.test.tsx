@@ -372,13 +372,20 @@ describe("theme toggle", () => {
 describe("AppShell layout mode", () => {
   const root = () => document.querySelector(".fs-root")!;
 
+  /* RC-P12 made /bounties wide (wideRoutes.ts); rewritten, not deleted. */
   it("renders every real route standard", () => {
-    for (const path of ["/", "/bounties", "/library", "/upload", "/drafts", "/messages", "/profile"]) {
+    for (const path of ["/", "/library", "/upload", "/drafts", "/messages", "/profile"]) {
       const view = renderAt(path);
       expect([path, root().getAttribute("data-layout")]).toEqual([path, "standard"]);
       expect([path, root().classList.contains("fs-wide")]).toEqual([path, false]);
       view.unmount();
     }
+  });
+
+  it("renders the bounties board wide (RC-P12)", () => {
+    renderAt("/bounties");
+    expect(root().getAttribute("data-layout")).toBe("wide");
+    expect(root().classList.contains("fs-wide")).toBe(true);
   });
 
   /* RC-P06: rewritten from "keeps the right rail on a standard route". */

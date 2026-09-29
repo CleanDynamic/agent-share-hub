@@ -21,7 +21,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
-import { SHAPE_RULES, type MissingItem, type RequirementKey } from "./signals";
+import { normaliseQuery, searchBuildIds } from "./search";
+import {
+  SHAPE_RULES,
+  STALE_AFTER_DAYS,
+  type MissingItem,
+  type RequirementKey,
+} from "./signals";
 import {
   buildLayerError,
   type Build,
@@ -282,11 +288,45 @@ const GALLERY_BOUNTY_COLUMNS = "id, reward_gbp, status";
  * a second string rather than a flag because PostgREST reads the modifier out
  * of the select and there is nothing to toggle at runtime.
  */
-function gallerySelect(openBountiesOnly: boolean): string {
+export function gallerySelect(openBountiesOnly: boolean): string {
   const bounties = openBountiesOnly
     ? `bounties!bounties_build_id_fkey!inner(${GALLERY_BOUNTY_COLUMNS})`
     : `bounties!bounties_build_id_fkey(${GALLERY_BOUNTY_COLUMNS})`;
   return `${GALLERY_BUILD_COLUMNS}, build_nodes!build_nodes_build_id_fkey(${GALLERY_NODE_COLUMNS}), build_media!build_media_build_id_fkey(${GALLERY_MEDIA_COLUMNS}), ${bounties}`;
+}
+
+/** The builder methods withCardEmbeds calls; every PostgREST filter builder has them. */
+interface CardEmbedQuery {
+  in(column: string, values: readonly unknown[]): CardEmbedQuery;
+  eq(column: string, value: unknown): CardEmbedQuery;
+  order(
+    column: string,
+    options: { referencedTable: string; ascending: boolean; nullsFirst: boolean },
+  ): CardEmbedQuery;
+  limit(count: number, options: { referencedTable: string }): CardEmbedQuery;
+}
+
+/**
+ * RC-P14c — the card's embedded filters and caps, for a list of cards that is
+ * not the gallery's.
+ *
+ * A card is the gallery's card only when it carries what the gallery's query
+ * gives it: the nodes its body reads, the pictures it shows, the open ask on
+ * its pill. Where next reads its rows with gallerySelect(false) and this, so a
+ * build looks the same at the foot of a build page as it does in the gallery
+ * ⟦law-of-similarity⟧. The filters and caps are listGallery's own, key for
+ * key; listGallery keeps its inline copy because its ORDER BY is locked
+ * (CONTRACT §4), and whereNext.test.ts holds the two equal.
+ */
+export function withCardEmbeds<Q>(query: Q): Q {
+  return (query as unknown as CardEmbedQuery)
+    .in("build_nodes.type", [...GALLERY_NODE_TYPES])
+    .in("build_media.kind", [...GALLERY_MEDIA_KINDS])
+    .eq("bounties.status", "open")
+    .order("position", { referencedTable: "build_nodes", ascending: true, nullsFirst: false })
+    .limit(NODES_PER_BUILD, { referencedTable: "build_nodes" })
+    .limit(MEDIA_PER_BUILD, { referencedTable: "build_media" })
+    .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" }) as unknown as Q;
 }
 
 /** A card's node: the embedded columns, nothing more. */
@@ -367,6 +407,26 @@ export interface GalleryBuild
   bounties?: GalleryBounty[];
 }
 
+/**
+ * The four ways a reader arrives at the gallery (RC-P10; CONTRACT §14), in the
+ * order the lens row shows them ⟦hicks-law › Budgets: lens row⟧.
+ *
+ *   all        nothing narrowed: the gallery as it has always been
+ *   proven     reproduced at least once and confirmed working within
+ *              STALE_AFTER_DAYS: "does it work?"
+ *   rebuilt    rebuilt at least once: "can I build on it?"
+ *   unsolved   carrying an open bounty: "where can I help?"
+ *
+ * A LENS FILTERS; IT NEVER REORDERS. Every lens reads the same ORDER BY below,
+ * so a build keeps its place relative to its neighbours whichever lens is on.
+ */
+export type GalleryLens = "all" | "proven" | "rebuilt" | "unsolved";
+
+export const GALLERY_LENSES: readonly GalleryLens[] = ["all", "proven", "rebuilt", "unsolved"];
+
+/** One day in milliseconds, for the proven lens's freshness cut-off. */
+const DAY_MS = 86_400_000;
+
 export interface GalleryFilters {
   /** Roles from made_for. Several are an OR: any one of them matches. */
   madeFor?: string[];
@@ -377,9 +437,20 @@ export interface GalleryFilters {
    *
    * An AND with the other two, like they are with each other: made for
    * lawyers, made with Claude, and asking for help. Additive — omitted or
-   * false is the gallery exactly as it was.
+   * false is the gallery exactly as it was. The Unsolved lens sets it.
    */
   openBounties?: boolean;
+  /**
+   * The lens (RC-P10). An AND with the facets and the query. Omitted, or a
+   * value that is not one of GALLERY_LENSES, is "all".
+   */
+  lens?: GalleryLens;
+  /**
+   * What the reader searched for (RC-P10): SEARCH IS THE GALLERY WITH A QUERY.
+   * Tidied by normaliseQuery here, so a query under two characters is no
+   * query. It never appears in an error (CONTRACT §9).
+   */
+  query?: string;
 }
 
 export interface ListGalleryOptions extends GalleryFilters {
@@ -420,14 +491,28 @@ export async function listGallery(
   const limit = Math.max(1, Math.min(options.limit ?? GALLERY_PAGE_SIZE, 60));
   const offset = Math.max(0, options.offset ?? 0);
 
-  const openBounties = options.openBounties === true;
+  const lens: GalleryLens = GALLERY_LENSES.includes(options.lens as GalleryLens)
+    ? (options.lens as GalleryLens)
+    : "all";
+  // The Unsolved lens IS the open-bounty filter: it takes the existing branch
+  // below rather than a second copy of it.
+  const openBounties = options.openBounties === true || lens === "unsolved";
+  const search = normaliseQuery(options.query);
 
   let query = supabase
     .from("builds")
     .select(gallerySelect(openBounties), { count: "exact" })
     // Never drafts. The RLS policy would hand a creator their own back.
-    .in("status", ["published", "gallery"])
-    .or(galleryPredicate())
+    .in("status", ["published", "gallery"]);
+
+  // SEARCH FINDS EVERY PUBLISHED BUILD (RC-P10). The completeness bar decides
+  // what the gallery puts in front of a reader who came looking for nothing in
+  // particular; a reader who typed a name is looking for one build, and a
+  // record under the bar is still the record they meant. So with a query only
+  // the status clause above holds, and the predicate is left off.
+  if (search === null) query = query.or(galleryPredicate());
+
+  query = query
     // Filters on an embedded column, without !inner, narrow the EMBEDDED rows
     // and leave the parent alone — a build with no prompt node still gets a
     // card, with an empty nodes array.
@@ -443,6 +528,22 @@ export async function listGallery(
 
   const madeWith = cleanList(options.madeWith);
   if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+
+  // The query narrows to the ids search_build_ids matched. When it matched
+  // nothing the answer is already known, so the builds request is never made.
+  if (search !== null) {
+    const ids = await searchBuildIds(search);
+    if (ids.length === 0) return { builds: [], total: 0 };
+    query = query.in("id", ids);
+  }
+
+  if (lens === "proven") {
+    // Confirmed within the same window isStale reads, from the same constant.
+    const freshSince = new Date(Date.now() - STALE_AFTER_DAYS * DAY_MS).toISOString();
+    query = query.gte("reproduction_count", 1).gte("last_confirmed_at", freshSince);
+  } else if (lens === "rebuilt") {
+    query = query.gte("rebuild_count", 1);
+  }
 
   const { data, error, count } = await query
     .order("reproduction_count", { ascending: false })
@@ -480,14 +581,14 @@ function galleryPredicate(): string {
 }
 
 /** The row as PostgREST returns it: embeds keyed by table name. */
-interface GalleryRow
+export interface GalleryRow
   extends Omit<GalleryBuild, "nodes" | "media" | "bounties"> {
   build_nodes: GalleryNode[] | null;
   build_media: GalleryMedia[] | null;
   bounties: GalleryBounty[] | null;
 }
 
-function toGalleryBuild(row: GalleryRow): GalleryBuild {
+export function toGalleryBuild(row: GalleryRow): GalleryBuild {
   const { build_nodes, build_media, bounties, ...header } = row;
   return {
     ...header,

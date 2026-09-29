@@ -180,31 +180,27 @@ async function stubFeed(page: Page): Promise<RpcCall[]> {
   return calls;
 }
 
+/* RC-P11 rewrote this file's address and tab names (CONTRACT §3.4): the
+   Builds tab became Home's Everyone tab, the same BuildsTab on the same
+   function, and Home has two tabs where it had six. What each test proves
+   about the feed is unchanged. */
 async function openBuildsTab(page: Page) {
-  await page.goto("/?tab=builds");
-  await expect(page.getByTestId("feed-tab-builds")).toBeVisible();
+  await page.goto("/?tab=everyone");
+  await expect(page.getByTestId("feed-tab-everyone")).toBeVisible();
   await expect(page.getByTestId("feed-builds")).toBeVisible();
 }
 
-test.describe("the Builds tab", () => {
-  // ACCEPTANCE 2 — the tab exists, first among the tabs, and the five that
-  // predate it are still there in their own order.
-  test("sits first among the six tabs, and displaces none of them", async ({ page }) => {
+test.describe("the Everyone tab (the Builds tab until RC-P11)", () => {
+  // RC-P11 — two tabs, Following then Everyone.
+  test("is one of exactly two tabs, after Following", async ({ page }) => {
     await stubFeed(page);
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
     const labels = await page
       .getByTestId(/^feed-tab-/)
       .evaluateAll((nodes) => nodes.map((node) => node.textContent?.trim()));
 
-    expect(labels).toEqual([
-      "Builds",
-      "For You",
-      "Following",
-      "Trending",
-      "Recent",
-      "Bounties",
-    ]);
+    expect(labels).toEqual(["Following", "Everyone"]);
   });
 
   // ACCEPTANCE 1
@@ -272,10 +268,10 @@ test.describe("the Builds tab", () => {
     await page.route(RPC, (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
     );
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
-    await expect(page.getByText("Nothing here yet")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Open the gallery" })).toBeVisible();
+    await expect(page.getByText("Nothing has been published yet.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Show what you built" })).toBeVisible();
   });
 });
 
@@ -288,7 +284,7 @@ test.describe("the Builds tab", () => {
 
 const LIVE = process.env.E2E_LIVE_FEED === "1";
 
-test.describe("the Builds tab, against seeded data", () => {
+test.describe("the Everyone tab, against seeded data", () => {
   test.skip(!LIVE, "Set E2E_LIVE_FEED=1 against a dev project with published builds.");
 
   test("renders published builds and asks for them once", async ({ page }) => {
@@ -298,7 +294,7 @@ test.describe("the Builds tab, against seeded data", () => {
       await route.continue();
     });
 
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
     await expect(page.getByTestId("feed-builds")).toBeVisible();
     await expect(page.getByTestId(FEED_ITEMS).first()).toBeVisible();
     expect(calls).toBe(1);

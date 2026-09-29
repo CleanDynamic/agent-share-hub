@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type MutableRefObject } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { SEARCH_MAX, normaliseQuery } from "@/lib/build/search";
@@ -56,12 +56,39 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.closest('[contenteditable]:not([contenteditable="false"])') !== null;
 }
 
-export function NavSearch() {
+/**
+ * RC-P10 — THE GALLERY'S OWN FIELD IS THIS FIELD, with three things changed by
+ * props rather than a second copy of the component: no "/" shortcut (the nav's
+ * field keeps it, and one key cannot focus two boxes), a submitted query
+ * written into the gallery's address instead of a navigation, and its own
+ * accessible name, so the two search landmarks on a desktop gallery are
+ * distinguishable. Every prop is optional; the nav renders it as before.
+ */
+export interface NavSearchProps {
+  /** "/" focuses the field from anywhere not taking text. Default on. */
+  shortcut?: boolean;
+  /**
+   * Where a submitted query goes. Default: open /gallery?q=…. Called with
+   * null when the field is submitted empty, which clears the search.
+   */
+  onSearch?: (query: string | null) => void;
+  /** The field's accessible name. Default "Search builds". */
+  label?: string;
+  /** The input, for a page that moves focus to it (/gallery?focus=search). */
+  inputRef?: MutableRefObject<HTMLInputElement | null>;
+}
+
+export function NavSearch({
+  shortcut = true,
+  onSearch,
+  label = "Search builds",
+  inputRef,
+}: NavSearchProps = {}) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   const [value, setValue] = useState("");
-  const field = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLInputElement | null>(null);
   const { state, handlers } = useInteractive<HTMLInputElement>();
 
   const galleryQuery = pathname === "/gallery" ? params.get("q") ?? "" : null;
@@ -70,6 +97,7 @@ export function NavSearch() {
   }, [galleryQuery]);
 
   useEffect(() => {
+    if (!shortcut) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
       if (isTypingTarget(event.target)) return;
@@ -78,21 +106,30 @@ export function NavSearch() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [shortcut]);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = normaliseQuery(value);
+    if (onSearch) {
+      // An emptied field clears the search; a query under two characters
+      // goes nowhere, as it does from the nav.
+      if (query !== null || value.trim() === "") onSearch(query);
+      return;
+    }
     if (query === null) return;
     navigate(`/gallery?q=${encodeURIComponent(query)}`);
   };
 
   return (
-    <form role="search" onSubmit={onSubmit} style={{ ...body, margin: 0 }}>
+    <form role="search" aria-label={label} onSubmit={onSubmit} style={{ ...body, margin: 0 }}>
       <input
-        ref={field}
+        ref={(node) => {
+          field.current = node;
+          if (inputRef) inputRef.current = node;
+        }}
         type="search"
-        aria-label="Search builds"
+        aria-label={label}
         placeholder="Search builds"
         className={PLACEHOLDER_CLASS}
         maxLength={SEARCH_MAX}

@@ -58,6 +58,18 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
      this prompt's to do. The honest fix is either a measure on the step list
      or this route going back to standard; see BG-P15's handoff note. */
   { pattern: "/import" },
+
+  /* The open bounties board (RC-P12) — a list of asks read across, max 960
+     wide on the title's edge, with the facet band above it. Wide for the same
+     reason the gallery is: the band and a three-column row want the room, and
+     RC-P09b drew it that way. Exact, so /bounties/solvers decides for itself. */
+  { pattern: "/bounties" },
+
+  /* The solvers board (RC-P13) — a 720 list under the bounties board. Wide
+     not for the room but for the frame: it is reached from /bounties, and a
+     standard frame would move the nav and the title between the two
+     (the M4 jump in docs/reconciliation/critique/phase-2.md). */
+  { pattern: "/bounties/solvers" },
 ];
 
 /**

@@ -210,6 +210,25 @@ test("BG-P19 — every card in a row gets the same media slot", async ({ page })
   await page.goto("/gallery");
   await expect(page.locator('[data-visual-slot="gallery-card"]').first()).toBeVisible();
 
+  /* WAITED FOR, NOT READ AT ONCE (RC-P14c). The stagger lifts each cell 14px
+     as it fades in, one step after the last, and a card at opacity 0 already
+     counts as visible — so a measurement taken while it runs finds the three
+     cards at different tops (it failed 5 times in 10 before Phase 3 and 4 in 10
+     after). The claim is about where the cards come to rest: the reveal ends
+     at `transform: none` (revealTo), so wait for the first three cells to get
+     there, as ACCEPTANCE 3 below waits for their opacity. */
+  await expect
+    .poll(
+      async () =>
+        page
+          .locator('[data-visual-slot="gallery-grid-cell"]')
+          .evaluateAll((nodes) =>
+            nodes.slice(0, 3).every((node) => getComputedStyle(node).transform === "none"),
+          ),
+      { timeout: 5_000 },
+    )
+    .toBe(true);
+
   // The first row's three cards. Their titles are one, two and nearly three
   // lines long, which is what makes this worth measuring at all.
   const row = await page.evaluate(() => {
@@ -285,9 +304,10 @@ test("BG-P19 — below 1024 the band is one control opening a sheet", async ({ p
   await trigger.click();
   const sheet = page.getByRole("dialog", { name: "Filters" });
   await expect(sheet).toBeVisible();
-  // The same chips, inside it.
+  // The same chips, inside it. RC-P10: Open bounties is the Unsolved lens
+  // now, on the page itself, so the sheet holds Made for and Made with only.
   await expect(sheet.getByTestId("facet-made-for-lawyer")).toBeVisible();
-  await expect(sheet.getByTestId("facet-bounties-open")).toBeVisible();
+  await expect(sheet.getByTestId("facet-bounties-open")).toHaveCount(0);
 
   // Choosing inside the sheet narrows the grid and shows up as a removable
   // chip on the page behind it.
@@ -359,6 +379,6 @@ test("BG-P19 — the empty state fits a phone without scrolling sideways", async
   await page.goto("/gallery");
 
   await expect(page.getByTestId("gallery-empty")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Write one up" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Show what you built" })).toBeVisible();
   expect(await overflowsX(page)).toBe(false);
 });

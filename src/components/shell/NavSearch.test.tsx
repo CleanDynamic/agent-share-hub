@@ -99,3 +99,49 @@ describe("NavSearch", () => {
     expect(field()).toHaveAttribute("placeholder", "Search builds");
   });
 });
+
+/* RC-P10 — the gallery's own field is this field with three props set. */
+describe("NavSearch as the gallery's own field", () => {
+  function renderOwn(onSearch: (query: string | null) => void, path = "/gallery?q=inbox") {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <NavSearch shortcut={false} label="Search the gallery" onSearch={onSearch} />
+        <Routes>
+          <Route path="*" element={<Address />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+  const own = () => screen.getByRole("searchbox", { name: "Search the gallery" });
+  const submit = (text: string) => {
+    fireEvent.change(own(), { target: { value: text } });
+    fireEvent.submit(own().closest("form")!);
+  };
+
+  it("hands the tidied query to the page instead of navigating", () => {
+    const calls: Array<string | null> = [];
+    renderOwn((query) => calls.push(query));
+    submit("  invoice   chaser ");
+    expect(calls).toEqual(["invoice chaser"]);
+    expect(address()).toBe("/gallery?q=inbox");
+  });
+
+  it("clears the search when submitted empty, and ignores a single character", () => {
+    const calls: Array<string | null> = [];
+    renderOwn((query) => calls.push(query));
+    submit("a");
+    submit("   ");
+    expect(calls).toEqual([null]);
+  });
+
+  it('does not take "/" when the shortcut is off', () => {
+    renderOwn(() => {});
+    fireEvent.keyDown(window, { key: "/" });
+    expect(own()).not.toHaveFocus();
+  });
+
+  it("shows the gallery's query", () => {
+    renderOwn(() => {}, "/gallery?q=invoice");
+    expect(own()).toHaveValue("invoice");
+  });
+});

@@ -11,8 +11,9 @@
 // of the reblog retirement in src/components/reblog/composeRetired.test.tsx:
 // six affordances, every button on each surface clicked, no composer mounted.
 // This file is about the layer underneath — the functions themselves — plus
-// the one read surface NS-P42 did not cover, the lineage page, which is the
-// only place a remix-created derivation is rendered.
+// the one read surface NS-P42 did not cover, the lineage page. RC-P14 made that
+// page the family of rebuilds and its old address a way there, so the case at
+// the foot of this file now proves the address still answers (CONTRACT §3.4).
 //
 // THESE TESTS ARE PART OF THE ROLLBACK. They assert the frozen behaviour
 // directly rather than reading the flags and asserting conditionally, because
@@ -69,7 +70,16 @@ const db = vi.hoisted(() => {
           status: "approved",
         },
       ],
-      post_lineage: [{ root_post_id: "post-root" }],
+      builds: [
+        {
+          id: "build-1",
+          slug: "original-prompt",
+          title: "Original prompt",
+          status: "published",
+          root_build_id: null,
+          parent_build_id: null,
+        },
+      ],
       reblog_likes: [],
       reblog_bookmarks: [],
       content_blocks: [],
@@ -116,32 +126,6 @@ vi.mock("@/integrations/supabase/client", () => {
     },
   };
 });
-
-/** The lineage the page renders: an original and one remix of it. */
-const LINEAGE = [
-  {
-    post_id: "post-root",
-    parent_post_id: null,
-    root_post_id: "post-root",
-    title: "Original prompt",
-    slug: "original-prompt",
-    creator_id: "author-1",
-    depth: 0,
-  },
-  {
-    post_id: "post-remix",
-    parent_post_id: "post-root",
-    root_post_id: "post-root",
-    title: "Remix of: Original prompt",
-    slug: "remix-of-original-prompt",
-    creator_id: "author-2",
-    depth: 1,
-  },
-];
-
-vi.mock("@/lib/progress", () => ({
-  getPostLineage: () => Promise.resolve(LINEAGE),
-}));
 
 import {
   ReblogValidationError,
@@ -254,26 +238,42 @@ describe("live — the reblog read path answers as it did", () => {
   });
 });
 
-describe("live — /b/:slug/lineage still renders a lineage created by remix", () => {
-  it("draws the original and the remix derived from it", async () => {
-    render(
+/* RC-P14 — THE OLD LINEAGE ADDRESS STILL ANSWERS. It drew remix lineage until
+   RC-P14 made lineage the family of rebuilds; it now lands on the build's own
+   /b2/:slug/lineage when the slug names a build (rewritten, not deleted, while
+   the address is reachable: CONTRACT §3.4). */
+describe("live — /b/:slug/lineage, the old lineage address, still answers", () => {
+  function renderOldAddress() {
+    return render(
       <HelmetProvider>
-        <QueryClientProvider client={new QueryClient()}>
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
           <MemoryRouter initialEntries={["/b/original-prompt/lineage"]}>
             <Routes>
-              <Route path="/b/:slug/lineage" element={<Lineage />} />
+              <Route path="/b/:slug/lineage" element={<Lineage legacy />} />
+              <Route path="/b2/:slug/lineage" element={<p>the family of original-prompt</p>} />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>
       </HelmetProvider>
     );
+  }
 
-    await waitFor(() => expect(screen.getByText("Remix of: Original prompt")).toBeTruthy());
-    // Both generations, and the handles that credit them.
-    expect(screen.getAllByText("Original prompt").length).toBeGreaterThan(0);
-    expect(screen.getByText("@original")).toBeTruthy();
-    // No tombstone in place of the retired button: the page is unchanged, not
-    // annotated with its own retirement.
+  it("lands on the build's family when the slug names a build", async () => {
+    renderOldAddress();
+    await waitFor(() => expect(screen.getByText("the family of original-prompt")).toBeTruthy());
+    // No tombstone in place of the retired remix page.
     expect(screen.queryByText(/remix(ing)? (is|has been) (retired|disabled)/i)).toBeNull();
+  });
+
+  it("says there is no build at it when the slug names none", async () => {
+    const builds = db.rows.builds;
+    db.rows.builds = [];
+    try {
+      renderOldAddress();
+      await waitFor(() => expect(screen.getByText("No build at this address.")).toBeTruthy());
+      expect(screen.queryByText("the family of original-prompt")).toBeNull();
+    } finally {
+      db.rows.builds = builds;
+    }
   });
 });

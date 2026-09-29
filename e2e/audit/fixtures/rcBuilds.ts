@@ -1,4 +1,6 @@
-/* RC-P09c — twelve synthetic builds for the phase-2 critique screenshots.
+/* RC-P09c — synthetic builds for the critique screenshots (twelve for phase 2;
+ * RC-P14c added a thirteenth, the third generation of a rebuild family, plus a
+ * third open ask, two solvers and the board's rows, for phase 3).
  *
  * SHAPED LIKE listGallery's ROWS: every column in GALLERY_BUILD_COLUMNS
  * (src/lib/build/gallery.ts), plus the three embeds its select asks for —
@@ -43,8 +45,10 @@ interface Spec {
   reproductions: number;
   confirmedDaysAgo: number | null;
   model: string | null;
-  bounty?: number;
-  rebuildOf?: { title: string; handle: string; note: string };
+  /** An open ask on a gap: its reward in pounds, or null for an ask that names none. */
+  bounty?: number | null;
+  /** `parent` is the 1-based position in SPECS of the build this one rebuilt. */
+  rebuildOf?: { title: string; handle: string; note: string; parent: number };
   cover: [number, number];
   rgb: [number, number, number];
 }
@@ -55,16 +59,32 @@ const SPECS: Spec[] = [
   { title: "Weekly investor update drafted from the metrics sheet", outcome: "Turns a spreadsheet of numbers into a one-page update.", shape: "prompt", madeFor: ["founder"], madeWith: ["ChatGPT", "Sheets"], reproductions: 19, confirmedDaysAgo: 200, model: "gpt-4o", cover: [1600, 1067], rgb: [104, 124, 108] },
   { title: "Support reply suggester", outcome: "Suggests a first reply for each new ticket, in the house voice.", shape: "agent", madeFor: ["support"], madeWith: ["Claude", "Zendesk"], reproductions: 12, confirmedDaysAgo: 21, model: "haiku-4.5", bounty: 150, cover: [1200, 900], rgb: [116, 100, 132] },
   { title: "A long-running research assistant that keeps a reading list honest", outcome: "Tracks what has been read, what is disputed and what is still owed.", shape: "agent", madeFor: ["researcher"], madeWith: ["Claude", "Zotero"], reproductions: 8, confirmedDaysAgo: 200, model: "sonnet-4.5", cover: [1600, 1067], rgb: [90, 118, 124] },
-  { title: "Invoice chaser for late payers", outcome: "Sends a polite reminder when an invoice is a week late.", shape: "workflow", madeFor: ["freelancer"], madeWith: ["n8n", "Gmail"], reproductions: 6, confirmedDaysAgo: 45, model: "gpt-4o-mini", cover: [1200, 800], rgb: [126, 118, 96] },
-  { title: "Inbox triage agent, rebuilt for a shared support mailbox", outcome: "The triage agent, pointed at a team inbox with assignment rules.", shape: "agent", madeFor: ["support"], madeWith: ["Claude", "n8n"], reproductions: 5, confirmedDaysAgo: 14, model: "sonnet-4.5", rebuildOf: { title: "Inbox triage agent for founders", handle: "maya.o", note: "Added assignment rules." }, cover: [1600, 1067], rgb: [98, 108, 124] },
+  { title: "Invoice chaser for late payers", outcome: "Sends a polite reminder when an invoice is a week late.", shape: "workflow", madeFor: ["freelancer"], madeWith: ["n8n", "Gmail"], reproductions: 6, confirmedDaysAgo: 45, model: "gpt-4o-mini", bounty: null, cover: [1200, 800], rgb: [126, 118, 96] },
+  { title: "Inbox triage agent, rebuilt for a shared support mailbox", outcome: "The triage agent, pointed at a team inbox with assignment rules.", shape: "agent", madeFor: ["support"], madeWith: ["Claude", "n8n"], reproductions: 5, confirmedDaysAgo: 14, model: "sonnet-4.5", rebuildOf: { title: "Inbox triage agent for founders", handle: "maya.o", note: "Added assignment rules.", parent: 1 }, cover: [1600, 1067], rgb: [98, 108, 124] },
   { title: "Meeting notes to action items", outcome: "Pulls owners and dates out of a transcript.", shape: "prompt", madeFor: ["founder", "designer"], madeWith: ["Claude"], reproductions: 3, confirmedDaysAgo: 30, model: "haiku-4.5", cover: [1200, 900], rgb: [120, 96, 104] },
   { title: "Grant application first-draft writer for small charities", outcome: "Drafts the answers a funder asks for from last year's report.", shape: "workflow", madeFor: ["nonprofit"], madeWith: ["ChatGPT"], reproductions: 2, confirmedDaysAgo: 200, model: "gpt-4o", bounty: 80, cover: [1600, 1067], rgb: [102, 122, 116] },
   { title: "Menu costing sheet with live supplier prices", outcome: "Keeps a restaurant's dish costs current as prices move.", shape: "dataset", madeFor: ["restaurant"], madeWith: ["Sheets", "Claude"], reproductions: 1, confirmedDaysAgo: 60, model: "sonnet-4.5", cover: [1200, 800], rgb: [132, 110, 100] },
-  { title: "Contract reviewer, rebuilt for leases", outcome: "The clause reviewer, retuned for commercial leases.", shape: "workflow", madeFor: ["lawyer"], madeWith: ["Claude"], reproductions: 0, confirmedDaysAgo: null, model: null, rebuildOf: { title: "Contract clause reviewer that flags the risky bits", handle: "tomas_l", note: "Swapped the clause list for lease terms." }, cover: [1200, 900], rgb: [110, 104, 126] },
+  { title: "Contract reviewer, rebuilt for leases", outcome: "The clause reviewer, retuned for commercial leases.", shape: "workflow", madeFor: ["lawyer"], madeWith: ["Claude"], reproductions: 0, confirmedDaysAgo: null, model: null, rebuildOf: { title: "Contract clause reviewer that flags the risky bits", handle: "tomas_l", note: "Swapped the clause list for lease terms.", parent: 2 }, cover: [1200, 900], rgb: [110, 104, 126] },
   { title: "Podcast show notes and chapter markers from a transcript", outcome: "Writes the notes and the timestamps for each chapter.", shape: "prompt", madeFor: ["creator"], madeWith: ["Claude", "Descript"], reproductions: 0, confirmedDaysAgo: null, model: null, cover: [1600, 1067], rgb: [96, 116, 110] },
+  // RC-P14c: the third generation — a rebuild of build 7, itself a rebuild of build 1.
+  { title: "Inbox triage for on-call, with Slack alerts", outcome: "The shared-mailbox triage, paging whoever is on call when a reply cannot wait.", shape: "agent", madeFor: ["support"], madeWith: ["Claude", "Slack"], reproductions: 2, confirmedDaysAgo: 6, model: "sonnet-4.5", rebuildOf: { title: "Inbox triage agent, rebuilt for a shared support mailbox", handle: "maya.o", note: "Pages the on-call person instead of the whole team.", parent: 7 }, cover: [1200, 800], rgb: [100, 112, 120] },
 ];
 
+/** The build the phase-3 build page and lineage captures open: the middle of the family. */
+export const RC_FIXTURE_SLUG = "rc-build-7";
+
 const id = (n: number, kind: string) => `7b0000${kind}-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+/** The first build in a rebuild chain: follows `parent` up from the 1-based position `n`. */
+function rootOf(n: number): number {
+  let at = n;
+  for (let guard = 0; guard < SPECS.length; guard += 1) {
+    const parent = SPECS[at - 1]?.rebuildOf?.parent;
+    if (!parent) return at;
+    at = parent;
+  }
+  return at;
+}
 
 /** The builds, as listGallery's rows. */
 export const RC_BUILDS: Row[] = SPECS.map((spec, index) => {
@@ -92,14 +112,15 @@ export const RC_BUILDS: Row[] = SPECS.map((spec, index) => {
     last_confirmed_at: spec.confirmedDaysAgo === null ? null : daysAgo(spec.confirmedDaysAgo),
     last_confirmed_model: spec.model,
     published_at: daysAgo(10 + n * 3),
-    parent_build_id: spec.rebuildOf ? id(index === 6 ? 1 : 2, "01") : null,
-    rebuild_count: index === 0 || index === 1 ? 1 : 0,
+    parent_build_id: spec.rebuildOf ? id(spec.rebuildOf.parent, "01") : null,
+    root_build_id: spec.rebuildOf ? id(rootOf(n), "01") : null,
+    rebuild_count: SPECS.filter((other) => other.rebuildOf?.parent === n).length,
     rebuild_note: spec.rebuildOf?.note ?? null,
     source_title_at_fork: spec.rebuildOf?.title ?? null,
     source_handle_at_fork: spec.rebuildOf?.handle ?? null,
     build_nodes: [
       { id: id(n, "04"), type: "prompt", title: "The prompt", payload: {}, position: 0, is_gap: false },
-      ...(spec.bounty
+      ...(spec.bounty !== undefined
         ? [{ id: gapId, type: "prompt", title: "The part nobody has solved", payload: {}, position: 1, is_gap: true }]
         : []),
     ],
@@ -118,7 +139,7 @@ export const RC_BUILDS: Row[] = SPECS.map((spec, index) => {
         post_text: null,
       },
     ],
-    bounties: spec.bounty ? [{ id: id(n, "05"), reward_gbp: spec.bounty, status: "open" }] : [],
+    bounties: spec.bounty !== undefined ? [{ id: id(n, "05"), reward_gbp: spec.bounty, status: "open" }] : [],
   };
 });
 
@@ -189,6 +210,86 @@ export const RC_FACETS = (() => {
   };
   return { roles: count("made_for"), tools: count("made_with") };
 })();
+
+/* ── RC-P14c: the boards and the family ──────────────────────────────────── */
+
+const GAP_TITLES: Record<number, string> = {
+  4: "A first reply that cites the right help article",
+  6: "Stop chasing invoices already paid by bank transfer",
+  9: "A budget table the funder's form accepts",
+};
+
+/** How many answers each open ask has had, by the build's 1-based position. */
+const ANSWERS: Record<number, number> = { 4: 2, 6: 0, 9: 1 };
+
+/** The three open asks, as the bounties board reads them: bounty columns plus both embeds. */
+export const RC_OPEN_BOUNTIES: Row[] = RC_BUILDS.flatMap((b, index) => {
+  const bounty = (b.bounties as Row[])[0];
+  if (!bounty) return [];
+  const n = index + 1;
+  return [
+    {
+      id: bounty.id,
+      build_id: b.id,
+      gap_node_id: id(n, "03"),
+      legacy_item_id: null,
+      author_id: b.creator_id,
+      status: "open",
+      reward_gbp: bounty.reward_gbp,
+      closes_at: null,
+      is_meta: false,
+      meta_parent_id: null,
+      accepted_solution_id: null,
+      me_too_count: 0,
+      created_at: daysAgo(n === 6 ? 1 : n === 4 ? 3 : 6),
+      solved_at: null,
+      builds: { id: b.id, slug: b.slug, title: b.title, made_with: b.made_with, creator_id: b.creator_id, status: b.status },
+      build_nodes: { title: GAP_TITLES[n] ?? "The part nobody has solved" },
+      _position: n,
+    },
+  ];
+}).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+
+/** Answers already sent to those asks. */
+export const RC_BOUNTY_SOLUTIONS: Row[] = RC_OPEN_BOUNTIES.flatMap((bounty) =>
+  Array.from({ length: ANSWERS[bounty._position as number] ?? 0 }, (_, k) => ({
+    id: `${bounty.id}-s${k}`,
+    bounty_id: bounty.id,
+    status: "submitted",
+  })),
+);
+
+/** Two solvers, as top_solvers returns them: most solved first. */
+export const RC_SOLVERS: Row[] = [
+  { user_id: RC_MAKERS[1].id, solved: 3, reward_total: 230, last_solved_at: daysAgo(2) },
+  { user_id: RC_MAKERS[2].id, solved: 1, reward_total: null, last_solved_at: daysAgo(12) },
+];
+
+/** rebuild_tree(root): the root and its published rebuilds, walked down parent_build_id. */
+export function rebuildTreeRows(rootId: string): Row[] {
+  const root = RC_BUILDS.find((b) => b.id === rootId);
+  if (!root) return [];
+  const rows: Row[] = [];
+  let level: Row[] = [root];
+  for (let depth = 0; level.length > 0 && depth <= 20; depth += 1) {
+    for (const b of [...level].sort((x, y) => String(x.published_at).localeCompare(String(y.published_at)))) {
+      rows.push({
+        id: b.id,
+        parent_build_id: b.parent_build_id,
+        depth,
+        slug: b.slug,
+        title: b.title,
+        creator_id: b.creator_id,
+        published_at: b.published_at,
+        reproduction_count: b.reproduction_count,
+        rebuild_note: b.rebuild_note,
+      });
+    }
+    const ids = new Set(level.map((b) => b.id));
+    level = RC_BUILDS.filter((b) => ids.has(b.parent_build_id as string));
+  }
+  return rows;
+}
 
 /* ── The generated covers ─────────────────────────────────────────────────── */
 

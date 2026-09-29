@@ -13,10 +13,10 @@
  * that reaches it, the Remix button in ContentDetail's lineage row.
  *
  * WHAT IT DOES NOT GATE — everything that reads a lineage already recorded.
- * The /b/:slug/lineage page, its `get_post_lineage` RPC, useLineageParent and
- * useRemixCount, the attribution chip and the descendant badge all keep
- * working, so a post derived before the freeze still shows where it came from
- * and how many derived from it.
+ * useLineageParent and useRemixCount, the attribution chip and the descendant
+ * badge all keep working, so a post derived before the freeze still shows
+ * where it came from and how many derived from it. (The /b/:slug/lineage page
+ * was the other reader until RC-P14 made it the family of rebuilds.)
  *
  * WHY THE GATE IS BOTH IN THE FUNCTION AND AT THE AFFORDANCE. The affordance
  * guard is what a reader sees: no button, nothing offered, nothing that fails

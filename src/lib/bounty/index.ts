@@ -50,12 +50,18 @@ export {
   listBountiesForBuild,
   listBuildBounties,
   listOpenBounties,
+  listOpenBountyCards,
+  bountyFacetsMadeWith,
+  type BountyFacet,
   type BuildBounty,
   type CreateBountyForGapInput,
   type ExtendDeadlineInput,
   type ListBuildBountiesOptions,
   type ListOpenBountiesOptions,
+  type ListOpenBountyCardsOptions,
   type OpenBountiesPage,
+  type OpenBountyCard,
+  type OpenBountyCardsPage,
 } from "./bounties";
 
 // The rebuild path (NS-P53): a solution that IS a build. The primary way to
@@ -90,6 +96,15 @@ export {
   type SubmitSolutionInput,
   type SubmittedSolution,
 } from "./solutions";
+
+// The solvers board (RC-P13): the people whose solutions were accepted on
+// bounties that live on a build, from top_solvers.
+export {
+  TOP_SOLVERS_LIMIT,
+  listTopSolvers,
+  type ListTopSolversOptions,
+  type Solver,
+} from "./solvers";
 
 // The reader's one-click answer to an open ask. Its table is NS-P52's and is
 // keyed at bounties; the generation-1 bounty_me_too is neither read nor
