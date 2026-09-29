@@ -21,16 +21,18 @@ import { WIDE_ROUTES, layoutForRoute, matchWideRoute } from "./wideRoutes";
 ──────────────────────────────────────────────── */
 
 describe("WIDE_ROUTES", () => {
-  it("holds the three routes BG-P15 moved, and nothing else about them", () => {
+  /* RC-P12 added /bounties (CONTRACT §3.4: rewritten, not deleted). */
+  it("holds the three routes BG-P15 moved and the bounties board, and nothing else", () => {
     expect(WIDE_ROUTES).toEqual([
       { pattern: "/gallery" },
       { pattern: "/b2/*" },
       { pattern: "/import" },
+      { pattern: "/bounties" },
     ]);
   });
 
-  it("makes the three moved routes wide", () => {
-    for (const path of ["/gallery", "/import", "/b2/some-build"]) {
+  it("makes the moved routes and the bounties board wide", () => {
+    for (const path of ["/gallery", "/import", "/b2/some-build", "/bounties"]) {
       expect([path, layoutForRoute(path)]).toEqual([path, "wide"]);
     }
   });
@@ -46,7 +48,7 @@ describe("WIDE_ROUTES", () => {
 
   it("leaves every other route standard", () => {
     for (const path of [
-      "/", "/browse", "/discover", "/bounties", "/library", "/drafts", "/messages",
+      "/", "/browse", "/discover", "/library", "/drafts", "/messages",
       "/notifications", "/profile", "/analytics", "/upload", "/upload/blueprint",
       "/dev/kit",
       /* BG-P16's four. Reduced chrome is deliberate on these — if a prompt

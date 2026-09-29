@@ -58,6 +58,12 @@ export const WIDE_ROUTES: readonly WideRoute[] = [
      this prompt's to do. The honest fix is either a measure on the step list
      or this route going back to standard; see BG-P15's handoff note. */
   { pattern: "/import" },
+
+  /* The open bounties board (RC-P12) — a list of asks read across, max 960
+     wide on the title's edge, with the facet band above it. Wide for the same
+     reason the gallery is: the band and a three-column row want the room, and
+     RC-P09b drew it that way. Exact, so /bounties/solvers decides for itself. */
+  { pattern: "/bounties" },
 ];
 
 /**

@@ -478,7 +478,7 @@ export async function listOpenBountyCards({
   const page = rows.slice(0, size);
   // A row can lose its build only if the embed came back empty anyway; it has
   // nothing to link to, so it is dropped rather than drawn half.
-  const kept = page.filter((row) => row.builds !== null);
+  const kept = page.filter((row) => Boolean(row.builds));
 
   const ids = kept.map((row) => row.id);
   const creatorIds = [...new Set(kept.map((row) => row.builds!.creator_id))];
