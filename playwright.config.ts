@@ -83,6 +83,7 @@ export default defineConfig({
         /e2e\/tier3\/library-builds\.spec\.ts/,
         /e2e\/tier3\/build-notifications\.spec\.ts/,
         /e2e\/tier3\/messages-build\.spec\.ts/,
+        /e2e\/tier3\/profile-builds\.spec\.ts/,
       ],
     },
   ],
