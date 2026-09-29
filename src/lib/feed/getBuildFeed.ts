@@ -177,6 +177,12 @@ export interface GetBuildFeedOptions {
   before?: string;
   /** Capped at 50 inside the function, whatever is passed. */
   pageSize?: number;
+  /**
+   * Only rows whose maker, reproducer or bounty author the signed-in reader
+   * follows: Home's Following tab (RC-P11). Sent only when true, so every
+   * other call is the same request it always was.
+   */
+  onlyFollowing?: boolean;
 }
 
 /**
@@ -193,6 +199,7 @@ export async function getBuildFeed(
 
   const args: Record<string, unknown> = { page_size: pageSize };
   if (options.before) args.before = options.before;
+  if (options.onlyFollowing === true) args.only_following = true;
 
   // The cast is the generated types not knowing this function's name yet; see
   // the note at the top of the file. It narrows straight back to BuildFeedRow.
