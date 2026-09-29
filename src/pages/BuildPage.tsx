@@ -47,6 +47,9 @@ import {
 } from "@/lib/bounty";
 import { useAuth } from "@/contexts/AuthContext";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
+import { SeoHead } from "@/components/SeoHead";
+import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
+import { getMakerName } from "@/lib/profile/makerName";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import {
@@ -585,6 +588,18 @@ export default function BuildPage() {
      one signed out). */
   const engagement = useEngagement(buildId ? [buildId] : []);
 
+  /* RC-P16b — the maker's name, for the one description that needs it: a
+     build with no outcome is described as "A build by <maker>, reproduced n
+     times." Every other build is described by its outcome, and asks nothing. */
+  const needsMakerName = Boolean(data) && !(data?.build.outcome ?? "").trim();
+  const { data: makerName } = useQuery<string | null>({
+    queryKey: ["build-maker-name", data?.build.creator_id],
+    queryFn: () => getMakerName(data?.build.creator_id as string),
+    enabled: needsMakerName && Boolean(data?.build.creator_id),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
   /**
    * #node-<id> in the address, scrolled to once the record is on screen.
    *
@@ -933,6 +948,21 @@ export default function BuildPage() {
 
   return (
     <Frame>
+      {/* RC-P16b — what a search result and a shared link say about this
+          build. The picture is the hero still the page already signed for its
+          own header; nothing is asked for it. A draft is never indexed. */}
+      <SeoHead
+        title={shareTitle(data.build.title)}
+        description={shareDescription({
+          outcome: data.build.outcome,
+          makerName,
+          reproductionCount: data.build.reproduction_count,
+        })}
+        path={`/b2/${data.build.slug}`}
+        ogType="article"
+        image={hero ? (hero.kind === "image" ? hero.src : hero.poster ?? undefined) : undefined}
+        noIndex={data.build.status === "draft"}
+      />
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {/* Above the build, not under it: a reader meets the provenance before
             they meet the work. */}

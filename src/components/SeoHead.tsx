@@ -1,6 +1,8 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = import.meta.env.VITE_SITE_URL || "https://neoscaleai.com";
+// RC-P16b: the site is buildgallery.ai. VITE_SITE_URL still overrides the
+// host, for a preview deploy that should canonicalise to itself.
+const SITE_URL = import.meta.env.VITE_SITE_URL || "https://buildgallery.ai";
 const SITE_NAME = "buildgallery";
 
 interface SeoHeadProps {
@@ -15,6 +17,11 @@ interface SeoHeadProps {
   jsonLd?: Record<string, any> | Record<string, any>[];
   /** Optional Twitter @handle (without @) for twitter:creator. */
   twitterCreator?: string;
+  /**
+   * Optional Twitter @handle (without @) for twitter:site. Omitted unless
+   * passed: buildgallery has no account of its own to name (RC-P16b).
+   */
+  twitterSite?: string;
   /** ISO date strings for article metadata. */
   publishedTime?: string;
   modifiedTime?: string;
@@ -33,6 +40,7 @@ export function SeoHead({
   image,
   jsonLd,
   twitterCreator,
+  twitterSite,
   publishedTime,
   modifiedTime,
   articleAuthor,
@@ -71,7 +79,7 @@ export function SeoHead({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:site" content="@neoscaleai" />
+      {twitterSite && <meta name="twitter:site" content={`@${twitterSite.replace(/^@/, "")}`} />}
       {image && <meta name="twitter:image" content={image} />}
       {twitterCreator && <meta name="twitter:creator" content={`@${twitterCreator.replace(/^@/, "")}`} />}
 

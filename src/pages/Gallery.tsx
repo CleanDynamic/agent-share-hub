@@ -84,7 +84,7 @@
 // 21) rather than passing for an empty gallery.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { SeoHead } from "@/components/SeoHead";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
@@ -329,13 +329,12 @@ export default function Gallery() {
         isolation: "isolate",
       }}
     >
-      <Helmet>
-        <title>Gallery — buildgallery</title>
-        <meta
-          name="description"
-          content="Builds other people have run: the prompts, configs and evidence, structured so you can run them too."
-        />
-      </Helmet>
+      {/* RC-P16b — the Gallery's title, description and share tags. */}
+      <SeoHead
+        title="Gallery — buildgallery"
+        description="Things people built with AI, ordered by how many others got them working."
+        path="/gallery"
+      />
 
         {/* BG-P15. The bespoke header — a "← buildgallery" link beside an
             <h1>Gallery> — is replaced by the frame's PageHeader. The back link
