@@ -393,7 +393,14 @@ Lovable messages owed: none
 Open: NOT INSTALLED: critique-information-density, buildgallery-repo-map. RECHARTS: neither Analytics.tsx nor any of its 75 modules imports it (walked), so step 1's condition was false; the route was made lazy anyway (its own 74,140-byte chunk; the main chunk 2,911,806 → 2,887,221 bytes) inside Suspense and RouteBoundary. AND IT NO LONGER REQUIRES A CREATOR: requireCreator read profiles.is_creator, a legacy flag nothing in the app sets, so the frame's level chip (every signed-in reader's way here) bounced to Home, and on a direct load AuthContext's onAuthStateChange sets loading false before its deferred profile fetch returns, so even flagged creators bounced; the race remains for /content/:id/edit. "Got working" is maker_build_metrics' worked (runs by other people that worked), which sums to the figure above it; "no worked run in the same period" is read from last_confirmed_at within 30 days. content_items: the page asks for none and no module it imports names it (Analytics.test.tsx walks them), but the FRAME'S Drafts badge (AppShell → useDraftCount) still counts legacy drafts on every signed-in page, including this one; it is outside this prompt's files. NEVER_CONFIRMED is now exported from Plaque.tsx so the table says it in the same words. The hero's text overlaps at every width (the XP panel, unchanged; RC-P27's). Theme 9/11, n/a 7 (no plaque: the table reports freshness in words) and 8 (no gap); overflow 0 at 390, 768, 1024 and 1440 in both rooms, the table scrolling in its wrapper at every width in this 560-wide column. tsc PASS · unit 2454/2454, 0 new failures · build PASS · analytics-builds 5/5 + 5/5 · tier1 92/92 on both projects.
 Next: RC-P24
 
-## RC-P24 — 
+## RC-P24 — The progress design note
+Date: 2026-09-29 · Commits: XP-1 · Head: 50d50987
+Landed: docs/reconciliation/XP-DESIGN.md with the prompt's sections and content: Principle; Sources (6: first publish 10, a run of your build that works 25, reporting a run of someone else's 5, a rebuild of your build 30, an accepted solution 50 + £1 per £, at most 150, re-confirming a stale build 15, each with its cap); Levels (the existing curve, which calc_level_from_xp and src/lib/progress/index.ts both hold); Reset; Badges (10: common 3, rare 4, highest 3); Tiers; Challenges (3, weekly); Parked.
+Skills applied: ⟦buildgallery-theme › Progress and achievement⟧ ⟦hicks-law › Budgets⟧ ⟦neoscale-code-review⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: buildgallery-repo-map is not installed (its §5 on the gamification tables was read from the migrations instead: award_xp(_user_id, _amount, _reason, _source_type, _source_id, _metadata) in 20260629162842, SECURITY DEFINER and executable by any signed-in user, called from src/lib/progress/index.ts's awardXp, which nothing in the app calls). Two formatting choices, content unchanged: the Sources table carries a Markdown separator row, and the badge lines are list items so they render one per line. RC-P26's catalogue test reads the badge lines from this file.
+Next: RC-P25
 
 ## RC-P25 — 
 
