@@ -260,7 +260,8 @@ function NotificationIcon({ notification }: { notification: NotificationCardData
 }
 
 // ── Title + CTA helpers ──────────────────────────────────────────────────
-function getTitle(n: NotificationCardData): string {
+/** RC-P19: exported so the notifications page keeps each legacy kind's words. */
+export function getTitle(n: NotificationCardData): string {
   const handle = n.actor?.handle ? `@${n.actor.handle}` : n.actor?.displayName || "Someone";
   switch (n.kind) {
     case "reference_received":

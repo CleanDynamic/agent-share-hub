@@ -77,5 +77,6 @@ export async function createNotification(
     kind: row.notification_type,
     actor: null,
     target: null,
+    build: null,
   };
 }

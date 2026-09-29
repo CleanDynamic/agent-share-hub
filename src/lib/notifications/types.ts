@@ -1,6 +1,26 @@
 // Shared types for the notifications data layer.
 
+/**
+ * RC-P19 — the nine kinds the database writes about builds
+ * (20261001200000_rc_build_notifications.sql). Their message is the stored
+ * body: fixed text, never a reader's.
+ */
+export const BUILD_NOTIFICATION_KINDS = [
+  "rebuilt",
+  "published",
+  "reproduced",
+  "comment",
+  "reply",
+  "like",
+  "solution",
+  "solved",
+  "follow",
+] as const;
+
+export type BuildNotificationKind = (typeof BUILD_NOTIFICATION_KINDS)[number];
+
 export type NotificationKind =
+  | BuildNotificationKind
   | "reference_received"
   | "new_follower"
   | "bounty_interaction"
@@ -22,7 +42,18 @@ export type NotificationTargetType =
   | "message"
   | "thread"
   | "profile"
+  // RC-P19: a build, a comment on one, and a bounty on one.
+  | "build"
+  | "build_comment"
+  | "bounty_build"
   | null;
+
+/** RC-P19 — the build a notification is about, as the page names and links it. */
+export interface NotificationBuild {
+  id: string;
+  slug: string;
+  title: string | null;
+}
 
 export interface NotificationActor {
   id: string;
@@ -64,6 +95,8 @@ export interface Notification extends NotificationRow {
   kind: NotificationKind;
   actor: NotificationActor | null;
   target: NotificationTargetPreview | null;
+  /** RC-P19: the build it is about, when there is one and the reader can read it. */
+  build: NotificationBuild | null;
 }
 
 export interface CreateNotificationInput {

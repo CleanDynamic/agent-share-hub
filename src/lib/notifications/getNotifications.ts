@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { resolveNotificationTargets } from "./resolveTarget";
+import { buildIdOf, resolveNotificationBuilds, resolveNotificationTargets } from "./resolveTarget";
 import type {
   Notification,
   NotificationActor,
@@ -50,7 +50,8 @@ export async function getNotifications({
     const { data: actors } = await supabase
       .from("profiles")
       .select("id, username, display_name, avatar_url")
-      .in("id", actorIds);
+      .in("id", actorIds)
+      .limit(actorIds.length);
     for (const a of (actors ?? []) as any[]) {
       actorById.set(a.id, {
         id: a.id,
@@ -61,7 +62,11 @@ export async function getNotifications({
     }
   }
 
-  const targetMap = await resolveNotificationTargets(rows);
+  // RC-P19: the builds are named alongside the legacy targets, in one request.
+  const [targetMap, buildById] = await Promise.all([
+    resolveNotificationTargets(rows),
+    resolveNotificationBuilds(rows),
+  ]);
 
   const notifications: Notification[] = rows.map((r) => {
     const effectiveType = (r.target_type ??
@@ -72,11 +77,13 @@ export async function getNotifications({
         ? targetMap.get(`${effectiveType}:${effectiveId}`) ?? null
         : null;
 
+    const buildId = buildIdOf(r);
     return {
       ...r,
       kind: r.notification_type,
       actor: r.actor_id ? actorById.get(r.actor_id) ?? null : null,
       target,
+      build: buildId ? buildById.get(buildId) ?? null : null,
     };
   });
 
