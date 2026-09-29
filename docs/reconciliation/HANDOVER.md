@@ -16,6 +16,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 ## Deferred to after the merge
 - FlatShell rightRail and forceRightRail, .fs-right CSS, AppShell's /upload/blueprint branch: removed in RC-P08b (RC-P06)
 - UploadPickerContext, UploadTypePicker, UploadPickerProvider, still imported by src/pages/UploadTypeSelector.tsx and src/lib/bounty-legacy/legacyBountyCreateRetired.test.tsx; deleted in RC-P08b (RC-P08)
+- sitemap-xml, public-api and post-json read content_items: repointed in RC-P30 (RC-P16b)
 
 ## Critique findings deferred
 From RC-P09c, docs/reconciliation/critique/phase-2.md. Two majors fall outside step 5's limits, each with its reason:
@@ -281,7 +282,14 @@ Lovable messages owed: none new. DEPLOY ORDER: the row reads 20261001180000 (Dep
 Open: FOUR LISTED SKILLS ARE NOT INSTALLED in this session (law-of-similarity, law-of-proximity, color-system, buildgallery-repo-map); their rules were taken from the prompt's own figures. The header's one filled button is "Rebuild this" (ForkControl): "I ran this and it worked" has been secondary since BG-P21 and is unchanged, so "the reproduction action stays the only filled button" is read as "the row adds none". Beside the action the row sat 215px from it at 1440 (the slot is as wide as its freshness line), so it is 24 under it at every width. A card is one link and the row's buttons sit inside it: the row stops the click and cancels the link's navigation (e2e: a press stays on /gallery); axe would call it nested-interactive, and moving the link off the frame is outside CONTRACT §3.5. Off the spacing scale: 4 (icon to count, the prompt's) and 13 (block padding that makes an 18px icon a 44px target). The card skeleton reserves the row. gallery-discovery.spec.ts records the list requests only (SOCIAL-4). Theme 10/11, n/a 8 (gaps untouched). tsc PASS · unit 2288/2288, 0 new failures · build PASS · engagement 6/6 + 6/6 · gallery-discovery 6/6 + 6/6 · tier1 92/92 on both projects · audit:contrast PASS · audit:glass PASS.
 Next: RC-P16b
 
-## RC-P16b — 
+## RC-P16b — Link previews and search tags for builds
+Date: 2026-09-29 · Commits: SEO-1, SEO-2 · Head: 5367f9eb
+Landed: a build page renders SeoHead once loaded: "<title> — buildgallery", the outcome cut at a word boundary to 155 with "…" (src/lib/build/shareMeta.ts), or "A build by <maker>, reproduced <n> times." (getMakerName, one two-column read, only then); canonical https://buildgallery.ai/b2/<slug>; og:type article; og:image from the hero still the page already signed; noindex on a draft. SeoHead defaults to https://buildgallery.ai and emits twitter:site only when passed. index.html: the new title and description, og:site_name buildgallery, no twitter:site. /gallery and /bounties carry their own titles and descriptions.
+Skills applied: ⟦aesthetic-usability › Where It Applies: First impressions⟧ ⟦neoscale-e2e-testing › Writing tests⟧ ⟦neoscale-code-review⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: THE AFTER-DEPLOY CHECK WILL LIKELY SHOW THE SITE'S TAGS, NOT THE BUILD'S. The app is a client-rendered SPA with no prerendering (netlify.toml) and no edge function writing meta, and messaging apps read the HTML without running JavaScript, so a pasted build link previews index.html's static tags; search engines that render JavaScript do see the build's. A per-build preview needs a crawler-facing edge function or Netlify prerendering, which this prompt's MUST NOT CHANGE (supabase/functions/**) rules out; the owner decides. index.html's og:title, og:description and their twitter twins still carry the old "AI Agent Tactics Forum" and "blueprints" copy ("nothing else in index.html changes"), and React 19 renders each page's tags beside those static ones. VITE_SITE_URL, if set on the host, still overrides the canonical host (.env.example says neoscaleai.com). Outside this prompt's two files "neoscale" remains in Home.tsx's title, Footer.tsx and portable.ts. BuildPage.test.tsx now stubs the engagement counts read, which SOCIAL-4 left reaching the real client. buildgallery-repo-map is not installed. tsc PASS · unit 2300/2300, 0 new failures · build PASS · tier1 92/92 on both projects.
+Next: RC-P17
 
 ## RC-P17 — 
 

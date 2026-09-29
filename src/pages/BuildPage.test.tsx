@@ -17,6 +17,17 @@ const getBuildFamily = vi.fn().mockResolvedValue(null);
 const getWhereNext = vi.fn().mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
 const getBuild = vi.fn().mockResolvedValue(null);
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
+/* RC-P16: the header's engagement row asks for this build's counts. Answered
+   here so no test reaches for a real database through it. */
+vi.mock("@/lib/social", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/social")>()),
+  getEngagementCounts: vi.fn(async () => ({ b: { likes: 3, comments: 1 } })),
+}));
+/* RC-P16b: a build with no outcome is described by its maker's name. */
+const getMakerName = vi.fn().mockResolvedValue("Maya Okafor");
+vi.mock("@/lib/profile/makerName", () => ({
+  getMakerName: (creatorId: string) => getMakerName(creatorId),
+}));
 
 /** The fork control asks who is reading. Nothing else on this page does. */
 vi.mock("@/contexts/AuthContext", () => ({
@@ -824,5 +835,71 @@ describe("BuildPage media", () => {
     await screen.findByText("A build made of screenshots");
     await waitFor(() => expect(document.querySelectorAll("img").length).toBe(3));
     expect(document.querySelector('[data-visual-slot="build-hero"]')).toBeNull();
+  });
+});
+
+/* ── RC-P16b: what a search result and a shared link say ─────────────────── */
+
+describe("BuildPage's share tags", () => {
+  const meta = (selector: string) => document.head.querySelector(selector)?.getAttribute("content") ?? null;
+
+  it("sets the title, the description, the canonical address and og:type article", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() => expect(document.title).toBe("Inbox triage agent — buildgallery"));
+    expect(meta('meta[name="description"]')).toBe("Sorts a full inbox.");
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
+      "https://buildgallery.ai/b2/inbox-triage-agent-demo",
+    );
+    expect(meta('meta[property="og:type"]')).toBe("article");
+    expect(meta('meta[property="og:url"]')).toBe("https://buildgallery.ai/b2/inbox-triage-agent-demo");
+    expect(meta('meta[name="robots"]')).toBe("index, follow");
+    // A live app has no hero still, and nothing is asked for a picture.
+    expect(document.head.querySelector('meta[property="og:image"]')).toBeNull();
+  });
+
+  it("describes a build with no outcome by its maker and its reproductions", async () => {
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      build: { ...record.build, outcome: "  ", reproduction_count: 12, creator_id: "maker-1" },
+    });
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() =>
+      expect(meta('meta[name="description"]')).toBe("A build by Maya Okafor, reproduced 12 times."),
+    );
+    expect(getMakerName).toHaveBeenCalledWith("maker-1");
+  });
+
+  it("asks nothing about the maker when the outcome describes the build", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+    await waitFor(() => expect(document.title).toBe("Inbox triage agent — buildgallery"));
+    expect(getMakerName).not.toHaveBeenCalled();
+  });
+
+  it("keeps a draft out of the index", async () => {
+    getBuildBySlug.mockResolvedValue({ ...record, build: { ...record.build, status: "draft" } });
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+
+    await waitFor(() => expect(meta('meta[name="robots"]')).toContain("noindex"));
+  });
+
+  it("names buildgallery in every tag it renders, never neoscale", async () => {
+    getBuildBySlug.mockResolvedValue(record);
+    renderAt("inbox-triage-agent-demo");
+    await screen.findByText("Inbox triage agent");
+    await waitFor(() => expect(document.title).toBe("Inbox triage agent — buildgallery"));
+
+    const tags = [...document.head.querySelectorAll("title, meta, link")].map((tag) => tag.outerHTML);
+    expect(tags.length).toBeGreaterThan(5);
+    expect(tags.filter((tag) => /neoscale/i.test(tag))).toEqual([]);
+    expect(meta('meta[property="og:site_name"]')).toBe("buildgallery");
+    expect(document.head.querySelector('meta[name="twitter:site"]')).toBeNull();
   });
 });
