@@ -47,6 +47,7 @@ import {
   REBUILD_TREE_ROW_CAP,
   buildTree,
   flattenFamily,
+  getBuildFamily,
   getRebuildTree,
   type RebuildTreeNode,
   type RebuildTreeRow,
@@ -213,5 +214,41 @@ describe("getRebuildTree", () => {
     rpcAnswer = { data: [row("r", null, 0)], error: null };
     profilesAnswer = { data: null, error: { code: "PGRST301", message: "JWT expired" } };
     await expect(getRebuildTree("r")).rejects.toThrow(/^getRebuildTree failed/);
+  });
+});
+
+describe("getBuildFamily", () => {
+  it("draws from the root in two requests when the build being read is in the family", async () => {
+    rpcAnswer = { data: [row("r", null, 0), row("a", "r", 1)], error: null };
+
+    const tree = await getBuildFamily({ rootId: "r", currentId: "a" });
+
+    expect(shape(tree)).toBe("r(0)[a(1)]");
+    expect(requests().map((call) => call.table)).toEqual(["rpc:rebuild_tree", "profiles"]);
+  });
+
+  it("asks once when the build is its own root", async () => {
+    rpcAnswer = { data: [row("a", null, 0)], error: null };
+
+    await getBuildFamily({ rootId: "a", currentId: "a" });
+    expect(requests().filter((call) => call.table === "rpc:rebuild_tree")).toHaveLength(1);
+  });
+
+  it("draws from the build being read when the root's family does not reach it", async () => {
+    rpcAnswer = { data: [row("r", null, 0), row("other", "r", 1)], error: null };
+
+    await getBuildFamily({ rootId: "r", currentId: "a" });
+
+    const walks = requests().filter((call) => call.table === "rpc:rebuild_tree");
+    expect(walks.map((call) => (call.args[0] as { root: string }).root)).toEqual(["r", "a"]);
+  });
+
+  it("draws from the build being read when the root cannot be read at all", async () => {
+    rpcAnswer = { data: [], error: null };
+
+    await expect(getBuildFamily({ rootId: "r", currentId: "a" })).resolves.toBeNull();
+
+    const walks = requests().filter((call) => call.table === "rpc:rebuild_tree");
+    expect(walks.map((call) => (call.args[0] as { root: string }).root)).toEqual(["r", "a"]);
   });
 });

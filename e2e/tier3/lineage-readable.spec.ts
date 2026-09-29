@@ -1,67 +1,87 @@
-// Tier 3 — the browser half of "remix creation is retired" (NS-P43).
+// Tier 3 — the old lineage address, after remix (NS-P43, rewritten RC-P14).
 //
-// WHAT THIS FILE CARRIES. NS-P43 froze createRemix and hid the one affordance
-// that reached it, on the promise that every lineage already recorded keeps
-// rendering. The function half is proved in src/lib/retiredSurfaces.test.tsx,
-// which also renders the lineage page against stubbed rows. What only a browser
-// can add is that /b/:slug/lineage is still SERVED — routed, mounted and drawn
-// against the real database — for a post whose derivation was recorded before
-// the freeze.
+// WHAT THIS FILE CARRIED. NS-P43 froze createRemix on the promise that every
+// remix lineage already recorded kept rendering at /b/:slug/lineage, and this
+// file proved the page was still served for a seeded post. RC-P14 made lineage
+// the family of rebuilds: the page draws builds, lives at /b2/:slug/lineage,
+// and its remix assertions moved to lineage-rebuilds.spec.ts as rebuild ones.
 //
-// WHAT IT DELIBERATELY DOES NOT CARRY, for the reason NS-P42 set out in
-// reblog-retired.spec.ts: "no Remix button on the content page" is vacuous
-// anonymously. RemixLineageRow only ever offered that button to a signed-in
-// viewer who is not the author, this repository has no Playwright auth fixture
-// (playwright.config.ts declares a `setup` project and no `.setup.ts` exists),
-// so an anonymous run would find no button whatever the flag said and would
-// pass just as happily with the freeze reverted. That assertion belongs to the
-// component spec, where the viewer can be signed in for the price of a mock.
+// WHAT IT CARRIES NOW is what the OLD ADDRESS still promises while it is
+// reachable (CONTRACT §3.4): it answers — landing on the build's family when
+// its slug names a build, saying there is no build at it when not — and it
+// never offers remix, or a notice that remix was removed (quiet retirement, as
+// NS-P42 set out).
 //
-// WHY IT SKIPS BY DEFAULT. It needs a post that actually has a lineage row —
-// seeded data, not something a spec can conjure — so it is gated on
-// E2E_LINEAGE_SLUG. Until one is pointed at, it skips rather than fails: a red
-// suite meaning "nobody seeded a fixture" trains a maintainer to ignore red.
-//
-// Selectors are roles and accessible names. Nothing here selects on a class:
-// see the selector rules in the e2e skill.
+// THE BACKEND IS FAKED (CONTRACT §7), so nothing here waits on a seeded post
+// any more, and nothing skips.
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
-/** A post slug that has a lineage — the segment after /b/, or a full path. */
-const LINEAGE_SLUG = process.env.E2E_LINEAGE_SLUG ?? "";
+type Row = Record<string, unknown>;
 
-const NEEDS_SLUG =
-  "Set E2E_LINEAGE_SLUG to a post with a post_lineage row, e.g. a remix created before NS-P43.";
+const BUILD: Row = {
+  id: "00000000-0000-4000-8000-000000000001",
+  creator_id: "00000000-0000-4000-8000-0000000000aa",
+  slug: "inbox-triage-agent",
+  title: "Inbox triage agent",
+  status: "published",
+  parent_build_id: null,
+  root_build_id: null,
+  published_at: "2026-08-02T00:00:00.000Z",
+};
 
-test.describe("a lineage recorded before the freeze", () => {
-  test.skip(!LINEAGE_SLUG, NEEDS_SLUG);
+const wantsObject = (route: Route) =>
+  (route.request().headers()["accept"] ?? "").includes("pgrst.object");
 
-  const path = LINEAGE_SLUG.startsWith("/")
-    ? LINEAGE_SLUG
-    : `/b/${LINEAGE_SLUG}/lineage`;
-
-  // ACCEPTANCE 2 — the lineage page renders exactly as before. The tree is the
-  // page's body, so if a row drew, the slug resolved and the RPC answered.
-  test("still renders as a tree at its own URL", async ({ page }) => {
-    await page.goto(path);
-
-    await expect(page.getByText("No lineage data for this post yet.")).toHaveCount(0);
-    // Every row credits its author with a handle; at least one must be drawn.
-    await expect(page.getByText(/^@/).first()).toBeVisible();
+async function fakeBackend(page: Page, builds: Row[]) {
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>
+    route.request().url().includes("css2")
+      ? route.fulfill({ status: 200, contentType: "text/css", body: "" })
+      : route.fulfill({ status: 200, contentType: "font/woff2", body: "" }),
+  );
+  await page.routeWebSocket(/\/realtime\/v1\//, () => {
+    /* no broker */
   });
+  await page.route(/\/auth\/v1\//, (route) =>
+    route.fulfill({ status: 401, contentType: "application/json", body: '{"msg":"no session"}' }),
+  );
+  await page.route(/\/(storage|functions)\/v1\//, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+  );
+  await page.route(/\/rest\/v1\//, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await page.route(/\/rest\/v1\/builds\?/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(wantsObject(route) ? (builds[0] ?? null) : builds),
+    }),
+  );
+  await page.route(/\/rest\/v1\/rpc\/rebuild_tree/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(builds.length ? [{ ...builds[0], depth: 0, reproduction_count: 0, rebuild_note: null }] : []),
+    }),
+  );
+}
 
-  // Quiet retirement, as in NS-P42: nothing stands where the affordance was.
-  test("carries no remix affordance, and no notice that one was removed", async ({
-    page,
-  }) => {
-    await page.goto(path);
+test("the old address answers with the build's family, and no remix affordance or notice", async ({ page }) => {
+  await fakeBackend(page, [BUILD]);
+  await page.goto("/b/inbox-triage-agent/lineage");
 
-    await expect(
-      page.getByRole("button", { name: "Remix — build on this" })
-    ).toHaveCount(0);
-    await expect(
-      page.getByText(/remix(ing)? (is|has been) (retired|disabled|removed)/i)
-    ).toHaveCount(0);
-    await expect(page).toHaveURL(new RegExp("/lineage$"));
-  });
+  await expect(page).toHaveURL(/\/b2\/inbox-triage-agent\/lineage$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Rebuilds of this" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remix — build on this" })).toHaveCount(0);
+  await expect(page.getByText(/remix(ing)? (is|has been) (retired|disabled|removed)/i)).toHaveCount(0);
+});
+
+test("the old address says there is no build at it when its slug names none", async ({ page }) => {
+  await fakeBackend(page, []);
+  await page.goto("/b/an-old-post/lineage");
+
+  await expect(page.getByTestId("lineage-not-found")).toContainText("No build at this address.");
+  await expect(page).toHaveURL(/\/b\/an-old-post\/lineage$/);
+  await expect(page.getByText(/remix(ing)? (is|has been) (retired|disabled|removed)/i)).toHaveCount(0);
 });
