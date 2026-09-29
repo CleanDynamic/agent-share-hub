@@ -10,7 +10,9 @@
 // --bg on a --line hairline at --r-panel with the raised elevation, rows lift
 // to --recess, and the text is --text over --text2. Loading is skeleton rows
 // at the rows' size (STATES.md row 20); empty is one sentence and one
-// secondary action (row 19), because the composer's Send is the primary.
+// secondary action (row 19), because the composer's Send is the primary; a
+// refusal is its sentence and a secondary "Try again" (row 21). The entrance
+// fades and lifts 8px, and under reduced motion it does not move at all.
 
 import * as React from "react";
 import {
@@ -24,8 +26,10 @@ import {
 import { Search, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { isPermissionError } from "@/lib/errors/permission";
 import { skeletonStyle } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
+import { prefersReducedMotion } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
@@ -55,6 +59,9 @@ export interface ThreadReferencePickerProps {
   onQueryChange: (query: string) => void;
   results: ReferenceItem[];
   isLoading?: boolean;
+  /** Why the builds could not be read, if they could not. */
+  error?: unknown;
+  onRetry?: () => void;
   onSelect: (item: ReferenceItem) => void;
   anchorEl: HTMLElement | null;
 }
@@ -66,6 +73,8 @@ export function ThreadReferencePicker({
   onQueryChange,
   results,
   isLoading = false,
+  error = null,
+  onRetry,
   onSelect,
   anchorEl,
 }: ThreadReferencePickerProps) {
@@ -82,7 +91,7 @@ export function ThreadReferencePicker({
   const { refs, floatingStyles, context } = floating;
 
   const { isMounted, styles: transitionStyles } = useTransitionStyles(context, {
-    duration: 150,
+    duration: prefersReducedMotion() ? 0 : 150,
     initial: { opacity: 0, transform: "translateY(8px)" },
   });
 
@@ -202,6 +211,20 @@ export function ThreadReferencePicker({
             {[0, 1, 2].map((index) => (
               <div key={index} style={{ ...skeletonStyle(), height: ROW_HEIGHT - SPACE.xs }} />
             ))}
+          </div>
+        ) : error ? (
+          <div
+            data-testid="reference-error"
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SPACE.xs, padding: SPACE.sm }}
+          >
+            <p style={{ ...body, color: t.text, margin: 0 }}>
+              {isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
+            </p>
+            {onRetry ? (
+              <Button type="button" variant="outline" onClick={onRetry} style={{ background: "transparent", minHeight: ROW_HEIGHT }}>
+                Try again
+              </Button>
+            ) : null}
           </div>
         ) : shown.length === 0 ? (
           <div

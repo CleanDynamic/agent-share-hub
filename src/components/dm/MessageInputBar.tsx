@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { isPermissionError } from "@/lib/errors/permission";
 import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square, AtSign } from "lucide-react";
 import { ThreadReferencePicker, type ReferenceItem } from "@/components/messages/ThreadReferencePicker";
 import { listShareableBuilds, sendBuildMessage } from "@/lib/messaging";
@@ -60,6 +62,8 @@ export function MessageInputBar({
   const [pickerDebouncedQuery, setPickerDebouncedQuery] = useState("");
   const [pickerResults, setPickerResults] = useState<ReferenceItem[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerError, setPickerError] = useState<unknown>(null);
+  const [pickerAttempt, setPickerAttempt] = useState(0);
   const [pendingShare, setPendingShare] = useState<PendingShare | null>(null);
   const atTriggerActiveRef = useRef<boolean>(false); // when picker opened via typing `@`
 
@@ -81,6 +85,7 @@ export function MessageInputBar({
     if (!pickerOpen) return;
     let cancelled = false;
     setPickerLoading(true);
+    setPickerError(null);
     (async () => {
       try {
         const builds = await listShareableBuilds({ query: pickerDebouncedQuery });
@@ -93,14 +98,18 @@ export function MessageInputBar({
             slug: build.slug,
           })),
         );
-      } catch {
-        if (!cancelled) setPickerResults([]);
+      } catch (error) {
+        // STATES.md row 21, not an empty list: a refusal is not "nothing".
+        if (!cancelled) {
+          setPickerResults([]);
+          setPickerError(error);
+        }
       } finally {
         if (!cancelled) setPickerLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [pickerOpen, pickerDebouncedQuery]);
+  }, [pickerOpen, pickerDebouncedQuery, pickerAttempt]);
 
   const openPicker = (initialQuery = "") => {
     setPickerQuery(initialQuery);
@@ -145,7 +154,15 @@ export function MessageInputBar({
     setSending(true);
     try {
       if (pendingShare) {
-        await sendBuildMessage(threadId, pendingShare.buildId, text.trim() || undefined);
+        try {
+          await sendBuildMessage(threadId, pendingShare.buildId, text.trim() || undefined);
+        } catch (error) {
+          // The build and the note stay, so the reader can send again. The
+          // toast says why in the words STATES.md row 21 gives; the note is
+          // not in it.
+          toast(isPermissionError(error) ? "You don't have access to this." : "Something went wrong.");
+          return;
+        }
         setPendingShare(null);
       } else {
         const insertData: any = {
@@ -546,6 +563,8 @@ export function MessageInputBar({
         onQueryChange={setPickerQuery}
         results={pickerResults}
         isLoading={pickerLoading}
+        error={pickerError}
+        onRetry={() => setPickerAttempt((attempt) => attempt + 1)}
         onSelect={handlePickerSelect}
         anchorEl={atButtonRef.current}
       />
