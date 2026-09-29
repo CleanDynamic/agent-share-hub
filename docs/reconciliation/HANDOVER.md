@@ -161,9 +161,23 @@ Lovable messages owed: none
 Open: TWO MAJORS ARE DEFERRED and are the owner's call before RC-P09b. M4: the nav jumps between standard and wide routes, 259px at 1440; the fix is structural (§2.2). M5: search lands on a Gallery that ignores q until RC-P10. Both are under Critique findings deferred, with 25 minor and LOW findings. tsc PASS · unit 2114/2114, 0 new failures · build PASS · tier1 92/92 · discovery-redirects 10/10 on each project · frame-no-rail 4 desktop, 2 phone.
 Next: RC-P09b (the picture), then RC-P10
 
-## RC-P09b — 
+## RC-P09b — The discovery screens, as a picture (owner's step)
+Date: 2026-09-29 · Commits: none · Head: d441223b
+Landed: nothing in the repository. The brief is a v0 prompt the owner pastes and looks at; its code is never used. It was not run in this session.
+Skills applied: none (no code)
+Migrations queued: none
+Lovable messages owed: L-P11-0 (read-only: get_build_feed's live definition and the indexes on follows), not supplied when RC-P11 ran
+Open: No preference was stated, so RC-P10 and RC-P12 build what is drawn: the lens row above the facet band, and Bounties as a list.
+Next: RC-P10
 
-## RC-P10 — 
+## RC-P10 — The Gallery becomes the discovery home
+Date: 2026-09-29 · Commits: DISCOVERY-1, DISCOVERY-2, DISCOVERY-3 · Head: c4497566
+Landed: /gallery reads lens, for, with and q from its address (src/lib/build/galleryParams.ts) and writes every change back. The lens row (All, Proven, Rebuilt, Unsolved; links with role radio) sits above a band of two facet groups, six options each by count and then More/Fewer. The page's own search field narrows through search_build_ids and offers up to three makers. Row 19's two sentences, row 21's refusal (src/lib/errors/permission.ts).
+Skills applied: ⟦hicks-law › Budgets; Readers table; Remedies 7 Add scent; Enforcing It in the Code⟧ ⟦law-of-proximity⟧ ⟦law-of-similarity⟧ ⟦law-of-continuity › Directional indicators⟧ ⟦better-layout › Group with space; Hint at hidden content; Plan for growth⟧ ⟦responsive-design › Touch⟧ ⟦von-restorff-effect⟧ ⟦aesthetic-usability › Applying It 4⟧ ⟦buildgallery-theme › Motion; The colour contract; Before you call it done⟧ ⟦neoscale-error-monitoring › Privacy⟧ ⟦neoscale-performance › Reporting⟧ ⟦neoscale-e2e-testing⟧ ⟦buildgallery-repo-map › 1⟧ ⟦neoscale-code-review⟧
+Migrations queued: none
+Lovable messages owed: none new; L-P07-1 (search_build_ids) must land before the query works live
+Open: requests /gallery 3 → 2, not equal: the Open bounties chip's count request left with the chip. /gallery?q=agent 3 on the baseline's empty database (nothing matches, so step 2c skips the builds request); 4 when the search matches a build. gallery.ts locked lines changed 0. The drawn burnt-orange More measured 3.69:1 on the Exhibition filter sheet (glass over the scrim), so More/Fewer is --text (10.08). Pre-existing, untouched: that sheet's --text2 chip labels are 4.05:1 on Exhibition. "The order sentence" is read as the header's description, so the lens wrapper's −16 top margin collapses PageHeader's 40 to 24. Committed on claude/rc-phase-3-discovery-q8vt2m, this session's branch (rc-reconcile is 21 commits behind main). tsc PASS · unit 2159/2159, 0 new failures · build PASS · tier1 92/92 on both projects · gallery-discovery 6/6 desktop, 6/6 mobile · audit:contrast PASS · audit:glass PASS.
+Next: RC-P11
 
 ## RC-P11 — 
 

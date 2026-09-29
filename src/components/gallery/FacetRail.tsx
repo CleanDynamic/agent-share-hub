@@ -268,9 +268,15 @@ function FacetOptions({ group }: { group: FacetGroup }) {
 }
 
 /**
- * "More" with a chevron pointing down; "Fewer" with it pointing up. Text, in
- * --action, because it is a control that stays where it is rather than a chip
- * that filters (action on --bg measures 4.80 on Exhibition, 6.33 on Dusk).
+ * "More" with a chevron pointing down; "Fewer" with it pointing up: text with
+ * no outline, so it reads as a control beside the chips rather than as one.
+ *
+ * --text, NOT THE PICTURE'S BURNT ORANGE. --action clears the floor on the
+ * band's --bg (4.80 Exhibition, 6.33 Dusk), but the sheet below 1024 is
+ * --glass over the scrim, and there --action measured 3.69:1 on Exhibition,
+ * under the 4.5 text floor. The theme's first remedy is a legal pairing, and
+ * --text is legal on both grounds; one look for one control on both surfaces
+ * ⟦law-of-similarity⟧.
  */
 function MoreToggle({
   expanded,
@@ -304,7 +310,7 @@ function MoreToggle({
         background: "transparent",
         border: "none",
         borderRadius: r.chip,
-        color: t.action,
+        color: t.text,
         cursor: "pointer",
         textDecoration: state.hovered ? "underline" : "none",
         textUnderlineOffset: "3px",

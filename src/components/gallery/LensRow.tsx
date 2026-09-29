@@ -32,8 +32,9 @@ import { t } from "@/lib/theme/tokens";
 
    32 TALL, 44 TO THE FINGER ⟦responsive-design › Touch⟧. The link is the hit
    area and the chip is inside it, so the extra height is padding on the link
-   rather than a bigger chip. The row wraps rather than scrolling sideways
-   ⟦better-layout › Plan for growth⟧.
+   rather than a bigger chip; the 8 between chips is the links' inline padding.
+   The row wraps rather than scrolling sideways ⟦better-layout › Plan for
+   growth⟧.
 
    NOT ORANGE WHEN CHOSEN ⟦von-restorff-effect⟧. The selected chip takes the
    --recess fill and a --text border: selection is a state of a control, not
@@ -53,6 +54,9 @@ const CHIP_HEIGHT = 32;
 
 /** The smallest a touch target may be. */
 const HIT_HEIGHT = 44;
+
+/** Between one chip and the next ⟦law-of-proximity⟧: SPACE.xs. */
+const CHIP_GAP = SPACE.xs;
 
 export interface LensRowProps {
   /** The lens the gallery is showing. */
@@ -91,7 +95,9 @@ export function LensRow({ current, hrefFor }: LensRowProps) {
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
-        columnGap: SPACE.xs,
+        /* No gap: each link carries half of the 8 between two chips as its own
+           inline padding, so the space between chips is hit area too. */
+        columnGap: 0,
         rowGap: 0,
       }}
     >
@@ -123,8 +129,15 @@ function LensChip({ lens, checked, to }: { lens: GalleryLens; checked: boolean; 
         display: "inline-flex",
         alignItems: "center",
         paddingBlock: (HIT_HEIGHT - CHIP_HEIGHT) / 2,
+        paddingInline: CHIP_GAP / 2,
+        borderRadius: r.control,
         textDecoration: "none",
-        outline: "none",
+        /* THE RING IS ON THE LINK, the element that has focus (focus.ts: one
+           ring, never suppressed). Drawn inward by its own width, so it sits
+           2px outside the chip across and 4px above and below it, inside the
+           hit area rather than around it. */
+        ...ring(state.focusVisible),
+        ...(state.focusVisible ? { outlineOffset: -2 } : {}),
       }}
     >
       <span
@@ -149,7 +162,6 @@ function LensChip({ lens, checked, to }: { lens: GalleryLens; checked: boolean; 
           cursor: "pointer",
           /* Colour and fill only, 150ms; "none" under reduced motion. */
           transition: feedback("color", "background-color"),
-          ...ring(state.focusVisible),
         }}
       >
         {checked ? <Check size={12} aria-hidden strokeWidth={2.25} /> : null}

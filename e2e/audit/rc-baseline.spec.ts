@@ -25,8 +25,9 @@
 
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-/** The routes the baseline measures, in report order. */
-const ROUTES = ["/", "/gallery"] as const;
+/** The routes the baseline measures, in report order. RC-P10 added the
+    gallery with a query, whose empty database matches nothing. */
+const ROUTES = ["/", "/gallery", "/gallery?q=agent"] as const;
 
 /** What is counted: PostgREST and edge-function requests. */
 const COUNTED = /\/rest\/v1\/|\/functions\/v1\//;
