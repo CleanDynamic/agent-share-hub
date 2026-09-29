@@ -72,6 +72,7 @@ export default defineConfig({
         /e2e\/tier3\/discovery-redirects\.spec\.ts/,
         /e2e\/tier3\/frame-no-rail\.spec\.ts/,
         /e2e\/tier3\/gallery-discovery\.spec\.ts/,
+        /e2e\/tier3\/home-two-tabs\.spec\.ts/,
       ],
     },
   ],

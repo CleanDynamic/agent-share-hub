@@ -21,6 +21,15 @@ import { eyebrow } from "@/lib/theme/type";
 /** The makers change slowly; one answer serves a visit. */
 const SUGGESTIONS_STALE_MS = 5 * 60 * 1000;
 
+/**
+ * Every maker's box is one width, so when the row wraps on a phone the three
+ * stack with their avatars on one edge instead of each centring on its own
+ * name ⟦law-of-continuity › Alignment⟧. Three of them and two 8 gaps fit the
+ * empty state's 472px measure on a desktop; 148 leaves a name about 108px
+ * beside its avatar before it wraps.
+ */
+const MAKER_WIDTH = 148;
+
 export function SuggestedMakers({ excludeId }: { excludeId: string | null }) {
   const headingId = useId();
   const makers = useQuery({
@@ -46,7 +55,7 @@ export function SuggestedMakers({ excludeId }: { excludeId: string | null }) {
       }}
     >
       <h2 id={headingId} style={{ ...eyebrow, margin: 0, color: t.text2 }}>
-        Most reproduced · last 90 days
+        Most reproduced · 90 days
       </h2>
       <ul
         style={{
@@ -56,12 +65,14 @@ export function SuggestedMakers({ excludeId }: { excludeId: string | null }) {
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          columnGap: SPACE.md,
+          columnGap: SPACE.xs,
           rowGap: SPACE.xs,
         }}
       >
         {rows.map((maker) => (
-          <li key={maker.id} style={{ minWidth: 0 }}>
+          /* textAlign start: the notice above centres its text, and a
+             centred link inside each box would undo the shared edge. */
+          <li key={maker.id} style={{ width: MAKER_WIDTH, minWidth: 0, textAlign: "start" }}>
             <MakerLink maker={maker} testId="suggested-maker" />
           </li>
         ))}
