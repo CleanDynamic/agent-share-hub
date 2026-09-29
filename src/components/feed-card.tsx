@@ -899,7 +899,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                   setMenuOpen(false);
                 }},
                 { label: 'View author', action: () => {
-                  navigate(`/creator/${post.author?.username}`);
+                  navigate(`/profile/${post.author?.username}`);
                   setMenuOpen(false);
                 }},
                 { label: 'Report', action: () => {

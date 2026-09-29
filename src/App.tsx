@@ -20,6 +20,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
+import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import Home from "./pages/Home";
 
 import Upload from "./pages/Upload";
@@ -31,7 +32,6 @@ import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
 import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
 import ProjectDetail from "./pages/ProjectDetail";
-import CreatorProfile from "./pages/CreatorProfile";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import Signup from "./pages/Signup";
@@ -44,7 +44,6 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import LibraryPage from "./pages/Library";
 import CollectionDetailRoute from "./pages/CollectionDetail";
-import MyUploads from "./pages/MyUploads";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
@@ -195,7 +194,16 @@ const App = () => (
                 <Route path="/b/:slug/lineage" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage legacy /></Suspense></RouteBoundary>} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
-                <Route path="/creator/:username" element={<CreatorProfile />} />
+                {/* RC-P22 — one address for each thing. The old creator page,
+                    the old uploads list and the old saves list duplicated
+                    the profile and the Library (hicks-law › Remedies 1
+                    Remove), so each address lands on its one home; the
+                    creator's handle is carried across. The page files stay
+                    until RC-P29 deletes them. */}
+                <Route path="/creator/:username" element={<CreatorRedirect />} />
+                <Route path="/creator" element={<Navigate to="/profile" replace />} />
+                <Route path="/my-uploads" element={<Navigate to="/profile" replace />} />
+                <Route path="/saved" element={<Navigate to="/library" replace />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
                 {/* /path/:id route removed */}
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -211,7 +219,6 @@ const App = () => (
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/profile/:handle" element={<Profile />} />
-                <Route path="/saved" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library/collections/:collectionId" element={<CollectionDetailRoute />} />
                 <Route path="/library/:handle/collections/:collectionId" element={<CollectionDetailRoute />} />
@@ -224,7 +231,6 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays

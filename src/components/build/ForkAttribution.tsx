@@ -226,7 +226,7 @@ function RebuildBanner({
       <RebuildCredit
         source={build}
         to={resolved ? `/b2/${resolved.slug}` : null}
-        handleTo={resolved && handle ? `/creator/${handle}` : null}
+        handleTo={resolved && handle ? `/profile/${handle}` : null}
         gone={gone}
       />
 

@@ -91,13 +91,13 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       <div style={{ padding: '18px 20px' }} className="space-y-2">
         {/* ROW 1 — Header */}
         <div className="flex items-center gap-2" style={{ height: 34 }}>
-          <Link to={`/creator/${profile?.username}`} onClick={stop}>
+          <Link to={`/profile/${profile?.username}`} onClick={stop}>
             <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
               <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
             </Avatar>
           </Link>
           <Link
-            to={`/creator/${profile?.username}`}
+            to={`/profile/${profile?.username}`}
             onClick={stop}
             className="hover:underline truncate"
             style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}

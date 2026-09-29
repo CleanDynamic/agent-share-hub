@@ -116,7 +116,7 @@ export default function PostPreviewPage() {
     } as any).eq("id", draftId!);
     setSubmitting(false);
     toast({ title: "Your post is live! ✓" });
-    navigate("/my-uploads");
+    navigate("/profile");
   }
 
   if (authLoading || isLoading) {

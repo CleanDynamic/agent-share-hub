@@ -572,7 +572,7 @@ describe("BuildPage rebuild attribution", () => {
 
     expect(link.getAttribute("href")).toBe("/b2/inbox-triage-agent-demo");
     expect(within(banner).getByRole("link", { name: "@amara" }).getAttribute("href"))
-      .toBe("/creator/amara");
+      .toBe("/profile/amara");
 
     // The rebuilder's own words, in full and in their own block.
     expect(screen.getByTestId("rebuild-banner-note").textContent).toContain(

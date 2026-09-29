@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 /**
  * Renders text with @username patterns as clickable links.
- * Links to /creator/:username with orange styling.
+ * Links to /profile/:username with orange styling.
  */
 export function MentionText({ text, className = "" }: { text: string; className?: string }) {
   const parts = useMemo(() => {
@@ -31,7 +31,7 @@ export function MentionText({ text, className = "" }: { text: string; className?
         part.type === "mention" ? (
           <Link
             key={i}
-            to={`/creator/${part.value}`}
+            to={`/profile/${part.value}`}
             className="mention-link"
             onClick={(e) => e.stopPropagation()}
           >

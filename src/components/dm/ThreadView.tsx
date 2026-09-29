@@ -1224,7 +1224,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
                 </div>
               </div>
               <button
-                onClick={() => navigate(`/creator/${otherUser.username}`)}
+                onClick={() => navigate(`/profile/${otherUser.username}`)}
                 className="text-xs text-secondary hover:underline"
               >
                 View profile →

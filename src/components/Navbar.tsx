@@ -89,7 +89,7 @@ export function Navbar() {
               <>
                 {/* Bookmark quick-access */}
                 <button
-                  onClick={() => navigate("/saved")}
+                  onClick={() => navigate("/library")}
                   className="relative rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
                   aria-label="Saved items"
                 >
@@ -176,13 +176,13 @@ export function Navbar() {
                       </span>
                     )}
                   </Link>
-                  <Link to="/my-uploads" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
+                  <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
                     <Upload className="h-4 w-4" /> My Uploads
                   </Link>
                   <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
                     <User className="h-4 w-4" /> My Profile
                   </Link>
-                  <Link to="/saved" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
+                  <Link to="/library" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 min-h-[44px] text-sm text-muted-foreground hover:text-foreground px-3 rounded-lg hover:bg-accent/50">
                     <Bookmark className="h-4 w-4" /> Saved
                     {hasUnseenSaves && (
                       <span className="ml-auto h-2 w-2 rounded-full bg-primary" />
