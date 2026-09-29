@@ -84,6 +84,23 @@ describe("the lineage page", () => {
     await screen.findByTestId("rebuild-tree");
   });
 
+  it("names the build it is about, and opens it from the title row (RC-P14c)", async () => {
+    renderAt("/b2/inbox-triage-gmail/lineage");
+
+    const header = await screen.findByRole("banner");
+    expect(await within(header).findByText("Inbox triage, Gmail only")).toBeInTheDocument();
+    const open = within(header).getByRole("link", { name: "Open the build" });
+    expect(open).toHaveAttribute("href", "/b2/inbox-triage-gmail");
+  });
+
+  it("names no build and offers no way in when the address names none", async () => {
+    getBuildHeaderBySlug.mockResolvedValue(null);
+    renderAt("/b2/nothing-here/lineage");
+
+    await screen.findByTestId("lineage-not-found");
+    expect(within(screen.getByRole("banner")).queryByRole("link")).toBeNull();
+  });
+
   it("resolves the slug and draws the family from its root, with this build marked", async () => {
     renderAt("/b2/inbox-triage-gmail/lineage");
 

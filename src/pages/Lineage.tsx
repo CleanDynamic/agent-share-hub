@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { getBuildHeaderBySlug } from "@/lib/build";
 import { isPermissionError } from "@/lib/errors/permission";
-import { skeletonStyle } from "@/lib/theme/controls";
+import { ring, skeletonStyle } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body } from "@/lib/theme/type";
@@ -29,6 +31,13 @@ import { body } from "@/lib/theme/type";
    when its slug names a build; otherwise there is nothing at it to draw.
 
    The order is stated, never offered: oldest first within each generation.
+
+   THE HEADER NAMES THE BUILD AND OPENS IT (RC-P14c). "Rebuilds of this" says
+   nothing on its own to a reader who arrived from a link, and the build's own
+   row in the tree says "you are here" and is not a link, so the page could not
+   take a reader to the build it is about. The eyebrow names it; one text link
+   at the trailing end of the title row opens it, as "Solvers" does on the
+   bounties board.
    ──────────────────────────────────────────────────────────────────────────── */
 
 export interface LineageProps {
@@ -64,7 +73,12 @@ export default function Lineage({ legacy = false }: LineageProps) {
         <title>{`Rebuilds of ${title} — buildgallery`}</title>
       </Helmet>
 
-      <PageHeader title="Rebuilds of this" description="Every published rebuild in this family." />
+      <PageHeader
+        eyebrow={found ? found.title?.trim() || "Untitled build" : undefined}
+        title="Rebuilds of this"
+        description="Every published rebuild in this family."
+        actions={found ? <OpenBuildLink slug={found.slug} /> : undefined}
+      />
 
       <div data-visual-slot="lineage-column" style={{ maxWidth: 720 }}>
         {build.error ? (
@@ -117,6 +131,32 @@ export default function Lineage({ legacy = false }: LineageProps) {
         )}
       </div>
     </div>
+  );
+}
+
+/** The way to the build this family is drawn for: a text link, underlined at rest, 44 tall, the theme's ring. */
+function OpenBuildLink({ slug }: { slug: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <Link
+      to={`/b2/${encodeURIComponent(slug)}`}
+      data-testid="lineage-open-build"
+      {...handlers}
+      style={{
+        ...body,
+        display: "inline-flex",
+        alignItems: "center",
+        minHeight: 44,
+        color: t.text,
+        textDecoration: "underline",
+        textUnderlineOffset: "4px",
+        textDecorationThickness: "1px",
+        borderRadius: r.chip,
+        ...ring(state.focusVisible),
+      }}
+    >
+      Open the build
+    </Link>
   );
 }
 
