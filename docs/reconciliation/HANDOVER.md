@@ -263,9 +263,23 @@ Lovable messages owed: L-P15-1, then L-P15-2 (RLS proof)
 Open: TWO DEPARTURES, BOTH FOR RC-P17's TWO-REQUEST BUDGET. (1) build_comments.author_id also keys to profiles(id) (build_comments_author_profile_fkey) so a page of comments embeds its authors; auth.users is not exposed to PostgREST. (2) listComments(buildId, { limit = 50, after }) pages FORWARD with after, not before, because RC-P17 lists oldest first; one request a page reads top-level comments and replies together in time order (limit counts both), and nestComments hangs each reply under its comment across pages. L-P15-2 reads 1 hidden comment if its second-oldest account is an admin (by design). buildgallery-repo-map, listed in the expected report, is not installed in this session (nor color-system, law-of-proximity, law-of-similarity, law-of-continuity, critique-information-density, which later phase-4 prompts list). builds.updated_at moves with every count change (trg_builds_updated_at), as with the reproduction and rebuild counters. Committed on claude/upbeat-shannon-57dvps, this session's branch, not rc-reconcile. tsc PASS · unit 2282/2282, 0 new failures · build PASS.
 Next: RC-P15b (the picture), then RC-P16
 
-## RC-P15b — 
+## RC-P15b — Engagement and comments, as a picture (owner's step)
+Date: 2026-09-29 · Commits: none · Head: 0f306688
+Landed: nothing in the repository. The brief is a v0 prompt the owner pastes and looks at; its code is never used. It was not run in this session.
+Skills applied: none (no code)
+Migrations queued: none
+Lovable messages owed: none
+Open: No drawing was supplied, so RC-P16 builds what the brief describes, with one difference recorded there: the page row sits 24 under the reproduction action, not 24 beside it.
+Next: RC-P16
 
-## RC-P16 — 
+## RC-P16 — Like, comment, save and share, on cards and build pages
+Date: 2026-09-29 · Commits: SOCIAL-3, SOCIAL-4, SOCIAL-5 · Head: 2c527a82
+Landed: src/hooks/useEngagement.ts (getEngagementCounts, and signed in getMyLikes and getMySaves, together: 3 requests for a list signed in, 1 signed out, in 60-id slices; updateEngagement writes an accepted change into every cached list) and src/components/social/EngagementRow.tsx (card: Like, Comment, Save; page: the same and Share; tertiary, lucide 18 at stroke 1.5, active the same icon filled --action with aria-pressed and its count --text, counts DM Mono 12 tabular, 4 icon to count, 16 between pairs, 44×44 by padding, colour and opacity at 150ms and none under reduced motion; optimistic with rollback and the sonner toast; signed out to /login?redirect=; Share is the share sheet or a copy of https://buildgallery.ai/b2/<slug> and "Link copied"). The card's new last element on the Gallery, Home's feed and where next, one hook call per list; the build header's row 24 under the reproduction action.
+Skills applied: ⟦buildgallery-theme › Components: Card, Plaque, Actions; Motion; Before you call it done⟧ ⟦hicks-law › Budgets; Enforcing It in the Code⟧ ⟦von-restorff-effect⟧ ⟦better-ui › Match icon stroke to text weight; One SVG, recolored per state; Motion restraint; icons.md⟧ ⟦critique-affordance › Action Discoverability⟧ ⟦responsive-design › Input Method Adaptation⟧ ⟦neoscale-performance⟧ ⟦neoscale-error-monitoring⟧ ⟦neoscale-e2e-testing › Writing tests⟧ ⟦neoscale-code-review⟧
+Migrations queued: none
+Lovable messages owed: none new. DEPLOY ORDER: the row reads 20261001180000 (Deploy queue item 9); before it is live the counts read fails, the row draws no numbers and Like and Save end in "Something went wrong."
+Open: FOUR LISTED SKILLS ARE NOT INSTALLED in this session (law-of-similarity, law-of-proximity, color-system, buildgallery-repo-map); their rules were taken from the prompt's own figures. The header's one filled button is "Rebuild this" (ForkControl): "I ran this and it worked" has been secondary since BG-P21 and is unchanged, so "the reproduction action stays the only filled button" is read as "the row adds none". Beside the action the row sat 215px from it at 1440 (the slot is as wide as its freshness line), so it is 24 under it at every width. A card is one link and the row's buttons sit inside it: the row stops the click and cancels the link's navigation (e2e: a press stays on /gallery); axe would call it nested-interactive, and moving the link off the frame is outside CONTRACT §3.5. Off the spacing scale: 4 (icon to count, the prompt's) and 13 (block padding that makes an 18px icon a 44px target). The card skeleton reserves the row. gallery-discovery.spec.ts records the list requests only (SOCIAL-4). Theme 10/11, n/a 8 (gaps untouched). tsc PASS · unit 2288/2288, 0 new failures · build PASS · engagement 6/6 + 6/6 · gallery-discovery 6/6 + 6/6 · tier1 92/92 on both projects · audit:contrast PASS · audit:glass PASS.
+Next: RC-P16b
 
 ## RC-P16b — 
 
