@@ -49,7 +49,6 @@ import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 // LearningPathDetail removed from UI
-import Analytics from "./pages/Analytics";
 import ApiDocs from "./pages/ApiDocs";
 
 import DraftsPage from "./pages/Drafts";
@@ -70,6 +69,13 @@ const Solvers = lazy(() => import("./pages/Solvers"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
 // address, /b/:slug/lineage. Its own chunk, like every route the RC series adds.
 const Lineage = lazy(() => import("./pages/Lineage"));
+// RC-P23 — progress and the maker's build numbers, signed in only. Its own
+// chunk: nobody reading the gallery pays for the XP panels or the table. The
+// route asks for a session and nothing more: it used to require
+// profiles.is_creator, a legacy flag nothing in the app sets, so the frame's
+// level chip (every signed-in reader's way here) bounced them to Home, and a
+// direct load raced the profile fetch and bounced creators too.
+const Analytics = lazy(() => import("./pages/Analytics"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -231,7 +237,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
+                <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays
                     registered so a bookmark is not a 404, the notice above it

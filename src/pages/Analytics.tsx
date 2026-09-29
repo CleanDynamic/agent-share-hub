@@ -15,9 +15,9 @@ import { toast } from "@/hooks/use-toast";
 import ProgressTabBar from "@/components/progress/ProgressTabBar";
 import { ProgressHero } from "@/components/progress/ProgressHero";
 import { SectionHeader } from "@/components/progress/SectionHeader";
-import { EngagementGrid } from "@/components/progress/EngagementGrid";
 import { NextUnlockCard } from "@/components/progress/NextUnlockCard";
-import { EmptyProgressState } from "@/components/progress/EmptyProgressState";
+// RC-P23 — analytics on builds, in place of the legacy statistics.
+import { BuildAnalytics } from "@/components/analytics/BuildAnalytics";
 import EligibilityNotice from "@/components/progress/xp-kit/eligibility-notice";
 import XpLedger, { type XpLedgerEntry } from "@/components/progress/xp-kit/xp-ledger";
 
@@ -217,6 +217,12 @@ export default function Analytics() {
               }
             />
 
+            {/* RC-P23 — what needs the maker, then their builds' numbers,
+                directly under the level and XP (better-layout › Order by
+                importance). They replace the engagement grid of the
+                product that was cleared, which sat at the foot of this tab. */}
+            <BuildAnalytics />
+
             {surfaces?.depth_revealed && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <FreezeIndicator
@@ -261,12 +267,6 @@ export default function Analytics() {
                 milestoneLabel={quest?.next_milestone}
                 isMysterious={!!quest?.completed && level < 5}
               />
-            )}
-
-            {overviewSurfaces.empty_state ? (
-              <EmptyProgressState />
-            ) : (
-              <EngagementGrid counters={progress?.counters ?? {}} />
             )}
 
           </>
