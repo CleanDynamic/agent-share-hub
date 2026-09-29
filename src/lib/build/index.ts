@@ -278,6 +278,16 @@ export {
   type StartRebuildInput,
 } from "./rebuild";
 export {
+  REBUILD_TREE_DEPTH_CAP,
+  REBUILD_TREE_ROW_CAP,
+  buildTree,
+  flattenFamily,
+  getRebuildTree,
+  type RebuildTreeMaker,
+  type RebuildTreeNode,
+  type RebuildTreeRow,
+} from "./lineage";
+export {
   MINIMUM_PUBLISHABLE_KEYS,
   MINIMUM_PUBLISHABLE_SCORE,
   REPRODUCTION_COLUMNS,
