@@ -84,7 +84,7 @@
 // 21) rather than passing for an empty gallery.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { SeoHead } from "@/components/SeoHead";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
@@ -104,6 +104,7 @@ import {
 import { isPermissionError } from "@/lib/errors/permission";
 import { linkableMakers, searchMakers, type MakerHit } from "@/lib/profile/searchMakers";
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
   FacetRail,
@@ -328,13 +329,12 @@ export default function Gallery() {
         isolation: "isolate",
       }}
     >
-      <Helmet>
-        <title>Gallery — buildgallery</title>
-        <meta
-          name="description"
-          content="Builds other people have run: the prompts, configs and evidence, structured so you can run them too."
-        />
-      </Helmet>
+      {/* RC-P16b — the Gallery's title, description and share tags. */}
+      <SeoHead
+        title="Gallery — buildgallery"
+        description="Things people built with AI, ordered by how many others got them working."
+        path="/gallery"
+      />
 
         {/* BG-P15. The bespoke header — a "← buildgallery" link beside an
             <h1>Gallery> — is replaced by the frame's PageHeader. The back link
@@ -800,6 +800,10 @@ function GalleryGrid({
     firstPaint.current = false;
   }, []);
 
+  /* RC-P16 — the cards' likes, comments and saves: one useEngagement call for
+     the page of builds on screen, three requests signed in, one signed out. */
+  const engagement = useEngagement(builds.map((build) => build.id));
+
   /* Reduced motion and a runtime without IntersectionObserver are both
      answered inside `useReveal`, by never entering the hidden state at all:
      the end state is identical, it simply arrives at once. What is decided
@@ -812,7 +816,11 @@ function GalleryGrid({
               snapshot columns off the record it was handed — they ride in on
               GALLERY_BUILD_COLUMNS like everything else the card shows — so the
               grid neither composes it nor can decline to pass it. */}
-          <GalleryCard build={build} srcByPath={srcByPath} />
+          <GalleryCard
+            build={build}
+            srcByPath={srcByPath}
+            engagement={engagementFor(engagement, build.id)}
+          />
           <Shortfall build={build} viewerId={viewerId} />
         </Reveal>
       ))}

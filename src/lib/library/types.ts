@@ -1,6 +1,13 @@
 // Shared types for the library/collections data layer.
 
-export type CollectionItemKind = "blueprint" | "blog" | "bounty" | "stage" | "block";
+import type { GalleryBuild } from "@/lib/build/gallery";
+
+/**
+ * What a collection item is. "build" arrived with RC-P18 (collection_items
+ * .build_id, 20261001180000); the five legacy kinds stay in the type until
+ * RC-P30 retires them.
+ */
+export type CollectionItemKind = "build" | "blueprint" | "blog" | "bounty" | "stage" | "block";
 
 export interface CollectionRow {
   id: string;
@@ -38,6 +45,8 @@ export interface CollectionItemRow {
   content_id: string | null;
   item_kind: CollectionItemKind | null;
   item_id: string | null;
+  /** RC-P18: set exactly when item_kind is "build" (collection_items_build_matches_kind). */
+  build_id?: string | null;
   position: number;
   note: string | null;
   added_by: string;
@@ -86,6 +95,8 @@ export interface SavedItem {
   // Collections (id + name) this item belongs to for the current viewer.
   inCollections: { id: string; name: string }[];
   cached_meta: Record<string, any> | null;
+  /** RC-P18: a build item's card, as the gallery reads it; absent for legacy kinds. */
+  build?: GalleryBuild | null;
 }
 
 export type CollectionSort = "recent" | "alphabetical" | "items";

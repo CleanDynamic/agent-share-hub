@@ -17,6 +17,13 @@ vi.mock("@/lib/build", async (importOriginal) => ({
   getWhereNext: (input: unknown) => getWhereNext(input),
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
+/* RC-P16: the cards carry the engagement row, which reads the session and asks
+   for counts. A signed-out reader and an empty answer; nothing here is about it. */
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null, isLoggedIn: false }) }));
+vi.mock("@/lib/social", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/social")>()),
+  getEngagementCounts: vi.fn(async () => ({})),
+}));
 
 import { WhereNext } from "@/components/build/WhereNext";
 

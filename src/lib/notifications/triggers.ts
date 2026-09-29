@@ -64,28 +64,9 @@ async function getPostMeta(
 }
 
 // ────────────────────────────────────────────────────────────
-// 1. NEW_FOLLOWER
+// 1. NEW_FOLLOWER — written by the database since RC-P19 (the 'follow'
+//    kind, 20261001200000_rc_build_notifications.sql); the client call went.
 // ────────────────────────────────────────────────────────────
-
-export function notifyNewFollower(args: {
-  followerId: string;
-  followingId: string;
-}) {
-  return silent(
-    (async () => {
-      const actor = await getActorUsername(args.followerId);
-      return createNotification({
-        recipientId: args.followingId,
-        kind: "new_follower",
-        actorId: args.followerId,
-        targetType: "profile",
-        targetId: args.followerId,
-        body: `${actor ?? "Someone"} followed you`,
-        metadata: { username: actor },
-      });
-    })()
-  );
-}
 
 // ────────────────────────────────────────────────────────────
 // 2/3. ENGAGEMENT — like / repost
@@ -334,53 +315,10 @@ export function notifyReferencesReceived(args: {
 }
 
 // ────────────────────────────────────────────────────────────
-// 8. BOUNTY interactions
+// 8. BOUNTY interactions — a solution posted and a solution accepted are
+//    written by the database since RC-P19 (the 'solution' and 'solved'
+//    kinds); the two client calls went.
 // ────────────────────────────────────────────────────────────
-
-export function notifyBountySolutionSubmitted(args: {
-  bountyId: string;
-  solverId: string;
-}) {
-  return silent(
-    (async () => {
-      const post = await getPostMeta(args.bountyId);
-      if (!post) return null;
-      const actor = await getActorUsername(args.solverId);
-      return createNotification({
-        recipientId: post.creator_id,
-        kind: "bounty_interaction",
-        actorId: args.solverId,
-        targetType: "bounty",
-        targetId: args.bountyId,
-        body: `${actor ?? "Someone"} submitted a solution to your bounty '${post.title}'`,
-        metadata: { sub: "solution_submitted", bounty_title: post.title },
-      });
-    })()
-  );
-}
-
-export function notifyBountySolutionAccepted(args: {
-  bountyId: string;
-  solverId: string;
-  acceptorId: string;
-}) {
-  return silent(
-    (async () => {
-      const post = await getPostMeta(args.bountyId);
-      if (!post) return null;
-      const acceptor = await getActorUsername(args.acceptorId);
-      return createNotification({
-        recipientId: args.solverId,
-        kind: "bounty_interaction",
-        actorId: args.acceptorId,
-        targetType: "bounty",
-        targetId: args.bountyId,
-        body: `${acceptor ?? "The author"} accepted your solution to '${post.title}'`,
-        metadata: { sub: "solution_accepted", bounty_title: post.title },
-      });
-    })()
-  );
-}
 
 // ────────────────────────────────────────────────────────────
 // 8b. BOUNTY competition events (Phase 8 — competition surfacing)

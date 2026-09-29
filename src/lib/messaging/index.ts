@@ -7,3 +7,10 @@ export { createBountyThread } from "./createBountyThread";
 export { createBlueprintGroup } from "./createBlueprintGroup";
 export { createDirectThread } from "./createDirectThread";
 export { useNewMessages, useThreadListUpdates } from "./realtime";
+export {
+  SHAREABLE_BUILDS_MAX,
+  getSharedBuilds,
+  listShareableBuilds,
+  sendBuildMessage,
+  type ShareableBuild,
+} from "./builds";

@@ -41,6 +41,7 @@ import { GalleryCard } from "@/components/gallery/GalleryCard";
 import { gapEdge } from "@/components/brand/GapMarker";
 import { rewardLabel } from "@/components/bounty/bountyDisplay";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import { engagementFor, type Engagement } from "@/hooks/useEngagement";
 import { PlaqueLamp } from "@/components/brand/Plaque";
 import { chipStyle } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
@@ -110,19 +111,28 @@ export interface BuildFeedItemViewProps {
   item: FeedItem;
   /** Signed once for the whole page, never per item. */
   srcByPath: MediaSrcMap;
+  /**
+   * RC-P16 — the tab's one useEngagement answer. Each card takes its own
+   * share; absent, the cards draw no engagement row.
+   */
+  engagement?: Engagement;
 }
 
 /** One feed item, whichever kind it is. */
-export function BuildFeedItemView({ item, srcByPath }: BuildFeedItemViewProps) {
+export function BuildFeedItemView({ item, srcByPath, engagement }: BuildFeedItemViewProps) {
   if (item.kind === "repro_note") return <ReproNoteStrip item={item} />;
+  const card = engagement ? engagementFor(engagement, item.build.id) : undefined;
   if (item.kind === "rebuild") {
-    return <RebuildItem item={item} srcByPath={srcByPath} />;
+    return <RebuildItem item={item} srcByPath={srcByPath} engagement={card} />;
   }
   if (item.kind === "bounty") {
-    return <BountyItem item={item} srcByPath={srcByPath} />;
+    return <BountyItem item={item} srcByPath={srcByPath} engagement={card} />;
   }
-  return <BuildItem item={item} srcByPath={srcByPath} />;
+  return <BuildItem item={item} srcByPath={srcByPath} engagement={card} />;
 }
+
+/** One card's share of the tab's engagement, as the card takes it. */
+type CardEngagement = ReturnType<typeof engagementFor> | undefined;
 
 /**
  * A build, as the gallery draws it — in the feed's layout.
@@ -133,13 +143,15 @@ export function BuildFeedItemView({ item, srcByPath }: BuildFeedItemViewProps) {
 function BuildItem({
   item,
   srcByPath,
+  engagement,
 }: {
   item: BuildFeedItem;
   srcByPath: MediaSrcMap;
+  engagement?: CardEngagement;
 }) {
   return (
     <div data-testid="feed-item-build" style={itemFrame}>
-      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} />
+      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} engagement={engagement} />
     </div>
   );
 }
@@ -165,9 +177,11 @@ function BuildItem({
 function RebuildItem({
   item,
   srcByPath,
+  engagement,
 }: {
   item: RebuildFeedItem;
   srcByPath: MediaSrcMap;
+  engagement?: CardEngagement;
 }) {
   return (
     <div data-testid="feed-item-rebuild" style={itemFrame}>
@@ -190,7 +204,7 @@ function RebuildItem({
           {item.note}
         </p>
       ) : null}
-      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} />
+      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} engagement={engagement} />
     </div>
   );
 }
@@ -225,9 +239,11 @@ function RebuildItem({
 function BountyItem({
   item,
   srcByPath,
+  engagement,
 }: {
   item: BountyFeedItem;
   srcByPath: MediaSrcMap;
+  engagement?: CardEngagement;
 }) {
   const reward = rewardLabel(item.reward);
   const part = (item.gapTitle ?? "").trim();
@@ -271,7 +287,7 @@ function BountyItem({
           </span>
         ) : null}
       </div>
-      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} />
+      <GalleryCard build={item.build} srcByPath={srcByPath} layout={FEED_LAYOUT} engagement={engagement} />
     </div>
   );
 }

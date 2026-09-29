@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
@@ -162,9 +162,12 @@ export default function Bounties() {
       data-visual-slot="bounties-frame"
       style={phone ? { paddingTop: SPACE.sm } : { padding: SPACE.md }}
     >
-      <Helmet>
-        <title>Bounties — buildgallery</title>
-      </Helmet>
+      {/* RC-P16b — the board's title, description and share tags. */}
+      <SeoHead
+        title="Open bounties — buildgallery"
+        description="Open asks on real AI builds, with rewards."
+        path="/bounties"
+      />
 
       <PageHeader
         title="Bounties"

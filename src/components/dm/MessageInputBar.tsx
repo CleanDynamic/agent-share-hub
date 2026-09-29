@@ -3,16 +3,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square, AtSign, FileText, Layers, Box } from "lucide-react";
-import { ThreadReferencePicker, type ReferenceItem, type ReferenceType, type ReferencePickerCounts } from "@/components/messages/ThreadReferencePicker";
-import { sendContentShareMessage } from "@/lib/messaging";
-import { queryBlueprints } from "@/lib/discover/queryBlueprints";
-import { queryStages } from "@/lib/discover/queryStages";
-import { queryBlocks } from "@/lib/discover/queryBlocks";
+import { toast } from "sonner";
+import { isPermissionError } from "@/lib/errors/permission";
+import { Camera, Image as ImageIcon, Mic, Smile, Heart, Send, X, Loader2, Square, AtSign } from "lucide-react";
+import { ThreadReferencePicker, type ReferenceItem } from "@/components/messages/ThreadReferencePicker";
+import { listShareableBuilds, sendBuildMessage } from "@/lib/messaging";
 // Aliased `tok`: this file already binds `t` twice in tight scopes (a
 // setTimeout handle and a MediaStreamTrack), and a token accessor that can
 // be shadowed is a trap for whoever edits those blocks next.
-import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
+import { t as tok } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
 import { data as dataType, tabular } from "@/lib/theme/type";
 import { uiTransition } from "@/lib/theme/controls";
@@ -25,18 +24,11 @@ interface MessageInputBarProps {
   onMessageSent: () => void;
 }
 
+/** RC-P20: the build a message is about to carry, and what the chip calls it. */
 interface PendingShare {
-  type: "blueprint" | "stage" | "block";
-  contentId: string; // for blueprint = id; for stage/block = parent blueprint content_items.id
+  buildId: string;
   label: string;
   subtitle?: string;
-  thumbnail?: string;
-}
-
-function variantIcon(t: ReferenceType) {
-  if (t === "blueprints") return <FileText className="h-3 w-3" />;
-  if (t === "stages") return <Layers className="h-3 w-3" />;
-  return <Box className="h-3 w-3" />;
 }
 
 export function MessageInputBar({
@@ -66,12 +58,12 @@ export function MessageInputBar({
   // Reference picker state
   const atButtonRef = useRef<HTMLButtonElement | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerType, setPickerType] = useState<ReferenceType>("blueprints");
   const [pickerQuery, setPickerQuery] = useState("");
   const [pickerDebouncedQuery, setPickerDebouncedQuery] = useState("");
   const [pickerResults, setPickerResults] = useState<ReferenceItem[]>([]);
   const [pickerLoading, setPickerLoading] = useState(false);
-  const [counts, setCounts] = useState<ReferencePickerCounts>({ blueprints: 0, stages: 0, blocks: 0 });
+  const [pickerError, setPickerError] = useState<unknown>(null);
+  const [pickerAttempt, setPickerAttempt] = useState(0);
   const [pendingShare, setPendingShare] = useState<PendingShare | null>(null);
   const atTriggerActiveRef = useRef<boolean>(false); // when picker opened via typing `@`
 
@@ -88,56 +80,36 @@ export function MessageInputBar({
     return () => clearTimeout(t);
   }, [pickerQuery]);
 
-  // Run search when picker opens / type / query changes
+  // RC-P20: one kind, builds — the reader's own and their saves, newest first.
   useEffect(() => {
     if (!pickerOpen) return;
     let cancelled = false;
     setPickerLoading(true);
+    setPickerError(null);
     (async () => {
       try {
-        if (pickerType === "blueprints") {
-          const res = await queryBlueprints({ query: pickerDebouncedQuery, limit: 12 });
-          if (cancelled) return;
-          const items: ReferenceItem[] = (res.rows ?? []).map((r: any) => ({
-            id: r.id,
-            name: r.title ?? "Untitled",
-            subtitle: r.author?.username ? `@${r.author.username}` : (r.profiles?.username ? `@${r.profiles.username}` : undefined),
-            type: "blueprints",
-            avatar: r.cover_image_url || undefined,
-          }));
-          setPickerResults(items);
-          setCounts((c) => ({ ...c, blueprints: res.total ?? items.length }));
-        } else if (pickerType === "stages") {
-          const res = await queryStages({ query: pickerDebouncedQuery, limit: 12 } as any);
-          if (cancelled) return;
-          const items: ReferenceItem[] = (res.rows ?? []).map((r) => ({
-            id: r.parent.blueprintId, // use parent blueprint id as shared_content_id
-            name: r.stage.name,
-            subtitle: `from ${r.parent.blueprintTitle}`,
-            type: "stages",
-          }));
-          setPickerResults(items);
-          setCounts((c) => ({ ...c, stages: res.total ?? items.length }));
-        } else {
-          const res = await queryBlocks({ query: pickerDebouncedQuery, limit: 12 } as any);
-          if (cancelled) return;
-          const items: ReferenceItem[] = (res.rows ?? []).map((r) => ({
-            id: r.parent.blueprintId,
-            name: r.block.name || r.block.type || "Block",
-            subtitle: `${r.block.type} · ${r.parent.stageName}`,
-            type: "blocks",
-          }));
-          setPickerResults(items);
-          setCounts((c) => ({ ...c, blocks: res.total ?? items.length }));
+        const builds = await listShareableBuilds({ query: pickerDebouncedQuery });
+        if (cancelled) return;
+        setPickerResults(
+          builds.map((build) => ({
+            id: build.id,
+            name: build.title,
+            subtitle: build.source === "yours" ? "Yours" : "Saved",
+            slug: build.slug,
+          })),
+        );
+      } catch (error) {
+        // STATES.md row 21, not an empty list: a refusal is not "nothing".
+        if (!cancelled) {
+          setPickerResults([]);
+          setPickerError(error);
         }
-      } catch (e) {
-        if (!cancelled) setPickerResults([]);
       } finally {
         if (!cancelled) setPickerLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [pickerOpen, pickerType, pickerDebouncedQuery]);
+  }, [pickerOpen, pickerDebouncedQuery, pickerAttempt]);
 
   const openPicker = (initialQuery = "") => {
     setPickerQuery(initialQuery);
@@ -151,15 +123,7 @@ export function MessageInputBar({
   };
 
   const handlePickerSelect = (item: ReferenceItem) => {
-    const variant: PendingShare["type"] =
-      item.type === "blueprints" ? "blueprint" : item.type === "stages" ? "stage" : "block";
-    setPendingShare({
-      type: variant,
-      contentId: item.id,
-      label: item.name,
-      subtitle: item.subtitle,
-      thumbnail: item.avatar,
-    });
+    setPendingShare({ buildId: item.id, label: item.name, subtitle: item.subtitle });
     // If opened via `@`, strip the `@query` token from the textarea
     if (atTriggerActiveRef.current) {
       setText((prev) => prev.replace(/@\S*$/, "").replace(/@$/, ""));
@@ -175,7 +139,6 @@ export function MessageInputBar({
     const match = val.match(/(^|\s)@(\S*)$/);
     if (match) {
       atTriggerActiveRef.current = true;
-      setPickerType("blueprints");
       openPicker(match[2] || "");
     } else if (atTriggerActiveRef.current && pickerOpen) {
       // user typed past trigger or deleted `@`
@@ -191,7 +154,15 @@ export function MessageInputBar({
     setSending(true);
     try {
       if (pendingShare) {
-        await sendContentShareMessage(threadId, pendingShare.type, pendingShare.contentId, text.trim() || undefined);
+        try {
+          await sendBuildMessage(threadId, pendingShare.buildId, text.trim() || undefined);
+        } catch (error) {
+          // The build and the note stay, so the reader can send again. The
+          // toast says why in the words STATES.md row 21 gives; the note is
+          // not in it.
+          toast(isPermissionError(error) ? "You don't have access to this." : "Something went wrong.");
+          return;
+        }
         setPendingShare(null);
       } else {
         const insertData: any = {
@@ -420,16 +391,6 @@ export function MessageInputBar({
             className="flex items-center gap-2 max-w-full pr-2 pl-2 py-1.5"
             style={{ borderRadius: r["r-chip"], border: `1px solid ${tok.line}`, background: tok.recess }}
           >
-            <div
-              className="h-6 w-6 flex items-center justify-center shrink-0"
-              style={{
-                borderRadius: r["r-chip"],
-                background: tokenAlpha("action", 0.14),
-                color: tok.text,
-              }}
-            >
-              {pendingShare.type === "blueprint" ? <FileText className="h-3 w-3" /> : pendingShare.type === "stage" ? <Layers className="h-3 w-3" /> : <Box className="h-3 w-3" />}
-            </div>
             <div className="min-w-0">
               <div className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: tok.text }}>
                 {pendingShare.label}
@@ -524,7 +485,7 @@ export function MessageInputBar({
             }}
             className="p-1"
             style={{ color: pickerOpen ? tok.text : tok.text2, transition: uiTransition() }}
-            aria-label="Share content"
+            aria-label="Share a build"
           >
             <AtSign className="h-5 w-5" />
           </button>
@@ -598,13 +559,12 @@ export function MessageInputBar({
       <ThreadReferencePicker
         isOpen={pickerOpen}
         onClose={closePicker}
-        activeType={pickerType}
-        onTypeChange={setPickerType}
         query={pickerQuery}
         onQueryChange={setPickerQuery}
         results={pickerResults}
         isLoading={pickerLoading}
-        counts={counts}
+        error={pickerError}
+        onRetry={() => setPickerAttempt((attempt) => attempt + 1)}
         onSelect={handlePickerSelect}
         anchorEl={atButtonRef.current}
       />

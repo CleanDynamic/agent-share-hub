@@ -20,6 +20,7 @@ import { buttonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { measure, tabular, type } from "@/lib/theme/type";
+import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
 
 /* ── BG-P21 — the hero is a media well, not a card ────────────────────────────
 
@@ -106,6 +107,22 @@ interface BuildHeaderProps {
    * a caller that has not resolved a hero renders exactly what it used to.
    */
   hero?: HeroMedia;
+  /**
+   * RC-P16 — the reader's Like, Comment, Save and Share, with this build's
+   * counts and the reader's own likes and saves.
+   *
+   * A NEW ELEMENT 24 AFTER THE REPRODUCTION ACTION, and quiet: four tertiary
+   * actions, none of them filled, so the header's one primary stays the only
+   * one ⟦von-restorff-effect⟧. Omitted — the composer's preview of a draft —
+   * the header is exactly what it was.
+   */
+  engagement?: RowEngagement;
+  /**
+   * RC-P17b — the credit line under the title and outcome: who made the build,
+   * and a quiet "Report" at its end for a signed-in reader who did not.
+   * Omitted, the title block is exactly what it was.
+   */
+  credit?: ReactNode;
 }
 
 /** A hero the page has already resolved: what it is, and where to get it. */
@@ -292,6 +309,8 @@ export function BuildHeader({
   reproduction,
   rebuilds,
   hero,
+  engagement,
+  credit,
 }: BuildHeaderProps) {
   const placed = flatten(tree);
   const heroNode = build.hero_node_id
@@ -306,6 +325,18 @@ export function BuildHeader({
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
 
   const hasCost = build.cost_setup !== null || build.cost_monthly !== null;
+
+  /* BG-P11: the fallback is the shared plaque. It used to be this file's own
+     rendering, and it had already drifted — it printed a raw
+     toLocaleDateString and never named the model, so the same build said "on
+     Sonnet 4.5" on its card and said nothing about the model on its own page.
+     The model always travels with the claim. */
+  const reproductionSlot = reproduction ?? (
+    <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <span style={{ ...type.eyebrow, color: t.text2 }}>Reproduction</span>
+      <Plaque build={build} size="header" />
+    </div>
+  );
 
   return (
     <header style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -354,6 +385,7 @@ export function BuildHeader({
             {build.outcome}
           </p>
         ) : null}
+        {credit ?? null}
       </div>
 
       {actions ? (
@@ -414,16 +446,27 @@ export function BuildHeader({
           </Fact>
         ) : null}
 
-        {/* BG-P11: the fallback is the shared plaque. It used to be this file's
-            own rendering, and it had already drifted — it printed a raw
-            toLocaleDateString and never named the model, so the same build said
-            "on Sonnet 4.5" on its card and said nothing about the model on its
-            own page. The model always travels with the claim. */}
-        {reproduction ?? (
-          <div data-visual-slot="build-reproduction" style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <span style={{ ...type.eyebrow, color: t.text2 }}>Reproduction</span>
-            <Plaque build={build} size="header" />
+        {engagement ? (
+          /* RC-P16. The reproduction action and the engagement row share one
+             new wrapper, the row 24 under the action at every width. Beside it
+             was tried: the slot is as wide as its freshness line, so at 1440
+             the row sat 215px from "I ran this and it worked" and read as a
+             separate thing. The reproduction slot itself is untouched. */
+          <div
+            data-visual-slot="build-engagement"
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 24 }}
+          >
+            {reproductionSlot}
+            <EngagementRow
+              variant="page"
+              build={{ id: build.id, slug: build.slug, title: build.title }}
+              counts={engagement.counts}
+              liked={engagement.liked}
+              saved={engagement.saved}
+            />
           </div>
+        ) : (
+          reproductionSlot
         )}
 
         {rebuilds}

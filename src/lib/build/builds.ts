@@ -162,17 +162,28 @@ export async function getBuild(id: string): Promise<BuildRecord | null> {
   return composeRecord(build);
 }
 
-/** The composed build record, addressed by slug. Same shape as getBuild. */
+/**
+ * The composed build record, addressed by slug. Same shape as getBuild, plus
+ * the maker's name for the page's credit line (RC-P17b), embedded on the same
+ * request rather than asked for separately.
+ */
 export async function getBuildBySlug(slug: string): Promise<BuildRecord | null> {
   const { data, error } = await supabase
     .from("builds")
-    .select(BUILD_COLUMNS)
+    .select(`${BUILD_COLUMNS}, maker:profiles!builds_creator_id_fkey(username, display_name)`)
     .eq("slug", slug)
     .maybeSingle();
 
   if (error) throw buildLayerError("getBuildBySlug", error);
   if (!data) return null;
-  return composeRecord(data as Build);
+  type MakerEmbed = { username: string | null; display_name: string | null };
+  const { maker, ...row } = data as unknown as Build & { maker?: MakerEmbed | MakerEmbed[] | null };
+  const embed = Array.isArray(maker) ? (maker[0] ?? null) : (maker ?? null);
+  const record = await composeRecord(row as Build);
+  return {
+    ...record,
+    maker: embed ? { username: embed.username, displayName: embed.display_name } : null,
+  };
 }
 
 async function composeRecord(build: Build): Promise<BuildRecord> {

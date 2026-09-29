@@ -6,13 +6,20 @@ export { createNotification } from "./createNotification";
 export { getUnreadCount } from "./getUnreadCount";
 export { subscribeToNewNotifications, useNewNotifications } from "./realtime";
 export {
-  notifyNewFollower,
+  buildIdOf,
+  isBuildNotificationKind,
+  notificationHref,
+  notificationMessage,
+  resolveNotificationBuilds,
+  resolveNotificationTargets,
+} from "./resolveTarget";
+// RC-P19: notifyNewFollower, notifyBountySolutionSubmitted and
+// notifyBountySolutionAccepted went — the database writes those events now.
+export {
   notifyEngagement,
   notifyMentions,
   notifyNewMessageCoalesced,
   notifyReferencesReceived,
-  notifyBountySolutionSubmitted,
-  notifyBountySolutionAccepted,
   notifyLevelEarned,
   recomputeUserLevel,
 } from "./triggers";

@@ -76,6 +76,7 @@ import { CardThread, THREAD_PAD, type CardLayout } from "./CardThread";
 import { BODY_HEIGHT } from "./cardBodies";
 import { coverMedia, mediaAlt, postMediaOf, stillFor, type MediaSrcMap } from "./cardMedia";
 import { feedback } from "@/lib/theme/motion";
+import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
 
 /**
  * Shape to body. Five bodies, nine shapes: agent and workflow are apps as far
@@ -137,9 +138,18 @@ export interface GalleryCardProps {
    * knowing what is inside a card.
    */
   layout?: CardLayout;
+  /**
+   * RC-P16 — the engagement row: this card's counts and whether the reader
+   * likes and has saved it, from the one useEngagement call its list makes.
+   *
+   * OPTIONAL, AND ABSENT MEANS NO ROW. The lists of published builds — the
+   * Gallery, Home's feed and where next — pass it; the composer's previews of a
+   * draft do not, because a draft is nothing a reader can like or save.
+   */
+  engagement?: RowEngagement;
 }
 
-export function GalleryCard({ build, srcByPath, layout = "grid" }: GalleryCardProps) {
+export function GalleryCard({ build, srcByPath, layout = "grid", engagement }: GalleryCardProps) {
   const Body =
     BODY_FOR_SHAPE[(build.shape ?? "other") as BuildShape] ?? DefaultCardBody;
 
@@ -252,6 +262,21 @@ export function GalleryCard({ build, srcByPath, layout = "grid" }: GalleryCardPr
           summary={bounty}
           testId="gallery-card-bounty"
         />
+
+        {/* 6. RC-P16 — THE ENGAGEMENT ROW, the one addition CONTRACT §3.5
+             sanctions: a NEW last element, 16 below whatever came last, with
+             every item above it where it was. Like, Comment and Save, quiet,
+             and outranked by the plaque. Its presses stay off this card's
+             link. */}
+        {engagement ? (
+          <EngagementRow
+            variant="card"
+            build={{ id: build.id, slug: build.slug, title: build.title }}
+            counts={engagement.counts}
+            liked={engagement.liked}
+            saved={engagement.saved}
+          />
+        ) : null}
       </div>
     </Frame>
   );
@@ -332,6 +357,11 @@ export function GalleryCardSkeleton({ layout = "grid" }: { layout?: CardLayout }
         <div style={{ display: "flex", gap: 6 }}>
           <Skeleton style={{ height: 22, width: 64, borderRadius: r.chip }} />
           <Skeleton style={{ height: 22, width: 48, borderRadius: r.chip }} />
+        </div>
+        {/* RC-P16 — the engagement row's 44px, 16 under the chips, so the
+            card that replaces this placeholder does not grow on arrival. */}
+        <div style={{ height: 44, marginTop: 8, display: "flex", alignItems: "center" }}>
+          <Skeleton style={{ height: 18, width: 132, borderRadius: r.chip }} />
         </div>
       </div>
     </div>

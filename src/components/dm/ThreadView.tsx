@@ -13,6 +13,9 @@ import { MessageInputBar } from "./MessageInputBar";
 import { displayContentType } from "@/lib/content-types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ContentShareBubble, type ContentShareValue, type ReadState } from "@/components/messages/ContentShareBubble";
+import { BuildShareCard } from "@/components/messages/BuildShareCard";
+import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
+import { getSharedBuilds } from "@/lib/messaging/builds";
 import { markContentViewed } from "@/lib/messaging";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { r } from "@/lib/theme/radius";
@@ -492,6 +495,20 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     enabled: messageIds.length > 0,
   });
 
+  /* RC-P20 — the builds this page of messages carries, read once for all of
+     them, as the gallery's cards read them, and their covers signed together. */
+  const sharedBuildIds = useMemo(() => {
+    const carried = ((messages ?? []) as { shared_build_id?: string | null }[]).map((m) => m.shared_build_id);
+    return [...new Set(carried.filter((id): id is string => typeof id === "string"))];
+  }, [messages]);
+  const { data: sharedBuilds } = useQuery({
+    queryKey: ["dm_shared_builds", threadId, sharedBuildIds],
+    queryFn: () => getSharedBuilds(sharedBuildIds),
+    enabled: sharedBuildIds.length > 0,
+  });
+  const sharedMedia = useMemo(() => [...(sharedBuilds?.values() ?? [])].flatMap(cardMedia), [sharedBuilds]);
+  const sharedSrc = useSignedMedia(sharedMedia);
+
   const reactionsByMessage = useMemo(() => {
     const map = new Map<string, any[]>();
     (allReactions ?? []).forEach((r: any) => {
@@ -936,15 +953,40 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
               />
             );
           }
+          // RC-P20: the clear emptied this link; the message keeps its words alone.
+          if (!msg.shared_content_id) {
+            return (
+              <p className="whitespace-pre-wrap break-words text-sm leading-[1.4]">
+                {linkifyText(msg.text_content || msg.body || "")}
+              </p>
+            );
+          }
           return <PostShareCard contentId={msg.shared_content_id} />;
         case "like":
           return <span className="text-[32px] leading-none">❤️</span>;
-        default:
+        default: {
+          // RC-P20: a message carrying a build shows the build's card, then
+          // its note. A build the reader cannot read, or one deleted since,
+          // leaves the words alone, as a message whose legacy link the clear
+          // emptied does.
+          const shared = msg.shared_build_id ? sharedBuilds?.get(msg.shared_build_id) : undefined;
+          const words = msg.text_content || "";
+          if (shared) {
+            return (
+              <div data-testid="message-build-share" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <BuildShareCard build={shared} srcByPath={sharedSrc} />
+                {words ? (
+                  <p className="whitespace-pre-wrap break-words text-sm leading-[1.4]">{linkifyText(words)}</p>
+                ) : null}
+              </div>
+            );
+          }
           return (
             <p className="whitespace-pre-wrap break-words text-sm leading-[1.4]">
-              {linkifyText(msg.text_content || "")}
+              {linkifyText(words)}
             </p>
           );
+        }
       }
     };
 

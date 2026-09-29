@@ -46,6 +46,16 @@ import {
   type SolutionBuild,
 } from "@/lib/bounty";
 import { useAuth } from "@/contexts/AuthContext";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
+import { SeoHead } from "@/components/SeoHead";
+import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
+import { getMakerName } from "@/lib/profile/makerName";
+import { Comments } from "@/components/social/Comments";
+import { CreditLine } from "@/components/build/CreditLine";
+import { ReportDialog } from "@/components/moderation/ReportDialog";
+import { isBuildHidden } from "@/lib/moderation";
+import { usePartCommentCounts } from "@/hooks/useBuildComments";
+import { numberParts } from "@/lib/social";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import {
@@ -482,13 +492,16 @@ function BuildPageSkeleton() {
   );
 }
 
+/** No part has comments yet: one frozen object, so the markers do not re-render. */
+const NO_PART_COUNTS: Record<string, number> = Object.freeze({}) as Record<string, number>;
+
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   // Read for one reason: whose me-too marks to fetch. Nothing on this page is
   // hidden from a signed-out reader.
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
 
   // The tab strip is controlled from here so that a breakage can send the
   // reader into the replay at the step it broke.
@@ -578,6 +591,45 @@ export default function BuildPage() {
   });
 
   const buildId = data?.build.id;
+
+  /* RC-P16 — this build's likes, comments and saves for the header's row: the
+     same hook the lists use, asked about one build (three requests signed in,
+     one signed out). */
+  const engagement = useEngagement(buildId ? [buildId] : []);
+
+  /* RC-P17 — comments. The parts are numbered as the Anatomy draws them, for
+     the "on part 3 · …" chips; a marker's press becomes an attach request the
+     comments section acts on; the markers read the part counts the section
+     asked for (enabled false: from the cache, never a request of their own). */
+  const parts = useMemo(() => numberParts(data?.tree ?? []), [data?.tree]);
+  const [attachRequest, setAttachRequest] = useState<{ nodeId: string; at: number } | null>(null);
+  const commentOnPart = useCallback((nodeId: string) => setAttachRequest({ nodeId, at: Date.now() }), []);
+  const { data: partCounts } = usePartCommentCounts(buildId, false);
+
+  /* RC-P17b — reporting this build, and whether an admin has hidden it. The
+     second is asked only on the creator's own page: everyone else is refused
+     a hidden build by the database and sees the not-found state instead. */
+  const [reporting, setReporting] = useState<{ type: "build"; id: string } | null>(null);
+  const viewerIsCreator = Boolean(user && data && user.id === data.build.creator_id);
+  const { data: hiddenByAdmin } = useQuery<boolean>({
+    queryKey: ["build-hidden", buildId],
+    queryFn: () => isBuildHidden(buildId as string),
+    enabled: Boolean(buildId) && viewerIsCreator,
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  /* RC-P16b — the maker's name, for the one description that needs it: a
+     build with no outcome is described as "A build by <maker>, reproduced n
+     times." Every other build is described by its outcome, and asks nothing. */
+  const needsMakerName = Boolean(data) && !(data?.build.outcome ?? "").trim();
+  const { data: makerName } = useQuery<string | null>({
+    queryKey: ["build-maker-name", data?.build.creator_id],
+    queryFn: () => getMakerName(data?.build.creator_id as string),
+    enabled: needsMakerName && Boolean(data?.build.creator_id),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
 
   /**
    * #node-<id> in the address, scrolled to once the record is on screen.
@@ -927,7 +979,33 @@ export default function BuildPage() {
 
   return (
     <Frame>
+      {/* RC-P16b — what a search result and a shared link say about this
+          build. The picture is the hero still the page already signed for its
+          own header; nothing is asked for it. A draft is never indexed. */}
+      <SeoHead
+        title={shareTitle(data.build.title)}
+        description={shareDescription({
+          outcome: data.build.outcome,
+          makerName,
+          reproductionCount: data.build.reproduction_count,
+        })}
+        path={`/b2/${data.build.slug}`}
+        ogType="article"
+        image={hero ? (hero.kind === "image" ? hero.src : hero.poster ?? undefined) : undefined}
+        noIndex={data.build.status === "draft"}
+      />
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        {/* RC-P17b — the creator's own view of a build an admin has hidden
+            (STATES.md row 15). */}
+        {hiddenByAdmin ? (
+          <div
+            role="status"
+            data-testid="build-hidden-banner"
+            style={{ background: t.recess, color: t.text, borderRadius: r.panel, padding: "16px 24px" }}
+          >
+            An admin has hidden this build.
+          </div>
+        ) : null}
         {/* Above the build, not under it: a reader meets the provenance before
             they meet the work. */}
         <Section>
@@ -971,6 +1049,17 @@ export default function BuildPage() {
               <RebuildCount
                 count={rebuildCount}
                 onOpen={() => setTab("rebuilds")}
+              />
+            }
+            engagement={engagementFor(engagement, data.build.id)}
+            credit={
+              <CreditLine
+                maker={data.maker}
+                onReport={
+                  isLoggedIn && !viewerIsCreator
+                    ? () => setReporting({ type: "build", id: data.build.id })
+                    : undefined
+                }
               />
             }
           />
@@ -1046,9 +1135,30 @@ export default function BuildPage() {
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
               renderFooter={renderNodeFooter}
+              partComments={
+                data.build.status !== "draft"
+                  ? { counts: partCounts ?? NO_PART_COUNTS, onComment: commentOnPart }
+                  : undefined
+              }
             />
           </BuildTabs>
         </Section>
+        {/* RC-P17 — the comments, once, after the tab panel and before where
+            next. It asks for nothing until it is within 400px of the screen,
+            or at once for /b2/<slug>#comments. A draft takes no comments. */}
+        {data.build.status !== "draft" ? (
+          <Section>
+            <Comments
+              build={{ id: data.build.id, slug: data.build.slug }}
+              parts={parts}
+              attachRequest={attachRequest}
+              onOpenPart={openNodeInAnatomy}
+            />
+          </Section>
+        ) : null}
+        {/* RC-P17b — the report dialog; it portals to the body, so it takes no
+            place in this column. */}
+        <ReportDialog target={reporting} onClose={() => setReporting(null)} />
         {/* RC-P14b — where next, at the foot, after the tab panel. It asks for
             nothing until the reader comes within 400px of it, and renders
             nothing when there is nowhere onward. */}

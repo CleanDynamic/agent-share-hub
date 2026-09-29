@@ -13,6 +13,17 @@ import type { ResolveMedia, ResolveNode } from "./renderers";
 import { t } from "@/lib/theme/tokens";
 import { body as bodyType, measure } from "@/lib/theme/type";
 import { feedback } from "@/lib/theme/motion";
+import { PartCommentMarker } from "@/components/social/PartCommentMarker";
+
+/**
+ * RC-P17 — each part's comment count, and what "Comment on this part" does.
+ * Supplied by BuildPage for a published build; absent, the rows are exactly
+ * what they were.
+ */
+export interface PartComments {
+  counts: Record<string, number>;
+  onComment: (nodeId: string) => void;
+}
 
 interface AnatomyTreeProps {
   tree: NodeTree[];
@@ -30,6 +41,7 @@ interface AnatomyTreeProps {
    * page's, which is the only layer that knows what bounties exist.
    */
   renderFooter?: (node: BuildNode) => ReactNode;
+  partComments?: PartComments;
 }
 
 /** Indentation per level. Three levels deep is the deepest the schema allows. */
@@ -77,6 +89,7 @@ function TreeNode({
   resolveNode,
   resolveMedia,
   renderFooter,
+  partComments,
 }: {
   node: NodeTree;
   typesByKey: Map<string, NodeType>;
@@ -85,6 +98,7 @@ function TreeNode({
   resolveNode: ResolveNode;
   resolveMedia: ResolveMedia;
   renderFooter?: (node: BuildNode) => ReactNode;
+  partComments?: PartComments;
 }) {
   // Expanded by default at every level: the anatomy is the point of the page.
   const [open, setOpen] = useState(true);
@@ -128,6 +142,14 @@ function TreeNode({
             footer={renderFooter?.(node)}
           />
         </div>
+        {/* RC-P17 — a NEW element at the row's trailing end: comment on this
+            part. Nothing already in the row moves or changes. */}
+        {partComments ? (
+          <PartCommentMarker
+            count={partComments.counts[node.id] ?? 0}
+            onPress={() => partComments.onComment(node.id)}
+          />
+        ) : null}
       </div>
 
       {hasChildren && open ? (
@@ -154,6 +176,7 @@ function TreeNode({
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
               renderFooter={renderFooter}
+              partComments={partComments}
             />
           ))}
         </ul>
@@ -169,6 +192,7 @@ export function AnatomyTree({
   resolveNode,
   resolveMedia,
   renderFooter,
+  partComments,
 }: AnatomyTreeProps) {
   const typesByKey = new Map(nodeTypes.map((type) => [type.key, type]));
 
@@ -202,6 +226,7 @@ export function AnatomyTree({
           resolveNode={resolveNode}
           resolveMedia={resolveMedia}
           renderFooter={renderFooter}
+          partComments={partComments}
         />
       ))}
     </ul>

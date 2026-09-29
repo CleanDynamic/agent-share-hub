@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
@@ -165,6 +166,8 @@ function WhereNextRows({ rows }: { rows: Row[] }) {
   /* Signed for the whole section at once, never per card: the gallery's rule. */
   const mediaRows = useMemo(() => rows.flatMap((row) => row.builds).flatMap(cardMedia), [rows]);
   const srcByPath = useSignedMedia(mediaRows);
+  /* RC-P16 — one engagement call for every card in the section. */
+  const engagement = useEngagement(rows.flatMap((row) => row.builds.map((build) => build.id)));
 
   return (
     <section
@@ -198,7 +201,11 @@ function WhereNextRows({ rows }: { rows: Row[] }) {
           >
             {row.builds.map((build) => (
               <li key={build.id} data-testid="where-next-card" style={{ minWidth: 0 }}>
-                <GalleryCard build={build} srcByPath={srcByPath} />
+                <GalleryCard
+                  build={build}
+                  srcByPath={srcByPath}
+                  engagement={engagementFor(engagement, build.id)}
+                />
               </li>
             ))}
           </ul>

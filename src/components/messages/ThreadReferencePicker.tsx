@@ -1,3 +1,19 @@
+// What a reader can put in a message: a build (RC-P20).
+//
+// ONE KIND ⟦hicks-law⟧. The picker offered blueprints, stages and blocks, all
+// of which the clear removed; it offers "Builds" now and nothing else: the
+// reader's own published builds and the ones they saved, the most recent
+// first, at most twenty shown (listShareableBuilds), with a search box.
+// Keyboard: up and down move, Enter picks, Escape closes.
+//
+// Painted from the theme's tokens, so it reads in both rooms: the panel is
+// --bg on a --line hairline at --r-panel with the raised elevation, rows lift
+// to --recess, and the text is --text over --text2. Loading is skeleton rows
+// at the rows' size (STATES.md row 20); empty is one sentence and one
+// secondary action (row 19), because the composer's Send is the primary; a
+// refusal is its sentence and a secondary "Try again" (row 21). The entrance
+// fades and lifts 8px, and under reduced motion it does not move at all.
+
 import * as React from "react";
 import {
   useFloating,
@@ -7,75 +23,69 @@ import {
   autoUpdate,
   useTransitionStyles,
 } from "@floating-ui/react";
-import { AtSign, X, Search, FileText, Layers, Box } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { isPermissionError } from "@/lib/errors/permission";
+import { skeletonStyle } from "@/lib/theme/controls";
+import { elevation } from "@/lib/theme/elevation";
+import { prefersReducedMotion } from "@/lib/theme/motion";
+import { r } from "@/lib/theme/radius";
+import { SPACE } from "@/lib/theme/space";
+import { t } from "@/lib/theme/tokens";
+import { body, data, eyebrow, tabular } from "@/lib/theme/type";
 
-export type ReferenceType = "blueprints" | "stages" | "blocks";
+/** The one kind a message can carry. */
+export const REFERENCE_KINDS = ["Builds"] as const;
+
+/** The most rows the picker shows. */
+export const REFERENCE_MAX = 20;
+
+/** A row's height: a 44px target, and the skeleton's pitch. */
+const ROW_HEIGHT = 44;
+
+/**
+ * STATES.md row 2, the RC secondary: Button's outline variant paints a glass
+ * surface, and the secondary is transparent.
+ */
+const SECONDARY = { background: "transparent", minHeight: ROW_HEIGHT } as const;
 
 export interface ReferenceItem {
   id: string;
   name: string;
+  /** "Yours" or "Saved": why it is offered. */
   subtitle?: string;
-  type: ReferenceType;
-  avatar?: string;
-  icon?: React.ReactNode;
-}
-
-export interface ReferencePickerCounts {
-  blueprints: number;
-  stages: number;
-  blocks: number;
+  slug?: string;
 }
 
 export interface ThreadReferencePickerProps {
   isOpen: boolean;
   onClose: () => void;
-  activeType: ReferenceType;
-  onTypeChange: (type: ReferenceType) => void;
   query: string;
   onQueryChange: (query: string) => void;
   results: ReferenceItem[];
   isLoading?: boolean;
-  counts: ReferencePickerCounts;
+  /** Why the builds could not be read, if they could not. */
+  error?: unknown;
+  onRetry?: () => void;
   onSelect: (item: ReferenceItem) => void;
   anchorEl: HTMLElement | null;
 }
 
-const typeConfig: Record<
-  ReferenceType,
-  { label: string; placeholder: string; icon: React.ReactNode }
-> = {
-  blueprints: {
-    label: "Blueprints",
-    placeholder: "Search blueprints…",
-    icon: <FileText className="h-3 w-3" />,
-  },
-  stages: {
-    label: "Stages",
-    placeholder: "Search stages…",
-    icon: <Layers className="h-3 w-3" />,
-  },
-  blocks: {
-    label: "Blocks",
-    placeholder: "Search blocks…",
-    icon: <Box className="h-3 w-3" />,
-  },
-};
-
 export function ThreadReferencePicker({
   isOpen,
   onClose,
-  activeType,
-  onTypeChange,
   query,
   onQueryChange,
   results,
   isLoading = false,
-  counts,
+  error = null,
+  onRetry,
   onSelect,
   anchorEl,
 }: ThreadReferencePickerProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const shown = results.slice(0, REFERENCE_MAX);
 
   const floating = useFloating({
     open: isOpen,
@@ -87,45 +97,37 @@ export function ThreadReferencePicker({
   const { refs, floatingStyles, context } = floating;
 
   const { isMounted, styles: transitionStyles } = useTransitionStyles(context, {
-    duration: 150,
+    duration: prefersReducedMotion() ? 0 : 150,
     initial: { opacity: 0, transform: "translateY(8px)" },
   });
 
   React.useEffect(() => {
     if (isOpen && inputRef.current) {
-      const t = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
   const [selectedIndex, setSelectedIndex] = React.useState(0);
-  React.useEffect(() => setSelectedIndex(0), [results, query, activeType]);
+  React.useEffect(() => setSelectedIndex(0), [results, query]);
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+        setSelectedIndex((i) => Math.min(i + 1, shown.length - 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter" && results[selectedIndex]) {
+      } else if (e.key === "Enter" && shown[selectedIndex]) {
         e.preventDefault();
-        onSelect(results[selectedIndex]);
+        onSelect(shown[selectedIndex]);
       } else if (e.key === "Escape") {
         e.preventDefault();
         onClose();
-      } else if (e.key === "Tab") {
-        e.preventDefault();
-        const types: ReferenceType[] = ["blueprints", "stages", "blocks"];
-        const idx = types.indexOf(activeType);
-        const next = e.shiftKey
-          ? (idx - 1 + types.length) % types.length
-          : (idx + 1) % types.length;
-        onTypeChange(types[next]);
       }
     },
-    [results, selectedIndex, onSelect, onClose, activeType, onTypeChange]
+    [shown, selectedIndex, onSelect, onClose],
   );
 
   if (!isMounted) return null;
@@ -133,142 +135,155 @@ export function ThreadReferencePicker({
   return (
     <div
       ref={refs.setFloating}
-      style={{ ...floatingStyles, ...transitionStyles, zIndex: 60 }}
-      className="w-[340px] rounded-xl border border-white/10 shadow-2xl backdrop-blur-xl"
+      data-testid="reference-picker"
+      role="dialog"
+      aria-label="Share a build"
+      style={{
+        ...floatingStyles,
+        ...transitionStyles,
+        zIndex: 60,
+        width: 340,
+        maxWidth: "calc(100vw - 16px)",
+        background: t.bg,
+        border: `1px solid ${t.line}`,
+        borderRadius: r.panel,
+        overflow: "hidden",
+        ...elevation.raised,
+      }}
     >
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: "var(--recess)" }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingLeft: SPACE.sm,
+          borderBottom: `1px solid ${t.line}`,
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 h-9 border-b border-white/5">
-          <div className="flex items-center gap-1.5">
-            <AtSign className="h-3.5 w-3.5 text-white/60" />
-            <span
-              className="text-[11px] font-semibold text-white/80"
-              style={{ fontFamily: "Figtree, sans-serif" }}
-            >
-              Share content
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white/90 transition-colors"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {/* Type tabs */}
-        <div className="flex h-8 border-b border-white/5">
-          {(["blueprints", "stages", "blocks"] as ReferenceType[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => onTypeChange(type)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 relative transition-colors text-[11px]",
-                activeType === type ? "text-white" : "text-white/50 hover:text-white/70"
-              )}
-              style={{ fontFamily: "Figtree, sans-serif", fontWeight: 500 }}
-            >
-              <span>{typeConfig[type].label}</span>
-              <span className="text-white/40">{counts[type]}</span>
-              {activeType === type && (
-                <div
-                  className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
-                  style={{ backgroundColor: "var(--evidence)" }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <div className="flex items-center gap-2 px-3 h-9 border-b border-white/5">
-          <Search className="h-3 w-3 text-white/40" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={typeConfig[activeType].placeholder}
-            className="flex-1 bg-transparent outline-none text-[12px] text-white/85 placeholder:text-white/35"
-            style={{ fontFamily: "Figtree, sans-serif" }}
-          />
-        </div>
-
-        {/* Results */}
-        <div className="max-h-[260px] overflow-y-auto py-1">
-          {isLoading ? (
-            <div className="px-3 py-6 flex items-center justify-center">
-              <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
-            </div>
-          ) : results.length === 0 ? (
-            <div
-              className="px-3 py-6 text-center text-[11px] text-white/40"
-              style={{ fontFamily: "Figtree, sans-serif" }}
-            >
-              No results found
-            </div>
-          ) : (
-            results.map((item, index) => (
-              <button
-                key={item.id}
-                onMouseEnter={() => setSelectedIndex(index)}
-                onClick={() => onSelect(item)}
-                className={cn(
-                  "w-full flex items-center gap-2.5 h-9 px-3 text-left transition-colors",
-                  index === selectedIndex ? "bg-white/10" : "hover:bg-white/5"
-                )}
-              >
-                {item.avatar ? (
-                  <img
-                    src={item.avatar}
-                    alt=""
-                    className="h-6 w-6 rounded object-cover shrink-0"
-                  />
-                ) : (
-                  <div
-                    className="h-6 w-6 rounded flex items-center justify-center shrink-0 text-white/70"
-                    style={{ backgroundColor: "var(--recess)" }}
-                  >
-                    {item.icon || typeConfig[item.type].icon}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div
-                    className="text-[12px] text-white/90 truncate"
-                    style={{ fontFamily: "Figtree, sans-serif", fontWeight: 500 }}
-                  >
-                    {item.name}
-                  </div>
-                  {item.subtitle && (
-                    <div
-                      className="text-[10px] text-white/45 truncate"
-                      style={{ fontFamily: "Figtree, sans-serif" }}
-                    >
-                      {item.subtitle}
-                    </div>
-                  )}
-                </div>
-                <div className="text-white/30 shrink-0">
-                  {typeConfig[item.type].icon}
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-
-        {/* Footer */}
-        <div
-          className="flex items-center gap-3 px-3 h-7 border-t border-white/5 text-[10px] text-white/40"
-          style={{ fontFamily: "Figtree, sans-serif" }}
+        {/* The one kind, named: there is nothing to switch between. */}
+        <span data-testid="reference-kind" style={{ ...eyebrow, color: t.text2 }}>
+          {REFERENCE_KINDS[0]}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: ROW_HEIGHT,
+            height: ROW_HEIGHT,
+            border: "none",
+            background: "transparent",
+            color: t.text2,
+            cursor: "pointer",
+          }}
         >
-          <span>↑↓ navigate</span>
-          <span>↵ select</span>
-          <span>Tab switch type</span>
-        </div>
+          <X size={16} />
+        </button>
+      </div>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: SPACE.xs,
+          padding: `0 ${SPACE.sm}px`,
+          minHeight: ROW_HEIGHT,
+          borderBottom: `1px solid ${t.line}`,
+        }}
+      >
+        <Search size={16} color={t.text2} aria-hidden />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search your builds and saves"
+          aria-label="Search your builds and saves"
+          style={{ ...body, flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", color: t.text }}
+        />
+      </label>
+
+      <div data-testid="reference-results" style={{ maxHeight: ROW_HEIGHT * 6, overflowY: "auto" }}>
+        {isLoading ? (
+          <div
+            aria-busy="true"
+            aria-label="Loading builds"
+            style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, padding: SPACE.xs }}
+          >
+            {[0, 1, 2].map((index) => (
+              <div key={index} style={{ ...skeletonStyle(), height: ROW_HEIGHT - SPACE.xs }} />
+            ))}
+          </div>
+        ) : error ? (
+          <div
+            data-testid="reference-error"
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SPACE.xs, padding: SPACE.sm }}
+          >
+            <p style={{ ...body, color: t.text, margin: 0 }}>
+              {isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
+            </p>
+            {onRetry ? (
+              <Button type="button" variant="outline" onClick={onRetry} style={SECONDARY}>
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : shown.length === 0 ? (
+          <div
+            data-testid="reference-empty"
+            style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: SPACE.xs, padding: SPACE.sm }}
+          >
+            <p style={{ ...body, color: t.text2, margin: 0 }}>
+              {query.trim() ? "No build of yours or saved by you has that in its title." : "Publish or save a build and it can go in a message."}
+            </p>
+            {query.trim() ? (
+              <Button type="button" variant="outline" onClick={() => onQueryChange("")} style={SECONDARY}>
+                Clear search
+              </Button>
+            ) : (
+              <Button asChild variant="outline" style={SECONDARY}>
+                <Link to="/gallery">Browse the gallery</Link>
+              </Button>
+            )}
+          </div>
+        ) : (
+          shown.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              data-testid="reference-item"
+              onMouseEnter={() => setSelectedIndex(index)}
+              onClick={() => onSelect(item)}
+              style={{
+                width: "100%",
+                minHeight: ROW_HEIGHT,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: SPACE.xs,
+                padding: `0 ${SPACE.sm}px`,
+                border: "none",
+                background: index === selectedIndex ? t.recess : "transparent",
+                color: t.text,
+                textAlign: "left",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ ...body, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {item.name}
+              </span>
+              {item.subtitle ? (
+                <span style={{ ...data, color: t.text2, flexShrink: 0, ...tabular }}>
+                  {item.subtitle}
+                </span>
+              ) : null}
+            </button>
+          ))
+        )}
       </div>
     </div>
   );

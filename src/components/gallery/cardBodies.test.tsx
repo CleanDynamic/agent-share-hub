@@ -558,10 +558,11 @@ describe("the skeleton", () => {
     expect(media.style.height).toBe("");
   });
 
-  it("draws the frame, the box, two title lines, a plaque line and a chip row", () => {
+  it("draws the frame, the box, two title lines, a plaque line, a chip row and the engagement row", () => {
     const { container } = render(<GalleryCardSkeleton />);
-    // Five shimmering blocks: two title lines, the plaque, two chips, plus media.
-    expect(container.querySelectorAll("[data-bg-animated]")).toHaveLength(6);
+    // Six shimmering blocks: two title lines, the plaque, two chips, the
+    // engagement row (RC-P16), plus media.
+    expect(container.querySelectorAll("[data-bg-animated]")).toHaveLength(7);
     expect(container.querySelector('[data-visual-slot="gallery-card-skeleton"]')).not.toBeNull();
   });
 

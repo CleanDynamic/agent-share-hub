@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { insertNotification } from "@/lib/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react";
@@ -103,14 +102,8 @@ export function FollowButton({ creatorId, onCountChange }: FollowButtonProps) {
           supabase.from("profiles").update({ following_count: followingCount ?? 0 } as any).eq("id", user.id),
           supabase.from("profiles").update({ follower_count: followerCount ?? 0 } as any).eq("id", creatorId),
         ]);
-        // Notification
-        const { data: myProfile } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
-        insertNotification({
-          recipient_id: creatorId,
-          actor_id: user.id,
-          notification_type: "new_follower",
-          metadata: { username: myProfile?.username || "" },
-        });
+        // RC-P19: the followed reader is told by the database (the 'follow'
+        // kind, written by a trigger on follows), so nothing is inserted here.
       }
     }
     setActing(false);
