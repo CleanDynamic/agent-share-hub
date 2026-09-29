@@ -50,12 +50,18 @@ export {
   listBountiesForBuild,
   listBuildBounties,
   listOpenBounties,
+  listOpenBountyCards,
+  bountyFacetsMadeWith,
+  type BountyFacet,
   type BuildBounty,
   type CreateBountyForGapInput,
   type ExtendDeadlineInput,
   type ListBuildBountiesOptions,
   type ListOpenBountiesOptions,
+  type ListOpenBountyCardsOptions,
   type OpenBountiesPage,
+  type OpenBountyCard,
+  type OpenBountyCardsPage,
 } from "./bounties";
 
 // The rebuild path (NS-P53): a solution that IS a build. The primary way to
