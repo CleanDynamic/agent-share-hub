@@ -44,6 +44,12 @@ export const REFERENCE_MAX = 20;
 /** A row's height: a 44px target, and the skeleton's pitch. */
 const ROW_HEIGHT = 44;
 
+/**
+ * STATES.md row 2, the RC secondary: Button's outline variant paints a glass
+ * surface, and the secondary is transparent.
+ */
+const SECONDARY = { background: "transparent", minHeight: ROW_HEIGHT } as const;
+
 export interface ReferenceItem {
   id: string;
   name: string;
@@ -221,7 +227,7 @@ export function ThreadReferencePicker({
               {isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
             </p>
             {onRetry ? (
-              <Button type="button" variant="outline" onClick={onRetry} style={{ background: "transparent", minHeight: ROW_HEIGHT }}>
+              <Button type="button" variant="outline" onClick={onRetry} style={SECONDARY}>
                 Try again
               </Button>
             ) : null}
@@ -235,11 +241,11 @@ export function ThreadReferencePicker({
               {query.trim() ? "No build of yours or saved by you has that in its title." : "Publish or save a build and it can go in a message."}
             </p>
             {query.trim() ? (
-              <Button type="button" variant="outline" onClick={() => onQueryChange("")} style={{ minHeight: ROW_HEIGHT }}>
+              <Button type="button" variant="outline" onClick={() => onQueryChange("")} style={SECONDARY}>
                 Clear search
               </Button>
             ) : (
-              <Button asChild variant="outline" style={{ minHeight: ROW_HEIGHT }}>
+              <Button asChild variant="outline" style={SECONDARY}>
                 <Link to="/gallery">Browse the gallery</Link>
               </Button>
             )}

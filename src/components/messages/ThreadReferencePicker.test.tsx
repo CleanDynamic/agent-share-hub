@@ -68,10 +68,17 @@ describe("ThreadReferencePicker", () => {
     expect(within(empty).getByRole("link", { name: "Browse the gallery" }).getAttribute("href")).toBe("/gallery");
   });
 
+  it("paints every one of its actions as the transparent secondary, never a filled or glass surface", () => {
+    const { picker } = renderPicker(vi.fn(), { results: [] });
+    expect(within(picker).getByRole("link", { name: "Browse the gallery" }).style.background).toBe("transparent");
+  });
+
   it("with a search that matches nothing, offers to clear it", () => {
     const onQueryChange = vi.fn();
     const { picker } = renderPicker(vi.fn(), { results: [], query: "zzz", onQueryChange });
-    fireEvent.click(within(picker).getByRole("button", { name: "Clear search" }));
+    const clear = within(picker).getByRole("button", { name: "Clear search" });
+    expect(clear.style.background).toBe("transparent");
+    fireEvent.click(clear);
     expect(onQueryChange).toHaveBeenCalledWith("");
   });
 
