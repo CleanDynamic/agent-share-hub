@@ -29,3 +29,5 @@ export {
   type ListCommentsOptions,
 } from "./comments";
 export { getEngagementCounts } from "./counts";
+export { commentTime } from "./time";
+export { numberParts, type PartLabel } from "./parts";

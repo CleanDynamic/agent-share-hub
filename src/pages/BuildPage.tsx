@@ -50,6 +50,8 @@ import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { SeoHead } from "@/components/SeoHead";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { getMakerName } from "@/lib/profile/makerName";
+import { Comments } from "@/components/social/Comments";
+import { numberParts } from "@/lib/social";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import {
@@ -588,6 +590,10 @@ export default function BuildPage() {
      one signed out). */
   const engagement = useEngagement(buildId ? [buildId] : []);
 
+  /* RC-P17 — comments. The parts are numbered as the Anatomy draws them, for
+     the "on part 3 · …" chips. */
+  const parts = useMemo(() => numberParts(data?.tree ?? []), [data?.tree]);
+
   /* RC-P16b — the maker's name, for the one description that needs it: a
      build with no outcome is described as "A build by <maker>, reproduced n
      times." Every other build is described by its outcome, and asks nothing. */
@@ -1086,6 +1092,19 @@ export default function BuildPage() {
             />
           </BuildTabs>
         </Section>
+        {/* RC-P17 — the comments, once, after the tab panel and before where
+            next. It asks for nothing until it is within 400px of the screen,
+            or at once for /b2/<slug>#comments. A draft takes no comments. */}
+        {data.build.status !== "draft" ? (
+          <Section>
+            <Comments
+              build={{ id: data.build.id, slug: data.build.slug }}
+              parts={parts}
+              attachRequest={null}
+              onOpenPart={openNodeInAnatomy}
+            />
+          </Section>
+        ) : null}
         {/* RC-P14b — where next, at the foot, after the tab panel. It asks for
             nothing until the reader comes within 400px of it, and renders
             nothing when there is nowhere onward. */}

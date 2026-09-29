@@ -22,6 +22,8 @@ const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 vi.mock("@/lib/social", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/social")>()),
   getEngagementCounts: vi.fn(async () => ({ b: { likes: 3, comments: 1 } })),
+  /* RC-P17: the comments section reads its first page. */
+  listComments: vi.fn(async () => ({ comments: [], rows: [], nextAfter: null })),
 }));
 /* RC-P16b: a build with no outcome is described by its maker's name. */
 const getMakerName = vi.fn().mockResolvedValue("Maya Okafor");
