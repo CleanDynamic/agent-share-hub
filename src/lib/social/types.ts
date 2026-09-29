@@ -164,6 +164,8 @@ export interface SocialErrorIds {
   commentId?: string | null;
   nodeId?: string | null;
   parentId?: string | null;
+  /** RC-P18: a collection, for the library's build items. */
+  collectionId?: string | null;
 }
 
 export class SocialError extends Error {
@@ -177,6 +179,7 @@ export class SocialError extends Error {
   readonly commentId: string | null;
   readonly nodeId: string | null;
   readonly parentId: string | null;
+  readonly collectionId: string | null;
 
   constructor(
     operation: string,
@@ -192,6 +195,7 @@ export class SocialError extends Error {
       ids.commentId ? `comment ${ids.commentId}` : null,
       ids.nodeId ? `node ${ids.nodeId}` : null,
       ids.parentId ? `parent ${ids.parentId}` : null,
+      ids.collectionId ? `collection ${ids.collectionId}` : null,
     ].filter(Boolean);
     super(`${operation} failed: ${kind.replace("_", " ")}${parts.length ? ` (${parts.join(", ")})` : ""}`);
     this.name = "SocialError";
@@ -203,6 +207,7 @@ export class SocialError extends Error {
     this.commentId = ids.commentId ?? null;
     this.nodeId = ids.nodeId ?? null;
     this.parentId = ids.parentId ?? null;
+    this.collectionId = ids.collectionId ?? null;
   }
 }
 

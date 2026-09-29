@@ -1,28 +1,61 @@
 import { supabase } from "@/integrations/supabase/client";
+import { gallerySelect, toGalleryBuild, withCardEmbeds, type GalleryBuild, type GalleryRow } from "@/lib/build/gallery";
+import { db, socialError, uniqueIds } from "@/lib/social/types";
 import type { CollectionItemKind, SavedItem } from "./types";
 
 const CONTENT_KINDS: CollectionItemKind[] = ["blueprint", "blog", "bounty"];
 
+type Resolved = Pick<SavedItem, "title" | "slug" | "cover_image_url" | "author" | "stats" | "build">;
+
 /**
- * Resolve display data for a list of saved items. Batched per kind.
+ * RC-P18 — the builds behind a list of collection items, as the gallery's own
+ * card reads them: GALLERY_BUILD_COLUMNS and the card's embeds
+ * (gallerySelect(false) with withCardEmbeds, as where next and the saved list
+ * read theirs), in ONE `.in` request for the whole list ⟦neoscale-performance⟧.
+ * A build the reader can no longer read (a draft again, or hidden) is absent.
+ * Errors carry the operation, code and status only.
+ */
+export async function resolveBuildItems(buildIds: readonly string[]): Promise<Map<string, GalleryBuild>> {
+  const ids = uniqueIds(buildIds);
+  if (ids.length === 0) return new Map();
+
+  const response = await withCardEmbeds(db.from("builds").select(gallerySelect(false)).in("id", ids).limit(ids.length));
+  if (response.error) throw socialError("resolveBuildItems", response);
+
+  return new Map(
+    ((response.data ?? []) as unknown as GalleryRow[]).map((row) => [row.id, toGalleryBuild(row)]),
+  );
+}
+
+/**
+ * Resolve display data for a list of saved items. Batched per kind: one
+ * request for the builds, one for the legacy posts and one for their authors.
  * Returns a map keyed by `${kind}:${id}` -> partial SavedItem fields.
  */
 export async function resolveSavedItems(
   refs: { kind: CollectionItemKind; id: string }[]
-): Promise<
-  Map<
-    string,
-    Pick<SavedItem, "title" | "slug" | "cover_image_url" | "author" | "stats">
-  >
-> {
-  const out = new Map<
-    string,
-    Pick<SavedItem, "title" | "slug" | "cover_image_url" | "author" | "stats">
-  >();
+): Promise<Map<string, Resolved>> {
+  const out = new Map<string, Resolved>();
   if (refs.length === 0) return out;
 
   const byKind: Record<string, Set<string>> = {};
   for (const r of refs) (byKind[r.kind] ??= new Set()).add(r.id);
+
+  // ---- builds (RC-P18)
+  const buildIds = Array.from(byKind.build ?? []);
+  if (buildIds.length > 0) {
+    const builds = await resolveBuildItems(buildIds);
+    for (const [id, build] of builds) {
+      out.set(`build:${id}`, {
+        title: build.title ?? null,
+        slug: build.slug,
+        cover_image_url: null,
+        author: null,
+        stats: null,
+        build,
+      });
+    }
+  }
 
   // ---- content_items: blueprint / blog / bounty
   const contentIds = new Set<string>();
@@ -34,7 +67,8 @@ export async function resolveSavedItems(
       .select(
         "id, title, slug, cover_image_url, creator_id, avg_rating, view_count, comment_count, post_type"
       )
-      .in("id", Array.from(contentIds));
+      .in("id", Array.from(contentIds))
+      .limit(contentIds.size);
 
     const creatorIds = Array.from(
       new Set(((items ?? []) as any[]).map((i) => i.creator_id).filter(Boolean))
@@ -44,7 +78,8 @@ export async function resolveSavedItems(
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, username, display_name, avatar_url")
-        .in("id", creatorIds);
+        .in("id", creatorIds)
+        .limit(creatorIds.length);
       for (const p of (profs ?? []) as any[]) profileById.set(p.id, p);
     }
 

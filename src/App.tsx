@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
+import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -152,6 +153,9 @@ const App = () => (
             <ReblogComposeProvider>
             <UploadPickerProvider>
             <QuotableSelectionProvider />
+            {/* RC-P18 — the one "Add to a collection" dialog, opened from the
+                Save toast; addToCollection.ts says why it lives here. */}
+            <AddToCollectionHost />
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />

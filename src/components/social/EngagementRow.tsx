@@ -47,6 +47,7 @@ import { Bookmark, Heart, MessageCircle, Share2, type LucideIcon } from "lucide-
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateEngagement } from "@/hooks/useEngagement";
+import { LIBRARY_SAVED_KEY, requestAddToCollection } from "@/components/library/addToCollection";
 import { copyToClipboard } from "@/lib/deepLink";
 import { isPermissionError } from "@/lib/errors/permission";
 import { SocialError, likeBuild, saveBuild, unlikeBuild, unsaveBuild, type EngagementCounts } from "@/lib/social";
@@ -75,6 +76,21 @@ const PAD_BLOCK = (HIT - ENGAGEMENT_ICON_SIZE) / 2;
 
 /** Between an icon and its count. */
 const ICON_TO_COUNT = 4;
+
+/**
+ * RC-P18 — the Save toast's action as a text action (STATES.md row 3), not the
+ * toaster's filled default: the toast is a note, and the page keeps its one
+ * filled button ⟦von-restorff-effect⟧.
+ */
+const SAVED_TOAST_ACTION: CSSProperties = {
+  background: "transparent",
+  color: t.text2,
+  border: "none",
+  boxShadow: "none",
+  fontWeight: 600,
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+};
 
 export interface EngagementRowProps {
   build: { id: string; slug: string; title: string };
@@ -150,6 +166,14 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
     try {
       await (next ? saveBuild(build.id) : unsaveBuild(build.id));
       updateEngagement(queryClient, build.id, { saved: next });
+      void queryClient.invalidateQueries({ queryKey: [LIBRARY_SAVED_KEY] });
+      // RC-P18: one text action, the next step a saver is most likely to take.
+      if (next) {
+        toast("Saved.", {
+          action: { label: "Add to a collection", onClick: () => requestAddToCollection(build.id) },
+          actionButtonStyle: SAVED_TOAST_ACTION,
+        });
+      }
     } catch (error) {
       setOptimistic(null);
       refused(error);
