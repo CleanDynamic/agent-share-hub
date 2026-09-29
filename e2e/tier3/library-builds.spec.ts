@@ -262,3 +262,16 @@ test("both empty sentences, each with its one action", async ({ page }) => {
   await expect(collections).toContainText("Group builds you want to keep together.");
   await expect(collections.getByRole("button", { name: "New collection" })).toBeVisible();
 });
+
+test("a short tab starts under its tabs, with no empty band above it", async ({ page }) => {
+  await fakeBackend(page, { empty: true });
+  await page.goto("/library?tab=collections");
+
+  const empty = page.getByTestId("library-collections-empty");
+  await expect(empty).toBeVisible();
+  const tabs = await page.getByRole("button", { name: "Collections", exact: true }).boundingBox();
+  const tab = await empty.boundingBox();
+  // The frame grows every child of the page body. The page is one child, so
+  // only its own spacing sits between the tabs and what they open (RC-P20b).
+  expect(tab!.y - (tabs!.y + tabs!.height)).toBeLessThanOrEqual(64);
+});

@@ -74,8 +74,13 @@ export default function LibraryPage() {
 
   const ownerName = owner.data?.displayName?.trim() || (owner.data?.username ? `@${owner.data.username}` : handle ?? "");
 
+  // ONE ROOT. The frame grows every child of the page body
+  // (.fs-page-body > * { flex: 1 0 auto }), so a header and a column rendered
+  // side by side there split whatever height the column leaves: a short tab
+  // opened under an empty band as tall as half the screen. One element holds
+  // both, as Notifications does, and grows alone (RC-P20b, CRITIQUE-9).
   return (
-    <>
+    <div data-testid="library-root">
       <SeoHead
         title={visiting ? `${ownerName}'s collections — buildgallery` : "Library — buildgallery"}
         description="Builds kept for later, and the collections they are kept in."
@@ -114,6 +119,6 @@ export default function LibraryPage() {
           <CollectionsTab canEdit onOpen={(id) => go({ collection: id })} />
         )}
       </div>
-    </>
+    </div>
   );
 }
