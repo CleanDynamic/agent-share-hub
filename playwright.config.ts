@@ -81,6 +81,7 @@ export default defineConfig({
         /e2e\/tier3\/build-comments\.spec\.ts/,
         /e2e\/tier3\/reports\.spec\.ts/,
         /e2e\/tier3\/library-builds\.spec\.ts/,
+        /e2e\/tier3\/build-notifications\.spec\.ts/,
       ],
     },
   ],
