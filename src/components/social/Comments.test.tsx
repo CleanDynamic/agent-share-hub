@@ -2,9 +2,11 @@
 //
 // The claims: a body is text, never markup; a reply cannot be answered; only
 // the author sees Edit and Delete, and Delete asks first, in a dialog whose
-// primary button names the act; an empty build says "No comments yet."; at
-// most three actions on any comment; and no body ever reaches an error or a
-// toast. The data layer is stubbed at src/lib/social; the section is real.
+// primary button names the act; a signed-in reader may Report somebody else's
+// comment (RC-P17b) and never their own; an empty build says "No comments
+// yet."; at most three actions on any comment; and no body ever reaches an
+// error or a toast. The data layer is stubbed at src/lib/social; the section
+// is real.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -80,7 +82,7 @@ const actionsOf = (item: HTMLElement) =>
   within(item)
     .queryAllByRole("button")
     .map((button) => button.textContent)
-    .filter((text) => text === "Reply" || text === "Edit" || text === "Delete");
+    .filter((text) => text === "Reply" || text === "Report" || text === "Edit" || text === "Delete");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -98,7 +100,7 @@ describe("Comments", () => {
     expect(body.querySelector("b")).toBeNull();
   });
 
-  it("offers Reply on somebody else's comment and nothing on a reply", async () => {
+  it("offers Reply and Report on somebody else's comment, and only Report on their reply", async () => {
     listComments.mockResolvedValue(
       page([comment("c1"), comment("r1", { parentId: "c1", createdAt: "2026-09-29T09:00:00.000Z" })]),
     );
@@ -106,12 +108,12 @@ describe("Comments", () => {
     await screen.findAllByTestId("comment");
 
     const [top, reply] = items();
-    expect(actionsOf(top)).toEqual(["Reply"]);
-    expect(actionsOf(reply)).toEqual([]);
+    expect(actionsOf(top)).toEqual(["Reply", "Report"]);
+    expect(actionsOf(reply)).toEqual(["Report"]);
     expect(within(screen.getByTestId("comment-replies")).getAllByTestId("comment")).toHaveLength(1);
   });
 
-  it("gives the author Reply, Edit and Delete, at most three, and others none of the last two", async () => {
+  it("gives the author Reply, Edit and Delete, at most three, and never Report on their own", async () => {
     const mine = { authorId: ME, author: { id: ME, username: "me", displayName: "Me", avatarUrl: null } };
     listComments.mockResolvedValue(
       page([
@@ -125,9 +127,40 @@ describe("Comments", () => {
 
     const [own, others, ownReply] = items();
     expect(actionsOf(own)).toEqual(["Reply", "Edit", "Delete"]);
-    expect(actionsOf(others)).toEqual(["Reply"]);
+    expect(actionsOf(others)).toEqual(["Reply", "Report"]);
     expect(actionsOf(ownReply)).toEqual(["Edit", "Delete"]);
     for (const item of items()) expect(actionsOf(item).length).toBeLessThanOrEqual(3);
+  });
+
+  it("says so on a hidden comment its reader can still see, and offers no Report on it", async () => {
+    listComments.mockResolvedValue(page([comment("c1", { isHidden: true })]));
+    renderSection();
+    await screen.findAllByTestId("comment");
+
+    expect(items()[0].querySelector("time")?.textContent).toContain("hidden by an admin");
+    expect(actionsOf(items()[0])).toEqual(["Reply"]);
+  });
+
+  it("opens the report dialog on somebody else's comment", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    try {
+      listComments.mockResolvedValue(page([comment("c1")]));
+      renderSection();
+      await screen.findAllByTestId("comment");
+
+      fireEvent.click(within(items()[0]).getByRole("button", { name: "Report" }));
+      const dialog = await screen.findByTestId("report-dialog");
+      expect(within(dialog).getByRole("heading", { name: "Report this comment" })).toBeTruthy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("asks before deleting, in a dialog whose button says Delete comment", async () => {

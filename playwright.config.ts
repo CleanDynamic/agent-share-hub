@@ -79,6 +79,7 @@ export default defineConfig({
         /e2e\/tier3\/where-next\.spec\.ts/,
         /e2e\/tier3\/engagement\.spec\.ts/,
         /e2e\/tier3\/build-comments\.spec\.ts/,
+        /e2e\/tier3\/reports\.spec\.ts/,
       ],
     },
   ],

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBuildBySlug = vi.fn();
 const getMediaForBuild = vi.fn().mockResolvedValue([]);
@@ -16,7 +16,14 @@ const getBuildFamily = vi.fn().mockResolvedValue(null);
    reaches for a real database through it. */
 const getWhereNext = vi.fn().mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
 const getBuild = vi.fn().mockResolvedValue(null);
-const auth = vi.hoisted(() => ({ isLoggedIn: false }));
+const auth = vi.hoisted(() => ({ isLoggedIn: false, userId: null as string | null }));
+/* RC-P17b: the page asks whether an admin has hidden the build, on its
+   maker's own view only. */
+const isBuildHidden = vi.fn().mockResolvedValue(false);
+vi.mock("@/lib/moderation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/moderation")>()),
+  isBuildHidden: (buildId: string) => isBuildHidden(buildId),
+}));
 /* RC-P16: the header's engagement row asks for this build's counts. Answered
    here so no test reaches for a real database through it. */
 vi.mock("@/lib/social", async (importOriginal) => ({
@@ -34,7 +41,7 @@ vi.mock("@/lib/profile/makerName", () => ({
 
 /** The fork control asks who is reading. Nothing else on this page does. */
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: null }),
+  useAuth: () => ({ isLoggedIn: auth.isLoggedIn, user: auth.userId ? { id: auth.userId } : null }),
 }));
 
 /**
@@ -211,7 +218,9 @@ beforeEach(() => {
   getForkOrigin.mockResolvedValue(null);
   listRebuilds.mockResolvedValue([]);
   getBuild.mockResolvedValue(null);
+  isBuildHidden.mockResolvedValue(false);
   auth.isLoggedIn = false;
+  auth.userId = null;
 });
 
 describe("BuildPage", () => {
@@ -904,5 +913,94 @@ describe("BuildPage's share tags", () => {
     expect(tags.filter((tag) => /neoscale/i.test(tag))).toEqual([]);
     expect(meta('meta[property="og:site_name"]')).toBe("buildgallery");
     expect(document.head.querySelector('meta[name="twitter:site"]')).toBeNull();
+  });
+});
+
+/* ── RC-P17b: reporting a build, and a build an admin has hidden ─────────── */
+
+describe("BuildPage reporting", () => {
+  const made = {
+    ...record,
+    build: { ...record.build, creator_id: "maker-1" },
+    maker: { username: "maya", displayName: "Maya Okafor" },
+  };
+
+  // jsdom has no ResizeObserver, and the report dialog's radios measure
+  // themselves with one.
+  beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("credits the maker, with Report at the end of that line and never among the header's actions", async () => {
+    auth.isLoggedIn = true;
+    auth.userId = "reader-1";
+    getBuildBySlug.mockResolvedValue(made);
+    renderAt("inbox-triage-agent-demo");
+
+    const credit = await screen.findByTestId("build-credit-line");
+    expect(credit.textContent).toContain("by Maya Okafor");
+    expect(within(credit).getByRole("link", { name: "Maya Okafor" }).getAttribute("href")).toBe("/profile/maya");
+    const report = within(credit).getByRole("button", { name: "Report" });
+    expect(credit.lastElementChild).toBe(report);
+    // Tertiary: no fill.
+    expect(report.getAttribute("data-visual-slot")).toBeNull();
+
+    // The header's row is still its four: Like, Comment, Save, Share.
+    const row = screen.getByTestId("engagement-row");
+    expect(within(row).getAllByRole("button")).toHaveLength(4);
+    expect(within(row).queryByRole("button", { name: "Report" })).toBeNull();
+
+    fireEvent.click(report);
+    const dialog = await screen.findByTestId("report-dialog");
+    expect(within(dialog).getByRole("heading", { name: "Report this build" })).toBeTruthy();
+  });
+
+  it("offers no Report to a reader who is not signed in, nor to the maker", async () => {
+    getBuildBySlug.mockResolvedValue(made);
+    const signedOut = renderAt("inbox-triage-agent-demo");
+    expect((await screen.findByTestId("build-credit-line")).textContent).toBe("by Maya Okafor");
+    expect(screen.queryByTestId("report-build")).toBeNull();
+    signedOut.unmount();
+
+    auth.isLoggedIn = true;
+    auth.userId = "maker-1";
+    renderAt("inbox-triage-agent-demo");
+    expect((await screen.findByTestId("build-credit-line")).textContent).toBe("by Maya Okafor");
+    expect(screen.queryByTestId("report-build")).toBeNull();
+  });
+
+  it("tells the maker that an admin has hidden the build", async () => {
+    auth.isLoggedIn = true;
+    auth.userId = "maker-1";
+    isBuildHidden.mockResolvedValue(true);
+    getBuildBySlug.mockResolvedValue(made);
+    renderAt("inbox-triage-agent-demo");
+
+    const banner = await screen.findByTestId("build-hidden-banner");
+    expect(banner.textContent).toBe("An admin has hidden this build.");
+    expect(banner.getAttribute("role")).toBe("status");
+    expect(isBuildHidden).toHaveBeenCalledWith("b");
+  });
+
+  it("asks nobody but the maker whether the build is hidden", async () => {
+    auth.isLoggedIn = true;
+    auth.userId = "reader-1";
+    isBuildHidden.mockResolvedValue(true);
+    getBuildBySlug.mockResolvedValue(made);
+    renderAt("inbox-triage-agent-demo");
+
+    await screen.findByTestId("build-credit-line");
+    expect(isBuildHidden).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("build-hidden-banner")).toBeNull();
   });
 });
