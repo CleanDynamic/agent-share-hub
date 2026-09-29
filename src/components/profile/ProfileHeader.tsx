@@ -178,7 +178,6 @@ export function ProfileHeader({
   onAvatarEdit,
   onCoverEdit,
 }: ProfileHeaderProps) {
-  const [followHover, setFollowHover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const showRing = typeof level === "number";
   const hasMarksRow = (creatorMarks && creatorMarks.length > 0) || !!founderAccessory;
@@ -187,6 +186,8 @@ export function ProfileHeader({
   const initials = (profile.displayName || "?").charAt(0).toUpperCase();
 
   const follow = useInteractive<HTMLButtonElement>();
+  const following = useInteractive<HTMLButtonElement>();
+  const edit = useInteractive<HTMLButtonElement>();
   const evidence = categoryFill("evidence");
 
   const joinedLabel = (() => {
@@ -199,7 +200,7 @@ export function ProfileHeader({
   })();
 
   return (
-    <header className="w-full">
+    <header className="w-full" data-testid="profile-header">
       {/* Cover Strip. It was a three-stop Tailwind gradient off
           `primary`/`accent`, which is decoration this system does not have.
           `--recess` RATHER THAN `--porthole`, and the difference is the whole
@@ -368,16 +369,29 @@ export function ProfileHeader({
           )}
           {hideIdentity && <div className="min-w-0" />}
 
-          {/* Action Buttons. ONE PRIMARY PER VIEW: on somebody else's profile
-              that is Follow, and on your own it is nothing — Edit and Share are
-              both secondary, because the primary action on your own wall is to
-              publish, and that button belongs to the frame. */}
+          {/* Action Buttons. EXACTLY ONE FILLED BUTTON IN THE HEADER
+              ⟦von-restorff-effect⟧ (RC-P21): on somebody else's profile it is
+              Follow, and it stays filled as Following, because it is the one
+              thing a visitor does here; on your own it is Edit profile. Share,
+              Message and More stay secondary beside it. */}
           <div className="flex items-center gap-2 pb-1 shrink-0 flex-wrap">
             {isOwnProfile ? (
               <>
-                <GhostButton onClick={onEditProfile} className="px-3 py-1.5">
+                <button
+                  type="button"
+                  onClick={onEditProfile}
+                  {...edit.handlers}
+                  data-visual-slot="btn-primary"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5"
+                  style={{
+                    ...body,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    ...buttonStyle("default", edit.state),
+                  }}
+                >
                   Edit profile
-                </GhostButton>
+                </button>
                 <GhostButton
                   onClick={onShareProfile}
                   aria-label="Share profile"
@@ -392,30 +406,29 @@ export function ProfileHeader({
                   <button
                     type="button"
                     onClick={onUnfollow}
-                    onMouseEnter={() => setFollowHover(true)}
-                    onMouseLeave={() => setFollowHover(false)}
+                    {...following.handlers}
+                    data-visual-slot="btn-primary"
                     className="px-4 py-1.5"
                     style={{
                       ...body,
                       fontSize: 12,
                       fontWeight: 600,
-                      /* Already following is a SECONDARY state — the work is
-                         done, and a filled button would keep asking for a click
-                         that has already happened. Hover reveals what pressing
-                         it would do, in breakage red, and says so in words. */
-                      ...buttonStyle("secondary", { hovered: followHover }),
-                      ...(followHover
-                        ? { color: t.catBreakage, borderColor: t.catBreakage }
-                        : {}),
+                      /* Following keeps the fill (RC-P21): the header's one
+                         filled button is the follow control in both of its
+                         states. Hover says in words what pressing it would do;
+                         no danger colour, because the theme forbids borrowing
+                         the breakage hue (STATES.md row 16). */
+                      ...buttonStyle("default", following.state),
                     }}
                   >
-                    {followHover ? "Unfollow" : "Following"}
+                    {following.state.hovered ? "Unfollow" : "Following"}
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={onFollow}
                     {...follow.handlers}
+                    data-visual-slot="btn-primary"
                     className="px-4 py-1.5"
                     style={{
                       ...body,

@@ -12,7 +12,7 @@ async function resolveProfile(userIdOrHandle: string) {
   const query = supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private"
+      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver"
     )
     .limit(1);
 
@@ -63,6 +63,9 @@ export async function getProfileSummary(
     avatarUrl: profile.avatar_url ?? null,
     coverUrl: (profile as any).banner_url ?? null,
     isVerified: !!(profile as any).is_verified,
+    // RC-P21: the header's Trusted solver chip, on the request the page
+    // already makes, rather than the legacy author-stats reads it rode on.
+    isTrustedSolver: !!profile.is_trusted_solver,
     isPrivate: !!(profile as any).is_private,
     level: (((profile as any).level as ProfileLevel) ?? "reader"),
     domain: null,
