@@ -104,6 +104,7 @@ import {
 import { isPermissionError } from "@/lib/errors/permission";
 import { linkableMakers, searchMakers, type MakerHit } from "@/lib/profile/searchMakers";
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
   FacetRail,
@@ -800,6 +801,10 @@ function GalleryGrid({
     firstPaint.current = false;
   }, []);
 
+  /* RC-P16 — the cards' likes, comments and saves: one useEngagement call for
+     the page of builds on screen, three requests signed in, one signed out. */
+  const engagement = useEngagement(builds.map((build) => build.id));
+
   /* Reduced motion and a runtime without IntersectionObserver are both
      answered inside `useReveal`, by never entering the hidden state at all:
      the end state is identical, it simply arrives at once. What is decided
@@ -812,7 +817,11 @@ function GalleryGrid({
               snapshot columns off the record it was handed — they ride in on
               GALLERY_BUILD_COLUMNS like everything else the card shows — so the
               grid neither composes it nor can decline to pass it. */}
-          <GalleryCard build={build} srcByPath={srcByPath} />
+          <GalleryCard
+            build={build}
+            srcByPath={srcByPath}
+            engagement={engagementFor(engagement, build.id)}
+          />
           <Shortfall build={build} viewerId={viewerId} />
         </Reveal>
       ))}

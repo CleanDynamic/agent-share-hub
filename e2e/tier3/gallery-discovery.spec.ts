@@ -50,7 +50,7 @@ const FACETS = {
 };
 
 interface Backend {
-  /** The builds requests the page sent, in order. */
+  /** The gallery's builds list requests, in order. */
   buildRequests: Request[];
 }
 
@@ -100,7 +100,11 @@ async function fakeBackend(
     }),
   );
   await page.route(/\/rest\/v1\/builds/, (route) => {
-    backend.buildRequests.push(route.request());
+    // The gallery's own list, not the cards' like and comment counts (RC-P16),
+    // which read builds too once the list has landed.
+    if (!decodeURIComponent(route.request().url()).includes("like_count")) {
+      backend.buildRequests.push(route.request());
+    }
     return route.fulfill({
       status: 200,
       contentType: "application/json",

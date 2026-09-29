@@ -85,6 +85,9 @@ export interface EngagementRowProps {
   variant: "card" | "page";
 }
 
+/** One build's share of its list's engagement: what a card or header passes on. */
+export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved">;
+
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
 export function EngagementRow({ build, counts, liked, saved, variant }: EngagementRowProps) {

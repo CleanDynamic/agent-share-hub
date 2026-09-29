@@ -46,6 +46,7 @@ import {
   type SolutionBuild,
 } from "@/lib/bounty";
 import { useAuth } from "@/contexts/AuthContext";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
 import {
@@ -579,6 +580,11 @@ export default function BuildPage() {
 
   const buildId = data?.build.id;
 
+  /* RC-P16 — this build's likes, comments and saves for the header's row: the
+     same hook the lists use, asked about one build (three requests signed in,
+     one signed out). */
+  const engagement = useEngagement(buildId ? [buildId] : []);
+
   /**
    * #node-<id> in the address, scrolled to once the record is on screen.
    *
@@ -973,6 +979,7 @@ export default function BuildPage() {
                 onOpen={() => setTab("rebuilds")}
               />
             }
+            engagement={engagementFor(engagement, data.build.id)}
           />
         </Section>
         <Section>

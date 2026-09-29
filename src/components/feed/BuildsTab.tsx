@@ -27,6 +27,7 @@ import { FeedErrorState } from "@/components/feed/FeedShell";
 import { BuildFeedItemView } from "@/components/feed/BuildFeedItems";
 import { GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
+import { useEngagement } from "@/hooks/useEngagement";
 import { t } from "@/lib/theme/tokens";
 import { data as dataText } from "@/lib/theme/type";
 import {
@@ -88,6 +89,12 @@ export function BuildsTab({ onlyFollowing = false, empty }: BuildsTabProps) {
   );
   const srcByPath = useSignedMedia(mediaRows);
 
+  // RC-P16 — every card's likes, comments and saves, asked about once for the
+  // items loaded (a reproduction note is not a card and has none).
+  const engagement = useEngagement(
+    useMemo(() => items.flatMap((item) => (item.kind === "repro_note" ? [] : [item.build.id])), [items]),
+  );
+
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = feed;
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
@@ -132,7 +139,7 @@ export function BuildsTab({ onlyFollowing = false, empty }: BuildsTabProps) {
   return (
     <div data-testid="feed-builds">
       {items.map((item) => (
-        <BuildFeedItemView key={item.key} item={item} srcByPath={srcByPath} />
+        <BuildFeedItemView key={item.key} item={item} srcByPath={srcByPath} engagement={engagement} />
       ))}
 
       {/* The sentinel sits below the last item and is watched rather than
