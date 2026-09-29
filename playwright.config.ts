@@ -85,6 +85,7 @@ export default defineConfig({
         /e2e\/tier3\/messages-build\.spec\.ts/,
         /e2e\/tier3\/profile-builds\.spec\.ts/,
         /e2e\/tier3\/personal-redirects\.spec\.ts/,
+        /e2e\/tier3\/analytics-builds\.spec\.ts/,
       ],
     },
   ],
