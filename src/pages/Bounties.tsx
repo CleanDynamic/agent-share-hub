@@ -90,6 +90,13 @@ function cleanValues(values: string[]): string[] {
 export default function Bounties() {
   const breakpoint = useBreakpoint();
   const phone = breakpoint === "mobile";
+  /* THE ROW REFLOWS BELOW 1024, NOT 768. The wide frame keeps its 240px nav
+     down to 768, so at 768 the list is about 408 wide: the reward and the
+     action take most of it and the ask wraps a word a line under the count.
+     The row stops fitting where the content does ⟦better-layout › Hold
+     structure until it breaks⟧, and 1024 is where FacetRail already folds its
+     band, so the board adds no breakpoint of its own. */
+  const stacked = breakpoint === "mobile" || breakpoint === "md";
   const [searchParams, setSearchParams] = useSearchParams();
 
   const madeWith = useMemo(() => cleanValues(searchParams.getAll("with")), [searchParams]);
@@ -161,7 +168,7 @@ export default function Bounties() {
       <div data-visual-slot="bounty-board-column" style={{ maxWidth: 960, paddingTop: SPACE.md }}>
         <BoardBody
           cards={cards}
-          phone={phone}
+          stacked={stacked}
           filtered={madeWith.length > 0}
           isLoading={board.isLoading}
           error={(board.error as Error | null) ?? null}
@@ -193,14 +200,14 @@ export default function Bounties() {
 
 function BoardBody({
   cards,
-  phone,
+  stacked,
   filtered,
   isLoading,
   error,
   onRetry,
 }: {
   cards: OpenBountyCard[];
-  phone: boolean;
+  stacked: boolean;
   filtered: boolean;
   isLoading: boolean;
   error: Error | null;
@@ -221,7 +228,7 @@ function BoardBody({
     );
   }
 
-  if (isLoading) return <LoadingRows phone={phone} />;
+  if (isLoading) return <LoadingRows stacked={stacked} />;
 
   /* STATES.md row 19: one sentence and one action, secondary (row 2), because
      the frame's own controls spend the primary on the phone and signed out.
@@ -258,11 +265,11 @@ function BoardBody({
         listStyle: "none",
         margin: 0,
         padding: 0,
-        ...(phone ? {} : { display: "grid", gridTemplateColumns: ROW_COLUMNS }),
+        ...(stacked ? {} : { display: "grid", gridTemplateColumns: ROW_COLUMNS }),
       }}
     >
       {cards.map((card, index) => (
-        <BountyRow key={card.bounty.id} card={card} phone={phone} first={index === 0} />
+        <BountyRow key={card.bounty.id} card={card} stacked={stacked} first={index === 0} />
       ))}
     </ol>
   );
@@ -308,17 +315,17 @@ function StateLine({
  * stay on the leading side in a right-to-left layout ⟦better-layout › Align to
  * shared edges⟧.
  *
- * BELOW 768 IT REFLOWS ⟦responsive-design › Reflow⟧: one column, 8 between the
- * three parts, and the button full width with a 44px hit area ⟦better-layout ›
- * Inset buttons⟧.
+ * BELOW 1024 IT REFLOWS ⟦responsive-design › Reflow⟧ (see the page's note on
+ * why not 768): one column, 8 between the three parts, and the button full
+ * width with a 44px hit area ⟦better-layout › Inset buttons⟧.
  */
 function BountyRow({
   card,
-  phone,
+  stacked,
   first,
 }: {
   card: OpenBountyCard;
-  phone: boolean;
+  stacked: boolean;
   first: boolean;
 }) {
   const edge = gapEdge("row");
@@ -334,12 +341,12 @@ function BountyRow({
       data-testid="bounty-row"
       style={{
         display: "grid",
-        ...(phone
+        ...(stacked
           ? { gridTemplateColumns: "1fr" }
           : { gridTemplateColumns: "subgrid", gridColumn: "1 / -1" }),
         columnGap: SPACE.md,
-        rowGap: phone ? SPACE.xs : 0,
-        alignItems: phone ? "start" : "center",
+        rowGap: stacked ? SPACE.xs : 0,
+        alignItems: stacked ? "start" : "center",
         paddingBlock: SPACE.sm,
         paddingInlineStart: SPACE.sm,
         borderInlineStartWidth: edge.borderLeftWidth,
@@ -377,10 +384,10 @@ function BountyRow({
       <div
         style={{
           display: "flex",
-          flexDirection: phone ? "column" : "row",
-          alignItems: phone ? "stretch" : "center",
-          justifyContent: phone ? "flex-start" : "flex-end",
-          gap: phone ? SPACE.xs : SPACE.sm,
+          flexDirection: stacked ? "column" : "row",
+          alignItems: stacked ? "stretch" : "center",
+          justifyContent: stacked ? "flex-start" : "flex-end",
+          gap: stacked ? SPACE.xs : SPACE.sm,
         }}
       >
         <span
@@ -404,7 +411,7 @@ function BountyRow({
             background: "transparent",
             borderRadius: r.control,
             minHeight: 44,
-            ...(phone ? { width: "100%" } : {}),
+            ...(stacked ? { width: "100%" } : {}),
           }}
         >
           <Link to={`/b2/${card.build.slug}`}>Open the build</Link>
@@ -415,7 +422,7 @@ function BountyRow({
 }
 
 /** STATES.md row 20: the rows' shape before the rows, in --recess. */
-function LoadingRows({ phone }: { phone: boolean }) {
+function LoadingRows({ stacked }: { stacked: boolean }) {
   return (
     <div data-testid="bounties-loading" aria-hidden>
       {Array.from({ length: LOADING_ROWS }, (_, index) => (
@@ -423,7 +430,7 @@ function LoadingRows({ phone }: { phone: boolean }) {
           key={index}
           style={{
             display: "grid",
-            gridTemplateColumns: phone ? "1fr" : "72px minmax(0, 1fr) 200px",
+            gridTemplateColumns: stacked ? "1fr" : "72px minmax(0, 1fr) 200px",
             columnGap: SPACE.md,
             rowGap: SPACE.xs,
             paddingBlock: SPACE.sm,

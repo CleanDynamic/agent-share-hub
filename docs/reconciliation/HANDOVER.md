@@ -189,7 +189,14 @@ Lovable messages owed: L-P11-0 was never answered. The migration was written fro
 Open: live definition differs from migration files: unknown (not supplied). DEPLOY ORDER: the Following tab calls only_following, so item 6 must be applied with the frontend; Everyone works on the current live function. Requests on / (anonymous baseline) 1 → 1; signed in, following nobody, 34 → 34; following one maker 38 → 37. Home's own requests are now the follows count plus one feed RPC. content_items requests: 0 from Home on either tab; a signed-in frame still makes 3 HEAD counts through AppShell's Drafts badge (useDraftCount), which is the frame and outside this prompt; repoint it at builds drafts when the frame's legacy path is retired. BuildFeedItems spaces entries 16 apart, not 24: unchanged, per step 7d. tsc PASS · unit 2165/2165, 0 new failures · build PASS (JS 4152715 → 4085628) · tier1 92/92 on both projects · home-two-tabs 8/8 + 8/8.
 Next: RC-P12
 
-## RC-P12 — 
+## RC-P12 — The open bounties board
+Date: 2026-09-29 · Commits: BOUNTIES-1, BOUNTIES-2, BOUNTIES-3 · Head: 8936e990
+Landed: /bounties is a wide route listing every open ask on a published build, newest first: listOpenBountyCards (three requests a page: the asks with build and gap title embedded, then solutions and makers together, keyset on created_at) and bountyFacetsMadeWith (one request, ≤12). One Made with group through the gallery's FacetRail (?with=), rows parted by hairlines with row 13's dashed edge, one outline "Open the build" per row, "Show more", row 19 and row 21.
+Skills applied: ⟦hicks-law › Budgets; Readers table⟧ ⟦layout-grid › Grid Anatomy; Responsive Behavior⟧ ⟦law-of-common-region › use the weakest container⟧ ⟦law-of-proximity⟧ ⟦law-of-continuity › Alignment⟧ ⟦von-restorff-effect⟧ ⟦responsive-design › Reflow⟧ ⟦better-layout › Inset buttons; Plan for growth; Hold structure until it breaks⟧ ⟦buildgallery-theme › Gap / bounty; Type; Before you call it done⟧ ⟦supabase-postgres-best-practices › references/data-pagination.md; references/data-n-plus-one.md⟧ ⟦neoscale-performance › Checklist for any new route⟧ ⟦neoscale-error-monitoring⟧ ⟦neoscale-e2e-testing⟧ ⟦buildgallery-repo-map › 1⟧ ⟦neoscale-code-review⟧
+Migrations queued: none
+Lovable messages owed: none
+Open: THE ROW REFLOWS BELOW 1024, NOT 768 as step 7d says: in the wide frame the list is about 408px at 768 and the three-column row overlapped itself (HIGH). 1024 is where FacetRail folds too. The list holds the prompt's three columns and each row uses them through subgrid, so the columns align down the board. Asks on draft builds are left off, as the feed's bounty arm does. With a Made with filter and no match, the board says "No open bounties are made with that." + Clear filters; unfiltered it is row 19's exact sentence. /bounties is wide now, so M4's nav jump applies to it. tsc PASS · unit 2180/2180, 0 new failures · build PASS · tier1 92/92 on both projects · bounties-board 7/7 + 7/7 · audit:contrast PASS.
+Next: RC-P13
 
 ## RC-P13 — 
 
