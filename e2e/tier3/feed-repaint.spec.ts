@@ -205,71 +205,59 @@ const setScrollTop = (page: Page, value: number) =>
    1. The tab bar
    ──────────────────────────────────────────────────────────────────────────── */
 
+/* RC-P11 rewrote this block (CONTRACT §3.4): Home has two tabs, Following and
+   Everyone, where it had six, so the scroller no longer has more than it can
+   show. What the block protects is unchanged: the order, the active mark, no
+   sideways page scroll on a phone, and the rails staying on screen at 768. */
 test.describe("the feed's tab bar", () => {
-  test("keeps six tabs in their order and marks the active one", async ({ page }) => {
+  test("keeps two tabs in their order and marks the active one", async ({ page }) => {
     await stubRestEmpty(page);
     await stubFeed(page);
-    await page.goto("/?tab=recent");
+    await page.goto("/?tab=everyone");
 
     const tabs = page.getByTestId(/^feed-tab-/);
-    await expect(tabs).toHaveCount(6);
+    await expect(tabs).toHaveCount(2);
     expect(
       await tabs.evaluateAll((nodes) => nodes.map((n) => n.textContent?.trim())),
-    ).toEqual(["Builds", "For You", "Following", "Trending", "Recent", "Bounties"]);
+    ).toEqual(["Following", "Everyone"]);
 
     // The active mark is BG-P07's `data-state`, which is what carries the
     // `--action` underline and the step up to full `--text`.
-    await expect(page.getByTestId("feed-tab-recent")).toHaveAttribute("data-state", "active");
-    await expect(page.getByTestId("feed-tab-builds")).toHaveAttribute("data-state", "inactive");
+    await expect(page.getByTestId("feed-tab-everyone")).toHaveAttribute("data-state", "active");
+    await expect(page.getByTestId("feed-tab-following")).toHaveAttribute("data-state", "inactive");
   });
 
-  test("scrolls sideways on a phone rather than squeezing, and hides its bar", async ({ page }) => {
+  test("fits a phone without scrolling the page sideways, and answers a click", async ({ page }) => {
     await stubRestEmpty(page);
     await stubFeed(page);
     await page.setViewportSize({ width: 390, height: 800 });
-    await page.goto("/?tab=recent");
-    await expect(page.getByTestId("feed-tab-builds")).toBeVisible();
+    await page.goto("/?tab=everyone");
+    await expect(page.getByTestId("feed-tab-following")).toBeVisible();
 
-    const row = page.getByTestId("feed-tab-builds").locator("xpath=..");
-
-    // The row has more content than room: that is what makes it a scroller
-    // rather than six clipped labels.
-    const { clientWidth, scrollWidth, scrollbar } = await row.evaluate((el) => {
-      /* BG-P18b put the `--line` hairline on the strip's own bottom edge, and a
-         border counts in `offsetHeight` too — so the borders come off before
-         what is left can be called a scrollbar. A hidden bar takes no space,
-         which is the only part of `.scrollbar-hide` a measurement can see. */
-      const cs = getComputedStyle(el);
-      const borders = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
-      return {
-        clientWidth: el.clientWidth,
-        scrollWidth: el.scrollWidth,
-        scrollbar: el.offsetHeight - el.clientHeight - borders,
-      };
-    });
-    expect(scrollWidth).toBeGreaterThan(clientWidth);
-    expect(scrollbar).toBe(0);
-
-    // And the page itself does not scroll sideways because of it.
+    const row = page.getByTestId("feed-tabs");
+    const { clientWidth, scrollWidth } = await row.evaluate((el) => ({
+      clientWidth: el.clientWidth,
+      scrollWidth: el.scrollWidth,
+    }));
+    // Two tabs fit: nothing is hidden past the edge of the row.
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
     expect(await pageOverflows(page)).toBe(false);
 
-    // The last tab is reachable by scrolling the row, and answers a click.
-    await page.getByTestId("feed-tab-bounties").scrollIntoViewIfNeeded();
-    await page.getByTestId("feed-tab-bounties").click();
-    await expect(page.getByTestId("feed-tab-bounties")).toHaveAttribute("data-state", "active");
+    await page.getByTestId("feed-tab-following").click();
+    await expect(page.getByTestId("feed-tab-following")).toHaveAttribute("data-state", "active");
   });
 
   test("does not push the frame's centre column past the rails at 768", async ({ page }) => {
     // THE REGRESSION THIS EXISTS FOR. `min-width: 0` removes a flex item's
-    // automatic minimum but not the bar's own min-content, which is six nowrap
+    // automatic minimum but not the bar's own min-content, which was six nowrap
     // labels — so a larger label size pushed the centre column from 456 to 580
     // and shoved the left rail off the screen. `contain: inline-size` on the
     // scroller is the fix, and this is what would catch its removal.
     await stubRestEmpty(page);
     await stubFeed(page);
     await page.setViewportSize({ width: 768, height: 900 });
-    await page.goto("/?tab=recent");
-    await expect(page.getByTestId("feed-tab-builds")).toBeVisible();
+    await page.goto("/?tab=everyone");
+    await expect(page.getByTestId("feed-tab-everyone")).toBeVisible();
 
     expect(await pageOverflows(page)).toBe(false);
     const railLeft = await page
@@ -286,12 +274,12 @@ test.describe("the feed's tab bar", () => {
 test.describe("the feed at four widths, in two themes", () => {
   for (const theme of THEMES) {
     for (const width of WIDTHS) {
-      test(`renders the Builds tab at ${width}px on ${theme}`, async ({ page }) => {
+      test(`renders the Everyone tab at ${width}px on ${theme}`, async ({ page }) => {
         await withTheme(page, theme);
         await stubRestEmpty(page);
         await stubFeed(page);
         await page.setViewportSize({ width, height: 900 });
-        await page.goto("/?tab=builds");
+        await page.goto("/?tab=everyone");
 
         await expect(page.getByTestId("feed-builds")).toBeVisible();
         await expect(page.getByTestId("feed-item-repro").first()).toBeVisible();
@@ -325,7 +313,7 @@ test.describe("the feed at four widths, in two themes", () => {
       await stubRestEmpty(page);
       await stubFeed(page);
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/?tab=builds");
+      await page.goto("/?tab=everyone");
       await expect(page.getByTestId("feed-builds")).toBeVisible();
       expect(await pageOverflows(page)).toBe(false);
     });
@@ -339,7 +327,7 @@ test.describe("the feed at four widths, in two themes", () => {
     await stubRestEmpty(page);
     await stubFeed(page);
     await page.setViewportSize({ width: 1024, height: 900 });
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
     await expect(page.getByTestId("feed-builds")).toBeVisible();
 
     const boxes = await page.evaluate(() => {
@@ -365,18 +353,19 @@ test.describe("the feed at four widths, in two themes", () => {
    ──────────────────────────────────────────────────────────────────────────── */
 
 test.describe("a tab with nothing to show", () => {
-  test("says so, and points at the gallery", async ({ page }) => {
+  /* RC-P11: STATES.md row 19's sentence and action for an empty Everyone tab. */
+  test("says so in one sentence, with one action", async ({ page }) => {
     await stubRestEmpty(page);
     await page.route(RPC, (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
     );
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
     const empty = page.getByTestId("feed-empty");
     await expect(empty).toBeVisible();
-    await expect(empty).toContainText("Nothing here yet");
-    await expect(empty).toContainText("The gallery has more.");
-    await expect(page.getByRole("button", { name: "Open the gallery" })).toBeVisible();
+    await expect(empty).toContainText("Nothing has been published yet.");
+    await expect(empty.getByRole("link")).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Show what you built" })).toBeVisible();
   });
 
   test("names the failure and offers a retry when the query breaks", async ({ page }) => {
@@ -390,13 +379,13 @@ test.describe("a tab with nothing to show", () => {
         body: JSON.stringify({ message: "permission denied for table build_media" }),
       });
     });
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
     // react-query retries a failed read before giving up, so the state takes a
     // few seconds to appear. That is the library's default and not this feed's.
     const error = page.getByTestId("feed-error");
     await expect(error).toBeVisible({ timeout: 30_000 });
-    await expect(error).toContainText("Builds could not be loaded");
+    await expect(error).toContainText("Everyone could not be loaded");
     // The data layer's own words, not a stand-in for them.
     await expect(error).toContainText("permission denied for table build_media");
 
@@ -411,9 +400,9 @@ test.describe("a tab with nothing to show", () => {
       await new Promise((resolve) => setTimeout(resolve, 10_000));
       await route.abort();
     });
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
-    // The Builds tab draws GalleryCardSkeleton, so the placeholder is the shape
+    // The feed draws GalleryCardSkeleton, so the placeholder is the shape
     // of the thing that is coming rather than a grey rectangle.
     await expect(page.getByTestId("feed-builds-skeleton")).toBeVisible();
     await expect(
@@ -430,7 +419,7 @@ test("forty loaded items neither clip nor move under the reader", async ({ page 
   await stubRestEmpty(page);
   await stubFeed(page);
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto("/?tab=builds");
+  await page.goto("/?tab=everyone");
   await expect(page.getByTestId("feed-builds")).toBeVisible();
 
   const items = page.getByTestId(/^feed-item-(build|rebuild|repro|bounty)$/);

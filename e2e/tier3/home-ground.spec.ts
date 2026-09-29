@@ -162,6 +162,11 @@ test.describe("one ground", () => {
 
     test(`has no background image anywhere on ${theme}`, async ({ page }) => {
       await open(page, "/", theme);
+      /* RC-P11: measured once the feed has settled. Home now shows the feed's
+         loading skeleton while the session and the default tab resolve, and a
+         skeleton's shimmer is a gradient by design; this test is about the
+         page's ground, which is what remains when loading is over. */
+      await expect(page.getByTestId("feed-empty")).toBeVisible();
       // BlobBackground's dot grid was a radial-gradient at `background-size:
       // 20px 20px` on a fixed inset-0 div. One element carrying one image is
       // all it took to put a pattern under the whole application.
@@ -299,8 +304,8 @@ test.describe("the tab bar", () => {
   });
 
   test("marks the current tab with a bar and no chip", async ({ page }) => {
-    await open(page, "/?tab=recent", "exhibition");
-    const current = page.getByTestId("feed-tab-recent");
+    await open(page, "/?tab=everyone", "exhibition");
+    const current = page.getByTestId("feed-tab-everyone");
     await expect(current).toHaveAttribute("data-state", "active");
 
     /* BG-P18 gave the current tab a --glass fill at --r-chip, which made one
@@ -338,12 +343,13 @@ test.describe("the tab bar", () => {
     await expect(page.getByTestId("feed-active-mark")).toHaveCount(1);
   });
 
-  test("divides six tabs equally across the column", async ({ page }) => {
+  /* RC-P11: two tabs where there were six (CONTRACT §3.4). */
+  test("divides the two tabs equally across the column", async ({ page }) => {
     await open(page, "/", "exhibition");
     const widths = await page
       .getByTestId(/^feed-tab-/)
       .evaluateAll((nodes) => nodes.map((n) => Math.round(n.getBoundingClientRect().width)));
-    expect(widths).toEqual([100, 100, 100, 100, 100, 100]);
+    expect(widths).toEqual([300, 300]);
   });
 });
 
@@ -353,7 +359,7 @@ test.describe("the tab bar", () => {
 
 test.describe("the card column", () => {
   test("puts 600px cards 16px apart, 16px below the bar", async ({ page }) => {
-    await open(page, "/?tab=builds", "exhibition", { feed: threeBuilds() });
+    await open(page, "/?tab=everyone", "exhibition", { feed: threeBuilds() });
 
     const cards = page.locator('[data-visual-slot="gallery-card"]');
     await expect(cards).toHaveCount(3);
@@ -370,7 +376,7 @@ test.describe("the card column", () => {
     for (const card of measured) expect(card.width).toBe(600);
 
     /* 16 between them, and the 16 is a collapsed margin rather than a flex gap:
-       five of the six tabs render legacy cards carrying their own 10–12px
+       before RC-P11 five of six tabs rendered legacy cards carrying their own 10–12px
        bottom margin inside shared components, and a gap would have ADDED to
        those and given a column of 26 and 28. */
     for (let i = 1; i < measured.length; i += 1) {
@@ -384,7 +390,7 @@ test.describe("the card column", () => {
   });
 
   test("ends the column with 64px of ground under the last card", async ({ page }) => {
-    await open(page, "/?tab=builds", "exhibition", { feed: threeBuilds() });
+    await open(page, "/?tab=everyone", "exhibition", { feed: threeBuilds() });
     await expect(page.locator('[data-visual-slot="gallery-card"]')).toHaveCount(3);
 
     /* MEASURED FROM THE LAST ROW, NOT THE LAST CARD. The Builds tab ends with
@@ -407,7 +413,7 @@ test.describe("the card column", () => {
     await page.route(RPC, () => {});
     await withTheme(page, "exhibition");
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/?tab=builds");
+    await page.goto("/?tab=everyone");
 
     await expect(page.getByTestId("feed-builds-skeleton")).toBeVisible();
     await expect(
@@ -422,20 +428,17 @@ test.describe("the card column", () => {
    ──────────────────────────────────────────────────────────────────────────── */
 
 test.describe("the empty state", () => {
-  test("is one line of display type, centred, with no disc and no icon", async ({ page }) => {
+  /* RC-P11 rewrote this (CONTRACT §3.4): an empty tab is STATES.md row 19,
+     one sentence in --text2 and one action, so the line of display type that
+     used to head it is gone. The rest of the claim stands. */
+  test("is one sentence and one action, centred, with no disc and no icon", async ({ page }) => {
     await open(page, "/", "exhibition");
     const notice = page.getByTestId("feed-empty");
     await expect(notice).toBeVisible();
 
-    const title = notice.locator("h2");
-    const type = await title.evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { size: parseFloat(cs.fontSize), family: cs.fontFamily };
-    });
-    // The display face is legal from 20px up; the shipped version was 22 and
-    // this is 26, which is the only line on an otherwise empty screen.
-    expect(type.size).toBeGreaterThanOrEqual(20);
-    expect(type.family).toContain("Bodoni Moda");
+    await expect(notice.locator("h2")).toHaveCount(0);
+    await expect(notice).toContainText("Nothing has been published yet.");
+    await expect(notice.getByRole("link")).toHaveCount(1);
 
     // No circle, and no glyph: --r-full belongs to spinners and avatars.
     const discs = await notice.evaluate(

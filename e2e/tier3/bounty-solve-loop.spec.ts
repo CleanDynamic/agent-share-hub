@@ -116,7 +116,7 @@ async function openBuild(page: Page): Promise<void> {
  * practice — the second is slack, not a search.
  */
 async function feedCarriesTheAsk(page: Page): Promise<boolean> {
-  await page.goto("/?tab=builds");
+  await page.goto("/?tab=everyone");
   await expect(page.getByTestId("feed-builds")).toBeVisible();
 
   const strip = page.locator(

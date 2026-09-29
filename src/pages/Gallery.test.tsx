@@ -19,7 +19,8 @@ const getGalleryFacets = vi.fn();
 const countOpenBountyBuilds = vi.fn();
 const searchMakers = vi.fn();
 
-vi.mock("@/lib/profile/searchMakers", () => ({
+vi.mock("@/lib/profile/searchMakers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/profile/searchMakers")>()),
   searchMakers: (query: string) => searchMakers(query),
 }));
 

@@ -102,7 +102,7 @@ import {
   type MissingItem,
 } from "@/lib/build";
 import { isPermissionError } from "@/lib/errors/permission";
-import { searchMakers, type MakerHit } from "@/lib/profile/searchMakers";
+import { linkableMakers, searchMakers, type MakerHit } from "@/lib/profile/searchMakers";
 import { GalleryCard, GalleryCardSkeleton } from "@/components/gallery/GalleryCard";
 import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import {
@@ -112,7 +112,7 @@ import {
 } from "@/components/gallery/FacetRail";
 import { LensRow } from "@/components/gallery/LensRow";
 import { NavSearch } from "@/components/shell/NavSearch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MakerLink } from "@/components/profile/MakerLink";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -668,9 +668,7 @@ function StateLine({
  * address to link to and is left out. Nothing renders when nobody matched.
  */
 function MakersRow({ makers }: { makers: MakerHit[] }) {
-  const linkable = makers.filter(
-    (maker): maker is MakerHit & { username: string } => Boolean(maker.username),
-  );
+  const linkable = linkableMakers(makers);
   if (linkable.length === 0) return null;
 
   return (
@@ -693,36 +691,11 @@ function MakersRow({ makers }: { makers: MakerHit[] }) {
           rowGap: SPACE.xs,
         }}
       >
-        {linkable.map((maker) => {
-          const name = maker.display_name?.trim() || maker.username;
-          return (
-            <li key={maker.id} style={{ minWidth: 0 }}>
-              <Link
-                to={`/profile/${encodeURIComponent(maker.username)}`}
-                data-testid="gallery-maker"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: SPACE.xs,
-                  minHeight: 44,
-                  color: t.text,
-                  textDecoration: "none",
-                }}
-              >
-                <Avatar style={{ width: 32, height: 32 }}>
-                  {maker.avatar_url ? <AvatarImage src={maker.avatar_url} alt="" /> : null}
-                  <AvatarFallback style={{ background: t.recess, color: t.text2, ...dataText }}>
-                    {name.slice(0, 1).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                  <span style={{ ...body, color: t.text }}>{name}</span>
-                  <span style={{ ...dataText, color: t.text2 }}>@{maker.username}</span>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+        {linkable.map((maker) => (
+          <li key={maker.id} style={{ minWidth: 0 }}>
+            <MakerLink maker={maker} testId="gallery-maker" />
+          </li>
+        ))}
       </ul>
     </section>
   );

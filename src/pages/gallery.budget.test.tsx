@@ -25,7 +25,10 @@ vi.mock("@/lib/build", async (importOriginal) => {
     getGalleryFacets: () => getGalleryFacets(),
   };
 });
-vi.mock("@/lib/profile/searchMakers", () => ({ searchMakers: async () => [] }));
+vi.mock("@/lib/profile/searchMakers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/profile/searchMakers")>()),
+  searchMakers: async () => [],
+}));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ createSignedUrl: vi.fn() }) } },
 }));
