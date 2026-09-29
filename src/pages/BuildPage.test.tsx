@@ -9,6 +9,9 @@ const getApprovedLayers = vi.fn().mockResolvedValue([]);
 const forkBuild = vi.fn();
 const getForkOrigin = vi.fn().mockResolvedValue(null);
 const listRebuilds = vi.fn().mockResolvedValue([]);
+/* RC-P14: the Rebuilds tab draws the family when it opens. Answered here so no
+   test reaches for a real database through it. */
+const getBuildFamily = vi.fn().mockResolvedValue(null);
 const getBuild = vi.fn().mockResolvedValue(null);
 const auth = vi.hoisted(() => ({ isLoggedIn: false }));
 
@@ -70,6 +73,7 @@ vi.mock("@/lib/build", async (importOriginal) => {
     forkBuild: (input: unknown) => forkBuild(input),
     getForkOrigin: (build: unknown) => getForkOrigin(build),
     listRebuilds: (buildId: string, options?: unknown) => listRebuilds(buildId, options),
+    getBuildFamily: (input: unknown) => getBuildFamily(input),
     getBuild: (id: string) => getBuild(id),
     signedMediaUrl: async (media: { path: string }, options?: { width?: number }) =>
       `https://project.supabase.co/storage/v1/render/image/sign/build-media/${media.path}` +

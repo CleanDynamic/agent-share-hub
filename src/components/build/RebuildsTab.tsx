@@ -16,8 +16,11 @@
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import { Link } from "react-router-dom";
+import type { ReactNode } from "react";
 import type { RebuildSummary } from "@/lib/build";
 import { BranchIcon } from "./BranchIcon";
+import { RebuildFamily } from "./RebuildTree";
+import { SPACE } from "@/lib/theme/space";
 import { creatorLabel, firstLine } from "./rebuildDisplay";
 import { cardGlass } from "./tokens";
 import { r } from "@/lib/theme/radius";
@@ -60,9 +63,52 @@ function when(created_at: string): string {
 
 export interface RebuildsTabProps {
   rebuilds: RebuildSummary[];
+  /**
+   * The family this build belongs to (RC-P14): drawn as a tree under THE
+   * FAMILY, above everything else in the tab. Absent draws no tree.
+   */
+  family?: { rootId: string; currentId: string };
 }
 
-export function RebuildsTab({ rebuilds }: RebuildsTabProps) {
+/* ── RC-P14 — THE FAMILY, ABOVE THE DIRECT LIST ───────────────────────────────
+
+   The list below says who rebuilt THIS build. The tree above it says where the
+   build sits in the whole family: what it was rebuilt from, its siblings, and
+   what grew from each of them, with this build marked "you are here". It asks
+   for the family only when the tab opens (BuildTabs mounts the open panel
+   alone), in two requests. Nothing that was in the tab moves: the tree is a new
+   section above it, under a DM Mono 12 heading.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export function RebuildsTab({ rebuilds, family }: RebuildsTabProps) {
+  const direct = <DirectRebuilds rebuilds={rebuilds} />;
+  if (!family) return direct;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: SPACE.lg }}>
+      <FamilySection rootId={family.rootId} currentId={family.currentId} />
+      {direct}
+    </div>
+  );
+}
+
+function FamilySection({ rootId, currentId }: { rootId: string; currentId: string }): ReactNode {
+  return (
+    <section
+      data-testid="rebuild-family"
+      aria-labelledby="rebuild-family-heading"
+      style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}
+    >
+      <h2 id="rebuild-family-heading" style={{ ...eyebrow, color: t.text2, margin: 0 }}>
+        The family
+      </h2>
+      <RebuildFamily rootId={rootId} currentId={currentId} />
+    </section>
+  );
+}
+
+/** The tab as it was before RC-P14: the direct rebuilds, or the one sentence. */
+function DirectRebuilds({ rebuilds }: { rebuilds: RebuildSummary[] }) {
   if (rebuilds.length === 0) {
     return (
       <p style={{ ...bodyType, ...measure, color: t.text2, margin: 0, padding: "48px 0" }}>

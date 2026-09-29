@@ -101,8 +101,13 @@ RemixValidationError("REMIX_RETIRED", "Remixing has been replaced by Rebuild.")
 
 ### What is still live, and must stay live
 
-- `/b/:slug/lineage` (`src/pages/Lineage.tsx`), its `get_post_lineage` RPC and
-  `LineageTreeView`. A lineage recorded before the freeze still draws in full.
+- ~~`/b/:slug/lineage`, its `get_post_lineage` RPC and `LineageTreeView`~~ —
+  no longer a remix surface since RC-P14, which made lineage the family of
+  rebuilds: `src/pages/Lineage.tsx` reads neither `post_lineage` nor
+  `get_post_lineage`, the page lives at `/b2/:slug/lineage`, and the old address
+  lands there when its slug names a build (`src/lib/retiredSurfaces.test.tsx`
+  proves it still answers). `LineageTreeView` has no caller and goes with the
+  rest of the remix path.
 - `useLineageParent` and `useRemixCount` (`src/lib/remix/hooks.ts`), and the
   attribution chip and descendant badge they feed in that same
   `RemixLineageRow`. A derived post still shows where it came from and how many
@@ -1063,7 +1068,7 @@ exists, still has its RLS policies, and is still read by the live read paths.
 | `public.reblog_likes` | table | Likes on those reblogs; `likeReblog` still writes here. |
 | `public.reblog_bookmarks` | table | Bookmarks on those reblogs; `bookmarkReblog` still writes here. |
 | `public.reblog_reports` | table | Moderation history, and reporting an existing reblog still works. |
-| `public.post_lineage` | table | Every derivation recorded by remix. Read by the lineage page, `useLineageParent` and `useRemixCount`. |
+| `public.post_lineage` | table | Every derivation recorded by remix. Read by `useLineageParent` and `useRemixCount`; the lineage page stopped reading it in RC-P14. |
 | `reblog-media` | storage bucket | The images and videos attached to published reblogs. Public read; the upload path is frozen. |
 
 `content_items.reblog_count` also stays — it is a counter column on a live

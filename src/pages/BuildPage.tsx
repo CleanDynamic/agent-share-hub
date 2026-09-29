@@ -1016,7 +1016,15 @@ export default function BuildPage() {
               ) : undefined
             }
             rebuilds={
-              (rebuilds ?? []).length > 0 ? <RebuildsTab rebuilds={rebuilds ?? []} /> : undefined
+              (rebuilds ?? []).length > 0 ? (
+                <RebuildsTab
+                  rebuilds={rebuilds ?? []}
+                  family={{
+                    rootId: data.build.root_build_id ?? data.build.id,
+                    currentId: data.build.id,
+                  }}
+                />
+              ) : undefined
             }
             broke={
               <BreakageView

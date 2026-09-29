@@ -316,11 +316,3 @@ export async function getPendingRevealBadges(userId: string) {
     description: string | null; metadata: Record<string, any>;
   }>;
 }
-
-export async function getPostLineage(rootId: string) {
-  const { data } = await (supabase as any).rpc("get_post_lineage", { _root_id: rootId });
-  return (data ?? []) as Array<{
-    post_id: string; parent_post_id: string | null; root_post_id: string;
-    title: string; slug: string; creator_id: string; depth: number;
-  }>;
-}

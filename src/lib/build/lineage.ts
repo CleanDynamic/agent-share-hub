@@ -1,7 +1,8 @@
 // A build's family of rebuilds, as a tree (RC-P14).
 //
 // THE FAMILY IS THE REBUILD, NOT THE REMIX. The old /b/:slug/lineage drew remix
-// derivations out of post_lineage, a legacy idea over data the clear emptied.
+// derivations out of the remix lineage table, a legacy idea over data the
+// clear emptied.
 // A build's lineage now is its rebuilds: builds.parent_build_id, followed down
 // from the family's root (root_build_id, or the build itself when it has none).
 //
@@ -186,4 +187,30 @@ export async function getRebuildTree(rootId: string): Promise<RebuildTreeNode | 
   );
 
   return buildTree(rows.map((row) => ({ ...row, maker: byId.get(row.creator_id) ?? null })));
+}
+
+export interface GetBuildFamilyInput {
+  /** The family's root: root_build_id, or the build itself when it has none. */
+  rootId: string;
+  /** The build the reader is on, which the drawn family must contain. */
+  currentId: string;
+}
+
+/**
+ * The family a reader on `currentId` sees: drawn from its root, in two
+ * requests.
+ *
+ * FROM THE CURRENT BUILD INSTEAD when drawing from the root would lose it: the
+ * root is no longer readable (unpublished since it was rebuilt), or the walk
+ * never reaches the current build (a draft between them, or the caps). Two
+ * more requests, only then, so the reader always finds "you are here".
+ */
+export async function getBuildFamily({
+  rootId,
+  currentId,
+}: GetBuildFamilyInput): Promise<RebuildTreeNode | null> {
+  const fromRoot = await getRebuildTree(rootId);
+  if (rootId === currentId) return fromRoot;
+  if (fromRoot && flattenFamily(fromRoot).some((node) => node.id === currentId)) return fromRoot;
+  return getRebuildTree(currentId);
 }
