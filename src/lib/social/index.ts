@@ -19,10 +19,12 @@ export { getMySaves, listMySavedBuilds, saveBuild, unsaveBuild, type ListMySaved
 export {
   COMMENT_COLUMNS,
   COMMENT_SELECT,
+  PART_COUNT_LIMIT,
   addComment,
   deleteComment,
   editComment,
   listComments,
+  listPartCommentCounts,
   nestComments,
   toBuildComment,
   type AddCommentInput,

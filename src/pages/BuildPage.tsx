@@ -51,6 +51,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { getMakerName } from "@/lib/profile/makerName";
 import { Comments } from "@/components/social/Comments";
+import { usePartCommentCounts } from "@/hooks/useBuildComments";
 import { numberParts } from "@/lib/social";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
@@ -488,6 +489,9 @@ function BuildPageSkeleton() {
   );
 }
 
+/** No part has comments yet: one frozen object, so the markers do not re-render. */
+const NO_PART_COUNTS: Record<string, number> = Object.freeze({}) as Record<string, number>;
+
 export default function BuildPage() {
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();
@@ -591,8 +595,13 @@ export default function BuildPage() {
   const engagement = useEngagement(buildId ? [buildId] : []);
 
   /* RC-P17 — comments. The parts are numbered as the Anatomy draws them, for
-     the "on part 3 · …" chips. */
+     the "on part 3 · …" chips; a marker's press becomes an attach request the
+     comments section acts on; the markers read the part counts the section
+     asked for (enabled false: from the cache, never a request of their own). */
   const parts = useMemo(() => numberParts(data?.tree ?? []), [data?.tree]);
+  const [attachRequest, setAttachRequest] = useState<{ nodeId: string; at: number } | null>(null);
+  const commentOnPart = useCallback((nodeId: string) => setAttachRequest({ nodeId, at: Date.now() }), []);
+  const { data: partCounts } = usePartCommentCounts(buildId, false);
 
   /* RC-P16b — the maker's name, for the one description that needs it: a
      build with no outcome is described as "A build by <maker>, reproduced n
@@ -1089,6 +1098,11 @@ export default function BuildPage() {
               resolveNode={resolveNode}
               resolveMedia={resolveMedia}
               renderFooter={renderNodeFooter}
+              partComments={
+                data.build.status !== "draft"
+                  ? { counts: partCounts ?? NO_PART_COUNTS, onComment: commentOnPart }
+                  : undefined
+              }
             />
           </BuildTabs>
         </Section>
@@ -1100,7 +1114,7 @@ export default function BuildPage() {
             <Comments
               build={{ id: data.build.id, slug: data.build.slug }}
               parts={parts}
-              attachRequest={null}
+              attachRequest={attachRequest}
               onOpenPart={openNodeInAnatomy}
             />
           </Section>

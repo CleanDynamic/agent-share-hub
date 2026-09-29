@@ -1,23 +1,27 @@
 // A build's comments and its part counts, as the page holds them (RC-P17).
 //
-// ONE REQUEST A PAGE ⟦neoscale-performance⟧: comments, replies and authors
-// together (src/lib/social/comments.ts), asked for once the comments section
-// comes within 400px of the viewport.
+// TWO REQUESTS, ISSUED TOGETHER ⟦neoscale-performance⟧: the first page of
+// comments (replies and authors included, src/lib/social/comments.ts) and the
+// comment count of every part, both asked for once the comments section comes
+// within 400px of the viewport. The anatomy's part markers read the same cached
+// counts without asking again, so the page never makes a third.
 //
 // A POSTED, EDITED OR DELETED COMMENT IS WRITTEN INTO THE CACHE, not re-read:
 // the database has already answered with the row, and reading the whole list
 // again to show one comment would cost the request the section was built to
-// avoid. The build's comment count moves with it.
+// avoid. The build's comment count and the part's count move with it.
 
-import { useInfiniteQuery, type InfiniteData, type QueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import {
   listComments,
+  listPartCommentCounts,
   nestComments,
   type BuildComment,
   type CommentPage,
 } from "@/lib/social";
 
 export const COMMENTS_KEY = "build-comments";
+export const PART_COUNTS_KEY = "build-part-comments";
 
 /** A conversation is not a ticker. */
 const COMMENTS_STALE_MS = 30_000;
@@ -32,6 +36,20 @@ export function useCommentPages(buildId: string, enabled: boolean) {
     queryFn: ({ pageParam }) => listComments(buildId, { after: pageParam }),
     getNextPageParam: (last: CommentPage) => last.nextAfter ?? undefined,
     enabled,
+    staleTime: COMMENTS_STALE_MS,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Each part's comment count. `enabled` false reads the cache only: the
+ * anatomy's markers show what the comments section asked for, and ask nothing.
+ */
+export function usePartCommentCounts(buildId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: [PART_COUNTS_KEY, buildId],
+    queryFn: () => listPartCommentCounts(buildId as string),
+    enabled: enabled && Boolean(buildId),
     staleTime: COMMENTS_STALE_MS,
     refetchOnWindowFocus: false,
   });
@@ -87,4 +105,16 @@ export function removeComment(queryClient: QueryClient, buildId: string, comment
     };
   });
   return removed;
+}
+
+/** A part gained or lost comments. */
+export function bumpPartCount(queryClient: QueryClient, buildId: string, nodeId: string, delta: number): void {
+  queryClient.setQueryData<Record<string, number>>([PART_COUNTS_KEY, buildId], (counts) => {
+    if (!counts) return counts;
+    const next = Math.max(0, (counts[nodeId] ?? 0) + delta);
+    const copy = { ...counts };
+    if (next === 0) delete copy[nodeId];
+    else copy[nodeId] = next;
+    return copy;
+  });
 }

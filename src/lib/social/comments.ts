@@ -139,6 +139,31 @@ export async function listComments(buildId: string, options: ListCommentsOptions
   };
 }
 
+/** The most node-attached comments one count read looks at. */
+export const PART_COUNT_LIMIT = 1000;
+
+/**
+ * How many comments each part of a build carries, in ONE request: the node id
+ * of every comment on the build that names a part, counted here. A part with
+ * none is absent. Hidden comments are counted only for the readers who can
+ * see them, because row-level security decides which rows come back.
+ */
+export async function listPartCommentCounts(buildId: string): Promise<Record<string, number>> {
+  const response = await db
+    .from("build_comments")
+    .select("node_id")
+    .eq("build_id", buildId)
+    .not("node_id", "is", null)
+    .limit(PART_COUNT_LIMIT);
+  if (response.error) throw socialError("listPartCommentCounts", response, { buildId });
+
+  const counts: Record<string, number> = {};
+  for (const row of (response.data ?? []) as { node_id: string | null }[]) {
+    if (row.node_id) counts[row.node_id] = (counts[row.node_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** Characters as Postgres counts them (char_length), not UTF-16 units. */
 function characters(text: string): number {
   return [...text].length;

@@ -22,10 +22,10 @@
 // Discoverability⟧. "Post" is secondary (row 2): the page's one filled button
 // is in its header ⟦von-restorff-effect⟧.
 //
-// NEAR THE VIEWPORT ⟦neoscale-performance⟧: nothing is asked until the section
-// is within 400px of the screen, or at once when the address ends #comments.
-// Then the first page of comments, one request (useBuildComments). "Show more
-// comments" asks for the next 50.
+// TWO REQUESTS, NEAR THE VIEWPORT ⟦neoscale-performance⟧: nothing is asked
+// until the section is within 400px of the screen, or at once when the address
+// ends #comments. Then the first page of comments and the parts' counts, one
+// request each (useBuildComments). "Show more comments" asks for the next 50.
 //
 // A COMMENT'S WORDS NEVER REACH AN ERROR OR A LOG ⟦neoscale-error-monitoring
 // › Privacy⟧: a refusal is reported by the data layer with ids and a code, and
@@ -42,7 +42,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { updateEngagement } from "@/hooks/useEngagement";
-import { appendComment, removeComment, replaceComment, useCommentPages } from "@/hooks/useBuildComments";
+import {
+  appendComment,
+  bumpPartCount,
+  removeComment,
+  replaceComment,
+  useCommentPages,
+  usePartCommentCounts,
+} from "@/hooks/useBuildComments";
 import { isPermissionError } from "@/lib/errors/permission";
 import {
   COMMENT_MAX,
@@ -115,6 +122,8 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
   }, [near]);
 
   const pages = useCommentPages(build.id, near);
+  // The second request, issued with the first: every part's count.
+  usePartCommentCounts(build.id, near);
 
   /* ── Arriving here on purpose ─────────────────────────────────────────────── */
 
@@ -162,11 +171,13 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
   const posted = (comment: BuildComment) => {
     appendComment(queryClient, build.id, comment);
     if (!comment.isHidden) updateEngagement(queryClient, build.id, { comments: 1 });
+    if (comment.nodeId) bumpPartCount(queryClient, build.id, comment.nodeId, 1);
   };
 
   const removed = (gone: BuildComment[]) => {
     const visible = gone.filter((row) => !row.isHidden).length;
     if (visible > 0) updateEngagement(queryClient, build.id, { comments: -visible });
+    for (const row of gone) if (row.nodeId) bumpPartCount(queryClient, build.id, row.nodeId, -1);
   };
 
   const [confirming, setConfirming] = useState<CommentThread | BuildComment | null>(null);
