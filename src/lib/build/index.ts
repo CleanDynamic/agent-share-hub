@@ -290,6 +290,13 @@ export {
   type RebuildTreeRow,
 } from "./lineage";
 export {
+  WHERE_NEXT_PER_ROW,
+  firstTool,
+  getWhereNext,
+  type WhereNext,
+  type WhereNextInput,
+} from "./whereNext";
+export {
   MINIMUM_PUBLISHABLE_KEYS,
   MINIMUM_PUBLISHABLE_SCORE,
   REPRODUCTION_COLUMNS,

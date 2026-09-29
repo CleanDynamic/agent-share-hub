@@ -63,6 +63,7 @@ import { ForkControl, useForkBuild } from "@/components/build/ForkControl";
 import { PortableExport } from "@/components/build/PortableExport";
 import { ReproductionAction } from "@/components/build/ReproductionAction";
 import { RebuildCount, RebuildsTab } from "@/components/build/RebuildsTab";
+import { WhereNext } from "@/components/build/WhereNext";
 import { Replay } from "@/components/build/Replay";
 import { RunView } from "@/components/build/RunView";
 import { skeletonStyle } from "@/lib/theme/controls";
@@ -1048,6 +1049,14 @@ export default function BuildPage() {
             />
           </BuildTabs>
         </Section>
+        {/* RC-P14b — where next, at the foot, after the tab panel. It asks for
+            nothing until the reader comes within 400px of it, and renders
+            nothing when there is nowhere onward. */}
+        <WhereNext
+          buildId={data.build.id}
+          creatorId={data.build.creator_id}
+          madeWith={data.build.made_with}
+        />
       </div>
     </Frame>
   );
