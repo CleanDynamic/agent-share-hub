@@ -5,11 +5,10 @@ import { GalleryCard } from "@/components/gallery/GalleryCard";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
-import { firstTool, getWhereNext, type GalleryBuild } from "@/lib/build";
+import { WHERE_NEXT_PER_ROW, firstTool, getWhereNext, type GalleryBuild } from "@/lib/build";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body, eyebrow } from "@/lib/theme/type";
-import { useReveal } from "@/lib/theme/useReveal";
 
 /* ────────────────────────────────────────────────────────────────────────────
    RC-P14b — where next, at the foot of a build page.
@@ -38,6 +37,13 @@ import { useReveal } from "@/lib/theme/useReveal";
    NO REQUEST UNTIL IT IS NEAR ⟦neoscale-performance⟧: a 1px sentinel is
    watched, and the three requests go out once it is within 400px of the
    viewport. Most readers of a build never reach its foot.
+
+   NO SCROLL REVEAL. The theme sanctions useReveal on two files only, the
+   build page's own sections and the gallery grid (motion.test.ts holds it),
+   and the section has usually arrived before the reader reaches it anyway:
+   it asks 400px ahead. Wrapping it in the page's revealed Section instead
+   would leave an empty flex item, and 32px of page, where there is nowhere
+   onward.
    ──────────────────────────────────────────────────────────────────────────── */
 
 /** How far ahead of the viewport the section starts asking. */
@@ -124,12 +130,23 @@ export function WhereNext({ buildId, creatorId, madeWith }: WhereNextProps) {
   const data = query.data;
   if (!data) return null;
 
+  /* The data layer already caps each row and leaves this build out; held here
+     too, so the rule is true of what is drawn, whatever it is handed. */
+  const onward = (builds: GalleryBuild[]) =>
+    builds.filter((build) => build.id !== buildId).slice(0, WHERE_NEXT_PER_ROW);
+
   const rows: Row[] = [
-    { key: "rebuilds" as const, heading: "Rebuilds of this", builds: data.rebuilds },
+    { key: "rebuilds" as const, heading: "Rebuilds of this", builds: onward(data.rebuilds) },
     ...(data.sharedTool
-      ? [{ key: "made-with" as const, heading: `More made with ${data.sharedTool.tool}`, builds: data.sharedTool.builds }]
+      ? [
+          {
+            key: "made-with" as const,
+            heading: `More made with ${data.sharedTool.tool}`,
+            builds: onward(data.sharedTool.builds),
+          },
+        ]
       : []),
-    { key: "maker" as const, heading: `More from ${data.makerName ?? "this maker"}`, builds: data.fromMaker },
+    { key: "maker" as const, heading: `More from ${data.makerName ?? "this maker"}`, builds: onward(data.fromMaker) },
   ].filter((row) => row.builds.length > 0);
 
   if (rows.length === 0) return null;
@@ -147,14 +164,12 @@ const COLUMNS = {
 /** The rows, drawn. Rendered only when at least one row has a build in it. */
 function WhereNextRows({ rows }: { rows: Row[] }) {
   const columns = COLUMNS[useBreakpoint()];
-  const { ref, style } = useReveal();
 
   return (
     <section
-      ref={ref}
       data-testid="where-next"
       aria-label="Where next"
-      style={{ display: "flex", flexDirection: "column", gap: SPACE.xl, ...style }}
+      style={{ display: "flex", flexDirection: "column", gap: SPACE.lg }}
     >
       {rows.map((row) => (
         <section
