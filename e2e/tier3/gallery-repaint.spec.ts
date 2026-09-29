@@ -210,6 +210,25 @@ test("BG-P19 — every card in a row gets the same media slot", async ({ page })
   await page.goto("/gallery");
   await expect(page.locator('[data-visual-slot="gallery-card"]').first()).toBeVisible();
 
+  /* WAITED FOR, NOT READ AT ONCE (RC-P14c). The stagger lifts each cell 14px
+     as it fades in, one step after the last, and a card at opacity 0 already
+     counts as visible — so a measurement taken while it runs finds the three
+     cards at different tops (it failed 5 times in 10 before Phase 3 and 4 in 10
+     after). The claim is about where the cards come to rest: the reveal ends
+     at `transform: none` (revealTo), so wait for the first three cells to get
+     there, as ACCEPTANCE 3 below waits for their opacity. */
+  await expect
+    .poll(
+      async () =>
+        page
+          .locator('[data-visual-slot="gallery-grid-cell"]')
+          .evaluateAll((nodes) =>
+            nodes.slice(0, 3).every((node) => getComputedStyle(node).transform === "none"),
+          ),
+      { timeout: 5_000 },
+    )
+    .toBe(true);
+
   // The first row's three cards. Their titles are one, two and nearly three
   // lines long, which is what makes this worth measuring at all.
   const row = await page.evaluate(() => {
