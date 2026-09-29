@@ -199,7 +199,14 @@ Lovable messages owed: none
 Open: THE ROW REFLOWS BELOW 1024, NOT 768 as step 7d says: in the wide frame the list is about 408px at 768 and the three-column row overlapped itself (HIGH). 1024 is where FacetRail folds too. The list holds the prompt's three columns and each row uses them through subgrid, so the columns align down the board. Asks on draft builds are left off, as the feed's bounty arm does. With a Made with filter and no match, the board says "No open bounties are made with that." + Clear filters; unfiltered it is row 19's exact sentence. /bounties is wide now, so M4's nav jump applies to it. tsc PASS · unit 2180/2180, 0 new failures · build PASS · tier1 92/92 on both projects · bounties-board 7/7 + 7/7 · audit:contrast PASS.
 Next: RC-P13
 
-## RC-P13 — 
+## RC-P13 — The board of solvers
+Date: 2026-09-29 · Commits: BOUNTIES-4, BOUNTIES-5 · Head: 246d6e35
+Landed: /bounties/solvers (wide, lazy, in RouteBoundary) ranks the people whose solutions were accepted on bounties that live on a build, in two requests: top_solvers (SECURITY INVOKER, STABLE; most solved, then reward total, then latest; 1–100 rows) and one profiles read by id. At most 25 rows, max 720, each its own "40px minmax(0,1fr) auto" grid with hairlines between; positions and tallies in DM Mono tabular-nums; the tally moves under the name below 768; row 19 "Nobody has solved a bounty yet." + See open bounties; row 21. /bounties carries one "Solvers" text link at the trailing end of its title row; no navigation entry (still 9). /b/:id/leaderboard lands on /bounties/solvers; BountyLeaderboard.tsx stays, no longer imported.
+Skills applied: ⟦hicks-law › Budgets; Enforcing It in the Code⟧ ⟦law-of-continuity › Alignment and reading flow⟧ ⟦buildgallery-theme › Type; Before you call it done⟧ ⟦layout-grid⟧ ⟦responsive-design › Reflow⟧ ⟦supabase-postgres-best-practices › references/query-partial-indexes.md; references/security-rls-basics.md⟧ ⟦neoscale-performance › Checklist for any new route⟧ ⟦neoscale-error-monitoring › Error boundaries⟧ ⟦neoscale-e2e-testing⟧ ⟦buildgallery-repo-map › 1⟧ ⟦neoscale-code-review⟧
+Migrations queued: 20261001160000_rc_top_solvers.sql (Deploy queue item 7; the prompt said 6)
+Lovable messages owed: L-P13-1 (queued): apply 20261001160000_rc_top_solvers.sql exactly as written, then run and paste `select * from public.top_solvers(5);`
+Open: No test asserted the old leaderboard route, so step 10 rewrote none; solvers-board.spec.ts proves the redirect. MakerLink now draws the theme's focus ring on the link, which also reaches the gallery's makers row and Home's suggestions (keyboard focus only). top_solvers(NULL) answers one row, as the specified LIMIT LEAST(GREATEST(max_results,1),100) reads a NULL; the page always passes 25. Contrast on /bounties/solvers and /bounties at 390 and 1440, both themes: 0 text failures; the new links wear the system ring (Exhibition 1.8:1, row 9's owner-escalated survivor). tsc PASS · unit 2207/2207, 0 new failures · build PASS · tier1 92/92 on both projects · solvers-board 6/6 + 6/6.
+Next: RC-P14
 
 ## RC-P14 — 
 

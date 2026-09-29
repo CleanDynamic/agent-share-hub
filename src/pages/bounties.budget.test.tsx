@@ -3,6 +3,8 @@
 //
 // One facet group, six options before More, no sort control, no filled button
 // while there are rows, and exactly one control per row that goes anywhere.
+// RC-P13 adds one text link at the trailing end of the title row, Solvers, and
+// nothing else: the page's only way out that is not a row.
 
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -97,6 +99,18 @@ describe("the bounties board's choice budgets", () => {
     await screen.findAllByTestId("bounty-row");
 
     expect(document.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(0);
+  });
+
+  it("has one text link beside the title, Solvers, to the solvers board (RC-P13)", async () => {
+    renderBoard();
+    await screen.findAllByTestId("bounty-row");
+
+    const header = screen.getByRole("banner");
+    const links = within(header).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveTextContent("Solvers");
+    expect(links[0]).toHaveAttribute("href", "/bounties/solvers");
+    expect(within(header).queryAllByRole("button")).toHaveLength(0);
   });
 
   it("gives each row exactly one control that goes anywhere: Open the build", async () => {
