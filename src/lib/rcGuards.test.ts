@@ -172,4 +172,18 @@ describe("RC decisions", () => {
       expect(sql.match(/\bgrant\b/gi) ?? []).toEqual([]);
     }
   });
+
+  // RC-P25: a screen that names either function is asking for a call the database
+  // refuses, or is a reason someone reopens the door. types.ts is generated from the
+  // live schema, so it lists every function and calls none of them.
+  it("no client code calls award_xp or rc_grant_xp", () => {
+    const GENERATED_TYPES = join("src", "integrations", "supabase", "types.ts");
+    const files = sourceFiles("src");
+    expect(files.length).toBeGreaterThan(100);
+
+    const callers = files
+      .filter((file) => file !== THIS_FILE && file !== GENERATED_TYPES)
+      .filter((file) => /\b(?:award_xp|rc_grant_xp)\b/.test(readFileSync(file, "utf8")));
+    expect(callers).toEqual([]);
+  });
 });
