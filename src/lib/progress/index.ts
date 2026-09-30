@@ -233,26 +233,6 @@ export async function claimChallenge(challengeId: string) {
   };
 }
 
-export async function awardXp(opts: {
-  userId: string;
-  amount: number;
-  reason: string;
-  sourceType?: string;
-  sourceId?: string;
-  metadata?: Record<string, any>;
-}) {
-  const { data, error } = await (supabase as any).rpc("award_xp", {
-    _user_id: opts.userId,
-    _amount: opts.amount,
-    _reason: opts.reason,
-    _source_type: opts.sourceType ?? null,
-    _source_id: opts.sourceId ?? null,
-    _metadata: opts.metadata ?? {},
-  });
-  if (error) throw error;
-  return data as any;
-}
-
 /* ─────────── Depth reveal + tracks + perks ─────────── */
 export async function markDepthRevealed(): Promise<string | null> {
   const { data, error } = await (supabase as any).rpc("mark_depth_revealed");
