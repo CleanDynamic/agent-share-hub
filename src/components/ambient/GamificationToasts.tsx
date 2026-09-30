@@ -6,10 +6,7 @@ import XpToast from "./XpToast";
 import LineageXpToast from "./LineageXpToast";
 import BadgeEarnedToast from "./BadgeEarnedToast";
 import PostXpFootnote from "./PostXpFootnote";
-import WelcomeXpModal from "./WelcomeXpModal";
 import StreakMilestoneModal from "@/components/streaks/streak-milestone-modal";
-
-import { useWelcomeXp } from "./useWelcomeXp";
 
 type ToastKind = "xp" | "lineage" | "badge" | "footnote";
 
@@ -47,19 +44,26 @@ function rid() {
  * - Routes rows to XpToast / LineageXpToast / BadgeEarnedToast.
  * - Listens for `gamification:post-xp` window events to render
  *   PostXpFootnote from places that don't have a dedicated success screen.
- * - Owns the one-time WelcomeXpModal.
  *
  * RC-P27: the depth reveal (DepthRevealModal, the level-5 moment of the old
  * product) is no longer mounted here, and a depth_unlocked notification no
  * longer reads the pending badges or marks the depth revealed. It was the
  * modal's only mount; the file stays until RC-P29.
+ *
+ * RC-P28a: nor is the one-time WelcomeXpModal. Every new account's
+ * user_progress row has welcome_xp_shown_at null (handle_new_user), so a new
+ * reader's first signed-in page opened under it, on an opaque ground: it
+ * promised that "streaks reward showing up" and "perk eligibility", which
+ * XP-DESIGN.md does not pay or has parked, hid the reset note (the one in-app
+ * note XP-DESIGN.md allows), and set its "Start your quest" in --text on
+ * --action (2.73:1 on Exhibition, 2.24:1 on Dusk). This was its only mount;
+ * WelcomeXpModal.tsx and useWelcomeXp.ts stay until RC-P29.
  */
 export default function GamificationToasts() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const coalesceRef = useRef<Map<string, CoalesceState>>(new Map());
-  const welcome = useWelcomeXp();
   const [milestone, setMilestone] = useState<{ open: boolean; days: number }>({ open: false, days: 0 });
 
   const dismiss = useCallback((id: string) => {
@@ -266,17 +270,6 @@ export default function GamificationToasts() {
           </div>
         ))}
       </div>
-
-      <WelcomeXpModal
-        open={welcome.open}
-        onStart={() => {
-          welcome.dismiss();
-          navigate("/analytics");
-        }}
-        onClose={() => {
-          welcome.dismiss();
-        }}
-      />
 
       {milestone.open && (
         <StreakMilestoneModal

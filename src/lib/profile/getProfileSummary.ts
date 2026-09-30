@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { ProfileSummary, ProfileLevel } from "./types";
+import type { ProfileSummary } from "./types";
 
 const UUID_RX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,7 +12,7 @@ async function resolveProfile(userIdOrHandle: string) {
   const query = supabase
     .from("profiles")
     .select(
-      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, level, derived_bio, last_derived_at, is_private, is_trusted_solver"
+      "id, username, display_name, avatar_url, banner_url, bio, website_url, location, follower_count, following_count, created_at, is_verified, derived_bio, last_derived_at, is_private, is_trusted_solver"
     )
     .limit(1);
 
@@ -35,26 +35,18 @@ export async function getProfileSummary(
 
   const isOwnProfile = !!viewerId && viewerId === profile.id;
 
-  // Stats matview + follow check in parallel.
-  const [statsRes, followRes] = await Promise.all([
-    (supabase as any)
-      .from("profile_stats")
-      .select(
-        "blueprints_count, blogs_count, bounties_posted"
-      )
-      .eq("user_id", profile.id)
-      .maybeSingle(),
+  // RC-P28a: the follow check only. The profile_stats read (blueprint, blog
+  // and bounty counts over content_items) fed the header's legacy counts,
+  // which the four figures replaced; profiles.level went with them.
+  const followRes =
     !isOwnProfile && viewerId
-      ? supabase
+      ? await supabase
           .from("follows")
           .select("id")
           .eq("follower_id", viewerId)
           .eq("following_id", profile.id)
           .maybeSingle()
-      : Promise.resolve({ data: null, error: null } as const),
-  ]);
-
-  const stats = (statsRes as any)?.data ?? {};
+      : ({ data: null, error: null } as const);
 
   return {
     id: profile.id,
@@ -67,7 +59,6 @@ export async function getProfileSummary(
     // already makes, rather than the legacy author-stats reads it rode on.
     isTrustedSolver: !!profile.is_trusted_solver,
     isPrivate: !!(profile as any).is_private,
-    level: (((profile as any).level as ProfileLevel) ?? "reader"),
     domain: null,
     derivedBio: (profile as any).derived_bio ?? null,
     customBio: profile.bio ?? null,
@@ -77,9 +68,6 @@ export async function getProfileSummary(
     counts: {
       followers: profile.follower_count ?? 0,
       following: profile.following_count ?? 0,
-      blueprints: Number(stats.blueprints_count ?? 0),
-      blogs: Number(stats.blogs_count ?? 0),
-      bounties: Number(stats.bounties_posted ?? 0),
     },
     isOwnProfile,
     isFollowing: isOwnProfile ? null : !!(followRes as any)?.data,

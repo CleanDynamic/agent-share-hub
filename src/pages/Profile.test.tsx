@@ -1,6 +1,7 @@
 // RC-P21 — the profile, rendered.
 //
-// The claims: a maker's standing is four figures from one getMakerStats call;
+// The claims: a maker's standing is four figures from one getMakerStats call,
+// said once (the header repeats none of them);
 // the tabs are Builds, Rebuilds and Solutions (and a Drafts link on your own
 // profile), each the gallery's own cards counted by one engagement request for
 // the whole list, each in the address; each empty tab is one sentence and at
@@ -56,13 +57,15 @@ vi.mock("@/lib/profile/makerBuilds", async (importOriginal) => ({
   listMakerSolvedBuilds: (...args: unknown[]) => listMakerSolvedBuilds(...args),
 }));
 
-vi.mock("@/hooks/useProfileGameData", () => ({ useProfileGameData: () => ({ data: undefined }) }));
+const game = vi.hoisted(() => ({ data: undefined as unknown }));
+vi.mock("@/hooks/useProfileGameData", () => ({ useProfileGameData: () => ({ data: game.data }) }));
 vi.mock("@/components/profile/MatchBanner", () => ({ MatchBanner: () => null }));
 
 import Profile from "@/pages/Profile";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import { MakerStatsError } from "@/lib/profile/makerStats";
 import type { ProfileSummary } from "@/lib/profile/types";
+import { parkedEntryPoints } from "@/test/parkedEntryPoints";
 
 function summary(over: Partial<ProfileSummary> = {}): ProfileSummary {
   return {
@@ -74,14 +77,13 @@ function summary(over: Partial<ProfileSummary> = {}): ProfileSummary {
     isVerified: false,
     isTrustedSolver: false,
     isPrivate: false,
-    level: "reader",
     derivedBio: null,
     customBio: null,
     joinedAt: "2026-01-10T00:00:00.000Z",
     location: null,
     website: null,
     domain: null,
-    counts: { followers: 12, following: 3, blueprints: 0, blogs: 0, bounties: 0 },
+    counts: { followers: 12, following: 3 },
     isOwnProfile: true,
     isFollowing: null,
     ...over,
@@ -146,6 +148,7 @@ const cardTitles = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  game.data = undefined;
   auth.user = { id: "maker-1" };
   getProfileSummary.mockResolvedValue(summary());
   getMakerStats.mockResolvedValue({ builds: 3, reproductionsReceived: 1204, rebuildsOfTheirWork: 7, gapsSolved: 2 });
@@ -177,12 +180,16 @@ describe("Profile", () => {
     expect(getMakerStats).toHaveBeenCalledWith("maker-2");
   });
 
-  it("gives the header's two earned numbers the same answer as the figures row", async () => {
+  /* RC-P28a — the standing is said once. The header used to restate two of the
+     figures in other words ("1204 reproduced", "rebuilt 7 times"). */
+  it("states the maker's standing once: in the figures row, and nowhere in the header", async () => {
     renderAt("/profile");
 
-    const header = await screen.findByTestId("profile-header");
-    await waitFor(() => expect(header.textContent).toContain("1204 reproduced"));
-    expect(header.textContent).toContain("rebuilt 7 times");
+    const row = await screen.findByTestId("maker-figures");
+    await waitFor(() =>
+      expect(within(row).getAllByTestId("maker-figure-value").map((value) => value.textContent)).toEqual(["3", "1,204", "7", "2"]),
+    );
+    expect(screen.getByTestId("profile-header").textContent).not.toMatch(/reproduced|rebuilt|1,?204/);
     expect(getMakerStats).toHaveBeenCalledTimes(1);
   });
 
@@ -308,5 +315,66 @@ describe("Profile", () => {
       expect(screen.queryByRole("button", { name: gone })).toBeNull();
     }
     expect(screen.queryAllByRole("button", { name: /sort/i })).toHaveLength(0);
+  });
+
+  /* RC-P28a — the header speaks the build model only: the two counts of people
+     as text, and no legacy post counts, no blueprint ladder chip. */
+  it("counts people in the header, as text, and says nothing of the legacy post model", async () => {
+    renderAt("/profile");
+    const header = await screen.findByTestId("profile-header");
+    const counts = within(header).getByTestId("profile-counts");
+
+    expect(counts.textContent).toBe("12followers3following");
+    expect(within(counts).queryAllByRole("button")).toHaveLength(0);
+    for (const legacy of [/blueprint/i, /\bblogs?\b/i, /\bbounties\b/i, /\bBUILDER\b/, /\bCREATOR\b/, /\bSAGE\b/]) {
+      expect(header.textContent).not.toMatch(legacy);
+    }
+  });
+
+  /* RC-P28a — a maker's level is readable by that maker alone, so the ring
+     around the avatar is drawn on your own profile only: to a visitor it could
+     only ever say level 1. */
+  it("draws the level ring on your own profile, and none on someone else's", async () => {
+    game.data = { level: 6, progressPct: 17, marks: [], founderBadge: null };
+    const own = renderAt("/profile");
+    const mine = await screen.findByTestId("profile-header");
+    expect(within(mine).getByRole("img", { name: "Level 6, 17% to next level" })).toBeInTheDocument();
+    own.unmount();
+
+    game.data = { level: 1, progressPct: 0, marks: [], founderBadge: null };
+    getProfileSummary.mockResolvedValue(summary({ id: "maker-2", isOwnProfile: false, isFollowing: false }));
+    renderAt("/profile/maren");
+    const theirs = await screen.findByTestId("profile-header");
+    expect(within(theirs).queryByRole("img", { name: /^Level / })).toBeNull();
+  });
+
+  /* RC-P28a — the founder badge looks as it does on the progress page: the
+     catalogue's rare chip, named in words, not the old crown pill. */
+  it("draws the founder badge as the catalogue does: a rare chip named Founder", async () => {
+    game.data = { level: 6, progressPct: 17, marks: [], founderBadge: { earned_at: "2026-01-10T00:00:00.000Z", memberNumber: null } };
+    renderAt("/profile");
+    const header = await screen.findByTestId("profile-header");
+
+    const founder = within(header).getByRole("img", { name: "Founder, rare badge" });
+    expect(founder.getAttribute("data-tier")).toBe("rare");
+    expect(founder.getAttribute("data-earned")).toBe("true");
+    expect(header.textContent).not.toMatch(/Founding member|first 100/);
+  });
+
+  /* RC-P28 — guilds, leaderboards and reputation are parked: no profile offers
+     a way into any of them, your own or someone else's. */
+  it("offers no way into guilds, leaderboards or reputation, on your own profile or someone else's", async () => {
+    listMakerBuilds.mockResolvedValue({ builds: [card(1)], next: null });
+    const own = renderAt("/profile");
+    await waitFor(() => expect(screen.getAllByTestId("profile-card")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("maker-figure-value")).toHaveLength(4));
+    expect(parkedEntryPoints(document.body)).toEqual([]);
+    own.unmount();
+
+    getProfileSummary.mockResolvedValue(summary({ id: "maker-2", isOwnProfile: false, isFollowing: false }));
+    renderAt("/profile/maren");
+    await waitFor(() => expect(screen.getAllByTestId("profile-card")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("maker-figure-value")).toHaveLength(4));
+    expect(parkedEntryPoints(document.body)).toEqual([]);
   });
 });

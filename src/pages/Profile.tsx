@@ -23,7 +23,8 @@ import { t } from "@/lib/theme/tokens";
 import { body, type } from "@/lib/theme/type";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
-import FounderMark from "@/components/profile-game/FounderMark";
+import { BadgeChip } from "@/components/trophies/BadgeMark";
+import { badgeBySlug } from "@/components/trophies/badge-data";
 import { useProfileGameData } from "@/hooks/useProfileGameData";
 import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
@@ -37,21 +38,28 @@ import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 // authored reblogs, the welcome note about blueprints) — are no longer
 // mounted, and nothing they asked for is asked for.
 //
-// The header's two earned numbers read the same answer as the figures row, so
-// the page cannot say two different things about how often a maker's work got
-// going; that is one request fewer than the header's old sum over every build.
+// The figures row is the one place the page states a maker's standing: the
+// header's two earned numbers, which said two of the four figures again in
+// other words, left in RC-P28a.
 
 const BUCKET = "profile-assets";
+
+/* RC-P28a — the founder badge, drawn as the catalogue draws it. The header used
+   the old FounderMark: an --action pill (a second filled element beside the
+   one primary) reading "Founding member — first 100", a claim the badge does
+   not make (founder is every account held before the reset, XP-DESIGN.md),
+   whose words spilled out of its 30px pill at 390, 768 and 1440, while the
+   progress page drew the same badge as a rare --recess tile. */
+const FOUNDER = badgeBySlug("founder");
 
 /**
  * The profile, before it has arrived.
  *
  * IT IS THE HEADER'S OWN SHAPE, not four grey bars. A skeleton that does not
  * match what replaces it is a layout shift with extra steps, so this carries
- * the cover at `--r-media`, the avatar as a circle, the name, the handle, and —
- * the part that was missing — a placeholder the width of the two earned
- * numbers, which is the row a reader's eye goes to next. The kit's `Skeleton`
- * paints them: `--recess` with a sweep across it, dropped under reduced motion.
+ * the cover at `--r-media`, the avatar as a circle, the name and the handle.
+ * The kit's `Skeleton` paints them: `--recess` with a sweep across it, dropped
+ * under reduced motion.
  */
 function ProfileSkeleton() {
   return (
@@ -67,11 +75,6 @@ function ProfileSkeleton() {
         <div className="space-y-2 pb-2 flex-1">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-4 w-32" />
-          {/* The earned numbers' slot: a tag and the line beside it. */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-24" style={{ borderRadius: r.chip }} />
-            <Skeleton className="h-4 w-28" style={{ borderRadius: r.chip }} />
-          </div>
         </div>
       </div>
       <Skeleton className="h-16 w-full" style={{ borderRadius: r.panel }} />
@@ -121,8 +124,7 @@ export default function Profile() {
   }, [qc, queryKey]);
 
   /* THE FOUR FIGURES, IN ONE REQUEST (RC-P21). maker_stats counts them in the
-     database under the reader's own row-level security; the header's two
-     earned numbers are two of the same four. */
+     database under the reader's own row-level security. */
   const makerStats = useQuery({
     queryKey: ["maker-stats", summary?.id ?? null],
     enabled: !!summary?.id,
@@ -336,18 +338,15 @@ export default function Profile() {
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!summary.isTrustedSolver}
-          level={gameData?.level ?? 1}
-          progressPct={gameData?.progressPct ?? 0}
+          /* RC-P28a — the level ring on your own profile only. user_progress
+             is readable by its owner alone (users_read_own_progress), so on
+             anyone else's profile the ring drew the default, level 1 at 0%,
+             for every maker: a false claim on the avatar. */
+          level={summary.isOwnProfile ? gameData?.level ?? 1 : undefined}
+          progressPct={summary.isOwnProfile ? gameData?.progressPct ?? 0 : undefined}
           creatorMarks={creatorMarks}
-          reproductionsReceived={makerStats.data?.reproductionsReceived ?? 0}
-          rebuildsReceived={makerStats.data?.rebuildsOfTheirWork ?? 0}
-          earnedLoading={makerStats.isLoading && !!summary.id}
           founderAccessory={
-            gameData?.founderBadge ? (
-              <FounderMark
-                memberNumber={gameData.founderBadge.memberNumber ?? undefined}
-              />
-            ) : undefined
+            gameData?.founderBadge && FOUNDER ? <BadgeChip badge={FOUNDER} earned /> : undefined
           }
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}

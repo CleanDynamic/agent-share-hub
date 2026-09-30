@@ -21,6 +21,7 @@ import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
+import { GUILDS_ENABLED, LEADERBOARDS_ENABLED, REPUTATION_ENABLED } from "@/lib/progress/flags";
 import Home from "./pages/Home";
 
 import Upload from "./pages/Upload";
@@ -238,6 +239,17 @@ const App = () => (
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
+                {/* RC-P28 — guilds, leaderboards and reputation are parked
+                    (docs/reconciliation/XP-DESIGN.md › Parked). While its flag
+                    in src/lib/progress/flags.ts is false, a feature's address,
+                    and anything under it, lands on the progress page. Nothing
+                    of the three is imported, so the visit fetches no code of
+                    theirs and asks the database nothing. None of them has a
+                    page: un-parking one means designing it and registering it
+                    here, lazy inside RouteBoundary (CONTRACT §2.6). */}
+                {!GUILDS_ENABLED && <Route path="/guilds/*" element={<Navigate to="/analytics" replace />} />}
+                {!LEADERBOARDS_ENABLED && <Route path="/leaderboards/*" element={<Navigate to="/analytics" replace />} />}
+                {!REPUTATION_ENABLED && <Route path="/reputation/*" element={<Navigate to="/analytics" replace />} />}
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays
                     registered so a bookmark is not a 404, the notice above it
