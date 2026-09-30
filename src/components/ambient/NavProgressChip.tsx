@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { ChevronRight, Sparkles, Flame, Shield } from "lucide-react"
-import { tokens, xpColor, streakColor, reputationColor } from "./tokens"
+import { tokens, streakColor, reputationColor } from "./tokens"
 import { REPUTATION_ENABLED } from "@/lib/progress/flags"
+import { t } from "@/lib/theme/tokens"
 
 export interface NavProgressChipProps {
   /** Current level number. */
@@ -23,6 +24,15 @@ export interface NavProgressChipProps {
 /**
  * NavProgressChip — compact level + mini XP bar for the left rail.
  * Hover reveals a flyout with the full breakdown. Ambient, L1.
+ *
+ * RC-P28a — PROGRESS IS LIGHT, AS IT IS ON THE PAGE IT OPENS. The level and its
+ * bars were filled with --action (ambient/tokens.ts maps XP to the primary
+ * fill), so the rail drew the reader's level in the primary's colour on every
+ * page, beside each page's one primary, while the progress page and the
+ * profile's ring carry the same level in --lit. The level is now a --lit fill
+ * with --on-lit on it and the bars --lit on --recess (STATES.md row 18), with
+ * no glow (the theme glows nothing on Exhibition); the XP figures are --text,
+ * as the progress page sets them (row 22).
  */
 export default function NavProgressChip({
   level,
@@ -57,22 +67,18 @@ export default function NavProgressChip({
       >
         <span
           className="flex shrink-0 items-center justify-center"
+          data-testid="level-chip-level"
           style={{
             width: 34,
             height: 34,
             borderRadius: tokens.radiusPill,
-            background: tokens.orangeGradient,
-            /* BG-P30. `--text` on `--action` measures 2.73:1 on Exhibition and
-               2.24:1 on Dusk — the level number was unreadable in both rooms,
-               at 13px/600, on a fill that exists precisely because it has an
-               ink of its own. `--on-action` is that ink and is the measured
-               pairing the contract publishes: 5.65:1 and 6.35:1. Reusing the
-               legal pairing, which is the theme's own first remedy. */
-            color: "var(--on-action)",
+            /* The progress light with its measured ink: --on-lit on --lit
+               (7.29:1 on Exhibition, the contract's text/lit). */
+            background: t.lit,
+            color: t.onLit,
             fontFamily: tokens.fontMono,
             fontSize: 13,
             fontWeight: 600,
-            boxShadow: "0 2px 10px color-mix(in srgb, var(--action) 35%, transparent)",
           }}
         >
           {level}
@@ -104,10 +110,11 @@ export default function NavProgressChip({
           >
             <span
               className="block h-full"
+              data-testid="level-chip-bar"
               style={{
                 width: `${pct}%`,
                 borderRadius: tokens.radiusPill,
-                background: tokens.orangeGradient,
+                background: t.lit,
               }}
             />
           </span>
@@ -136,7 +143,7 @@ export default function NavProgressChip({
           <span style={{ fontSize: 13, fontWeight: 600, color: tokens.text }}>
             Level {level} · {levelName}
           </span>
-          <Sparkles size={14} color={xpColor} />
+          <Sparkles size={14} color={t.text2} />
         </div>
 
         <div className="mt-3">
@@ -149,11 +156,12 @@ export default function NavProgressChip({
             }}
           >
             <div
+              data-testid="level-chip-flyout-bar"
               style={{
                 width: `${pct}%`,
                 height: "100%",
                 borderRadius: tokens.radiusPill,
-                background: tokens.orangeGradient,
+                background: t.lit,
               }}
             />
           </div>
@@ -165,7 +173,7 @@ export default function NavProgressChip({
               style={{
                 fontFamily: tokens.fontMono,
                 fontSize: 11,
-                color: xpColor,
+                color: t.text,
                 fontWeight: 600,
               }}
             >
@@ -180,10 +188,10 @@ export default function NavProgressChip({
         >
           {typeof totalXp === "number" && (
             <FlyoutStat
-              icon={<Sparkles size={13} color={xpColor} />}
+              icon={<Sparkles size={13} color={t.text2} />}
               label="Lifetime XP"
               value={totalXp.toLocaleString()}
-              color={xpColor}
+              color={t.text}
             />
           )}
           {typeof streakDays === "number" && (
