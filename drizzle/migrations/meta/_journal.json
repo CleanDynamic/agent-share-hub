@@ -57,6 +57,13 @@
       "when": 1790190703696,
       "tag": "0007_imports_storage_object_policies_and_drop_helper",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790779244872,
+      "tag": "0008_rc_xp_close",
+      "breakpoints": true
     }
   ]
 }
