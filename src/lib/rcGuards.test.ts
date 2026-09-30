@@ -17,6 +17,14 @@
 // would refill content_items after the clear. Until RC-P08b deletes it, the
 // picker may be opened only from its own files, the legacy /upload page and
 // the frozen legacy-bounty code; anywhere else, a call to it is a regression.
+//
+// RC-P25 closed the XP hole. award_xp let any signed-in reader write XP to
+// themselves, so it is now executable by no client role, and XP is written only
+// by rc_grant_xp, which only the database's own triggers can call. The two
+// migrations that do this make promises a later edit could break quietly: the
+// SQL carries its own copy of the stale window, which must stay equal to
+// STALE_AFTER_DAYS, and nothing they create may be executable by anon or
+// authenticated.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
@@ -30,6 +38,9 @@ const MIGRATIONS = join("supabase", "migrations");
 const BACKUP = join(MIGRATIONS, "20261001120000_rc_backup_legacy.sql");
 const ROTATION = join(MIGRATIONS, "20261001123000_rc_rotate_demo_passwords.sql");
 const CLEAR = join(MIGRATIONS, "20261001130000_rc_clear_legacy_posts.sql");
+const XP_CLOSE = join(MIGRATIONS, "20261001230000_rc_xp_close.sql");
+const XP_EVENTS = join(MIGRATIONS, "20261001240000_rc_xp_build_events.sql");
+const SIGNALS = join("src", "lib", "build", "signals.ts");
 
 /** The only files that may still open the type picker, until RC-P08b removes it. */
 const PICKER_FILES = [
@@ -120,5 +131,45 @@ describe("RC decisions", () => {
     expect(html).not.toContain("twitter:site");
     expect(seoHead).toContain('"https://buildgallery.ai"');
     expect(seoHead).toContain('const SITE_NAME = "buildgallery";');
+  });
+
+  // RC-P25: "stale" is decided in SQL as well as in signals.ts, because the
+  // database has to know when a re-confirmation is worth XP. Two numbers for one
+  // fact drift apart without anyone noticing, so this reads both.
+  it("the stale window in the XP migration equals STALE_AFTER_DAYS", () => {
+    const declared = /export const STALE_AFTER_DAYS\s*=\s*(\d+)\s*;/.exec(readFileSync(SIGNALS, "utf8"));
+    expect(declared, "STALE_AFTER_DAYS is declared in signals.ts").not.toBeNull();
+
+    expect(readFileSync(XP_EVENTS, "utf8")).toContain("STALE_AFTER_DAYS in src/lib/build/signals.ts");
+
+    // Read without comments, so a comment quoting a number cannot stand in for the code.
+    const sql = statements(XP_EVENTS);
+    const windows = [...sql.matchAll(/\bstale_days\s+constant\s+integer\s*:=\s*(\d+)\s*;/gi)];
+    expect(windows).toHaveLength(1);
+    expect(Number(windows[0][1])).toBe(Number(declared?.[1]));
+
+    // The window is written once. A literal interval would be a second, unchecked copy.
+    expect(sql.match(/interval\s+'\s*\d+\s*days?\s*'/gi) ?? []).toEqual([]);
+  });
+
+  it("the XP migrations leave award_xp and rc_grant_xp executable by no client role", () => {
+    const close = statements(XP_CLOSE);
+    expect(close).toMatch(/proname\s*=\s*'award_xp'/);
+    expect(close).toMatch(/revoke\s+execute\s+on\s+function\s+public\.%I\(%s\)\s+from\s+public,\s*anon,\s*authenticated/i);
+
+    // Every function the earning migration creates, the writer and the four triggers, is revoked.
+    const earn = statements(XP_EVENTS);
+    const created = [...earn.matchAll(/create\s+(?:or\s+replace\s+)?function\s+public\.(\w+)/gi)].map((match) => match[1]);
+    expect(created).toContain("rc_grant_xp");
+    expect(created).toHaveLength(5);
+    for (const name of created) {
+      const revoke = new RegExp(`revoke\\s+execute\\s+on\\s+function\\s+public\\.${name}\\([^)]*\\)\\s+from\\s+public,\\s*anon,\\s*authenticated`, "i");
+      expect(earn, name).toMatch(revoke);
+    }
+
+    // Neither file opens anything to anybody.
+    for (const sql of [close, earn]) {
+      expect(sql.match(/\bgrant\b/gi) ?? []).toEqual([]);
+    }
   });
 });
