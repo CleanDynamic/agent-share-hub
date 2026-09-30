@@ -357,7 +357,7 @@ const ProjectDetail = () => {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-[13px] text-muted-foreground">
           {creator && (
             <>
-              <Link to={`/creator/${creator.username}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+              <Link to={`/profile/${creator.username}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
                 <User className="h-3 w-3" />
                 <span>By {creator.display_name || creator.username}</span>
               </Link>
@@ -389,13 +389,13 @@ const ProjectDetail = () => {
         {/* 9. Created By card */}
         {creator && (
           <div className="flex items-center gap-3 py-3.5 mb-4 border-t border-b border-border">
-            <Link to={`/creator/${creator.username}`} className="shrink-0">
+            <Link to={`/profile/${creator.username}`} className="shrink-0">
               <div className="h-11 w-11 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground overflow-hidden">
                 {(creator.display_name || creator.username || "?")[0].toUpperCase()}
               </div>
             </Link>
             <div className="flex-1 min-w-0">
-              <Link to={`/creator/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+              <Link to={`/profile/${creator.username}`} className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
                 {creator.display_name || creator.username}
               </Link>
               <p className="text-xs text-muted-foreground">@{creator.username}</p>

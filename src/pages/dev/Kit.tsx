@@ -618,7 +618,7 @@ function BrandSection() {
           <RebuildCredit
             source={CREDIT_SOURCE}
             to="/b2/inbox-triage-agent-demo"
-            handleTo="/creator/amara"
+            handleTo="/profile/amara"
           />
         </Cell>
         <Cell label="source deleted — snapshot text, no link">

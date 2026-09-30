@@ -268,13 +268,13 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
             {String(rank).padStart(2, "0")}
           </span>
         )}
-        <Link to={`/creator/${profile?.username}`} onClick={stop}>
+        <Link to={`/profile/${profile?.username}`} onClick={stop}>
           <Avatar className="shrink-0" style={{ width: 34, height: 34 }}>
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{initials}</AvatarFallback>
           </Avatar>
         </Link>
         <Link
-          to={`/creator/${profile?.username}`}
+          to={`/profile/${profile?.username}`}
           onClick={stop}
           className="hover:underline truncate"
           style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}

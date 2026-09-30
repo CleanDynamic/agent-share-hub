@@ -19,6 +19,8 @@ export interface ProfileSummary {
   avatarUrl: string | null;
   coverUrl: string | null;
   isVerified: boolean;
+  /** profiles.is_trusted_solver: the header's Trusted solver chip. */
+  isTrustedSolver?: boolean;
   isPrivate: boolean;
   level: ProfileLevel;
   derivedBio: string | null;

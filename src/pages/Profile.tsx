@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -8,53 +8,38 @@ import { SeoHead } from "@/components/SeoHead";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { EditProfileSheet } from "@/components/profile/EditProfileSheet";
-import {
-  AuthorStatsPanel,
-  AuthorStatsPanelSkeleton,
-} from "@/components/profile/AuthorStatsPanel";
-import {
-  MostReferencedPrimitives,
-  type PrimitiveCardData,
-} from "@/components/profile/MostReferencedPrimitives";
+import { MakerFigures } from "@/components/profile/MakerFigures";
 import {
   ProfileContentZones,
-  type Zone,
+  profileTabOf,
+  type ProfileTab,
 } from "@/components/profile/ProfileContentZones";
-import { ProfileAuthoredReblogs } from "@/components/profile/ProfileAuthoredReblogs";
 import { MatchBanner } from "@/components/profile/MatchBanner";
-import { ProfileWelcomeCoachmark } from "@/components/profile/ProfileWelcomeCoachmark";
-import { MakeCollectionDialog } from "@/components/profile/MakeCollectionDialog";
-// Straight from the module, not the @/lib/build barrel: this page is eagerly
-// imported by App, and the barrel would pull the whole build layer — intake,
-// portable, gallery, layers — into the main chunk with it.
-import { listBuildsByCreator } from "@/lib/build/builds";
+import { getMakerStats } from "@/lib/profile/makerStats";
 import { getProfileSummary } from "@/lib/profile/getProfileSummary";
 import { buttonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, type } from "@/lib/theme/type";
-import { getAuthorStats } from "@/lib/profile/getAuthorStats";
-import { getMostReferenced } from "@/lib/profile/getMostReferenced";
-import { getZoneContent } from "@/lib/profile/getZoneContent";
-import type { Primitive, ZoneItem } from "@/lib/profile/types";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
-import ShowcaseSection from "@/components/profile-game/ShowcaseSection";
 import FounderMark from "@/components/profile-game/FounderMark";
 import { useProfileGameData } from "@/hooks/useProfileGameData";
 import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
-import type { ShowcaseItem } from "@/components/profile-game/ShowcaseStrip";
-import { scrollBehavior } from "@/lib/theme/motion";
 
-/** The two trigger-maintained counters the header's earned numbers sum. */
-interface EarnedCounts {
-  reproduction_count?: number | null;
-  rebuild_count?: number | null;
-}
-
-const PAGE_SIZE = 20;
-const VALID_ZONES: Zone[] = ["authored", "curated", "activity", "network"];
+// THE PROFILE, ON BUILDS (RC-P21). A maker's standing is what they built, what
+// other people got working, what other people rebuilt, and which gaps they
+// solved: four figures under the header, from one request (maker_stats), and
+// three tabs of the gallery's own cards under those. The zones of the product
+// that was cleared — their filters, their sort menu, and the panels that read
+// legacy posts (author stats, most-referenced blocks, the showcase strip,
+// authored reblogs, the welcome note about blueprints) — are no longer
+// mounted, and nothing they asked for is asked for.
+//
+// The header's two earned numbers read the same answer as the figures row, so
+// the page cannot say two different things about how often a maker's work got
+// going; that is one request fewer than the header's old sum over every build.
 
 const BUCKET = "profile-assets";
 
@@ -102,7 +87,6 @@ export default function Profile() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
-  const [makeCollectionOpen, setMakeCollectionOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeBusy, setComposeBusy] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement | null>(null);
@@ -136,293 +120,29 @@ export default function Profile() {
     qc.invalidateQueries({ queryKey });
   }, [qc, queryKey]);
 
-  // Author stats — fetched in parallel once we know the profile id.
-  const { data: authorStats, isLoading: statsLoading } = useQuery({
-    queryKey: ["author-stats", summary?.id ?? null],
+  /* THE FOUR FIGURES, IN ONE REQUEST (RC-P21). maker_stats counts them in the
+     database under the reader's own row-level security; the header's two
+     earned numbers are two of the same four. */
+  const makerStats = useQuery({
+    queryKey: ["maker-stats", summary?.id ?? null],
     enabled: !!summary?.id,
-    queryFn: () => getAuthorStats(summary!.id),
+    queryFn: () => getMakerStats(summary!.id),
+    refetchOnWindowFocus: false,
   });
 
-  const { data: reblogCount } = useQuery({
-    queryKey: ["profile-reblog-count", summary?.id ?? null],
-    enabled: !!summary?.id,
-    queryFn: async () => {
-      const { count } = await (supabase as any)
-        .from("reblogs")
-        .select("id", { count: "exact", head: true })
-        .eq("reblogger_id", summary!.id)
-        .is("deleted_at", null)
-        .is("hidden_at", null);
-      return count ?? 0;
-    },
-  });
-
-  /* THE TWO EARNED NUMBERS (BG-P25 task 1).
-     Reproductions received and rebuilds of this creator's work, both summed
-     across their builds. Neither figure exists anywhere else on this page:
-     `profile_stats` predates the build record and counts content_items, and
-     `reproduction_count`/`rebuild_count` are columns on `builds` that only a
-     database trigger writes. This spends `listBuildsByCreator` EXACTLY AS IT
-     STANDS — no filter added, no ordering changed, nothing about the query
-     touched — because the header needs the two columns and that helper is
-     already the sanctioned way to read a creator's build headers. */
-  const { data: creatorBuilds, isLoading: earnedLoading } = useQuery({
-    queryKey: ["profile-earned", summary?.id ?? null],
-    enabled: !!summary?.id,
-    queryFn: () => listBuildsByCreator(summary!.id),
-    /* NO RETRIES, AND THE REASON IS A SCHEMA DRIFT THIS PROMPT CANNOT FIX.
-       `BUILD_COLUMNS` selects `rebuild_count`, which the repo's own migration
-       adds but the deployed database does not yet have — so against that
-       database this read 400s. With the default three retries the header sits
-       on "counting" for about ten seconds before falling back; failing once
-       puts it straight into the honest zero state. On a database that HAS the
-       column nothing about this changes, because it does not fail. */
-    retry: false,
-  });
-
-  const earned = useMemo(() => {
-    let reproductions = 0;
-    let rebuilds = 0;
-    /* The two columns, named locally. `builds.rebuild_count` is not in the
-       generated Supabase types yet — the same gap `ForkAttribution` and
-       `Plaque` already work around by declaring the shape they read rather
-       than waiting on a regeneration this prompt is not allowed to run. */
-    for (const build of (creatorBuilds ?? []) as EarnedCounts[]) {
-      reproductions += build.reproduction_count ?? 0;
-      rebuilds += build.rebuild_count ?? 0;
-    }
-    return { reproductions, rebuilds };
-  }, [creatorBuilds]);
-
-  // Most-referenced primitives strip.
-  const { data: mostReferenced } = useQuery({
-    queryKey: ["most-referenced", summary?.id ?? null],
-    enabled: !!summary?.id,
-    queryFn: () => getMostReferenced(summary!.id, 8),
-  });
-
-  const referencedCards = useMemo<PrimitiveCardData[]>(() => {
-    return (mostReferenced ?? []).map((p: Primitive) => ({
-      id: p.blockId,
-      type: "block",
-      blockType: p.blockType,
-      name: p.parent?.title ?? "",
-      contentPreview: p.preview,
-      referenceCount: p.referenceCount,
-      parent: {
-        blueprintId: p.parent?.contentId ?? "",
-        blueprintTitle: p.parent?.title ?? "Untitled",
-        slug: p.parent?.slug ?? "",
-      },
-    }));
-  }, [mostReferenced]);
-
-  const handlePrimitiveClick = useCallback(
-    (primitive: PrimitiveCardData) => {
-      if (primitive.parent.slug) {
-        navigate(`/p/${primitive.parent.slug}#block-${primitive.id}`);
-      } else if (primitive.parent.blueprintId) {
-        navigate(`/p/${primitive.parent.blueprintId}#block-${primitive.id}`);
-      }
-    },
-    [navigate]
-  );
-
-  const handleViewAllReferenced = useCallback(() => {
-    toast({ title: "Full list coming soon" });
-  }, [toast]);
-
-  // ── Zones: URL-driven state ────────────────────────────────────────────
+  // ── The tab lives in the address: ?tab=rebuilds, ?tab=solutions ────────
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawZone = searchParams.get("zone");
-  const activeZone: Zone = (VALID_ZONES.includes(rawZone as Zone)
-    ? rawZone
-    : "authored") as Zone;
-  const activeFilter = searchParams.get("filter") ?? "all";
-  const sort = searchParams.get("sort") ?? "recent";
+  const activeTab = profileTabOf(searchParams.get("tab"));
 
-  const updateParams = useCallback(
-    (next: { zone?: Zone; filter?: string; sort?: string }) => {
+  const handleTabChange = useCallback(
+    (tab: ProfileTab) => {
       const params = new URLSearchParams(searchParams);
-      if (next.zone !== undefined) params.set("zone", next.zone);
-      if (next.filter !== undefined) {
-        if (next.filter === "all") params.delete("filter");
-        else params.set("filter", next.filter);
-      }
-      if (next.sort !== undefined) {
-        if (next.sort === "recent") params.delete("sort");
-        else params.set("sort", next.sort);
-      }
+      if (tab === "builds") params.delete("tab");
+      else params.set("tab", tab);
       setSearchParams(params, { replace: false });
     },
     [searchParams, setSearchParams]
   );
-
-  const handleZoneChange = useCallback(
-    (z: Zone) => updateParams({ zone: z, filter: "all" }),
-    [updateParams]
-  );
-  const handleFilterChange = useCallback(
-    (f: string) => updateParams({ filter: f }),
-    [updateParams]
-  );
-  const handleSortChange = useCallback(
-    (s: string) => updateParams({ sort: s }),
-    [updateParams]
-  );
-
-  // ── Zone content (paginated) ────────────────────────────────────────────
-  const zoneQuery = useInfiniteQuery({
-    queryKey: ["zone-content", summary?.id ?? null, activeZone, activeFilter, sort],
-    enabled: !!summary?.id,
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      getZoneContent({
-        userId: summary!.id,
-        zone: activeZone,
-        filter: activeFilter,
-        sort,
-        offset: pageParam as number,
-        limit: PAGE_SIZE,
-      }),
-    getNextPageParam: (last, all) =>
-      last.hasMore ? all.length * PAGE_SIZE : undefined,
-  });
-
-  const zoneItems: ZoneItem[] = useMemo(
-    () => (zoneQuery.data?.pages ?? []).flatMap((p) => p.items),
-    [zoneQuery.data]
-  );
-
-  // Network filter is client-side (kind matches "follower" / "following" / "collaborator").
-  const visibleZoneItems = useMemo(() => {
-    if (activeZone === "network" && activeFilter !== "all") {
-      return zoneItems.filter((i) => i.kind === activeFilter);
-    }
-    if (activeZone === "activity" && activeFilter !== "all") {
-      return zoneItems.filter((i) => i.kind === activeFilter);
-    }
-    if (activeZone === "curated" && activeFilter !== "all") {
-      return zoneItems.filter((i) => i.kind === activeFilter);
-    }
-    return zoneItems;
-  }, [zoneItems, activeZone, activeFilter]);
-
-  const zoneCounts = useMemo(
-    () => ({
-      authored:
-        (summary?.counts.blueprints ?? 0) +
-        (summary?.counts.blogs ?? 0) +
-        (summary?.counts.bounties ?? 0),
-      curated: 0,
-      activity: 0,
-      network:
-        (summary?.counts.followers ?? 0) + (summary?.counts.following ?? 0),
-    }),
-    [summary]
-  );
-
-  const handleZoneItemClick = useCallback(
-    (item: ZoneItem) => {
-      if (item.href) navigate(item.href);
-    },
-    [navigate]
-  );
-
-  // ── Item-level actions (owner & visitor) ───────────────────────────────
-  const refetchZone = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ["zone-content", summary?.id ?? null] });
-  }, [qc, summary?.id]);
-
-  const handleEditItem = useCallback(
-    (item: ZoneItem) => {
-      const id = item.id;
-      if (!id) return;
-      // Best-effort: route to the upload editor. Different post types share /upload?edit.
-      navigate(`/upload?edit=${id}`);
-    },
-    [navigate]
-  );
-
-  const handleUnpublishItem = useCallback(
-    async (item: ZoneItem) => {
-      if (!item.id) return;
-      const { error: err } = await supabase
-        .from("content_items")
-        .update({ status: "draft" } as any)
-        .eq("id", item.id);
-      if (err) {
-        toast({ title: "Could not unpublish", description: err.message, variant: "destructive" });
-        return;
-      }
-      toast({ title: "Moved back to drafts" });
-      refetchZone();
-    },
-    [toast, refetchZone]
-  );
-
-  const handleDeleteItem = useCallback(
-    async (item: ZoneItem) => {
-      if (!item.id) return;
-      if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
-      const { error: err } = await supabase
-        .from("content_items")
-        .delete()
-        .eq("id", item.id);
-      if (err) {
-        toast({ title: "Could not delete", description: err.message, variant: "destructive" });
-        return;
-      }
-      toast({ title: "Deleted" });
-      refetchZone();
-    },
-    [toast, refetchZone]
-  );
-
-  const handleBookmarkItem = useCallback(
-    async (item: ZoneItem) => {
-      if (!user?.id) {
-        navigate("/login");
-        return;
-      }
-      if (!item.id) return;
-      const { error: err } = await supabase
-        .from("user_saves")
-        .insert({ user_id: user.id, content_id: item.id } as any);
-      if (err && !err.message.toLowerCase().includes("duplicate")) {
-        toast({ title: "Could not bookmark", description: err.message, variant: "destructive" });
-        return;
-      }
-      toast({ title: "Saved to your library" });
-    },
-    [user?.id, toast, navigate]
-  );
-
-  const handleRepostItem = useCallback(
-    (_item: ZoneItem) => {
-      toast({ title: "Repost coming soon" });
-    },
-    [toast]
-  );
-
-  const handleShareItem = useCallback(
-    async (item: ZoneItem) => {
-      try {
-        const url = item.href
-          ? `${window.location.origin}${item.href}`
-          : window.location.href;
-        await navigator.clipboard.writeText(url);
-        toast({ title: "Link copied" });
-      } catch {
-        toast({ title: "Could not copy link", variant: "destructive" });
-      }
-    },
-    [toast]
-  );
-
-  const handleCreateBlueprint = useCallback(() => {
-    navigate("/compose/new");
-  }, [navigate]);
 
   // ── Follow / Unfollow ──────────────────────────────────────────────────
   const handleFollow = useCallback(async () => {
@@ -558,30 +278,6 @@ export default function Profile() {
     [user?.id, toast, refresh]
   );
 
-  // ── Stat click → tab switching (zones not yet built; soft-scroll hook) ─
-  const handleStatClick = useCallback(
-    (stat: "followers" | "following" | "blueprints" | "blogs" | "bounties") => {
-      // Map header stat → (zone, filter) and update URL.
-      if (stat === "followers") updateParams({ zone: "network", filter: "follower" });
-      else if (stat === "following")
-        updateParams({ zone: "network", filter: "following" });
-      else if (stat === "blueprints")
-        updateParams({ zone: "authored", filter: "blueprint" });
-      else if (stat === "blogs")
-        updateParams({ zone: "authored", filter: "blog" });
-      else if (stat === "bounties")
-        updateParams({ zone: "authored", filter: "bounty" });
-
-      // Scroll the zones into view.
-      requestAnimationFrame(() => {
-        document
-          .getElementById("profile-zones")
-          ?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-      });
-    },
-    [updateParams]
-  );
-
   // Profile-game (level / xp / streak / marks / founder badge)
   const { data: gameData } = useProfileGameData(summary?.id ?? null);
   const creatorMarks: CreatorMark[] = useMemo(() => {
@@ -594,20 +290,6 @@ export default function Profile() {
       icon: Sparkles,
     }));
   }, [gameData]);
-
-
-
-
-  const showcaseItems: ShowcaseItem[] = useMemo(() => {
-    return zoneItems.slice(0, 6).map((item: any) => ({
-      id: item.id,
-      title: item.title ?? "Untitled",
-      imageUrl: item.coverUrl ?? item.thumbnailUrl ?? undefined,
-      likes: Number(item.likeCount ?? item.likes ?? 0),
-      views: Number(item.viewCount ?? item.views ?? 0),
-    }));
-  }, [zoneItems]);
-
 
   if (authLoading || isLoading || !lookup) return <ProfileSkeleton />;
   if (error || !summary) {
@@ -653,13 +335,13 @@ export default function Profile() {
         <ProfileHeader
           profile={summary}
           isFollowing={!!summary.isFollowing}
-          isTrustedSolver={!!authorStats?.isTrustedSolver}
+          isTrustedSolver={!!summary.isTrustedSolver}
           level={gameData?.level ?? 1}
           progressPct={gameData?.progressPct ?? 0}
           creatorMarks={creatorMarks}
-          reproductionsReceived={earned.reproductions}
-          rebuildsReceived={earned.rebuilds}
-          earnedLoading={earnedLoading && !!summary.id}
+          reproductionsReceived={makerStats.data?.reproductionsReceived ?? 0}
+          rebuildsReceived={makerStats.data?.rebuildsOfTheirWork ?? 0}
+          earnedLoading={makerStats.isLoading && !!summary.id}
           founderAccessory={
             gameData?.founderBadge ? (
               <FounderMark
@@ -674,9 +356,16 @@ export default function Profile() {
           onMessage={handleMessage}
           onBlockUser={() => console.log("[profile] block user", summary.id)}
           onReportUser={() => console.log("[profile] report user", summary.id)}
-          onStatClick={handleStatClick}
           onAvatarEdit={() => avatarFileRef.current?.click()}
           onCoverEdit={() => coverFileRef.current?.click()}
+        />
+
+        {/* THE FOUR FIGURES: a maker's standing, directly under the header. */}
+        <MakerFigures
+          stats={makerStats.data}
+          loading={makerStats.isLoading}
+          error={makerStats.error}
+          onRetry={() => void makerStats.refetch()}
         />
 
         {/* Visitor-only "shared interests" banner. */}
@@ -684,14 +373,6 @@ export default function Profile() {
           targetUserId={summary.id}
           viewerId={user?.id ?? null}
           isOwnProfile={summary.isOwnProfile}
-        />
-
-        {/* Own-profile welcome coachmark (zero-content state). */}
-        <ProfileWelcomeCoachmark
-          visible={
-            summary.isOwnProfile &&
-            (summary.counts.blueprints + summary.counts.blogs + summary.counts.bounties) === 0
-          }
         />
 
         {/* Hidden file inputs for avatar / cover uploads */}
@@ -718,60 +399,15 @@ export default function Profile() {
           }}
         />
 
-        {statsLoading || !authorStats ? (
-          <AuthorStatsPanelSkeleton />
-        ) : (
-          <AuthorStatsPanel stats={{ ...authorStats, reblogCount: reblogCount ?? 0 } as any} />
-        )}
-
-        <MostReferencedPrimitives
-          primitives={referencedCards}
-          onPrimitiveClick={handlePrimitiveClick}
-          onViewAllClick={handleViewAllReferenced}
-        />
-
-        {showcaseItems.length > 0 && (
-          <ShowcaseSection
-            items={showcaseItems}
-            autoPinned
-            onViewAll={() => navigate("/analytics?tab=trophies")}
-          />
-        )}
-
-        {/* Profile zones (authored / curated / activity / network). */}
+        {/* The tabs: Builds, Rebuilds, Solutions, and on your own profile a
+            link to your drafts. */}
         <div id="profile-zones">
-          {activeZone === "authored" && activeFilter === "reblog" ? (
-            <ProfileAuthoredReblogs
-              userId={summary.id}
-              activeFilter={activeFilter}
-              onFilterChange={handleFilterChange}
-            />
-          ) : (
-            <ProfileContentZones
-              activeZone={activeZone}
-              onZoneChange={handleZoneChange}
-              activeFilter={activeFilter}
-              onFilterChange={handleFilterChange}
-              sort={sort}
-              onSortChange={handleSortChange}
-              counts={zoneCounts}
-              items={visibleZoneItems}
-              isLoading={zoneQuery.isLoading}
-              isLoadingMore={zoneQuery.isFetchingNextPage}
-              hasMore={!!zoneQuery.hasNextPage}
-              onLoadMore={() => zoneQuery.fetchNextPage()}
-              onItemClick={handleZoneItemClick}
-              isOwnProfile={summary.isOwnProfile}
-              onMakeCollection={() => setMakeCollectionOpen(true)}
-              onCreateBlueprint={handleCreateBlueprint}
-              onEditItem={summary.isOwnProfile ? handleEditItem : undefined}
-              onUnpublishItem={summary.isOwnProfile ? handleUnpublishItem : undefined}
-              onDeleteItem={summary.isOwnProfile ? handleDeleteItem : undefined}
-              onBookmarkItem={!summary.isOwnProfile ? handleBookmarkItem : undefined}
-              onRepostItem={!summary.isOwnProfile ? handleRepostItem : undefined}
-              onShareItem={handleShareItem}
-            />
-          )}
+          <ProfileContentZones
+            userId={summary.id}
+            isOwnProfile={summary.isOwnProfile}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
         </div>
       </div>
 
@@ -789,15 +425,6 @@ export default function Profile() {
             website: summary.website,
           }}
           onSaved={refresh}
-        />
-      )}
-
-      {summary.isOwnProfile && user?.id && (
-        <MakeCollectionDialog
-          open={makeCollectionOpen}
-          onOpenChange={setMakeCollectionOpen}
-          ownerId={user.id}
-          onCreated={() => refetchZone()}
         />
       )}
 

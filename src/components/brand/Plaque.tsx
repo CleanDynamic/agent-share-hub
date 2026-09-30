@@ -99,8 +99,12 @@ export interface PlaqueProps {
 /** What the tag says when nobody who is not the creator has run it. */
 const NEVER_REPRODUCED = "not yet reproduced";
 
-/** What the freshness half says when there is no confirmation to report. */
-const NEVER_CONFIRMED = "not confirmed by anyone yet";
+/**
+ * What the freshness half says when there is no confirmation to report.
+ * Exported so a table that reports the same fact (RC-P23's analytics) says it
+ * in the same words.
+ */
+export const NEVER_CONFIRMED = "not confirmed by anyone yet";
 
 /** The numeral's size per plaque size. The word beside it never moves. */
 const COUNT_PX: Record<PlaqueSize, number | undefined> = {

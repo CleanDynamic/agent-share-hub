@@ -20,6 +20,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
+import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import Home from "./pages/Home";
 
 import Upload from "./pages/Upload";
@@ -31,7 +32,6 @@ import About from "./pages/About";
 import ContentDetail from "./pages/ContentDetail";
 import ContentOrReblogRoute from "@/components/routing/ContentOrReblogRoute";
 import ProjectDetail from "./pages/ProjectDetail";
-import CreatorProfile from "./pages/CreatorProfile";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import Signup from "./pages/Signup";
@@ -44,13 +44,11 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import LibraryPage from "./pages/Library";
 import CollectionDetailRoute from "./pages/CollectionDetail";
-import MyUploads from "./pages/MyUploads";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/Notifications";
 import MessagesPage from "./pages/Messages";
 import CollectionDetail from "./pages/CollectionDetail";
 // LearningPathDetail removed from UI
-import Analytics from "./pages/Analytics";
 import ApiDocs from "./pages/ApiDocs";
 
 import DraftsPage from "./pages/Drafts";
@@ -71,6 +69,13 @@ const Solvers = lazy(() => import("./pages/Solvers"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
 // address, /b/:slug/lineage. Its own chunk, like every route the RC series adds.
 const Lineage = lazy(() => import("./pages/Lineage"));
+// RC-P23 — progress and the maker's build numbers, signed in only. Its own
+// chunk: nobody reading the gallery pays for the XP panels or the table. The
+// route asks for a session and nothing more: it used to require
+// profiles.is_creator, a legacy flag nothing in the app sets, so the frame's
+// level chip (every signed-in reader's way here) bounced them to Home, and a
+// direct load raced the profile fetch and bounced creators too.
+const Analytics = lazy(() => import("./pages/Analytics"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -195,7 +200,16 @@ const App = () => (
                 <Route path="/b/:slug/lineage" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage legacy /></Suspense></RouteBoundary>} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
-                <Route path="/creator/:username" element={<CreatorProfile />} />
+                {/* RC-P22 — one address for each thing. The old creator page,
+                    the old uploads list and the old saves list duplicated
+                    the profile and the Library (hicks-law › Remedies 1
+                    Remove), so each address lands on its one home; the
+                    creator's handle is carried across. The page files stay
+                    until RC-P29 deletes them. */}
+                <Route path="/creator/:username" element={<CreatorRedirect />} />
+                <Route path="/creator" element={<Navigate to="/profile" replace />} />
+                <Route path="/my-uploads" element={<Navigate to="/profile" replace />} />
+                <Route path="/saved" element={<Navigate to="/library" replace />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
                 {/* /path/:id route removed */}
                 <Route path="/admin/login" element={<AdminLogin />} />
@@ -211,7 +225,6 @@ const App = () => (
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/profile/:handle" element={<Profile />} />
-                <Route path="/saved" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library/collections/:collectionId" element={<CollectionDetailRoute />} />
                 <Route path="/library/:handle/collections/:collectionId" element={<CollectionDetailRoute />} />
@@ -224,8 +237,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-                <Route path="/my-uploads" element={<ProtectedRoute requireCreator><MyUploads /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute requireCreator><Analytics /></ProtectedRoute>} />
+                <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />
                 {/* NS-P54. The standalone bounty form, retired the same way
                     the previous publishing tool was: the route stays
                     registered so a bookmark is not a 404, the notice above it

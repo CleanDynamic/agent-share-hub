@@ -63,7 +63,7 @@ describe("the credit is rebuildCredit.ts's sentence", () => {
 
       render(
         <MemoryRouter>
-          <RebuildCredit source={source} to="/b2/x" handleTo="/creator/y" />
+          <RebuildCredit source={source} to="/b2/x" handleTo="/profile/y" />
         </MemoryRouter>
       );
       const linkedText = screen.getByTestId("rebuild-credit-line").textContent ?? "";
@@ -82,12 +82,12 @@ describe("the credit is rebuildCredit.ts's sentence", () => {
   });
 
   it("links the title to the source and the handle to its creator", () => {
-    renderCredit({ to: "/b2/inbox-triage", handleTo: "/creator/amara" });
+    renderCredit({ to: "/b2/inbox-triage", handleTo: "/profile/amara" });
     const line = screen.getByTestId("rebuild-credit-line");
     const links = within(line).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual([
       "/b2/inbox-triage",
-      "/creator/amara",
+      "/profile/amara",
     ]);
   });
 });
@@ -101,7 +101,7 @@ describe("a source that is gone", () => {
   });
 
   it("offers nothing to click, even when a target was supplied", () => {
-    renderCredit({ gone: true, to: "/b2/inbox-triage", handleTo: "/creator/amara" });
+    renderCredit({ gone: true, to: "/b2/inbox-triage", handleTo: "/profile/amara" });
     const line = screen.getByTestId("rebuild-credit-line");
     expect(within(line).queryAllByRole("link")).toHaveLength(0);
   });
@@ -212,7 +212,7 @@ describe("tokens only", () => {
       { changes: lines(10) },
       { changes: [] },
       { gone: true },
-      { to: "/b2/x", handleTo: "/creator/y", changes: lines(2) },
+      { to: "/b2/x", handleTo: "/profile/y", changes: lines(2) },
     ]) {
       const html = renderToStaticMarkup(
         <MemoryRouter>

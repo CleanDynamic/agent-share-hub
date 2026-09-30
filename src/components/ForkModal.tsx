@@ -143,7 +143,7 @@ export function ForkModal({ open, onOpenChange, originalItem, originalCreatorUse
       queryClient.invalidateQueries({ queryKey: ["content_detail", originalItem.id] });
       toast({ title: "Fork created. Find it in My Uploads to edit and publish." });
       onOpenChange(false);
-      navigate("/my-uploads");
+      navigate("/profile");
     } catch (err: any) {
       toast({ title: "Fork failed", description: err.message || "Something went wrong.", variant: "destructive" });
     }
