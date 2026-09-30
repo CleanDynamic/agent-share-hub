@@ -64,6 +64,13 @@
       "when": 1790779244872,
       "tag": "0008_rc_xp_close",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790779321751,
+      "tag": "0009_rc_xp_build_events",
+      "breakpoints": true
     }
   ]
 }
