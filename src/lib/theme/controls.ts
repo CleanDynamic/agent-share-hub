@@ -101,7 +101,7 @@ export const ring = (focusVisible: boolean | undefined): CSSProperties =>
  */
 export const FOCUS_RING_CLASS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-[color:var(--lit)]";
+  "focus-visible:outline-[color:var(--focus-ring)]";
 
 /* ── Buttons ──────────────────────────────────────────────────────────────────
    Four treatments, mapped onto the six shadcn variant names so that no consumer

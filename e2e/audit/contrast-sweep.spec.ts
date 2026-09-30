@@ -52,40 +52,11 @@ interface Survivor {
   why: string;
 }
 
-const SURVIVORS: Survivor[] = [
-  {
-    route: "*",
-    theme: "noon",
-    // Only the amber ring, and only on Noon. Any other focus failure,
-    // any other ring colour, and any failure on Dusk still fails.
-    match: /^focus ring #D9A441 /,
-    why:
-      "THE FOCUS RING IS 1.55-2.04:1 ON EVERY NOON GROUND, AND EVERY FIX " +
-      "FOR IT IS OUT OF THIS PROMPT'S HANDS. ESCALATED, NOT ACCEPTED. " +
-      "`--lit` is #D9A441 in both rooms and measures 1.80:1 on --bg, 1.55:1 on " +
-      "--recess and 2.04:1 on a glass card; on Dusk the same value is 7.47:1, " +
-      "so this is a Noon-only shortfall. The buildgallery-theme skill " +
-      "PRESCRIBES this ring ('2px --lit with a 2px --bg offset, identical in " +
-      "both themes') and justifies it by the offset — 'the ring is read " +
-      "against two edges rather than against the ground alone'. The offset " +
-      "band is --bg and so is what lies outside the ring, so on Noon it " +
-      "is the same 1.80:1 on both edges and the justification does not hold. " +
-      "contrast.test.ts already records the underlying divergence (the skill " +
-      "says --lit is 3.01:1 on the ground; the declared tokens give 1.80:1). " +
-      "The escalation order's first two remedies both fail here: reusing a " +
-      "legal pairing means changing the ring's colour, which the skill forbids " +
-      "('one definition, used everywhere') and which this prompt's constraint " +
-      "2 explicitly blesses --lit for; and adjusting lightness within the hue " +
-      "means darkening --lit, which is one value in both rooms by design and " +
-      "which would break two published contract pairings (text/lit 7.29 and " +
-      "dusk lit/bg 7.47) that acceptance 3 requires to still measure as " +
-      "stated. So it goes to the operator with three options: (a) split --lit " +
-      "per theme and darken Noon's, re-recording the contract; (b) keep " +
-      "--lit and add a second, contrasting inner ring, the standard " +
-      "double-ring pattern, which is a new visual treatment; (c) accept 1.80:1 " +
-      "on Noon as a deliberate deviation from WCAG 1.4.11.",
-  },
-];
+/* UI-P04 emptied this list. Its one entry was the lamp-gold focus ring on
+   Noon, 1.55-2.04:1 on every ground, which BG-P30 escalated with three options;
+   the first, a ring colour per theme, is what shipped. The ring is
+   `--focus-ring` now, the ink on Noon, and clears the floor on every ground. */
+const SURVIVORS: Survivor[] = [];
 
 /** The subject a survivor is matched against: the thing, then where it is. */
 const survivorFor = (route: string, theme: string, selector: string, subject: string) =>

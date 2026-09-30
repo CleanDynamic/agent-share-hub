@@ -116,6 +116,7 @@
   --evidence-fill: #BFE3DC;
   --lit: #D9A441;
   --on-lit: #1B2026;
+  --focus-ring: #1A2320;
 
   --porthole: #4E565E;
   --chrome-hi: #FFFFFF;
@@ -220,7 +221,7 @@
   --destructive-foreground: 210 14% 97%;
   --border: 213 11% 80%;
   --input: 213 11% 80%;
-  --ring: 39 67% 55%;
+  --ring: 160 15% 12%;
   --sidebar-background: 210 8% 90%;
   --sidebar-foreground: 213 17% 13%;
   --sidebar-primary: 16 56% 40%;
@@ -228,7 +229,7 @@
   --sidebar-accent: 210 10% 84%;
   --sidebar-accent-foreground: 213 17% 13%;
   --sidebar-border: 213 11% 80%;
-  --sidebar-ring: 39 67% 55%;
+  --sidebar-ring: 160 15% 12%;
 }
 
 :root[data-theme="dusk"] {
@@ -254,6 +255,7 @@
   --evidence-fill: rgba(134,189,211,.16);
   --lit: #D9A441;
   --on-lit: #241B1A;
+  --focus-ring: #D9A441;
 
   --porthole: #141020;
   --chrome-hi: #CBC6E4;
@@ -510,7 +512,7 @@ body {
     --destructive-foreground: 210 14% 97%;
     --border: 213 11% 80%;
     --input: 213 11% 80%;
-    --ring: 39 67% 55%;
+    --ring: 160 15% 12%;
     --radius: var(--r-control);
     --sidebar-background: 210 8% 90%;
     --sidebar-foreground: 213 17% 13%;
@@ -519,7 +521,7 @@ body {
     --sidebar-accent: 210 10% 84%;
     --sidebar-accent-foreground: 213 17% 13%;
     --sidebar-border: 213 11% 80%;
-    --sidebar-ring: 39 67% 55%;
+    --sidebar-ring: 160 15% 12%;
   }
 }
 
@@ -673,7 +675,7 @@ input, textarea, select {
    which draws as a shadow and would otherwise stack underneath the outline. */
 input:focus-visible, textarea:focus-visible, select:focus-visible {
   border-color: var(--action);
-  outline: 2px solid var(--lit);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   box-shadow: none !important;
 }

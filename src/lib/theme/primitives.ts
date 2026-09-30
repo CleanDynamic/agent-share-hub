@@ -20,8 +20,10 @@
 // to reason about, not easier.
 //
 // Two rooms, two neutral ramps: `grey` is Noon's cool luminous gallery,
-// `lavender` is Dusk's lavender stone. The accent hues are shared and change
-// only their step between themes.
+// `lavender` is Dusk's lavender stone. `birch` is the Birch Mist ramp the design
+// kit gives Noon; only its ink is struck so far, because the focus ring is the
+// one token that spends it. The accent hues are shared and change only their
+// step between themes.
 
 /* ── Neutrals ─────────────────────────────────────────────────────────────── */
 
@@ -46,6 +48,11 @@ export const greyAlpha = {
   "0/55": "rgba(255,255,255,.55)",
   "0/80": "rgba(255,255,255,.80)",
   "0/95": "rgba(255,255,255,.95)",
+} as const;
+
+/** Birch Mist — the design kit's Noon neutrals. `950` is its ink. */
+export const birch = {
+  950: "#1A2320",
 } as const;
 
 /** Lavender stone — Dusk's room, and the ramp its greys come from. */

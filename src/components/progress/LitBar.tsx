@@ -6,7 +6,7 @@
 // beside it in DM Mono, so the bar is never the only carrier of a value.
 // MEASURED from the declared tokens (Noon / Dusk): --lit on --recess
 // 1.55 / 5.60, and the track on --bg 1.16 / 1.33, both under the 3.0 UI floor
-// on Noon, as the focus ring BG-P30 escalated is. Reported, not
+// on Noon. Reported, not
 // repainted: the prompt fixes these colours, and the bar is a picture of the
 // number, which is what is read.
 //

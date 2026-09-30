@@ -14,7 +14,7 @@ Keys are the real names each treatment resolves to: `t.*` from src/lib/theme/tok
 | 6 | Nav item, active | existing behaviour, unchanged. Phone bottom nav: --action text and icon, no fill. Desktop left rail: 2px --action left edge, 12% --action wash, --text label | `MobileBottomNav`, `t.action`, `t.text` |
 | 7 | Engagement action, inactive | outline icon in --text2; count in --text2, DM Mono 12, tabular-nums | `t.text2`, `DM_MONO`, `tabular` |
 | 8 | Engagement action, active (liked, saved) | icon filled --action, count --text | `t.action`, `t.text` |
-| 9 | Focus | the theme's single focus ring: 2px --lit, 2px --bg offset | `focusRing`, `ring`, `t.lit`, `t.bg` |
+| 9 | Focus | the theme's single focus ring: 2px --focus-ring (the ink on Noon, the lamp gold on Dusk), 2px --bg offset | `focusRing`, `ring`, `t.focusRing`, `t.bg` |
 | 10 | Disabled | the existing Button disabled state; custom controls: --text2 label, no hover response, aria-disabled="true" | `Button`, `buttonStyle`, `t.text2` |
 | 11 | Freshness stale / never reproduced | existing Plaque behaviour, unchanged | `Plaque`, `plaqueState` |
 | 12 | Gap on a card | existing card treatment (1.5px dashed breakage border, mono "1 part unsolved · £n"), unchanged | `gapEdge("card")`, `GalleryCard` |
@@ -36,5 +36,5 @@ Keys are the real names each treatment resolves to: `t.*` from src/lib/theme/tok
 - Row 5 is not `chipSelectedStyle`. That helper marks a selected category chip with an --action border, because the chip's fill already names its category. Row 5 is for lens and filter chips, which carry no category.
 - Row 16: Button's "destructive" variant paints t.catBreakage, which the theme forbids borrowing. New destructive actions use the ghost variant and a Dialog confirmation.
 - Row 17: src/components/ui/alert-dialog.tsx uses neither dialogPanelStyle nor scrimStyle, so confirmations use Dialog.
-- Row 9: on Noon the ring measures 1.55–2.13:1 against every ground, under the 3.0 UI floor. BG-P30 escalated this to the owner and src/lib/theme/state-contrast.test.ts records the figures. This map changes nothing about it.
+- Row 9: the ring was --lit until UI-P04 and measured 1.55–2.13:1 against every Noon ground, under the 3.0 UI floor; BG-P30 escalated it to the owner. UI-P04 gave the ring its own token, --focus-ring: the ink on Noon (11.12:1 or better on every ground) and the lamp gold on Dusk (5.10:1 or better). src/lib/theme/state-contrast.test.ts holds both rooms to the floor.
 - Measured for this map in src/lib/theme/contrast.test.ts (Noon / Dusk): --text on --recess 11.33 / 10.62, --text2 on --recess 4.55 / 5.73, --text as a border on --recess 11.33 / 10.62, --action as an icon on --bg 4.80 / 6.33. --text2 on --recess clears the 4.5 floor on Noon by 0.05, so --text2 never goes on a ground darker than --recess.

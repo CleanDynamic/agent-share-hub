@@ -24,15 +24,12 @@ import { data as dataText } from "@/lib/theme/type";
    a pairing anyone measured; `--text2` on `--recess` is (4.55 Noon, 5.73
    Dusk). Painting the ground is what makes the colour contract hold here.
 
-   THE FOCUS RING IS NOW THE SHARED ONE, which is the question BG-P02 left open.
+   THE FOCUS RING IS THE SHARED ONE, which is the question BG-P02 left open.
    It wrote the ring in `--text` because `--lit` measures 1.80:1 on Noon's
-   ground, under the 3.0:1 floor for UI state. The resolution is in `focus.ts`
-   and is about the OFFSET rather than the colour: `outline-offset: 2px` leaves a
-   2px band of `--bg` between the control and the ring, so the ring is read
-   against two edges rather than against the ground alone. That band is part of
-   the ring's definition, not a taste, and it is why one definition can be used
-   everywhere. A second ring here would be a second thing for a keyboard user to
-   learn, for no gain.
+   ground, under the 3.0:1 floor for UI state. UI-P04 settled it in `focus.ts`
+   by giving the shared ring its own token, `--focus-ring`: the ink on Noon and
+   the lamp gold on Dusk, legal on every ground in both rooms. A second ring
+   here would be a second thing for a keyboard user to learn, for no gain.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [

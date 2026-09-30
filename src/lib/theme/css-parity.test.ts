@@ -101,13 +101,10 @@ describe("index.css mirrors shadcn.ts", () => {
   it("gives the two rooms different values", () => {
     // Being fixed across both themes is the bug this replaced: one set of
     // values declared once, painting Noon in the dark shell's colours.
-    // The two rings are the exception and are meant to be: the theme's focus
-    // ring is ONE definition, 2px --lit, identical in both rooms, and --lit is
-    // the one token that does not change value between them.
-    expect(SHADCN_NAMES.filter((n) => noonShadcn[n] === duskShadcn[n])).toEqual([
-      "ring",
-      "sidebar-ring",
-    ]);
+    // The two rings used to be the exception, because the ring was --lit in
+    // both rooms. Since UI-P04 they follow --focus-ring, the ink on Noon and
+    // the lamp gold on Dusk, so no name is shared.
+    expect(SHADCN_NAMES.filter((n) => noonShadcn[n] === duskShadcn[n])).toEqual([]);
   });
 });
 

@@ -69,7 +69,8 @@ export type ShadcnName = (typeof SHADCN_NAMES)[number];
      primary / primary-foreground  →  --action / --on-action
      destructive  →  --cat-breakage, with --on-action on it
      border / input  →  --line
-     ring  →  --lit, which is what the theme's focus ring is made of
+     ring  →  --focus-ring, which is what the theme's focus ring is made of:
+              the ink on Noon, the lamp gold on Dusk (UI-P04)
 
    Measured, both themes: foreground/background 13.10 and 14.17,
    muted-foreground/background 5.26 and 7.65, muted-foreground/muted 4.55 and
@@ -96,7 +97,7 @@ export const noonShadcn: Record<ShadcnName, string> = {
   "destructive-foreground": "210 14% 97%",
   border: "213 11% 80%",
   input: "213 11% 80%",
-  ring: "39 67% 55%",
+  ring: "160 15% 12%",
   "sidebar-background": "210 8% 90%",
   "sidebar-foreground": "213 17% 13%",
   "sidebar-primary": "16 56% 40%",
@@ -104,7 +105,7 @@ export const noonShadcn: Record<ShadcnName, string> = {
   "sidebar-accent": "210 10% 84%",
   "sidebar-accent-foreground": "213 17% 13%",
   "sidebar-border": "213 11% 80%",
-  "sidebar-ring": "39 67% 55%",
+  "sidebar-ring": "160 15% 12%",
 };
 
 /** Dusk — the dark room. */

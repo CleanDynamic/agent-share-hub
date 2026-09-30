@@ -114,6 +114,9 @@ const CONTRACT: Pairing[] = [
   { theme: "noon", label: "text2/recess", fg: "text2", bg: "recess", spec: 4.55, floor: TEXT_FLOOR },
   { theme: "noon", label: "text border/recess", fg: "text", bg: "recess", spec: 11.33, floor: UI_FLOOR },
   { theme: "noon", label: "action icon/bg", fg: "action", bg: "bg", spec: 4.8, floor: UI_FLOOR },
+  // UI-P04 — the focus ring against the ground. A ring is UI state, floored at
+  // 3.0:1, and is measured here, so `spec` IS the measurement.
+  { theme: "noon", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 12.86, floor: UI_FLOOR },
   // Dusk
   { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.17, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 12.04, measured: 11.48, floor: TEXT_FLOOR },
@@ -129,6 +132,8 @@ const CONTRACT: Pairing[] = [
   { theme: "dusk", label: "text2/recess", fg: "text2", bg: "recess", spec: 5.73, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text border/recess", fg: "text", bg: "recess", spec: 10.62, floor: UI_FLOOR },
   { theme: "dusk", label: "action icon/bg", fg: "action", bg: "bg", spec: 6.33, floor: UI_FLOOR },
+  // UI-P04, as above.
+  { theme: "dusk", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 7.47, floor: UI_FLOOR },
 ];
 
 const CATEGORIES: TokenName[] = [

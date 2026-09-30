@@ -113,21 +113,21 @@ describe("the radius scale", () => {
 });
 
 describe("the focus ring", () => {
-  it("is 2px of --lit with a 2px offset", () => {
+  it("is 2px of --focus-ring with a 2px offset", () => {
     expect(focusRing).toEqual({
       outlineWidth: "2px",
       outlineStyle: "solid",
-      outlineColor: "var(--lit)",
+      outlineColor: "var(--focus-ring)",
       outlineOffset: "2px",
     });
     expect(FOCUS_RING_WIDTH).toBe("2px");
     expect(FOCUS_RING_OFFSET).toBe("2px");
   });
 
-  it("spends --lit and nothing else", () => {
-    expect(focusRing.outlineColor).toBe("var(--lit)");
+  it("spends --focus-ring and nothing else", () => {
+    expect(focusRing.outlineColor).toBe("var(--focus-ring)");
     const spent = Object.values(focusRing).filter((v) => v.startsWith("var("));
-    expect(spent).toEqual(["var(--lit)"]);
+    expect(spent).toEqual(["var(--focus-ring)"]);
   });
 
   it("is an outline, so it cannot shift a layout when it appears", () => {
@@ -137,10 +137,10 @@ describe("the focus ring", () => {
     expect(keys).not.toContain("boxShadow");
   });
 
-  it("carries the offset that makes amber legal here", () => {
-    // The ring is read against a band of --bg rather than against the ground
-    // alone. Without the offset the 3.0:1 UI floor is the whole argument, and
-    // --lit is 1.80:1 on Noon's ground.
+  it("keeps the 2px band of --bg between the control and the ring", () => {
+    // UI-P04 moved the ring's colour, not its geometry. The offset keeps the
+    // ring off the control's own fill, so it is read against the ground the
+    // control sits on, which is what state-contrast.test.ts measures it on.
     expect(focusRing.outlineOffset).not.toBe("0");
     expect(parseInt(focusRing.outlineOffset, 10)).toBeGreaterThan(0);
   });

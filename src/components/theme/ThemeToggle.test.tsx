@@ -118,9 +118,9 @@ describe("ThemeToggle", () => {
 
   it("uses the ONE shared ring, not a second definition of its own", () => {
     // BG-P02 gave this control a --text ring of its own because --lit measures
-    // 1.80:1 on Noon's ground. focus.ts resolved that: the 2px offset
-    // leaves a band of --bg under the ring, so it is read against two edges
-    // rather than against the ground alone. One ring, everywhere.
+    // 1.80:1 on Noon's ground. focus.ts resolved that in UI-P04: the shared
+    // ring is --focus-ring, the ink on Noon and the lamp gold on Dusk. One
+    // ring, everywhere.
     //
     // Asserted against the SOURCE the component spends rather than against the
     // rendered node, because jsdom drops the var() colour (see above). What the

@@ -64,6 +64,7 @@
 
 import {
   amber,
+  birch,
   blue,
   clay,
   green,
@@ -105,6 +106,7 @@ export const TOKEN_NAMES = [
   "evidence-fill",
   "lit",
   "on-lit",
+  "focus-ring",
   "porthole",
   "chrome-hi",
   "chrome-lo",
@@ -155,6 +157,9 @@ export const noon: Record<TokenName, string> = {
   "evidence-fill": teal[200],
   lit: amber[500],
   "on-lit": grey[950],
+  /* UI-P04. The ink, not the lamp: --lit is 1.80:1 on this ground, under the
+     3.0:1 floor for UI state, and this is 12.86:1. */
+  "focus-ring": birch[950],
 
   porthole: grey[700],
   "chrome-hi": grey[0],
@@ -205,6 +210,8 @@ export const dusk: Record<TokenName, string> = {
   "evidence-fill": skyAlpha["400/16"],
   lit: amber[500],
   "on-lit": clay[950],
+  /* UI-P04. The lamp gold, which is 7.47:1 on this ground. */
+  "focus-ring": amber[500],
 
   porthole: lavender[950],
   "chrome-hi": lavender[100],
