@@ -7,9 +7,9 @@
 // exactly eight columns, numbers in DM Mono at the trailing edge, a stale claim
 // saying so, and no sort control; the empty and refused states are STATES.md's;
 // and both sections sit directly under the level and XP, where the legacy
-// engagement grid used to be at the foot of the tab. The XP panels' hooks are
-// stubbed (they are RC-P27's); the build numbers run through the real data
-// layer over a recording stand-in for supabase-js.
+// engagement grid used to be at the foot of the tab. The build numbers, and
+// since RC-P27 the progress page's own reads, run through the real data layer
+// over a recording stand-in for supabase-js.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -25,23 +25,6 @@ const auth = vi.hoisted(() => ({
 }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: auth.user, profile: auth.profile, isLoggedIn: true, loading: false }),
-}));
-
-vi.mock("@/hooks/useProgress", () => ({
-  useProgress: () => ({
-    progress: { streak_days: 0, created_at: "2026-01-01T00:00:00.000Z", counters: { saves: 4 } },
-    surfaces: { tabs: ["overview", "trophies", "history"], quest: false, daily_nudge: false, next_unlock: false, eligibility_notice: false, empty_state: false },
-    quest: null,
-    challenges: [],
-    marks: [],
-    xpInLevel: 0,
-    xpForNext: 75,
-    level: 1,
-    isLoading: false,
-  }),
-  useXpEvents: () => [{ data: [], refetch: vi.fn() }, { data: [] }],
-  useClaimChallenge: () => ({ mutate: vi.fn() }),
-  useStreakDays: () => ({ data: [] }),
 }));
 
 /** Every request the page makes, by table or function. */
@@ -141,7 +124,8 @@ describe("Analytics on builds", () => {
     renderPage();
 
     await screen.findByTestId("build-stats-table");
-    expect([...recorded.requests].sort()).toEqual(["builds", "rpc:maker_build_metrics", "rpc:maker_stats"]);
+    const buildNumbers = recorded.requests.filter((request) => request === "builds" || request.startsWith("rpc:maker_"));
+    expect([...buildNumbers].sort()).toEqual(["builds", "rpc:maker_build_metrics", "rpc:maker_stats"]);
     expect(recorded.requests.filter((request) => request.includes("content_items"))).toEqual([]);
   });
 

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { progressFailure } from "./errors";
 
 /* ─────────── Level math (75 × L^1.7) ─────────── */
 /** XP threshold to enter `level`. xpForLevel(1) = 0, xpForLevel(2) = 75 × 1^1.7, etc. */
@@ -119,7 +120,27 @@ export type ChallengeHistoryRow = {
   completed_at: string;
 };
 
+/** The two numbers the progress chips and the progress page show (RC-P27). */
+export type ProgressFigures = { xp_total: number; level: number };
+
 /* ─────────── Reads ─────────── */
+
+/**
+ * The reader's XP and level, and nothing else: two named columns of their one
+ * user_progress row (RC-P27). No row yet is null, which is the start (level 1,
+ * no XP); a failed read throws, so it is never drawn as the start.
+ */
+export async function getProgressFigures(userId: string): Promise<ProgressFigures | null> {
+  const response = await supabase
+    .from("user_progress")
+    .select("xp_total, level")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (response.error) throw progressFailure("getProgressFigures", userId, response);
+  if (!response.data) return null;
+  return { xp_total: Number(response.data.xp_total) || 0, level: Number(response.data.level) || 1 };
+}
+
 export async function getUserProgress(userId: string): Promise<UserProgress | null> {
   const { data } = await (supabase as any)
     .from("user_progress")
