@@ -331,6 +331,23 @@ describe("Profile", () => {
     }
   });
 
+  /* RC-P28a — a maker's level is readable by that maker alone, so the ring
+     around the avatar is drawn on your own profile only: to a visitor it could
+     only ever say level 1. */
+  it("draws the level ring on your own profile, and none on someone else's", async () => {
+    game.data = { level: 6, progressPct: 17, marks: [], founderBadge: null };
+    const own = renderAt("/profile");
+    const mine = await screen.findByTestId("profile-header");
+    expect(within(mine).getByRole("img", { name: "Level 6, 17% to next level" })).toBeInTheDocument();
+    own.unmount();
+
+    game.data = { level: 1, progressPct: 0, marks: [], founderBadge: null };
+    getProfileSummary.mockResolvedValue(summary({ id: "maker-2", isOwnProfile: false, isFollowing: false }));
+    renderAt("/profile/maren");
+    const theirs = await screen.findByTestId("profile-header");
+    expect(within(theirs).queryByRole("img", { name: /^Level / })).toBeNull();
+  });
+
   /* RC-P28a — the founder badge looks as it does on the progress page: the
      catalogue's rare chip, named in words, not the old crown pill. */
   it("draws the founder badge as the catalogue does: a rare chip named Founder", async () => {

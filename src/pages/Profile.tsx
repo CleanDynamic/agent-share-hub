@@ -338,8 +338,12 @@ export default function Profile() {
           profile={summary}
           isFollowing={!!summary.isFollowing}
           isTrustedSolver={!!summary.isTrustedSolver}
-          level={gameData?.level ?? 1}
-          progressPct={gameData?.progressPct ?? 0}
+          /* RC-P28a — the level ring on your own profile only. user_progress
+             is readable by its owner alone (users_read_own_progress), so on
+             anyone else's profile the ring drew the default, level 1 at 0%,
+             for every maker: a false claim on the avatar. */
+          level={summary.isOwnProfile ? gameData?.level ?? 1 : undefined}
+          progressPct={summary.isOwnProfile ? gameData?.progressPct ?? 0 : undefined}
           creatorMarks={creatorMarks}
           founderAccessory={
             gameData?.founderBadge && FOUNDER ? <BadgeChip badge={FOUNDER} earned /> : undefined
