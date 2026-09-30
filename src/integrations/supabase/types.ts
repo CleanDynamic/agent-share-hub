@@ -5645,6 +5645,16 @@ export type Database = {
       }
       mark_depth_revealed: { Args: never; Returns: string }
       mark_welcome_xp_shown: { Args: never; Returns: string }
+      rc_grant_xp: {
+        Args: {
+          amount: number
+          reason: string
+          recipient: string
+          source_id: string
+          source_type: string
+        }
+        Returns: undefined
+      }
       record_daily_activity: { Args: never; Returns: Json }
       respec_track: { Args: { _track: string }; Returns: string }
       semantic_search: {
