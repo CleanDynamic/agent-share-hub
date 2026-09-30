@@ -75,14 +75,13 @@ function summary(over: Partial<ProfileSummary> = {}): ProfileSummary {
     isVerified: false,
     isTrustedSolver: false,
     isPrivate: false,
-    level: "reader",
     derivedBio: null,
     customBio: null,
     joinedAt: "2026-01-10T00:00:00.000Z",
     location: null,
     website: null,
     domain: null,
-    counts: { followers: 12, following: 3, blueprints: 0, blogs: 0, bounties: 0 },
+    counts: { followers: 12, following: 3 },
     isOwnProfile: true,
     isFollowing: null,
     ...over,
@@ -309,6 +308,20 @@ describe("Profile", () => {
       expect(screen.queryByRole("button", { name: gone })).toBeNull();
     }
     expect(screen.queryAllByRole("button", { name: /sort/i })).toHaveLength(0);
+  });
+
+  /* RC-P28a — the header speaks the build model only: the two counts of people
+     as text, and no legacy post counts, no blueprint ladder chip. */
+  it("counts people in the header, as text, and says nothing of the legacy post model", async () => {
+    renderAt("/profile");
+    const header = await screen.findByTestId("profile-header");
+    const counts = within(header).getByTestId("profile-counts");
+
+    expect(counts.textContent).toBe("12followers3following");
+    expect(within(counts).queryAllByRole("button")).toHaveLength(0);
+    for (const legacy of [/blueprint/i, /\bblogs?\b/i, /\bbounties\b/i, /\bBUILDER\b/, /\bCREATOR\b/, /\bSAGE\b/]) {
+      expect(header.textContent).not.toMatch(legacy);
+    }
   });
 
   /* RC-P28 — guilds, leaderboards and reputation are parked: no profile offers

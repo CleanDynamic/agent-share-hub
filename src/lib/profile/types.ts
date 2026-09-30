@@ -10,8 +10,6 @@
 //    references are derived from blog_referenced_post_ids + fork_of_content_id,
 //    bookmarks come from user_library + collection_items.
 
-export type ProfileLevel = "reader" | "builder" | "creator" | "curator";
-
 export interface ProfileSummary {
   id: string;
   displayName: string;
@@ -22,7 +20,6 @@ export interface ProfileSummary {
   /** profiles.is_trusted_solver: the header's Trusted solver chip. */
   isTrustedSolver?: boolean;
   isPrivate: boolean;
-  level: ProfileLevel;
   derivedBio: string | null;
   customBio: string | null;
   joinedAt: string;
@@ -31,12 +28,10 @@ export interface ProfileSummary {
   // Optional self-reported domain (used for visitor "Match" banner). Falls back
   // to derivedBio heuristics if not present.
   domain: string | null;
+  /** The two counts of people. The legacy post counts left in RC-P28a. */
   counts: {
     followers: number;
     following: number;
-    blueprints: number;
-    blogs: number;
-    bounties: number;
   };
   isOwnProfile: boolean;
   isFollowing: boolean | null;

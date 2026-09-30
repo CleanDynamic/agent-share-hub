@@ -5,8 +5,8 @@
 // here to decide whether this creator's builds are worth their evening, and the
 // header's job is to answer that in one glance and then get out of the way. So
 // the weight goes, in order, to the avatar and name, to the two earned numbers,
-// and to the one primary action — and the bio, the meta row and the five
-// vanity counts are all `--text2` connective tissue beneath them. Nothing here
+// and to the one primary action — and the bio, the meta row and the follower
+// counts are all `--text2` connective tissue beneath them. Nothing here
 // competes with the grid below it.
 //
 // THE EARNED NUMBERS ARE THE PLAQUE, SPENT AGAIN. They sit directly under the
@@ -26,13 +26,16 @@
 // this page is exactly what it was, because changing one is what breaks the
 // three-panel frame.
 //
-// THE LEVEL BADGE IS THE THEME'S RARITY LADDER, NOT A THIRD PALETTE. Three
-// steps, by weight and fill rather than by hue: builder is an outline, creator
-// is a `--recess` fill, and curator — the top step — is the only one that takes
-// `--lit`, with `--on-lit` on it. Amber is light here and never type, which is
-// the rule the colour contract states twice.
+// NOTHING HERE READS THE LEGACY POST MODEL (RC-P28a). The level chip
+// (profiles.level, a ladder of approved blueprint counts backfilled in
+// 20260429123847) and the strip's blueprint, blog and bounty counts
+// (profile_stats, a view over content_items) described the old product: beside
+// the four figures under the header they said "0 bounties" to a maker with a
+// gap solved, and the counts were buttons that opened nothing. The maker's
+// standing is the four figures (RC-P21); the strip keeps the two counts of
+// people, as text.
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   BadgeCheck,
   Calendar,
@@ -44,7 +47,7 @@ import {
   Share2,
   Sparkles,
 } from "lucide-react";
-import type { ProfileLevel, ProfileSummary } from "@/lib/profile/types";
+import type { ProfileSummary } from "@/lib/profile/types";
 import LevelRing from "@/components/profile-game/LevelRing";
 import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import { EarnedNumbers } from "@/components/profile/EarnedNumbers";
@@ -54,7 +57,6 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { body, data as dataText, measure, tabular, type } from "@/lib/theme/type";
-import { feedback } from "@/lib/theme/motion";
 
 interface ProfileHeaderProps {
   profile: ProfileSummary;
@@ -84,9 +86,6 @@ interface ProfileHeaderProps {
   onMessage?: () => void;
   onBlockUser?: () => void;
   onReportUser?: () => void;
-  onStatClick?: (
-    stat: "followers" | "following" | "blueprints" | "blogs" | "bounties"
-  ) => void;
   onAvatarEdit?: () => void;
   onCoverEdit?: () => void;
 }
@@ -95,44 +94,6 @@ function formatCount(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).split(".0").join("") + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1).split(".0").join("") + "K";
   return n.toLocaleString();
-}
-
-/**
- * The rarity ladder, three steps, by weight and fill. See the file header.
- *
- * `reader` renders nothing, as it always has: a level everybody starts at is
- * not an achievement and a chip saying so is noise on every profile.
- */
-function LevelBadge({ level }: { level: ProfileLevel }) {
-  if (level === "reader") return null;
-  const config: Record<Exclude<ProfileLevel, "reader">, { label: string; paint: CSSProperties }> = {
-    builder: {
-      label: "BUILDER",
-      /* Common: an outline. No fill at all, so the step up to one means
-         something when it arrives. */
-      paint: { background: "transparent", color: t.text2, border: `1px solid ${t.line}` },
-    },
-    creator: {
-      label: "CREATOR",
-      /* Rare: the recess fill. */
-      paint: { background: t.recess, color: t.text, border: `1px solid ${t.line}` },
-    },
-    curator: {
-      label: "SAGE",
-      /* Highest: the only amber on the header, and it is a FILL with the
-         measured label on it — never amber type. */
-      paint: { background: t.lit, color: t.onLit, border: "1px solid transparent" },
-    },
-  };
-  const { label, paint } = config[level];
-  return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold tracking-wider"
-      style={{ ...chipType, borderRadius: r.chip, ...paint }}
-    >
-      {label}
-    </span>
-  );
 }
 
 /** The secondary control treatment, shared by Edit / Share / Message / more. */
@@ -174,7 +135,6 @@ export function ProfileHeader({
   onMessage,
   onBlockUser,
   onReportUser,
-  onStatClick,
   onAvatarEdit,
   onCoverEdit,
 }: ProfileHeaderProps) {
@@ -321,7 +281,6 @@ export function ProfileHeader({
                       aria-label="Verified"
                     />
                   )}
-                  <LevelBadge level={profile.level} />
                   {isTrustedSolver && (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold tracking-wider"
@@ -553,29 +512,15 @@ export function ProfileHeader({
 
         {/* Stats Strip. These are counts, not claims — they sit below the
             hairline in `--text2`, well under the two earned numbers above, and
-            the figures take tabular digits so five buttons in a row do not
-            jitter as they load. */}
+            the figures take tabular digits. RC-P28a: the counts of people
+            only, and as text: nothing opens a list of either. */}
         <div
           className="mt-4 pt-4 flex flex-wrap items-center gap-x-5 gap-y-2"
           style={{ borderTop: `1px solid ${t.line}` }}
+          data-testid="profile-counts"
         >
-          {(
-            [
-              ["followers", profile.counts.followers, "followers", true],
-              ["following", profile.counts.following, "following", true],
-              ["blueprints", profile.counts.blueprints, "blueprints", false],
-              ["blogs", profile.counts.blogs, "blogs", false],
-              ["bounties", profile.counts.bounties, "bounties", false],
-            ] as const
-          ).map(([key, value, label, hasViewList]) => (
-            <StatButton
-              key={key}
-              value={formatCount(value)}
-              label={label}
-              hasViewList={hasViewList}
-              onSelect={() => onStatClick?.(key)}
-            />
-          ))}
+          <PeopleCount value={formatCount(profile.counts.followers)} label="followers" />
+          <PeopleCount value={formatCount(profile.counts.following)} label="following" />
         </div>
       </div>
     </header>
@@ -598,47 +543,13 @@ function MenuRow({ label, onSelect }: { label: string; onSelect: () => void }) {
   );
 }
 
-/** One count in the stats strip. */
-function StatButton({
-  value,
-  label,
-  hasViewList,
-  onSelect,
-}: {
-  value: string;
-  label: string;
-  hasViewList: boolean;
-  onSelect: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
+/** One count in the stats strip: the figure in full ink, its label beside it. */
+function PeopleCount({ value, label }: { value: string; label: string }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      title={hasViewList ? `View ${label} list` : undefined}
-      className="inline-flex items-center gap-1.5"
-      style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer" }}
-    >
-      <span style={{ ...dataText, ...tabular, color: t.text, fontWeight: 500 }}>
-        {value}
-      </span>
-      {/* THE LABEL CARRIES THE HOVER, NOT A SIXTH ELEMENT. See the note on the
-          rhythm fix above: a hover-only "View list →" held its width at rest
-          and broke the row's spacing into two intervals. The label stepping up
-          to full ink says the same thing, costs no width, and the `title`
-          states it in words for anyone who cannot hover. */}
-      <span
-        style={{
-          ...dataText,
-          color: hovered && hasViewList ? t.text : t.text2,
-          transition: feedback("color"),
-        }}
-      >
-        {label}
-      </span>
-    </button>
+    <span className="inline-flex items-center gap-1.5">
+      <span style={{ ...dataText, ...tabular, color: t.text, fontWeight: 500 }}>{value}</span>
+      <span style={{ ...dataText, color: t.text2 }}>{label}</span>
+    </span>
   );
 }
 
