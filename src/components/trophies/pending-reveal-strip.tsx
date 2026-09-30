@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import type { Badge } from "./badge-data"
-import { tierColorVar } from "./badge-data"
+import { badgeLabel, badgePaint } from "./BadgeMark"
+import { r } from "@/lib/theme/radius"
 
 interface PendingRevealStripProps {
   badges: Badge[]
@@ -32,7 +33,6 @@ export function PendingRevealStrip({ badges }: PendingRevealStripProps) {
       <div className="flex items-center justify-center gap-3">
         {shown.map((badge, i) => {
           const Icon = badge.icon
-          const accent = badge.variant === "tiered" && badge.tier ? tierColorVar[badge.tier] : "var(--ring)"
           const isOn = i < revealed
           return (
             <div
@@ -44,13 +44,16 @@ export function PendingRevealStrip({ badges }: PendingRevealStripProps) {
                 transition: "transform 280ms cubic-bezier(0.34,1.56,0.64,1), opacity 220ms ease-out",
               }}
             >
+              {/* The mark's name carries the tier in words, so the name beneath it is not read twice. */}
               <span
-                className="flex size-12 items-center justify-center rounded-xl ring-1 ring-border"
-                style={{ color: accent, backgroundColor: `color-mix(in oklch, ${accent} 16%, transparent)` }}
+                className="flex size-12 items-center justify-center"
+                role="img"
+                aria-label={badgeLabel(badge, true)}
+                style={{ ...badgePaint(badge.tier, true), borderRadius: r.chip }}
               >
                 <Icon className="size-6" strokeWidth={1.6} aria-hidden="true" />
               </span>
-              <span className="max-w-16 text-[10px] font-medium leading-tight text-foreground text-balance">
+              <span aria-hidden="true" className="max-w-16 text-[10px] font-medium leading-tight text-foreground text-balance">
                 {badge.name}
               </span>
             </div>

@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import type { Badge } from "./badge-data"
-import { tierColorVar } from "./badge-data"
+import { badgeLabel, badgePaint } from "./BadgeMark"
+import { r } from "@/lib/theme/radius"
 import { cn } from "@/lib/utils"
 import { GripVertical, X } from "lucide-react"
 
@@ -48,7 +49,6 @@ export function ShowcaseEditor({ badges, onChange }: ShowcaseEditorProps) {
       <ul className="flex flex-col gap-2">
         {items.map((badge, index) => {
           const Icon = badge.icon
-          const accent = badge.variant === "tiered" && badge.tier ? tierColorVar[badge.tier] : "var(--ring)"
           return (
             <li
               key={badge.id}
@@ -72,13 +72,16 @@ export function ShowcaseEditor({ badges, onChange }: ShowcaseEditorProps) {
               <span className="cursor-grab text-muted-foreground active:cursor-grabbing" aria-hidden="true">
                 <GripVertical className="size-4" />
               </span>
+              {/* The mark's name carries the tier in words, so the name beside it is not read twice. */}
               <span
-                className="flex size-9 items-center justify-center rounded-lg ring-1 ring-border"
-                style={{ color: accent, backgroundColor: `color-mix(in oklch, ${accent} 14%, transparent)` }}
+                className="flex size-9 items-center justify-center"
+                role="img"
+                aria-label={badgeLabel(badge, badge.earned)}
+                style={{ ...badgePaint(badge.tier, badge.earned), borderRadius: r.chip }}
               >
                 <Icon className="size-5" strokeWidth={1.6} aria-hidden="true" />
               </span>
-              <span className="flex-1 text-sm font-medium text-foreground">{badge.name}</span>
+              <span aria-hidden="true" className="flex-1 text-sm font-medium text-foreground">{badge.name}</span>
               {index < 5 ? (
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
                   On profile
