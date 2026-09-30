@@ -1,8 +1,9 @@
 "use client"
 
 import type { Badge } from "./badge-data"
-import { tierColorVar } from "./badge-data"
+import { badgeLabel, badgePaint } from "./BadgeMark"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { r } from "@/lib/theme/radius"
 import { cn } from "@/lib/utils"
 import { Plus, Settings2 } from "lucide-react"
 
@@ -54,20 +55,16 @@ export function ShowcaseStrip({ badges, isOwnProfile = true, autoPinned = false,
       <div className="flex flex-wrap gap-3">
         {shown.map((badge) => {
           const Icon = badge.icon
-          const accent = badge.variant === "tiered" && badge.tier ? tierColorVar[badge.tier] : "var(--ring)"
-          const tileClass =
-            "flex size-14 items-center justify-center rounded-xl ring-1 ring-border transition-transform hover:-translate-y-0.5"
-          const tileStyle = {
-            color: accent,
-            backgroundColor: `color-mix(in oklch, ${accent} 14%, transparent)`,
-          }
+          // One treatment for every badge of a tier: BadgeMark's, by weight and fill.
+          const tileClass = "flex size-14 items-center justify-center transition-transform hover:-translate-y-0.5"
+          const tileStyle = { ...badgePaint(badge.tier, badge.earned), borderRadius: r.chip }
 
           if (autoPinned) {
             return (
               <Tooltip key={badge.id}>
                 <TooltipTrigger
                   type="button"
-                  aria-label={`${badge.name}, auto-pinned`}
+                  aria-label={`${badgeLabel(badge, badge.earned)}, auto-pinned`}
                   className={tileClass}
                   style={tileStyle}
                 >
@@ -82,7 +79,14 @@ export function ShowcaseStrip({ badges, isOwnProfile = true, autoPinned = false,
           }
 
           return (
-            <div key={badge.id} className={tileClass} style={tileStyle} title={badge.name}>
+            <div
+              key={badge.id}
+              className={tileClass}
+              style={tileStyle}
+              title={badge.name}
+              role="img"
+              aria-label={badgeLabel(badge, badge.earned)}
+            >
               <Icon className="size-7" strokeWidth={1.6} aria-hidden="true" />
             </div>
           )
@@ -93,9 +97,10 @@ export function ShowcaseStrip({ badges, isOwnProfile = true, autoPinned = false,
             key={`empty-${i}`}
             aria-hidden="true"
             className={cn(
-              "flex size-14 items-center justify-center rounded-xl border border-dashed border-border text-muted-foreground/50",
+              "flex size-14 items-center justify-center border border-dashed border-border text-muted-foreground/50",
               autoPinned && "opacity-40",
             )}
+            style={{ borderRadius: r.chip }}
           >
             <Plus className="size-5" />
           </div>

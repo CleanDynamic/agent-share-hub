@@ -1,9 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { Badge, BadgeCategory } from "./badge-data"
+import type { Badge } from "./badge-data"
 import { BadgeTile } from "./badge-tile"
-import { HiddenBadgeSlot } from "./hidden-badge-slot"
 import { BadgeDetailModal } from "./badge-detail-modal"
 import { cn } from "@/lib/utils"
 
@@ -11,30 +10,24 @@ interface CabinetGridProps {
   badges: Badge[]
 }
 
-type FilterKey = "all" | "earned" | "locked" | BadgeCategory
-type SortKey = "default" | "rarity" | "recent" | "name"
+type FilterKey = "all" | "earned" | "locked"
+type SortKey = "default" | "recent" | "name"
 
 const filters: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
   { key: "earned", label: "Earned" },
-  { key: "locked", label: "Locked" },
-  { key: "creation", label: "Creation" },
-  { key: "community", label: "Community" },
-  { key: "mastery", label: "Mastery" },
-  { key: "milestone", label: "Milestone" },
-  { key: "seasonal", label: "Seasonal" },
+  { key: "locked", label: "Not yet" },
 ]
 
 const sorts: { key: SortKey; label: string }[] = [
   { key: "default", label: "Recommended" },
-  { key: "rarity", label: "Rarest first" },
   { key: "recent", label: "Recently earned" },
   { key: "name", label: "Name A–Z" },
 ]
 
 /**
- * CabinetGrid — the L2 surface. R1 spec with filters + sort. Hidden + unearned
- * badges render as HiddenBadgeSlots so criteria stay secret.
+ * CabinetGrid — the L2 surface. The ten badges of XP-DESIGN.md, with filters
+ * and sort. None is hidden, and none has a category or a rarity.
  */
 export function CabinetGrid({ badges }: CabinetGridProps) {
   const [filter, setFilter] = useState<FilterKey>("all")
@@ -49,12 +42,9 @@ export function CabinetGrid({ badges }: CabinetGridProps) {
 
     if (filter === "earned") list = list.filter((b) => b.earned)
     else if (filter === "locked") list = list.filter((b) => !b.earned)
-    else if (filter !== "all") list = list.filter((b) => b.category === filter)
 
     list.sort((a, b) => {
       switch (sort) {
-        case "rarity":
-          return (a.rarityPct ?? 999) - (b.rarityPct ?? 999)
         case "recent":
           return (b.earnedDate ? Date.parse(b.earnedDate) : 0) - (a.earnedDate ? Date.parse(a.earnedDate) : 0)
         case "name":
@@ -82,7 +72,7 @@ export function CabinetGrid({ badges }: CabinetGridProps) {
             {earnedCount}/{badges.length}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground">Every badge you can chase, including a few well-kept secrets.</p>
+        <p className="text-sm text-muted-foreground">The ten badges, and what earns each.</p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -127,13 +117,9 @@ export function CabinetGrid({ badges }: CabinetGridProps) {
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {visible.map((badge) =>
-            badge.variant === "hidden" && !badge.earned ? (
-              <HiddenBadgeSlot key={badge.id} />
-            ) : (
-              <BadgeTile key={badge.id} badge={badge} onSelect={handleSelect} />
-            ),
-          )}
+          {visible.map((badge) => (
+            <BadgeTile key={badge.id} badge={badge} onSelect={handleSelect} />
+          ))}
         </div>
       )}
 

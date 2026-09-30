@@ -29,7 +29,8 @@ import ChallengeHistoryRow from "@/components/challenges/quest/challenge-history
 // Trophies
 import { CreatorMarksRow } from "@/components/trophies/creator-marks-row";
 import { ShowcaseStrip } from "@/components/trophies/showcase-strip";
-import { creatorMarks as creatorMarksCatalog, cabinetBadges } from "@/components/trophies/badge-data";
+import type { Badge } from "@/components/trophies/badge-data";
+import { creatorMarks as creatorMarksCatalog } from "@/components/trophies/creator-marks-data";
 
 // Streaks
 import StreakFlame from "@/components/streaks/streak-flame";
@@ -164,7 +165,10 @@ export default function Analytics() {
     timestamp: new Date(e.created_at),
   }));
 
-  const showcaseAuto = cabinetBadges.filter((b) => b.earned).slice(0, 5);
+  // The showcase drew five badges from a static sample (cabinetBadges, earned or not as the
+  // sample said); the catalogue is now the ten of XP-DESIGN.md and none of them is earned by
+  // being in it. Until RC-P27 reads the person's own user_badges, the strip shows empty slots.
+  const showcaseAuto: Badge[] = [];
 
   const overviewSurfaces = surfaces ?? {
     eligibility_notice: true,

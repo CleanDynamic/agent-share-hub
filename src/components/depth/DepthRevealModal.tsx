@@ -3,7 +3,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { PendingRevealStrip } from "@/components/trophies/pending-reveal-strip";
-import type { Badge } from "@/components/trophies/badge-data";
+import { badgeBySlug, type Badge } from "@/components/trophies/badge-data";
 
 export interface DepthRevealModalProps {
   open: boolean;
@@ -31,16 +31,20 @@ export default function DepthRevealModal({ open, pendingBadges, onClose }: Depth
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const stripBadges: Badge[] = pendingBadges.slice(0, 4).map((b) => ({
-    id: b.id,
-    name: b.title || b.badge_key || "New badge",
-    description: b.description || "",
-    icon: Sparkles,
-    variant: "category",
-    category: "mastery",
-    earned: true,
-    rarityPct: null,
-  }));
+  // A key in the catalogue of XP-DESIGN.md draws as its badge, tier and all; a key that is not
+  // one of the ten (a row from before RC-P26 removed them) still draws, as a common badge.
+  const stripBadges: Badge[] = pendingBadges.slice(0, 4).map((b) => {
+    const known = badgeBySlug(b.badge_key);
+    if (known) return { ...known, earned: true };
+    return {
+      id: b.id,
+      name: b.title || b.badge_key || "New badge",
+      description: b.description || "",
+      icon: Sparkles,
+      tier: "common",
+      earned: true,
+    };
+  });
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
