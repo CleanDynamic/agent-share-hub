@@ -658,27 +658,32 @@ export async function withTheme(page: Page, theme: Theme) {
   }, theme);
 }
 
-/** Put a signed-in session in storage, so ProtectedRoute lets the sweep through. */
-export async function withSession(page: Page) {
+/**
+ * Put a signed-in session in storage, so ProtectedRoute lets the sweep through.
+ * The reader is the audit runner unless another invented person is named
+ * (RC-P28a signs in as a fixture maker and as a new reader).
+ */
+export async function withSession(page: Page, who: { id: string; username: string } = ME) {
   const ref = projectRef();
   const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24;
+  const email = who.id === ME.id ? "audit@example.test" : `${who.username}@example.test`;
   const session = {
-    access_token: fakeJwt({ sub: ME.id, exp: expiresAt, role: "authenticated" }),
+    access_token: fakeJwt({ sub: who.id, exp: expiresAt, role: "authenticated" }),
     token_type: "bearer",
     expires_in: 60 * 60 * 24,
     expires_at: expiresAt,
     refresh_token: "audit-refresh-token",
     user: {
-      id: ME.id,
+      id: who.id,
       aud: "authenticated",
       role: "authenticated",
-      email: "audit@example.test",
+      email,
       email_confirmed_at: new Date(0).toISOString(),
       phone: "",
       confirmed_at: new Date(0).toISOString(),
       last_sign_in_at: new Date(0).toISOString(),
       app_metadata: { provider: "email", providers: ["email"] },
-      user_metadata: { username: ME.username },
+      user_metadata: { username: who.username },
       identities: [],
       created_at: new Date(0).toISOString(),
       updated_at: new Date(0).toISOString(),
