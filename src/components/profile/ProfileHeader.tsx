@@ -4,16 +4,15 @@
 // entry point is the WORK, not the bio (`visual-hierarchy`): a reader arrives
 // here to decide whether this creator's builds are worth their evening, and the
 // header's job is to answer that in one glance and then get out of the way. So
-// the weight goes, in order, to the avatar and name, to the two earned numbers,
-// and to the one primary action — and the bio, the meta row and the follower
-// counts are all `--text2` connective tissue beneath them. Nothing here
-// competes with the grid below it.
+// the weight goes, in order, to the avatar and name and to the one primary
+// action — and the bio, the meta row and the follower counts are all `--text2`
+// connective tissue beneath them. Nothing here competes with the grid below it.
 //
-// THE EARNED NUMBERS ARE THE PLAQUE, SPENT AGAIN. They sit directly under the
-// name for the same reason a card's plaque sits directly under its title: the
-// claim belongs to the thing it is about, and a trust signal in a footer is a
-// trust signal nobody reads. See `EarnedNumbers.tsx` for why they wear the
-// plaque's exact treatment rather than an approximation of it.
+// THE MAKER'S STANDING IS SAID ONCE, UNDER THE HEADER (RC-P28a). The header
+// used to carry two "earned numbers" ("64 reproduced", "not yet rebuilt")
+// directly above the four figures that say the same two facts in other words
+// and another format ("64 got working by others", "0 rebuilt by others"). The
+// four figures (MakerFigures, RC-P21) are the one statement.
 //
 // WHAT MOVED AND WHAT DID NOT. Every colour in this file was a Tailwind
 // semantic (`text-foreground`, `bg-primary`, `border-white/10`) or a raw
@@ -50,7 +49,6 @@ import {
 import type { ProfileSummary } from "@/lib/profile/types";
 import LevelRing from "@/components/profile-game/LevelRing";
 import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
-import { EarnedNumbers } from "@/components/profile/EarnedNumbers";
 import { categoryFill } from "@/lib/theme/category";
 import { buttonStyle, chipType, GLASS_BLUR, menuItemStyle, menuPanelStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -71,14 +69,6 @@ interface ProfileHeaderProps {
   creatorMarks?: CreatorMark[];
   /** Optional accessory (e.g. FounderMark) rendered inline with the marks row. */
   founderAccessory?: ReactNode;
-  /**
-   * The two earned numbers, summed across this creator's builds. Absent means
-   * the caller does not have them yet — the row renders in its counting state
-   * rather than asserting a zero it has not measured.
-   */
-  reproductionsReceived?: number;
-  rebuildsReceived?: number;
-  earnedLoading?: boolean;
   onEditProfile?: () => void;
   onShareProfile?: () => void;
   onFollow?: () => void;
@@ -125,9 +115,6 @@ export function ProfileHeader({
   progressPct,
   creatorMarks,
   founderAccessory,
-  reproductionsReceived,
-  rebuildsReceived,
-  earnedLoading = false,
   onEditProfile,
   onShareProfile,
   onFollow,
@@ -302,17 +289,6 @@ export function ProfileHeader({
                 <p style={{ ...dataText, color: t.text2, margin: 0 }}>
                   @{profile.handle}
                 </p>
-
-                {/* THE TWO EARNED NUMBERS. Directly under the name, above
-                    everything else the header says, because they are the only
-                    two facts here the creator could not have written about
-                    themselves. */}
-                <EarnedNumbers
-                  reproductions={reproductionsReceived ?? 0}
-                  rebuilds={rebuildsReceived ?? 0}
-                  loading={earnedLoading}
-                  style={{ marginTop: 8 }}
-                />
 
                 {hasMarksRow && (
                   <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -511,8 +487,7 @@ export function ProfileHeader({
         </div>
 
         {/* Stats Strip. These are counts, not claims — they sit below the
-            hairline in `--text2`, well under the two earned numbers above, and
-            the figures take tabular digits. RC-P28a: the counts of people
+            hairline in `--text2`, and the figures take tabular digits. RC-P28a: the counts of people
             only, and as text: nothing opens a list of either. */}
         <div
           className="mt-4 pt-4 flex flex-wrap items-center gap-x-5 gap-y-2"

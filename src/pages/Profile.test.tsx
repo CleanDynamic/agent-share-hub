@@ -1,6 +1,7 @@
 // RC-P21 — the profile, rendered.
 //
-// The claims: a maker's standing is four figures from one getMakerStats call;
+// The claims: a maker's standing is four figures from one getMakerStats call,
+// said once (the header repeats none of them);
 // the tabs are Builds, Rebuilds and Solutions (and a Drafts link on your own
 // profile), each the gallery's own cards counted by one engagement request for
 // the whole list, each in the address; each empty tab is one sentence and at
@@ -177,12 +178,16 @@ describe("Profile", () => {
     expect(getMakerStats).toHaveBeenCalledWith("maker-2");
   });
 
-  it("gives the header's two earned numbers the same answer as the figures row", async () => {
+  /* RC-P28a — the standing is said once. The header used to restate two of the
+     figures in other words ("1204 reproduced", "rebuilt 7 times"). */
+  it("states the maker's standing once: in the figures row, and nowhere in the header", async () => {
     renderAt("/profile");
 
-    const header = await screen.findByTestId("profile-header");
-    await waitFor(() => expect(header.textContent).toContain("1204 reproduced"));
-    expect(header.textContent).toContain("rebuilt 7 times");
+    const row = await screen.findByTestId("maker-figures");
+    await waitFor(() =>
+      expect(within(row).getAllByTestId("maker-figure-value").map((value) => value.textContent)).toEqual(["3", "1,204", "7", "2"]),
+    );
+    expect(screen.getByTestId("profile-header").textContent).not.toMatch(/reproduced|rebuilt|1,?204/);
     expect(getMakerStats).toHaveBeenCalledTimes(1);
   });
 
