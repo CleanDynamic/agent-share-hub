@@ -63,6 +63,7 @@ import Profile from "@/pages/Profile";
 import type { GalleryBuild } from "@/lib/build/gallery";
 import { MakerStatsError } from "@/lib/profile/makerStats";
 import type { ProfileSummary } from "@/lib/profile/types";
+import { parkedEntryPoints } from "@/test/parkedEntryPoints";
 
 function summary(over: Partial<ProfileSummary> = {}): ProfileSummary {
   return {
@@ -308,5 +309,22 @@ describe("Profile", () => {
       expect(screen.queryByRole("button", { name: gone })).toBeNull();
     }
     expect(screen.queryAllByRole("button", { name: /sort/i })).toHaveLength(0);
+  });
+
+  /* RC-P28 — guilds, leaderboards and reputation are parked: no profile offers
+     a way into any of them, your own or someone else's. */
+  it("offers no way into guilds, leaderboards or reputation, on your own profile or someone else's", async () => {
+    listMakerBuilds.mockResolvedValue({ builds: [card(1)], next: null });
+    const own = renderAt("/profile");
+    await waitFor(() => expect(screen.getAllByTestId("profile-card")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("maker-figure-value")).toHaveLength(4));
+    expect(parkedEntryPoints(document.body)).toEqual([]);
+    own.unmount();
+
+    getProfileSummary.mockResolvedValue(summary({ id: "maker-2", isOwnProfile: false, isFollowing: false }));
+    renderAt("/profile/maren");
+    await waitFor(() => expect(screen.getAllByTestId("profile-card")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("maker-figure-value")).toHaveLength(4));
+    expect(parkedEntryPoints(document.body)).toEqual([]);
   });
 });

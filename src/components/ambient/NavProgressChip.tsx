@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ChevronRight, Sparkles, Flame, Shield } from "lucide-react"
 import { tokens, xpColor, streakColor, reputationColor } from "./tokens"
+import { REPUTATION_ENABLED } from "@/lib/progress/flags"
 
 export interface NavProgressChipProps {
   /** Current level number. */
@@ -193,7 +194,9 @@ export default function NavProgressChip({
               color={streakColor}
             />
           )}
-          {typeof reputation === "number" && (
+          {/* RC-P28 — reputation is parked (src/lib/progress/flags.ts): the
+              row draws only while its flag is true, whatever score is passed. */}
+          {REPUTATION_ENABLED && typeof reputation === "number" && (
             <FlyoutStat
               icon={<Shield size={13} color={reputationColor} />}
               label="Reputation"

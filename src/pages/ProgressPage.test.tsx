@@ -74,6 +74,7 @@ import { MY_BUILD_STATS_KEY } from "@/components/analytics/BuildAnalytics";
 import { RESET_NOTE_KEY } from "@/components/progress/ResetNote";
 import { useProgress } from "@/hooks/useProgress";
 import { XP_SOURCES } from "@/lib/progress/sources";
+import { parkedEntryPoints } from "@/test/parkedEntryPoints";
 
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
@@ -263,6 +264,16 @@ describe("the six sections", () => {
     for (const gone of [/skill tree/i, /daily/i, /quest/i, /streak/i, /perk/i, /XP ledger/i, /creator marks/i, /showcase/i, /trophies/i]) {
       expect(screen.queryByText(gone)).toBeNull();
     }
+  });
+
+  /* RC-P28 — guilds, leaderboards and reputation are parked, and their
+     addresses land here: the page offers no way into any of them. */
+  it("offer no way into guilds, leaderboards or reputation", async () => {
+    renderPage();
+    await settled();
+    await screen.findByTestId("needs-you");
+
+    expect(parkedEntryPoints(document.body)).toEqual([]);
   });
 });
 
