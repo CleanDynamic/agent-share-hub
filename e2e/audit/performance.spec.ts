@@ -149,7 +149,7 @@ test("BG-P31 — load timing on / against the historical baseline", async ({ bro
   const page = await context.newPage();
   try {
     await page.addInitScript(INSTALL_VITALS);
-    await openRoute(page, { ...ROUTES[0], path: `${target}/` }, "exhibition");
+    await openRoute(page, { ...ROUTES[0], path: `${target}/` }, "noon");
     const vitals = await page.evaluate(READ_VITALS);
     const glass = await page.evaluate(collectGlass);
 
@@ -452,7 +452,7 @@ test("BG-P31 — the theme switch moves no geometry and shifts no layout", async
   const page = await context.newPage();
   try {
     await page.addInitScript(INSTALL_VITALS);
-    await openRoute(page, ROUTES.find((r) => r.id === "dev-kit")!, "exhibition");
+    await openRoute(page, ROUTES.find((r) => r.id === "dev-kit")!, "noon");
 
     const measure = () =>
       page.evaluate(() =>

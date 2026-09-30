@@ -89,7 +89,7 @@ const sortOptions = [
  *
  * NO MEDALS. Gold, silver and bronze were three invented hues in a system whose
  * nine hues are spoken for, and two of them (#D1D5DB at 1.3:1, #B45309 at
- * 3.4:1) could not carry a numeral on the Exhibition ground anyway. The theme
+ * 3.4:1) could not carry a numeral on the Noon ground anyway. The theme
  * ranks tiers by WEIGHT AND FILL instead, three steps only, and the top three
  * take that ladder:
  *

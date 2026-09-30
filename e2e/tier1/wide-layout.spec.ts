@@ -19,7 +19,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 const SWEEP = [390, 768, 1024, 1400, 1920];
 
 /** Set the theme before first paint, the way index.html's boot script reads it. */
@@ -72,7 +72,7 @@ const overflows = (page: Page) =>
     });
   });
 
-async function open(page: Page, path: string, viewport: number, theme = "exhibition") {
+async function open(page: Page, path: string, viewport: number, theme = "noon") {
   await withTheme(page, theme);
   await page.setViewportSize({ width: viewport, height: 900 });
   await page.goto(path);

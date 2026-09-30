@@ -134,7 +134,7 @@ const App = () => (
     {/* BG-P18b. `<BlobBackground />` stood here and painted the page: a fixed
         inset-0 div carrying a hard-coded #25252F ground under a 20px dot grid,
         in BOTH themes. That is what put three light panels on a dark dotted
-        field with Exhibition selected — two themes on one screen, which the
+        field with Noon selected — two themes on one screen, which the
         theme's first rule forbids outright. The ground is now `--bg` on
         html/body/#root and nothing else paints behind the frame.
 
@@ -286,7 +286,7 @@ const App = () => (
                     THE FALLBACKS LOST THEIR HARD-CODED #08080C. Outside the
                     frame, a full-viewport dark block was the page's own ground
                     arriving before the page. Inside it, that block would paint
-                    over the frame and flash dark on Exhibition, so it is
+                    over the frame and flash dark on Noon, so it is
                     `--bg` — the live theme's ground — and it fills the centre
                     column rather than the viewport, because the frame is
                     already on screen and only the page is still coming. ── */}
@@ -323,7 +323,7 @@ const App = () => (
                   is neither theme's ground: it was the workspace's own colour
                   arriving before the workspace, and now that the workspace is
                   `--bg` it would be a flash of black before a luminous grey
-                  room on Exhibition. `--bg` is the live theme's ground, so the
+                  room on Noon. `--bg` is the live theme's ground, so the
                   fallback is the room the route is about to paint. ── */}
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />

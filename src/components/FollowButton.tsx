@@ -13,7 +13,7 @@ import { t } from "@/lib/theme/tokens";
 // NOT FOLLOWING IS THE PRIMARY, FOLLOWING IS THE SECONDARY, and that ordering
 // is the whole of this repaint. Both states used to be the same white-alpha
 // ghost on the legacy `--border` and `--legacy-text` — the old dark paint,
-// which resolves to an almost-invisible button on the Exhibition ground and
+// which resolves to an almost-invisible button on the Noon ground and
 // asks for the click exactly as loudly once you have already given it. Follow
 // is now BG-P07's primary, the same control `/profile` shows, and Following
 // steps down to the secondary treatment because the work is done. Hover on the

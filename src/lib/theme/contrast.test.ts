@@ -14,7 +14,7 @@
 // TWO PAIRINGS PER THEME DO NOT REPRODUCE — see SPEC_DIVERGENCE below. The
 // skill's four `text/glass` and `text2/glass` figures cannot be derived from the
 // glass tokens it declares: they imply an effective alpha near .39 on
-// Exhibition and .32 on Dusk, where the tokens declare .55 and .42. The most
+// Noon and .32 on Dusk, where the tokens declare .55 and .42. The most
 // likely explanation is that those four were read off a rendered surface, where
 // `backdrop-filter: blur(16px) saturate(1.15)` had already changed what sat
 // behind the glass. Following better-colors — report the pair, do not repaint
@@ -22,7 +22,7 @@
 // it clears the WCAG floor, and records the skill's figure alongside.
 
 import { describe, expect, it } from "vitest";
-import { dusk, exhibition, type TokenName } from "./semantics";
+import { dusk, noon, type TokenName } from "./semantics";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
@@ -69,7 +69,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 /* ── the two rooms ────────────────────────────────────────────────────────── */
 
-const THEMES = { exhibition, dusk } as const;
+const THEMES = { noon, dusk } as const;
 type ThemeKey = keyof typeof THEMES;
 
 /** A token's rendered colour: itself, or itself composited over the theme's ground. */
@@ -94,26 +94,26 @@ interface Pairing {
 }
 
 const CONTRACT: Pairing[] = [
-  // Exhibition
-  { theme: "exhibition", label: "text/bg", fg: "text", bg: "bg", spec: 13.1, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text/glass", fg: "text", bg: "glass", spec: 14.37, measured: 14.88, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text2/bg", fg: "text2", bg: "bg", spec: 5.26, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text2/glass", fg: "text2", bg: "glass", spec: 5.78, measured: 5.98, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "action/bg", fg: "action", bg: "bg", spec: 4.8, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "on-action/action", fg: "on-action", bg: "action", spec: 5.65, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 4.89, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text/evidence-fill", fg: "text", bg: "evidence-fill", spec: 11.89, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text/lit", fg: "text", bg: "lit", spec: 7.29, floor: TEXT_FLOOR },
+  // Noon
+  { theme: "noon", label: "text/bg", fg: "text", bg: "bg", spec: 13.1, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/glass", fg: "text", bg: "glass", spec: 14.37, measured: 14.88, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/bg", fg: "text2", bg: "bg", spec: 5.26, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/glass", fg: "text2", bg: "glass", spec: 5.78, measured: 5.98, floor: TEXT_FLOOR },
+  { theme: "noon", label: "action/bg", fg: "action", bg: "bg", spec: 4.8, floor: TEXT_FLOOR },
+  { theme: "noon", label: "on-action/action", fg: "on-action", bg: "action", spec: 5.65, floor: TEXT_FLOOR },
+  { theme: "noon", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 4.89, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/evidence-fill", fg: "text", bg: "evidence-fill", spec: 11.89, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/lit", fg: "text", bg: "lit", spec: 7.29, floor: TEXT_FLOOR },
   // BG-P09 — the card's two layers, measured here rather than published by the
   // skill, so `spec` IS the measurement this prompt reports.
-  { theme: "exhibition", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.47, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.47, floor: TEXT_FLOOR },
   // RC-P04b — the pairings docs/reconciliation/STATES.md adds, measured here in
   // the same way, so `spec` IS the measurement. A border and an icon are UI
   // marks, floored at 3.0:1; the same colours as text are floored at 4.5:1.
-  { theme: "exhibition", label: "text/recess", fg: "text", bg: "recess", spec: 11.33, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text2/recess", fg: "text2", bg: "recess", spec: 4.55, floor: TEXT_FLOOR },
-  { theme: "exhibition", label: "text border/recess", fg: "text", bg: "recess", spec: 11.33, floor: UI_FLOOR },
-  { theme: "exhibition", label: "action icon/bg", fg: "action", bg: "bg", spec: 4.8, floor: UI_FLOOR },
+  { theme: "noon", label: "text/recess", fg: "text", bg: "recess", spec: 11.33, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/recess", fg: "text2", bg: "recess", spec: 4.55, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text border/recess", fg: "text", bg: "recess", spec: 11.33, floor: UI_FLOOR },
+  { theme: "noon", label: "action icon/bg", fg: "action", bg: "bg", spec: 4.8, floor: UI_FLOOR },
   // Dusk
   { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.17, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 12.04, measured: 11.48, floor: TEXT_FLOOR },
@@ -143,7 +143,7 @@ const CATEGORIES: TokenName[] = [
   "cat-media",
 ];
 
-const CATEGORY_FLOOR = { exhibition: 4.83, dusk: 5.75 } as const;
+const CATEGORY_FLOOR = { noon: 4.83, dusk: 5.75 } as const;
 
 const TOLERANCE = 0.05;
 
@@ -163,7 +163,7 @@ describe("the colour contract", () => {
   );
 
   it.each(
-    (["exhibition", "dusk"] as const).flatMap((theme) =>
+    (["noon", "dusk"] as const).flatMap((theme) =>
       CATEGORIES.map((token) => ({ theme, token, floor: CATEGORY_FLOOR[theme] })),
     ),
   )("$theme $token clears $floor:1 on the ground", ({ theme, token, floor }) => {
@@ -191,7 +191,7 @@ describe("the colour contract", () => {
 
 describe("the card's frame and thread box", () => {
   const COMPOSITE = {
-    exhibition: { text: 15.54, text2: 6.24 },
+    noon: { text: 15.54, text2: 6.24 },
     dusk: { text: 9.68, text2: 5.22 },
   } as const;
 
@@ -199,7 +199,7 @@ describe("the card's frame and thread box", () => {
   const composite = (theme: ThemeKey) =>
     over(THEMES[theme]["card-thread"], over(THEMES[theme]["card-frame"], THEMES[theme].bg));
 
-  it.each(["exhibition", "dusk"] as const)(
+  it.each(["noon", "dusk"] as const)(
     "%s puts --text on frame+thread above the body floor",
     (theme) => {
       const actual = round(contrast(THEMES[theme].text, composite(theme)));
@@ -208,7 +208,7 @@ describe("the card's frame and thread box", () => {
     },
   );
 
-  it.each(["exhibition", "dusk"] as const)(
+  it.each(["noon", "dusk"] as const)(
     "%s puts --text2 on frame+thread above the body floor too",
     (theme) => {
       // The control row's "Show thread · 3 more" is --text2 on this composite,
@@ -223,7 +223,7 @@ describe("the card's frame and thread box", () => {
     // The STEP is the structure (law-of-common-region). Its DIRECTION has to be
     // the same in both themes or the card is two different objects, which is why
     // Dusk's box is struck from the room's light rather than from the stone.
-    for (const theme of ["exhibition", "dusk"] as const) {
+    for (const theme of ["noon", "dusk"] as const) {
       const frame = over(THEMES[theme]["card-frame"], THEMES[theme].bg);
       const step = luminance(composite(theme)) - luminance(frame);
       expect(step, `${theme}'s thread box is not lighter than its frame`).toBeGreaterThan(0);
@@ -234,7 +234,7 @@ describe("the card's frame and thread box", () => {
     // Measured as the contrast between the two layers. Below about 1.05 the
     // box disappears; a big step would read as a nested card rather than as an
     // inset. Both rooms land inside that window.
-    for (const theme of ["exhibition", "dusk"] as const) {
+    for (const theme of ["noon", "dusk"] as const) {
       const frame = over(THEMES[theme]["card-frame"], THEMES[theme].bg);
       const ratio = contrast(composite(theme), frame);
       expect(ratio, `${theme}'s step is ${round(ratio)}:1`).toBeGreaterThan(1.04);
@@ -246,17 +246,17 @@ describe("the card's frame and thread box", () => {
 /* ── the two rules ────────────────────────────────────────────────────────── */
 
 describe("amber is light, never type", () => {
-  it("--lit is not legal as text on Exhibition's ground", () => {
-    const ratio = round(contrast(exhibition.lit, exhibition.bg));
+  it("--lit is not legal as text on Noon's ground", () => {
+    const ratio = round(contrast(noon.lit, noon.bg));
     expect(ratio, `--lit is ${ratio}:1 on --bg; text needs ${TEXT_FLOOR}:1`).toBeLessThan(TEXT_FLOOR);
   });
 
   it("...nor as a border carrying state there", () => {
-    expect(round(contrast(exhibition.lit, exhibition.bg))).toBeLessThan(UI_FLOOR);
+    expect(round(contrast(noon.lit, noon.bg))).toBeLessThan(UI_FLOOR);
   });
 
   it("is legal as a fill, with --on-lit on it, in both themes", () => {
-    expect(round(contrast(exhibition["on-lit"], exhibition.lit))).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    expect(round(contrast(noon["on-lit"], noon.lit))).toBeGreaterThanOrEqual(TEXT_FLOOR);
     expect(round(contrast(dusk["on-lit"], dusk.lit))).toBeGreaterThanOrEqual(TEXT_FLOOR);
   });
 
@@ -269,17 +269,17 @@ describe("salmon changes value across themes, not hue", () => {
   const SALMON = "#D98C6B";
 
   it("#D98C6B is never used on a light ground", () => {
-    const ratio = round(contrast(SALMON, exhibition.bg));
-    expect(ratio, `#D98C6B is ${ratio}:1 on Exhibition's ground`).toBeLessThan(TEXT_FLOOR);
-    for (const [token, value] of Object.entries(exhibition)) {
-      expect(value.toUpperCase(), `Exhibition --${token} is the salmon`).not.toBe(SALMON);
+    const ratio = round(contrast(SALMON, noon.bg));
+    expect(ratio, `#D98C6B is ${ratio}:1 on Noon's ground`).toBeLessThan(TEXT_FLOOR);
+    for (const [token, value] of Object.entries(noon)) {
+      expect(value.toUpperCase(), `Noon --${token} is the salmon`).not.toBe(SALMON);
     }
   });
 
-  it("Dusk's action is the salmon, Exhibition's is the burnt orange", () => {
+  it("Dusk's action is the salmon, Noon's is the burnt orange", () => {
     expect(dusk.action.toUpperCase()).toBe(SALMON);
-    expect(exhibition.action.toUpperCase()).toBe("#9E4B2C");
-    expect(round(contrast(exhibition.action, exhibition.bg))).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    expect(noon.action.toUpperCase()).toBe("#9E4B2C");
+    expect(round(contrast(noon.action, noon.bg))).toBeGreaterThanOrEqual(TEXT_FLOOR);
   });
 });
 
@@ -294,19 +294,19 @@ describe("SPEC_DIVERGENCE", () => {
     }));
 
     expect(diverged).toEqual([
-      { pairing: "exhibition text/glass", skill: 14.37, declared: 14.88 },
-      { pairing: "exhibition text2/glass", skill: 5.78, declared: 5.98 },
+      { pairing: "noon text/glass", skill: 14.37, declared: 14.88 },
+      { pairing: "noon text2/glass", skill: 5.78, declared: 5.98 },
       { pairing: "dusk text/glass", skill: 12.04, declared: 11.48 },
       { pairing: "dusk text2/glass", skill: 6.5, declared: 6.19 },
     ]);
     for (const d of diverged) expect(d.declared).toBeGreaterThanOrEqual(TEXT_FLOOR);
   });
 
-  it("records that --lit on Exhibition measures lower than the skill's prose", () => {
+  it("records that --lit on Noon measures lower than the skill's prose", () => {
     // The skill says 3.01:1; the declared tokens give 1.80:1. Both are below the
     // 4.5:1 text floor, so the rule the figure justifies is unaffected.
-    expect(round(contrast(exhibition.lit, exhibition.bg))).toBe(1.8);
-    expect(round(contrast("#D98C6B", exhibition.bg))).toBe(2.12); // skill says 2.05
+    expect(round(contrast(noon.lit, noon.bg))).toBe(1.8);
+    expect(round(contrast("#D98C6B", noon.bg))).toBe(2.12); // skill says 2.05
   });
 });
 
@@ -316,14 +316,14 @@ describe("SPEC_DIVERGENCE", () => {
 // and are not one: they are three of the nine part-category hues doing a second,
 // legitimate job. That is what makes them measurable, and this is the
 // measurement — the ramp they replaced was `#ef4444 / #f59e0b / #2EC4B6`, picked
-// by eye, of which the amber measures 2.28:1 on Exhibition's ground.
+// by eye, of which the amber measures 2.28:1 on Noon's ground.
 //
 // ON THE CARD, NOT ON THE PAGE. The meter sits inside an auth card, which is
 // `--glass` over `--bg`, so the ground under it is the composite rather than the
 // room. The category floors above already hold each hue against `--bg`; these
 // hold the three against the surface they are actually painted on, in both
 // rooms, because a hue that clears the floor on the page and fails on the card
-// fails where a reader is looking. Exhibition's card LIGHTENS the ground and
+// fails where a reader is looking. Noon's card LIGHTENS the ground and
 // Dusk's DARKENS it, so neither room's figure can be inferred from the other.
 //
 // The `backdrop-filter` is not modelled, for the reason the glass divergences
@@ -333,7 +333,7 @@ describe("the password strength meter", () => {
   const METER: TokenName[] = ["cat-breakage", "cat-artefact", "evidence"];
 
   const CARD = {
-    exhibition: { "cat-breakage": 5.88, "cat-artefact": 6.41, evidence: 5.56 },
+    noon: { "cat-breakage": 5.88, "cat-artefact": 6.41, evidence: 5.56 },
     dusk: { "cat-breakage": 4.66, "cat-artefact": 7.65, evidence: 6.63 },
   } as const;
 
@@ -341,7 +341,7 @@ describe("the password strength meter", () => {
   const card = (theme: ThemeKey) => over(THEMES[theme].glass, THEMES[theme].bg);
 
   it.each(
-    (["exhibition", "dusk"] as const).flatMap((theme) =>
+    (["noon", "dusk"] as const).flatMap((theme) =>
       METER.map((token) => ({ theme, token })),
     ),
   )("$theme reads $token as a label on the auth card", ({ theme, token }) => {
@@ -354,7 +354,7 @@ describe("the password strength meter", () => {
   });
 
   it.each(
-    (["exhibition", "dusk"] as const).flatMap((theme) =>
+    (["noon", "dusk"] as const).flatMap((theme) =>
       METER.map((token) => ({ theme, token })),
     ),
   )("$theme separates a filled $token segment from the track", ({ theme, token }) => {

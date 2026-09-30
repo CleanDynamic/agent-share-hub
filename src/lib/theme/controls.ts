@@ -116,7 +116,7 @@ export const FOCUS_RING_CLASS =
 
    WHY DESTRUCTIVE TAKES --on-action AND NOT A HARDCODED WHITE. Both tokens flip
    together, and they flip in opposite directions, which is exactly what the
-   pairing needs: Exhibition puts near-white #F7F8F9 on deep red #B91C1C (6.15:1)
+   pairing needs: Noon puts near-white #F7F8F9 on deep red #B91C1C (6.15:1)
    and Dusk puts near-black #241B1A on light red #F26D6D (5.76:1). A literal
    white would be 1.16:1 on Dusk's red — illegible, and the reason no component
    in this system spends a hex.
@@ -280,7 +280,7 @@ export function fieldStyle(state: FieldState = {}): CSSProperties {
  * The error message under an invalid field.
  *
  * Breakage red is legal as text on both grounds — the theme measures every
- * category hue at ≥4.83:1 on Exhibition and ≥5.75:1 on Dusk — which is why the
+ * category hue at ≥4.83:1 on Noon and ≥5.75:1 on Dusk — which is why the
  * message and the border can share one token.
  */
 export const fieldMessageStyle: CSSProperties = {
@@ -474,7 +474,7 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
    1.13:1 and 1.37:1 on a recess. Against a 3.0:1 floor.
 
    THAT FLOOR APPLIES HERE AND NOT TO A HAIRLINE, and the difference is what
-   the border is doing. `--line` is 1.2:1 on Exhibition's ground BY DESIGN —
+   the border is doing. `--line` is 1.2:1 on Noon's ground BY DESIGN —
    the spec names it "hairlines, chip borders" and floors it nowhere, because a
    separator carries no information and WCAG 1.4.11 exempts it. An unchecked
    checkbox carries all of it: the box has no label of its own, no fill worth
@@ -724,7 +724,7 @@ export const scrimStyle: CSSProperties = { ...SCRIM };
  * The tooltip. Opaque, for the reason given above.
  *
  * `--text` as a ground with `--bg` as the ink is the system's highest-contrast
- * pairing in both themes (13.10:1 Exhibition, 14.17:1 Dusk) — it is the page's
+ * pairing in both themes (13.10:1 Noon, 14.17:1 Dusk) — it is the page's
  * own text and background colours swapped, so it needs no separate measurement.
  */
 export const tooltipStyle: CSSProperties = {

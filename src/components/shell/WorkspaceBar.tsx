@@ -45,7 +45,7 @@
 // creator who cannot find their way out of a full-screen editor panics, and a
 // four-word link in a crowded bar is not findable. Its border is `--text2`
 // rather than the `--line` every other control here takes — 5.26:1 on
-// Exhibition and 7.65:1 on Dusk, clearing the 3.0 floor for UI state, where
+// Noon and 7.65:1 on Dusk, clearing the 3.0 floor for UI state, where
 // `--line` on `--bg` measures 1.30 and 1.82 and would leave the one control
 // nobody may miss reading as a label. It is also the tallest thing in the bar,
 // which is the whole of its emphasis (von-restorff): one element differing from
@@ -108,7 +108,7 @@ export const workspaceGround: CSSProperties = {
  * A panel standing on the workspace ground: `--recess` with a `--line` hairline.
  *
  * The step from `--bg` to `--recess` goes the same direction in both rooms —
- * denser than the ground on Exhibition, lighter than it on Dusk — so a panel
+ * denser than the ground on Noon, lighter than it on Dusk — so a panel
  * reads as one object in both. No blur, by the rule at the top of this file.
  */
 export const workspacePanel: CSSProperties = {
@@ -269,7 +269,7 @@ export function exitControlStyle(state: ControlState = {}): CSSProperties {
     /* Flat. --recess on --bg, no blur — the ground rule at the top. */
     backgroundColor: hot ? t.line : t.recess,
     /* --text2 rather than --line: the one control here that must read as a
-       control at a glance. 5.26:1 Exhibition, 7.65:1 Dusk, against --line's
+       control at a glance. 5.26:1 Noon, 7.65:1 Dusk, against --line's
        1.30 and 1.82 which are under the 3.0 floor for UI state. */
     borderWidth: 1,
     borderStyle: "solid",
@@ -468,7 +468,7 @@ export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) 
       />
 
       {/* Mode identity. Mono, because an eyebrow is data about the surface
-          rather than prose on it. --text2 on --bg: 5.26 Exhibition, 7.65 Dusk. */}
+          rather than prose on it. --text2 on --bg: 5.26 Noon, 7.65 Dusk. */}
       <span
         data-testid="workspace-mode"
         style={{ ...eyebrow, color: t.text2, flexShrink: 0 }}

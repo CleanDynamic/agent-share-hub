@@ -25,7 +25,7 @@ import {
   notificationsSeed,
 } from "./support/supabaseStub";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 const WIDTHS = [1400, 1024, 768, 390];
 
 async function withTheme(page: Page, theme: string) {

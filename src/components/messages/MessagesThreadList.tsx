@@ -3,7 +3,7 @@
 // WHAT WAS HERE. Forty-three hard-coded colours, every one of them assuming a
 // dark ground: white at nine different alphas for text and hairlines, #E8571A
 // for the active edge and the unread badge, and #F59E0B / #22C55E / #14B8A6 for
-// the type pills. On Exhibition that renders white-on-light — the list was
+// the type pills. On Noon that renders white-on-light — the list was
 // legible in one room only.
 //
 // WHAT CHANGED, AND WHAT DID NOT. Colour, radius and type only. Every height,
@@ -13,7 +13,7 @@
 //
 // THE UNREAD COUNT IS `--text`, NOT `--action`. "Mono on --action at low alpha"
 // reads at first like action-coloured ink, and that pairing is illegal: the hue
-// on its own 14% ground measures 3.97:1 on Exhibition, under the 4.5 text floor.
+// on its own 14% ground measures 3.97:1 on Noon, under the 4.5 text floor.
 // `--text` on the same ground is 10.85:1 there and 11.29:1 on Dusk, and it is
 // the pairing BG-P26 names for the message bubble, which is the same ground.
 //
@@ -205,7 +205,7 @@ function AvatarStack({ urls }: { urls: string[] }) {
             top: i * 2,
             zIndex: displayUrls.length - i,
             // The ring that separates overlapping avatars was `border-black/50`,
-            // which is invisible on Dusk and a smear on Exhibition. The page
+            // which is invisible on Dusk and a smear on Noon. The page
             // ground is the correct colour for a cut-out against the list.
             border: `1px solid ${t.bg}`,
           }}

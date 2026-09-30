@@ -91,7 +91,7 @@ export const KIND_META: Record<EventKind, KindMeta> = {
     /* A deploy is the artefact going out, so it takes the artefact hue. The
        theme's rule for a colour that is not a part category is "resolve into
        the nine, or --text2": #F59E0B was an amber picked by eye, and amber in
-       this system is LIGHT and never type — 3.01:1 on the Exhibition ground. */
+       this system is LIGHT and never type — 3.01:1 on the Noon ground. */
     colour: t.catArtefact,
     hint: "You shipped it somewhere",
   },

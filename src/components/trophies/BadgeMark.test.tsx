@@ -16,7 +16,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import DepthRevealModal from "@/components/depth/DepthRevealModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { dusk, exhibition, type TokenName } from "@/lib/theme/semantics";
+import { dusk, noon, type TokenName } from "@/lib/theme/semantics";
 
 import { BADGES, type Badge, type Tier } from "./badge-data";
 import { BadgeMark, badgeLabel, badgePaint } from "./BadgeMark";
@@ -371,9 +371,9 @@ function contrast(a: string, b: string): number {
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
 
-const ROOMS = { exhibition, dusk } as const;
+const ROOMS = { noon, dusk } as const;
 type Room = keyof typeof ROOMS;
-const ROOM_NAMES: Room[] = ["exhibition", "dusk"];
+const ROOM_NAMES: Room[] = ["noon", "dusk"];
 
 const tokenOf = (room: Room, token: TokenName): string => ROOMS[room][token];
 const glassOf = (room: Room): string => over(tokenOf(room, "glass"), tokenOf(room, "bg"));
@@ -407,13 +407,13 @@ describe("the pairings the treatment spends are measured", () => {
       text2OnBg: contrast(tokenOf(room, "text2"), tokenOf(room, "bg")),
     }));
     expect(figures).toEqual([
-      { room: "exhibition", textOnBg: 13.1, textOnRecess: 11.33, onLitOnLit: 7.29, text2OnBg: 5.26 },
+      { room: "noon", textOnBg: 13.1, textOnRecess: 11.33, onLitOnLit: 7.29, text2OnBg: 5.26 },
       { room: "dusk", textOnBg: 14.17, textOnRecess: 10.62, onLitOnLit: 7.49, text2OnBg: 7.65 },
     ]);
   });
 
   // REPORTED, NOT REPAINTED (RC-P26). Two EDGES of the ladder are under the 3.0:1
-  // floor for UI on Exhibition: the outline, --line on --bg, and the highest tier's
+  // floor for UI on Noon: the outline, --line on --bg, and the highest tier's
   // amber against the ground, which is the same 1.80 the focus ring was escalated
   // for (BG-P30, state-contrast.test.ts). The ladder is the theme's own and neither
   // edge is the only carrier of anything: the ink inside is what is read (all six
@@ -426,7 +426,7 @@ describe("the pairings the treatment spends are measured", () => {
       amberOnBg: contrast(tokenOf(room, "lit"), tokenOf(room, "bg")),
     }));
     expect(edges).toEqual([
-      { room: "exhibition", outlineOnBg: 1.3, amberOnBg: 1.8 },
+      { room: "noon", outlineOnBg: 1.3, amberOnBg: 1.8 },
       { room: "dusk", outlineOnBg: 1.82, amberOnBg: 7.47 },
     ]);
   });

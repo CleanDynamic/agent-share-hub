@@ -107,7 +107,7 @@ const EVIDENCE = categoryFill("evidence");
 /**
  * The primary action, in one place.
  *
- * THE PAIR IS `--action` / `--on-action`, MEASURED (5.65:1 on Exhibition,
+ * THE PAIR IS `--action` / `--on-action`, MEASURED (5.65:1 on Noon,
  * 6.35:1 on Dusk). What stood here was `--bg` on `--evidence`, which is a
  * pairing nobody measured and which also spent the evidence hue on a button:
  * evidence on this panel means "somebody ran this and said what happened", and

@@ -4,9 +4,9 @@
 // --lit and nothing is written on it, in either room; the track is --recess
 // and both carry --r-control. The number the bar draws is always printed
 // beside it in DM Mono, so the bar is never the only carrier of a value.
-// MEASURED from the declared tokens (Exhibition / Dusk): --lit on --recess
+// MEASURED from the declared tokens (Noon / Dusk): --lit on --recess
 // 1.55 / 5.60, and the track on --bg 1.16 / 1.33, both under the 3.0 UI floor
-// on Exhibition, as the focus ring BG-P30 escalated is. Reported, not
+// on Noon, as the focus ring BG-P30 escalated is. Reported, not
 // repainted: the prompt fixes these colours, and the bar is a picture of the
 // number, which is what is read.
 //

@@ -31,10 +31,10 @@ Keys are the real names each treatment resolves to: `t.*` from src/lib/theme/tok
 
 ## Notes
 
-- Row 6 records the nav as built. "--action text and icon" is the phone bottom nav only. The desktop rail keeps a --text label because --action as text on the rail's wash measures 3.57:1 (Exhibition) and 3.94:1 (Dusk), under the text floor (src/components/shell/flat-shell.css, BG-P13).
+- Row 6 records the nav as built. "--action text and icon" is the phone bottom nav only. The desktop rail keeps a --text label because --action as text on the rail's wash measures 3.57:1 (Noon) and 3.94:1 (Dusk), under the text floor (src/components/shell/flat-shell.css, BG-P13).
 - Rows 2, 19 and 21: Button's "secondary" and "outline" variants paint t.glass and t.glass2. The RC secondary is transparent: Button variant="outline" with `background: "transparent"` in its style prop.
 - Row 5 is not `chipSelectedStyle`. That helper marks a selected category chip with an --action border, because the chip's fill already names its category. Row 5 is for lens and filter chips, which carry no category.
 - Row 16: Button's "destructive" variant paints t.catBreakage, which the theme forbids borrowing. New destructive actions use the ghost variant and a Dialog confirmation.
 - Row 17: src/components/ui/alert-dialog.tsx uses neither dialogPanelStyle nor scrimStyle, so confirmations use Dialog.
-- Row 9: on Exhibition the ring measures 1.55–2.13:1 against every ground, under the 3.0 UI floor. BG-P30 escalated this to the owner and src/lib/theme/state-contrast.test.ts records the figures. This map changes nothing about it.
-- Measured for this map in src/lib/theme/contrast.test.ts (Exhibition / Dusk): --text on --recess 11.33 / 10.62, --text2 on --recess 4.55 / 5.73, --text as a border on --recess 11.33 / 10.62, --action as an icon on --bg 4.80 / 6.33. --text2 on --recess clears the 4.5 floor on Exhibition by 0.05, so --text2 never goes on a ground darker than --recess.
+- Row 9: on Noon the ring measures 1.55–2.13:1 against every ground, under the 3.0 UI floor. BG-P30 escalated this to the owner and src/lib/theme/state-contrast.test.ts records the figures. This map changes nothing about it.
+- Measured for this map in src/lib/theme/contrast.test.ts (Noon / Dusk): --text on --recess 11.33 / 10.62, --text2 on --recess 4.55 / 5.73, --text as a border on --recess 11.33 / 10.62, --action as an icon on --bg 4.80 / 6.33. --text2 on --recess clears the 4.5 floor on Noon by 0.05, so --text2 never goes on a ground darker than --recess.

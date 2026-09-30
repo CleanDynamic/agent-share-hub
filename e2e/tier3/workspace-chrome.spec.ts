@@ -29,7 +29,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** The height ComposeTopBar has always been. BG-P16 repaints, never resizes. */
 const BAR_HEIGHT = 52;
@@ -64,7 +64,7 @@ test.describe("the workspace bar", () => {
   }
 
   test("holds that height at every width, so a crowded bar never grows a row", async ({ page }) => {
-    await openKit(page, "exhibition");
+    await openKit(page, "noon");
     for (const width of [1920, 1440, 1024, 900, 768, 390]) {
       await page.setViewportSize({ width, height: 700 });
       const box = await bar(page).boundingBox();
@@ -95,7 +95,7 @@ test.describe("the workspace bar", () => {
 
 test.describe("the exit", () => {
   test("reads as a control rather than as a line of text", async ({ page }) => {
-    await openKit(page, "exhibition");
+    await openKit(page, "noon");
     const control = exit(page);
     await expect(control).toBeVisible();
     await expect(control).toContainText("buildgallery");
@@ -120,13 +120,13 @@ test.describe("the exit", () => {
   });
 
   test("navigates out of the workspace when pressed", async ({ page }) => {
-    await openKit(page, "exhibition");
+    await openKit(page, "noon");
     await exit(page).click();
     await expect(page).toHaveURL(/\/gallery$/);
   });
 
   test("is reachable and operable from the keyboard", async ({ page }) => {
-    await openKit(page, "exhibition");
+    await openKit(page, "noon");
     await exit(page).focus();
     await expect(exit(page)).toBeFocused();
     await page.keyboard.press("Enter");
@@ -160,7 +160,7 @@ test.describe("the exit", () => {
 
 test.describe("the theme toggle inside the workspace", () => {
   test("changes rooms without leaving the workspace", async ({ page }) => {
-    await openKit(page, "exhibition");
+    await openKit(page, "noon");
     const group = bar(page).getByRole("radiogroup", { name: "Theme" });
     await expect(group).toBeVisible();
 
@@ -170,8 +170,8 @@ test.describe("the theme toggle inside the workspace", () => {
     await expect(bar(page)).toBeVisible();
     await expect(exit(page)).toBeVisible();
 
-    await group.getByRole("radio", { name: "Exhibition" }).click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "exhibition");
+    await group.getByRole("radio", { name: "Noon" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "noon");
     await expect(bar(page)).toBeVisible();
   });
 });
@@ -185,7 +185,7 @@ test.describe("the four authoring routes stay outside the frame", () => {
 
   for (const route of ROUTES) {
     test(`${route} never renders the application frame's rails`, async ({ page }) => {
-      await withTheme(page, "exhibition");
+      await withTheme(page, "noon");
       await page.goto(route);
       // Either the route's own surface, or the login redirect. Never the frame
       // wrapped around an authoring surface.

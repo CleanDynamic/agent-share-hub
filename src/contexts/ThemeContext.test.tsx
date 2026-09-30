@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { ThemeProvider, THEME_STORAGE_KEY, useTheme } from "./ThemeContext";
@@ -75,18 +77,18 @@ afterEach(() => {
 });
 
 describe("ThemeProvider", () => {
-  it("defaults a visitor with no stored preference to Exhibition", () => {
+  it("defaults a visitor with no stored preference to Noon", () => {
     renderProvider();
-    expect(read("theme")).toBe("exhibition");
-    expect(read("resolved")).toBe("exhibition");
+    expect(read("theme")).toBe("noon");
+    expect(read("resolved")).toBe("noon");
   });
 
-  it("defaults to Exhibition even where the OS prefers dark", () => {
+  it("defaults to Noon even where the OS prefers dark", () => {
     // The departure from the spec is deliberate: an unknown visitor gets the
     // lit room, and only an explicit "system" defers to the OS.
     stubMatchMedia(true);
     renderProvider();
-    expect(read("resolved")).toBe("exhibition");
+    expect(read("resolved")).toBe("noon");
   });
 
   it("prefers a stored choice over the default", () => {
@@ -99,7 +101,31 @@ describe("ThemeProvider", () => {
   it("ignores a stored value that is not a theme", () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, "midnight");
     renderProvider();
-    expect(read("theme")).toBe("exhibition");
+    expect(read("theme")).toBe("noon");
+  });
+
+  /* UI-P02. Noon was called Exhibition before UI-P02, and a returning visitor
+     may still have the old name stored. Both halves migrate it: the boot script
+     before paint, the provider on its first read. */
+  describe("a choice stored under Noon's old name", () => {
+    it("is read as Noon and written back as Noon", () => {
+      window.localStorage.setItem(THEME_STORAGE_KEY, "exhibition");
+      renderProvider();
+      expect(read("theme")).toBe("noon");
+      expect(rootTheme()).toBe("noon");
+      expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("noon");
+    });
+
+    it("is migrated the same way by the boot script in index.html", () => {
+      const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
+      const boot = html.match(/<script>(try\{[\s\S]*?)<\/script>/)?.[1];
+      expect(boot, "the inline theme boot script").toBeDefined();
+
+      window.localStorage.setItem(THEME_STORAGE_KEY, "exhibition");
+      new Function(boot!)();
+      expect(rootTheme()).toBe("noon");
+      expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("noon");
+    });
   });
 
   it("lands the resolved theme on the root element", () => {
@@ -125,35 +151,35 @@ describe("ThemeProvider", () => {
       expect(rootTheme()).toBe("dusk");
     });
 
-    it("resolves to Exhibition when the OS prefers light", () => {
+    it("resolves to Noon when the OS prefers light", () => {
       window.localStorage.setItem(THEME_STORAGE_KEY, "system");
       renderProvider();
-      expect(read("resolved")).toBe("exhibition");
-      expect(rootTheme()).toBe("exhibition");
+      expect(read("resolved")).toBe("noon");
+      expect(rootTheme()).toBe("noon");
     });
 
     it("follows an OS appearance change with no reload", () => {
       const media = stubMatchMedia(false);
       window.localStorage.setItem(THEME_STORAGE_KEY, "system");
       renderProvider();
-      expect(rootTheme()).toBe("exhibition");
+      expect(rootTheme()).toBe("noon");
 
       act(() => media.setDark(true));
       expect(read("resolved")).toBe("dusk");
       expect(rootTheme()).toBe("dusk");
 
       act(() => media.setDark(false));
-      expect(rootTheme()).toBe("exhibition");
+      expect(rootTheme()).toBe("noon");
     });
 
     it("does not follow the OS once a concrete theme is chosen", () => {
       const media = stubMatchMedia(false);
-      window.localStorage.setItem(THEME_STORAGE_KEY, "exhibition");
+      window.localStorage.setItem(THEME_STORAGE_KEY, "noon");
       renderProvider();
 
       act(() => media.setDark(true));
-      expect(read("resolved")).toBe("exhibition");
-      expect(rootTheme()).toBe("exhibition");
+      expect(read("resolved")).toBe("noon");
+      expect(rootTheme()).toBe("noon");
     });
   });
 
@@ -163,8 +189,8 @@ describe("ThemeProvider", () => {
         throw new Error("access denied");
       });
       renderProvider();
-      expect(read("theme")).toBe("exhibition");
-      expect(rootTheme()).toBe("exhibition");
+      expect(read("theme")).toBe("noon");
+      expect(rootTheme()).toBe("noon");
     });
 
     it("still switches, for the life of the page", () => {

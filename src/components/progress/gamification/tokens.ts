@@ -14,7 +14,7 @@
  * re-render.
  *
  * THE NAMES LIE NOW, WHICH IS THE PRICE OF THE ALIAS. `brand` is the action
- * token — burnt orange on Exhibition, salmon on Dusk. Read every name below as
+ * token — burnt orange on Noon, salmon on Dusk. Read every name below as
  * the JOB it does rather than as the colour it was.
  *
  * THE BRAND MAPPING IS BG-P25'S, applied unchanged so the four gamification

@@ -140,7 +140,7 @@ describe("the focus ring", () => {
   it("carries the offset that makes amber legal here", () => {
     // The ring is read against a band of --bg rather than against the ground
     // alone. Without the offset the 3.0:1 UI floor is the whole argument, and
-    // --lit is 1.80:1 on Exhibition's ground.
+    // --lit is 1.80:1 on Noon's ground.
     expect(focusRing.outlineOffset).not.toBe("0");
     expect(parseInt(focusRing.outlineOffset, 10)).toBeGreaterThan(0);
   });

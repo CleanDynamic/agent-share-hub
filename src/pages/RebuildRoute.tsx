@@ -51,7 +51,7 @@ const STALE_TIME = 300_000;
  * workspace it hands the creator to.
  *
  * The ground was #08080C, which is neither theme's, and went black on
- * Exhibition. It is `--bg` now, flat, with the panel on `--recess`.
+ * Noon. It is `--bg` now, flat, with the panel on `--recess`.
  *
  * THE MODE READS "REBUILD" AND THE CONTEXT NAMES THE SOURCE, which is the one
  * thing a creator waiting on a fork wants confirmed: that it is forking the

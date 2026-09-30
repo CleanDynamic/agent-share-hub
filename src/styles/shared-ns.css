@@ -44,7 +44,7 @@
      "THE FOUR RULES BELOW ARE STILL ON THE OLD COLOURS. Every colour here is a
       hardcoded rgba(255,255,255,…) inherited from the shell, which only ever
       rendered on a dark ground. They do not read <html data-theme> and so do
-      not change between Exhibition and Dusk. Repainting them onto tokens is
+      not change between Noon and Dusk. Repainting them onto tokens is
       BG-P29's job — the rail's stylesheet already had that done in BG-P13,
       this file has not — and deliberately not this prompt's, which is a
       deletion and must stay bisectable."

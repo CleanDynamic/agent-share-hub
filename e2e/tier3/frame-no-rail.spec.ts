@@ -30,7 +30,7 @@ import { installStub, withSession, withTheme } from "../audit/support/harness";
 const READY_MS = 45_000;
 
 async function openSignedIn(page: Page, path: string) {
-  await withTheme(page, "exhibition");
+  await withTheme(page, "noon");
   await withSession(page);
   await installStub(page);
   await page.goto(path);
@@ -63,8 +63,8 @@ test.describe("desktop", () => {
   });
 
   /* RC-P09c. The field's placeholder is its only visible label. It showed in
-     the browser's grey, 1.75:1 on Exhibition's --recess, until this pass. */
-  for (const theme of ["exhibition", "dusk"] as const) {
+     the browser's grey, 1.75:1 on Noon's --recess, until this pass. */
+  for (const theme of ["noon", "dusk"] as const) {
     test(`the search field's placeholder reads at the text floor in ${theme}`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await withTheme(page, theme);

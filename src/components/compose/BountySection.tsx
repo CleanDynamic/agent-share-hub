@@ -318,7 +318,7 @@ export function BountySection({
 
         {/* THE BG-P07 SWITCH. It was a hand-rolled track and knob with its own
             geometry, its own transition and a hard-coded near-black thumb that
-            was invisible against an Exhibition ground. The kit's carries the
+            was invisible against a Noon ground. The kit's carries the
             `--action` track, the `--bg` thumb, the shared focus ring and the
             reduced-motion gate, and it is the same switch every other toggle
             in the app is. `role="switch"` and `aria-checked` come from Radix,

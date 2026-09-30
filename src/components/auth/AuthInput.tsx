@@ -145,7 +145,7 @@ export function AuthInput({
   };
 
   /* Beneath the field, always — never only a toast. Breakage red is legal as
-     text on both grounds (≥4.83 Exhibition, ≥5.75 Dusk), which is what lets the
+     text on both grounds (≥4.83 Noon, ≥5.75 Dusk), which is what lets the
      message and the border share one token; a confirmation is `--evidence`, the
      token that means "it worked" everywhere else. */
   const validationMessageStyle = {

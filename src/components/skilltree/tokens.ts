@@ -5,7 +5,7 @@
 // `src/components/profile-game/tokens.ts`. Every value here used to be a
 // literal struck for one dark room: three lavender-grey surfaces, two
 // white-alpha hairlines, three white-alpha ink steps and six brand hexes. None
-// read `<html data-theme>`, so a skill node drawn on Exhibition was a dark-room
+// read `<html data-theme>`, so a skill node drawn on Noon was a dark-room
 // object sitting in a lit one.
 //
 // THIS FOLDER IS LIVE, WHICH IS WHY IT IS REPOINTED RATHER THAN LEFT. It has no

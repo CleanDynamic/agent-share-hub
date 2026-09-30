@@ -138,7 +138,7 @@ export function ShellHeader({
                 border: "none",
                 /* BG-P29. Was `var(--text)`, which is the ROOM's ink and not
                    the ink for a filled control: --text on --action measures
-                   2.73:1 on Exhibition and 2.24:1 on Dusk, both well under the
+                   2.73:1 on Noon and 2.24:1 on Dusk, both well under the
                    4.5:1 text floor, on the one primary CTA in the header.
                    --on-action is the measured pairing the theme publishes for
                    exactly this — 5.65:1 and 6.35:1 — and it inverts with the
@@ -222,7 +222,7 @@ export function ShellHeader({
                       fontSize: 13,
                       fontWeight: 500,
                       /* BG-P30. The resting tab was painted `--recess`, which
-                         is a SURFACE token: 1.16:1 on Exhibition's ground and
+                         is a SURFACE token: 1.16:1 on Noon's ground and
                          1.33:1 on Dusk's, at 13px/500. An inactive tab is
                          still a label somebody has to read to choose it.
                          `--text2` is what the system names quiet ink and is

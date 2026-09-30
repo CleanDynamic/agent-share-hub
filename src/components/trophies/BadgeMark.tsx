@@ -11,7 +11,7 @@
 //   not yet   the outline, whatever the tier, a --text2 icon and "Not yet" beneath
 //
 // Amber is light, never type: --lit is only ever a ground, and the ink on it is
-// --on-lit. On Exhibition it is a solid mark with no glow, because a glow needs
+// --on-lit. On Noon it is a solid mark with no glow, because a glow needs
 // darkness to glow against; Dusk gets the same solid mark, so the two rooms draw
 // one badge.
 //
@@ -27,11 +27,11 @@
 // grayscale by the theme's own choice, so the tier is also written in words,
 // "<name>, <tier> badge", in the accessible name of every mark. A test reads it.
 //
-// MEASURED (Exhibition / Dusk, from the declared tokens): --text on --bg
+// MEASURED (Noon / Dusk, from the declared tokens): --text on --bg
 // 13.10 / 14.17; --text on --recess 11.33 / 10.62; --on-lit on --lit 7.29 /
 // 7.49; --text2 on --bg 5.26 / 7.65. Every label clears the 4.5 text floor. The
 // two edges do not clear the 3.0 floor for UI: the outline is --line on --bg,
-// 1.30 / 1.82, and the amber fill on Exhibition's ground is 1.80 (Dusk 7.47),
+// 1.30 / 1.82, and the amber fill on Noon's ground is 1.80 (Dusk 7.47),
 // the same figure the focus ring was escalated for (BG-P30). Neither edge is the
 // only carrier of anything: the ink inside is what is read, and the tier is in
 // the words. Reported, not repainted.

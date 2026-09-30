@@ -7,7 +7,7 @@ import { type } from "@/lib/theme/type";
 /* THE FOURTEEN LEGACY BADGE COLOURS ARE RETIRED (BG-P28).
    What stood here was seventeen invented hues — #FFE66D, #FCBAD3, #F5F5DC and
    the rest — none of them measured, several of them (a cream, two pastels)
-   under 2:1 on the Exhibition ground. The theme retires that set outright and
+   under 2:1 on the Noon ground. The theme retires that set outright and
    says anything needing a colour resolves into the nine part hues, or into
    --text2 when nothing fits. These follow the resolution BG-P26 already made
    for the same map in ContentShareBubble, extended to the types only this

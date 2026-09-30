@@ -252,7 +252,7 @@ export function TrayPanel({
             borderRadius: r.chip,
             /* --evidence-fill is the measured ground for "this happened". The
                ink on it is --text, which the theme measures at 11.89 on
-               Exhibition and higher on Dusk — --evidence on that fill is 4.44 in
+               Noon and higher on Dusk — --evidence on that fill is 4.44 in
                the light room, under the 4.5 text floor, so it carries the border
                instead, where the floor is 3.0. */
             border: `1px solid ${t.evidence}`,

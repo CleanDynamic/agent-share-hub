@@ -9,7 +9,7 @@
 // --r-panel. No category hue, and no amber: amber is light, never type, and
 // this note is nothing but type ⟦buildgallery-theme › Progress and achievement⟧.
 // THE ACTION is STATES.md row 3, the one tertiary control: a ghost button,
-// --text2 on the same --recess ground, which measures 4.55:1 on Exhibition and
+// --text2 on the same --recess ground, which measures 4.55:1 on Noon and
 // 5.73:1 on Dusk (contrast.test.ts), so it never goes on a darker ground than
 // this one. There is no primary action here, and the page that mounts the note
 // keeps the one it already has.

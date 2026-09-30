@@ -66,8 +66,9 @@
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
          sees a flash of the other room. Mirrors src/contexts/ThemeContext.tsx —
-         same bg-theme key, same Exhibition fallback. Change one, change both. -->
-    <script>try{var t=localStorage.getItem("bg-theme");if(t=="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dusk":"exhibition";document.documentElement.dataset.theme=t=="dusk"?"dusk":"exhibition"}catch(e){document.documentElement.dataset.theme="exhibition"}</script>
+         same bg-theme key, same Noon fallback, and the same migration of the
+         name Noon had before UI-P02. Change one, change both. -->
+    <script>try{var t=localStorage.getItem("bg-theme");if(t=="exhibition")localStorage.setItem("bg-theme",t="noon");if(t=="system")t=matchMedia("(prefers-color-scheme:dark)").matches?"dusk":"noon";document.documentElement.dataset.theme=t=="dusk"?"dusk":"noon"}catch(e){document.documentElement.dataset.theme="noon"}</script>
 
     
     

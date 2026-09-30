@@ -9,7 +9,7 @@
 //
 // THE REFERENCE COUNT IS AN EVIDENCE TAG, NOT AN AMBER ONE. It was amber type
 // on an amber wash, and amber may never be type — `--lit` is 3.01:1 on the
-// Exhibition ground, legal as a light and illegal as a word. It is the same
+// Noon ground, legal as a light and illegal as a word. It is the same
 // claim a card's plaque makes (other people used this), so it takes the same
 // measured evidence pair the plaque's count does.
 //

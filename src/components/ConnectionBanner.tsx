@@ -3,7 +3,7 @@
 // It was `bg-destructive/10` with `border-destructive/30` — shadcn palette
 // colours, not theme tokens, so the banner did not change between the rooms.
 // `--cat-breakage` is this system's own token for a break, and it is the one
-// BG-P26 names for this banner. Measured 5.17:1 on Exhibition and 5.75:1 on
+// BG-P26 names for this banner. Measured 5.17:1 on Noon and 5.75:1 on
 // Dusk against `--bg`, so it is legal as text and not only as a mark.
 
 import { useState, useEffect } from "react";

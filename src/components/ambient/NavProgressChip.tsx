@@ -61,7 +61,7 @@ export default function NavProgressChip({
             height: 34,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            /* BG-P30. `--text` on `--action` measures 2.73:1 on Exhibition and
+            /* BG-P30. `--text` on `--action` measures 2.73:1 on Noon and
                2.24:1 on Dusk — the level number was unreadable in both rooms,
                at 13px/600, on a fill that exists precisely because it has an
                ink of its own. `--on-action` is that ink and is the measured
@@ -210,7 +210,7 @@ export default function NavProgressChip({
             padding: "8px 12px",
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
-            /* BG-P30. `--text` on `--action` measures 2.73:1 on Exhibition and
+            /* BG-P30. `--text` on `--action` measures 2.73:1 on Noon and
                2.24:1 on Dusk — the level number was unreadable in both rooms,
                at 13px/600, on a fill that exists precisely because it has an
                ink of its own. `--on-action` is that ink and is the measured

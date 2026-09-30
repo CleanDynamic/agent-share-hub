@@ -81,7 +81,7 @@ function messageOf(cause: unknown): string {
  *
  * BG-P24 — BREAKAGE ON THE EDGE, NOT UNDER THE WHOLE PANEL.
  *
- * It was a 6% red wash inside a 30%-alpha red border, which on the Exhibition
+ * It was a 6% red wash inside a 30%-alpha red border, which on the Noon
  * ground is a pink box — and a pink box says "you did something wrong", which
  * is the one thing this panel must not say. The file is wrong; the person is
  * not. So the state is carried by a 2px `--cat-breakage` left edge over the

@@ -12,7 +12,7 @@
 // them are decoration.
 //
 // DEFINED PER THEME, BECAUSE A SHADOW ON A LIGHT GROUND AND A SHADOW ON A DARK
-// GROUND ARE NOT THE SAME OBJECT. On Exhibition, depth is a true shadow: the
+// GROUND ARE NOT THE SAME OBJECT. On Noon, depth is a true shadow: the
 // luminous grey room has a light source, and a surface above the page casts.
 // On Dusk, a shadow alone does not read — black on lavender stone at dusk is
 // barely a change — so each level pairs a deeper shadow with an inset `--glass-hi`
@@ -61,12 +61,12 @@ export const ELEVATION_TOKENS = ["elev-raised", "elev-overlay"] as const;
 export type ElevationTokenName = (typeof ELEVATION_TOKENS)[number];
 
 /**
- * Exhibition — a true shadow. Two layers each: a tight contact shadow that
+ * Noon — a true shadow. Two layers each: a tight contact shadow that
  * anchors the surface to the page, and a wider ambient one that gives it its
  * height. Struck from `--text` (#1B2026) rather than from black, so the shadow
  * belongs to the cool grey room rather than sitting on top of it.
  */
-export const exhibitionElevation: Record<ElevationTokenName, string> = {
+export const noonElevation: Record<ElevationTokenName, string> = {
   "elev-raised": "0 1px 2px rgba(27,32,38,.08), 0 6px 16px rgba(27,32,38,.10)",
   "elev-overlay": "0 2px 6px rgba(27,32,38,.12), 0 24px 56px rgba(27,32,38,.20)",
 };
@@ -77,7 +77,7 @@ export const exhibitionElevation: Record<ElevationTokenName, string> = {
  * The `inset 0 1px 0 var(--glass-hi)` is doing the work a shadow cannot do on a
  * dark ground: it is the surface's own edge catching the violet-to-salmon
  * horizon, and it is what reads as "above". The shadows are darker and wider
- * than Exhibition's because they have to travel further to register at all.
+ * than Noon's because they have to travel further to register at all.
  */
 export const duskElevation: Record<ElevationTokenName, string> = {
   "elev-raised": "inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44)",
@@ -85,7 +85,7 @@ export const duskElevation: Record<ElevationTokenName, string> = {
 };
 
 export const elevationThemes = {
-  exhibition: exhibitionElevation,
+  noon: noonElevation,
   dusk: duskElevation,
 } as const;
 

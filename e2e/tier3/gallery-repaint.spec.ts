@@ -42,7 +42,7 @@ const COLUMNS: Record<number, number> = {
   700: 1,
 };
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** Set the theme before first paint, the way index.html's boot script reads it. */
 async function withTheme(page: Page, theme: string) {

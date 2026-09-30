@@ -18,10 +18,10 @@
  *   HIGH   text under 4.5:1 — a reader cannot read it.
  *   HIGH   a STATE-CARRYING border or a focus ring under 3.0:1 — a reader
  *          cannot tell the state.
- *   HIGH   `--lit` used as text or as a state border on Exhibition, at any
+ *   HIGH   `--lit` used as text or as a state border on Noon, at any
  *          ratio. The theme's first hard rule; it is a finding even where the
  *          measurement happens to pass, and it is asserted separately below.
- *   note   a HAIRLINE under 3.0:1. `--line` is 1.2:1 on Exhibition's ground BY
+ *   note   a HAIRLINE under 3.0:1. `--line` is 1.2:1 on Noon's ground BY
  *          DESIGN — the spec names it "hairlines, chip borders" and floors it
  *          nowhere, because a separator is not a control boundary and WCAG
  *          1.4.11 exempts it. These are reported, never failed; failing them
@@ -55,20 +55,20 @@ interface Survivor {
 const SURVIVORS: Survivor[] = [
   {
     route: "*",
-    theme: "exhibition",
-    // Only the amber ring, and only on Exhibition. Any other focus failure,
+    theme: "noon",
+    // Only the amber ring, and only on Noon. Any other focus failure,
     // any other ring colour, and any failure on Dusk still fails.
     match: /^focus ring #D9A441 /,
     why:
-      "THE FOCUS RING IS 1.55-2.04:1 ON EVERY EXHIBITION GROUND, AND EVERY FIX " +
+      "THE FOCUS RING IS 1.55-2.04:1 ON EVERY NOON GROUND, AND EVERY FIX " +
       "FOR IT IS OUT OF THIS PROMPT'S HANDS. ESCALATED, NOT ACCEPTED. " +
       "`--lit` is #D9A441 in both rooms and measures 1.80:1 on --bg, 1.55:1 on " +
       "--recess and 2.04:1 on a glass card; on Dusk the same value is 7.47:1, " +
-      "so this is an Exhibition-only shortfall. The buildgallery-theme skill " +
+      "so this is a Noon-only shortfall. The buildgallery-theme skill " +
       "PRESCRIBES this ring ('2px --lit with a 2px --bg offset, identical in " +
       "both themes') and justifies it by the offset — 'the ring is read " +
       "against two edges rather than against the ground alone'. The offset " +
-      "band is --bg and so is what lies outside the ring, so on Exhibition it " +
+      "band is --bg and so is what lies outside the ring, so on Noon it " +
       "is the same 1.80:1 on both edges and the justification does not hold. " +
       "contrast.test.ts already records the underlying divergence (the skill " +
       "says --lit is 3.01:1 on the ground; the declared tokens give 1.80:1). " +
@@ -80,10 +80,10 @@ const SURVIVORS: Survivor[] = [
       "which would break two published contract pairings (text/lit 7.29 and " +
       "dusk lit/bg 7.47) that acceptance 3 requires to still measure as " +
       "stated. So it goes to the operator with three options: (a) split --lit " +
-      "per theme and darken Exhibition's, re-recording the contract; (b) keep " +
+      "per theme and darken Noon's, re-recording the contract; (b) keep " +
       "--lit and add a second, contrasting inner ring, the standard " +
       "double-ring pattern, which is a new visual treatment; (c) accept 1.80:1 " +
-      "on Exhibition as a deliberate deviation from WCAG 1.4.11.",
+      "on Noon as a deliberate deviation from WCAG 1.4.11.",
   },
 ];
 

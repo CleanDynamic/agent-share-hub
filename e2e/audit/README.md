@@ -52,7 +52,7 @@ Reports land in `e2e/audit/out/` (gitignored):
 
 ## What the contrast sweep does
 
-For every route in `support/harness.ts`, in Exhibition and in Dusk:
+For every route in `support/harness.ts`, in Noon and in Dusk:
 
 1. **Text.** Every text node's rendered `color`, at its effective opacity,
    composited over the ground its ancestors actually produce — each background
@@ -64,7 +64,7 @@ For every route in `support/harness.ts`, in Exhibition and in Dusk:
    state** — it is painted in a state token, it is the boundary of a checkbox,
    switch or radio, it marks an error, or it is a ≥1.5px boundary on a control.
    Everything else is a **hairline**: reported, never failed. `--line` is
-   1.2:1 on the Exhibition ground *by design* — the spec names it "hairlines,
+   1.2:1 on the Noon ground *by design* — the spec names it "hairlines,
    chip borders" and floors it nowhere, because a separator is not a control
    boundary.
 3. **Control fills.** A checkbox, switch or radio with no label of its own is
@@ -99,7 +99,7 @@ the asymmetric rule catches it with no false positives against `color-mix()`
 and `tokenAlpha()`, which resolve to values that are in no token block by
 design.
 
-The file's first test plants Dusk's salmon on an Exhibition page and requires
+The file's first test plants Dusk's salmon on a Noon page and requires
 the sweep to find it, so a green run is a measurement rather than a tautology.
 
 ## The network
@@ -119,7 +119,7 @@ dev project, so the sweep reads no project and writes to none — the same trade
 Three classes are measured, recorded and never failed. Each is a rule, not a
 shrug:
 
-- **Hairlines.** `--line` is 1.2:1 on the Exhibition ground by design.
+- **Hairlines.** `--line` is 1.2:1 on the Noon ground by design.
 - **Inactive components.** WCAG 1.4.3 excludes text that is part of an inactive
   control and 1.4.11 excludes its boundary. The 50% wash this kit puts on a
   disabled control works *because* it is harder to see. The numbers are still

@@ -6,7 +6,7 @@
 // literal struck for one dark room: three lavender-grey surfaces, three
 // white-alpha ink steps, three white-alpha hairlines, and seven brand hexes
 // headed by `#E8571A`. None read `<html data-theme>`, so an XP bar drawn on
-// Exhibition was a dark-room object sitting in a lit one.
+// Noon was a dark-room object sitting in a lit one.
 //
 // The KEYS are untouched. Thirteen components in this folder spend them and
 // this is a repaint rather than a rewrite; only the values move, and they move
@@ -14,7 +14,7 @@
 // re-render.
 //
 // THE NAMES LIE NOW, WHICH IS THE PRICE OF THE ALIAS. `orange` is the action
-// token — burnt orange on Exhibition, salmon on Dusk. Read every name below as
+// token — burnt orange on Noon, salmon on Dusk. Read every name below as
 // the JOB it does rather than as the colour it was.
 //
 // THE BRAND MAPPING IS BG-P25'S, applied unchanged so the four gamification

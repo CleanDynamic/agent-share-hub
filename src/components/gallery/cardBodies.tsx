@@ -33,7 +33,7 @@ import { t } from "@/lib/theme/tokens";
    The bodies were written for the legacy dark shell, where TEXT_PRIMARY was a
    near-white hex. That was invisible the moment BG-P09 put them inside the
    thread box: the box is `--card-thread` over `--card-frame`, which is a LIGHT
-   surface in Exhibition, and white text on it is the "dark card on a light
+   surface in Noon, and white text on it is the "dark card on a light
    ground" the spec forbids, arrived at from the other direction.
 
    So every colour declaration below reads a semantic token and the layout is

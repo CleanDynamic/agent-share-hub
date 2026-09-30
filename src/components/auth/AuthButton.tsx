@@ -20,7 +20,7 @@ interface AuthButtonProps {
  * WHAT CHANGED AND WHY. The fill was a `#E8571A → #C44514` gradient, which is
  * the legacy orange and a shape this system does not have: a primary button is
  * a flat `--action` fill with an `--on-action` label, measured at 5.65:1 on
- * Exhibition and 6.35:1 on Dusk. The 10px radius is `--r-control`. Hover is
+ * Noon and 6.35:1 on Dusk. The 10px radius is `--r-control`. Hover is
  * `buttonStyle`'s measured brightness step and 1px lift rather than a 1%
  * scale — a scale on a 48px control blurs its own text for the duration — and
  * it is gated on a fine pointer by `useInteractive`, so a tap on a phone no

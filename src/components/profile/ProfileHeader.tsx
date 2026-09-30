@@ -206,7 +206,7 @@ export function ProfileHeader({
           `--recess` RATHER THAN `--porthole`, and the difference is the whole
           balance of the page: a 200px full-width band is the largest object
           on the profile, and in `--porthole` it is also the darkest — on
-          Exhibition that is a near-black slab at the top of a luminous grey
+          Noon that is a near-black slab at the top of a luminous grey
           room, and the composition tips into it before the reader has read a
           word. `GalleryCard` sets the precedent for the same decision at card
           scale: a build with no picture holds a text well, not an empty media

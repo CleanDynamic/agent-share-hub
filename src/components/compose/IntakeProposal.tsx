@@ -132,7 +132,7 @@ function InferredMark({ reason }: { reason: string | null }) {
         cursor: "help",
         /* The accent's own measured pair, opaque, rather than a 14% wash of it
            — a tint of the accent over an unknown ground is a pairing nobody
-           measured, and on Exhibition it is close to invisible. */
+           measured, and on Noon it is close to invisible. */
         backgroundColor: t.action,
         borderWidth: 1,
         borderStyle: "solid",
@@ -511,7 +511,7 @@ function secretLocation(secret: SecretWarning): string {
  * BG-P24 — `--cat-breakage` ON THE EDGE AND ON THE COUNT, NOT UNDER THE PANEL.
  *
  * It was a 6% red wash inside a 30%-alpha red border, matching the refusal
- * panel's old treatment. On the Exhibition ground that is a pink box, and the
+ * panel's old treatment. On the Noon ground that is a pink box, and the
  * two surfaces then say the same thing in the same voice when they mean
  * different things: the refusal is "this file could not be read" and this is
  * "read this before you publish". So this keeps a 2px breakage edge over the

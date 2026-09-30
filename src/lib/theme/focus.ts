@@ -5,7 +5,7 @@
 // the page is a second thing to learn for no gain.
 //
 // WHY AMBER IS LEGAL HERE, WHEN IT IS ILLEGAL AS TEXT. `--lit` measures 1.80:1
-// on Exhibition's ground, far under the 4.5:1 text floor — the theme's first
+// on Noon's ground, far under the 4.5:1 text floor — the theme's first
 // hard rule is that amber is light, never type. A focus ring is not type. It is
 // UI state, which the spec floors at 3.0:1, and the ring clears that because of
 // the OFFSET rather than the colour: `outline-offset: 2px` leaves a 2px band of
@@ -56,7 +56,7 @@ export const FOCUS_RING_WIDTH = "2px";
 export const FOCUS_RING_OFFSET = "2px";
 
 /**
- * The one focus ring. Identical in Exhibition and Dusk, because `--lit` is one
+ * The one focus ring. Identical in Noon and Dusk, because `--lit` is one
  * value in both themes — the only accent in the system that does not change.
  */
 export const focusRing = {

@@ -18,7 +18,7 @@
 //
 // THE CARD'S SURFACE LEAVES THE LEGACY `:root` BLOCK. `var(--surface)`,
 // `var(--border)` and `var(--border-hover)` are the old dark paint — white
-// alphas that resolve to an invisible card on the Exhibition ground. They are
+// alphas that resolve to an invisible card on the Noon ground. They are
 // shared with surfaces this prompt does not own, so the names stay where they
 // are and this file stops reading them.
 

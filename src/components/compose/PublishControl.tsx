@@ -183,7 +183,7 @@ interface BountyPlanItem {
  * only thing in this file it touches: the trigger stands in the workspace bar,
  * and the bar's ground moved from a hard-coded #08080C void to `--bg`. Left on
  * rgba(255,255,255,.025) with a 45%-white label, the one primary action on the
- * compose route would have been near-invisible in Exhibition, which is the
+ * compose route would have been near-invisible in Noon, which is the
  * default theme. The publish SHEET and the confirmation screen below are
  * BG-P24's and are untouched.
  *
@@ -745,7 +745,7 @@ function PublishConfirmation({
         padding: 24,
         /* The elevation model's own scrim, struck from `--porthole` so the
            workspace dims into its own room rather than under a sheet of ink.
-           It was a hard-coded near-black, which on Exhibition put a dark room
+           It was a hard-coded near-black, which on Noon put a dark room
            behind a light panel. No blur: this covers the whole viewport. */
         ...SCRIM,
       }}

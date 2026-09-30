@@ -19,13 +19,13 @@
 // a second representation added for four values would make the palette harder
 // to reason about, not easier.
 //
-// Two rooms, two neutral ramps: `grey` is Exhibition's cool luminous gallery,
+// Two rooms, two neutral ramps: `grey` is Noon's cool luminous gallery,
 // `lavender` is Dusk's lavender stone. The accent hues are shared and change
 // only their step between themes.
 
 /* ── Neutrals ─────────────────────────────────────────────────────────────── */
 
-/** Cool grey — Exhibition's room, and the ramp its greys come from. */
+/** Cool grey — Noon's room, and the ramp its greys come from. */
 export const grey = {
   0: "#FFFFFF",
   25: "#F7F8F9",
@@ -38,7 +38,7 @@ export const grey = {
   950: "#1B2026",
 } as const;
 
-/** Exhibition's glass, struck from `grey.0`. `0/55` reads "grey.0 at 55%". */
+/** Noon's glass, struck from `grey.0`. `0/55` reads "grey.0 at 55%". */
 export const greyAlpha = {
   "0/34": "rgba(255,255,255,.34)",
   /** BG-P09 — the card frame, one step darker than the thread box inside it. */
@@ -80,7 +80,7 @@ export const lavenderAlpha = {
 
 /**
  * Clay — the primary action in both themes, plus the warm ink that sits on it.
- * `clay.700` on Exhibition and `clay.400` on Dusk are the same hue at two
+ * `clay.700` on Noon and `clay.400` on Dusk are the same hue at two
  * values, which is the point: salmon is 2.12:1 on a light ground and may never
  * appear there.
  */
@@ -95,7 +95,7 @@ export const amber = {
   500: "#D9A441",
 } as const;
 
-/** Teal — Exhibition's evidence, and its fill. `300` is the chip fill (BG-P05). */
+/** Teal — Noon's evidence, and its fill. `300` is the chip fill (BG-P05). */
 export const teal = {
   200: "#BFE3DC",
   300: "#C2D1D2",
@@ -117,7 +117,7 @@ export const skyAlpha = {
 /* ── Part-category hues ───────────────────────────────────────────────────── */
 //
 // Nine hues, one per part category. Each keeps its hue across both themes and
-// changes only its value — the `700`/`600` step on Exhibition, the `400` step
+// changes only its value — the `700`/`600` step on Noon, the `400` step
 // on Dusk. `teal`/`sky` above carry the evidence category as well as the
 // evidence role, which is why they are not repeated here.
 //
@@ -128,11 +128,11 @@ export const skyAlpha = {
 //
 // THE `50` AND `900` STEPS ARE CHIP FILLS, AND THEY ARE MEASURED (BG-P05). Each
 // is its own ramp's category hue laid over the theme's ground at a low alpha
-// and then flattened: `50` is the Exhibition step over `#E4E6E8`, `900` the Dusk
+// and then flattened: `50` is the Noon step over `#E4E6E8`, `900` the Dusk
 // step over `#1F1B2B`. The alpha is the largest on a 0.01 ladder capped at 0.20
 // at which the hue still clears 4.5:1 on the result — the hue never moves to
 // make a fill legal, only the alpha does, and where a hue sits close to its
-// floor on the ground (Exhibition's magenta, at 4.83:1) the alpha that survives
+// floor on the ground (Noon's magenta, at 4.83:1) the alpha that survives
 // is small and the fill is nearly the ground. The composite is stored rather
 // than the alpha so the pairing measures the same on glass as it does on the
 // ground; `src/lib/theme/category.test.ts` recomputes every one of them.

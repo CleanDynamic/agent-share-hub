@@ -150,7 +150,7 @@ function CoverTile({ item }: { item: CoverItem }) {
     /* `--recess`: this is the tile with NOTHING in it — an icon on a ground —
        and every branch below that does carry a picture overrides it with
        `--porthole`, the well colour proper. An empty porthole is the darkest
-       object on an Exhibition card and there are four of them per cover. */
+       object on a Noon card and there are four of them per cover. */
     background: t.recess,
     display: "flex",
     alignItems: "center",
@@ -218,7 +218,7 @@ function CoverTile({ item }: { item: CoverItem }) {
             ...tileStyle,
             /* The measured ground for this hue, flat. A gradient between a
                category tint and a white alpha had no second stop that was
-               legal on the Exhibition ground. */
+               legal on the Noon ground. */
             backgroundColor: blockFill.background,
           }}
         >

@@ -4,7 +4,7 @@ The frame RC-P05 to RC-P08 built, judged from its screenshots and measured in th
 
 ## Method
 
-- **Screens.** `e2e/audit/rc-critique.spec.ts` captures five routes (`/`, `/gallery`, `/bounties`, `/notifications`, `/library`) at 390, 768, 1024 and 1440 wide, in Exhibition and Dusk: 40 screenshots in `e2e/audit/critique/phase-2/`, which is gitignored. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop` from the spec as CRITIQUE-4 (74e04f7f) left it; RC-P14c re-pointed the spec at phase 3's addresses. The reader is the audit harness's signed-in reader; the builds are the twelve synthetic rows in `e2e/audit/fixtures/rcBuilds.ts`; nothing reaches the network. Reduced motion is emulated, so nothing is caught mid-reveal. The gallery's "Open bounties 12" is a fixture artifact: the fixture answers every count with its twelve rows.
+- **Screens.** `e2e/audit/rc-critique.spec.ts` captures five routes (`/`, `/gallery`, `/bounties`, `/notifications`, `/library`) at 390, 768, 1024 and 1440 wide, in Noon and Dusk: 40 screenshots in `e2e/audit/critique/phase-2/`, which is gitignored. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop` from the spec as CRITIQUE-4 (74e04f7f) left it; RC-P14c re-pointed the spec at phase 3's addresses. The reader is the audit harness's signed-in reader; the builds are the twelve synthetic rows in `e2e/audit/fixtures/rcBuilds.ts`; nothing reaches the network. Reduced motion is emulated, so nothing is caught mid-reveal. The gallery's "Open bounties 12" is a fixture artifact: the fixture answers every count with its twelve rows.
 - **Probes.** Some findings came from measuring the running app rather than from a picture, and each says so: the tab order, the placeholder's contrast, the nav's position at 768, 1024, 1280, 1440 and 1920 (on this tree and on the pre-phase tree, c4e33615), and the theme checklist's measurable items at 390, 768, 1024, 1400 and 1440.
 - **Ratings.** Each skill's own scale. For the three critique skills in this pass:
   - **major issue**: a reader cannot reach a destination, cannot tell where they are, gets something other than what a control names, or finds the frame's anchor moved.
@@ -28,7 +28,7 @@ The five majors:
 |---|---|---|---|
 | M1 | The desktop nav's nine rows and the wordmark could not be reached by keyboard | FlatShell.tsx | Fixed, CRITIQUE-1 |
 | M2 | The phone top bar titled the Gallery "Discover" | AppShell.tsx, MobileTopBar.tsx | Fixed, CRITIQUE-2 |
-| M3 | The search field's only visible label read 1.75:1 on Exhibition | NavSearch.tsx | Fixed, CRITIQUE-3 |
+| M3 | The search field's only visible label read 1.75:1 on Noon | NavSearch.tsx | Fixed, CRITIQUE-3 |
 | M4 | The nav jumps between standard and wide routes: 259px at 1440 | flat-shell.css | Deferred: structural CSS (CONTRACT §2.2) |
 | M5 | Search opens the Gallery, which ignores `q` and `focus=search` until RC-P10 | Gallery.tsx | Deferred: outside RC-P05 to RC-P08's files; RC-P10's first step |
 
@@ -142,12 +142,12 @@ The five majors:
 
 - **Observation.**
   - Nav rows, bar items, drawer rows and buttons all read as controls. Measured at 390: the bar's items are 76×63 and the top bar's two buttons 56×44. In the open drawer, the six rows and Sign out are 48px tall, but Close is 36×36 and View profile is 35px tall, under the 44px minimum (m24).
-  - The search field is a recessed well with a hairline. Its placeholder "Search builds" is its only visible label, and was drawn in the base stylesheet's grey: measured 1.75:1 on Exhibition's --recess, and 4.96:1 on Dusk (computed from the measured colours).
+  - The search field is a recessed well with a hairline. Its placeholder "Search builds" is its only visible label, and was drawn in the base stylesheet's grey: measured 1.75:1 on Noon's --recess, and 4.96:1 on Dusk (computed from the measured colours).
   - While a query is typed, the native clear "×" appears in the browser's own blue (m8).
   - Notifications' "View" is an 11px label on a 45×27 button with square corners (m17).
 - **Problem.** On the default room, the label of the phase's one search field was under the theme's 4.5:1 text floor and its 3.0:1 UI floor (M3). The × is the only uncontrolled colour in the frame. Two drawer targets are smaller than a thumb. "View" is square, where the theme says nothing is square; it is small; and its label is generic.
 - **Fix.**
-  - CRITIQUE-3: the field takes the kit's placeholder utility, as ui/input.tsx does. Measured after: 4.55:1 on Exhibition, 5.73:1 on Dusk, now guarded by frame-no-rail.spec.ts.
+  - CRITIQUE-3: the field takes the kit's placeholder utility, as ui/input.tsx does. Measured after: 4.55:1 on Noon, 5.73:1 on Dusk, now guarded by frame-no-rail.spec.ts.
   - The ×: `type="text"` with the search role kept, or a stylesheet rule (§2.1). Deferred.
   - The drawer's Close and View profile: a 44px hit area around the same visuals. Deferred.
   - "View": deferred to the Notifications rebuild.
@@ -241,9 +241,9 @@ The five majors:
 
 ## law-of-figure-ground
 
-**Home (/).** One ground, --bg, runs under the nav and the column alike. The stage is bounded only by the column's two --line hairlines, so it reads as a band of the room, not a panel. The figures are the compose strip and the competitions card, each a --glass surface with a hairline; the empty state sits directly on the ground and reads as ground-level text. The active state is unambiguous in both rooms. Home carries the nav's only --action mark, a 2px inset edge and an 8% wash, and its label moves to --text while its neighbours stay --text2. On the phone, Home's icon and label turn --action under a 2px mark. On Exhibition the search field's --recess well is the heaviest block in the nav, heavier than the active row's wash. The row still wins attention, because it holds the nav's only accent.
+**Home (/).** One ground, --bg, runs under the nav and the column alike. The stage is bounded only by the column's two --line hairlines, so it reads as a band of the room, not a panel. The figures are the compose strip and the competitions card, each a --glass surface with a hairline; the empty state sits directly on the ground and reads as ground-level text. The active state is unambiguous in both rooms. Home carries the nav's only --action mark, a 2px inset edge and an 8% wash, and its label moves to --text while its neighbours stay --text2. On the phone, Home's icon and label turn --action under a 2px mark. On Noon the search field's --recess well is the heaviest block in the nav, heavier than the active row's wash. The row still wins attention, because it holds the nav's only accent.
 
-**Gallery.** In wide mode the cards are the figures: --glass with a --glass-border, each holding its cover as a second, inner figure, and the nesting stops there. The facet chips are outlined figures on the ground. The one dashed-edge card (a gap) differs by its edge, not by its ground, which keeps it one of the set. On Dusk the glass reads lighter than the lavender ground, and on Exhibition lighter than the grey: the same order in both rooms. The active row is Gallery, marked as above. On the phone, the glass top bar floats over the scrolling column, and its hairline separates it. Before CRITIQUE-2 its title contradicted the bar's lit Gallery.
+**Gallery.** In wide mode the cards are the figures: --glass with a --glass-border, each holding its cover as a second, inner figure, and the nesting stops there. The facet chips are outlined figures on the ground. The one dashed-edge card (a gap) differs by its edge, not by its ground, which keeps it one of the set. On Dusk the glass reads lighter than the lavender ground, and on Noon lighter than the grey: the same order in both rooms. The active row is Gallery, marked as above. On the phone, the glass top bar floats over the scrolling column, and its hairline separates it. Before CRITIQUE-2 its title contradicted the bar's lit Gallery.
 
 **Bounties.** Almost all ground: a heading, one --text2 sentence and one filled button. The button is the strongest figure on the page, which is right for the view's one action on the desktop. On the phone it shares that weight with the bar's New build tile (m1). The active row is Bounties; on the phone, Bounties is lit.
 
@@ -259,7 +259,7 @@ Decision points in the order a reader meets them: the search field, under the wo
 
 | Decision point | n | Criterion | Default | Depth | Scent | Budget | Competing emphasis | Rating |
 |---|---|---|---|---|---|---|---|---|
-| Search field (desktop; the phone's magnifier opens the Gallery) | 1 field, the only one in the chrome | Results in evidence order: most reproduced, then most recently published (search_build_ids), shown by the Gallery once it reads `q` | Empty; "/" focuses it from anywhere not taking text | 1: type, Enter | The placeholder "Search builds", 1.75:1 on Exhibition before CRITIQUE-3 and 4.55:1 after. The result does not reflect the query until RC-P10 | One search box, the same everywhere: 1 (navBudget.test.tsx) | Its --recess well is the nav's heaviest block but carries no accent | major → major (M3 fixed; M5 deferred) |
+| Search field (desktop; the phone's magnifier opens the Gallery) | 1 field, the only one in the chrome | Results in evidence order: most reproduced, then most recently published (search_build_ids), shown by the Gallery once it reads `q` | Empty; "/" focuses it from anywhere not taking text | 1: type, Enter | The placeholder "Search builds", 1.75:1 on Noon before CRITIQUE-3 and 4.55:1 after. The result does not reflect the query until RC-P10 | One search box, the same everywhere: 1 (navBudget.test.tsx) | Its --recess well is the nav's heaviest block but carries no accent | major → major (M3 fixed; M5 deferred) |
 | Desktop nav | 9 in 4 groups signed in; 4 signed out | Intent: Browse · Make · Talk · You | The current route marked; aria-current since CRITIQUE-1 | 1 | Nouns and icons; counts on Drafts, Messages and Notifications; a dot on Library | ≤ 9, ≤ 4 groups, one level: 9, 4, 1 | One accent, the active row | major → major (M1 fixed; M4 deferred) |
 | Phone bar | 5 | Intent, in the budget's order: Home, Gallery, New build, Bounties, Profile | The current route lit; Profile lit for the six drawer routes | 1; drawer 2, by the split rule | Labels under icons; one unread dot on Profile | Exactly 5: 5 | New build is the bar's one filled tile; / and /bounties add a second filled control; the top bar's avatar is a second way into the drawer | minor → minor |
 
@@ -289,7 +289,7 @@ The phase's surfaces are the nav and its search field, the phone bar, drawer and
 
 1. **Both themes checked.** PASS. All 40 screenshots are in both rooms, before and after the fixes. RouteBoundary's error state is not in this pass's screenshots; its colours are t.text and the outline Button (RC-P05).
 2. **Every colour a semantic token.** PASS. The phase's files use `t.*` and `var(--…)` only, and the placeholder fix spends --text2. src/lib/theme/compliance.test.ts passes.
-3. **Every new pairing measured; no amber text on Exhibition.** FAIL, then fixed. The search placeholder was 1.75:1 on Exhibition (M3); after CRITIQUE-3 it is 4.55:1, and 5.73:1 on Dusk. Amber appears only as light: the focus ring, and the freshness lamps on the Gallery's cards.
+3. **Every new pairing measured; no amber text on Noon.** FAIL, then fixed. The search placeholder was 1.75:1 on Noon (M3); after CRITIQUE-3 it is 4.55:1, and 5.73:1 on Dusk. Amber appears only as light: the focus ring, and the freshness lamps on the Gallery's cards.
 4. **Radius from the scale; no pills; no square corners.** PASS for the phase's surfaces:
    - The search field and nav rows are at --r-control; the ring follows the row's radius.
    - The probe found no pill-shaped control on the five routes at any width.
@@ -318,7 +318,7 @@ The screenshots were re-taken after CRITIQUE-1 to 3: 40 files, the same five rou
 | Finding | Was | Now | Evidence |
 |---|---|---|---|
 | M1 keyboard reach | major (State Visibility; hicks-law nav) | pass | Probe: Tab reaches the wordmark, the field and nine rows; ring drawn in both rooms; Enter follows; AppShell.test.tsx |
-| M2 Gallery titled "Discover" | major (Entry Point) | pass | gallery-390-{exhibition,dusk}.png read "buildgallery"; AppShell.test.tsx; discovery-redirects.spec.ts on both projects |
-| M3 placeholder 1.75:1 | major (Clickability; hicks-law search scent) | pass | Measured 4.55:1 / 5.73:1; frame-no-rail.spec.ts; the placeholder visibly darker in every Exhibition desktop shot |
+| M2 Gallery titled "Discover" | major (Entry Point) | pass | gallery-390-{noon,dusk}.png read "buildgallery"; AppShell.test.tsx; discovery-redirects.spec.ts on both projects |
+| M3 placeholder 1.75:1 | major (Clickability; hicks-law search scent) | pass | Measured 4.55:1 / 5.73:1; frame-no-rail.spec.ts; the placeholder visibly darker in every Noon desktop shot |
 | M4 nav position | major | major, deferred | Structural; the owner's decision |
 | M5 search results | major | major, deferred | RC-P10 |

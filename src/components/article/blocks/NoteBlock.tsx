@@ -19,7 +19,7 @@ interface NoteBlockData {
    ground/ink pair from the part hues rather than a Post-it hex with a second,
    lighter hex for its text. The pale inks (#FCD34D, #F9A8D4, #93C5FD, #86EFAC)
    were the tell: they exist only because the ground beneath them was assumed
-   dark, and every one of them fails on the Exhibition room. */
+   dark, and every one of them fails on the Noon room. */
 const colorStyles: Record<NoteColor, { bg: string; border: string; text: string }> = {
   yellow: {
     bg: 'bg-[var(--cat-artefact-fill)]',

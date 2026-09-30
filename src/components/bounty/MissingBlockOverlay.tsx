@@ -18,7 +18,7 @@ interface MissingBlockOverlayProps {
  * A part deliberately unsolved is the theme's GAP, and the theme spends one
  * hue on it: `--cat-breakage`, on the EDGE, dashed, over the ordinary shape.
  * Amber was never available for this — `--lit` is light (a lamp, a glow, a
- * focus ring, a fill with `--on-lit` on it) and 3.01:1 on the Exhibition
+ * focus ring, a fill with `--on-lit` on it) and 3.01:1 on the Noon
  * ground, so it can carry neither this label nor a border that says which
  * state the part is in.
  *

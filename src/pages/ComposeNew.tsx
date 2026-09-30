@@ -1336,7 +1336,7 @@ export default function ComposeNew() {
                12px/500. Its own neighbour two elements up ("Choose a file")
                already spends TEXT_SECONDARY on the same ground at the same
                size, so the legal pairing was sitting beside it: text2/recess
-               is 4.55:1 on Exhibition and 5.73:1 on Dusk. It is also what the
+               is 4.55:1 on Noon and 5.73:1 on Dusk. It is also what the
                theme prescribes for a tertiary action. */
             color: TEXT_SECONDARY,
             textDecoration: "underline",

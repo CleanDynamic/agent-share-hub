@@ -33,7 +33,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { dusk, exhibition, type TokenName } from "./semantics";
+import { dusk, noon, type TokenName } from "./semantics";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
@@ -72,9 +72,9 @@ function contrast(a: string, b: string): number {
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
 
-const THEMES = { exhibition, dusk } as const;
+const THEMES = { noon, dusk } as const;
 type ThemeKey = keyof typeof THEMES;
-const ROOMS = ["exhibition", "dusk"] as const;
+const ROOMS = ["noon", "dusk"] as const;
 
 /** A token's rendered colour: itself, or itself over the room's ground. */
 function value(theme: ThemeKey, token: TokenName): string {
@@ -138,7 +138,7 @@ describe("every category hue as an edge, on every ground a part sits on", () => 
       ),
     }));
     expect(worst).toEqual([
-      { theme: "exhibition", lowest: 4.17 },
+      { theme: "noon", lowest: 4.17 },
       { theme: "dusk", lowest: 3.93 },
     ]);
   });
@@ -148,7 +148,7 @@ describe("every category hue as an edge, on every ground a part sits on", () => 
 
 describe("the focus ring, on every ground a control sits on", () => {
   // THE ONE FINDING BG-P30 ESCALATED RATHER THAN FIXED. `--lit` is one value in
-  // both rooms and it does not clear the 3.0:1 UI floor on ANY Exhibition
+  // both rooms and it does not clear the 3.0:1 UI floor on ANY Noon
   // ground. The skill prescribes this ring and justifies it by the 2px offset —
   // but the offset band is `--bg` and so is what lies outside the ring, so both
   // of the ring's edges are read against the same colour. Every remedy in the
@@ -170,7 +170,7 @@ describe("the focus ring, on every ground a control sits on", () => {
       ),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", bg: 1.8, recess: 1.55, glass: 2.04, card: 2.13 },
+      { theme: "noon", bg: 1.8, recess: 1.55, glass: 2.04, card: 2.13 },
       { theme: "dusk", bg: 7.47, recess: 5.6, glass: 6.05, card: 5.1 },
     ]);
   });
@@ -223,7 +223,7 @@ describe("the error state", () => {
       card: contrast(value(theme, "cat-breakage"), grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", recess: 4.47, card: 6.13 },
+      { theme: "noon", recess: 4.47, card: 6.13 },
       { theme: "dusk", recess: 4.31, card: 3.93 },
     ]);
     // The three that are short are short — stated, so the rule above has a
@@ -245,10 +245,10 @@ describe("the error state", () => {
 
 describe("the evidence fill pair", () => {
   // The two halves are used together or not at all, and the ink differs by
-  // room: Exhibition puts `--text` on a solid mint, Dusk puts `--evidence` on a
+  // room: Noon puts `--text` on a solid mint, Dusk puts `--evidence` on a
   // 16% wash of itself. Both are contract pairings; this holds them to it.
-  it("Exhibition puts --text on --evidence-fill", () => {
-    expect(contrast(value("exhibition", "text"), value("exhibition", "evidence-fill"))).toBe(11.89);
+  it("Noon puts --text on --evidence-fill", () => {
+    expect(contrast(value("noon", "text"), value("noon", "evidence-fill"))).toBe(11.89);
   });
 
   it("Dusk puts --evidence on --evidence-fill", () => {
@@ -326,7 +326,7 @@ describe("disabled text", () => {
       onCard: washed(theme, "text2", grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", onBg: 2.06, onCard: 2.17 },
+      { theme: "noon", onBg: 2.06, onCard: 2.17 },
       { theme: "dusk", onBg: 2.93, onCard: 2.47 },
     ]);
     for (const row of measured) {

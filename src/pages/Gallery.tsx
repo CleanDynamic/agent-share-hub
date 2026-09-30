@@ -304,7 +304,7 @@ export default function Gallery() {
                      painted here rather than left transparent for the reason
                      /dev/wide paints it: the centre column is transparent and
                      BlobBackground behind it is hard-coded dark in both
-                     themes, so Exhibition needs a ground under the header or
+                     themes, so Noon needs a ground under the header or
                      the type is dark ink on a dark room.
          color       inherited from `.fs-root`, which is `var(--text)`.
          fontFamily  inherited from `.fs-root`, which is Figtree.
@@ -1000,7 +1000,7 @@ function Pagination({
   /* The kit's secondary button rather than three hand-written declarations per
      control. It was a 100px capsule on an rgba(255,255,255,0.025) fill with a
      hard-coded hairline — a pill, which the theme retired, on a white alpha
-     that is invisible on Exhibition. `disabled` now carries the kit's own
+     that is invisible on Noon. `disabled` now carries the kit's own
      treatment instead of a colour swap this file chose. */
   const step = (label: string, next: number, enabled: boolean) => (
     <Button

@@ -11,7 +11,7 @@
 // 1. `--recess` WAS BEING USED AS AN INK. `textMuted`, `textFaint` and `locked`
 //    all pointed at it. `--recess` is the token for an inset SURFACE — a
 //    screen, a well, a field — and text set in it measures 1.1:1 on the
-//    Exhibition ground it is nearly the same value as. The system publishes two
+//    Noon ground it is nearly the same value as. The system publishes two
 //    text tokens, so all three keys resolve to `--text2`.
 //
 // 2. TWO CATEGORY HUES WERE BORROWED. `purple` pointed at `--cat-agents` and
@@ -25,7 +25,7 @@
 //
 // THE CREDIT IS STRUCTURAL, SO ITS PAINT HAD BETTER FOLLOW THE ROOM. The theme
 // asks a rebuild credit to look like part of the record rather than like a
-// caption; a credit line still wearing the old dark room's ink on an Exhibition
+// caption; a credit line still wearing the old dark room's ink on a Noon
 // page read as neither.
 
 import { GLASS_BLUR } from "@/lib/theme/controls"

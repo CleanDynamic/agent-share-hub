@@ -31,7 +31,7 @@ const REST = /\/rest\/v1\//;
 
 /** The prompt's four widths. */
 const WIDTHS = [1400, 1024, 768, 390];
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** How long the card's one animated moment takes, plus room to settle. */
 const UNFOLD_SETTLE = 700;

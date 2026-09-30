@@ -7,8 +7,8 @@
 // utilities, so until now a page could be converted to `var(--token)` in every
 // inline style it had and STILL show the old dark-shell palette through its
 // class names. The values were fixed, too: one set, declared once, identical
-// in Exhibition and Dusk. `--foreground: 0 0% 95%` put near-white type on the
-// Exhibition ground and `--muted-foreground: 0 0% 60%` measured 2.3:1 on it.
+// in Noon and Dusk. `--foreground: 0 0% 95%` put near-white type on the
+// Noon ground and `--muted-foreground: 0 0% 60%` measured 2.3:1 on it.
 //
 // So each name is repointed at the buildgallery token it MEANS, per theme.
 // This module is the source of truth for that mapping, mirrored into the two
@@ -76,8 +76,8 @@ export type ShadcnName = (typeof SHADCN_NAMES)[number];
    5.73, foreground/card 11.33 and 10.62, primary-foreground/primary 5.65 and
    6.35, destructive-foreground/destructive 6.08 and 5.76. */
 
-/** Exhibition — the light room. */
-export const exhibitionShadcn: Record<ShadcnName, string> = {
+/** Noon — the light room. */
+export const noonShadcn: Record<ShadcnName, string> = {
   background: "210 8% 90%",
   foreground: "213 17% 13%",
   card: "210 10% 84%",
@@ -139,6 +139,6 @@ export const duskShadcn: Record<ShadcnName, string> = {
 };
 
 export const shadcnThemes = {
-  exhibition: exhibitionShadcn,
+  noon: noonShadcn,
   dusk: duskShadcn,
 } as const;

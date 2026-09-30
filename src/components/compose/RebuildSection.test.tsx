@@ -413,7 +413,7 @@ describe("the rebuild section itself", () => {
    * BG-P24 — the note is the kit's textarea.
    *
    * It was a hand-rolled 2.5%-white film with a 10px radius, which is not a
-   * step of the scale and which disappears on an Exhibition ground. The kit's
+   * step of the scale and which disappears on a Noon ground. The kit's
    * field is a `--recess` well at `--r-control`, and taking the component
    * rather than copying its declarations is what keeps it that way.
    */

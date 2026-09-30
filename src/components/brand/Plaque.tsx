@@ -202,7 +202,7 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
           padding: size === "header" ? "4px 10px" : "2px 8px",
           borderRadius: r.chip,
           /* `--evidence-fill` with `--text` on it: the measured pair the colour
-             contract names for this tag, 11.89:1 on Exhibition. Both halves or
+             contract names for this tag, 11.89:1 on Noon. Both halves or
              neither — this ink on another ground is a pairing nobody measured.
              The LONGHAND rather than the `background` shorthand: the value is a
              colour and nothing else, and a shorthand whose value is a `var()`
@@ -262,7 +262,7 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
  * The lamp: an oval of `--lit`, dimmed to 45% when the claim has gone stale.
  *
  * Amber is LIGHT here and never type, which is the one rule the colour contract
- * states twice — `--lit` is 3.01:1 on the Exhibition ground, legal as a lamp and
+ * states twice — `--lit` is 3.01:1 on the Noon ground, legal as a lamp and
  * illegal as a word. `opacity` carries the stale state so the colour stays one
  * token in both themes rather than becoming two.
  *
