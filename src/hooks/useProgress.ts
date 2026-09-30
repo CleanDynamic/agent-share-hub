@@ -2,11 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getChallengeHistory,
-  getChallenges,
-  getCreatorMarks,
-  getQuestState,
-  getUserProgress,
-  getVisibleSurfaces,
+  getProgressFigures,
   getXpEvents,
   getUserPerks,
   getPerksCatalogue,
@@ -21,22 +17,28 @@ import {
   type TrackId,
 } from "@/lib/progress";
 
+/**
+ * The reader's level and XP, from one read of two columns (RC-P27).
+ *
+ * The frame's progress chip, the phone drawer's and the progress page all
+ * spend this under one cache key, so a page showing all three asks once. It
+ * used to read four more things alongside, for panels of the old product:
+ * the surfaces and quest functions, creator_marks, and today's daily
+ * challenge, which it tried to insert when there was none. The frame mounts
+ * the chip on every page, so every page paid for panels only /analytics drew;
+ * RC-P27 unmounted those panels and their reads went with them.
+ */
 export function useProgress() {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const results = useQueries({
-    queries: [
-      { queryKey: ["progress", userId], queryFn: () => getUserProgress(userId!), enabled: !!userId },
-      { queryKey: ["progress.surfaces", userId], queryFn: () => getVisibleSurfaces(userId!), enabled: !!userId },
-      { queryKey: ["progress.quest", userId], queryFn: () => getQuestState(userId!), enabled: !!userId },
-      { queryKey: ["progress.challenges", userId], queryFn: () => getChallenges(userId!), enabled: !!userId },
-      { queryKey: ["progress.marks", userId], queryFn: () => getCreatorMarks(userId!), enabled: !!userId },
-    ],
+  const query = useQuery({
+    queryKey: ["progress", userId],
+    queryFn: () => getProgressFigures(userId!),
+    enabled: !!userId,
   });
 
-  const [pq, sq, qq, cq, mq] = results;
-  const progress = pq.data ?? null;
+  const progress = query.data ?? null;
   const xpLocal = progress
     ? xpProgressInLevel(progress.xp_total)
     : { level: 1, xpInLevel: 0, xpForNext: 75 };
@@ -47,12 +49,9 @@ export function useProgress() {
     xpInLevel: xpLocal.xpInLevel,
     xpForNext: xpLocal.xpForNext,
     level: progress?.level ?? xpLocal.level,
-    surfaces: sq.data,
-    quest: qq.data,
-    challenges: cq.data ?? [],
-    marks: mq.data ?? [],
-    isLoading: results.some((r) => r.isLoading),
-    refetchAll: () => results.forEach((r) => r.refetch()),
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: () => void query.refetch(),
   };
 }
 

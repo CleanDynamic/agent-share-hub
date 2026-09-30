@@ -1,187 +1,58 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+// /analytics — the progress page, in six sections (RC-P27).
+//
+// EXACTLY THESE, IN THIS ORDER, AND NOTHING ELSE ⟦better-layout › Order by
+// importance⟧ ⟦critique-information-density › Progressive Disclosure⟧:
+//
+//   1. the reset note, until it is read (RC-P25's ResetNote);
+//   2. PROGRESS: the level, the XP, the XP to the next level, the bar, and
+//      how XP is earned;
+//   3. NEEDS YOU, the builds waiting on their maker, left out when none is
+//      (RC-P23);
+//   4. YOUR BUILDS, the maker's figures and the table (RC-P23);
+//   5. THIS WEEK, the three weekly challenges ⟦hicks-law › Budgets⟧;
+//   6. BADGES, the ten, earned first.
+//
+// The old product's panels are not mounted: the tab bar, the skill tree and
+// its perks, today's daily nudge, the quest checklist, the next unlock, the
+// eligibility notice, the streak flame, calendar and freezes, the creator
+// marks and the showcase, the XP ledger and the challenge history. Their files
+// stay until RC-P29, and nothing on this page asks for their data.
+//
+// SPACING ⟦buildgallery-theme › Spacing scale⟧: sections are 64 apart, in this
+// new wrapper; inside each section its children are 16 apart, in the
+// section's own. The column around them is the page's existing layout element
+// and keeps every structural value it had (CONTRACT §2.2).
+//
+// ONE LIGHT ⟦von-restorff-effect⟧: nothing here is filled but the progress
+// fills (and a badge's tier, which is how BadgeMark draws one), and the page
+// adds no primary action; its buttons are ghost or secondary.
+
 import { SeoHead } from "@/components/SeoHead";
+import { BuildAnalytics } from "@/components/analytics/BuildAnalytics";
+import { BadgesSection } from "@/components/progress/BadgesSection";
+import { ProgressSection } from "@/components/progress/ProgressSection";
+import { ResetNote } from "@/components/progress/ResetNote";
+import { ThisWeek } from "@/components/progress/ThisWeek";
 import { ShellHeader } from "@/components/shell/ShellHeader";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Zap } from "lucide-react";
-import { useProgress, useXpEvents, useClaimChallenge } from "@/hooks/useProgress";
-import { toast } from "@/hooks/use-toast";
-
-
-// Progress UI
-import ProgressTabBar from "@/components/progress/ProgressTabBar";
-import { ProgressHero } from "@/components/progress/ProgressHero";
-import { SectionHeader } from "@/components/progress/SectionHeader";
-import { NextUnlockCard } from "@/components/progress/NextUnlockCard";
-// RC-P23 — analytics on builds, in place of the legacy statistics.
-import { BuildAnalytics } from "@/components/analytics/BuildAnalytics";
-import EligibilityNotice from "@/components/progress/xp-kit/eligibility-notice";
-import XpLedger, { type XpLedgerEntry } from "@/components/progress/xp-kit/xp-ledger";
-
-// Quest + challenges
-import QuestChecklist from "@/components/challenges/quest/quest-checklist";
-import DailyNudgeCard from "@/components/challenges/quest/daily-nudge-card";
-import ChallengeHistoryRow from "@/components/challenges/quest/challenge-history-row";
-
-// Trophies
-import { CreatorMarksRow } from "@/components/trophies/creator-marks-row";
-import { ShowcaseStrip } from "@/components/trophies/showcase-strip";
-import type { Badge } from "@/components/trophies/badge-data";
-import { creatorMarks as creatorMarksCatalog } from "@/components/trophies/creator-marks-data";
-
-// Streaks
-import StreakFlame from "@/components/streaks/streak-flame";
-import StreakInlineNote from "@/components/streaks/streak-inline-note";
-import StreakCalendar from "@/components/streaks/streak-calendar";
-import FreezeIndicator from "@/components/streaks/freeze-indicator";
-
-// L2 tabs
-import SkillTreeTab from "@/components/progress/SkillTreeTab";
-import ChallengesTab from "@/components/progress/ChallengesTab";
-import { useStreakDays } from "@/hooks/useProgress";
-import { scrollBehavior } from "@/lib/theme/motion";
-
-
-const TAB_LABELS: Record<string, string> = {
-  overview: "Overview",
-  skill_tree: "Skill tree",
-  trophies: "Trophies",
-  challenges: "Challenges",
-  history: "History",
-};
+import { useAuth } from "@/contexts/AuthContext";
+import { SPACE } from "@/lib/theme/space";
 
 export default function Analytics() {
-  const { user, profile, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("overview");
-  const { progress, surfaces, quest, challenges, marks, xpInLevel, xpForNext, level, isLoading } = useProgress();
-  const streakDaysQ = useStreakDays(60);
-  const [xpEventsQ, historyQ] = useXpEvents(50);
-  const claim = useClaimChallenge();
-  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
 
   if (authLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Skeleton className="h-8 w-48" /></div>;
   }
   if (!user) return null;
 
-  const tabs = (surfaces?.tabs ?? ["overview", "trophies", "history"]).map((id) => ({
-    id,
-    label: TAB_LABELS[id] ?? id,
-    isNew:
-      (id === "skill_tree" && !!surfaces?.skill_tree_isnew) ||
-      (id === "challenges" && !!surfaces?.challenges_isnew),
-  }));
-
-  const initials = (profile?.display_name || profile?.username || user.email || "?").slice(0, 2).toUpperCase();
-  const displayName = profile?.display_name || profile?.username || "You";
-
-  // Map server marks to creatorMarks catalog entries for the row
-  const enrichedMarks = useMemo(() => {
-    const earnedKeys = new Set((marks ?? []).map((m) => m.mark_key));
-    return creatorMarksCatalog.map((m) => ({
-      ...m,
-      earnedDate: earnedKeys.has(m.id) ? "Earned" : undefined,
-    }));
-  }, [marks]);
-
-  const heroMarks = useMemo(
-    () =>
-      (marks ?? []).slice(0, 3).map((m) => ({
-        id: m.id,
-        name: creatorMarksCatalog.find((c) => c.id === m.mark_key)?.name ?? m.mark_key,
-      })),
-    [marks]
-  );
-
-  // Build quest steps from server state
-  const QUEST_DEF: { id: string; label: string; xp: number }[] = [
-    { id: "verify-email", label: "Verify your email", xp: 10 },
-    { id: "complete-profile", label: "Complete your profile", xp: 15 },
-    { id: "save-posts", label: "Save your first blueprint", xp: 10 },
-    { id: "first-comment", label: "Leave a comment", xp: 10 },
-    { id: "publish-draft", label: "Publish your first post", xp: 30 },
-    { id: "todays-nudge", label: "Complete today's nudge", xp: 10 },
-    { id: "come-back", label: "Come back tomorrow", xp: 10 },
-  ];
-  // map server keys (first-save, first-publish, first-nudge, return-tomorrow) to UI ids
-  const serverKeyAlias: Record<string, string> = {
-    "save-posts": "first-save",
-    "publish-draft": "first-publish",
-    "todays-nudge": "first-nudge",
-    "come-back": "return-tomorrow",
-  };
-  const questSteps = QUEST_DEF.map((s) => {
-    const serverKey = serverKeyAlias[s.id] ?? s.id;
-    const done = !!quest?.steps?.[serverKey];
-    return { ...s, status: (done ? "completed" : "active") as "completed" | "active" | "future" };
-  });
-
-  const handleQuestGo = (step: { id: string }) => {
-    switch (step.id) {
-      case "verify-email":
-        supabase.auth.resend({ type: "signup", email: user.email! } as any).then(() => {
-          toast({ title: "Verification email sent" });
-        }).catch(() => toast({ title: "Could not resend", variant: "destructive" }));
-        break;
-      case "complete-profile":
-        navigate("/profile");
-        break;
-      case "save-posts":
-      case "first-comment":
-        navigate("/discover");
-        break;
-      case "publish-draft":
-        navigate("/compose/new");
-        break;
-      case "todays-nudge": {
-        const el = document.getElementById("daily-nudge-anchor");
-        el?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
-        break;
-      }
-      case "come-back":
-      default:
-        break;
-    }
-  };
-
-  const todayChallenge = challenges[0];
-  const challengeState: "go" | "claimable" | "claimed" = todayChallenge
-    ? todayChallenge.claimed
-      ? "claimed"
-      : todayChallenge.progress >= todayChallenge.target
-      ? "claimable"
-      : "go"
-    : "go";
-
-  const xpEvents: XpLedgerEntry[] = (xpEventsQ.data ?? []).map((e: any) => ({
-    id: e.id,
-    icon: Zap,
-    action: humanizeReason(e.reason),
-    sourceLabel: e.metadata?.title,
-    xp: e.amount,
-    timestamp: new Date(e.created_at),
-  }));
-
-  // The showcase drew five badges from a static sample (cabinetBadges, earned or not as the
-  // sample said); the catalogue is now the ten of XP-DESIGN.md and none of them is earned by
-  // being in it. Until RC-P27 reads the person's own user_badges, the strip shows empty slots.
-  const showcaseAuto: Badge[] = [];
-
-  const overviewSurfaces = surfaces ?? {
-    eligibility_notice: true,
-    quest: true,
-    daily_nudge: true,
-    next_unlock: true,
-    engagement_grid: false,
-    empty_state: true,
-  };
-
   return (
     <>
-      <SeoHead title="Your Progress — buildgallery.ai" description="Track your XP, quests, and creator marks." path="/analytics" />
+      <SeoHead
+        title="Your Progress — buildgallery.ai"
+        description="Your level and XP, your builds' numbers, this week's challenges and your badges."
+        path="/analytics"
+      />
       <ShellHeader title="Your Progress" />
       <div
         className="mx-auto"
@@ -193,143 +64,17 @@ export default function Analytics() {
           gap: 20,
         }}
       >
-        <ProgressTabBar tabs={tabs} active={activeTab} onChange={setActiveTab} />
-
-        {activeTab === "overview" && (
-          <>
-            {overviewSurfaces.eligibility_notice && (
-              <EligibilityNotice
-                isVerified={!!user.email_confirmed_at}
-                hoursRemaining={Math.max(0, 48 - Math.floor(((Date.now() - new Date(progress?.created_at ?? Date.now()).getTime()) / 3_600_000)))}
-                onVerifyClick={() => handleQuestGo({ id: "verify-email" })}
-              />
-            )}
-
-            <ProgressHero
-              name={displayName}
-              avatarUrl={profile?.avatar_url ?? undefined}
-              initials={initials}
-              level={level}
-              xpInLevel={xpInLevel}
-              xpForNext={xpForNext}
-              marks={heroMarks}
-              rightSlot={
-                <>
-                  <StreakFlame streak={progress?.streak_days ?? 0} state={(progress?.streak_days ?? 0) > 0 ? "active" : "zero"} />
-                  <StreakInlineNote />
-                </>
-              }
-            />
-
-            {/* RC-P23 — what needs the maker, then their builds' numbers,
-                directly under the level and XP (better-layout › Order by
-                importance). They replace the engagement grid of the
-                product that was cleared, which sat at the foot of this tab. */}
-            <BuildAnalytics />
-
-            {surfaces?.depth_revealed && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <FreezeIndicator
-                  available={Math.max(0, 2 - ((progress as any)?.freezes_used_month ?? 0))}
-                  total={2}
-                />
-                <StreakCalendar
-                  days={(streakDaysQ.data ?? []).map((d) => ({
-                    date: d.date,
-                    level: d.kind === "frozen" ? 0 : 3,
-                    frozen: d.kind === "frozen",
-                  }))}
-                />
-              </div>
-            )}
-
-            {overviewSurfaces.quest && (
-              <QuestChecklist
-                steps={questSteps as any}
-                onGo={handleQuestGo as any}
-              />
-            )}
-
-            <div id="daily-nudge-anchor">
-              {overviewSurfaces.daily_nudge && todayChallenge && (
-                <DailyNudgeCard
-                  challenge={{
-                    id: todayChallenge.id,
-                    title: todayChallenge.title,
-                    description: todayChallenge.description ?? undefined,
-                    xp: todayChallenge.xp_reward,
-                    state: challengeState,
-                  } as any}
-                  state={challengeState}
-                  onClaim={() => claim.mutate(todayChallenge.id)}
-                />
-              )}
-            </div>
-
-            {overviewSurfaces.next_unlock && (
-              <NextUnlockCard
-                milestoneLabel={quest?.next_milestone}
-                isMysterious={!!quest?.completed && level < 5}
-              />
-            )}
-
-          </>
-        )}
-
-        {activeTab === "skill_tree" && (
-          <SkillTreeTab progress={progress} surfaces={surfaces} />
-        )}
-
-        {activeTab === "challenges" && (
-          <ChallengesTab
-            challenges={challenges}
-            history={historyQ.data ?? []}
-            hasNew={!!surfaces?.challenges_isnew}
-          />
-        )}
-
-        {activeTab === "trophies" && (
-          <>
-            <CreatorMarksRow marks={enrichedMarks as any} />
-            <ShowcaseStrip badges={showcaseAuto} autoPinned isOwnProfile />
-          </>
-        )}
-
-        {activeTab === "history" && (
-          <>
-            <SectionHeader title="XP ledger" />
-            <XpLedger
-              entries={xpEvents}
-              onLoadMore={() => xpEventsQ.refetch()}
-            />
-            <SectionHeader title="Challenges completed" />
-            <div style={{ background: "var(--glass)", borderRadius: 12, border: "0.5px solid var(--line)", overflow: "hidden" }}>
-              {(historyQ.data ?? []).length === 0 ? (
-                <div style={{ padding: 20, textAlign: "center", color: "var(--text2)", fontSize: 13 }}>
-                  No challenges claimed yet.
-                </div>
-              ) : (
-                (historyQ.data ?? []).map((h: any) => (
-                  <ChallengeHistoryRow
-                    key={h.id}
-                    entry={{
-                      id: h.id,
-                      title: h.title ?? h.challenge_key,
-                      xp: h.xp_awarded,
-                      completedAt: h.completed_at,
-                    }}
-                  />
-                ))
-              )}
-            </div>
-          </>
-        )}
+        <div
+          data-testid="progress-page"
+          style={{ display: "flex", flexDirection: "column", gap: SPACE.xl, minWidth: 0 }}
+        >
+          <ResetNote />
+          <ProgressSection />
+          <BuildAnalytics />
+          <ThisWeek />
+          <BadgesSection />
+        </div>
       </div>
     </>
   );
-}
-
-function humanizeReason(reason: string): string {
-  if (reason.startsWith("challenge:")) return "Challenge claimed";
-  return reason.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 }

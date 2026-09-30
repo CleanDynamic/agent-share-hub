@@ -76,7 +76,8 @@ export function useMyBuildStats() {
   });
 }
 
-function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
+/** A section's heading on the progress page: the eyebrow, in --text2. RC-P27's sections spend it too. */
+export function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
   return (
     <h2 id={id} style={{ ...eyebrow, color: t.text2, margin: 0 }}>
       {children}

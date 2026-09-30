@@ -2,20 +2,14 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
 import XpToast from "./XpToast";
 import LineageXpToast from "./LineageXpToast";
 import BadgeEarnedToast from "./BadgeEarnedToast";
 import PostXpFootnote from "./PostXpFootnote";
 import WelcomeXpModal from "./WelcomeXpModal";
-import DepthRevealModal from "@/components/depth/DepthRevealModal";
 import StreakMilestoneModal from "@/components/streaks/streak-milestone-modal";
 
 import { useWelcomeXp } from "./useWelcomeXp";
-import {
-  getPendingRevealBadges,
-  markDepthRevealed,
-} from "@/lib/progress";
 
 type ToastKind = "xp" | "lineage" | "badge" | "footnote";
 
@@ -54,16 +48,18 @@ function rid() {
  * - Listens for `gamification:post-xp` window events to render
  *   PostXpFootnote from places that don't have a dedicated success screen.
  * - Owns the one-time WelcomeXpModal.
+ *
+ * RC-P27: the depth reveal (DepthRevealModal, the level-5 moment of the old
+ * product) is no longer mounted here, and a depth_unlocked notification no
+ * longer reads the pending badges or marks the depth revealed. It was the
+ * modal's only mount; the file stays until RC-P29.
  */
 export default function GamificationToasts() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const coalesceRef = useRef<Map<string, CoalesceState>>(new Map());
   const welcome = useWelcomeXp();
-  const [depthModal, setDepthModal] = useState<{ open: boolean; badges: any[] }>({ open: false, badges: [] });
-  const depthShownRef = useRef(false);
   const [milestone, setMilestone] = useState<{ open: boolean; days: number }>({ open: false, days: 0 });
 
   const dismiss = useCallback((id: string) => {
@@ -191,7 +187,7 @@ export default function GamificationToasts() {
     return () => window.removeEventListener("gamification:post-xp", onPostXp);
   }, [push]);
 
-  // Notifications: depth_unlocked + streak_milestone + streak_saved
+  // Notifications: streak_milestone + streak_saved
   useEffect(() => {
     if (!user?.id) return;
     const uid = user.id;
@@ -200,14 +196,10 @@ export default function GamificationToasts() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `recipient_id=eq.${uid}` },
-        async (payload) => {
+        (payload) => {
           const row: any = payload.new;
           const kind = row?.notification_type;
-          if (kind === "depth_unlocked" && !depthShownRef.current) {
-            depthShownRef.current = true;
-            const badges = await getPendingRevealBadges(uid);
-            setDepthModal({ open: true, badges });
-          } else if (kind === "streak_milestone") {
+          if (kind === "streak_milestone") {
             const days = Number(row?.metadata?.days ?? 0);
             if (days > 0) setMilestone({ open: true, days });
           } else if (kind === "streak_saved") {
@@ -220,17 +212,6 @@ export default function GamificationToasts() {
       supabase.removeChannel(ch);
     };
   }, [user?.id, push]);
-
-  const handleDepthClose = useCallback(async () => {
-    setDepthModal({ open: false, badges: [] });
-    try {
-      await markDepthRevealed();
-    } finally {
-      qc.invalidateQueries({ queryKey: ["progress"] });
-      qc.invalidateQueries({ queryKey: ["progress.surfaces"] });
-      qc.invalidateQueries({ queryKey: ["progress.pending_reveal"] });
-    }
-  }, [qc]);
 
   return (
     <>
@@ -295,12 +276,6 @@ export default function GamificationToasts() {
         onClose={() => {
           welcome.dismiss();
         }}
-      />
-
-      <DepthRevealModal
-        open={depthModal.open}
-        pendingBadges={depthModal.badges}
-        onClose={handleDepthClose}
       />
 
       {milestone.open && (
