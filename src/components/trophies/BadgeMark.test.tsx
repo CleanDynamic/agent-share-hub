@@ -19,7 +19,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { dusk, exhibition, type TokenName } from "@/lib/theme/semantics";
 
 import { BADGES, type Badge, type Tier } from "./badge-data";
-import { BadgeMark, badgeLabel, badgePaint } from "./BadgeMark";
+import { BadgeChip, BadgeMark, badgeLabel, badgePaint } from "./BadgeMark";
 import { BadgeTile } from "./badge-tile";
 import { PendingRevealStrip } from "./pending-reveal-strip";
 import { ShowcaseStrip } from "./showcase-strip";
@@ -269,6 +269,21 @@ describe("every surface that draws a badge spends the same paint", () => {
 
     expect(slots).toHaveLength(5);
     for (const slot of slots) expect(style(slot)["border-radius"]).toBe("var(--r-chip)");
+  });
+
+  /* RC-P28a — the chip a line of text uses (the profile header's founder badge). */
+  it("the chip paints each badge as the mark does, at the chip radius, and names its tier", () => {
+    for (const tier of TIERS) {
+      for (const isEarned of [true, false]) {
+        const badge = first(tier);
+        const chip = dom(renderToStaticMarkup(<BadgeChip badge={badge} earned={isEarned} />)).querySelector('[role="img"]');
+
+        expect(paintOf(chip), `${tier} ${isEarned}`).toEqual(isEarned ? EARNED[tier] : NOT_YET);
+        expect(style(chip)["border-radius"]).toBe("var(--r-chip)");
+        expect(chip?.getAttribute("aria-label")).toBe(badgeLabel(badge, isEarned));
+        expect(chip?.textContent).toBe(badge.name);
+      }
+    }
   });
 
   it("the reveal strip paints each well as the mark does and does not read a name twice", () => {

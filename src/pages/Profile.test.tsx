@@ -57,7 +57,8 @@ vi.mock("@/lib/profile/makerBuilds", async (importOriginal) => ({
   listMakerSolvedBuilds: (...args: unknown[]) => listMakerSolvedBuilds(...args),
 }));
 
-vi.mock("@/hooks/useProfileGameData", () => ({ useProfileGameData: () => ({ data: undefined }) }));
+const game = vi.hoisted(() => ({ data: undefined as unknown }));
+vi.mock("@/hooks/useProfileGameData", () => ({ useProfileGameData: () => ({ data: game.data }) }));
 vi.mock("@/components/profile/MatchBanner", () => ({ MatchBanner: () => null }));
 
 import Profile from "@/pages/Profile";
@@ -147,6 +148,7 @@ const cardTitles = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  game.data = undefined;
   auth.user = { id: "maker-1" };
   getProfileSummary.mockResolvedValue(summary());
   getMakerStats.mockResolvedValue({ builds: 3, reproductionsReceived: 1204, rebuildsOfTheirWork: 7, gapsSolved: 2 });
@@ -327,6 +329,19 @@ describe("Profile", () => {
     for (const legacy of [/blueprint/i, /\bblogs?\b/i, /\bbounties\b/i, /\bBUILDER\b/, /\bCREATOR\b/, /\bSAGE\b/]) {
       expect(header.textContent).not.toMatch(legacy);
     }
+  });
+
+  /* RC-P28a — the founder badge looks as it does on the progress page: the
+     catalogue's rare chip, named in words, not the old crown pill. */
+  it("draws the founder badge as the catalogue does: a rare chip named Founder", async () => {
+    game.data = { level: 6, progressPct: 17, marks: [], founderBadge: { earned_at: "2026-01-10T00:00:00.000Z", memberNumber: null } };
+    renderAt("/profile");
+    const header = await screen.findByTestId("profile-header");
+
+    const founder = within(header).getByRole("img", { name: "Founder, rare badge" });
+    expect(founder.getAttribute("data-tier")).toBe("rare");
+    expect(founder.getAttribute("data-earned")).toBe("true");
+    expect(header.textContent).not.toMatch(/Founding member|first 100/);
   });
 
   /* RC-P28 — guilds, leaderboards and reputation are parked: no profile offers

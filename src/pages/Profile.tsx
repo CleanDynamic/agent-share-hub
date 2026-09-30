@@ -23,7 +23,8 @@ import { t } from "@/lib/theme/tokens";
 import { body, type } from "@/lib/theme/type";
 import { createDirectThread, sendTextMessage } from "@/lib/messaging";
 import { MessageComposeModal } from "@/components/messages/MessageComposeModal";
-import FounderMark from "@/components/profile-game/FounderMark";
+import { BadgeChip } from "@/components/trophies/BadgeMark";
+import { badgeBySlug } from "@/components/trophies/badge-data";
 import { useProfileGameData } from "@/hooks/useProfileGameData";
 import { Sparkles } from "lucide-react";
 import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
@@ -42,6 +43,14 @@ import type { CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 // other words, left in RC-P28a.
 
 const BUCKET = "profile-assets";
+
+/* RC-P28a — the founder badge, drawn as the catalogue draws it. The header used
+   the old FounderMark: an --action pill (a second filled element beside the
+   one primary) reading "Founding member — first 100", a claim the badge does
+   not make (founder is every account held before the reset, XP-DESIGN.md),
+   whose words spilled out of its 30px pill at 390, 768 and 1440, while the
+   progress page drew the same badge as a rare --recess tile. */
+const FOUNDER = badgeBySlug("founder");
 
 /**
  * The profile, before it has arrived.
@@ -333,11 +342,7 @@ export default function Profile() {
           progressPct={gameData?.progressPct ?? 0}
           creatorMarks={creatorMarks}
           founderAccessory={
-            gameData?.founderBadge ? (
-              <FounderMark
-                memberNumber={gameData.founderBadge.memberNumber ?? undefined}
-              />
-            ) : undefined
+            gameData?.founderBadge && FOUNDER ? <BadgeChip badge={FOUNDER} earned /> : undefined
           }
           onEditProfile={() => setEditOpen(true)}
           onShareProfile={handleShare}

@@ -67,7 +67,7 @@ interface ProfileHeaderProps {
   progressPct?: number;
   /** Optional creator-mark chips rendered under the handle row. */
   creatorMarks?: CreatorMark[];
-  /** Optional accessory (e.g. FounderMark) rendered inline with the marks row. */
+  /** Optional accessory (the founder badge, as a BadgeChip) rendered inline with the marks row. */
   founderAccessory?: ReactNode;
   onEditProfile?: () => void;
   onShareProfile?: () => void;

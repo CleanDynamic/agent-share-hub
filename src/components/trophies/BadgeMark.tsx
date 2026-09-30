@@ -120,4 +120,41 @@ export function BadgeMark({ badge, earned = badge.earned }: BadgeMarkProps) {
   )
 }
 
+/**
+ * RC-P28a — a badge named in a line rather than set in the grid: the tile's
+ * paint (badgePaint), its icon and its name, at chip size. The profile's
+ * header draws its founder badge with it, so a badge looks the same wherever
+ * it appears: the progress page's tile and the header's chip are one
+ * treatment at two sizes.
+ */
+export function BadgeChip({ badge, earned = badge.earned }: BadgeMarkProps) {
+  const Icon = badge.icon
+
+  const chip: CSSProperties = {
+    ...badgePaint(badge.tier, earned),
+    ...labelText,
+    boxSizing: "border-box",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: SPACE.xs,
+    padding: `2px ${SPACE.xs}px`,
+    borderRadius: r.chip,
+    whiteSpace: "nowrap",
+  }
+
+  return (
+    <span
+      role="img"
+      aria-label={badgeLabel(badge, earned)}
+      data-testid={`badge-chip-${badge.id}`}
+      data-tier={badge.tier}
+      data-earned={earned ? "true" : "false"}
+      style={chip}
+    >
+      <Icon size={14} strokeWidth={1.75} aria-hidden="true" />
+      <span>{badge.name}</span>
+    </span>
+  )
+}
+
 export default BadgeMark
