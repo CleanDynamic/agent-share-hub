@@ -323,8 +323,14 @@ describe("the publish sheet, on a rebuild", () => {
      * Radix numbers its generated ids from a counter that does not reset
      * between renders, so the aria wiring differs by a serial and nothing else.
      * Normalising it is the difference between a DOM diff and a render counter.
+     * React's `useId` is the same counter: the card's title id and the cover
+     * sky's gradient id (UI-P14) are generated from it, so they are normalised
+     * for the same reason.
      */
-    const stable = (markup: string) => markup.replace(/radix-[^"]*/g, "radix-id");
+    const stable = (markup: string) =>
+      markup
+        .replace(/radix-[^"]*/g, "radix-id")
+        .replace(/(card-title|sky)-[A-Za-z0-9_-]+/g, "$1-id");
 
     getBuild.mockImplementation(async () => plainRecord());
     const { unmount } = renderCompose();

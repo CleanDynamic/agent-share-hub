@@ -498,32 +498,30 @@ describe("the never-nest rule", () => {
     expect(box.getAttribute("style")).not.toMatch(/backdrop/i);
   });
 
-  it("puts the two card surfaces on the two card tokens and nothing else", () => {
+  it("keeps the thread box on its own token, and the card on --glass (UI-P14)", () => {
     // ASSERTED ON THE SOURCE, because jsdom cannot help here: its cssstyle
     // refuses every `var()` in a colour property, so a token-coloured element
-    // arrives in a test with no colour declared at all. That is a property of
-    // the test environment rather than of the card — every surface in this
-    // codebase is coloured this way — and the honest place to check which token
-    // each layer spends is therefore the declaration.
-    expect(card).toMatch(/background: t\.cardFrame/);
+    // arrives in a test with no colour declared at all.
+    //
+    // UI-P14 made the card ONE SURFACE: `BuildCard` is `--glass`, and the frame
+    // token `--card-frame` is no longer spent by the card or its skeleton. The
+    // thread box (the feed's unfolding post) still paints `--card-thread` until
+    // UI-P41 retires the pair, and never borrows the frame's token.
+    const brandCard = readFileSync("src/components/brand/BuildCard.tsx", "utf8");
+    expect(brandCard).toMatch(/background: t\.glass,/);
+    expect(card).not.toMatch(/t\.cardFrame/);
+    expect(card).not.toMatch(/t\.cardThread/);
     expect(thread).toMatch(/background: t\.cardThread/);
-    // The box never borrows the frame's token: it does not draw the frame, and a
-    // box painted --card-frame would be a box that had stopped being a region.
     expect(thread).not.toMatch(/t\.cardFrame/);
-    // GalleryCard.tsx spends BOTH, and only because the skeleton lives there and
-    // draws both layers — the frame's shape with the box inset in it. Every other
-    // use of --card-thread in that file would be the frame painting itself as the
-    // box, so the count is what is asserted rather than the absence.
-    expect((card.match(/t\.cardThread/g) ?? []).length).toBe(1);
   });
 
-  it("blurs exactly one surface across the two files, and it is the frame", () => {
-    // The -webkit- prefixed copy of a declaration is the SAME declaration on the
-    // same element, so the count is of property names that are not the prefix.
-    // One blurred surface per card is the rule; two spellings of it is not two.
-    const declarations = [...card.matchAll(/(\w*[Bb]ackdropFilter):/g)].map((m) => m[1]);
-    expect(declarations).toEqual(["backdropFilter", "WebkitBackdropFilter"]);
-    expect(card).toMatch(/background: t\.cardFrame/);
+  it("blurs nothing: the card is a reading surface and never blurs (UI-P14)", () => {
+    // The card's one backdrop-filter went with its second layer. A page's blurred
+    // surfaces are the header, the build page's plate and, on phones, the dock.
+    const brandCard = readFileSync("src/components/brand/BuildCard.tsx", "utf8");
+    for (const source of [card, brandCard, thread]) {
+      expect([...source.matchAll(/(\w*[Bb]ackdropFilter):/g)]).toEqual([]);
+    }
   });
 });
 

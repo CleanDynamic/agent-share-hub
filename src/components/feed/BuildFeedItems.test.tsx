@@ -169,7 +169,7 @@ describe("a bounty in the feed", () => {
    ──────────────────────────────────────────────────────────────────────────── */
 
 describe("the rebuilt card in the feed", () => {
-  it("renders the frame and the thread box, the same two layers the gallery draws", () => {
+  it("renders the one-surface card the gallery draws, with a cover", () => {
     // THE POINT OF THE SHARED COMPONENT. This file imports GalleryCard; BG-P09
     // rebuilt that component; so the Builds tab got the rebuild without a line
     // of feed code changing. A feed that had drawn its own card would have to be
@@ -177,7 +177,9 @@ describe("the rebuilt card in the feed", () => {
     renderItem(row());
     const item = screen.getByTestId("feed-item-build");
     expect(item.querySelector('[data-visual-slot="gallery-card"]')).not.toBeNull();
-    expect(item.querySelector('[data-visual-slot="card-thread"]')).not.toBeNull();
+    // UI-P14: one surface. No inset thread box until the build carries a post.
+    expect(item.querySelector('[data-visual-slot="card-thread"]')).toBeNull();
+    expect(item.querySelector('[data-ui="build-card"]')).not.toBeNull();
   });
 
   it("asks the card for FEED layout, on all three kinds that render one", () => {
@@ -198,7 +200,7 @@ describe("the rebuilt card in the feed", () => {
     }
   });
 
-  it("still draws the fixed slot for a row the feed query gives no post rows", () => {
+  it("still draws the cover for a row the feed query gives no post rows", () => {
     // NOT A CONTRADICTION OF THE TEST ABOVE, and the distinction is the whole
     // state of play after BG-P18. The card is ASKED for feed layout; it falls
     // back to the gallery's fixed slot for a build with no post entries, because
@@ -209,7 +211,9 @@ describe("the rebuilt card in the feed", () => {
     // the right file, on the day that function starts returning the post's rows.
     renderItem(row());
     const item = screen.getByTestId("feed-item-build");
-    expect(item.querySelector('[data-thread-layout="grid"]')).not.toBeNull();
+    // UI-P14: the fallback is the card's cover now, not the thread's grid slot.
+    expect(item.querySelector("[data-thread-layout]")).toBeNull();
+    expect(item.querySelector('[data-ui="cover-fallback"], img')).not.toBeNull();
     expect(item.querySelector("[data-thread-control]")).toBeNull();
   });
 

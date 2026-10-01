@@ -15,6 +15,7 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE, mono } from "@/lib/theme/type";
 
+import { BuildCardsSection } from "./catalogue/BuildCardsSection";
 import { ChartsSection } from "./catalogue/ChartsSection";
 import { CompositionsSection } from "./catalogue/CompositionsSection";
 import { ControlsSection } from "./catalogue/ControlsSection";
@@ -54,9 +55,10 @@ export default function KitComponents() {
       <PanelsSection />
       <OrbsSection />
       <TaglineSection />
+      <BuildCardsSection />
       <ChartsSection />
       <CompositionsSection />
-      {/* Later prompts: Build cards, Frame. */}
+      {/* Later prompts: the vacant frames (UI-P15), Frame. */}
     </div>
   );
 }

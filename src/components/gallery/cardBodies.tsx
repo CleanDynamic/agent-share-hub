@@ -49,7 +49,7 @@ const TEXT_PRIMARY = t.text;
 const TEXT_MUTED = t.text2;
 /** Between the two on the legacy ramp; one token serves both here. */
 const TEXT_SECONDARY = t.text2;
-import type { GalleryBuild, GalleryMedia } from "@/lib/build";
+import type { BuildShape, GalleryBuild, GalleryMedia } from "@/lib/build";
 import {
   EVIDENCE_TYPES,
   coverMedia,
@@ -713,4 +713,27 @@ function firstString(...values: unknown[]): string | null {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return null;
+}
+
+/**
+ * Shape to body. Five bodies, nine shapes: agent and workflow are apps as far
+ * as a card is concerned — something deployed, with a link and a screenshot —
+ * and dataset, technique and other have no card-shaped summary of their own, so
+ * they take the default chain.
+ *
+ * UI-P14 MOVED THIS HERE from GalleryCard, which no longer draws a body: the
+ * reference card's cover is the build's picture or its sky. The bodies stay,
+ * whole and tested, until UI-P41 retires them with the old frame.
+ */
+const BODY_FOR_SHAPE: Partial<Record<BuildShape, (props: CardBodyProps) => ReactElement>> = {
+  app: AppCardBody,
+  agent: AppCardBody,
+  workflow: AppCardBody,
+  prompt: PromptCardBody,
+  study: StudyCardBody,
+  media: MediaCardBody,
+};
+
+export function bodyForShape(shape: string | null | undefined): (props: CardBodyProps) => ReactElement {
+  return BODY_FOR_SHAPE[(shape ?? "other") as BuildShape] ?? DefaultCardBody;
 }

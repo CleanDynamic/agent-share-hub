@@ -52,7 +52,14 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { GALLERY_LENSES, listGallery, type GalleryLens } from "@/lib/build/gallery";
+import {
+  GALLERY_LENSES,
+  GALLERY_NODE_CATEGORY,
+  GALLERY_NODE_TYPES,
+  listGallery,
+  partCategories,
+  type GalleryLens,
+} from "@/lib/build/gallery";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 const of = (method: string) => calls.filter((entry) => entry.method === method);
@@ -186,5 +193,27 @@ describe("the gallery with a query", () => {
     expect(of("in").some((entry) => entry.args[0] === "id")).toBe(true);
     expect(of("gte").map((entry) => entry.args)).toEqual([["rebuild_count", 1]]);
     expect(of("overlaps").map((entry) => entry.args)).toEqual([["made_for", ["lawyer"]]]);
+  });
+});
+
+
+describe("partCategories (UI-P14)", () => {
+  it("has a category for every node type the card's query carries, and for no other", () => {
+    expect(Object.keys(GALLERY_NODE_CATEGORY).sort()).toEqual([...GALLERY_NODE_TYPES].sort());
+  });
+
+  it("lists the categories present once each, in reading order", () => {
+    const nodes = ["screenshot", "result", "system_prompt", "prompt", "dataset", "repo"].map((type) => ({ type }));
+    expect(partCategories(nodes)).toEqual(["instruction", "data", "artefact", "evidence"]);
+  });
+
+  it("is empty for no nodes, and skips a type it was not told about rather than guessing", () => {
+    expect(partCategories([])).toEqual([]);
+    expect(partCategories([{ type: "something_new" }])).toEqual([]);
+  });
+
+  it("never offers breakage: it is not a node category", () => {
+    expect(Object.values(GALLERY_NODE_CATEGORY)).not.toContain("breakage");
+    expect(partCategories([{ type: "breakage" }, { type: "gap" }])).toEqual([]);
   });
 });
