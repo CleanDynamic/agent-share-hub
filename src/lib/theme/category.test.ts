@@ -157,7 +157,7 @@ describe("every chip fill clears 4.5:1, measured", () => {
       { pair: "noon agents", hue: "#6D28D9", fill: "#D2CAE6", ratio: 4.51 },
       { pair: "noon breakage", hue: "#B91C1C", fill: "#E1D6D8", ratio: 4.56 },
       { pair: "noon media", hue: "#BE185D", fill: "#E2DEE2", ratio: 4.54 },
-      { pair: "noon fallback", hue: "#565E66", fill: "#D3D7DB", ratio: 4.55 },
+      { pair: "noon fallback", hue: "#505A55", fill: "#D7DBD5", ratio: 5.11 },
       { pair: "dusk instruction", hue: "#F0865A", fill: "#493034", ratio: 4.71 },
       { pair: "dusk configuration", hue: "#5CCB7C", fill: "#2B3E3B", ratio: 5.55 },
       { pair: "dusk data", hue: "#6AA1FF", fill: "#2E3655", ratio: 4.59 },
@@ -171,13 +171,23 @@ describe("every chip fill clears 4.5:1, measured", () => {
     ]);
   });
 
+  /* UI-P03 MOVED THE ROOM AND LEFT THE FILLS. The nine `cat-*-fill` steps were
+     struck over the previous grounds — Noon's #E4E6E8 and Dusk's #1F1B2B — and
+     the kit does not mention them, so they keep those values (UI-P03: tokens the
+     kit does not mention keep their current values). Each still clears 4.5:1
+     against its own hue, which the pairs above prove; what no longer holds is
+     "composited over the CURRENT --bg", so the alpha is recovered against the
+     ground they were struck on. UI-P14 re-strikes them over the new room and
+     deletes this constant. */
+  const STRUCK_OVER = { noon: "#E4E6E8", dusk: "#1F1B2B" } as const;
+
   it("each fill is its hue at a low alpha over the ground, and nothing else", () => {
     // The rule the fills were produced under: adjust the alpha, never the hue.
     // Recovering an alpha in [0.01, 0.20] from the composite is what proves the
     // hue did not move to make the pairing legal.
     for (const { theme, name } of CASES) {
       const hue = parse(resolve(theme, `cat-${name}` as TokenName));
-      const bg = parse(resolve(theme, "bg"));
+      const bg = parse(STRUCK_OVER[theme]);
       const fill = parse(resolve(theme, `cat-${name}-fill` as TokenName));
 
       const alphas = [0, 1, 2].map((i) =>

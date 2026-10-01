@@ -5,12 +5,12 @@
 // somewhere else on the page is a second thing to learn for no gain.
 //
 // INK ON NOON, LAMP GOLD ON DUSK (UI-P04). A focus ring is UI state, which the
-// spec floors at 3.0:1. The lamp gold clears that on Dusk, at 7.47:1 against the
-// ground, and does not on Noon: `--lit` measures 1.80:1 there. The offset cannot
+// spec floors at 3.0:1. The lamp gold clears that on Dusk, at 7.65:1 against the
+// ground, and does not on Noon: `--lit` measures 1.87:1 there. The offset cannot
 // rescue it, because the band the offset leaves is `--bg` and so is everything
 // outside the ring, so both of the ring's edges are read against the same
 // colour. So the ring has its own token, `--focus-ring`: the ink on Noon
-// (12.86:1 against the ground, and 11.12:1 or better on every ground a control
+// (13.41:1 against the ground, and 11.48:1 or better on every ground a control
 // sits on) and the lamp gold on Dusk. Width and offset are the same in both
 // rooms; only the colour moves. It is exported as one object rather than as a
 // colour someone spends on their own, so it cannot drift into a second ring.

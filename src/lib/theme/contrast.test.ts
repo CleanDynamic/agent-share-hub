@@ -11,15 +11,10 @@
 // theme's `--bg` before measuring, because a ratio against an rgba() string is
 // not a thing that exists.
 //
-// TWO PAIRINGS PER THEME DO NOT REPRODUCE — see SPEC_DIVERGENCE below. The
-// skill's four `text/glass` and `text2/glass` figures cannot be derived from the
-// glass tokens it declares: they imply an effective alpha near .39 on
-// Noon and .32 on Dusk, where the tokens declare .55 and .42. The most
-// likely explanation is that those four were read off a rendered surface, where
-// `backdrop-filter: blur(16px) saturate(1.15)` had already changed what sat
-// behind the glass. Following better-colors — report the pair, do not repaint
-// it — this file asserts the value the declared tokens actually produce, checks
-// it clears the WCAG floor, and records the skill's figure alongside.
+// UI-P03 REPLACED THE GLASS VALUES with the design kit's, and the four
+// `text/glass` / `text2/glass` figures the earlier palette could not reproduce
+// now agree with the declared tokens. See SPEC_DIVERGENCE below, which now
+// records that nothing diverges, and where a future divergence has to be added.
 
 import { describe, expect, it } from "vitest";
 import { dusk, noon, type TokenName } from "./semantics";
@@ -95,45 +90,55 @@ interface Pairing {
 
 const CONTRACT: Pairing[] = [
   // Noon
-  { theme: "noon", label: "text/bg", fg: "text", bg: "bg", spec: 13.1, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text/glass", fg: "text", bg: "glass", spec: 14.37, measured: 14.88, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text2/bg", fg: "text2", bg: "bg", spec: 5.26, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text2/glass", fg: "text2", bg: "glass", spec: 5.78, measured: 5.98, floor: TEXT_FLOOR },
-  { theme: "noon", label: "action/bg", fg: "action", bg: "bg", spec: 4.8, floor: TEXT_FLOOR },
-  { theme: "noon", label: "on-action/action", fg: "on-action", bg: "action", spec: 5.65, floor: TEXT_FLOOR },
-  { theme: "noon", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 4.89, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text/evidence-fill", fg: "text", bg: "evidence-fill", spec: 11.89, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text/lit", fg: "text", bg: "lit", spec: 7.29, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/bg", fg: "text", bg: "bg", spec: 13.41, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/glass", fg: "text", bg: "glass", spec: 15.24, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/bg", fg: "text2", bg: "bg", spec: 5.96, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/glass", fg: "text2", bg: "glass", spec: 6.78, floor: TEXT_FLOOR },
+  { theme: "noon", label: "action/bg", fg: "action", bg: "bg", spec: 6.26, floor: TEXT_FLOOR },
+  { theme: "noon", label: "on-action/action", fg: "on-action", bg: "action", spec: 7.07, floor: TEXT_FLOOR },
+  { theme: "noon", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 5.6, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/evidence-fill", fg: "text", bg: "evidence-fill", spec: 11.86, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/lit", fg: "text", bg: "lit", spec: 7.15, floor: TEXT_FLOOR },
   // BG-P09 — the card's two layers, measured here rather than published by the
   // skill, so `spec` IS the measurement this prompt reports.
-  { theme: "noon", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.47, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 14.45, floor: TEXT_FLOOR },
   // RC-P04b — the pairings docs/reconciliation/STATES.md adds, measured here in
   // the same way, so `spec` IS the measurement. A border and an icon are UI
   // marks, floored at 3.0:1; the same colours as text are floored at 4.5:1.
-  { theme: "noon", label: "text/recess", fg: "text", bg: "recess", spec: 11.33, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text2/recess", fg: "text2", bg: "recess", spec: 4.55, floor: TEXT_FLOOR },
-  { theme: "noon", label: "text border/recess", fg: "text", bg: "recess", spec: 11.33, floor: UI_FLOOR },
-  { theme: "noon", label: "action icon/bg", fg: "action", bg: "bg", spec: 4.8, floor: UI_FLOOR },
+  { theme: "noon", label: "text/recess", fg: "text", bg: "recess", spec: 11.48, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text2/recess", fg: "text2", bg: "recess", spec: 5.11, floor: TEXT_FLOOR },
+  { theme: "noon", label: "text border/recess", fg: "text", bg: "recess", spec: 11.48, floor: UI_FLOOR },
+  { theme: "noon", label: "action icon/bg", fg: "action", bg: "bg", spec: 6.26, floor: UI_FLOOR },
   // UI-P04 — the focus ring against the ground. A ring is UI state, floored at
   // 3.0:1, and is measured here, so `spec` IS the measurement.
-  { theme: "noon", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 12.86, floor: UI_FLOOR },
+  { theme: "noon", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 13.41, floor: UI_FLOOR },
+  // UI-P03 — the pairings the kit's values were measured against, on the
+  // flattened glass surface.
+  { theme: "noon", label: "action/glass", fg: "action", bg: "glass", spec: 7.12, floor: TEXT_FLOOR },
+  { theme: "noon", label: "evidence/glass", fg: "evidence", bg: "glass", spec: 6.37, floor: TEXT_FLOOR },
+  { theme: "noon", label: "on-evidence-fill/evidence-fill", fg: "on-evidence-fill", bg: "evidence-fill", spec: 11.86, floor: TEXT_FLOOR },
+  { theme: "noon", label: "label/glass", fg: "label", bg: "glass", spec: 6.78, floor: TEXT_FLOOR },
   // Dusk
-  { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.17, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 12.04, measured: 11.48, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "text2/bg", fg: "text2", bg: "bg", spec: 7.65, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "text2/glass", fg: "text2", bg: "glass", spec: 6.5, measured: 6.19, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "action/bg", fg: "action", bg: "bg", spec: 6.33, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text/bg", fg: "text", bg: "bg", spec: 14.51, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text/glass", fg: "text", bg: "glass", spec: 14.26, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text2/bg", fg: "text2", bg: "bg", spec: 7.83, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "text2/glass", fg: "text2", bg: "glass", spec: 7.69, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "action/bg", fg: "action", bg: "bg", spec: 6.48, floor: TEXT_FLOOR },
   { theme: "dusk", label: "on-action/action", fg: "on-action", bg: "action", spec: 6.35, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 8.19, floor: TEXT_FLOOR },
-  { theme: "dusk", label: "lit/bg", fg: "lit", bg: "bg", spec: 7.47, floor: UI_FLOOR },
-  { theme: "dusk", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 11.48, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "evidence/bg", fg: "evidence", bg: "bg", spec: 8.38, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "lit/bg", fg: "lit", bg: "bg", spec: 7.65, floor: UI_FLOOR },
+  { theme: "dusk", label: "text/card-frame", fg: "text", bg: "card-frame", spec: 11.73, floor: TEXT_FLOOR },
   // RC-P04b, as above.
   { theme: "dusk", label: "text/recess", fg: "text", bg: "recess", spec: 10.62, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text2/recess", fg: "text2", bg: "recess", spec: 5.73, floor: TEXT_FLOOR },
   { theme: "dusk", label: "text border/recess", fg: "text", bg: "recess", spec: 10.62, floor: UI_FLOOR },
-  { theme: "dusk", label: "action icon/bg", fg: "action", bg: "bg", spec: 6.33, floor: UI_FLOOR },
+  { theme: "dusk", label: "action icon/bg", fg: "action", bg: "bg", spec: 6.48, floor: UI_FLOOR },
+  { theme: "dusk", label: "label/glass", fg: "label", bg: "glass", spec: 6.6, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "action/glass", fg: "action", bg: "glass", spec: 6.37, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "evidence/glass", fg: "evidence", bg: "glass", spec: 8.24, floor: TEXT_FLOOR },
+  { theme: "dusk", label: "on-evidence-fill/evidence-fill", fg: "on-evidence-fill", bg: "evidence-fill", spec: 6.16, floor: TEXT_FLOOR },
   // UI-P04, as above.
-  { theme: "dusk", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 7.47, floor: UI_FLOOR },
+  { theme: "dusk", label: "focus-ring/bg", fg: "focus-ring", bg: "bg", spec: 7.65, floor: UI_FLOOR },
 ];
 
 const CATEGORIES: TokenName[] = [
@@ -151,6 +156,9 @@ const CATEGORIES: TokenName[] = [
 const CATEGORY_FLOOR = { noon: 4.83, dusk: 5.75 } as const;
 
 const TOLERANCE = 0.05;
+
+/** UI-P03 — every category hue on the flattened glass surface. */
+const CATEGORY_ON_GLASS_FLOOR = { noon: 5.72, dusk: 5.78 } as const;
 
 /* ── the contract ─────────────────────────────────────────────────────────── */
 
@@ -177,6 +185,17 @@ describe("the colour contract", () => {
   });
 });
 
+describe("every category hue on glass", () => {
+  it.each(
+    (["noon", "dusk"] as const).flatMap((theme) =>
+      CATEGORIES.map((token) => ({ theme, token, floor: CATEGORY_ON_GLASS_FLOOR[theme] })),
+    ),
+  )("$theme $token clears $floor:1 on --glass", ({ theme, token, floor }) => {
+    const actual = round(contrast(ground(theme, token), ground(theme, "glass")));
+    expect(actual, `${theme} ${token} is ${actual}:1 on --glass`).toBeGreaterThanOrEqual(floor);
+  });
+});
+
 /* ── the card's two layers (BG-P09) ───────────────────────────────────────── */
 //
 // A build card stacks THREE translucencies, and body text sits on the last of
@@ -196,8 +215,8 @@ describe("the colour contract", () => {
 
 describe("the card's frame and thread box", () => {
   const COMPOSITE = {
-    noon: { text: 15.54, text2: 6.24 },
-    dusk: { text: 9.68, text2: 5.22 },
+    noon: { text: 15.38, text2: 6.84 },
+    dusk: { text: 9.91, text2: 5.35 },
   } as const;
 
   /** The colour body text actually lands on: thread over frame over bg. */
@@ -283,7 +302,7 @@ describe("salmon changes value across themes, not hue", () => {
 
   it("Dusk's action is the salmon, Noon's is the burnt orange", () => {
     expect(dusk.action.toUpperCase()).toBe(SALMON);
-    expect(noon.action.toUpperCase()).toBe("#9E4B2C");
+    expect(noon.action.toUpperCase()).toBe("#8C3B36");
     expect(round(contrast(noon.action, noon.bg))).toBeGreaterThanOrEqual(TEXT_FLOOR);
   });
 });
@@ -291,27 +310,26 @@ describe("salmon changes value across themes, not hue", () => {
 /* ── divergence from the published figures ────────────────────────────────── */
 
 describe("SPEC_DIVERGENCE", () => {
-  it("records the four glass pairings the declared tokens do not reproduce", () => {
+  it("records no glass pairing the declared tokens fail to reproduce", () => {
+    // UI-P03 struck the glass values from the design kit, and the figures
+    // above are the kit's own, measured on the flattened glass surface. The
+    // four divergences the earlier palette recorded here are gone: nothing in
+    // CONTRACT carries a `measured` override any more. A new one has to be
+    // added to this list, with the reason, rather than slipped into CONTRACT.
     const diverged = CONTRACT.filter((p) => p.measured !== undefined).map((p) => ({
       pairing: `${p.theme} ${p.label}`,
       skill: p.spec,
       declared: round(contrast(ground(p.theme, p.fg), ground(p.theme, p.bg))),
     }));
 
-    expect(diverged).toEqual([
-      { pairing: "noon text/glass", skill: 14.37, declared: 14.88 },
-      { pairing: "noon text2/glass", skill: 5.78, declared: 5.98 },
-      { pairing: "dusk text/glass", skill: 12.04, declared: 11.48 },
-      { pairing: "dusk text2/glass", skill: 6.5, declared: 6.19 },
-    ]);
-    for (const d of diverged) expect(d.declared).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    expect(diverged).toEqual([]);
   });
 
   it("records that --lit on Noon measures lower than the skill's prose", () => {
-    // The skill says 3.01:1; the declared tokens give 1.80:1. Both are below the
+    // The skill says 3.01:1; the declared tokens give 1.87:1. Both are below the
     // 4.5:1 text floor, so the rule the figure justifies is unaffected.
-    expect(round(contrast(noon.lit, noon.bg))).toBe(1.8);
-    expect(round(contrast("#D98C6B", noon.bg))).toBe(2.12); // skill says 2.05
+    expect(round(contrast(noon.lit, noon.bg))).toBe(1.87);
+    expect(round(contrast("#D98C6B", noon.bg))).toBe(2.21); // skill says 2.05
   });
 });
 
@@ -338,8 +356,8 @@ describe("the password strength meter", () => {
   const METER: TokenName[] = ["cat-breakage", "cat-artefact", "evidence"];
 
   const CARD = {
-    noon: { "cat-breakage": 5.88, "cat-artefact": 6.41, evidence: 5.56 },
-    dusk: { "cat-breakage": 4.66, "cat-artefact": 7.65, evidence: 6.63 },
+    noon: { "cat-breakage": 6.13, "cat-artefact": 6.68, evidence: 6.37 },
+    dusk: { "cat-breakage": 5.78, "cat-artefact": 9.5, evidence: 8.24 },
   } as const;
 
   /** The auth card's ground: `--glass` composited over the room. */

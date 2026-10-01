@@ -150,15 +150,20 @@ describe("one ground", () => {
   });
 
   it("declares --bg per theme and no longer in the legacy block", () => {
-    expect(bare).toMatch(/:root,\s*:root\[data-theme="noon"\]\s*\{[^}]*--bg:\s*#E4E6E8/);
-    expect(bare).toMatch(/:root\[data-theme="dusk"\]\s*\{[^}]*--bg:\s*#1F1B2B/);
+    expect(bare).toMatch(/:root,\s*:root\[data-theme="noon"\]\s*\{[^}]*--bg:\s*#E9EBE7/);
+    expect(bare).toMatch(/:root\[data-theme="dusk"\]\s*\{[^}]*--bg:\s*#1F1829/);
     expect(bare).not.toContain("#25252F");
   });
 
   it("paints no pattern anywhere in either stylesheet", () => {
     // BlobBackground's dot grid was a `radial-gradient` at `background-size:
     // 20px 20px`. Nothing on this route may carry a background image.
-    for (const text of [bare, css]) {
+    // UI-P03 declares `--backdrop`, `--ambient` and `--orb-glass` as custom
+    // properties, which are values waiting to be spent and paint nothing by
+    // themselves; the check is on what a RULE paints, so declarations of
+    // custom properties are taken out first.
+    const paints = (text: string) => text.replace(/^\s*--[a-z0-9-]+:[^;]*;/gm, "");
+    for (const text of [bare, css].map(paints)) {
       expect(text).not.toMatch(/background-image/);
       expect(text).not.toMatch(/radial-gradient/);
     }
