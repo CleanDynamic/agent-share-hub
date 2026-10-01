@@ -183,6 +183,37 @@ export async function recordSelfConfirmation(
 }
 
 // =============================================================================
+// Home signals
+// =============================================================================
+
+/** The statuses a signed-out reader can see; drafts never count towards a signal. */
+const SIGNAL_STATUSES = ["published", "gallery"];
+
+/**
+ * How many builds were confirmed working in the last 24 hours, rolling.
+ *
+ * "Lit" is the same word the picture lamp uses: a confirmation is the light
+ * going on. The window is a rolling day from now rather than a calendar day,
+ * so the number does not drop to zero at midnight UTC.
+ *
+ * AN ESTIMATED HEAD COUNT, no rows. It is a headline figure, and the planner's
+ * estimate is what the rest of the home page's counts use. Drafts are left out
+ * so the number is the same for a signed-in creator as for a visitor.
+ */
+export async function countLitToday(): Promise<number> {
+  const since = new Date(Date.now() - MS_PER_DAY).toISOString();
+
+  const { count, error } = await supabase
+    .from("builds")
+    .select("id", { count: "estimated", head: true })
+    .in("status", SIGNAL_STATUSES)
+    .gte("last_confirmed_at", since);
+
+  if (error) throw buildLayerError("countLitToday", error);
+  return count ?? 0;
+}
+
+// =============================================================================
 // Freshness
 // =============================================================================
 
