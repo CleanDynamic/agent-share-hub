@@ -134,6 +134,18 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "the Google G turning theme-dependent. If a fifth literal ever appears " +
       "here, it is not a brand wedge.",
   },
+  "src/components/brand/CoverFallback.tsx": {
+    max: 42,
+    why:
+      "THE SIX COVER SKIES — artwork, seven colours each (sky top, middle and " +
+      "horizon, sun, three hills). A picture of a sky does not follow the room: " +
+      "the same six are drawn in Noon and in Dusk, so they are not tokens, and " +
+      "design/tokens/token-map.md names the arrangement — fixed values on " +
+      "artwork live as named constants in the component that owns them. The " +
+      "source of the values is `_notes.coverFallbackSkies` in " +
+      "design/tokens/tokens.json. THE CAP IS 42 BECAUSE 6 x 7 IS ALL THERE IS: " +
+      "an eighth colour on a sky is a new decision, not a mechanical one.",
+  },
   "src/components/article/blocks/CodeBlock.tsx": {
     max: 5,
     why:
