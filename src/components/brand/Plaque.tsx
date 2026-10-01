@@ -1,42 +1,39 @@
-// The plaque: the two trust signals, as one object, at three sizes (BG-P11).
+// The plaque: the two trust signals, as one object, at three sizes (BG-P11,
+// repainted UI-P08).
 //
 // WHAT WAS HERE BEFORE. Three surfaces each drew their own: the gallery card's
 // local `Plaque` (BG-P09), the build header's `reproduction` fallback, and the
 // display half of `ReproductionAction`. Three renderings of one claim is three
-// chances for them to disagree about what a reader is entitled to, and one of
-// them already did — the header's fallback printed a raw `toLocaleDateString`
-// and never named the model, so the same build said "on Sonnet 4.5" on its card
-// and said nothing about the model on its own page. This file is the one
-// rendering; those three now spend it.
+// chances for them to disagree about what a reader is entitled to. This file is
+// the one rendering; those three now spend it.
 //
-// IT IS IMPOSSIBLE TO RENDER HALF OF IT, which is the rule the theme states and
-// the reason this takes ONE props object rather than two optional halves. The
-// reproduction count and the freshness claim are both read off a single record:
-// there is no argument list that supplies one and withholds the other, because
-// `build` is the only argument there is. A caller cannot pass a count without a
-// confirmation date any more than it can pass half a row.
+// IT IS IMPOSSIBLE TO RENDER HALF OF IT. The reproduction count and the
+// freshness claim are both read off a single record: there is no argument list
+// that supplies one and withholds the other, because `build` is the only
+// argument there is.
 //
-// THE COUNT IS THE NUMBER THAT SHOULD BE REMEMBERED, so it is the one element
-// here that deviates — the only filled ground on an object that is otherwise
-// mono text on nothing (`von-restorff-effect`: the deviation works because
-// everything around it is consistent). It is NOT inflated to earn that: on a
-// card it is the same 12px as its neighbours and wins on fill alone, and even
-// at `header` size the numeral steps up one notch inside the same tag rather
-// than becoming a 34px figure shouting across the page. Isolation by fill and
-// weight survives greyscale; isolation by size alone is just a big number.
+// THREE STATES, FROM DATA (RULES §5), and `plaqueState()` is the one place they
+// are decided:
 //
-// THE TWO SIGNALS READ AS ONE OBJECT because they are one element's children at
-// one gap, set apart from their neighbours by a larger one (`law-of-proximity`),
-// and because both are set in the same mono face at the same size
-// (`law-of-similarity`). Neither grouping survives being split across two
-// containers, which is the other reason this is a component and not a pair of
-// helpers.
+//   healthy       "41 reproduced" on `--evidence-fill`, then a lit lamp dot and
+//                 the freshness claim in `--text`.
+//   stale         the same tag, the lamp dimmed to 45%, the claim in `--text2`.
+//                 A prompt, never a failure: nothing here rewords it, warns, or
+//                 paints it red. A build nobody confirmed lately has not failed.
+//   unreproduced  one line, "not yet reproduced", in `--text2`. No tag, no lamp,
+//                 no freshness: with no reproduction there is nothing to light
+//                 and nothing to date, and a lamp that was off would say
+//                 something different from a lamp that is absent.
 //
-// STALENESS IS A DIMMED LAMP AND NOTHING ELSE IS SAID. `freshnessLabel` already
-// returns a statement of fact — "last confirmed working 8 months ago, on Sonnet
-// 4.0" — which is the gentle prompt the theme asks for, so nothing here rewords
-// it, adds a warning to it, or paints it red. A build nobody has confirmed
-// lately has not failed.
+// THE COUNT IS THE ONE FILLED GROUND, and wins on that alone: the same type as
+// its neighbours, at every size, never a larger numeral. The two signals read as
+// one object because they are one flex row at one gap (`law-of-proximity`) in
+// type that differs only by face (`law-of-similarity`).
+//
+// SIZES. `card` and `row` say "3 days ago, on sonnet-4.5"; `header` says it in
+// full, "last confirmed working 3 days ago, on sonnet-4.5", because the build
+// page has the room and the reader has no card around the claim to tell them
+// what it is a claim about. The text may wrap.
 //
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
@@ -44,15 +41,16 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
   freshnessLabel,
+  freshnessShort,
   isStale,
   type FreshnessSource,
   type StalenessSource,
 } from "@/lib/build/signals";
-import { categoryFill } from "@/lib/theme/category";
-import { chipType } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { data as dataText, tabular } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
+
+import { LampDot } from "./LampDot";
 
 /**
  * Where the plaque is standing.
@@ -96,7 +94,7 @@ export interface PlaqueProps {
   now?: number;
 }
 
-/** What the tag says when nobody who is not the creator has run it. */
+/** What the plaque says when nobody who is not the creator has run it. */
 const NEVER_REPRODUCED = "not yet reproduced";
 
 /**
@@ -106,22 +104,16 @@ const NEVER_REPRODUCED = "not yet reproduced";
  */
 export const NEVER_CONFIRMED = "not confirmed by anyone yet";
 
-/** The numeral's size per plaque size. The word beside it never moves. */
-const COUNT_PX: Record<PlaqueSize, number | undefined> = {
-  card: undefined,
-  /* One notch up inside the same tag. See the note on inflation above. */
-  header: 20,
-  row: undefined,
-};
+/** Type per size: the tag is DM Mono, the freshness line and the bare text Figtree. */
+const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 13 };
+const TEXT_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12 };
 
-/** The lamp, per size. An oval rather than a circle: it is a light, not a dot. */
+/** The lamp dot, per size. Card and row use the default 10×7. */
 const LAMP: Record<PlaqueSize, { width: number; height: number }> = {
   card: { width: 10, height: 7 },
+  row: { width: 10, height: 7 },
   header: { width: 12, height: 8 },
-  row: { width: 9, height: 6 },
 };
-
-const GAP: Record<PlaqueSize, number> = { card: 8, header: 8, row: 8 };
 
 /**
  * Why a reader should care about the number, in words, on hover.
@@ -145,112 +137,91 @@ export function plaqueState(build: PlaqueBuild, now?: number): PlaqueState {
 
 export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
   const count = build.reproduction_count ?? 0;
-  const freshness = freshnessLabel(build, now);
-  const stale = isStale(build, now);
   const state = plaqueState(build, now);
+  const stale = state === "stale";
 
-  const evidence = categoryFill("evidence");
-  const countPx = COUNT_PX[size];
+  const frame: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 7,
+    minWidth: 0,
+  };
 
-  const frame: CSSProperties =
-    size === "header"
-      ? {
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          gap: 6,
-          minWidth: 0,
-          maxWidth: "100%",
-        }
-      : {
-          display: "flex",
-          alignItems: "center",
-          flexWrap: size === "row" ? "nowrap" : "wrap",
-          gap: GAP[size],
-          minWidth: 0,
-        };
+  const marks = {
+    /* The card's content-order contract (BG-P09) names its four parts in the
+       DOM, and the plaque is the third. Emitted at `card` size only, because
+       that attribute means "this is the card's plaque" and a build header is
+       not a card. */
+    "data-card-part": size === "card" ? "plaque" : undefined,
+    "data-visual-slot": "plaque",
+    "data-ui": "plaque",
+    "data-plaque-size": size,
+    "data-plaque-state": state,
+  } as const;
+
+  /* UNREPRODUCED: one quiet line. No tag, no lamp, no freshness. It keeps the
+     tag's hooks (`data-plaque-reproduction`, the test id and the hover) because
+     it IS the reproduction half, said in words — and `trailing` still rides. */
+  if (state === "unreproduced") {
+    return (
+      <div {...marks} data-variant="never" style={{ ...frame, fontFamily: FIGTREE, fontSize: TEXT_PX[size], lineHeight: "normal", color: t.text2 }}>
+        <span
+          data-plaque-reproduction=""
+          data-testid="reproduction-count"
+          title={countTitle(0)}
+        >
+          {NEVER_REPRODUCED}
+        </span>
+        {trailing}
+      </div>
+    );
+  }
+
+  const freshness =
+    size === "header" ? freshnessLabel(build, now) : freshnessShort(build, now);
 
   return (
-    <div
-      /* The card's content-order contract (BG-P09) names its four parts in the
-         DOM, and the plaque is the third. Emitted at `card` size only, because
-         that attribute means "this is the card's plaque" and a build header is
-         not a card. */
-      data-card-part={size === "card" ? "plaque" : undefined}
-      data-visual-slot="plaque"
-      data-plaque-size={size}
-      data-plaque-state={state}
-      style={frame}
-    >
-      {/* 1. REPRODUCTION. Zero is shown, never hidden: "nobody yet" is a state a
-           reader is entitled to, and suppressing it leaves them unable to tell
-           it apart from "we are not saying". */}
+    <div {...marks} data-variant={stale ? "stale" : "fresh"} style={frame}>
+      {/* 1. REPRODUCTION. The one filled ground on the object. */}
       <span
         data-plaque-reproduction=""
         data-testid="reproduction-count"
         title={countTitle(count)}
         style={{
-          ...chipType,
           ...tabular,
-          /* INLINE FLOW, NOT FLEX. The numeral is its own span so it can step
-             up at header size, and a flex container would swallow the space
-             between it and the word — leaving "41reproduced" in the accessible
-             name and in anything that copies the text. Inline flow keeps the
-             space real and puts the two on the same baseline for free. */
-          display: "inline-block",
-          flexShrink: 0,
-          padding: size === "header" ? "4px 10px" : "2px 8px",
+          fontFamily: DM_MONO,
+          fontSize: TAG_PX[size],
+          lineHeight: "normal",
+          background: t.evidenceFill,
+          color: t.onEvidenceFill,
+          padding: "2px 6px",
           borderRadius: r.chip,
-          /* `--evidence-fill` with `--text` on it: the measured pair the colour
-             contract names for this tag, 11.89:1 on Noon. Both halves or
-             neither — this ink on another ground is a pairing nobody measured.
-             The LONGHAND rather than the `background` shorthand: the value is a
-             colour and nothing else, and a shorthand whose value is a `var()`
-             is the declaration jsdom's cssstyle is known to drop whole (see the
-             note in NodeCard.tsx). */
-          backgroundColor: evidence.background,
-          color: t.text,
+          whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
-        {count === 0 ? (
-          NEVER_REPRODUCED
-        ) : (
-          <>
-            <span style={countPx ? { fontSize: countPx, fontWeight: 500 } : undefined}>
-              {count}
-            </span>{" "}
-            reproduced
-          </>
-        )}
+        {count} reproduced
       </span>
 
-      {/* 2. FRESHNESS. The lamp is lit only where there is a confirmation to
-           light: an unlit lamp and an absent one say different things, and on a
-           build nobody has confirmed only the second one is true. */}
+      {/* 2. FRESHNESS. A lit lamp for a current claim, a dim one for a stale
+          claim; the text is `--text` while it is current and `--text2` once it
+          is not, and it may wrap. */}
       <span
         data-plaque-freshness=""
         style={{
-          ...(size === "card" || size === "row" ? chipType : dataText),
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          /* Both, and for different jobs. `minWidth: 0` lets this shrink below
-             its content inside a flex row; `maxWidth: 100%` stops it growing
-             past its container in a COLUMN, where flex-start sizes a child to
-             max-content and a nowrap line would otherwise run off the page.
-             Without the second, the freshness sentence overflowed the header
-             plaque at 390px. */
+          gap: 5,
+          fontFamily: FIGTREE,
+          fontSize: TEXT_PX[size],
+          lineHeight: "normal",
+          color: stale ? t.text2 : t.text,
           minWidth: 0,
-          maxWidth: "100%",
-          color: t.text2,
         }}
       >
-        {freshness ? <PlaqueLamp dim={stale} size={size} /> : null}
-        <span
-          style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-        >
-          {freshness ?? NEVER_CONFIRMED}
-        </span>
+        <PlaqueLamp dim={stale} size={size} />
+        {freshness ?? NEVER_CONFIRMED}
       </span>
 
       {trailing}
@@ -259,35 +230,17 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
 }
 
 /**
- * The lamp: an oval of `--lit`, dimmed to 45% when the claim has gone stale.
+ * The lamp in a plaque: `LampDot`, at the size the plaque is standing at.
  *
- * Amber is LIGHT here and never type, which is the one rule the colour contract
- * states twice — `--lit` is 3.01:1 on the Noon ground, legal as a lamp and
- * illegal as a word. `opacity` carries the stale state so the colour stays one
- * token in both themes rather than becoming two.
- *
- * EXPORTED SINCE BG-P18, BECAUSE THE SIGNAL IS IN TWO PLACES AND HAS TO BE ONE
- * OBJECT. A reproduction note in the feed — "@rae ran it, and it worked on
- * sonnet-4.5" — is the same claim this lamp reports on a card: somebody who is
- * not the creator ran the thing and said what happened. Two lamps drawn from
- * one token would still have been two lamps, free to drift in size, in shape and
- * in what dimming means; this is the lamp, spent twice. Nothing about the plaque
- * changed to export it.
+ * Kept as its own export since BG-P18, because the signal is in two places and
+ * has to be one object. A reproduction note in the feed — "@rae ran it, and it
+ * worked on sonnet-4.5" — is the same claim this lamp reports on a card: somebody
+ * who is not the creator ran the thing and said what happened. UI-P08 moved the
+ * drawing into `LampDot`; this is the plaque's name for it.
  */
 export function PlaqueLamp({ dim, size = "row" }: { dim: boolean; size?: PlaqueSize }) {
   return (
-    <span
-      aria-hidden
-      data-plaque-lamp={dim ? "dim" : "lit"}
-      style={{
-        flexShrink: 0,
-        ...LAMP[size],
-        borderRadius: "50% / 50%",
-        /* Longhand, for the reason noted on the tag above. */
-        backgroundColor: t.lit,
-        opacity: dim ? 0.45 : 1,
-      }}
-    />
+    <LampDot data-plaque-lamp={dim ? "dim" : "lit"} dim={dim} {...LAMP[size]} />
   );
 }
 

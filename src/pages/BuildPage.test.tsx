@@ -230,9 +230,9 @@ describe("BuildPage", () => {
 
     expect(await screen.findByText("Inbox triage agent")).toBeTruthy();
     expect(screen.getByText("first result in 35 minutes")).toBeTruthy();
-    // BG-P11: the shared plaque's words. It says the same thing the build
-    // page's own line used to, in the wording the card has always used.
-    expect(screen.getByText("not confirmed by anyone yet")).toBeTruthy();
+    // The shared plaque's words (BG-P11). A build nobody has reproduced says
+    // so in one line and nothing else (UI-P08): no tag, no lamp, no freshness.
+    expect(screen.getByText("not yet reproduced")).toBeTruthy();
     expect(screen.getByText("Load it here")).toBeTruthy();
 
     for (const tab of ["Anatomy", "Watch it get built", "Run it yourself", "Where it broke"]) {

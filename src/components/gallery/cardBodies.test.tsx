@@ -479,8 +479,9 @@ describe("the plaque", () => {
       "dim"
     );
     // A prompt, never a failure.
+    // The card says it in the short form (UI-P08): "1 year ago, on …".
     expect(container.querySelector("[data-plaque-freshness]")).toHaveTextContent(
-      /last confirmed working/i
+      /ago, on /i
     );
   });
 

@@ -455,13 +455,12 @@ describe("the gallery page", () => {
     // own words for it, and the reason the title can now lead the card.
     const figure = screen.getByTitle(/4 people other than the creator ran this/i);
     expect(figure).toHaveTextContent("4 reproduced");
-    expect(
-      screen.getByText(/last confirmed working .* on Sonnet 4\.5/i)
-    ).toBeInTheDocument();
+    // A card says the claim in the short form (UI-P08): "3 days ago, on …".
+    expect(screen.getByText(/ago, on Sonnet 4\.5/i)).toBeInTheDocument();
     // Neither half may be rendered without the other.
     const plaque = figure.closest("[data-card-part='plaque']");
     expect(plaque).not.toBeNull();
-    expect(plaque).toHaveTextContent(/last confirmed working/i);
+    expect(plaque).toHaveTextContent(/ago, on Sonnet 4\.5/i);
   });
 
   it("says so plainly when a build has never been confirmed", async () => {
@@ -471,7 +470,7 @@ describe("the gallery page", () => {
     });
     renderGallery();
 
-    expect(await screen.findByText("not confirmed by anyone yet")).toBeInTheDocument();
+    expect(await screen.findByText("not yet reproduced")).toBeInTheDocument();
     // The zero state is SAID, not suppressed. A reader must be able to tell
     // "nobody yet" from silence, and BG-P09 says it in words rather than as a
     // nought — "not yet reproduced", which is the theme's third plaque state.

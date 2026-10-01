@@ -303,7 +303,9 @@ describe("ReproductionAction", () => {
     // rather than the bare 0, because a figure alone cannot say whether nobody
     // has run it or nobody is saying.
     expect(repro.getByTestId("reproduction-count")).toHaveTextContent("not yet reproduced");
-    expect(repro.getByText("not confirmed by anyone yet")).toBeTruthy();
+    // UI-P08: an unreproduced plaque is that one line. It makes no freshness
+    // claim at all, so there is no "not confirmed by anyone yet" beside it.
+    expect(repro.queryByText("not confirmed by anyone yet")).toBeNull();
     expect(repro.queryByText(/last confirmed working/)).toBeNull();
     // And no lamp, because there is no confirmation to light.
     expect(repro.queryByTestId("reproduction-count")).toBeTruthy();

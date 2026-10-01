@@ -17,6 +17,7 @@ import { display, FIGTREE, mono } from "@/lib/theme/type";
 
 import { ControlsSection } from "./catalogue/ControlsSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
+import { ProofSection } from "./catalogue/ProofSection";
 
 export default function KitComponents() {
   const theme = useDesignTheme();
@@ -44,7 +45,8 @@ export default function KitComponents() {
       </header>
       <IdentitySection />
       <ControlsSection />
-      {/* UI-P08 onward: Proof, Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
+      <ProofSection />
+      {/* UI-P09 onward: Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
     </div>
   );
 }
