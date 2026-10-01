@@ -6,8 +6,8 @@
 // browser's own Back button. Nothing about what the reader is looking at lives
 // only in component state.
 //
-// FOUR PARAMETERS, ALWAYS IN THIS ORDER: lens, for (repeatable), with
-// (repeatable), q. One order means one address per view: two links to the same
+// FIVE PARAMETERS, ALWAYS IN THIS ORDER: lens, for (repeatable), with
+// (repeatable), shape (repeatable, UI-P28), q. One order means one address per view: two links to the same
 // filtered gallery are the same string, which is what makes a written URL
 // comparable with the one in the address bar.
 //
@@ -17,7 +17,7 @@
 // name for, an unknown parameter, a query shorter than SEARCH_MIN — is dropped
 // on the way through, so parse followed by write is also a tidy.
 
-import { GALLERY_LENSES, type GalleryLens } from "./gallery";
+import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryLens } from "./gallery";
 import { normaliseQuery } from "./search";
 
 /** Where the gallery lives. */
@@ -30,6 +30,11 @@ export interface GalleryParams {
   madeFor: string[];
   /** made_with values; several are an OR. */
   madeWith: string[];
+  /**
+   * Shapes (UI-P28); several are an OR. Present only when at least one is set,
+   * so the resting address reads exactly as it did before shapes existed.
+   */
+  shapes?: string[];
   /** The tidied query, or null for none. */
   query: string | null;
 }
@@ -44,6 +49,11 @@ function cleanValues(values: readonly string[] | undefined): string[] {
   return [...seen];
 }
 
+/** Only shapes the gallery knows. */
+function cleanShapes(values: readonly string[] | undefined): string[] {
+  return cleanValues(values).filter((value) => (GALLERY_SHAPES as readonly string[]).includes(value));
+}
+
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
 }
@@ -54,17 +64,19 @@ function isLens(value: string | null): value is GalleryLens {
  */
 export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const lens = search.get("lens");
+  const shapes = cleanShapes(search.getAll("shape"));
   return {
     lens: isLens(lens) ? lens : "all",
     madeFor: cleanValues(search.getAll("for")),
     madeWith: cleanValues(search.getAll("with")),
+    ...(shapes.length > 0 ? { shapes } : {}),
     query: normaliseQuery(search.get("q")),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order lens, for, with, q.
+ * default, keys in the order lens, for, with, shape, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -72,6 +84,7 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   if (params.lens && isLens(params.lens) && params.lens !== "all") out.set("lens", params.lens);
   for (const value of cleanValues(params.madeFor)) out.append("for", value);
   for (const value of cleanValues(params.madeWith)) out.append("with", value);
+  for (const value of cleanShapes(params.shapes)) out.append("shape", value);
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

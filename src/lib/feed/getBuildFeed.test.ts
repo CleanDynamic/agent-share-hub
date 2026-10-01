@@ -13,7 +13,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { rpc: (name: string, args: unknown) => rpc(name, args) },
 }));
 
-import { getBuildFeed, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
+import { getBuildFeed, toFeedItem, type BuildFeedRow } from "@/lib/feed/getBuildFeed";
 
 function row(over: Partial<BuildFeedRow> = {}): BuildFeedRow {
   return {
@@ -89,5 +89,34 @@ describe("getBuildFeed's following scope", () => {
     expect(following.items).toHaveLength(1);
     expect(following.items[0]).toMatchObject({ kind: "build", key: "build:b1:2026-09-20T10:00:00.000Z" });
     expect(following.nextBefore).toBe("2026-09-20T10:00:00.000Z");
+  });
+});
+
+describe("the maker on every kind of item (UI-P27)", () => {
+  const maker = { id: "c1", handle: "maya", name: "Maya", avatarUrl: null };
+
+  it("carries the build's maker on a build, a rebuild and a bounty", () => {
+    expect(toFeedItem(row())).toMatchObject({ kind: "build", maker });
+    expect(toFeedItem(row({ item_kind: "rebuild", parent_build_id: "b0" }))).toMatchObject({ kind: "rebuild", maker });
+    expect(toFeedItem(row({ item_kind: "bounty", bounty_id: "x1", bounty_reward_gbp: 150 }))).toMatchObject({
+      kind: "bounty",
+      maker,
+    });
+  });
+
+  it("gives a reproduction note the build it is about, beside the reproducer's handle", () => {
+    const item = toFeedItem(
+      row({
+        item_kind: "repro_note",
+        repro_note: "worked first try",
+        repro_user_username: "ada",
+        reproduction_count: 9,
+        last_confirmed_at: "2026-09-18T10:00:00.000Z",
+      }),
+    );
+
+    expect(item).toMatchObject({ kind: "repro_note", handle: "ada", maker });
+    if (item.kind !== "repro_note") throw new Error("expected a note");
+    expect(item.build).toMatchObject({ id: "b1", reproduction_count: 9, last_confirmed_at: "2026-09-18T10:00:00.000Z" });
   });
 });

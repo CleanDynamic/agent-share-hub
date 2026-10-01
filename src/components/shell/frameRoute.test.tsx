@@ -26,7 +26,7 @@ describe("FrameRoute", () => {
 
   it("renders the legacy page on a route not in SITE_FRAME_ROUTES, flag on", () => {
     flag.on = true;
-    at("/gallery");
+    at("/bounties");
     expect(screen.getByText("old")).toBeTruthy();
   });
 

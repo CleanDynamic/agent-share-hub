@@ -79,6 +79,23 @@ export interface BuildFeedRow {
 }
 
 /**
+ * The build's maker, as the function joins them. UI-P27: Home's visitors' book
+ * names who did what, and the row already carries the answer.
+ *
+ * On a bounty row this is the build's maker, not the ask's author: the function
+ * filters bounties by their author but selects the build's profile. They are the
+ * same person whenever a maker opens an ask on their own build, which is the
+ * only way the product lets one be opened today.
+ */
+export interface FeedMaker {
+  id: string;
+  /** Without the @. Null if their profile has no username. */
+  handle: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+/**
  * A published build that is nobody's child. Renders as the gallery card,
  * unchanged.
  */
@@ -89,6 +106,7 @@ export interface BuildFeedItem {
   /** The keyset cursor this row sits at: published_at. */
   at: string;
   build: GalleryBuild;
+  maker: FeedMaker;
 }
 
 /**
@@ -100,6 +118,7 @@ export interface RebuildFeedItem {
   key: string;
   at: string;
   build: GalleryBuild;
+  maker: FeedMaker;
   /** The first line of the rebuild note, or null. See rebuildDisplay.ts. */
   note: string | null;
 }
@@ -121,6 +140,13 @@ export interface ReproNoteFeedItem {
   title: string;
   /** The reproducer's handle, without the @. Null if their profile is gone. */
   handle: string | null;
+  /**
+   * The build the note is about, for the cover and the plaque (UI-P27). The
+   * row carries both for every kind, so this costs no request.
+   */
+  build: GalleryBuild;
+  /** The build's maker, who is not the reproducer. */
+  maker: FeedMaker;
   /** The model they ran it on. Null means they did not say — never guess. */
   model: string | null;
   note: string;
@@ -143,6 +169,7 @@ export interface BountyFeedItem {
   /** The keyset cursor this row sits at: bounties.created_at. */
   at: string;
   build: GalleryBuild;
+  maker: FeedMaker;
   bountyId: string;
   /** Pounds, or null for an unpriced ask — which is still a real bounty. */
   reward: number | string | null;
@@ -334,6 +361,16 @@ function coverRows(row: BuildFeedRow): GalleryMedia[] {
   ];
 }
 
+/** The build's maker, from the columns every row carries. */
+function makerOf(row: BuildFeedRow): FeedMaker {
+  return {
+    id: row.creator_id,
+    handle: row.creator_username,
+    name: row.creator_display,
+    avatarUrl: row.creator_avatar,
+  };
+}
+
 /**
  * The first line of a note, or null.
  *
@@ -371,6 +408,8 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
       slug: row.slug,
       title: row.title,
       handle: row.repro_user_username,
+      build: toGalleryBuild(row),
+      maker: makerOf(row),
       model: row.repro_model,
       // The function admits no empty note, so this is prose. The fallback is
       // for a row that arrived from somewhere else.
@@ -387,6 +426,7 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
       key: feedKey(row),
       at: row.item_at,
       build: toGalleryBuild(row),
+      maker: makerOf(row),
       // The function admits no bounty row without an id; the fallback is for a
       // row that arrived from somewhere else.
       bountyId: row.bounty_id ?? "",
@@ -401,6 +441,7 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
       key: feedKey(row),
       at: row.item_at,
       build: toGalleryBuild(row),
+      maker: makerOf(row),
       note: firstLine(row.rebuild_note),
     };
   }
@@ -410,5 +451,6 @@ export function toFeedItem(row: BuildFeedRow): FeedItem {
     key: feedKey(row),
     at: row.item_at,
     build: toGalleryBuild(row),
+    maker: makerOf(row),
   };
 }

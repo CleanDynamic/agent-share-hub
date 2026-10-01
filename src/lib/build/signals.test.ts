@@ -15,7 +15,7 @@ let answer: { count: number | null; error: unknown } = { count: 0, error: null }
 
 function builder() {
   const self: Record<string, unknown> = {};
-  for (const method of ["select", "in", "gte"]) {
+  for (const method of ["select", "in", "gte", "lt"]) {
     self[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return self;
@@ -35,7 +35,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { countLitToday, countReproducedToday, countRunsThisWeek } from "@/lib/build/signals";
+import { countLitToday, countReproducedToday, countRunsLastWeek, countRunsThisWeek } from "@/lib/build/signals";
 
 const of = (method: string) => calls.filter((entry) => entry.method === method);
 
@@ -160,3 +160,33 @@ describe("countRunsThisWeek", () => {
     await expect(countRunsThisWeek()).rejects.toThrow("countRunsThisWeek failed: boom");
   });
 });
+
+describe("countRunsLastWeek", () => {
+  it("counts reproductions created from last Monday 00:00 UTC up to this Monday 00:00 UTC", async () => {
+    answer = { count: 280, error: null };
+
+    await expect(countRunsLastWeek(new Date("2026-10-01T15:20:00Z"))).resolves.toBe(280);
+
+    expect(of("from")[0].args).toEqual(["build_reproductions"]);
+    expect(of("select")[0].args).toEqual(["id", { count: "estimated", head: true }]);
+    expect(of("gte")[0].args).toEqual(["created_at", "2026-09-21T00:00:00.000Z"]);
+    expect(of("lt")[0].args).toEqual(["created_at", "2026-09-28T00:00:00.000Z"]);
+  });
+
+  it("rolls over with the week: on Monday 00:01 UTC last week is the one that just ended", async () => {
+    await countRunsLastWeek(new Date("2026-10-05T00:01:00Z"));
+    expect(of("gte")[0].args).toEqual(["created_at", "2026-09-28T00:00:00.000Z"]);
+    expect(of("lt")[0].args).toEqual(["created_at", "2026-10-05T00:00:00.000Z"]);
+  });
+
+  it("throws an error naming the operation when the request fails", async () => {
+    answer = { count: null, error: { message: "boom" } };
+    await expect(countRunsLastWeek()).rejects.toThrow("countRunsLastWeek failed: boom");
+  });
+
+  it("leaves this week's count a single bound, as it was", async () => {
+    await countRunsThisWeek(new Date("2026-10-01T15:20:00Z"));
+    expect(of("lt")).toHaveLength(0);
+  });
+});
+

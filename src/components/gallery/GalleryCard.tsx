@@ -43,7 +43,7 @@
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import { useMemo } from "react";
-import { BuildCard, CardCredit, COVER_HEIGHT } from "@/components/brand/BuildCard";
+import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardTitleSize } from "@/components/brand/BuildCard";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { BranchIcon } from "@/components/build/BranchIcon";
 import { chipType } from "@/lib/theme/controls";
@@ -97,9 +97,23 @@ export interface GalleryCardProps {
    * draft do not, because a draft is nothing a reader can like or save.
    */
   engagement?: RowEngagement;
+  /**
+   * UI-P28: the cover's height and the title's size where the card stands. The
+   * defaults are the gallery wall's (92 and 19); a phone's two-column wall is 96
+   * and 18, and nothing else changes with them.
+   */
+  coverHeight?: number;
+  titleSize?: BuildCardTitleSize;
 }
 
-export function GalleryCard({ build, srcByPath, layout = "grid", engagement }: GalleryCardProps) {
+export function GalleryCard({
+  build,
+  srcByPath,
+  layout = "grid",
+  engagement,
+  coverHeight = COVER_PX,
+  titleSize,
+}: GalleryCardProps) {
   const shape = (build.shape ?? "other") as BuildShape;
   const bounty = openBounty(build);
 
@@ -125,7 +139,8 @@ export function GalleryCard({ build, srcByPath, layout = "grid", engagement }: G
       shapeKey={shape}
       layout={layout}
       cover={<Cover build={build} srcByPath={srcByPath} />}
-      coverHeight={COVER_PX}
+      coverHeight={coverHeight}
+      titleSize={titleSize}
       media={
         threaded ? (
           <CardThread

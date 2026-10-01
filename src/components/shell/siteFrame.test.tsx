@@ -21,10 +21,12 @@ describe("boardHeight", () => {
 });
 
 describe("usesSiteFrame", () => {
-  it("lists /notifications (UI-P20) and nothing else yet", () => {
-    expect(SITE_FRAME_ROUTES).toEqual(["/notifications"]);
+  it("lists Home (UI-P27), the Gallery (UI-P28) and /notifications (UI-P20), and nothing else yet", () => {
+    expect(SITE_FRAME_ROUTES).toEqual(["/", "/gallery", "/notifications"]);
+    expect(usesSiteFrame("/")).toBe(true);
+    expect(usesSiteFrame("/gallery")).toBe(true);
     expect(usesSiteFrame("/notifications")).toBe(true);
-    expect(usesSiteFrame("/gallery")).toBe(false);
+    expect(usesSiteFrame("/gallery/extra")).toBe(false);
     expect(usesSiteFrame("/notifications/extra")).toBe(false);
   });
 });

@@ -366,7 +366,9 @@ describe("scroll reveals live on the two sanctioned surfaces only", () => {
      storytelling." A working surface that withholds its content until you
      scroll to it is a surface arguing with the person trying to use it, and
      this is the assertion that keeps the third one from being added quietly. */
-  const SANCTIONED = ["src/pages/BuildPage.tsx", "src/pages/Gallery.tsx"];
+  /* UI-P28: the Gallery in the site frame is the same gallery grid, so it takes
+     the same entrance as the page it replaces until UI-P41 deletes that one. */
+  const SANCTIONED = ["src/pages/BuildPage.tsx", "src/pages/Gallery.tsx", "src/pages/site/gallery/GalleryPage.tsx"];
 
   it("is imported by exactly those two", () => {
     const importers = SCANNED.filter((file) => /from ["'][^"']*useReveal["']/.test(file.code))
