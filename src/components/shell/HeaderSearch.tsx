@@ -16,12 +16,19 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
+import { ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-/** The kit's placeholder colour, spelled as ui/input.tsx spells it (a pseudo-element no inline style reaches). */
-const PLACEHOLDER_CLASS = "placeholder:text-[color:var(--text2)]";
+/* index.css gives every <input> a `--recess` fill, a 1px border and a focus
+   outline, all `!important`, which no inline style can beat. This field is a
+   transparent input inside a drawn box (the label), so those are switched off
+   with Tailwind's own important utilities — generated utilities, not new CSS
+   classes — and the box carries the focus ring instead. The placeholder is the
+   kit's `--text2`, a pseudo-element no inline style reaches. */
+const INPUT_CLASS =
+  "placeholder:text-[color:var(--text2)] !bg-transparent !border-0 focus-visible:!outline-none focus-visible:!border-0";
 
 /** True when the key press belongs to something the reader is typing into. */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -65,6 +72,7 @@ export function HeaderSearch({
   const [value, setValue] = useState(initialValue);
   const field = useRef<HTMLInputElement | null>(null);
   const [focused, setFocused] = useState(false);
+  const [focusVisible, setFocusVisible] = useState(false);
 
   useEffect(() => setValue(initialValue), [initialValue]);
 
@@ -103,6 +111,7 @@ export function HeaderSearch({
           background: t.field,
           border: `1px solid ${focused ? t.action : t.line}`,
           color: t.text2,
+          ...ring(focusVisible),
         }}
       >
         <Search size={15} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
@@ -111,13 +120,26 @@ export function HeaderSearch({
           type="search"
           aria-label="Search builds"
           placeholder="Search builds, makers, tools"
-          className={PLACEHOLDER_CLASS}
+          className={INPUT_CLASS}
           maxLength={SEARCH_MAX}
           value={value}
           autoFocus={autoFocus}
           onChange={(event) => setValue(event.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={(event) => {
+            setFocused(true);
+            // Where :focus-visible is unsupported the ring is shown rather than hidden.
+            let visible = true;
+            try {
+              visible = event.currentTarget.matches(":focus-visible");
+            } catch {
+              /* keep the ring */
+            }
+            setFocusVisible(visible);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            setFocusVisible(false);
+          }}
           style={{
             background: "transparent",
             border: 0,

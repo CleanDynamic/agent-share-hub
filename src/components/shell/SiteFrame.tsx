@@ -31,6 +31,8 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { Breadcrumb } from "./Breadcrumb";
+import { Dock } from "./Dock";
+import { MobileHeader } from "./MobileHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { CrumbTitleProvider } from "./useBreadcrumb";
@@ -199,7 +201,14 @@ export interface SiteFrameProps {
 export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
-      <SiteFrameView variant={variant} header={<SiteHeader />} breadcrumb={<Breadcrumb />} footer={<SiteFooter />}>
+      <SiteFrameView
+        variant={variant}
+        header={<SiteHeader />}
+        breadcrumb={<Breadcrumb />}
+        footer={<SiteFooter />}
+        mobileHeader={<MobileHeader />}
+        dock={<Dock />}
+      >
         {children}
       </SiteFrameView>
     </CrumbTitleProvider>

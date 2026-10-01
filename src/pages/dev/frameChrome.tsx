@@ -7,6 +7,8 @@
 
 import type { ReactNode } from "react";
 
+import { DockView, type DockViewProps } from "@/components/shell/Dock";
+import { MobileHeaderView } from "@/components/shell/MobileHeader";
 import { BreadcrumbView } from "@/components/shell/Breadcrumb";
 import type { FrameViewer } from "@/components/shell/frameTypes";
 import { SiteFooterView } from "@/components/shell/SiteFooter";
@@ -32,6 +34,8 @@ export interface DevChromeOptions {
   activityCurrent?: boolean;
   /** The breadcrumb trail the board shows. Defaults to Home / Gallery / the sample build. */
   trail?: readonly Crumb[];
+  /** Which dock tile has the lamp on the phone boards. */
+  dockCurrent?: DockViewProps["current"];
 }
 
 export interface DevChrome {
@@ -45,7 +49,7 @@ export interface DevChrome {
 const noop = () => undefined;
 
 /** The sample build's title, for the trails that end in a record. */
-export const FIXTURE_BUILD_TITLE = fixtures.builds[fixtures.build_page.build as number].title;
+export const FIXTURE_BUILD_TITLE = fixtures.builds[fixtures.build_page.build - 1].title;
 
 const DEFAULT_TRAIL: Crumb[] = [
   { label: "Home", href: "/" },
@@ -53,7 +57,7 @@ const DEFAULT_TRAIL: Crumb[] = [
   { label: FIXTURE_BUILD_TITLE },
 ];
 
-export function devChrome({ theme, current = "gallery", activityCurrent = false, trail = DEFAULT_TRAIL }: DevChromeOptions): DevChrome {
+export function devChrome({ theme, current = "gallery", activityCurrent = false, trail = DEFAULT_TRAIL, dockCurrent = "gallery" }: DevChromeOptions): DevChrome {
   return {
     header: (
       <SiteHeaderView
@@ -68,6 +72,10 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false,
         onNewBuild={noop}
       />
     ),
+    mobileHeader: (
+      <MobileHeaderView viewer={FIXTURE_FRAME_VIEWER} onSearchOpen={noop} onAccountOpen={noop} onSignIn={noop} />
+    ),
+    dock: <DockView current={dockCurrent} unread={fixtures.viewer.unread} />,
     breadcrumb: <BreadcrumbView trail={trail} />,
     footer: (
       <SiteFooterView

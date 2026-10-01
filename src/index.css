@@ -732,6 +732,13 @@ body {
   display: none;
 }
 
+/* UI-P19 — the sideways chip rows (ScrollRow) hide their scrollbar. The standard
+   property is set inline on the element; WebKit has no inline equivalent for its
+   pseudo-element, so this is the one rule the row needs. */
+.bg-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar.
    BG-P18b. The track was #0a0a10 and the thumb #333 — the legacy dark paint's
    last three hexes on the page ground, which drew a near-black gutter down the
