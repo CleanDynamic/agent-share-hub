@@ -17,6 +17,7 @@ import { display, FIGTREE, mono } from "@/lib/theme/type";
 
 import { ControlsSection } from "./catalogue/ControlsSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
+import { PanelsSection } from "./catalogue/PanelsSection";
 import { ProofSection } from "./catalogue/ProofSection";
 
 export default function KitComponents() {
@@ -46,7 +47,8 @@ export default function KitComponents() {
       <IdentitySection />
       <ControlsSection />
       <ProofSection />
-      {/* UI-P09 onward: Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
+      <PanelsSection />
+      {/* UI-P10 onward: Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
     </div>
   );
 }
