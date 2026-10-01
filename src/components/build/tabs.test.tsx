@@ -259,10 +259,12 @@ function breakage() {
 }
 
 describe("where it broke reads as resolved, not as an alarm", () => {
-  it("spends the breakage hue on the measured chip pair and nowhere else", () => {
+  it("spends the breakage hue on the category chip and nowhere else", () => {
     const doc = staticDoc(breakage());
-    const chip = Array.from(doc.querySelectorAll("span")).find((span) =>
-      styleOf(span).includes("var(--cat-breakage-fill)"),
+    // The chip carries no fill since the design kit's repaint; it is found by
+    // its own marker, and the hue is the whole of what it spends.
+    const chip = Array.from(doc.querySelectorAll("span")).find(
+      (span) => span.getAttribute("data-chip-variant") === "category",
     );
 
     expect(chip).toBeTruthy();

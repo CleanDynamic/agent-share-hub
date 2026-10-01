@@ -15,6 +15,7 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE, mono } from "@/lib/theme/type";
 
+import { ControlsSection } from "./catalogue/ControlsSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
 
 export default function KitComponents() {
@@ -42,7 +43,8 @@ export default function KitComponents() {
         </h1>
       </header>
       <IdentitySection />
-      {/* UI-P07 onward: Controls, Proof, Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
+      <ControlsSection />
+      {/* UI-P08 onward: Proof, Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
     </div>
   );
 }

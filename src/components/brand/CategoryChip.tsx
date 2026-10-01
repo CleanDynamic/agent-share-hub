@@ -1,45 +1,43 @@
-// The category chip: one part category, in its measured pair (BG-P11).
+// The category chip: one part category, in its own hue (BG-P11, repainted UI-P06+).
 //
 // WHAT THIS REPLACES. Seven surfaces each drew their own — the gallery card,
 // the build header, the node card, the run view, the convert plan, the compose
-// tree and the intake proposal — and no two agreed on the shape. Three were at
-// `border-radius: 100` or `999`, which is the capsule rule the theme dropped by
-// decision; one was at 6, one at 8; two were uppercase and five were not; and
-// the build header's was not a category chip at all but a hairline outline in a
-// hardcoded teal or orange, so "made for founders" was painted the same green
-// the platform reserves for a configuration part.
+// tree and the intake proposal — and no two agreed on the shape. This is the one
+// rendering, and the design kit's: a 1px `--line` border, DM Mono 10px, padding
+// 2px 6px, radius 8, no wrap, and NO FILL. The category is carried by the text
+// colour alone, `--cat-<category>`, which every hue clears as text on glass
+// (>= 5.72:1 on Noon, >= 5.78:1 on Dusk, `contrast.test.ts`).
 //
-// THE FILL IS THE WHOLE TREATMENT. `categoryFill` returns a measured
-// background/foreground pair — see the note in category.ts for how the ten were
-// struck — and the contract is that the halves are used together or not at all.
-// So a chip carries a transparent border and the fill does the work; there is
-// no second colour on it, and selection does not overwrite the fill, because
-// the fill is the one thing the chip encodes.
+// The props are unchanged: `category` + `label` + `count`, `selected`, the
+// `overflow` variant. Anything the resolver does not recognise lands on
+// `--cat-fallback` (`--text2`) rather than on an invented hue — a role like
+// "founders" is NOT a category and must not borrow one of the nine.
 //
-// WHY NOT `ui/badge.tsx`. Badge is the shadcn primitive and it resolves through
-// the same `chipStyle`, so this is not a second implementation of the paint —
-// it is a second WRAPPER, and deliberately. Badge is a `<div>` carrying cva
-// classes whose padding is `px-2.5 py-0.5`; every surface converted here sits a
-// chip inline in a text row at 2px/7px, and adopting Badge's padding would move
-// each of them. A chip must also be phrasing content: several of these sit
-// inside a `<p>` or an `<a>`, where a `<div>` is invalid. So: one paint, two
-// wrappers, and the difference between them is the box, not the colour.
+// SELECTION IS A BORDER, never a fill: a selected chip's border is `--action`.
 //
 // A COUNT RIDES INSIDE THE CHIP, not beside it. "configuration 3" is one object
-// naming one category; a chip with a number after it is two, and a reader has
-// to work out whether the number belongs to the chip or to the next one.
+// naming one category; a chip with a number after it is two.
 //
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
 import type { CSSProperties, MouseEventHandler } from "react";
 
-import { chipSelectedStyle, chipStyle } from "@/lib/theme/controls";
+import { categoryColour } from "@/lib/theme/category";
+import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { tabular } from "@/lib/theme/type";
+import { DM_MONO, tabular } from "@/lib/theme/type";
 
-/** The chip's own padding. Smaller than a control's: it is a label, not a target. */
-const PAD = "2px 8px";
+/** What every chip shares: the reference's box, with no fill and a hairline. */
+const BASE: CSSProperties = {
+  border: `1px solid ${t.line}`,
+  fontFamily: DM_MONO,
+  fontSize: 10,
+  lineHeight: "normal",
+  padding: "2px 6px",
+  borderRadius: r.chip,
+  whiteSpace: "nowrap",
+};
 
 interface CommonProps {
   /** Anything the surface wants on hover — what the category means, usually. */
@@ -53,8 +51,7 @@ export interface CategoryChipCategoryProps extends CommonProps {
   variant?: "category";
   /**
    * A part category. Anything the resolver does not recognise lands on the
-   * measured fallback pair — `--text2` on `--recess` — rather than on an
-   * invented hue. A role like "founders" is NOT a category and resolves there
+   * fallback ink — `--text2` — rather than on an invented hue. A role like "founders" is NOT a category and resolves there
    * on purpose: borrowing one of the nine for it would say the card was talking
    * about a configuration.
    */
@@ -82,19 +79,18 @@ export function CategoryChip(props: CategoryChipProps) {
   if (props.variant === "overflow") {
     return (
       <span
+        data-ui="category-chip"
+        data-variant="overflow"
         data-visual-slot="category-chip"
         data-chip-variant="overflow"
         title={title}
         onClick={onClick}
         style={{
-          /* The OUTLINE tone, which is `--text2` on nothing. An overflow chip
-             names no category, so it must not wear one of the ten grounds — a
-             filled "+4" reads as a tenth category rather than as the rest of
+          /* An overflow chip names no category, so it wears no category hue: a
+             coloured "+4" reads as a tenth category rather than as the rest of
              the row. */
-          ...chipStyle("outline", { selectable }),
+          ...BASE,
           ...tabular,
-          padding: PAD,
-          whiteSpace: "nowrap",
           color: t.text2,
           ...style,
         }}
@@ -109,6 +105,8 @@ export function CategoryChip(props: CategoryChipProps) {
 
   return (
     <span
+      data-ui="category-chip"
+      data-variant={category}
       data-visual-slot="category-chip"
       data-chip-variant="category"
       data-category={category}
@@ -131,31 +129,19 @@ export function CategoryChip(props: CategoryChipProps) {
           : undefined
       }
       style={{
-        ...chipStyle("category", { category, selectable }),
-        ...(selected ? chipSelectedStyle : null),
+        ...BASE,
+        color: categoryColour(category),
+        ...(selected ? { borderColor: t.action } : null),
         display: "inline-flex",
         alignItems: "baseline",
         gap: 5,
-        padding: PAD,
-        whiteSpace: "nowrap",
+        cursor: selectable ? "pointer" : undefined,
         ...style,
       }}
     >
       {label}
-      {/* BG-P30. THE COUNT CARRIED `opacity: 0.75` AND THE FILLS HAVE NO ROOM
-          FOR IT. Each of the twenty `cat-*`/`cat-*-fill` pairs was struck to
-          land just above the text floor — 4.51 to 4.56 on Noon, 4.54 to
-          6.09 on Dusk — because the fill is the hue at a low alpha over the
-          ground and any more alpha would stop reading as the category. Fading
-          the ink to 75% over that fill spends headroom that was never there:
-          the sweep measured 2.96 to 3.06 on Noon and 3.28 to 4.20 on
-          Dusk, so the number inside the chip failed in BOTH rooms while the
-          label beside it passed.
-
-          The fix is to stop spending it. The count is already set apart by
-          `tabular` and by the gap, which is the de-emphasis the opacity was
-          reaching for, and dropping the opacity restores exactly the pairing
-          category.ts measured and category.test.ts records. */}
+      {/* The count is set apart by `tabular` and by the gap. It carries no
+          opacity: the ink has to stay the measured hue (BG-P30). */}
       {showCount ? (
         <span data-chip-count="" style={tabular}>
           {count}

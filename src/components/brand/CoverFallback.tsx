@@ -19,6 +19,10 @@
 
 import { useId } from "react";
 
+import { hashSeed } from "./hash";
+
+export { hashSeed };
+
 export type SkyPalette = readonly [string, string, string, string, string, string, string];
 
 /** Sky top, sky middle, sky horizon, sun, far hill, mid hill, near hill. */
@@ -39,16 +43,6 @@ const HILLS = [
   "M0 140 C50 126 90 138 140 128 C190 118 230 138 300 126 L300 180 L0 180Z",
   "M0 162 C60 152 120 164 180 156 C230 150 270 160 300 154 L300 180 L0 180Z",
 ] as const;
-
-/** FNV-1a, 32-bit. Stable across runs and platforms, which `Math.random` and object order are not. */
-export function hashSeed(seed: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < seed.length; i += 1) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
 
 /** The sky a seed lands on, 0 to 5. */
 export function skyIndex(seed: string): number {

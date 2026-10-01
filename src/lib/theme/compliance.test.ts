@@ -134,6 +134,16 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "the Google G turning theme-dependent. If a fifth literal ever appears " +
       "here, it is not a brand wedge.",
   },
+  "src/components/brand/Avatar.tsx": {
+    max: 7,
+    why:
+      "THE SIX AVATAR HUES AND THEIR INITIALS' INK — artwork, identical in both " +
+      "themes, so not tokens: a person keeps their colour in either room, and " +
+      "design/tokens/token-map.md names the arrangement (fixed values on " +
+      "artwork live as named constants in the component that owns them). Six " +
+      "hues plus the one near-white ink. THE CAP IS 7 BECAUSE THAT IS ALL THERE " +
+      "IS: a seventh hue is a design decision, not a mechanical one.",
+  },
   "src/components/brand/CoverFallback.tsx": {
     max: 42,
     why:
