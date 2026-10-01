@@ -21,10 +21,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
+import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import { normaliseQuery, searchBuildIds } from "./search";
 import {
   SHAPE_RULES,
   STALE_AFTER_DAYS,
+  countRunsThisWeek,
   type MissingItem,
   type RequirementKey,
 } from "./signals";
@@ -825,6 +827,43 @@ export async function countGalleryLenses(): Promise<Record<GalleryLens, number>>
     out[lens] = counts[index];
   });
   return out;
+}
+
+/** The numbers on the Gallery's stats row. */
+export interface GalleryStats {
+  /** Builds in the gallery: the All lens' count. */
+  inGallery: number;
+  /** Reproductions recorded since Monday 00:00 UTC. */
+  reproducedThisWeek: number;
+  /** WEEKLY_REPRODUCTION_GOAL; null while no target is set. */
+  weeklyGoal: number | null;
+  /** Gallery builds confirmed within STALE_AFTER_DAYS, as a whole percentage of inGallery. */
+  freshPct: number;
+}
+
+/**
+ * The stats row: how many builds the gallery holds, how many runs this week,
+ * and how much of the gallery is still fresh. Three head counts, sent together.
+ *
+ * `freshPct` reads the same window isStale does, over the same builds the
+ * gallery shows, and is 0 for an empty gallery rather than a divide by zero.
+ */
+export async function getGalleryStats(): Promise<GalleryStats> {
+  const now = Date.now();
+  const [inGalleryCount, freshCount, reproducedThisWeek] = await Promise.all([
+    countGalleryBuilds("getGalleryStats", "all", now),
+    countGalleryBuilds("getGalleryStats (fresh)", "all", now, true),
+    countRunsThisWeek(new Date(now)),
+  ]);
+
+  return {
+    inGallery: inGalleryCount,
+    reproducedThisWeek,
+    weeklyGoal: WEEKLY_REPRODUCTION_GOAL,
+    // Counts are estimates, so the fresh figure can overshoot the total.
+    freshPct:
+      inGalleryCount > 0 ? Math.min(100, Math.round((freshCount / inGalleryCount) * 100)) : 0,
+  };
 }
 
 // =============================================================================

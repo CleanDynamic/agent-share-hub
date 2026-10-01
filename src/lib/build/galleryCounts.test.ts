@@ -51,6 +51,7 @@ import {
   GALLERY_LENSES,
   GALLERY_THRESHOLD,
   countGalleryLenses,
+  getGalleryStats,
   listGallery,
   type GalleryLens,
 } from "@/lib/build/gallery";
@@ -175,5 +176,85 @@ describe("countGalleryLenses", () => {
   it("throws an error naming the operation when a request fails", async () => {
     answer = () => ({ count: null, error: { message: "boom" } });
     await expect(countGalleryLenses()).rejects.toThrow("countGalleryLenses failed: boom");
+  });
+});
+
+describe("getGalleryStats", () => {
+  /** Answers each request by what it counts: runs, fresh gallery builds, or all gallery builds. */
+  function answerWith(figures: { all: number | null; fresh: number | null; runs: number | null }) {
+    answer = (own) => {
+      if (named(own, "from")[0][0] === "build_reproductions") return { count: figures.runs, error: null };
+      const fresh = named(own, "gte").some((args) => args[0] === "last_confirmed_at");
+      return { count: fresh ? figures.fresh : figures.all, error: null };
+    };
+  }
+
+  it("reports the gallery's size, this week's runs, a null goal and the fresh share", async () => {
+    answerWith({ all: 200, fresh: 150, runs: 312 });
+
+    await expect(getGalleryStats()).resolves.toEqual({
+      inGallery: 200,
+      reproducedThisWeek: 312,
+      weeklyGoal: null,
+      freshPct: 75,
+    });
+  });
+
+  it("counts the All lens over the gallery's membership, and freshness over the stale window", async () => {
+    answerWith({ all: 10, fresh: 5, runs: 1 });
+    await getGalleryStats();
+
+    const gallery = [1, 2].map((id) => filtersOf(callsOf(id)));
+    const all = gallery.find((request) => request.gte.length === 0);
+    const fresh = gallery.find((request) => request.gte.length > 0);
+
+    expect(all?.status).toEqual([["status", ["published", "gallery"]]]);
+    expect(all?.or).toEqual(fresh?.or);
+    // Fresh asks only for the confirmation window: no reproduction clause.
+    expect(fresh?.gte).toEqual([["last_confirmed_at", FRESH_SINCE]]);
+  });
+
+  it("counts this week's runs from Monday 00:00 UTC", async () => {
+    answerWith({ all: 1, fresh: 1, runs: 1 });
+    await getGalleryStats();
+
+    const runs = callsOf(3);
+    expect(named(runs, "from")[0]).toEqual(["build_reproductions"]);
+    expect(named(runs, "gte")).toEqual([["created_at", "2026-09-28T00:00:00.000Z"]]);
+  });
+
+  it("rounds to a whole percentage", async () => {
+    answerWith({ all: 3, fresh: 1, runs: 0 });
+    expect((await getGalleryStats()).freshPct).toBe(33);
+  });
+
+  it("reports 0% for an empty gallery rather than dividing by zero", async () => {
+    answerWith({ all: 0, fresh: 0, runs: 0 });
+    expect(await getGalleryStats()).toEqual({
+      inGallery: 0,
+      reproducedThisWeek: 0,
+      weeklyGoal: null,
+      freshPct: 0,
+    });
+  });
+
+  it("treats empty counts as 0", async () => {
+    answerWith({ all: null, fresh: null, runs: null });
+    expect(await getGalleryStats()).toEqual({
+      inGallery: 0,
+      reproducedThisWeek: 0,
+      weeklyGoal: null,
+      freshPct: 0,
+    });
+  });
+
+  it("never reports more than 100% when an estimate overshoots", async () => {
+    answerWith({ all: 100, fresh: 140, runs: 0 });
+    expect((await getGalleryStats()).freshPct).toBe(100);
+  });
+
+  it("throws an error naming the operation when a count fails", async () => {
+    answer = () => ({ count: null, error: { message: "boom" } });
+    await expect(getGalleryStats()).rejects.toThrow(/getGalleryStats.* failed: boom/);
   });
 });
