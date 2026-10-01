@@ -144,6 +144,17 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "hues plus the one near-white ink. THE CAP IS 7 BECAUSE THAT IS ALL THERE " +
       "IS: a seventh hue is a design decision, not a mechanical one.",
   },
+  "src/components/brand/orb.ts": {
+    max: 2,
+    why:
+      "THE ORBS' TWO NEUTRAL SHADOWS — the white inner light (18%) along the glass " +
+      "orb's upper edge and the black drop shadow (25%) every orb casts. Both are " +
+      "identical in Noon and Dusk and sit on artwork, so they are not tokens: " +
+      "design/tokens/token-map.md names exactly these two as named constants in " +
+      "the component that owns them. Everything theme-dependent on an orb — the " +
+      "ground, the edge, every ink — is a token. THE CAP IS 2 BECAUSE THAT IS " +
+      "ALL THERE IS.",
+  },
   "src/components/brand/CoverFallback.tsx": {
     max: 42,
     why:
