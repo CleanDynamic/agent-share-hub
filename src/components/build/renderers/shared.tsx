@@ -53,7 +53,7 @@ import {
      Figtree  prose — a note, a step, a creator's sentence.
      DM Mono  data — a model name, a cost, a duration, a count, a part label,
               a field label, a caption, a chip.
-     Bodoni   display — and NOTHING in this file, which draws the inside of a
+     Sentient   display — and NOTHING in this file, which draws the inside of a
               node card. The display face belongs to the build's own title.
 
    A renderer that mixes them the other way round — mono prose, Figtree figures

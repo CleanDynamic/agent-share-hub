@@ -173,7 +173,7 @@ describe("a row names its part", () => {
     expect(styleOf(heading)).toContain("font-size:16px");
     expect(styleOf(heading)).toContain("font-weight:600");
     // The build's own title is the only display-face heading on this page.
-    expect(styleOf(heading)).not.toContain("Bodoni");
+    expect(styleOf(heading)).not.toContain("Sentient");
   });
 
   it("caps a note at the reading measure", () => {

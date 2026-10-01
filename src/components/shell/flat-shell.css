@@ -262,13 +262,13 @@
 }
 
 /* ── Wordmark ──
-     BG-P13. "buildgallery", in the display face. 22px clears the theme's 20px
-     Bodoni floor with room to spare — a didone's hairlines shimmer and break up
+     BG-P13. "buildgallery", in the display face. 22px clears the theme's 17px
+     Sentient floor with room to spare — the display face loses its shape
      below it, worst on Dusk. It is --text and not --action on purpose: the
      active nav row is the one --action mark in this rail, and a wordmark
      competing with it would leave the reader two places to look. ── */
 .fs-logo {
-  font-family: 'Bodoni Moda', 'Didot', 'Times New Roman', Georgia, serif;
+  font-family: 'Sentient', Georgia, 'Times New Roman', serif;
   font-size: 22px;
   font-weight: 500;
   line-height: 28px;

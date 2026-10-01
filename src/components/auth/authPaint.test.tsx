@@ -26,7 +26,7 @@ import { AuthShell } from "./AuthShell";
 import { OAuthButtons } from "./OAuthButtons";
 import { PasswordStrengthMeter, type PasswordStrength } from "./PasswordStrengthMeter";
 import { ThemeProvider, THEME_STORAGE_KEY } from "@/contexts/ThemeContext";
-import { BODONI, DISPLAY_MIN_PX } from "@/lib/theme/type";
+import { SENTIENT, DISPLAY_MIN_PX } from "@/lib/theme/type";
 import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 /** AuthShell reads the resolved theme for its wash, so it needs the provider. */
@@ -75,7 +75,7 @@ describe("AuthShell", () => {
     );
     expect(wordmark).toBeTruthy();
     const style = styleOf(wordmark);
-    expect(style).toContain(BODONI);
+    expect(style).toContain(SENTIENT);
     expect(style).toContain("font-size:28px");
     expect(28).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
     expect(style).toContain("color:var(--text)");

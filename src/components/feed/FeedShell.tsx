@@ -671,8 +671,8 @@ function FeedNotice({
         padding: "0 64px",
       }}
     >
-      {/* 26/32 Bodoni. The display face is legal from 20px up — below it the
-          didone's hairlines shimmer, worst on Dusk — and the `cardTitle` role
+      {/* 26/32 Sentient. The display face is legal from 17px up — below it the
+          display face loses its shape, worst on Dusk — and the `cardTitle` role
           this used to take is 22, which is a title inside a card rather than
           the one line on an otherwise empty screen. */}
       {headline ? (

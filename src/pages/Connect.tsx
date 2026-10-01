@@ -60,7 +60,7 @@ import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import {
-  BODONI,
+  SENTIENT,
   body as bodyText,
   bodyLarge,
   cardTitle,
@@ -399,14 +399,14 @@ export default function Connect() {
         }}
       >
         {/* The way home, since there is no frame to carry one. The wordmark as
-            AuthShell sets it — Bodoni at 28, clear of the display face's 20px
+            AuthShell sets it — Sentient at 28, clear of the display face's 17px
             floor. */}
         <Link
           to="/"
           style={{
             display: "inline-block",
             marginBottom: SPACE.lg,
-            fontFamily: BODONI,
+            fontFamily: SENTIENT,
             fontSize: "28px",
             fontWeight: 500,
             lineHeight: 1.1,

@@ -6,7 +6,7 @@ import { GLASS_BLUR, prefersReducedMotion } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { BODONI, FIGTREE } from "@/lib/theme/type";
+import { SENTIENT, FIGTREE } from "@/lib/theme/type";
 
 interface AuthShellProps {
   children: ReactNode;
@@ -87,8 +87,8 @@ export function AuthShell({ children }: AuthShellProps) {
       }}
     >
       <div className="flex flex-col items-center" style={{ gap: "24px" }}>
-        {/* The wordmark. Bodoni at 28 — display, and well clear of the face's
-            20px floor, which is what lets the entrance carry the brand with one
+        {/* The wordmark. Sentient at 28 — display, and well clear of the face's
+            17px floor, which is what lets the entrance carry the brand with one
             word instead of a logo. */}
         <div
           className="flex flex-col items-center"
@@ -96,7 +96,7 @@ export function AuthShell({ children }: AuthShellProps) {
         >
           <span
             style={{
-              fontFamily: BODONI,
+              fontFamily: SENTIENT,
               fontSize: "28px",
               fontWeight: 500,
               lineHeight: 1.1,

@@ -1,7 +1,7 @@
 import { ArrowLeft, Search, Bell } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { t } from "@/lib/theme/tokens";
-import { BODONI, FIGTREE } from "@/lib/theme/type";
+import { SENTIENT, FIGTREE } from "@/lib/theme/type";
 
 export type PageContextType =
   | "home"
@@ -49,7 +49,7 @@ const TITLE_STYLE: React.CSSProperties = {
 /* The wordmark, in the display face at the same 22px the left rail uses. */
 const WORDMARK_STYLE: React.CSSProperties = {
   color: t.text,
-  fontFamily: BODONI,
+  fontFamily: SENTIENT,
   fontSize: 22,
   fontWeight: 500,
   letterSpacing: "-0.01em",

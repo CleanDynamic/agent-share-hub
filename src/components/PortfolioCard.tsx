@@ -104,8 +104,8 @@ export function PortfolioCard({ item }: PortfolioCardProps) {
             className="w-full h-full flex items-center justify-center"
             style={{ backgroundColor: accent.background }}
           >
-            {/* The display face is legal at 32px — well above the 20px floor
-                below which Bodoni's hairlines shimmer. */}
+            {/* The display face is legal at 32px — well above the 17px floor
+                below which Sentient's small sizes lose their shape. */}
             <span style={{ ...type.cardTitle, fontSize: 32, color: accent.color }}>
               {(item.content_type || "?")[0]}
             </span>

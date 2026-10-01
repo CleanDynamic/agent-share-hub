@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PageHeader } from "./PageHeader";
-import { BODONI, DM_MONO, sectionHead } from "@/lib/theme/type";
+import { SENTIENT, DM_MONO, sectionHead } from "@/lib/theme/type";
 import { t } from "@/lib/theme/tokens";
 
 /* ────────────────────────────────────────────────
@@ -22,7 +22,7 @@ describe("PageHeader", () => {
   it("sets the title in the display face, at the whole sectionHead role", () => {
     render(<PageHeader title="The gallery" />);
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.style.fontFamily).toBe(BODONI);
+    expect(h1.style.fontFamily).toBe(SENTIENT);
 
     /* The role SPREAD, not picked apart — a heading that arrived with the
        size but not the weight is how a scale stops being one. Compared

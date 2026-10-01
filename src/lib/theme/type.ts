@@ -14,23 +14,29 @@
 //   <h2 style={{ ...type.sectionHead, color: t.text }}>How it was built</h2>
 //   <p  style={{ ...type.body, ...measure, color: t.text2 }}>…</p>
 //   <span style={{ ...type.data, ...tabular }}>$0.42</span>
+//   <h1 style={{ ...type.display(44), color: t.text }}>Builds worth running</h1>
+//   <span style={{ ...type.mono(10, { caps: true }) }}>Maker</span>
 //
 // Spread it; do not pick fields out of it. A role that arrives half-applied —
 // the size without the weight, the family without the line-height — is how a
 // scale stops being one.
 //
-// THREE FACES, THREE JOBS. Bodoni Moda is display and nothing else. Figtree is
-// body and UI. DM Mono is data: model names, cost, timestamps, change
-// summaries, part labels, counts and eyebrows. Mono never sets long-form prose,
-// and no role here mixes the jobs.
+// THREE FACES, THREE JOBS. Sentient (500, self-hosted from /fonts) is display
+// and nothing else: every heading. Figtree is body and UI. DM Mono is data:
+// model names, cost, timestamps, change summaries, part labels, counts and
+// eyebrows. Mono never sets long-form prose, and no role here mixes the jobs.
+// Bodoni Moda, the display face before UI-P05, is retired.
 //
-// TWO FLOORS, ENFORCED BELOW RATHER THAN DOCUMENTED. Bodoni Moda is never
-// emitted under 20px, and Figtree is never emitted under weight 400 at sizes
-// below 18px. Both are hard rules in the theme, and both describe a specific
-// failure: a didone's hairlines shimmer and break up at small sizes, worst on
-// the dark room, and a sub-400 weight at text size disappears into the ground.
-// `assertFloors` runs over this table at import time in dev, and the unit test
-// runs it in CI, so a violation cannot reach a screen by being written down.
+// TWO FLOORS, ENFORCED BELOW RATHER THAN DOCUMENTED. Sentient is never emitted
+// under 17px (a card title on mobile is 17–18px), and Figtree is never emitted
+// under weight 400 at sizes below 18px. Both are hard rules in the theme: a
+// display face loses its shape at small sizes, worst on the dark room, and a
+// sub-400 weight at text size disappears into the ground. The one sanctioned
+// exception is the lockup wordmark, which the reference draws at 16px in the
+// footer; `display(16, { lockup: true })` is the only way to get it.
+// `assertFloors` runs over the static role table at import time in dev, and the
+// unit test runs it in CI, so a violation cannot reach a screen by being
+// written down.
 
 import type { CSSProperties } from "react";
 
@@ -42,8 +48,9 @@ import type { CSSProperties } from "react";
 export const FIGTREE =
   "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-/** Display, 20px and up only. */
-export const BODONI = "'Bodoni Moda', 'Didot', 'Times New Roman', Georgia, serif";
+/** Display, 17px and up (16px only for the lockup wordmark). Loaded by the
+ *  `@font-face` rules in src/index.css, weights 500 and 700. */
+export const SENTIENT = "'Sentient', Georgia, 'Times New Roman', serif";
 
 /** Data. */
 export const DM_MONO =
@@ -60,7 +67,8 @@ export const DM_MONO =
    paragraph does not end on a widow. Neither belongs on a label or a number,
    which is why the short roles carry no `textWrap` at all. */
 
-/** 12px mono, uppercase. The small label above a section or a card. */
+/** 12px mono, uppercase. The small label above a section or a card.
+    `mono(px, { caps: true })` is the same job at the reference's other sizes. */
 export const eyebrow = {
   fontFamily: DM_MONO,
   fontSize: "12px",
@@ -91,7 +99,7 @@ export const bodyLarge = {
 } as const satisfies CSSProperties;
 
 /**
- * 22px Bodoni Moda 500. A card's title.
+ * 22px Sentient 500. A card's title.
  *
  * DISPLAY, AND FIXED AT THE TOP OF ITS RANGE RATHER THAN CLAMPED (BG-P09). It
  * was `clamp(19px, 1.4vw, 22px)` in Figtree, and the note here said the display
@@ -101,17 +109,17 @@ export const bodyLarge = {
  * The card is why. BG-P09 rebuilt it as a picture above a title, and a title
  * under a picture cannot win the reader's eye by POSITION — it has to win by
  * face, size and contrast. Figtree 500 at 19 loses that contest to any
- * photograph. Bodoni at 22 wins it, and 22 ≥ DISPLAY_MIN_PX, so the floor is
+ * photograph. Sentient at 22 wins it, and 22 ≥ DISPLAY_MIN_PX, so the floor is
  * cleared by the same assertion that used to rule the face out: `assertFloors`
  * runs over this table at import time in dev and in CI, and it passes because
  * the smallest this role can now render is 22 and not 19.
  *
  * A fixed size rather than a clamp is the price, and it is the right one: the
- * lower bound was what breached the floor, and a display face that shimmered on
+ * lower bound was what breached the floor, and a display face that lost its shape on
  * Dusk at a narrow viewport would have been the floor's whole point.
  */
 export const cardTitle = {
-  fontFamily: BODONI,
+  fontFamily: SENTIENT,
   fontSize: "22px",
   fontWeight: 500,
   lineHeight: 1.25,
@@ -119,21 +127,21 @@ export const cardTitle = {
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 30–48px Bodoni Moda. A section heading on a reading surface. */
+/** 30–48px Sentient. A section heading on a reading surface. */
 export const sectionHead = {
-  fontFamily: BODONI,
+  fontFamily: SENTIENT,
   fontSize: "clamp(30px, 3.6vw, 48px)",
-  fontWeight: 400,
+  fontWeight: 500,
   lineHeight: 1.12,
   letterSpacing: "-0.01em",
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 44–78px Bodoni Moda. One per page, at most. */
+/** 44–78px Sentient. One per page, at most. */
 export const hero = {
-  fontFamily: BODONI,
+  fontFamily: SENTIENT,
   fontSize: "clamp(44px, 6.4vw, 78px)",
-  fontWeight: 400,
+  fontWeight: 500,
   lineHeight: 1.05,
   letterSpacing: "-0.02em",
   textWrap: "balance",
@@ -158,6 +166,111 @@ export const label = {
   letterSpacing: "0.01em",
 } as const satisfies CSSProperties;
 
+/** The eight static roles, by name. The floors are checked over this table;
+    `display` and `mono` below are functions and are checked at the call. */
+export const scale = {
+  eyebrow,
+  body,
+  bodyLarge,
+  cardTitle,
+  sectionHead,
+  hero,
+  data,
+  label,
+} as const;
+
+/* ── Sized roles ───────────────────────────────────────────────────────────
+   Display and mono type are used at many sizes in the overhaul, and their
+   tracking and leading depend on the size, so each is a function that returns a
+   complete role. The bands are the reference's own. */
+
+export interface DisplayOptions {
+  /** The lockup wordmark: −0.03em, line-height 1, no balancing, and the one
+   *  role allowed under the 17px floor (the reference's 16px footer lockup).
+   *  Sizes used: 16, 18, 19, 21, 34, 64, 70. */
+  lockup?: boolean;
+  /** A page heading on mobile at 30–36px takes −0.035em instead of −0.03em. */
+  mobilePageHeading?: boolean;
+}
+
+/** The smallest the lockup wordmark is ever drawn. */
+export const LOCKUP_MIN_PX = 16;
+
+/**
+ * A complete Sentient 500 role at `px`, with the reference's letter-spacing and
+ * line-height for that size band:
+ *
+ *   52 and up   −0.04em   0.95
+ *   44–51       −0.035em  1
+ *   30–43       −0.03em   1    (−0.035em for a mobile page heading at 30–36)
+ *   17–29       −0.02em   1.05
+ *   lockup      −0.03em   1    at its own size
+ *
+ * Throws under the floor rather than emitting it: a size the face cannot hold
+ * is an authoring mistake, and it should fail where it is written.
+ */
+export function display(px: number, options: DisplayOptions = {}): CSSProperties {
+  const { lockup = false, mobilePageHeading = false } = options;
+  const floor = lockup ? LOCKUP_MIN_PX : DISPLAY_MIN_PX;
+  if (!(px >= floor)) {
+    throw new RangeError(
+      `type.display(${px}): Sentient is never set under ${floor}px${
+        lockup ? "" : " (the lockup wordmark alone may go to 16)"
+      }.`,
+    );
+  }
+
+  const base = {
+    fontFamily: SENTIENT,
+    fontSize: `${px}px`,
+    fontWeight: 500,
+  } as const;
+
+  if (lockup) return { ...base, lineHeight: 1, letterSpacing: "-0.03em" };
+
+  let letterSpacing: string;
+  let lineHeight: number;
+  if (px >= 52) {
+    letterSpacing = "-0.04em";
+    lineHeight = 0.95;
+  } else if (px >= 44) {
+    letterSpacing = "-0.035em";
+    lineHeight = 1;
+  } else if (px >= 30) {
+    letterSpacing = mobilePageHeading && px <= 36 ? "-0.035em" : "-0.03em";
+    lineHeight = 1;
+  } else {
+    letterSpacing = "-0.02em";
+    lineHeight = 1.05;
+  }
+  return { ...base, lineHeight, letterSpacing, textWrap: "balance" };
+}
+
+export interface MonoOptions {
+  /** An eyebrow: uppercase, .09em tracking, weight 500. Used at 10–12px. */
+  caps?: boolean;
+}
+
+/**
+ * A complete DM Mono role at `px`. Eyebrows (`caps`) are uppercase with .09em
+ * tracking; data values carry no extra tracking; a large number — 22px and up —
+ * takes −0.02em. Digits that sit in a column also need `tabular`, which this
+ * role carries so a number cannot be set without it.
+ */
+export function mono(px: number, options: MonoOptions = {}): CSSProperties {
+  const { caps = false } = options;
+  const base = {
+    fontFamily: DM_MONO,
+    fontSize: `${px}px`,
+    lineHeight: 1.3,
+    fontVariantNumeric: "tabular-nums",
+  } as const;
+  if (caps) {
+    return { ...base, fontWeight: 500, letterSpacing: "0.09em", textTransform: "uppercase" };
+  }
+  return { ...base, fontWeight: 400, letterSpacing: px >= 22 ? "-0.02em" : "0" };
+}
+
 /**
  * The scale, by role. `type.body`, `type.sectionHead`, and so on.
  *
@@ -175,17 +288,12 @@ export const label = {
  * object. Every role below is exported individually for exactly this.
  */
 export const type = {
-  eyebrow,
-  body,
-  bodyLarge,
-  cardTitle,
-  sectionHead,
-  hero,
-  data,
-  label,
+  ...scale,
+  display,
+  mono,
 } as const;
 
-export type TypeRole = keyof typeof type;
+export type TypeRole = keyof typeof scale;
 
 /* ── Modifiers ─────────────────────────────────────────────────────────────
    Spread alongside a role rather than baked into it, because both depend on
@@ -216,8 +324,8 @@ export const tabular = {
    Both rules are stated in the theme as hard, so they are checked in code
    rather than trusted to review. */
 
-/** Bodoni Moda is never emitted below this size. */
-export const DISPLAY_MIN_PX = 20;
+/** Sentient is never emitted below this size (the lockup wordmark aside). */
+export const DISPLAY_MIN_PX = 17;
 
 /** Below this size, Figtree is never emitted under weight 400. */
 export const BODY_WEIGHT_FLOOR_PX = 18;
@@ -256,16 +364,16 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
   const size = typeof style.fontSize === "string" ? minPx(style.fontSize) : null;
   const weight = Number(style.fontWeight ?? BODY_MIN_WEIGHT);
 
-  if (leadsWith(family, "Bodoni Moda")) {
+  if (leadsWith(family, "Sentient")) {
     if (size === null) {
       found.push(
-        `${role}: Bodoni Moda at a size this check cannot resolve (${String(style.fontSize)}); ` +
+        `${role}: Sentient at a size this check cannot resolve (${String(style.fontSize)}); ` +
           `the display face needs a size provably at or above ${DISPLAY_MIN_PX}px.`,
       );
     } else if (size < DISPLAY_MIN_PX) {
       found.push(
-        `${role}: Bodoni Moda at ${size}px is below the ${DISPLAY_MIN_PX}px display floor — ` +
-          `its hairlines break up at this size, worst on Dusk. Use Figtree, or size up.`,
+        `${role}: Sentient at ${size}px is below the ${DISPLAY_MIN_PX}px display floor — ` +
+          `the face loses its shape at this size, worst on Dusk. Use Figtree, or size up.`,
       );
     }
   }
@@ -285,9 +393,9 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
   return found;
 }
 
-/** Every violation across the scale. Empty when the table is legal. */
+/** Every violation across the static roles. Empty when the table is legal. */
 export function assertFloors(): string[] {
-  return Object.entries(type).flatMap(([role, style]) =>
+  return Object.entries(scale).flatMap(([role, style]) =>
     floorViolations(role, style as CSSProperties),
   );
 }

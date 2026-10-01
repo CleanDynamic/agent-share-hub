@@ -52,10 +52,10 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 /* BG-P21 — THE HEADINGS KEEP THEIR SIZE AND CHANGE THEIR FACE. The page
    headings were `pageHeadingText`, 22px Figtree 700; they are `cardTitle`, 22px
-   Bodoni 500 — the same size, in the face the theme reserves for display, and
-   clear of the 20px floor that rules the display face out below it. The section
+   Sentient 500 — the same size, in the face the theme reserves for display, and
+   clear of the 17px floor that rules the display face out below it. The section
    heading was 15px Figtree 600 and stays a body-face heading at 16/600, because
-   a didone at 15 would breach that floor and a didone at 22 would make a
+   Sentient at 15 would breach that floor and Sentient at 22 would make a
    subheading louder than the page's own title. */
 import {
   body as bodyType,

@@ -7,16 +7,26 @@
     <meta name="description" content="A gallery of AI builds with the proof attached: who ran them, whether they worked, and when.">
     <meta name="author" content="buildgallery.ai" />
 
-    <!-- BG-P03 typefaces. Figtree (body/UI), Bodoni Moda (display), DM Mono
-         (data). They live here rather than as an @import in src/index.css so
+    <!-- UI-P05: SENTIENT REPLACES BODONI MODA AS THE DISPLAY FACE. Sentient is
+         not on Google Fonts, so it is self-hosted: two .otf files in
+         /public/fonts (500 and 700), declared by the @font-face rules in
+         src/index.css and preloaded below so the first heading does not wait on
+         the stylesheet. Bodoni Moda is gone from the request, and from every
+         role in src/lib/theme/type.ts. The measurements further down were taken
+         when Bodoni was still in the request and are kept as the record of why
+         the remaining two families are requested the way they are.
+
+         BG-P03 typefaces. Figtree (body/UI), Sentient (display, self-hosted),
+         DM Mono (data). Figtree and DM Mono live here rather than as an @import in src/index.css so
          the request starts with the document instead of waiting on the CSS
          bundle to parse — an @import is a serial hop before paint. The
          preconnects warm both hosts (the css2 response is served from
          googleapis, the woff2 files from gstatic) so the font fetch does not
          pay for DNS + TLS twice.
 
-         Weights are the three the type scale emits, and no more: Figtree
-         400..500..600, Bodoni Moda 400..500 roman, DM Mono 400 and 500.
+         Weights are the ones the type scale emits, and no more: Figtree
+         400..500..600, DM Mono 400 and 500 (and Bodoni Moda 400..500 roman,
+         before UI-P05).
          Ranges where the family is variable, discrete weights where it is
          not, so Google serves one file per family instead of one per weight.
          Latin only — the product is English and nothing in the repo renders
@@ -52,17 +62,15 @@
          would buy a connection, not bytes, and the preconnects above already
          pay for that.
 
-         The italic is one token away if a display italic is ever wanted:
-         `family=Bodoni+Moda:ital,wght@0,400..500;1,400` restores it.
-
          The faces are read through src/lib/theme/type.ts. Change the scale
          there and the weights here together. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400..500&family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
     />
+    <link rel="preload" as="font" type="font/otf" href="/fonts/Sentient-Medium.otf" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
          sees a flash of the other room. Mirrors src/contexts/ThemeContext.tsx —

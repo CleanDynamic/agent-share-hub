@@ -1,5 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
-import { BODONI, FIGTREE } from "@/lib/theme/type";
+import { SENTIENT, FIGTREE } from "@/lib/theme/type";
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import ImageExtension from '@tiptap/extension-image';
@@ -779,7 +779,7 @@ export function ArticleEditor({
           background: var(--action);
         }
         .tiptap-article h1 {
-          font-family: ${isBlog ? BODONI : FIGTREE};
+          font-family: ${isBlog ? SENTIENT : FIGTREE};
           font-size: ${isBlog ? 28 : 28}px;
           font-weight: 700;
           color: var(--text);
@@ -787,7 +787,7 @@ export function ArticleEditor({
           line-height: 1.3;
         }
         .tiptap-article h2 {
-          font-family: ${isBlog ? BODONI : FIGTREE};
+          font-family: ${isBlog ? SENTIENT : FIGTREE};
           font-size: 22px;
           font-weight: 600;
           color: var(--text);

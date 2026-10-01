@@ -215,7 +215,7 @@ describe("WorkspaceBar — the ground rule", () => {
     const style = exit().querySelector("span")?.getAttribute("style") ?? "";
     const size = Number(/font-size:\s*(\d+)px/.exec(style)?.[1]);
     // type.test.ts sweeps CSS template literals for this; a style object is
-    // invisible to it, so the one new Bodoni site checks its own floor.
+    // invisible to it, so the one new Sentient site checks its own floor.
     expect(size).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
   });
 
