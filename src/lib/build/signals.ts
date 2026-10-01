@@ -237,17 +237,32 @@ export async function countRunsThisWeek(now: Date = new Date()): Promise<number>
   return countReproductionsSince("countRunsThisWeek", weekStartUtc(now));
 }
 
+/**
+ * How many reproductions were recorded in the whole of the week before the one
+ * `now` falls in: Monday 00:00 UTC seven days back, up to this Monday 00:00 UTC.
+ * The Gallery's stats bar sets this week against it while no weekly goal is set
+ * (WEEKLY_REPRODUCTION_GOAL is null). Same `created_at` rule as the others.
+ */
+export async function countRunsLastWeek(now: Date = new Date()): Promise<number> {
+  const thisMonday = weekStartUtc(now);
+  const lastMonday = new Date(thisMonday.getTime() - 7 * MS_PER_DAY);
+  return countReproductionsSince("countRunsLastWeek", lastMonday, thisMonday);
+}
+
 /** 00:00 UTC of the day that holds `now`. */
 function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
-/** An estimated head count of reproduction rows first recorded at or after `since`. */
-async function countReproductionsSince(operation: string, since: Date): Promise<number> {
-  const { count, error } = await supabase
+/** An estimated head count of reproduction rows first recorded at or after `since` (and before `until`, when given). */
+async function countReproductionsSince(operation: string, since: Date, until?: Date): Promise<number> {
+  let query = supabase
     .from("build_reproductions")
     .select("id", { count: "estimated", head: true })
     .gte("created_at", since.toISOString());
+  if (until) query = query.lt("created_at", until.toISOString());
+
+  const { count, error } = await query;
 
   if (error) throw buildLayerError(operation, error);
   return count ?? 0;
