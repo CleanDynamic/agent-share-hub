@@ -308,10 +308,11 @@ describe("colour", () => {
     expect(inked.length).toBeGreaterThan(40);
     expect(inked.filter((element) => inkOf(element, root) === "var(--lit)").map((element) => element.textContent)).toEqual([]);
 
-    const fills = root.querySelectorAll('[data-testid="lit-bar-fill"]');
+    const fills = root.querySelectorAll("[data-striped-fill]");
     expect(fills).toHaveLength(4); // the level, and the three challenges
     for (const fill of fills) {
-      expect(styleOf(fill)["background"]).toBe("var(--lit)");
+      // UI-P09: the bar is --lit stripes (a gradient), and nothing is written on it.
+      expect(styleOf(fill)["background"]).toContain("var(--lit)");
       expect(fill.textContent).toBe("");
     }
     // The one other amber: a highest-tier badge's fill, whose ink is --on-lit.

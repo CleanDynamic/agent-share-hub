@@ -192,7 +192,7 @@ describe("the publish sheet", () => {
     // The card's own chain, not a second one written here: with no picture it
     // leads with the first evidence node's words, exactly as /gallery does.
     expect(preview).toHaveTextContent("What it did");
-    expect(preview).toHaveTextContent("not confirmed by anyone yet");
+    expect(preview).toHaveTextContent("not yet reproduced");
   });
 
   it("falls through to the outcome, set large, when the record has neither picture nor words", async () => {

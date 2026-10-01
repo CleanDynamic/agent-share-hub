@@ -31,9 +31,6 @@
 export const grey = {
   0: "#FFFFFF",
   25: "#F7F8F9",
-  50: "#E4E6E8",
-  100: "#D3D7DB",
-  200: "#C6CBD1",
   400: "#99A2AA",
   600: "#565E66",
   700: "#4E565E",
@@ -42,17 +39,49 @@ export const grey = {
 
 /** Noon's glass, struck from `grey.0`. `0/55` reads "grey.0 at 55%". */
 export const greyAlpha = {
-  "0/34": "rgba(255,255,255,.34)",
   /** BG-P09 — the card frame, one step darker than the thread box inside it. */
   "0/42": "rgba(255,255,255,.42)",
   "0/55": "rgba(255,255,255,.55)",
-  "0/80": "rgba(255,255,255,.80)",
   "0/95": "rgba(255,255,255,.95)",
 } as const;
 
 /** Birch Mist — the design kit's Noon neutrals. `950` is its ink. */
 export const birch = {
+  25: "#F8F8F6",
+  40: "#EEF0EC",
+  50: "#E9EBE7",
+  100: "#D7DBD5",
+  130: "#C5CBC7",
+  140: "#C5CAC3",
+  600: "#505A55",
   950: "#1A2320",
+} as const;
+
+/** Noon's brick — the action, and the far end of the arc. */
+export const brick = { 700: "#8C3B36" } as const;
+
+/** Noon's pine — evidence, and its fill. */
+export const pine = { 200: "#C8E3DC", 600: "#256659" } as const;
+
+/** The three warm and cool steps of Noon's arc. */
+export const sage = { 400: "#8FA79B" } as const;
+export const salmon = { 300: "#E3A594" } as const;
+export const blush = { 100: "#F1D5CB" } as const;
+
+/**
+ * Aubergine — the design kit's Dusk grounds, darkest to lightest by step. The
+ * room is `900`; `975` is the part viewer's well and `960` is the ink that sits
+ * on a lamp-lit fill.
+ */
+export const aubergine = {
+  975: "#0C0A12",
+  960: "#15121C",
+  950: "#17131F",
+  940: "#1B1725",
+  900: "#1F1829",
+  700: "#3A3350",
+  400: "#8C78C4",
+  300: "#A59EBA",
 } as const;
 
 /** Lavender stone — Dusk's room, and the ramp its greys come from. */
@@ -61,16 +90,13 @@ export const lavender = {
   100: "#CBC6E4",
   200: "#B3ABC6",
   500: "#5C5480",
-  600: "#4B4362",
-  650: "#483F68",
   700: "#372F4A",
   900: "#1F1B2B",
   950: "#141020",
 } as const;
 
-/** Dusk's glass: the surface is struck from `lavender.650`, the light from `lavender.50`. */
+/** Dusk's glass: the surface is struck from #483F68 (once `lavender.650`), the light from `lavender.50`. */
 export const lavenderAlpha = {
-  "650/26": "rgba(72,63,104,.26)",
   "650/42": "rgba(72,63,104,.42)",
   /**
    * BG-P09 — Dusk's thread box. The lightest step in this table by a wide
@@ -79,7 +105,6 @@ export const lavenderAlpha = {
    * from the stone would read as a second card.
    */
   "50/06": "rgba(238,234,244,.06)",
-  "50/14": "rgba(238,234,244,.14)",
   "50/22": "rgba(238,234,244,.22)",
 } as const;
 
@@ -104,9 +129,7 @@ export const amber = {
 
 /** Teal — Noon's evidence, and its fill. `300` is the chip fill (BG-P05). */
 export const teal = {
-  200: "#BFE3DC",
   300: "#C2D1D2",
-  600: "#0F6E63",
   700: "#0E635C",
 } as const;
 
@@ -116,9 +139,98 @@ export const sky = {
   900: "#343B4D",
 } as const;
 
-/** Dusk's evidence fill, struck from `sky.400`. */
-export const skyAlpha = {
-  "400/16": "rgba(134,189,211,.16)",
+/* ── The design kit's values that are not a single hex ───────────────────────
+   Translucents, gradients, shadows and `none`. They have no ramp — a gradient
+   is not a step on one — so each is named by the token that consumes it, and
+   `semantics.ts` is the only file that reads them. The values are those of
+   design/tokens/tokens.css, verbatim. */
+
+export const noonKit = {
+  "backdrop": "linear-gradient(180deg, #C2CFCF 0%, #D2DADA 24%, #E1E3DE 42%, #EDD3C8 51%, #F2BEA8 55%, #E6DED9 61%, #E0E5E2 74%, #E9EBE7 100%)",
+  "ambient": "radial-gradient(60% 50% at 15% 15%, rgba(255,255,255,.8) 0%, rgba(255,255,255,0) 60%), radial-gradient(50% 45% at 85% 20%, rgba(241,213,203,.55) 0%, rgba(241,213,203,0) 65%)",
+  "line": "rgba(26,35,32,.15)",
+  "hairline": "rgba(26,35,32,.09)",
+  "header": "rgba(249,250,248,.50)",
+  "header-border": "rgba(255,255,255,.92)",
+  "glass": "rgba(255,255,255,.68)",
+  "glass-border": "rgba(255,255,255,.95)",
+  "glass-2": "rgba(255,255,255,.58)",
+  "cell": "rgba(255,255,255,.55)",
+  "row-highlight": "rgba(255,255,255,.85)",
+  "tab": "rgba(255,255,255,.82)",
+  "field": "rgba(255,255,255,.72)",
+  "media-tag": "rgba(248,248,246,.92)",
+  "plate": "rgba(247,248,249,.72)",
+  "scrim": "rgba(247,248,249,.35)",
+  "dock": "rgba(255,255,255,.55)",
+  "dock-border": "rgba(255,255,255,.95)",
+  "dock-tile": "rgba(255,255,255,.85)",
+  "ring-glow": "none",
+  "orb-glass": "radial-gradient(ellipse 58% 34% at 50% 78%, #F8F8F6 0%, #F8F8F6 36%, #F0C8B8 52%, #E3A594 58%, rgba(143,167,155,.45) 68%, rgba(143,167,155,0) 80%), linear-gradient(180deg, #B4C4C3 0%, #CCD6D4 40%, #E9EBE7 58%, #CCD6D4 80%, #B4C4C3 100%)",
+  "orb-glass-edge": "rgba(255,255,255,.95)",
+  "orb-solid": "radial-gradient(circle at 32% 28%, #4B5752 0%, #2C3632 40%, #1A2320 75%, #0C1210 100%)",
+  "shadow-float": "0 40px 90px rgba(26,35,32,.20)",
+  "panel-highlight": "inset 0 1px 0 rgba(255,255,255,1)",
+  "ring-track": "rgba(27,32,38,.10)",
+  "lamp-glow": "none",
+  "picture-lamp-glow": "none",
+  "picture-lamp-wash": "rgba(255,255,255,.9)",
+  "shadow-card": "0 14px 30px rgba(26,35,32,.11)",
+  "nav-lamp-glow": "none",
+  "rank-glow": "none",
+  "banner-scrim": "rgba(247,248,249,.8)",
+  "inset": "rgba(255,255,255,.7)",
+  "secret-fill": "rgba(242,109,109,.2)",
+  "sheet-dim": "rgba(10,8,14,.45)",
+  "shadow-square": "0 14px 30px rgba(0,0,0,.35)",
+  "shadow-dock": "inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3)",
+  "shadow-sheet": "0 -20px 50px rgba(0,0,0,.35)",
+  "signin-edge": "inset 0 0 0 1px rgba(255,255,255,.9), inset 0 0 120px rgba(203,198,228,.6), inset 0 -80px 160px rgba(239,196,168,.55)",
+} as const;
+
+export const duskKit = {
+  "backdrop": "radial-gradient(60% 42% at 88% 0%, rgba(140,120,196,.42) 0%, rgba(140,120,196,0) 72%), radial-gradient(40% 26% at 80% 6%, rgba(217,140,107,.22) 0%, rgba(217,140,107,0) 70%), radial-gradient(55% 45% at 10% 100%, rgba(92,84,128,.28) 0%, rgba(92,84,128,0) 70%), linear-gradient(180deg, #241C33 0%, #1F1829 45%, #1A1523 100%)",
+  "ambient": "radial-gradient(60% 50% at 12% 80%, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 65%)",
+  "line": "rgba(238,234,244,.14)",
+  "hairline": "rgba(238,234,244,.09)",
+  "header": "rgba(13,10,20,.60)",
+  "header-border": "rgba(238,234,244,.16)",
+  "glass": "rgba(31,27,45,.66)",
+  "glass-border": "rgba(238,234,244,.12)",
+  "glass-2": "rgba(238,234,244,.06)",
+  "cell": "rgba(14,11,20,.35)",
+  "row-highlight": "rgba(238,234,244,.10)",
+  "tab": "rgba(238,234,244,.10)",
+  "field": "rgba(238,234,244,.07)",
+  "media-tag": "rgba(14,11,20,.78)",
+  "plate": "rgba(14,11,20,.62)",
+  "scrim": "rgba(14,11,20,.55)",
+  "dock": "rgba(30,24,44,.62)",
+  "dock-border": "rgba(238,234,244,.20)",
+  "dock-tile": "rgba(238,234,244,.08)",
+  "evidence-fill": "rgba(134,189,211,.16)",
+  "ring-glow": "0 0 40px rgba(217,164,65,.35)",
+  "orb-glass": "radial-gradient(ellipse 58% 34% at 50% 78%, #0B0910 0%, #0B0910 38%, #7A3F2E 52%, #D98C6B 60%, rgba(140,120,196,.55) 70%, rgba(140,120,196,0) 82%), linear-gradient(180deg, #2E2C52 0%, #474670 40%, #8C8AA8 58%, #474670 80%, #2E2C52 100%)",
+  "orb-glass-edge": "rgba(238,234,244,.45)",
+  "orb-solid": "radial-gradient(circle at 32% 28%, #FFFFFF 0%, #ECEDF0 35%, #BFC3CA 72%, #8E949D 100%)",
+  "shadow-float": "0 40px 100px rgba(4,3,8,.6)",
+  "panel-highlight": "inset 0 1px 0 rgba(238,234,244,.10)",
+  "ring-track": "rgba(238,234,244,.10)",
+  "lamp-glow": "0 0 10px rgba(217,164,65,.6)",
+  "picture-lamp-glow": "0 0 14px rgba(217,164,65,.65)",
+  "picture-lamp-wash": "rgba(217,164,65,.22)",
+  "shadow-card": "0 18px 40px rgba(4,3,8,.35)",
+  "nav-lamp-glow": "0 0 12px rgba(217,164,65,.8)",
+  "rank-glow": "0 0 20px rgba(217,164,65,.5)",
+  "banner-scrim": "rgba(14,11,20,.75)",
+  "inset": "rgba(14,11,20,.4)",
+  "turn": "rgba(238,234,244,.05)",
+  "secret-fill": "rgba(242,109,109,.2)",
+  "sheet-dim": "rgba(10,8,14,.45)",
+  "shadow-square": "0 14px 30px rgba(0,0,0,.35)",
+  "shadow-dock": "inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3)",
+  "shadow-sheet": "0 -20px 50px rgba(0,0,0,.35)",
+  "signin-edge": "inset 0 0 0 1px rgba(203,198,228,.25), inset 0 0 26px rgba(203,198,228,.45), inset 0 0 120px rgba(217,140,107,.45), inset 0 -80px 180px rgba(140,120,196,.45)",
 } as const;
 
 /* ── Part-category hues ───────────────────────────────────────────────────── */

@@ -112,15 +112,15 @@
 
 :root,
 :root[data-theme="noon"] {
-  --bg: #E4E6E8;
-  --recess: #D3D7DB;
-  --text: #1B2026;
-  --text2: #565E66;
-  --line: #C6CBD1;
+  --bg: #E9EBE7;
+  --recess: #D7DBD5;
+  --text: #1A2320;
+  --text2: #505A55;
+  --line: rgba(26,35,32,.15);
 
-  --glass: rgba(255,255,255,.55);
-  --glass-2: rgba(255,255,255,.34);
-  --glass-border: rgba(255,255,255,.80);
+  --glass: rgba(255,255,255,.68);
+  --glass-2: rgba(255,255,255,.58);
+  --glass-border: rgba(255,255,255,.95);
   --glass-hi: rgba(255,255,255,.95);
 
   /* BG-P09 — the card's two layers. The frame is one step DARKER than the
@@ -129,12 +129,12 @@
   --card-frame: rgba(255,255,255,.42);
   --card-thread: rgba(255,255,255,.55);
 
-  --action: #9E4B2C;
-  --on-action: #F7F8F9;
-  --evidence: #0F6E63;
-  --evidence-fill: #BFE3DC;
+  --action: #8C3B36;
+  --on-action: #F8F8F6;
+  --evidence: #256659;
+  --evidence-fill: #C8E3DC;
   --lit: #D9A441;
-  --on-lit: #1B2026;
+  --on-lit: #1A2320;
   --focus-ring: #1A2320;
 
   --porthole: #4E565E;
@@ -162,6 +162,71 @@
   --cat-breakage-fill: #E1D6D8;
   --cat-media-fill: #E2DEE2;
   --cat-fallback-fill: var(--recess);
+
+  /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
+     in semantics.ts; css-parity.test.ts holds the two together. */
+  --backdrop: linear-gradient(180deg, #C2CFCF 0%, #D2DADA 24%, #E1E3DE 42%, #EDD3C8 51%, #F2BEA8 55%, #E6DED9 61%, #E0E5E2 74%, #E9EBE7 100%);
+  --ambient: radial-gradient(60% 50% at 15% 15%, rgba(255,255,255,.8) 0%, rgba(255,255,255,0) 60%), radial-gradient(50% 45% at 85% 20%, rgba(241,213,203,.55) 0%, rgba(241,213,203,0) 65%);
+  --label: #505A55;
+  --on-text: #F8F8F6;
+  --hairline: rgba(26,35,32,.09);
+  --header: rgba(249,250,248,.50);
+  --header-border: rgba(255,255,255,.92);
+  --cell: rgba(255,255,255,.55);
+  --row-highlight: rgba(255,255,255,.85);
+  --solid: #F8F8F6;
+  --flat: #EEF0EC;
+  --viewer-block: #E9EBE7;
+  --tab: rgba(255,255,255,.82);
+  --field: rgba(255,255,255,.72);
+  --media-tag: rgba(248,248,246,.92);
+  --plate: rgba(247,248,249,.72);
+  --scrim: rgba(247,248,249,.35);
+  --dock: rgba(255,255,255,.55);
+  --dock-border: rgba(255,255,255,.95);
+  --dock-tile: rgba(255,255,255,.85);
+  --on-evidence-fill: #1A2320;
+  --inverse-evidence-fill: #C8E3DC;
+  --on-inverse-evidence-fill: #1A2320;
+  --lit-ink: #8F4309;
+  --ring-glow: none;
+  --bar-base: #C5CAC3;
+  --tagline-chip: #1A2320;
+  --on-tagline-chip: #F8F8F6;
+  --tagline-lamp: #D9A441;
+  --inverse: #1A2320;
+  --on-inverse: #F8F8F6;
+  --on-inverse-2: #C5CBC7;
+  --orb-glass: radial-gradient(ellipse 58% 34% at 50% 78%, #F8F8F6 0%, #F8F8F6 36%, #F0C8B8 52%, #E3A594 58%, rgba(143,167,155,.45) 68%, rgba(143,167,155,0) 80%), linear-gradient(180deg, #B4C4C3 0%, #CCD6D4 40%, #E9EBE7 58%, #CCD6D4 80%, #B4C4C3 100%);
+  --orb-glass-edge: rgba(255,255,255,.95);
+  --on-orb-glass: #1A2320;
+  --orb-solid: radial-gradient(circle at 32% 28%, #4B5752 0%, #2C3632 40%, #1A2320 75%, #0C1210 100%);
+  --on-orb-solid: #F8F8F6;
+  --on-orb-solid-2: #C5CBC7;
+  --arc-1: #8FA79B;
+  --arc-2: #E3A594;
+  --arc-3: #8C3B36;
+  --arc-haze: #F1D5CB;
+  --arc-outer: #8FA79B;
+  --shadow-float: 0 40px 90px rgba(26,35,32,.20);
+  --panel-highlight: inset 0 1px 0 rgba(255,255,255,1);
+  --ring-track: rgba(27,32,38,.10);
+  --lamp-glow: none;
+  --picture-lamp-glow: none;
+  --picture-lamp-wash: rgba(255,255,255,.9);
+  --shadow-card: 0 14px 30px rgba(26,35,32,.11);
+  --nav-lamp-glow: none;
+  --rank-glow: none;
+  --banner-scrim: rgba(247,248,249,.8);
+  --inset: rgba(255,255,255,.7);
+  --turn: #FFFFFF;
+  --on-evidence: #FFFFFF;
+  --secret-fill: rgba(242,109,109,.2);
+  --sheet-dim: rgba(10,8,14,.45);
+  --shadow-square: 0 14px 30px rgba(0,0,0,.35);
+  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3);
+  --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
+  --signin-edge: inset 0 0 0 1px rgba(255,255,255,.9), inset 0 0 120px rgba(203,198,228,.6), inset 0 -80px 160px rgba(239,196,168,.55);
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
@@ -215,52 +280,52 @@
      would break every one of them.
 
      The values are the tokens above, converted. Measured, both themes:
-     foreground/background 13.1:1 and 14.2:1, muted-foreground/background
-     5.3:1 and 7.7:1, muted-foreground/muted 4.55:1 and 5.73:1,
+     foreground/background 13.4:1 and 14.5:1, muted-foreground/background
+     6.0:1 and 7.8:1, muted-foreground/muted 5.11:1 and 5.73:1,
      destructive-foreground/destructive 6.08:1 and 5.76:1.
 
      These are unlayered and the block they override sits in `@layer base`, so
      they win wherever both are present without needing !important.
      ───────────────────────────────────────────────────────────────────────── */
-  --background: 210 8% 90%;
-  --foreground: 213 17% 13%;
-  --card: 210 10% 84%;
-  --card-foreground: 213 17% 13%;
-  --popover: 210 10% 84%;
-  --popover-foreground: 213 17% 13%;
-  --primary: 16 56% 40%;
-  --primary-foreground: 210 14% 97%;
-  --secondary: 210 10% 84%;
-  --secondary-foreground: 213 17% 13%;
-  --muted: 210 10% 84%;
-  --muted-foreground: 210 9% 37%;
-  --accent: 210 10% 84%;
-  --accent-foreground: 213 17% 13%;
+  --background: 90 9% 91%;
+  --foreground: 160 15% 12%;
+  --card: 100 8% 85%;
+  --card-foreground: 160 15% 12%;
+  --popover: 100 8% 85%;
+  --popover-foreground: 160 15% 12%;
+  --primary: 3 44% 38%;
+  --primary-foreground: 60 12% 97%;
+  --secondary: 100 8% 85%;
+  --secondary-foreground: 160 15% 12%;
+  --muted: 100 8% 85%;
+  --muted-foreground: 150 6% 33%;
+  --accent: 100 8% 85%;
+  --accent-foreground: 160 15% 12%;
   --destructive: 0 74% 42%;
-  --destructive-foreground: 210 14% 97%;
-  --border: 213 11% 80%;
-  --input: 213 11% 80%;
+  --destructive-foreground: 60 12% 97%;
+  --border: 105 4% 80%;
+  --input: 105 4% 80%;
   --ring: 160 15% 12%;
-  --sidebar-background: 210 8% 90%;
-  --sidebar-foreground: 213 17% 13%;
-  --sidebar-primary: 16 56% 40%;
-  --sidebar-primary-foreground: 210 14% 97%;
-  --sidebar-accent: 210 10% 84%;
-  --sidebar-accent-foreground: 213 17% 13%;
-  --sidebar-border: 213 11% 80%;
+  --sidebar-background: 90 9% 91%;
+  --sidebar-foreground: 160 15% 12%;
+  --sidebar-primary: 3 44% 38%;
+  --sidebar-primary-foreground: 60 12% 97%;
+  --sidebar-accent: 100 8% 85%;
+  --sidebar-accent-foreground: 160 15% 12%;
+  --sidebar-border: 105 4% 80%;
   --sidebar-ring: 160 15% 12%;
 }
 
 :root[data-theme="dusk"] {
-  --bg: #1F1B2B;
+  --bg: #1F1829;
   --recess: #372F4A;
   --text: #EEEAF4;
   --text2: #B3ABC6;
-  --line: #4B4362;
+  --line: rgba(238,234,244,.14);
 
-  --glass: rgba(72,63,104,.42);
-  --glass-2: rgba(72,63,104,.26);
-  --glass-border: rgba(238,234,244,.14);
+  --glass: rgba(31,27,45,.66);
+  --glass-2: rgba(238,234,244,.06);
+  --glass-border: rgba(238,234,244,.12);
   --glass-hi: rgba(238,234,244,.22);
 
   /* BG-P09 — the card's two layers. Struck from the stone for the frame and
@@ -302,6 +367,71 @@
   --cat-media-fill: #4A2C47;
   --cat-fallback-fill: var(--recess);
 
+  /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
+     in semantics.ts; css-parity.test.ts holds the two together. */
+  --backdrop: radial-gradient(60% 42% at 88% 0%, rgba(140,120,196,.42) 0%, rgba(140,120,196,0) 72%), radial-gradient(40% 26% at 80% 6%, rgba(217,140,107,.22) 0%, rgba(217,140,107,0) 70%), radial-gradient(55% 45% at 10% 100%, rgba(92,84,128,.28) 0%, rgba(92,84,128,0) 70%), linear-gradient(180deg, #241C33 0%, #1F1829 45%, #1A1523 100%);
+  --ambient: radial-gradient(60% 50% at 12% 80%, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 65%);
+  --label: #A59EBA;
+  --on-text: #15121C;
+  --hairline: rgba(238,234,244,.09);
+  --header: rgba(13,10,20,.60);
+  --header-border: rgba(238,234,244,.16);
+  --cell: rgba(14,11,20,.35);
+  --row-highlight: rgba(238,234,244,.10);
+  --solid: #17131F;
+  --flat: #1B1725;
+  --viewer-block: #0C0A12;
+  --tab: rgba(238,234,244,.10);
+  --field: rgba(238,234,244,.07);
+  --media-tag: rgba(14,11,20,.78);
+  --plate: rgba(14,11,20,.62);
+  --scrim: rgba(14,11,20,.55);
+  --dock: rgba(30,24,44,.62);
+  --dock-border: rgba(238,234,244,.20);
+  --dock-tile: rgba(238,234,244,.08);
+  --on-evidence-fill: #86BDD3;
+  --inverse-evidence-fill: #C8E3DC;
+  --on-inverse-evidence-fill: #1A2320;
+  --lit-ink: #D9A441;
+  --ring-glow: 0 0 40px rgba(217,164,65,.35);
+  --bar-base: #3A3350;
+  --tagline-chip: #EEEAF4;
+  --on-tagline-chip: #1F1B2B;
+  --tagline-lamp: #9E4B2C;
+  --inverse: #F7F8F9;
+  --on-inverse: #1B2026;
+  --on-inverse-2: #565E66;
+  --orb-glass: radial-gradient(ellipse 58% 34% at 50% 78%, #0B0910 0%, #0B0910 38%, #7A3F2E 52%, #D98C6B 60%, rgba(140,120,196,.55) 70%, rgba(140,120,196,0) 82%), linear-gradient(180deg, #2E2C52 0%, #474670 40%, #8C8AA8 58%, #474670 80%, #2E2C52 100%);
+  --orb-glass-edge: rgba(238,234,244,.45);
+  --on-orb-glass: #EEEAF4;
+  --orb-solid: radial-gradient(circle at 32% 28%, #FFFFFF 0%, #ECEDF0 35%, #BFC3CA 72%, #8E949D 100%);
+  --on-orb-solid: #1B2026;
+  --on-orb-solid-2: #565E66;
+  --arc-1: #FFFFFF;
+  --arc-2: #CBC6E4;
+  --arc-3: #D98C6B;
+  --arc-haze: #8C78C4;
+  --arc-outer: #CBC6E4;
+  --shadow-float: 0 40px 100px rgba(4,3,8,.6);
+  --panel-highlight: inset 0 1px 0 rgba(238,234,244,.10);
+  --ring-track: rgba(238,234,244,.10);
+  --lamp-glow: 0 0 10px rgba(217,164,65,.6);
+  --picture-lamp-glow: 0 0 14px rgba(217,164,65,.65);
+  --picture-lamp-wash: rgba(217,164,65,.22);
+  --shadow-card: 0 18px 40px rgba(4,3,8,.35);
+  --nav-lamp-glow: 0 0 12px rgba(217,164,65,.8);
+  --rank-glow: 0 0 20px rgba(217,164,65,.5);
+  --banner-scrim: rgba(14,11,20,.75);
+  --inset: rgba(14,11,20,.4);
+  --turn: rgba(238,234,244,.05);
+  --on-evidence: #15121C;
+  --secret-fill: rgba(242,109,109,.2);
+  --sheet-dim: rgba(10,8,14,.45);
+  --shadow-square: 0 14px 30px rgba(0,0,0,.35);
+  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3);
+  --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
+  --signin-edge: inset 0 0 0 1px rgba(203,198,228,.25), inset 0 0 26px rgba(203,198,228,.45), inset 0 0 120px rgba(217,140,107,.45), inset 0 -80px 180px rgba(140,120,196,.45);
+
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
@@ -337,7 +467,7 @@
   --elev-overlay: inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62);
 
   /* The shadcn bridge, Dusk half. See the note in the Noon block. */
-  --background: 255 23% 14%;
+  --background: 265 26% 13%;
   --foreground: 264 31% 94%;
   --card: 258 22% 24%;
   --card-foreground: 264 31% 94%;
@@ -353,16 +483,16 @@
   --accent-foreground: 264 31% 94%;
   --destructive: 0 84% 69%;
   --destructive-foreground: 6 16% 12%;
-  --border: 255 19% 32%;
-  --input: 255 19% 32%;
+  --border: 266 13% 24%;
+  --input: 266 13% 24%;
   --ring: 39 67% 55%;
-  --sidebar-background: 255 23% 14%;
+  --sidebar-background: 265 26% 13%;
   --sidebar-foreground: 264 31% 94%;
   --sidebar-primary: 18 59% 64%;
   --sidebar-primary-foreground: 6 16% 12%;
   --sidebar-accent: 258 22% 24%;
   --sidebar-accent-foreground: 264 31% 94%;
-  --sidebar-border: 255 19% 32%;
+  --sidebar-border: 266 13% 24%;
   --sidebar-ring: 39 67% 55%;
 }
 
@@ -513,33 +643,33 @@ body {
    ─────────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background: 210 8% 90%;
-    --foreground: 213 17% 13%;
-    --card: 210 10% 84%;
-    --card-foreground: 213 17% 13%;
-    --popover: 210 10% 84%;
-    --popover-foreground: 213 17% 13%;
-    --primary: 16 56% 40%;
-    --primary-foreground: 210 14% 97%;
-    --secondary: 210 10% 84%;
-    --secondary-foreground: 213 17% 13%;
-    --muted: 210 10% 84%;
-    --muted-foreground: 210 9% 37%;
-    --accent: 210 10% 84%;
-    --accent-foreground: 213 17% 13%;
+    --background: 90 9% 91%;
+    --foreground: 160 15% 12%;
+    --card: 100 8% 85%;
+    --card-foreground: 160 15% 12%;
+    --popover: 100 8% 85%;
+    --popover-foreground: 160 15% 12%;
+    --primary: 3 44% 38%;
+    --primary-foreground: 60 12% 97%;
+    --secondary: 100 8% 85%;
+    --secondary-foreground: 160 15% 12%;
+    --muted: 100 8% 85%;
+    --muted-foreground: 150 6% 33%;
+    --accent: 100 8% 85%;
+    --accent-foreground: 160 15% 12%;
     --destructive: 0 74% 42%;
-    --destructive-foreground: 210 14% 97%;
-    --border: 213 11% 80%;
-    --input: 213 11% 80%;
+    --destructive-foreground: 60 12% 97%;
+    --border: 105 4% 80%;
+    --input: 105 4% 80%;
     --ring: 160 15% 12%;
     --radius: var(--r-control);
-    --sidebar-background: 210 8% 90%;
-    --sidebar-foreground: 213 17% 13%;
-    --sidebar-primary: 16 56% 40%;
-    --sidebar-primary-foreground: 210 14% 97%;
-    --sidebar-accent: 210 10% 84%;
-    --sidebar-accent-foreground: 213 17% 13%;
-    --sidebar-border: 213 11% 80%;
+    --sidebar-background: 90 9% 91%;
+    --sidebar-foreground: 160 15% 12%;
+    --sidebar-primary: 3 44% 38%;
+    --sidebar-primary-foreground: 60 12% 97%;
+    --sidebar-accent: 100 8% 85%;
+    --sidebar-accent-foreground: 160 15% 12%;
+    --sidebar-border: 105 4% 80%;
     --sidebar-ring: 160 15% 12%;
   }
 }

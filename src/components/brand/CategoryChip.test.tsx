@@ -1,9 +1,10 @@
 // BG-P11 — the category chip.
 //
-// The claims: every chip resolves through the measured pairs and carries no
-// raw hex in either theme's token set, the radius is the scale's chip step and
-// never a capsule, selection is a border rather than a second fill, and the
-// overflow variant names no category so it wears no category ground.
+// The claims: every chip is painted in its category's hue on no fill and carries
+// no raw hex, the radius is the scale's chip step and never a capsule, selection
+// is a border and never a fill, and the overflow variant names no category so it
+// wears no category hue. (UI-P07 repainted the chip to the design kit: a 1px
+// `--line` border, DM Mono 10px, padding 2px 6px, no fill.)
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -18,22 +19,30 @@ function markup(node: React.ReactElement): string {
 
 describe("the nine, and the fallback", () => {
   for (const category of CATEGORIES) {
-    it(`paints ${category} from its measured pair`, () => {
+    it(`paints ${category} in its own hue, with no fill`, () => {
       const html = markup(<CategoryChip category={category} label={category} />);
-      expect(html).toContain(`background:var(--cat-${category}-fill)`);
       expect(html).toContain(`color:var(--cat-${category})`);
+      expect(html).not.toMatch(/background/);
     });
   }
 
-  it("lands an unknown category on the fallback pair, not on an invented hue", () => {
+  it("lands an unknown category on the fallback ink, not on an invented hue", () => {
     const html = markup(<CategoryChip category="founders" label="founders" />);
-    expect(html).toContain("background:var(--cat-fallback-fill)");
     expect(html).toContain("color:var(--cat-fallback)");
   });
 
   it("resolves a synonym rather than falling back", () => {
     const html = markup(<CategoryChip category="gap" label="gap" />);
-    expect(html).toContain("background:var(--cat-breakage-fill)");
+    expect(html).toContain("color:var(--cat-breakage)");
+  });
+
+  it("is the kit's chip: a 1px --line border, DM Mono 10px, 2px 6px, no wrap", () => {
+    const html = markup(<CategoryChip category="data" label="data" />);
+    expect(html).toContain("border:1px solid var(--line)");
+    expect(html).toContain("font-size:10px");
+    expect(html).toContain("padding:2px 6px");
+    expect(html).toContain("white-space:nowrap");
+    expect(html).toContain("DM Mono");
   });
 });
 
@@ -84,12 +93,13 @@ describe("the count", () => {
 });
 
 describe("selection", () => {
-  it("is a border, and never overwrites the fill that carries the category", () => {
+  it("is a border, and never a fill", () => {
     const html = markup(
       <CategoryChip category="agents" label="agents" selected onClick={() => {}} />
     );
-    expect(html).toContain("background:var(--cat-agents-fill)");
     expect(html).toContain("border-color:var(--action)");
+    expect(html).toContain("color:var(--cat-agents)");
+    expect(html).not.toMatch(/background/);
   });
 
   it("makes a chip with a handler an operable control", () => {

@@ -65,8 +65,8 @@ describe("a gap keeps its own category chip", () => {
       it(`is a configuration chip, not a red one — ${placement}, ${state}`, () => {
         const chips = categoryChips(markup(sample(placement, state)));
         expect(chips).toHaveLength(1);
-        // The part's own measured pair, and never breakage's.
-        expect(chips[0]).toContain("background:var(--cat-configuration-fill)");
+        // The part's own hue, and never breakage's. (The chip has had no fill
+        // since the design kit's repaint; the hue is the whole signal.)
         expect(chips[0]).toContain("color:var(--cat-configuration)");
         expect(chips[0]).not.toContain("var(--cat-breakage");
       });

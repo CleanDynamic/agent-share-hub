@@ -13,7 +13,13 @@
 
 import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
-import { cardTitle } from "@/lib/theme/type";
+import { display, FIGTREE, mono } from "@/lib/theme/type";
+
+import { ControlsSection } from "./catalogue/ControlsSection";
+import { IdentitySection } from "./catalogue/IdentitySection";
+import { OrbsSection } from "./catalogue/OrbsSection";
+import { PanelsSection } from "./catalogue/PanelsSection";
+import { ProofSection } from "./catalogue/ProofSection";
 
 export default function KitComponents() {
   const theme = useDesignTheme();
@@ -25,14 +31,26 @@ export default function KitComponents() {
       style={{
         width: 1440,
         minHeight: "100vh",
-        padding: "32px 40px",
         boxSizing: "border-box",
-        background: t.bg,
+        background: `${t.ambient}, ${t.backdrop}`,
         color: t.text,
+        fontFamily: FIGTREE,
       }}
     >
-      <h1 style={{ ...cardTitle, margin: 0 }}>Component catalogue · {theme === "noon" ? "Noon" : "Dusk"}</h1>
-      {/* UI-P06 onward: <section data-catalogue="Identity">…</section> and so on. */}
+      <header style={{ padding: "36px 40px 10px" }}>
+        <div style={{ ...mono(12), lineHeight: "normal", letterSpacing: ".1em", color: t.label, textTransform: "uppercase" }}>
+          buildgallery · component catalogue · {theme === "noon" ? "Noon" : "Dusk"}
+        </div>
+        <h1 style={{ ...display(56), margin: "8px 0 0", lineHeight: "normal", letterSpacing: "-0.035em", color: t.text }}>
+          Every primitive, every state
+        </h1>
+      </header>
+      <IdentitySection />
+      <ControlsSection />
+      <ProofSection />
+      <PanelsSection />
+      <OrbsSection />
+      {/* Later prompts: Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
     </div>
   );
 }

@@ -166,8 +166,13 @@ describe("the facts strip", () => {
   it("prints every figure in tabular numerals", () => {
     const doc = staticDoc(header());
     const strip = doc.querySelector('[data-visual-slot="build-facts"]') as Element;
-    const figures = Array.from(strip.querySelectorAll("span")).filter((span) =>
-      styleOf(span).includes("font-variant-numeric:tabular-nums")
+    // The plaque's tag is the one tabular figure that is not ink on the page:
+    // it is `--on-evidence-fill` on its own ground, and the plaque's test
+    // holds that pairing.
+    const figures = Array.from(strip.querySelectorAll("span")).filter(
+      (span) =>
+        styleOf(span).includes("font-variant-numeric:tabular-nums") &&
+        !span.hasAttribute("data-plaque-reproduction")
     );
 
     // Cost and speed both carry digits, and both are tabular.

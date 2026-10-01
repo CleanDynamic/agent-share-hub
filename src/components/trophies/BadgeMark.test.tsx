@@ -407,8 +407,8 @@ describe("the pairings the treatment spends are measured", () => {
       text2OnBg: contrast(tokenOf(room, "text2"), tokenOf(room, "bg")),
     }));
     expect(figures).toEqual([
-      { room: "noon", textOnBg: 13.1, textOnRecess: 11.33, onLitOnLit: 7.29, text2OnBg: 5.26 },
-      { room: "dusk", textOnBg: 14.17, textOnRecess: 10.62, onLitOnLit: 7.49, text2OnBg: 7.65 },
+      { room: "noon", textOnBg: 13.41, textOnRecess: 11.48, onLitOnLit: 7.15, text2OnBg: 5.96 },
+      { room: "dusk", textOnBg: 14.51, textOnRecess: 10.62, onLitOnLit: 7.49, text2OnBg: 7.83 },
     ]);
   });
 
@@ -422,12 +422,13 @@ describe("the pairings the treatment spends are measured", () => {
   it("records the two edges that are under the UI floor, rather than hiding them", () => {
     const edges = ROOM_NAMES.map((room) => ({
       room,
-      outlineOnBg: contrast(tokenOf(room, "line"), tokenOf(room, "bg")),
+      /* `--line` is a translucent hairline since UI-P03: measured flattened on the ground it sits on. */
+      outlineOnBg: contrast(over(tokenOf(room, "line"), tokenOf(room, "bg")), tokenOf(room, "bg")),
       amberOnBg: contrast(tokenOf(room, "lit"), tokenOf(room, "bg")),
     }));
     expect(edges).toEqual([
-      { room: "noon", outlineOnBg: 1.3, amberOnBg: 1.8 },
-      { room: "dusk", outlineOnBg: 1.82, amberOnBg: 7.47 },
+      { room: "noon", outlineOnBg: 1.34, amberOnBg: 1.87 },
+      { room: "dusk", outlineOnBg: 1.46, amberOnBg: 7.65 },
     ]);
   });
 });

@@ -138,8 +138,8 @@ describe("every category hue as an edge, on every ground a part sits on", () => 
       ),
     }));
     expect(worst).toEqual([
-      { theme: "noon", lowest: 4.17 },
-      { theme: "dusk", lowest: 3.93 },
+      { theme: "noon", lowest: 4.31 },
+      { theme: "dusk", lowest: 4.02 },
     ]);
   });
 });
@@ -176,8 +176,8 @@ describe("the focus ring, on every ground a control sits on", () => {
       ),
     }));
     expect(measured).toEqual([
-      { theme: "noon", bg: 12.86, recess: 11.12, glass: 14.61, card: 15.25 },
-      { theme: "dusk", bg: 7.47, recess: 5.6, glass: 6.05, card: 5.1 },
+      { theme: "noon", bg: 13.41, recess: 11.48, glass: 15.24, card: 15.38 },
+      { theme: "dusk", bg: 7.65, recess: 5.6, glass: 7.52, card: 5.22 },
     ]);
   });
 
@@ -232,12 +232,13 @@ describe("the error state", () => {
       card: contrast(value(theme, "cat-breakage"), grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "noon", recess: 4.47, card: 6.13 },
-      { theme: "dusk", recess: 4.31, card: 3.93 },
+      { theme: "noon", recess: 4.62, card: 6.18 },
+      { theme: "dusk", recess: 4.31, card: 4.02 },
     ]);
-    // The three that are short are short — stated, so the rule above has a
-    // measurement behind it rather than a memory.
-    expect(measured[0].recess).toBeLessThan(TEXT_FLOOR);
+    // The two that are short are short — stated, so the rule above has a
+    // measurement behind it rather than a memory. UI-P03's Noon recess lifted
+    // that ground to 4.62:1, so only Dusk's are left; the rule stands for both
+    // rooms because a message painted on a recess is still unmeasured by design.
     expect(measured[1].recess).toBeLessThan(TEXT_FLOOR);
     expect(measured[1].card).toBeLessThan(TEXT_FLOOR);
   });
@@ -257,7 +258,7 @@ describe("the evidence fill pair", () => {
   // room: Noon puts `--text` on a solid mint, Dusk puts `--evidence` on a
   // 16% wash of itself. Both are contract pairings; this holds them to it.
   it("Noon puts --text on --evidence-fill", () => {
-    expect(contrast(value("noon", "text"), value("noon", "evidence-fill"))).toBe(11.89);
+    expect(contrast(value("noon", "text"), value("noon", "evidence-fill"))).toBe(11.86);
   });
 
   it("Dusk puts --evidence on --evidence-fill", () => {
@@ -335,8 +336,8 @@ describe("disabled text", () => {
       onCard: washed(theme, "text2", grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "noon", onBg: 2.06, onCard: 2.17 },
-      { theme: "dusk", onBg: 2.93, onCard: 2.47 },
+      { theme: "noon", onBg: 2.14, onCard: 2.25 },
+      { theme: "dusk", onBg: 2.96, onCard: 2.5 },
     ]);
     for (const row of measured) {
       expect(row.onBg, "a disabled control that cleared the text floor would not read as disabled")

@@ -109,7 +109,7 @@ export interface CategoryFill {
  *
  * `color` is the same value `categoryColour` returns, so a chip and a bare label
  * of the same category are the same hue. Unknown categories get the fallback
- * pair — `--text2` on `--recess`, 4.55:1 on Noon and 5.73:1 on Dusk.
+ * pair — `--text2` on `--recess`, 5.11:1 on Noon and 5.73:1 on Dusk.
  *
  * Use it for both halves or neither. Putting this `color` on some other ground,
  * or this `background` under some other ink, is a pairing nobody measured.

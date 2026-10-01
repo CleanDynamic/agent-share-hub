@@ -724,7 +724,7 @@ export const scrimStyle: CSSProperties = { ...SCRIM };
  * The tooltip. Opaque, for the reason given above.
  *
  * `--text` as a ground with `--bg` as the ink is the system's highest-contrast
- * pairing in both themes (13.10:1 Noon, 14.17:1 Dusk) — it is the page's
+ * pairing in both themes (13.41:1 Noon, 14.51:1 Dusk) — it is the page's
  * own text and background colours swapped, so it needs no separate measurement.
  */
 export const tooltipStyle: CSSProperties = {

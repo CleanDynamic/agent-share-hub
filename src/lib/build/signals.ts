@@ -196,6 +196,26 @@ export type FreshnessSource = Pick<
 export type StalenessSource = Pick<Build, "last_confirmed_at" | "published_at">;
 
 /**
+ * "3 days ago, on Sonnet 4.5", or null — the freshness claim without its lead.
+ *
+ * The same two facts `freshnessLabel` states, for the places that already say
+ * what they are about (a card's plaque, a list row) and only need the answer.
+ * null when nobody has confirmed it; the model half is dropped entirely when
+ * model_used was never given.
+ */
+export function freshnessShort(
+  build: FreshnessSource,
+  now: number = Date.now()
+): string | null {
+  const days = daysSince(build.last_confirmed_at, now);
+  if (days === null) return null;
+
+  const when = relativeDays(days);
+  const model = presentModelName(build.last_confirmed_model);
+  return model ? `${when}, on ${model}` : when;
+}
+
+/**
  * "last confirmed working 3 days ago, on Sonnet 4.5", or null.
  *
  * null when nobody has confirmed it — an unconfirmed build has no freshness to
@@ -209,14 +229,8 @@ export function freshnessLabel(
   build: FreshnessSource,
   now: number = Date.now()
 ): string | null {
-  const days = daysSince(build.last_confirmed_at, now);
-  if (days === null) return null;
-
-  const when = relativeDays(days);
-  const model = presentModelName(build.last_confirmed_model);
-  return model
-    ? `last confirmed working ${when}, on ${model}`
-    : `last confirmed working ${when}`;
+  const short = freshnessShort(build, now);
+  return short === null ? null : `last confirmed working ${short}`;
 }
 
 /**

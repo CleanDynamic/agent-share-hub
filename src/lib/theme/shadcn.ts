@@ -72,45 +72,45 @@ export type ShadcnName = (typeof SHADCN_NAMES)[number];
      ring  →  --focus-ring, which is what the theme's focus ring is made of:
               the ink on Noon, the lamp gold on Dusk (UI-P04)
 
-   Measured, both themes: foreground/background 13.10 and 14.17,
-   muted-foreground/background 5.26 and 7.65, muted-foreground/muted 4.55 and
-   5.73, foreground/card 11.33 and 10.62, primary-foreground/primary 5.65 and
+   Measured, both themes: foreground/background 13.41 and 14.51,
+   muted-foreground/background 5.96 and 7.83, muted-foreground/muted 5.11 and
+   5.73, foreground/card 11.48 and 10.62, primary-foreground/primary 7.07 and
    6.35, destructive-foreground/destructive 6.08 and 5.76. */
 
 /** Noon — the light room. */
 export const noonShadcn: Record<ShadcnName, string> = {
-  background: "210 8% 90%",
-  foreground: "213 17% 13%",
-  card: "210 10% 84%",
-  "card-foreground": "213 17% 13%",
-  popover: "210 10% 84%",
-  "popover-foreground": "213 17% 13%",
-  primary: "16 56% 40%",
-  "primary-foreground": "210 14% 97%",
-  secondary: "210 10% 84%",
-  "secondary-foreground": "213 17% 13%",
-  muted: "210 10% 84%",
-  "muted-foreground": "210 9% 37%",
-  accent: "210 10% 84%",
-  "accent-foreground": "213 17% 13%",
+  background: "90 9% 91%",
+  foreground: "160 15% 12%",
+  card: "100 8% 85%",
+  "card-foreground": "160 15% 12%",
+  popover: "100 8% 85%",
+  "popover-foreground": "160 15% 12%",
+  primary: "3 44% 38%",
+  "primary-foreground": "60 12% 97%",
+  secondary: "100 8% 85%",
+  "secondary-foreground": "160 15% 12%",
+  muted: "100 8% 85%",
+  "muted-foreground": "150 6% 33%",
+  accent: "100 8% 85%",
+  "accent-foreground": "160 15% 12%",
   destructive: "0 74% 42%",
-  "destructive-foreground": "210 14% 97%",
-  border: "213 11% 80%",
-  input: "213 11% 80%",
+  "destructive-foreground": "60 12% 97%",
+  border: "105 4% 80%",
+  input: "105 4% 80%",
   ring: "160 15% 12%",
-  "sidebar-background": "210 8% 90%",
-  "sidebar-foreground": "213 17% 13%",
-  "sidebar-primary": "16 56% 40%",
-  "sidebar-primary-foreground": "210 14% 97%",
-  "sidebar-accent": "210 10% 84%",
-  "sidebar-accent-foreground": "213 17% 13%",
-  "sidebar-border": "213 11% 80%",
+  "sidebar-background": "90 9% 91%",
+  "sidebar-foreground": "160 15% 12%",
+  "sidebar-primary": "3 44% 38%",
+  "sidebar-primary-foreground": "60 12% 97%",
+  "sidebar-accent": "100 8% 85%",
+  "sidebar-accent-foreground": "160 15% 12%",
+  "sidebar-border": "105 4% 80%",
   "sidebar-ring": "160 15% 12%",
 };
 
 /** Dusk — the dark room. */
 export const duskShadcn: Record<ShadcnName, string> = {
-  background: "255 23% 14%",
+  background: "265 26% 13%",
   foreground: "264 31% 94%",
   card: "258 22% 24%",
   "card-foreground": "264 31% 94%",
@@ -126,16 +126,16 @@ export const duskShadcn: Record<ShadcnName, string> = {
   "accent-foreground": "264 31% 94%",
   destructive: "0 84% 69%",
   "destructive-foreground": "6 16% 12%",
-  border: "255 19% 32%",
-  input: "255 19% 32%",
+  border: "266 13% 24%",
+  input: "266 13% 24%",
   ring: "39 67% 55%",
-  "sidebar-background": "255 23% 14%",
+  "sidebar-background": "265 26% 13%",
   "sidebar-foreground": "264 31% 94%",
   "sidebar-primary": "18 59% 64%",
   "sidebar-primary-foreground": "6 16% 12%",
   "sidebar-accent": "258 22% 24%",
   "sidebar-accent-foreground": "264 31% 94%",
-  "sidebar-border": "255 19% 32%",
+  "sidebar-border": "266 13% 24%",
   "sidebar-ring": "39 67% 55%",
 };
 

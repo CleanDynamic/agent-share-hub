@@ -137,12 +137,12 @@ describe("depth is alignment and a guide, never nested boxes", () => {
 });
 
 describe("a row names its part", () => {
-  it("wears the category's own measured pair", () => {
+  it("wears the category's own hue, and no fill", () => {
     const doc = staticDoc(anatomy());
     const chip = Array.from(doc.querySelectorAll("span")).find(
       (span) => span.textContent === "Prompt",
     );
-    expect(styleOf(chip)).toContain("background:var(--cat-instruction-fill)");
+    expect(styleOf(chip)).not.toContain("background");
     expect(styleOf(chip)).toContain("color:var(--cat-instruction)");
     expect(styleOf(chip)).toContain("border-radius:var(--r-chip)");
   });
