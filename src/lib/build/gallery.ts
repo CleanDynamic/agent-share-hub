@@ -770,6 +770,109 @@ export async function countOpenBountyBuilds(): Promise<number> {
 }
 
 // =============================================================================
+// The featured build
+// =============================================================================
+
+/** The window "most reproduced" looks back over. */
+const FEATURED_WINDOW_DAYS = 30;
+
+/** The most reproduction rows read to rank builds; past it the ranking is partial. */
+const FEATURED_ROWS_LIMIT = 5000;
+
+/**
+ * The top builds by count that are checked against the gallery's rule. Ties
+ * are settled among these, which is far more than ever tie at the top.
+ */
+const FEATURED_CANDIDATES = 100;
+
+/** The columns inGallery reads, and the tie-break. */
+const FEATURED_RANK_COLUMNS = "id, status, shape, completeness, last_confirmed_at";
+
+/** The build the Gallery's hero shows, and the numbers beside it. */
+export interface FeaturedBuild {
+  build: GalleryBuild;
+  /** Reproductions recorded in the 30 days before `now`. */
+  reproductions30d: number;
+  /** The one-line outcome, as the build header shows it. */
+  outcome: string | null;
+}
+
+/**
+ * "Most reproduced this month": the gallery build with the most reproductions
+ * in the 30 days before `now`, or null when nothing was reproduced.
+ *
+ * Counted in code from `build_id` rows, newest window first, because grouping
+ * is not something PostgREST does. The read is capped at FEATURED_ROWS_LIMIT
+ * rows; if the cap is reached the ranking covers only those rows, which is
+ * logged and still returned.
+ *
+ * Ties go to the most recently confirmed build. A build outside the gallery
+ * (a draft is never visible; a record under its bar is) is passed over for the
+ * next one down, by the rule `inGallery` applies to a loaded build.
+ */
+export async function getFeaturedBuild(now: Date = new Date()): Promise<FeaturedBuild | null> {
+  const since = new Date(now.getTime() - FEATURED_WINDOW_DAYS * DAY_MS).toISOString();
+
+  const reproductions = await supabase
+    .from("build_reproductions")
+    .select("build_id")
+    .gte("created_at", since)
+    .limit(FEATURED_ROWS_LIMIT);
+
+  if (reproductions.error) throw buildLayerError("getFeaturedBuild (reproductions)", reproductions.error);
+
+  const rows = (reproductions.data ?? []) as Array<{ build_id: string }>;
+  if (rows.length >= FEATURED_ROWS_LIMIT) {
+    // TODO: replace with an RPC that groups build_reproductions by build_id in
+    // SQL (a `most_reproduced_builds(since, limit)` function, security invoker),
+    // which has no row cap to rank around.
+    console.warn(`[getFeaturedBuild] read the ${FEATURED_ROWS_LIMIT}-row cap; the ranking is partial`);
+  }
+
+  const counts = new Map<string, number>();
+  for (const { build_id } of rows) counts.set(build_id, (counts.get(build_id) ?? 0) + 1);
+  if (counts.size === 0) return null;
+
+  const ranked = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, FEATURED_CANDIDATES);
+
+  const candidates = await supabase
+    .from("builds")
+    .select(FEATURED_RANK_COLUMNS)
+    .in("id", ranked.map(([id]) => id))
+    .limit(FEATURED_CANDIDATES);
+
+  if (candidates.error) throw buildLayerError("getFeaturedBuild (candidates)", candidates.error);
+
+  type RankRow = Pick<Build, "id" | "status" | "shape" | "completeness" | "last_confirmed_at">;
+  const inGalleryById = new Map<string, RankRow>();
+  for (const row of (candidates.data ?? []) as unknown as RankRow[]) {
+    if (inGallery(row)) inGalleryById.set(row.id, row);
+  }
+
+  const confirmedAt = (id: string) => Date.parse(inGalleryById.get(id)?.last_confirmed_at ?? "") || 0;
+  const top = ranked
+    .filter(([id]) => inGalleryById.has(id))
+    .sort((a, b) => b[1] - a[1] || confirmedAt(b[0]) - confirmedAt(a[0]))[0];
+  if (!top) return null;
+
+  const [id, reproductions30d] = top;
+
+  // The card's own select, so the hero has the nodes and pictures a card has.
+  const loaded = await withCardEmbeds(
+    supabase.from("builds").select(gallerySelect(false)).eq("id", id).limit(1),
+  );
+  if (loaded.error) throw buildLayerError("getFeaturedBuild (build)", loaded.error);
+
+  const row = ((loaded.data ?? []) as unknown as GalleryRow[])[0];
+  if (!row) return null;
+
+  const build = toGalleryBuild(row);
+  return { build, reproductions30d, outcome: build.outcome?.trim() || null };
+}
+
+// =============================================================================
 // The lens counts
 // =============================================================================
 
