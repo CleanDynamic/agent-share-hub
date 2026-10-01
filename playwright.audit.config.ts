@@ -23,7 +23,9 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: [["list"]],
+  // UI-P01. The HTML report is where design-compare's expected / actual / diff
+  // images are shown; the other sweeps write their own files and ignore it.
+  reporter: [["list"], ["html", { open: "never", outputFolder: "e2e/audit/out/playwright-report" }]],
   // The sweep visits thirty pages in one test and settles each of them.
   timeout: 15 * 60_000,
   expect: { timeout: 15_000 },

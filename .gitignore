@@ -40,6 +40,10 @@ playwright-report
 # run's findings, not source, and a committed copy goes stale the next repaint.
 e2e/audit/out
 
+# UI-P01 design-compare. The reference screenshot is written next to the spec on
+# every run so Playwright can diff the app against it; it is output, not source.
+e2e/audit/design-compare.spec.ts-snapshots/
+
 # Deno lockfile for supabase/functions/. Generated locally by `deno test` and
 # `deno check`, in whatever lockfile format the local Deno happens to write;
 # Lovable deploys these functions to an edge runtime on its own Deno version,
