@@ -12,6 +12,7 @@
 // build_reproductions), so every row here is somebody else's run.
 
 import { supabase } from "@/integrations/supabase/client";
+import { weekStartUtc } from "@/lib/progress/weekly";
 import { buildLayerError } from "./types";
 
 /** The most reproduction rows read to draw the chart; past it the series is partial. */
@@ -99,4 +100,42 @@ export async function getRunsOfMyBuilds(
 
   const latest = ((rebuild.data ?? []) as unknown as Array<{ published_at: string | null }>)[0];
   return { series, rebuildLiveIndex: dayIndex(latest?.published_at) };
+}
+
+/** The most reproduction rows read to de-duplicate the people; past it the count is partial. */
+const PEOPLE_ROWS_LIMIT = 2000;
+
+/**
+ * How many different people ran this maker's builds since Monday 00:00 UTC of
+ * the week `now` falls in: distinct reproducers, never the maker themselves.
+ *
+ * Distinct in code, from `user_id` rows, because PostgREST cannot count
+ * distinct. The read is capped at PEOPLE_ROWS_LIMIT rows; if the cap is reached
+ * the count covers only those rows (so it errs low), which is logged and still
+ * returned.
+ */
+export async function countPeopleWhoRanMyBuildsThisWeek(
+  userId: string,
+  now: Date = new Date(),
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("build_reproductions")
+    .select("user_id, builds!build_reproductions_build_id_fkey!inner(creator_id)")
+    .eq("builds.creator_id", userId)
+    .neq("user_id", userId)
+    .gte("created_at", weekStartUtc(now).toISOString())
+    .limit(PEOPLE_ROWS_LIMIT);
+
+  if (error) throw buildLayerError("countPeopleWhoRanMyBuildsThisWeek", error);
+
+  const rows = (data ?? []) as unknown as Array<{ user_id: string }>;
+  if (rows.length >= PEOPLE_ROWS_LIMIT) {
+    // TODO: replace with an RPC that returns count(distinct user_id), which has
+    // no row cap.
+    console.warn(
+      `[countPeopleWhoRanMyBuildsThisWeek] read the ${PEOPLE_ROWS_LIMIT}-row cap; the count is partial`,
+    );
+  }
+
+  return new Set(rows.map((row) => row.user_id)).size;
 }

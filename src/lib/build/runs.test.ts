@@ -40,7 +40,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { getRunsOfMyBuilds } from "@/lib/build/runs";
+import { countPeopleWhoRanMyBuildsThisWeek, getRunsOfMyBuilds } from "@/lib/build/runs";
 
 const USER = "user-1";
 const NOW = new Date("2026-10-01T12:00:00Z");
@@ -171,6 +171,61 @@ describe("getRunsOfMyBuilds", () => {
     failOn = on;
     await expect(getRunsOfMyBuilds(USER, 14, NOW)).rejects.toThrow(
       new RegExp(`getRunsOfMyBuilds \\(${on}\\) failed: boom`),
+    );
+  });
+});
+
+describe("countPeopleWhoRanMyBuildsThisWeek", () => {
+  const person = (user_id: string) => ({ user_id });
+
+  it("counts each person once, however many of the maker's builds they ran", async () => {
+    runs = [person("ana"), person("bo"), person("ana"), person("cy"), person("bo")];
+    await expect(countPeopleWhoRanMyBuildsThisWeek(USER, NOW)).resolves.toBe(3);
+  });
+
+  it("returns 0 when nobody ran anything", async () => {
+    await expect(countPeopleWhoRanMyBuildsThisWeek(USER, NOW)).resolves.toBe(0);
+  });
+
+  it("never counts the maker themselves", async () => {
+    await countPeopleWhoRanMyBuildsThisWeek(USER, NOW);
+    expect(of("build_reproductions", "neq")).toEqual([["user_id", USER]]);
+  });
+
+  it("reads reproducers of this maker's builds since Monday 00:00 UTC, capped at 2000", async () => {
+    await countPeopleWhoRanMyBuildsThisWeek(USER, NOW);
+
+    expect(of("build_reproductions", "select")).toEqual([
+      ["user_id, builds!build_reproductions_build_id_fkey!inner(creator_id)"],
+    ]);
+    expect(of("build_reproductions", "eq")).toEqual([["builds.creator_id", USER]]);
+    // 1 October 2026 is a Thursday; the week began on Monday 28 September.
+    expect(of("build_reproductions", "gte")).toEqual([["created_at", "2026-09-28T00:00:00.000Z"]]);
+    expect(of("build_reproductions", "limit")).toEqual([[2000]]);
+  });
+
+  it("is still last week at 23:59 UTC on Sunday and the new week at 00:01 UTC on Monday", async () => {
+    await countPeopleWhoRanMyBuildsThisWeek(USER, new Date("2026-10-04T23:59:00Z"));
+    await countPeopleWhoRanMyBuildsThisWeek(USER, new Date("2026-10-05T00:01:00Z"));
+    expect(of("build_reproductions", "gte")).toEqual([
+      ["created_at", "2026-09-28T00:00:00.000Z"],
+      ["created_at", "2026-10-05T00:00:00.000Z"],
+    ]);
+  });
+
+  it("warns once when the row cap is reached, and still returns the count", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    runs = Array.from({ length: 2000 }, (_, index) => person(`user-${index % 700}`));
+
+    await expect(countPeopleWhoRanMyBuildsThisWeek(USER, NOW)).resolves.toBe(700);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  it("throws an error naming the operation when the read fails", async () => {
+    failOn = "runs";
+    await expect(countPeopleWhoRanMyBuildsThisWeek(USER, NOW)).rejects.toThrow(
+      "countPeopleWhoRanMyBuildsThisWeek failed: boom",
     );
   });
 });
