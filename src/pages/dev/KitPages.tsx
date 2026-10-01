@@ -17,6 +17,8 @@ import { useParams } from "react-router-dom";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/useDesignTheme";
 
+import { devChrome } from "./frameChrome";
+
 /** What a registered compare entry receives. The view reads the 768px breakpoint itself; this is for sizing the wrapper. */
 export interface DesignPageProps {
   viewport: DesignViewport;
@@ -57,7 +59,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) ? (
           <View viewport={viewport} fit="board" />
         ) : (
-          <SiteFrameView viewport={viewport}>
+          <SiteFrameView viewport={viewport} {...devChrome({ theme })}>
             <View viewport={viewport} fit="board" />
           </SiteFrameView>
         )}

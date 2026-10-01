@@ -43,7 +43,7 @@ export function loadSiteFrameFlag(): Promise<boolean> {
   inflight = (async () => {
     let on = false;
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("feature_flags")
         .select("key, enabled")
         .eq("key", SITE_FRAME_FLAG_KEY)

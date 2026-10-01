@@ -30,6 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { SiteHeader } from "./SiteHeader";
 import { useMinWidth } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
@@ -193,7 +194,11 @@ export interface SiteFrameProps {
 
 /** The container: live chrome around the page. UI-P17 to UI-P19 fill the slots. */
 export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
-  return <SiteFrameView variant={variant}>{children}</SiteFrameView>;
+  return (
+    <SiteFrameView variant={variant} header={<SiteHeader />}>
+      {children}
+    </SiteFrameView>
+  );
 }
 
 export default SiteFrame;
