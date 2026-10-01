@@ -60,6 +60,8 @@ export interface HeaderSearchProps {
   /** "/" focuses the field. On for the header, off for the sheet. */
   shortcut?: boolean;
   autoFocus?: boolean;
+  /** `bar` width in px. Omit to let the field shrink (min 140, up to 280) when the header is tight. */
+  width?: number;
 }
 
 export function HeaderSearch({
@@ -68,6 +70,7 @@ export function HeaderSearch({
   initialValue = "",
   shortcut = variant === "bar",
   autoFocus = false,
+  width,
 }: HeaderSearchProps) {
   const [value, setValue] = useState(initialValue);
   const field = useRef<HTMLInputElement | null>(null);
@@ -96,14 +99,19 @@ export function HeaderSearch({
   const sheet = variant === "sheet";
 
   return (
-    <form role="search" aria-label="Search builds" onSubmit={submit} style={{ margin: 0, display: "flex" }}>
+    <form
+      role="search"
+      aria-label="Search builds"
+      onSubmit={submit}
+      style={{ margin: 0, display: "flex", minWidth: sheet ? undefined : width ? undefined : 140, flex: sheet || width ? undefined : "0 1 280px" }}
+    >
       <label
         data-ui="header-search"
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
-          width: sheet ? "100%" : 280,
+          width: sheet ? "100%" : (width ?? "100%"),
           height: sheet ? 44 : 38,
           boxSizing: "border-box",
           padding: "0 12px",

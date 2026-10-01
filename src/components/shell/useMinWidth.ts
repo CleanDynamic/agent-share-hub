@@ -1,11 +1,15 @@
-/* UI-P16 — `(min-width: Npx)` as a boolean, for the one place the frame's
-   padding changes at a width the 768px breakpoint hook does not cover. Server
-   and jsdom (no matchMedia) read as wide. */
+/* UI-P16 — viewport-width queries as booleans, read synchronously.
+
+   WHY NOT `useIsMobile`. That hook starts `false` and corrects itself in an
+   effect, so a phone's first render is the desktop one; wide content then makes
+   mobile browsers widen the layout viewport, `innerWidth` stays ≥768 and the
+   hook never flips back. These read `matchMedia` on the first client render, so
+   the frame picks the right chrome before anything can overflow. Server and
+   jsdom (no matchMedia) read as wide. */
 
 import { useSyncExternalStore } from "react";
 
-export function useMinWidth(px: number): boolean {
-  const query = `(min-width: ${px}px)`;
+function useMedia(query: string, fallback: boolean): boolean {
   const subscribe = (onChange: () => void) => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
     const mql = window.matchMedia(query);
@@ -13,6 +17,15 @@ export function useMinWidth(px: number): boolean {
     return () => mql.removeEventListener("change", onChange);
   };
   const read = () =>
-    typeof window === "undefined" || typeof window.matchMedia !== "function" ? true : window.matchMedia(query).matches;
-  return useSyncExternalStore(subscribe, read, () => true);
+    typeof window === "undefined" || typeof window.matchMedia !== "function" ? fallback : window.matchMedia(query).matches;
+  return useSyncExternalStore(subscribe, read, () => fallback);
+}
+
+export function useMinWidth(px: number): boolean {
+  return useMedia(`(min-width: ${px}px)`, true);
+}
+
+/** True below the app's 768px breakpoint. */
+export function useIsPhone(): boolean {
+  return useMedia("(max-width: 767px)", false);
 }

@@ -4,6 +4,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SiteHeaderView, type SiteHeaderViewProps } from "./SiteHeader";
 
+// The test setup's matchMedia says "no" to every query, which reads as a narrow
+// window; these tests are about the full-width header.
+vi.stubGlobal("matchMedia", (query: string) => ({
+  matches: query.includes("min-width"),
+  media: query,
+  addEventListener: () => undefined,
+  removeEventListener: () => undefined,
+}));
+
 const viewer = { id: "u1", name: "Maya Okafor", handle: "maya", hue: 1 };
 
 function header(props: Partial<SiteHeaderViewProps> = {}) {

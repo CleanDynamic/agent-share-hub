@@ -30,27 +30,32 @@ const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, color: t.text2 
 
 export function SiteFooterView({ signedIn, onSignOut, themeControl }: SiteFooterViewProps) {
   const wide = useMinWidth(1328);
+  /* Below 1100 the row cannot hold lockup, five links, the theme control and the
+     credit on one line, so it wraps and the footer grows past its 88px. */
+  const narrow = !useMinWidth(1100);
   return (
     <footer
       data-testid="site-footer"
       data-ui="site-footer"
-      style={{ height: 88, borderTop: `1px solid ${t.headerBorder}`, background: t.header, boxSizing: "border-box", overflow: "hidden" }}
+      style={{ height: narrow ? undefined : 88, minHeight: 88, borderTop: `1px solid ${t.headerBorder}`, background: t.header, boxSizing: "border-box", overflow: "hidden" }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: 1280,
           margin: "0 auto",
-          height: 88,
+          height: narrow ? undefined : 88,
+          minHeight: 88,
           display: "flex",
+          flexWrap: narrow ? "wrap" : undefined,
           alignItems: "center",
-          gap: 28,
-          padding: wide ? 0 : "0 24px",
+          gap: narrow ? "12px 20px" : 28,
+          padding: wide ? 0 : narrow ? "12px 24px" : "0 24px",
           boxSizing: "border-box",
         }}
       >
         <Lockup size={16} to={SITE_NAV.home} />
-        <nav aria-label="Footer" style={{ display: "flex", gap: 22 }}>
+        <nav aria-label="Footer" style={{ display: "flex", flexWrap: narrow ? "wrap" : undefined, gap: narrow ? "8px 16px" : 22 }}>
           <FrameLink to="/about" style={link}>About</FrameLink>
           <FrameLink to="/api-docs" style={link}>API docs</FrameLink>
           <FrameLink to="/bounties/solvers" style={link}>Solvers</FrameLink>

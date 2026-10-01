@@ -26,7 +26,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { PageBackdrop } from "@/components/brand/PageBackdrop";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -36,7 +35,7 @@ import { MobileHeader } from "./MobileHeader";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { CrumbTitleProvider } from "./useBreadcrumb";
-import { useMinWidth } from "./useMinWidth";
+import { useIsPhone, useMinWidth } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -109,7 +108,7 @@ export function SiteFrameView({
   dock,
   children,
 }: SiteFrameViewProps) {
-  const narrow = useIsMobile();
+  const narrow = useIsPhone();
   const wide = useMinWidth(SITE_COLUMN_FULL);
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
 

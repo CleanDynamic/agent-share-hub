@@ -18,7 +18,7 @@
 // routes sit behind `ProtectedRoute`, so a signed-out header does not offer them.
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Bell, Moon, Plus, Sun } from "lucide-react";
+import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -59,6 +59,8 @@ export interface SiteHeaderViewProps {
   /** Search submit. Defaults to nothing (the compare page). */
   onSearch?: (query: string) => boolean | void;
   searchInitial?: string;
+  /** Compact widths: the Search icon goes to the gallery's own search field. */
+  onOpenSearch?: () => void;
 }
 
 const linkBase: CSSProperties = {
@@ -66,9 +68,26 @@ const linkBase: CSSProperties = {
   height: 64,
   display: "flex",
   alignItems: "center",
-  padding: "0 14px",
   fontFamily: FIGTREE,
   fontSize: 14,
+};
+
+/* THE HEADER'S THREE WIDTHS. The reference draws 1280 and nothing else; the
+   column needs about 1210px of room, so below that it gives ground in steps:
+   `full` (≥1260) is the reference exactly; `mid` (960–1259) tightens the gaps
+   and lets the search field shrink; `compact` (<960) turns Search and New build
+   into icon buttons. Nothing is dropped and nothing scrolls sideways. */
+const MID_MIN = 960;
+const FULL_MIN = 1260;
+
+const visuallyHidden: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
 };
 
 const badge: CSSProperties = {
@@ -168,9 +187,14 @@ export function SiteHeaderView({
   onNewBuild,
   onSearch,
   searchInitial,
+  onOpenSearch,
 }: SiteHeaderViewProps) {
   const wide = useMinWidth(1328);
+  const full = useMinWidth(FULL_MIN);
+  const compact = !useMinWidth(MID_MIN);
   const signedIn = viewer !== null;
+  const gap = full ? 28 : compact ? 8 : 14;
+  const linkPad = full ? "0 14px" : compact ? "0 8px" : "0 10px";
   const unreadLabel = unread > 9 ? "9+" : String(unread);
 
   return (
@@ -194,8 +218,8 @@ export function SiteHeaderView({
           height: 64,
           display: "flex",
           alignItems: "center",
-          gap: 28,
-          padding: wide ? 0 : "0 24px",
+          gap,
+          padding: wide ? 0 : compact ? "0 16px" : "0 24px",
           boxSizing: "border-box",
         }}
       >
@@ -209,7 +233,7 @@ export function SiteHeaderView({
                 key={link.key}
                 to={link.href}
                 aria-current={isCurrent ? "page" : undefined}
-                style={{ ...linkBase, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.text2 }}
+                style={{ ...linkBase, padding: linkPad, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.text2 }}
               >
                 {link.label}
                 {isCurrent && <Lamp width={26} place={{ left: "50%", marginLeft: -13, bottom: -1 }} />}
@@ -220,10 +244,18 @@ export function SiteHeaderView({
 
         <span style={{ flexGrow: 1 }} />
 
-        <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} />
+        {compact ? (
+          <IconButton icon={Search} label="Search" size={38} onClick={onOpenSearch} />
+        ) : (
+          <HeaderSearch
+            onSubmit={onSearch ?? (() => undefined)}
+            initialValue={searchInitial}
+            width={full ? 280 : undefined}
+          />
+        )}
 
-        <Button size={38} icon={Plus} onClick={onNewBuild}>
-          New build
+        <Button size={38} icon={Plus} onClick={onNewBuild} style={compact ? { width: 38, padding: 0 } : undefined}>
+          {compact ? <span style={visuallyHidden}>New build</span> : "New build"}
         </Button>
 
         {signedIn && (
@@ -305,6 +337,7 @@ export function SiteHeader() {
       onNewBuild={() => navigate(SITE_NAV.create)}
       onSearch={search}
       searchInitial={pathname === "/gallery" ? (params.get("q") ?? "") : ""}
+      onOpenSearch={() => navigate("/gallery?focus=search")}
     />
   );
 }
