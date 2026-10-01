@@ -26,7 +26,17 @@ The harness opens each reference HTML and the matching dev page at the same size
 
 They render the page views with `fixtures/sample-data.json`, so a comparison tests the UI and not the database. Dev-only, never in a production bundle. `?theme=` sets the page's theme without touching the stored preference.
 
-To see a real route in the new frame before the flag is on anywhere: `?frame=site` (development builds only).
+### Viewing any route in the new frame
+
+The site frame is behind the `site_frame` row of `feature_flags` (missing row = off) and a route list, `SITE_FRAME_ROUTES` in `src/components/shell/siteFrameRoutes.ts`. The flag is never turned on in production data by a prompt. To see a listed route in the new frame locally, open it in a development build with `?frame=site`:
+
+```
+npm run dev
+http://localhost:5173/notifications?frame=site      # the new frame
+http://localhost:5173/notifications?frame=flat      # back to the old one
+```
+
+The override is held for the browser session (sessionStorage), so it survives in-app navigation that drops the query, and it does not exist in a production build. A route that is not in `SITE_FRAME_ROUTES` still renders in the old frame under `?frame=site`; each page prompt adds its own. `/notifications` is the first. The tier-1 spec `e2e/tier1/site-frame.spec.ts` runs with this override.
 
 ## Where things are
 

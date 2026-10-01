@@ -19,6 +19,7 @@ import { BuildCardsSection } from "./catalogue/BuildCardsSection";
 import { ChartsSection } from "./catalogue/ChartsSection";
 import { CompositionsSection } from "./catalogue/CompositionsSection";
 import { ControlsSection } from "./catalogue/ControlsSection";
+import { FrameSection } from "./catalogue/FrameSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
 import { OrbsSection } from "./catalogue/OrbsSection";
 import { PanelsSection } from "./catalogue/PanelsSection";
@@ -58,7 +59,7 @@ export default function KitComponents() {
       <BuildCardsSection />
       <ChartsSection />
       <CompositionsSection />
-      {/* Later prompts: Frame. */}
+      <FrameSection />
     </div>
   );
 }

@@ -27,6 +27,9 @@ import { ProfileDrawer, type DrawerRoute } from "@/components/shell/ProfileDrawe
 import { NavSearch } from "@/components/shell/NavSearch";
 import NavProgressChip from "@/components/ambient/NavProgressChip";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { SiteFrame } from "@/components/shell/SiteFrame";
+import { usesSiteFrame } from "@/components/shell/siteFrameRoutes";
+import { useSiteFrameFlag } from "@/lib/shell/flags";
 
 /* ────────────────────────────────────────────────
    AppShell — the wired container around FlatShell.
@@ -80,7 +83,26 @@ const NAV_ICONS = {
   profile: <UserIcon size={20} strokeWidth={2} />,
 };
 
+/* UI-P20. THE FRAME IS CHOSEN HERE, ONCE. With the `site_frame` flag on and the
+   route listed in `SITE_FRAME_ROUTES`, the page renders in `SiteFrame` and none
+   of the old chrome below is mounted — no rail, no drawers, no bottom nav, and
+   none of their unread-count subscriptions. Otherwise it renders exactly the
+   tree it rendered before this prompt: `FlatAppShell` is the previous
+   `AppShell`, renamed and not edited. */
 export function AppShell() {
+  const siteFrameOn = useSiteFrameFlag();
+  const { pathname } = useLocation();
+  if (siteFrameOn && usesSiteFrame(pathname)) {
+    return (
+      <SiteFrame>
+        <Outlet />
+      </SiteFrame>
+    );
+  }
+  return <FlatAppShell />;
+}
+
+function FlatAppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();

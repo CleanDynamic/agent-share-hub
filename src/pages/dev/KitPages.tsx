@@ -14,18 +14,28 @@
 
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 import { useParams } from "react-router-dom";
+import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/useDesignTheme";
+
+import { devChrome } from "./frameChrome";
 
 /** What a registered compare entry receives. The view reads the 768px breakpoint itself; this is for sizing the wrapper. */
 export interface DesignPageProps {
   viewport: DesignViewport;
+  /** Page views are compared in `board` fit (UI-P16). */
+  fit?: "board" | "content";
 }
 
 /** `:page` (the `page` field of `design/reference/index.json`) → a lazy entry that renders the view with fixtures. */
 const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> | undefined> = {
   /* UI-P13 — a throwaway for the page backdrop; not a board, so not in index.json. */
   backdrop: lazy(() => import("./BackdropDemo")),
+  /* UI-P16 — the empty frame: backdrop, empty slots, the 820px grid placeholder. */
+  frame: lazy(() => import("./FrameDemo")),
 };
+
+/** Entries that draw their own room and are not wrapped in the site frame. */
+const UNFRAMED = new Set(["backdrop"]);
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 
@@ -46,7 +56,13 @@ export default function KitPages() {
       style={{ width: WIDTH[viewport] }}
     >
       <Suspense fallback={null}>
-        <View viewport={viewport} />
+        {UNFRAMED.has(page) ? (
+          <View viewport={viewport} fit="board" />
+        ) : (
+          <SiteFrameView viewport={viewport} {...devChrome({ theme })}>
+            <View viewport={viewport} fit="board" />
+          </SiteFrameView>
+        )}
       </Suspense>
     </div>
   );
