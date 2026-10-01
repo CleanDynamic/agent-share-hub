@@ -495,6 +495,12 @@ export interface GalleryFilters {
   /** Tools from made_with. Several are an OR. */
   madeWith?: string[];
   /**
+   * Shapes (UI-P28). Several are an OR, and the whole is an AND with the other
+   * filters. Values that are not one of GALLERY_SHAPES are dropped. Additive:
+   * omitted or empty is the gallery exactly as it was.
+   */
+  shapes?: string[];
+  /**
    * Only builds carrying an open bounty (NS-P52).
    *
    * An AND with the other two, like they are with each other: made for
@@ -621,6 +627,9 @@ export async function listGallery(
 
   const madeWith = cleanList(options.madeWith);
   if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
+
+  const shapes = cleanShapes(options.shapes);
+  if (shapes.length > 0) query = query.in("shape", shapes);
 
   // The query narrows to the ids search_build_ids matched. When it matched
   // nothing the answer is already known, so the builds request is never made.
@@ -894,6 +903,7 @@ async function countGalleryBuilds(
   lens: GalleryLens,
   now: number,
   freshOnly = false,
+  shape?: BuildShape,
 ): Promise<number> {
   const unsolved = lens === "unsolved";
 
@@ -909,6 +919,7 @@ async function countGalleryBuilds(
   if (unsolved) query = query.eq("bounties.status", "open");
   query = applyLensFilters(query, lens, now);
   if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
+  if (shape) query = query.eq("shape", shape);
 
   const { count, error } = await query;
   if (error) throw buildLayerError(operation, error);
@@ -930,6 +941,39 @@ export async function countGalleryLenses(): Promise<Record<GalleryLens, number>>
     out[lens] = counts[index];
   });
   return out;
+}
+
+// =============================================================================
+// The shape facet
+// =============================================================================
+
+/** The nine shapes, as the gallery's threshold table names them. */
+export const GALLERY_SHAPES = Object.keys(GALLERY_THRESHOLD) as readonly BuildShape[];
+
+/** One shape and how many gallery builds have it. */
+export interface GalleryShapeFacet {
+  value: BuildShape;
+  count: number;
+}
+
+/**
+ * The shapes worth offering as a filter, counted over the gallery's builds.
+ *
+ * NOT PART OF `gallery_facets`, whose roles and tools come from one RPC: adding
+ * shapes to it is a database change, and this is not one. One estimated head
+ * count per shape, sent together over the same membership clauses the grid and
+ * the lens counts use, so a shape's number and its page cannot drift apart.
+ * Shapes with no builds are left out; the rest are ordered by count, then name.
+ */
+export async function getGalleryShapeFacets(): Promise<GalleryShapeFacet[]> {
+  const now = Date.now();
+  const counts = await Promise.all(
+    GALLERY_SHAPES.map((shape) => countGalleryBuilds("getGalleryShapeFacets", "all", now, false, shape)),
+  );
+
+  return GALLERY_SHAPES.map((value, index) => ({ value, count: counts[index] }))
+    .filter((facet) => facet.count > 0)
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
 
 /** The numbers on the Gallery's stats row. */
@@ -981,4 +1025,10 @@ function cleanList(values: string[] | undefined): string[] {
     if (trimmed) seen.add(trimmed);
   }
   return [...seen];
+}
+
+/** Only shapes the gallery knows, trimmed, first occurrence kept. */
+function cleanShapes(values: string[] | undefined): BuildShape[] {
+  const known = new Set<string>(GALLERY_SHAPES);
+  return cleanList(values).filter((value): value is BuildShape => known.has(value));
 }

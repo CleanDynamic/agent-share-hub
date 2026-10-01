@@ -76,3 +76,25 @@ describe("galleryHref", () => {
     }
   });
 });
+
+describe("shapes (UI-P28)", () => {
+  it("reads shape as repeatable, known shapes only — and leaves the key out when there are none", () => {
+    expect(parse("shape=agent&shape=%20app%20&shape=agent&shape=toaster").shapes).toEqual(["agent", "app"]);
+    expect(parse("")).not.toHaveProperty("shapes");
+    expect(parse("shape=toaster")).not.toHaveProperty("shapes");
+  });
+
+  it("writes shape after with and before q, and drops what it does not know", () => {
+    expect(galleryHref({ madeWith: ["Claude"], shapes: ["agent", "workflow"], query: "inbox" })).toBe(
+      "/gallery?with=Claude&shape=agent&shape=workflow&q=inbox",
+    );
+    expect(galleryHref({ shapes: ["toaster"] })).toBe("/gallery");
+  });
+
+  it("round-trips", () => {
+    const address = "/gallery?lens=rebuilt&for=lawyers&shape=study&q=inbox+agent";
+    const search = new URLSearchParams(address.split("?")[1]);
+    expect(galleryHref(parseGalleryParams(search))).toBe(address);
+  });
+});
+

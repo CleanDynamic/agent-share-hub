@@ -50,7 +50,9 @@ vi.mock("@/integrations/supabase/client", () => ({
 import {
   GALLERY_LENSES,
   GALLERY_THRESHOLD,
+  GALLERY_SHAPES,
   countGalleryLenses,
+  getGalleryShapeFacets,
   getGalleryStats,
   listGallery,
   type GalleryLens,
@@ -258,3 +260,50 @@ describe("getGalleryStats", () => {
     await expect(getGalleryStats()).rejects.toThrow(/getGalleryStats.* failed: boom/);
   });
 });
+
+describe("getGalleryShapeFacets (UI-P28)", () => {
+  /** Answers each shape's request by the shape it asked about. */
+  function answerByShape(figures: Partial<Record<string, number>>) {
+    answer = (own) => {
+      const shape = own.find((call) => call.method === "eq" && call.args[0] === "shape")?.args[1] as string;
+      return { count: figures[shape] ?? 0, error: null };
+    };
+  }
+
+  it("counts every shape over the gallery's membership, one estimated head request each", async () => {
+    answerByShape({});
+    await getGalleryShapeFacets();
+
+    expect(builders).toBe(GALLERY_SHAPES.length);
+    for (let id = 1; id <= builders; id += 1) {
+      const own = callsOf(id);
+      expect(named(own, "select")[0][1]).toEqual({ count: "estimated", head: true });
+      expect(named(own, "in")).toEqual([["status", ["published", "gallery"]]]);
+      expect(named(own, "or")).toHaveLength(1);
+    }
+    expect(GALLERY_SHAPES).toEqual(["app", "agent", "workflow", "prompt", "dataset", "study", "media", "technique", "other"]);
+  });
+
+  it("orders by count, then name, and leaves out shapes with none", async () => {
+    answerByShape({ agent: 402, workflow: 318, app: 402, study: 88 });
+    await expect(getGalleryShapeFacets()).resolves.toEqual([
+      { value: "agent", count: 402 },
+      { value: "app", count: 402 },
+      { value: "workflow", count: 318 },
+      { value: "study", count: 88 },
+    ]);
+  });
+});
+
+describe("listGallery's shape filter (UI-P28)", () => {
+  it("narrows to the named shapes, drops unknown ones, and sends nothing when there are none", async () => {
+    await listGallery({ shapes: ["agent", "toaster", "agent", "study"] });
+    expect(named(callsOf(1), "in")).toContainEqual(["shape", ["agent", "study"]]);
+
+    calls = [];
+    builders = 0;
+    await listGallery({ shapes: [] });
+    expect(named(callsOf(1), "in").some((args) => args[0] === "shape")).toBe(false);
+  });
+});
+
