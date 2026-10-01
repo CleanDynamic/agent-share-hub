@@ -525,6 +525,37 @@ export interface GalleryPage {
   total: number | null;
 }
 
+/** The one builder method applyLensFilters calls; every PostgREST filter builder has it. */
+interface LensQuery {
+  gte(column: string, value: string | number): LensQuery;
+}
+
+/** The oldest last_confirmed_at that still counts as fresh: the window isStale reads. */
+function freshSince(now: number): string {
+  return new Date(now - STALE_AFTER_DAYS * DAY_MS).toISOString();
+}
+
+/**
+ * What a lens adds to a gallery query, on top of the membership clauses.
+ *
+ * Shared by listGallery and the counts (countGalleryLenses, getGalleryStats),
+ * so a lens' number and its page cannot drift apart. Unsolved adds nothing
+ * here: it is the inner bounty embed in the select and the `bounties.status`
+ * clause, which a caller applies with the select it builds (see
+ * gallerySelect and countGalleryBuilds).
+ */
+function applyLensFilters<Q>(query: Q, lens: GalleryLens, now: number = Date.now()): Q {
+  const builder = query as unknown as LensQuery;
+  if (lens === "proven") {
+    // Confirmed within the same window isStale reads, from the same constant.
+    return builder.gte("reproduction_count", 1).gte("last_confirmed_at", freshSince(now)) as unknown as Q;
+  }
+  if (lens === "rebuilt") {
+    return builder.gte("rebuild_count", 1) as unknown as Q;
+  }
+  return query;
+}
+
 /**
  * One page of the gallery, in one request.
  *
@@ -597,13 +628,7 @@ export async function listGallery(
     query = query.in("id", ids);
   }
 
-  if (lens === "proven") {
-    // Confirmed within the same window isStale reads, from the same constant.
-    const freshSince = new Date(Date.now() - STALE_AFTER_DAYS * DAY_MS).toISOString();
-    query = query.gte("reproduction_count", 1).gte("last_confirmed_at", freshSince);
-  } else if (lens === "rebuilt") {
-    query = query.gte("rebuild_count", 1);
-  }
+  query = applyLensFilters(query, lens);
 
   const { data, error, count } = await query
     .order("reproduction_count", { ascending: false })
@@ -740,6 +765,66 @@ export async function countOpenBountyBuilds(): Promise<number> {
     return 0;
   }
   return count ?? 0;
+}
+
+// =============================================================================
+// The lens counts
+// =============================================================================
+
+/**
+ * An estimated head count of the gallery's builds under one lens: the same
+ * membership clauses and the same lens filters listGallery applies, and no rows.
+ *
+ * ESTIMATED, because PostgREST answers an estimated count with the exact one
+ * until the table is large enough for the planner's figure to be close, so a
+ * small gallery is counted exactly and a large one cheaply. Unsolved joins
+ * bounties as countOpenBountyBuilds does.
+ *
+ * `freshOnly` adds the confirmed-within-STALE_AFTER_DAYS clause on its own,
+ * without Proven's reproduction clause: the freshness figure getGalleryStats
+ * reports counts every gallery build, run by someone or not.
+ */
+async function countGalleryBuilds(
+  operation: string,
+  lens: GalleryLens,
+  now: number,
+  freshOnly = false,
+): Promise<number> {
+  const unsolved = lens === "unsolved";
+
+  let query = supabase
+    .from("builds")
+    .select(unsolved ? "id, bounties!bounties_build_id_fkey!inner(id)" : "id", {
+      count: "estimated",
+      head: true,
+    })
+    .in("status", ["published", "gallery"])
+    .or(galleryPredicate());
+
+  if (unsolved) query = query.eq("bounties.status", "open");
+  query = applyLensFilters(query, lens, now);
+  if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
+
+  const { count, error } = await query;
+  if (error) throw buildLayerError(operation, error);
+  return count ?? 0;
+}
+
+/**
+ * How many gallery builds each lens holds, for the numbers on the lens row.
+ * One head request per lens, sent together.
+ */
+export async function countGalleryLenses(): Promise<Record<GalleryLens, number>> {
+  const now = Date.now();
+  const counts = await Promise.all(
+    GALLERY_LENSES.map((lens) => countGalleryBuilds("countGalleryLenses", lens, now)),
+  );
+
+  const out = {} as Record<GalleryLens, number>;
+  GALLERY_LENSES.forEach((lens, index) => {
+    out[lens] = counts[index];
+  });
+  return out;
 }
 
 // =============================================================================
