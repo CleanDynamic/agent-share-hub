@@ -16,6 +16,9 @@
 // as the mark's halo is.
 //
 // `at` is the caller's: "04:12" is a clock inside the build, not a date.
+//
+// ON A PHONE (`size="phone"`, UI-P29) the time column is 48px and the type a
+// step up: the time 11px, the kind 10px, the text 14px.
 
 import type { EventKind } from "@/lib/build";
 import { t } from "@/lib/theme/tokens";
@@ -34,6 +37,8 @@ export interface TimelineProps {
   events: readonly TimelineEvent[];
   /** The list's accessible name. */
   label?: string;
+  /** `phone`: the 390 board's rows — a 48px time column, 11px time, 14px text. */
+  size?: "desktop" | "phone";
 }
 
 /** The dot's colour, and the colour of the kind's name. */
@@ -47,8 +52,9 @@ const DOT: Record<EventKind, string> = {
 /** The kind's name, which is read: deploy swaps the lamp for its legible ink. */
 const INK: Record<EventKind, string> = { ...DOT, deploy: t.litInk };
 
-export function Timeline({ events, label = "Events" }: TimelineProps) {
+export function Timeline({ events, label = "Events", size = "desktop" }: TimelineProps) {
   const dusk = useRoom() === "dusk";
+  const phone = size === "phone";
 
   return (
     <div data-ui="timeline" style={{ position: "relative" }}>
@@ -63,7 +69,7 @@ export function Timeline({ events, label = "Events" }: TimelineProps) {
             data-event-kind={event.kind}
             style={{
               display: "grid",
-              gridTemplateColumns: "16px 44px minmax(0, 1fr)",
+              gridTemplateColumns: phone ? "16px 48px minmax(0, 1fr)" : "16px 44px minmax(0, 1fr)",
               gap: 10,
               alignItems: "start",
               position: "relative",
@@ -81,7 +87,9 @@ export function Timeline({ events, label = "Events" }: TimelineProps) {
                 boxShadow: dusk ? `0 0 10px ${DOT[event.kind]}` : undefined,
               }}
             />
-            <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label, marginTop: 2 }}>{event.at}</span>
+            <span style={{ fontFamily: DM_MONO, fontSize: phone ? 11 : 10, color: t.label, marginTop: phone ? 0 : 2 }}>
+              {event.at}
+            </span>
             <div>
               <div
                 style={{
@@ -94,7 +102,7 @@ export function Timeline({ events, label = "Events" }: TimelineProps) {
               >
                 {event.kind}
               </div>
-              <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text, marginTop: 2 }}>{event.text}</div>
+              <div style={{ fontFamily: FIGTREE, fontSize: phone ? 14 : 12, color: t.text, marginTop: 2 }}>{event.text}</div>
             </div>
           </li>
         ))}
