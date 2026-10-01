@@ -15,11 +15,13 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE, mono } from "@/lib/theme/type";
 
+import { CompositionsSection } from "./catalogue/CompositionsSection";
 import { ControlsSection } from "./catalogue/ControlsSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
 import { OrbsSection } from "./catalogue/OrbsSection";
 import { PanelsSection } from "./catalogue/PanelsSection";
 import { ProofSection } from "./catalogue/ProofSection";
+import { TaglineSection } from "./catalogue/TaglineSection";
 
 export default function KitComponents() {
   const theme = useDesignTheme();
@@ -50,7 +52,9 @@ export default function KitComponents() {
       <ProofSection />
       <PanelsSection />
       <OrbsSection />
-      {/* Later prompts: Panels, Orbs, Tagline, Build cards, Charts, Frame. */}
+      <TaglineSection />
+      <CompositionsSection />
+      {/* Later prompts: Build cards, Charts, Frame. */}
     </div>
   );
 }

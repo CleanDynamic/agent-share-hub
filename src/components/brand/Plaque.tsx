@@ -80,10 +80,19 @@ export interface PlaqueBuild extends FreshnessSource, StalenessSource {
   rebuild_count?: number | null;
 }
 
+/**
+ * The ground the plaque stands on. `surface` is every glass or solid surface;
+ * `inverse` is the featured build's dark-on-light panel (UI-P11), where the
+ * count wears `--inverse-evidence-fill` and the words `--on-inverse`.
+ */
+export type PlaqueTone = "surface" | "inverse";
+
 export interface PlaqueProps {
   /** The build. One object, so neither signal can be supplied without the other. */
   build: PlaqueBuild;
   size?: PlaqueSize;
+  /** The ground it stands on. Defaults to `surface`. */
+  tone?: PlaqueTone;
   /**
    * Anything the surface wants riding at the end of the plaque — the build
    * page's rebuild link, say. It is a CHILD rather than a third signal: the
@@ -135,10 +144,20 @@ export function plaqueState(build: PlaqueBuild, now?: number): PlaqueState {
   return isStale(build, now) ? "stale" : "healthy";
 }
 
-export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
+export function Plaque({ build, size = "card", tone = "surface", trailing, now }: PlaqueProps) {
   const count = build.reproduction_count ?? 0;
   const state = plaqueState(build, now);
   const stale = state === "stale";
+  const inverse = tone === "inverse";
+
+  /* On the inverse panel the tag is the reference's own 10px and the line beside
+     it 11px (the featured plate draws them that way), the lamp is the same lit
+     dot, and every word is read against `--inverse`: current in `--on-inverse`,
+     quiet in `--on-inverse-2`. */
+  const textPx = inverse ? 11 : TEXT_PX[size];
+  const tagPx = inverse ? 10 : TAG_PX[size];
+  const ink = inverse ? t.onInverse : t.text;
+  const quietInk = inverse ? t.onInverse2 : t.text2;
 
   const frame: CSSProperties = {
     display: "flex",
@@ -158,6 +177,7 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
     "data-ui": "plaque",
     "data-plaque-size": size,
     "data-plaque-state": state,
+    "data-plaque-tone": inverse ? "inverse" : undefined,
   } as const;
 
   /* UNREPRODUCED: one quiet line. No tag, no lamp, no freshness. It keeps the
@@ -165,7 +185,7 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
      it IS the reproduction half, said in words — and `trailing` still rides. */
   if (state === "unreproduced") {
     return (
-      <div {...marks} data-variant="never" style={{ ...frame, fontFamily: FIGTREE, fontSize: TEXT_PX[size], lineHeight: "normal", color: t.text2 }}>
+      <div {...marks} data-variant="never" style={{ ...frame, fontFamily: FIGTREE, fontSize: textPx, lineHeight: "normal", color: quietInk }}>
         <span
           data-plaque-reproduction=""
           data-testid="reproduction-count"
@@ -191,10 +211,10 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
         style={{
           ...tabular,
           fontFamily: DM_MONO,
-          fontSize: TAG_PX[size],
+          fontSize: tagPx,
           lineHeight: "normal",
-          background: t.evidenceFill,
-          color: t.onEvidenceFill,
+          background: inverse ? t.inverseEvidenceFill : t.evidenceFill,
+          color: inverse ? t.onInverseEvidenceFill : t.onEvidenceFill,
           padding: "2px 6px",
           borderRadius: r.chip,
           whiteSpace: "nowrap",
@@ -214,9 +234,9 @@ export function Plaque({ build, size = "card", trailing, now }: PlaqueProps) {
           alignItems: "center",
           gap: 5,
           fontFamily: FIGTREE,
-          fontSize: TEXT_PX[size],
+          fontSize: textPx,
           lineHeight: "normal",
-          color: stale ? t.text2 : t.text,
+          color: stale ? quietInk : ink,
           minWidth: 0,
         }}
       >
