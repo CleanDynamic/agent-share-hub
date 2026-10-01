@@ -36,6 +36,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   home: lazy(() => import("./HomeDemo")),
   /* UI-P28 — Gallery. */
   gallery: lazy(() => import("./GalleryDemo")),
+  /* UI-P29 — the Build page's first screen. */
+  build: lazy(() => import("./BuildDemo")),
 };
 
 /** Entries that draw their own room and are not wrapped in the site frame. */

@@ -33,7 +33,10 @@
 // SIZES. `card` and `row` say "3 days ago, on sonnet-4.5"; `header` says it in
 // full, "last confirmed working 3 days ago, on sonnet-4.5", because the build
 // page has the room and the reader has no card around the claim to tell them
-// what it is a claim about. The text may wrap.
+// what it is a claim about. The text may wrap. `proof` (UI-P29) is the Build
+// page's proof panel as the reference draws it: the tag at 11px, the claim at
+// 12px and the 10×7 lamp, in full — and `wording="short"` where a phone column
+// has no room for the lead.
 //
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
@@ -61,8 +64,10 @@ import { LampDot } from "./LampDot";
  *           A column, and the only size where the numeral steps up.
  *   row     in a list — a rebuilds tab, a solver's shortlist. One line that
  *           never wraps and clips its freshness rather than growing.
+ *   proof   the Build page's proof panel (UI-P29): the reference's 11px tag
+ *           and 12px claim beside the reproduction orb, said in full.
  */
-export type PlaqueSize = "card" | "header" | "row";
+export type PlaqueSize = "card" | "header" | "row" | "proof";
 
 /** Healthy, gone stale, or nobody has run it yet. */
 export type PlaqueState = "healthy" | "stale" | "unreproduced";
@@ -99,6 +104,12 @@ export interface PlaqueProps {
    * plaque decides where it sits, and never lets it displace either half.
    */
   trailing?: ReactNode;
+  /**
+   * How the freshness half is said, when the size's own choice does not fit:
+   * `full` leads with "last confirmed working", `short` does not. Defaults to
+   * full at `header` and `proof`, short everywhere else.
+   */
+  wording?: "full" | "short";
   /** Frozen "now", for a fixture or a test. Defaults to the clock. */
   now?: number;
 }
@@ -114,14 +125,15 @@ const NEVER_REPRODUCED = "not yet reproduced";
 export const NEVER_CONFIRMED = "not confirmed by anyone yet";
 
 /** Type per size: the tag is DM Mono, the freshness line and the bare text Figtree. */
-const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 13 };
-const TEXT_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12 };
+const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 13, proof: 11 };
+const TEXT_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12, proof: 12 };
 
 /** The lamp dot, per size. Card and row use the default 10×7. */
 const LAMP: Record<PlaqueSize, { width: number; height: number }> = {
   card: { width: 10, height: 7 },
   row: { width: 10, height: 7 },
   header: { width: 12, height: 8 },
+  proof: { width: 10, height: 7 },
 };
 
 /**
@@ -144,7 +156,7 @@ export function plaqueState(build: PlaqueBuild, now?: number): PlaqueState {
   return isStale(build, now) ? "stale" : "healthy";
 }
 
-export function Plaque({ build, size = "card", tone = "surface", trailing, now }: PlaqueProps) {
+export function Plaque({ build, size = "card", tone = "surface", trailing, wording, now }: PlaqueProps) {
   const count = build.reproduction_count ?? 0;
   const state = plaqueState(build, now);
   const stale = state === "stale";
@@ -199,7 +211,9 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, now }
   }
 
   const freshness =
-    size === "header" ? freshnessLabel(build, now) : freshnessShort(build, now);
+    (wording ?? (size === "header" || size === "proof" ? "full" : "short")) === "full"
+      ? freshnessLabel(build, now)
+      : freshnessShort(build, now);
 
   return (
     <div {...marks} data-variant={stale ? "stale" : "fresh"} style={frame}>

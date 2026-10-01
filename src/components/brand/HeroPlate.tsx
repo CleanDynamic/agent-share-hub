@@ -6,7 +6,9 @@
 //   build     the Build page's title plate — a frosted plate laid over the cover
 //             with the mark square at its left. UI-P29 places it; this builds the
 //             plate only, absolutely positioned 16px in from the left, right and
-//             bottom of whatever positioned box the page puts it in.
+//             bottom of whatever positioned box the page puts it in. On a phone
+//             (`size="phone"`, UI-P29) the plate sits 10px in, the title is 32px,
+//             the credit and the Δ stack, and there is no mark square.
 //
 // THE PLATE IS ONE OF THREE BLURRED SURFACES. The `build` variant is the only
 // blurred element in this file, and `GLASS_BLUR` is the one blur the codebase
@@ -59,6 +61,8 @@ export interface BuildHeroPlateProps {
   credit: ReactNode;
   /** The change summary, drawn after the credit in mono: "Δ swapped model, added retry step". */
   delta?: string;
+  /** `phone`: the 390 board's plate — 10px in, 32px title, credit and Δ stacked, no mark square. */
+  size?: "desktop" | "phone";
   style?: CSSProperties;
 }
 
@@ -154,7 +158,42 @@ function Featured({ cover, title, outcome, build, rank, eyebrow = FEATURED_EYEBR
   );
 }
 
-function BuildPlate({ title, outcome, credit, delta, style }: BuildHeroPlateProps) {
+/** The phone's plate: the same frosted surface, closer to the edge, with the credit and the Δ on lines of their own. */
+function PhonePlate({ title, outcome, credit, delta, style }: BuildHeroPlateProps) {
+  return (
+    <div
+      data-ui="hero-plate"
+      data-variant="build"
+      data-size="phone"
+      style={{
+        position: "absolute",
+        left: 10,
+        right: 10,
+        bottom: 10,
+        padding: 16,
+        borderRadius: 14,
+        background: t.plate,
+        border: `1px solid ${t.headerBorder}`,
+        backdropFilter: GLASS_BLUR,
+        WebkitBackdropFilter: GLASS_BLUR,
+        ...style,
+      }}
+    >
+      <h1 style={{ ...display(32, { mobilePageHeading: true }), margin: 0, color: t.text }}>{title}</h1>
+      {outcome ? (
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.45, color: t.text2, marginTop: 8 }}>{outcome}</div>
+      ) : null}
+      <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, marginTop: 8 }}>{credit}</div>
+      {delta ? (
+        <div style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, marginTop: 2 }}>{delta}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function BuildPlate(props: BuildHeroPlateProps) {
+  if (props.size === "phone") return <PhonePlate {...props} />;
+  const { title, outcome, credit, delta, style } = props;
   return (
     <>
       <div

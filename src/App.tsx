@@ -82,6 +82,8 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const HomePage = lazy(() => import("./pages/site/home/HomePage"));
 // UI-P28 — the Gallery in the site frame; its own chunk, picked by `FrameRoute`.
 const GalleryPage = lazy(() => import("./pages/site/gallery/GalleryPage"));
+// UI-P29 — the Build page in the site frame; its own chunk, picked by `FrameRoute`.
+const BuildSitePage = lazy(() => import("./pages/site/build/BuildPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -317,7 +319,21 @@ const App = () => (
                     `--bg` — the live theme's ground — and it fills the centre
                     column rather than the viewport, because the frame is
                     already on screen and only the page is still coming. ── */}
-                <Route path="/b2/:slug" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildPage /></Suspense>} />
+                <Route
+                  path="/b2/:slug"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <BuildSitePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
+                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildPage /></Suspense>}
+                    />
+                  }
+                />
                 {/* RC-P14 — every published rebuild in a build's family, beside
                     the build page it belongs to. Wide through /b2/*. */}
                 <Route path="/b2/:slug/lineage" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage /></Suspense></RouteBoundary>} />
