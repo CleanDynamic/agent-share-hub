@@ -95,7 +95,7 @@ function messageOf(cause: unknown): string {
  * The page's own scrolling is untouched — no fixed container, no inner scroll
  * area, so scroll restoration and the mobile URL bar behave as they did.
  *
- * The ground was #08080C, which went black on Exhibition.
+ * The ground was #08080C, which went black on Noon.
  */
 function Frame({
   contentItemId,

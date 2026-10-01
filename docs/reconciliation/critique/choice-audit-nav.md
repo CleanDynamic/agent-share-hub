@@ -1,6 +1,6 @@
 # Choice audit — the navigation (RC-P05)
 
-⟦hicks-law › Choice Audit⟧ on the three navigation surfaces as RC-P05 leaves them, read from the rendered frame (signed in and signed out; 390, 768, 1024 and 1440 wide; Exhibition and Dusk) and from `src/components/shell/navBudget.test.tsx`, which counts them in the DOM. Rows are in the order a reader meets them.
+⟦hicks-law › Choice Audit⟧ on the three navigation surfaces as RC-P05 leaves them, read from the rendered frame (signed in and signed out; 390, 768, 1024 and 1440 wide; Noon and Dusk) and from `src/components/shell/navBudget.test.tsx`, which counts them in the DOM. Rows are in the order a reader meets them.
 
 | Decision point | n | Criterion | Default | Depth | Scent | Budget | Competing emphasis | Rating |
 |---|---|---|---|---|---|---|---|---|

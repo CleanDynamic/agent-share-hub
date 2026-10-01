@@ -456,7 +456,7 @@ function ComposeWorkspace({
              depth, working surfaces do not, because in a workspace the content
              is figure and the chrome has to recede behind it. This was the
              hard-coded #08080C void, which was neither theme's ground and went
-             black on Exhibition. */
+             black on Noon. */
           ...workspaceGround,
           display: "flex",
           flexDirection: "column",

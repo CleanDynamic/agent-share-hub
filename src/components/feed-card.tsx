@@ -33,7 +33,7 @@ import { feedback } from "@/lib/theme/motion";
  * It stays a map-shaped lookup rather than being inlined at the three call
  * sites, because those sites also feed the avatar fallback and would otherwise
  * each have to decide the same thing again. `--recess` under `--text2` is the
- * kit's neutral chip, 4.55:1 on Exhibition and 5.73:1 on Dusk, and it is what
+ * kit's neutral chip, 4.55:1 on Noon and 5.73:1 on Dusk, and it is what
  * `categoryFill` returns for a category the registry does not know — which is
  * exactly what a content type is.
  */
@@ -590,7 +590,7 @@ export function FeedCard({ post }: { post: FeedPost }) {
                 style={{
                   width: '100%', height: 160,
                   /* Was 0.85, which is a dark-theme trick: knocking a
-                     photograph back reads as haze on Exhibition's light ground
+                     photograph back reads as haze on Noon's light ground
                      rather than as restraint. */
                   objectFit: 'cover',
                   display: 'block',

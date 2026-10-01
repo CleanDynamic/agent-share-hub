@@ -30,7 +30,7 @@ describe("ThemeToggle", () => {
   it("is a labelled radio group of the three themes", () => {
     renderToggle();
     expect(within(group()).getAllByRole("radio").map((r) => r.textContent))
-      .toEqual(["Exhibition", "Dusk", "System"]);
+      .toEqual(["Noon", "Dusk", "System"]);
   });
 
   it("checks the current theme and only the current theme", () => {
@@ -50,13 +50,13 @@ describe("ThemeToggle", () => {
 
   it("is one tab stop, with the checked option carrying it", () => {
     renderToggle();
-    expect(option("Exhibition").tabIndex).toBe(0);
+    expect(option("Noon").tabIndex).toBe(0);
     expect(option("Dusk").tabIndex).toBe(-1);
     expect(option("System").tabIndex).toBe(-1);
 
     fireEvent.click(option("System"));
     expect(option("System").tabIndex).toBe(0);
-    expect(option("Exhibition").tabIndex).toBe(-1);
+    expect(option("Noon").tabIndex).toBe(-1);
   });
 
   it("moves the selection with the arrow keys, and wraps", () => {
@@ -66,7 +66,7 @@ describe("ThemeToggle", () => {
     fireEvent.keyDown(group(), { key: "ArrowDown" });
     expect(checked()).toBe("System");
     fireEvent.keyDown(group(), { key: "ArrowRight" });
-    expect(checked()).toBe("Exhibition");
+    expect(checked()).toBe("Noon");
     fireEvent.keyDown(group(), { key: "ArrowLeft" });
     expect(checked()).toBe("System");
   });
@@ -110,7 +110,7 @@ describe("ThemeToggle", () => {
 
   it("carries the ring along an arrow-key move", () => {
     renderToggle();
-    act(() => option("Exhibition").focus());
+    act(() => option("Noon").focus());
     fireEvent.keyDown(group(), { key: "ArrowRight" });
     expect(option("Dusk")).toHaveFocus();
     expect(ringOf(option("Dusk"))).toEqual(RING);
@@ -118,9 +118,9 @@ describe("ThemeToggle", () => {
 
   it("uses the ONE shared ring, not a second definition of its own", () => {
     // BG-P02 gave this control a --text ring of its own because --lit measures
-    // 1.80:1 on Exhibition's ground. focus.ts resolved that: the 2px offset
-    // leaves a band of --bg under the ring, so it is read against two edges
-    // rather than against the ground alone. One ring, everywhere.
+    // 1.80:1 on Noon's ground. focus.ts resolved that in UI-P04: the shared
+    // ring is --focus-ring, the ink on Noon and the lamp gold on Dusk. One
+    // ring, everywhere.
     //
     // Asserted against the SOURCE the component spends rather than against the
     // rendered node, because jsdom drops the var() colour (see above). What the

@@ -1,10 +1,14 @@
 // buildgallery.ai — semantic tokens.
 //
+// NOON WAS CALLED EXHIBITION BEFORE UI-P02. Same theme, same values; only the
+// name changed. A preference stored under the old name is migrated to "noon" by
+// the boot script in index.html and by ThemeContext.
+//
 // TIER TWO OF TWO. A semantic token names a *job*. This is the only tier a
 // component ever touches, and it touches it through `tokens.ts` — never through
 // these objects directly, and never through `primitives.ts`.
 //
-// `exhibition` and `dusk` are light and dark modes of one product, not two
+// `noon` and `dusk` are light and dark modes of one product, not two
 // brands: same token names, same jobs, only the values differ. Every name in
 // TOKEN_NAMES therefore appears in both objects, which `Record<TokenName,…>`
 // enforces at compile time. Adding a token means adding it to TOKEN_NAMES, to
@@ -24,8 +28,8 @@
 // wrong and the grouping vanishes). So neither is a general-purpose surface and
 // neither is `--glass` by another name:
 //
-//   Exhibition  frame .42 white, thread .55 white — the box is LIGHTER.
-//   Dusk        frame .42 stone, thread .06 room light — the box is LIGHTER.
+//   Noon  frame .42 white, thread .55 white — the box is LIGHTER.
+//   Dusk  frame .42 stone, thread .06 room light — the box is LIGHTER.
 //
 // The direction is the same in both rooms even though the values are struck from
 // different primitives, which is what makes the card read as one object in both.
@@ -42,12 +46,12 @@
 //
 // An alias, not a copy, so the fallback cannot drift from the secondary text it
 // is meant to be. `--recess` is reused rather than a twenty-first value struck,
-// because text2-on-recess already measures 4.55:1 on Exhibition and 5.73:1 on
+// because text2-on-recess already measures 4.55:1 on Noon and 5.73:1 on
 // Dusk — the skill's order is reuse a legal pairing first, and this is one.
 
 // `--recess` IS A SURFACE AND NEVER INK (BG-P30). It is the token for inset
 // surfaces, screens and wells, and it is one step from `--bg` by design — which
-// makes it 1.16:1 on the Exhibition ground and 1.33:1 on Dusk's if anything
+// makes it 1.16:1 on the Noon ground and 1.33:1 on Dusk's if anything
 // paints text with it. The audit sweep found it doing exactly that on the shell
 // tabs, and a scan for the cause found fourteen more: every one an INACTIVE
 // state — an unselected tab, an unchosen sort, a section that is not the
@@ -60,6 +64,7 @@
 
 import {
   amber,
+  birch,
   blue,
   clay,
   green,
@@ -101,6 +106,7 @@ export const TOKEN_NAMES = [
   "evidence-fill",
   "lit",
   "on-lit",
+  "focus-ring",
   "porthole",
   "chrome-hi",
   "chrome-lo",
@@ -127,10 +133,10 @@ export const TOKEN_NAMES = [
 ] as const;
 
 export type TokenName = (typeof TOKEN_NAMES)[number];
-export type ThemeName = "exhibition" | "dusk";
+export type ThemeName = "noon" | "dusk";
 
-/** Exhibition — light. A cool luminous grey gallery. The default theme. */
-export const exhibition: Record<TokenName, string> = {
+/** Noon — light. A cool luminous grey gallery. The default theme. */
+export const noon: Record<TokenName, string> = {
   bg: grey[50],
   recess: grey[100],
   text: grey[950],
@@ -151,6 +157,9 @@ export const exhibition: Record<TokenName, string> = {
   "evidence-fill": teal[200],
   lit: amber[500],
   "on-lit": grey[950],
+  /* UI-P04. The ink, not the lamp: --lit is 1.80:1 on this ground, under the
+     3.0:1 floor for UI state, and this is 12.86:1. */
+  "focus-ring": birch[950],
 
   porthole: grey[700],
   "chrome-hi": grey[0],
@@ -201,6 +210,8 @@ export const dusk: Record<TokenName, string> = {
   "evidence-fill": skyAlpha["400/16"],
   lit: amber[500],
   "on-lit": clay[950],
+  /* UI-P04. The lamp gold, which is 7.47:1 on this ground. */
+  "focus-ring": amber[500],
 
   porthole: lavender[950],
   "chrome-hi": lavender[100],
@@ -230,6 +241,6 @@ export const dusk: Record<TokenName, string> = {
 };
 
 export const themes: Record<ThemeName, Record<TokenName, string>> = {
-  exhibition,
+  noon,
   dusk,
 };

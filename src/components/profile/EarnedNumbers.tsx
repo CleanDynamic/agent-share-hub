@@ -107,7 +107,7 @@ export function EarnedNumbers({
           padding: "2px 8px",
           borderRadius: r.chip,
           /* The measured pair: `--evidence-fill` with `--text` on it, 11.89:1
-             on Exhibition. Longhand rather than the `background` shorthand —
+             on Noon. Longhand rather than the `background` shorthand —
              a shorthand whose whole value is a `var()` is the declaration
              jsdom's cssstyle drops. */
           backgroundColor: evidence.background,

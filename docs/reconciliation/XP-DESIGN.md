@@ -34,7 +34,7 @@ Every user's xp_total and level return to 0 and 1 on deploy. xp_events is copied
 - fixer "Fixer" — five accepted solutions — highest
 
 ## Tiers (buildgallery-theme, Progress and achievement)
-common = outline; rare = --recess fill; highest = --lit fill with --on-lit. Never a hue per tier. Amber never carries text on Exhibition.
+common = outline; rare = --recess fill; highest = --lit fill with --on-lit. Never a hue per tier. Amber never carries text on Noon.
 
 ## Challenges (weekly only, at most 3 active)
 Run three builds you haven't run before · Solve a gap · Re-confirm one of your stale builds

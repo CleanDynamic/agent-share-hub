@@ -40,7 +40,7 @@ import { body } from "@/lib/theme/type";
    for it: ::placeholder is a pseudo-element no inline style can reach, so it
    takes the generated utility ui/input.tsx uses, whose note explains why that
    is not a new class. Without it the placeholder kept the base stylesheet's
-   grey: 1.75:1 on Exhibition's --recess, where --text2 is 4.55:1 (5.73:1 on
+   grey: 1.75:1 on Noon's --recess, where --text2 is 4.55:1 (5.73:1 on
    Dusk).
    ──────────────────────────────────────────────────────────────────────────── */
 

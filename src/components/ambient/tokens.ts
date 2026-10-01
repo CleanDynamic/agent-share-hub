@@ -12,7 +12,7 @@
 // 1. `--recess` WAS BEING USED AS AN INK. `textMuted`, `textFaint` and `locked`
 //    all pointed at it. `--recess` is the token for an inset SURFACE — a
 //    screen, a well, a field — and text set in it measures 1.1:1 on the
-//    Exhibition ground it is nearly the same value as. The system publishes two
+//    Noon ground it is nearly the same value as. The system publishes two
 //    text tokens; the lower rungs of the old white-alpha ramp were never legal
 //    ones, so all three keys resolve to `--text2`.
 //

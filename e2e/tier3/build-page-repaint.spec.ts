@@ -23,7 +23,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const REST = /\/rest\/v1\//;
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** The prompt's four widths. */
 const WIDTHS = [1400, 1024, 768, 390] as const;
@@ -409,7 +409,7 @@ test("BG-P21 — the hero leads: it is first, it is bigger, and the title follow
   // ratio. The video variant is measured in the awkward-build test instead: a
   // <video> whose codec this container cannot decode resolves to no height at
   // all, so measuring hierarchy through one would be measuring the stub.
-  await openBuild(page, "exhibition", 1400, { heroKind: "image" });
+  await openBuild(page, "noon", 1400, { heroKind: "image" });
   await expect(page.locator('[data-visual-slot="build-hero"] img')).toBeVisible();
 
   const hero = await page.locator('[data-visual-slot="build-hero"]').boundingBox();
@@ -498,7 +498,7 @@ test("BG-P21 — the hero's media is requested at a slot width, never at origina
   page,
 }) => {
   const asked: string[] = [];
-  await withTheme(page, "exhibition");
+  await withTheme(page, "noon");
   await stubBuild(page);
   page.on("request", (request) => {
     const url = request.url();
@@ -532,7 +532,7 @@ test("BG-P21 — the hero's media is requested at a slot width, never at origina
 test("BG-P21 — at 390 the title still fits and the facts strip wraps rather than scrolls", async ({
   page,
 }) => {
-  await openBuild(page, "exhibition", 390);
+  await openBuild(page, "noon", 390);
 
   const title = page.getByRole("heading", { level: 1 });
   const box = await title.boundingBox();

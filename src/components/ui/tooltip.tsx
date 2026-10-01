@@ -14,7 +14,7 @@ import { tooltipStyle } from "@/lib/theme/controls";
 
    So it takes a solid --text ground with --bg ink: the page's own text and
    background colours swapped, which is the highest-contrast pairing the system
-   has in both themes (13.10:1 Exhibition, 14.17:1 Dusk) and needs no separate
+   has in both themes (13.10:1 Noon, 14.17:1 Dusk) and needs no separate
    measurement. That is also the right call for 12px type that has to be read in
    under a second. */
 

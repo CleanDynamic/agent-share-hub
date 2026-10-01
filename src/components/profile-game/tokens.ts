@@ -3,7 +3,7 @@
 // WHAT CHANGED. Every value here used to be a literal: three greys struck for a
 // panel that only ever rendered on a dark ground, four accent hexes, and a
 // brand orange repeated in five places. None of them read <html data-theme>, so
-// a level ring drawn on Exhibition was a dark-room object sitting in a lit one.
+// a level ring drawn on Noon was a dark-room object sitting in a lit one.
 // The KEYS are untouched, because ten components spend them and this prompt is
 // a repaint rather than a rewrite; only the values move, and they move to
 // `var(--token)` references so the whole surface follows the theme switch with
@@ -87,7 +87,7 @@ export const tokens = {
   /**
    * The unfilled remainder of a progress ring. A hairline rather than a
    * ground: the arc is the light and the track is the groove it sits in, and
-   * on Exhibition a white-alpha track simply vanished.
+   * on Noon a white-alpha track simply vanished.
    */
   ringTrack: t.line,
   // Gamification colour language

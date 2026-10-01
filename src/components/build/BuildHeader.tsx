@@ -246,7 +246,7 @@ function LiveAppHero({
           loading="lazy"
           /* `--chrome-hi` rather than `#fff`: a third-party page arrives with
              its own ground and this is only what shows through where it has
-             none. The token is white on Exhibition and a pale lavender on
+             none. The token is white on Noon and a pale lavender on
              Dusk, so an embed with a transparent body does not flash a white
              rectangle into the dark room. */
           style={{ width: "100%", height: "100%", border: "none", background: t.chromeHi }}

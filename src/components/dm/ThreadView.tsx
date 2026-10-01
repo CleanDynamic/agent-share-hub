@@ -134,7 +134,7 @@ function VoiceMessage({ url, duration }: { url: string; duration: number }) {
           // BG-P26. `--evidence` is the token for a live state, and a played
           // bar is exactly that. The bars are graphics rather than type, so
           // they answer to the 3.0:1 UI floor: measured 4.23:1 on `--recess`
-          // and 3.83:1 on the own-message wash on Exhibition, 6.14 and 6.09 on
+          // and 3.83:1 on the own-message wash on Noon, 6.14 and 6.09 on
           // Dusk. The unplayed bars drop to 30% of the same hue so the track
           // reads as one object at two states, not as two colours.
           backgroundColor: filled ? t.evidence : tokenAlpha("evidence", 0.3),
@@ -1000,9 +1000,9 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
     /**
      * BG-P26. Own messages take an `--action` wash with `--text` on it; theirs
      * take `--recess`. Both carry `--text`, which is the measured pairing —
-     * 10.27:1 and 11.33:1 on Exhibition, 10.54:1 and 10.62:1 on Dusk. The
+     * 10.27:1 and 11.33:1 on Noon, 10.54:1 and 10.62:1 on Dusk. The
      * `--action` hue itself is NOT legal as ink on its own wash (3.76:1 on
-     * Exhibition), so the ink is the same in both bubbles and only the ground
+     * Noon), so the ink is the same in both bubbles and only the ground
      * says who spoke.
      *
      * `bg-primary` was the old fill and it is a Tailwind palette colour, not a

@@ -1,7 +1,7 @@
 /* BG-P30 — the both-theme completeness assertion.
  *
  * THE CLASSIC FAILURE THIS CATCHES. A page that looks right in Dusk and wrong
- * in Exhibition, because one surface was written with a value instead of a
+ * in Noon, because one surface was written with a value instead of a
  * token. `compliance.test.ts` (BG-P29) already catches a raw literal in the
  * SOURCE; this catches the same defect in the RENDER, which is where it also
  * arrives by other routes a source scan cannot see: a Tailwind utility whose
@@ -13,7 +13,7 @@
  * value that belongs to the OTHER room's token block, and to no token in the
  * room it is painted in, is a colour that stopped following the theme. That is
  * precise rather than approximate: `#D98C6B` is Dusk's `--action` and nothing
- * else, so seeing it on Exhibition means one surface is wearing the other
+ * else, so seeing it on Noon means one surface is wearing the other
  * room's paint — which is the exact case the theme's second hard rule names.
  *
  * WHY NOT "every colour must be a token value". Because `color-mix()` and
@@ -33,7 +33,7 @@ import { expect, test } from "@playwright/test";
 import { DEGRADED, ROUTES, THEMES, openRoute } from "./support/harness";
 import { collectColours } from "./support/probe";
 import { writeCsv, writeText } from "./support/report";
-import { dusk, exhibition, TOKEN_NAMES } from "../../src/lib/theme/semantics";
+import { dusk, noon, TOKEN_NAMES } from "../../src/lib/theme/semantics";
 
 test.describe.configure({ mode: "serial" });
 
@@ -74,7 +74,7 @@ function paletteOf(theme: Record<string, string>) {
   return { exact, rgbOnly };
 }
 
-const PALETTE = { exhibition: paletteOf(exhibition), dusk: paletteOf(dusk) } as const;
+const PALETTE = { noon: paletteOf(noon), dusk: paletteOf(dusk) } as const;
 
 /**
  * Colours that are the other room's AND legal where they are, with the reason.
@@ -83,17 +83,17 @@ const PALETTE = { exhibition: paletteOf(exhibition), dusk: paletteOf(dusk) } as 
 const EXEMPT: Array<{ route: string; value: string; why: string }> = [];
 
 /* A DETECTOR THAT CANNOT FIRE IS A GREEN TEST THAT MEANS NOTHING. This plants
-   Dusk's `--action` on an Exhibition page and requires the sweep to find it,
+   Dusk's `--action` on a Noon page and requires the sweep to find it,
    so "zero leaks" below is a measurement rather than a tautology. */
 test("BG-P30 — the leak detector fires on a planted single-room colour", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   try {
-    await openRoute(page, ROUTES[0], "exhibition");
+    await openRoute(page, ROUTES[0], "noon");
     await page.evaluate(() => {
       const plant = document.createElement("p");
       plant.id = "planted-dusk-salmon";
-      plant.textContent = "Dusk's salmon, on the Exhibition ground";
+      plant.textContent = "Dusk's salmon, on the Noon ground";
       plant.style.color = "#D98C6B";
       document.body.appendChild(plant);
     });
@@ -104,7 +104,7 @@ test("BG-P30 — the leak detector fires on a planted single-room colour", async
       .map((n) => n.split(",").slice(0, 3).join(","));
     expect(planted).toContain("217,140,107");
     expect(PALETTE.dusk.rgbOnly.has("217,140,107")).toBe(true);
-    expect(PALETTE.exhibition.rgbOnly.has("217,140,107")).toBe(false);
+    expect(PALETTE.noon.rgbOnly.has("217,140,107")).toBe(false);
   } finally {
     await context.close();
   }
@@ -116,7 +116,7 @@ test("BG-P30 — no element renders a colour defined only in the other room", as
 
   for (const route of ROUTES) {
     for (const theme of THEMES) {
-      const other = theme === "exhibition" ? "dusk" : "exhibition";
+      const other = theme === "noon" ? "dusk" : "noon";
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await context.newPage();
       try {

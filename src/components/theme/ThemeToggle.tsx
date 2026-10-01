@@ -21,22 +21,19 @@ import { data as dataText } from "@/lib/theme/type";
 
    THE GROUP PAINTS ITS OWN GROUND, and that is not decoration. The rails this
    sits in still carry the legacy dark paint, and `--text2` on that paint is not
-   a pairing anyone measured; `--text2` on `--recess` is (4.55 Exhibition, 5.73
+   a pairing anyone measured; `--text2` on `--recess` is (4.55 Noon, 5.73
    Dusk). Painting the ground is what makes the colour contract hold here.
 
-   THE FOCUS RING IS NOW THE SHARED ONE, which is the question BG-P02 left open.
-   It wrote the ring in `--text` because `--lit` measures 1.80:1 on Exhibition's
-   ground, under the 3.0:1 floor for UI state. The resolution is in `focus.ts`
-   and is about the OFFSET rather than the colour: `outline-offset: 2px` leaves a
-   2px band of `--bg` between the control and the ring, so the ring is read
-   against two edges rather than against the ground alone. That band is part of
-   the ring's definition, not a taste, and it is why one definition can be used
-   everywhere. A second ring here would be a second thing for a keyboard user to
-   learn, for no gain.
+   THE FOCUS RING IS THE SHARED ONE, which is the question BG-P02 left open.
+   It wrote the ring in `--text` because `--lit` measures 1.80:1 on Noon's
+   ground, under the 3.0:1 floor for UI state. UI-P04 settled it in `focus.ts`
+   by giving the shared ring its own token, `--focus-ring`: the ink on Noon and
+   the lamp gold on Dusk, legal on every ground in both rooms. A second ring
+   here would be a second thing for a keyboard user to learn, for no gain.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
-  { value: "exhibition", label: "Exhibition" },
+  { value: "noon", label: "Noon" },
   { value: "dusk", label: "Dusk" },
   { value: "system", label: "System" },
 ];
@@ -76,10 +73,10 @@ function railSegmentStyle(state: { selected: boolean; hovered: boolean; focusVis
        is the floor DM Mono is allowed at. */
     fontSize: 12,
     /* `1 1 auto`, NOT `1 1 0`. Three equal thirds of the rail's 208px is 69
-       each, and "Exhibition" at 12px DM Mono needs 72 — it clipped to
-       "Exhibitior". Sizing from the labels and sharing the slack keeps all
-       three whole, which matters more here than three identical boxes: the
-       labels are the control. */
+       each, and a label wider than that clips: the ten-letter name Noon had
+       before UI-P02 needed 72 at 12px DM Mono. Sizing from the labels and
+       sharing the slack keeps all three whole, which matters more here than
+       three identical boxes: the labels are the control. */
     flex: "1 1 auto",
     minWidth: 0,
     height: "100%",

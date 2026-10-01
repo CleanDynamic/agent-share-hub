@@ -30,7 +30,7 @@ import { BODONI, DISPLAY_MIN_PX } from "@/lib/theme/type";
 import { staticDoc, styleOf } from "@/test/tokenStyle";
 
 /** AuthShell reads the resolved theme for its wash, so it needs the provider. */
-const shell = (theme: "exhibition" | "dusk") => {
+const shell = (theme: "noon" | "dusk") => {
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   return staticDoc(
     <ThemeProvider>
@@ -47,7 +47,7 @@ beforeEach(() => {
 
 describe("AuthShell", () => {
   it("stands the entrance on --bg, with no dot grid left on it", () => {
-    const ground = shell("exhibition").querySelector("div");
+    const ground = shell("noon").querySelector("div");
     const style = styleOf(ground);
     expect(style).toContain("background-color:var(--bg)");
     // The legacy paint was a 24px-tiled dot grid over #25252F.
@@ -55,8 +55,8 @@ describe("AuthShell", () => {
     expect(style).not.toContain("#25252F");
   });
 
-  it("washes Exhibition in --lit and Dusk in --action, both very low", () => {
-    expect(styleOf(shell("exhibition").querySelector("div"))).toContain(
+  it("washes Noon in --lit and Dusk in --action, both very low", () => {
+    expect(styleOf(shell("noon").querySelector("div"))).toContain(
       "radial-gradient(68% 54% at 50% 26%, color-mix(in srgb, var(--lit) 9%",
     );
     expect(styleOf(shell("dusk").querySelector("div"))).toContain(
@@ -69,7 +69,7 @@ describe("AuthShell", () => {
      what makes its 20px floor cover every route rather than one file — and a
      test that spelled the family out by hand would be the first hole in it. */
   it("sets the wordmark in the display face at 28, clear of its floor", () => {
-    const doc = shell("exhibition");
+    const doc = shell("noon");
     const wordmark = [...doc.querySelectorAll("span")].find(
       (span) => span.textContent === "buildgallery",
     );
@@ -82,7 +82,7 @@ describe("AuthShell", () => {
   });
 
   it("gives the card glass, a --glass-border hairline, --r-panel and raised", () => {
-    const doc = shell("exhibition");
+    const doc = shell("noon");
     const card = [...doc.querySelectorAll("div")].find((div) =>
       styleOf(div).includes("var(--glass-border)"),
     );
@@ -95,7 +95,7 @@ describe("AuthShell", () => {
   });
 
   it("puts the room's choice on the page, as a labelled radio group", () => {
-    const group = shell("exhibition").querySelector('[role="radiogroup"]');
+    const group = shell("noon").querySelector('[role="radiogroup"]');
     expect(group?.getAttribute("aria-label")).toBe("Theme");
     expect(group?.querySelectorAll('[role="radio"]').length).toBe(3);
   });

@@ -200,7 +200,7 @@ export function DiscussionCompose({
           fontSize: 12,
           /* The counter warns in breakage red, leans on --text at the elbow,
              and is otherwise ordinary secondary type. Amber stood at the
-             middle step and cannot: it is 3.01:1 on the Exhibition ground and
+             middle step and cannot: it is 3.01:1 on the Noon ground and
              the theme forbids it as type outright. */
           color: isOverLimit
             ? 'var(--cat-breakage)'

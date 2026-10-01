@@ -1718,7 +1718,7 @@ rendered for months — is no longer the first thing a reader finds.
 ## Rendering evidence
 
 40 screenshots, taken with the shell present and again with it gone: ten routes
-× two themes (Exhibition, Dusk) × two viewports (1440×900, 412×915), animation
+× two themes (Noon, Dusk) × two viewports (1440×900, 412×915), animation
 frozen so a shimmer could not make two identical renders differ. **All 40 pairs
 are byte-identical.** The set includes `/dev/wide/rail`, which renders the
 Explore rail — thirty of the inherited classes on one screen.
@@ -1732,7 +1732,7 @@ as they did before this prompt.
 The four rules in `src/styles/shared-ns.css` are on hardcoded
 `rgba(255,255,255,…)` inherited from a shell that only ever rendered on a dark
 ground. They do not read `<html data-theme>` and so do not change between
-Exhibition and Dusk. BG-P17 deliberately did not touch them: it is a deletion,
+Noon and Dusk. BG-P17 deliberately did not touch them: it is a deletion,
 and a deletion that also repaints is a deletion nobody can bisect.
 
 - `.ns-back-btn` — `color`, `border-bottom`, and the `:hover` colour.

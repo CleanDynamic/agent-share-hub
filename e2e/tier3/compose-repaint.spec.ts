@@ -19,7 +19,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** The prompt's four widths. */
 const WIDTHS = [1400, 1024, 900, 390] as const;
@@ -276,7 +276,7 @@ test.describe("the composer at every width", () => {
 
   test("puts the preview beside the editor above 1024 and beneath it below", async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 1000 });
-    await openComposer(page, "exhibition");
+    await openComposer(page, "noon");
 
     const strip = page.getByTestId("cover-strip");
     const preview = page.getByTestId("thread-preview");
@@ -341,7 +341,7 @@ test.describe("the tree's unsolved row", () => {
 test.describe("the completeness panel", () => {
   test("invites rather than scoring", async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 1000 });
-    await openComposer(page, "exhibition");
+    await openComposer(page, "noon");
 
     // Never a score: no percentage, and no bar to read one off.
     await expect(page.getByRole("progressbar")).toHaveCount(0);
@@ -372,7 +372,7 @@ test.describe("where each entry's text is written", () => {
   }) => {
     const writes: Write[] = [];
     await page.setViewportSize({ width: 1400, height: 1000 });
-    await openComposer(page, "exhibition", writes);
+    await openComposer(page, "noon", writes);
 
     // The first entry: the description, on the workspace's own debounce.
     await page.getByTestId("outcome-input").fill("Clears a week of backlog in one pass.");

@@ -150,7 +150,7 @@ describe("one ground", () => {
   });
 
   it("declares --bg per theme and no longer in the legacy block", () => {
-    expect(bare).toMatch(/:root,\s*:root\[data-theme="exhibition"\]\s*\{[^}]*--bg:\s*#E4E6E8/);
+    expect(bare).toMatch(/:root,\s*:root\[data-theme="noon"\]\s*\{[^}]*--bg:\s*#E4E6E8/);
     expect(bare).toMatch(/:root\[data-theme="dusk"\]\s*\{[^}]*--bg:\s*#1F1B2B/);
     expect(bare).not.toContain("#25252F");
   });

@@ -350,8 +350,8 @@ describe("theme toggle", () => {
   it("offers all three choices, with the current one checked", () => {
     renderAt("/");
     expect(within(toggle()!).getAllByRole("radio").map((r) => r.textContent))
-      .toEqual(["Exhibition", "Dusk", "System"]);
-    expect(within(toggle()!).getByRole("radio", { checked: true })).toHaveTextContent("Exhibition");
+      .toEqual(["Noon", "Dusk", "System"]);
+    expect(within(toggle()!).getByRole("radio", { checked: true })).toHaveTextContent("Noon");
   });
 
   it("is absent where the frame hides the left rail", () => {

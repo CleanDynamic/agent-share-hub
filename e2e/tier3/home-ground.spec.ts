@@ -7,7 +7,7 @@
 // prompt (`flat-shell.wide.test.ts`) asserts the stylesheet's text and this
 // asserts what a browser does with it. Neither is the other's substitute.
 //
-// THE DEFECT THIS FILE EXISTS FOR. With Exhibition selected, `/` rendered three
+// THE DEFECT THIS FILE EXISTS FOR. With Noon selected, `/` rendered three
 // light panels on a dark, dotted field: `BlobBackground` painted the page
 // #25252F under a 20px dot grid in BOTH themes, and the frame above it was on
 // the new tokens. That is not a light theme with a bug, it is two themes on one
@@ -23,11 +23,11 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 const RPC = /\/rest\/v1\/rpc\/get_build_feed/;
 const REST = /\/rest\/v1\//;
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** What each theme's `--bg` resolves to, as a browser reports it. */
 const GROUND: Record<(typeof THEMES)[number], string> = {
-  exhibition: "rgb(228, 230, 232)",
+  noon: "rgb(228, 230, 232)",
   dusk: "rgb(31, 27, 43)",
 };
 
@@ -116,7 +116,7 @@ async function stubFeed(page: Page, rows: unknown[]) {
 async function open(
   page: Page,
   path: string,
-  theme = "exhibition",
+  theme = "noon",
   opts: { feed?: unknown[]; width?: number } = {},
 ) {
   await withTheme(page, theme);
@@ -147,7 +147,7 @@ test.describe("one ground", () => {
         await page.evaluate(() =>
           getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(),
         ),
-      ).toBe(theme === "exhibition" ? "#E4E6E8" : "#1F1B2B");
+      ).toBe(theme === "noon" ? "#E4E6E8" : "#1F1B2B");
 
       for (const sel of ["html", "body", "#root"]) {
         expect([sel, await prop(page, sel, "background-color")]).toEqual([sel, GROUND[theme]]);
@@ -180,7 +180,7 @@ test.describe("one ground", () => {
   }
 
   test("blurs exactly one surface with no cards loaded", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     /* The theme's budget is about twenty blurred surfaces a page, and the rule
        that matters more is that a full-height fixed panel is never one. With an
        empty feed on a desktop viewport the only blurred surface on this route
@@ -207,7 +207,7 @@ test.describe("one ground", () => {
    centre. The measurements below are rewritten to that frame. */
 test.describe("the two columns read as one surface", () => {
   test("separates them with two hairlines and nothing else", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
 
     const line = (
       await page.evaluate(() =>
@@ -250,7 +250,7 @@ test.describe("the two columns read as one surface", () => {
   });
 
   test("runs the hairlines to the bottom of the window with an empty feed", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     await expect(page.getByTestId("feed-empty")).toBeVisible();
 
     // THE DEFECT THIS CATCHES. The centre used to end at the bottom of its
@@ -264,7 +264,7 @@ test.describe("the two columns read as one surface", () => {
   });
 
   test("holds the nav at the top of the window as sticky, full-height", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     expect(await prop(page, ".fs-left", "position")).toBe("sticky");
     const height = await page.locator(".fs-left").evaluate((el) => el.getBoundingClientRect().height);
     expect(height).toBe(900);
@@ -277,7 +277,7 @@ test.describe("the two columns read as one surface", () => {
 
 test.describe("the tab bar", () => {
   test("is a 52px sticky strip at the top of the column", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const bar = page.getByTestId("feed-tabs");
     const box = await bar.evaluate((el) => {
       const cs = getComputedStyle(el);
@@ -304,7 +304,7 @@ test.describe("the tab bar", () => {
   });
 
   test("marks the current tab with a bar and no chip", async ({ page }) => {
-    await open(page, "/?tab=everyone", "exhibition");
+    await open(page, "/?tab=everyone", "noon");
     const current = page.getByTestId("feed-tab-everyone");
     await expect(current).toHaveAttribute("data-state", "active");
 
@@ -345,7 +345,7 @@ test.describe("the tab bar", () => {
 
   /* RC-P11: two tabs where there were six (CONTRACT §3.4). */
   test("divides the two tabs equally across the column", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const widths = await page
       .getByTestId(/^feed-tab-/)
       .evaluateAll((nodes) => nodes.map((n) => Math.round(n.getBoundingClientRect().width)));
@@ -359,7 +359,7 @@ test.describe("the tab bar", () => {
 
 test.describe("the card column", () => {
   test("puts 600px cards 16px apart, 16px below the bar", async ({ page }) => {
-    await open(page, "/?tab=everyone", "exhibition", { feed: threeBuilds() });
+    await open(page, "/?tab=everyone", "noon", { feed: threeBuilds() });
 
     const cards = page.locator('[data-visual-slot="gallery-card"]');
     await expect(cards).toHaveCount(3);
@@ -390,7 +390,7 @@ test.describe("the card column", () => {
   });
 
   test("ends the column with 64px of ground under the last card", async ({ page }) => {
-    await open(page, "/?tab=everyone", "exhibition", { feed: threeBuilds() });
+    await open(page, "/?tab=everyone", "noon", { feed: threeBuilds() });
     await expect(page.locator('[data-visual-slot="gallery-card"]')).toHaveCount(3);
 
     /* MEASURED FROM THE LAST ROW, NOT THE LAST CARD. The Builds tab ends with
@@ -411,7 +411,7 @@ test.describe("the card column", () => {
     await stubRestEmpty(page);
     // Hold the feed open so the loading state is the one on screen.
     await page.route(RPC, () => {});
-    await withTheme(page, "exhibition");
+    await withTheme(page, "noon");
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/?tab=everyone");
 
@@ -432,7 +432,7 @@ test.describe("the empty state", () => {
      one sentence in --text2 and one action, so the line of display type that
      used to head it is gone. The rest of the claim stands. */
   test("is one sentence and one action, centred, with no disc and no icon", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const notice = page.getByTestId("feed-empty");
     await expect(notice).toBeVisible();
 
@@ -453,7 +453,7 @@ test.describe("the empty state", () => {
   });
 
   test("fills the window under the tab bar", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const box = await page
       .getByTestId("feed-empty")
       .evaluate((el) => {
@@ -472,7 +472,7 @@ test.describe("the empty state", () => {
 
 test.describe("the left rail", () => {
   test("runs wordmark, nav, spacer, account block, theme control", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const order = await page.evaluate(() => {
       const rail = document.querySelector(".fs-left")!;
       const y = (s: string) => {
@@ -497,7 +497,7 @@ test.describe("the left rail", () => {
   });
 
   test("aligns the wordmark with the nav icons", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const edges = await page.evaluate(() => ({
       logo: Math.round(document.querySelector(".fs-logo")!.getBoundingClientRect().left),
       icon: Math.round(document.querySelector(".fs-nav-icon")!.getBoundingClientRect().left),
@@ -510,7 +510,7 @@ test.describe("the left rail", () => {
   });
 
   test("offers the primary above the secondary, both at 40", async ({ page }) => {
-    await open(page, "/", "exhibition");
+    await open(page, "/", "noon");
     const buttons = await page
       .locator(".fs-auth-btn")
       .evaluateAll((nodes) =>

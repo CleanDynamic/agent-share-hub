@@ -13,7 +13,7 @@ import { feedback } from "@/lib/theme/motion";
 function bountyStatusColor(status: string): { bg: string; border: string; text: string; emoji: string } {
   switch (status) {
     /* Claimed is work in progress, and the part category for a produced
-       thing is artefact — 6.41:1 on Exhibition and 7.65:1 on Dusk. Amber was
+       thing is artefact — 6.41:1 on Noon and 7.65:1 on Dusk. Amber was
        the old paint for it and cannot carry the label at all. */
     case "claimed": return { bg: "color-mix(in srgb, var(--cat-artefact) 12%, transparent)", border: "var(--cat-artefact)", text: "var(--cat-artefact)", emoji: "🟡" };
     case "solved":  return { bg: "color-mix(in srgb, var(--cat-configuration) 12%, transparent)",  border: "var(--cat-configuration)", text: "var(--cat-configuration)", emoji: "🟢" };

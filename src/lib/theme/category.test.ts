@@ -20,13 +20,13 @@ import {
   normaliseCategory,
   type Category,
 } from "./category";
-import { dusk, exhibition, TOKEN_NAMES, type TokenName } from "./semantics";
+import { dusk, noon, TOKEN_NAMES, type TokenName } from "./semantics";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
-const THEMES = { exhibition, dusk } as const;
+const THEMES = { noon, dusk } as const;
 type ThemeKey = keyof typeof THEMES;
-const THEME_KEYS = ["exhibition", "dusk"] as const;
+const THEME_KEYS = ["noon", "dusk"] as const;
 
 /** `"var(--text2)"` -> `"text2"`. Null for anything that is not a bare `var()`. */
 function varName(value: string): TokenName | null {
@@ -104,8 +104,8 @@ describe("every category resolves in both themes", () => {
   it("the two themes name the same ten categories", () => {
     const names = (theme: ThemeKey) =>
       TOKEN_NAMES.filter((n) => n.startsWith("cat-") && theme in THEMES).sort();
-    expect(names("exhibition")).toEqual(names("dusk"));
-    expect(names("exhibition")).toHaveLength(RESOLVABLE.length * 2);
+    expect(names("noon")).toEqual(names("dusk"));
+    expect(names("noon")).toHaveLength(RESOLVABLE.length * 2);
   });
 
   it("the nine hues keep their hue across the themes, changing only their value", () => {
@@ -113,7 +113,7 @@ describe("every category resolves in both themes", () => {
     // values ever became the same colour, the theme would have stopped being a
     // theme for that chip.
     for (const category of CATEGORIES) {
-      const light = resolve("exhibition", `cat-${category}` as TokenName);
+      const light = resolve("noon", `cat-${category}` as TokenName);
       const dark = resolve("dusk", `cat-${category}` as TokenName);
       if (category === "evidence") continue; // teal/sky: the one deliberate share
       expect(light.toUpperCase(), `${category} is one value in both themes`).not.toBe(
@@ -148,16 +148,16 @@ describe("every chip fill clears 4.5:1, measured", () => {
     }));
 
     expect(table).toEqual([
-      { pair: "exhibition instruction", hue: "#9C3E12", fill: "#DBD2CE", ratio: 4.54 },
-      { pair: "exhibition configuration", hue: "#0F6B31", fill: "#CDD8D4", ratio: 4.54 },
-      { pair: "exhibition data", hue: "#1D4ED8", fill: "#CCD4E6", ratio: 4.51 },
-      { pair: "exhibition artefact", hue: "#8F4309", fill: "#D7CEC7", ratio: 4.55 },
-      { pair: "exhibition evidence", hue: "#0E635C", fill: "#C2D1D2", ratio: 4.51 },
-      { pair: "exhibition narrative", hue: "#565B63", fill: "#D0D3D5", ratio: 4.54 },
-      { pair: "exhibition agents", hue: "#6D28D9", fill: "#D2CAE6", ratio: 4.51 },
-      { pair: "exhibition breakage", hue: "#B91C1C", fill: "#E1D6D8", ratio: 4.56 },
-      { pair: "exhibition media", hue: "#BE185D", fill: "#E2DEE2", ratio: 4.54 },
-      { pair: "exhibition fallback", hue: "#565E66", fill: "#D3D7DB", ratio: 4.55 },
+      { pair: "noon instruction", hue: "#9C3E12", fill: "#DBD2CE", ratio: 4.54 },
+      { pair: "noon configuration", hue: "#0F6B31", fill: "#CDD8D4", ratio: 4.54 },
+      { pair: "noon data", hue: "#1D4ED8", fill: "#CCD4E6", ratio: 4.51 },
+      { pair: "noon artefact", hue: "#8F4309", fill: "#D7CEC7", ratio: 4.55 },
+      { pair: "noon evidence", hue: "#0E635C", fill: "#C2D1D2", ratio: 4.51 },
+      { pair: "noon narrative", hue: "#565B63", fill: "#D0D3D5", ratio: 4.54 },
+      { pair: "noon agents", hue: "#6D28D9", fill: "#D2CAE6", ratio: 4.51 },
+      { pair: "noon breakage", hue: "#B91C1C", fill: "#E1D6D8", ratio: 4.56 },
+      { pair: "noon media", hue: "#BE185D", fill: "#E2DEE2", ratio: 4.54 },
+      { pair: "noon fallback", hue: "#565E66", fill: "#D3D7DB", ratio: 4.55 },
       { pair: "dusk instruction", hue: "#F0865A", fill: "#493034", ratio: 4.71 },
       { pair: "dusk configuration", hue: "#5CCB7C", fill: "#2B3E3B", ratio: 5.55 },
       { pair: "dusk data", hue: "#6AA1FF", fill: "#2E3655", ratio: 4.59 },

@@ -44,7 +44,7 @@ export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
                 height: 104,
                 /* `--porthole` BEHIND a picture, `--recess` when there is
                    none. A two-stop ramp struck from an accent plus a dark-room
-                   grey had no second stop that was legal on Exhibition; a
+                   grey had no second stop that was legal on Noon; a
                    porthole slab with nothing in it is legal and still wrong,
                    because an empty well is the darkest object in a light room
                    and there are three of them in a row. */

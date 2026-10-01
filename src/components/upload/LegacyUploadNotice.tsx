@@ -26,7 +26,7 @@ import type { ReactNode } from "react";
    wrong: the tool saves, the tool publishes, and the notice is telling the
    creator where the replacement lives. So it sits on --recess like any other
    informational panel and marks itself with --cat-artefact, the part hue for a
-   produced thing, at 6.41:1 on Exhibition and 7.65:1 on Dusk — carried on a
+   produced thing, at 6.41:1 on Noon and 7.65:1 on Dusk — carried on a
    left edge, which is where this codebase already puts an informational mark.
    The link's borderRadius: 100 went with it: the capsule rule was dropped and
    a pill is off-brand, so it takes --r-control like every other button here.

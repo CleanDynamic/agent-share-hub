@@ -28,7 +28,7 @@
 // the change count, View and Publish. They MOVED into the shared bar's right
 // slot rather than being rebuilt — same elements, same behaviour, repainted
 // onto tokens because the bar's ground is now `--bg` and a control drawn in
-// rgba(255,255,255,.025) with 45%-white text is invisible on Exhibition.
+// rgba(255,255,255,.025) with 45%-white text is invisible on Noon.
 //
 // PublishControl IS THE ONE THING LEFT ON ITS LEGACY PAINT, deliberately and on
 // two separate grounds: the publish sheet belongs to BG-P24, and its trigger
@@ -453,7 +453,7 @@ export function ComposeTopBar({
           flexShrink: 0,
           /* The native option list follows the room rather than always being
              dark: `colorScheme: "dark"` was correct when the workspace was a
-             hard-coded void and is wrong now that Exhibition is the default. */
+             hard-coded void and is wrong now that Noon is the default. */
           colorScheme: "light dark",
         }}
       >
@@ -504,7 +504,7 @@ export function ComposeTopBar({
       {/* UNTOUCHED BY BG-P16, on two grounds: the publish sheet belongs to
           BG-P24, and this trigger carries data-visual-slot="btn-primary",
           which is an externally-supplied visual shell. It still carries its
-          dark-only paint and will read poorly on Exhibition until BG-P24
+          dark-only paint and will read poorly on Noon until BG-P24
           repaints it — reported in the handoff rather than taken quietly. */}
       <PublishControl
         build={build}

@@ -298,7 +298,7 @@ function DownloadLink({
  * BG-P24 — A `--recess` PANEL, NOT A GLASS CARD.
  *
  * The steps were `cardGlass`: a 2.5%-white film over a glass border, which is
- * a reading-surface treatment and which on an Exhibition ground is very nearly
+ * a reading-surface treatment and which on a Noon ground is very nearly
  * nothing at all. `--recess` is the token for a surface the page is cut into,
  * and three panels cut into the page is exactly what three steps are. At
  * `--r-panel`, because that is the step of the scale a panel takes.
@@ -621,7 +621,7 @@ export default function ImportPage() {
               {extractor.failed ? (
                 /* A refusal names the way out. Breakage red as TEXT is legal
                    on both grounds — the theme measures every category hue at
-                   ≥4.83:1 on Exhibition and ≥5.75:1 on Dusk. */
+                   ≥4.83:1 on Noon and ≥5.75:1 on Dusk. */
                 <p
                   role="status"
                   style={{ ...dataText, ...measure, margin: 0, color: t.catBreakage }}

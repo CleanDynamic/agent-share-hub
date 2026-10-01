@@ -812,7 +812,7 @@ export function FeedShell({
       /* NO GROUND OF ITS OWN, AND THAT LINE IS THE POINT OF BG-P18b. This
          carried `background: var(--bg)` and a note explaining that it had to,
          because the centre column was transparent and `BlobBackground` painted
-         the page #25252F in both themes — so an Exhibition feed was dark ink in
+         the page #25252F in both themes — so a Noon feed was dark ink in
          a dark room unless the column repainted its own. That component is
          gone and `html, body, #root` are `--bg`; repainting it here would be a
          second paint of the same colour, and a 600px box of it that ends where

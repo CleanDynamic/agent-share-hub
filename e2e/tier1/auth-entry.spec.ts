@@ -21,7 +21,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 const SWEEP = [1400, 768, 390];
 
 /* `/auth/callback` polls Supabase for a session for ten seconds and then shows
@@ -51,7 +51,7 @@ async function withTheme(page: Page, theme: string) {
   }, theme);
 }
 
-async function open(page: Page, path: string, viewport: number, theme = "exhibition") {
+async function open(page: Page, path: string, viewport: number, theme = "noon") {
   await withTheme(page, theme);
   await page.setViewportSize({ width: viewport, height: 900 });
   await page.goto(path);
@@ -112,15 +112,15 @@ test.describe("every auth route renders, in both rooms, at every width", () => {
 
 test.describe("the visitor can choose their room before signing in", () => {
   test("the toggle is on the page and flips the attribute", async ({ page }) => {
-    await open(page, "/login", 1400, "exhibition");
+    await open(page, "/login", 1400, "noon");
     const group = page.getByRole("radiogroup", { name: "Theme" });
     await expect(group).toBeVisible();
 
     await group.getByRole("radio", { name: "Dusk" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dusk");
 
-    await group.getByRole("radio", { name: "Exhibition" }).click();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "exhibition");
+    await group.getByRole("radio", { name: "Noon" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "noon");
   });
 });
 

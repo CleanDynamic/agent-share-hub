@@ -328,7 +328,7 @@ function RolePill({ role }: { role: "author" | "solver" }) {
      solver answered it; both are the record saying who someone is on this
      thread, so both take `--evidence` and are told apart by FILL rather than
      by hue — the theme's tier ladder, and the reason the author pill is no
-     longer amber (which cannot carry text on the Exhibition ground at all). */
+     longer amber (which cannot carry text on the Noon ground at all). */
   const cfg =
     role === "author"
       ? { bg: "transparent", color: "var(--evidence)", text: "Bounty author" }

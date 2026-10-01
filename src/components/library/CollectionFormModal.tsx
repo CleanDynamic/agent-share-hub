@@ -22,7 +22,7 @@ import { feedback } from "@/lib/theme/motion";
  *
  * EIGHT HEXES BECOME EIGHT TOKEN REFERENCES. The old values were fixed colours
  * chosen against a dark room — a fixed pink dot is a different object on the
- * Exhibition ground than it is on Dusk, and none of them moved when the theme
+ * Noon ground than it is on Dusk, and none of them moved when the theme
  * did. A `var()` reference does, because it is resolved by the browser against
  * whatever `<html data-theme>` currently says.
  *
@@ -156,7 +156,7 @@ export function CollectionFormModal({
                       background: s.value,
                       /* Selection is a ring in the page's own ink, so the
                          chosen swatch reads as chosen in both rooms — a white
-                         ring vanished on Exhibition. */
+                         ring vanished on Noon. */
                       border: `2px solid ${active ? t.text : t.line}`,
                       cursor: "pointer",
                       transition: feedback("transform"),

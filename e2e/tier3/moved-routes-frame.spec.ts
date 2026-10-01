@@ -44,7 +44,7 @@
 
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** The widths BG-P15's acceptance names. */
 const DESKTOP_WIDE = 1400;

@@ -20,7 +20,7 @@
 //
 // GLASS PANELS, AND THE REASON IS MEASURED. This is a reading surface, which the
 // theme gives glass, and the panels carry links and a "Copied" confirmation. On
-// `--recess` those fail the 4.5:1 text floor in Exhibition — `--action` measures
+// `--recess` those fail the 4.5:1 text floor in Noon — `--action` measures
 // 4.15:1 and `--evidence` 4.23:1 — while on `--glass` over `--bg` every colour
 // this page spends clears it in both rooms (the lowest is `--cat-breakage` on
 // Dusk, 4.66:1). The address and the command sit in `--recess` wells inside the

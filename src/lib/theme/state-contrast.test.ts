@@ -33,7 +33,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { dusk, exhibition, type TokenName } from "./semantics";
+import { dusk, noon, type TokenName } from "./semantics";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
@@ -72,9 +72,9 @@ function contrast(a: string, b: string): number {
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
 
-const THEMES = { exhibition, dusk } as const;
+const THEMES = { noon, dusk } as const;
 type ThemeKey = keyof typeof THEMES;
-const ROOMS = ["exhibition", "dusk"] as const;
+const ROOMS = ["noon", "dusk"] as const;
 
 /** A token's rendered colour: itself, or itself over the room's ground. */
 function value(theme: ThemeKey, token: TokenName): string {
@@ -138,7 +138,7 @@ describe("every category hue as an edge, on every ground a part sits on", () => 
       ),
     }));
     expect(worst).toEqual([
-      { theme: "exhibition", lowest: 4.17 },
+      { theme: "noon", lowest: 4.17 },
       { theme: "dusk", lowest: 3.93 },
     ]);
   });
@@ -147,38 +147,47 @@ describe("every category hue as an edge, on every ground a part sits on", () => 
 /* ── state colours ────────────────────────────────────────────────────────── */
 
 describe("the focus ring, on every ground a control sits on", () => {
-  // THE ONE FINDING BG-P30 ESCALATED RATHER THAN FIXED. `--lit` is one value in
-  // both rooms and it does not clear the 3.0:1 UI floor on ANY Exhibition
-  // ground. The skill prescribes this ring and justifies it by the 2px offset —
-  // but the offset band is `--bg` and so is what lies outside the ring, so both
-  // of the ring's edges are read against the same colour. Every remedy in the
-  // escalation order moves something the prompt may not move; see SURVIVORS in
-  // e2e/audit/contrast-sweep.spec.ts for the three options put to the operator.
-  //
-  // This test RECORDS the numbers rather than asserting the floor, because a
-  // test that failed here would fail for the operator's decision rather than
-  // for a regression. If the ring is ever fixed, these figures change and this
-  // test is what says so.
-  it("measures --lit against the three grounds, in both rooms", () => {
+  // BG-P30 ESCALATED THIS RING RATHER THAN FIXING IT, AND UI-P04 FIXED IT. The
+  // ring was `--lit` in both rooms, and the lamp gold does not clear the 3.0:1
+  // UI floor on any Noon ground. The 2px offset does not rescue it: the band
+  // is `--bg` and so is what lies outside the ring, so both of the ring's edges
+  // are read against the same colour. The ring is `--focus-ring` now, the ink
+  // on Noon and the lamp gold on Dusk, and this asserts the floor it was only
+  // recording before.
+  it("clears the UI floor on every ground, in both rooms", () => {
+    for (const theme of ROOMS) {
+      for (const [name, ground] of Object.entries(grounds(theme))) {
+        const ratio = contrast(value(theme, "focus-ring"), ground);
+        expect(ratio, `${theme} --focus-ring is ${ratio}:1 on --${name}`).toBeGreaterThanOrEqual(
+          UI_FLOOR,
+        );
+      }
+    }
+  });
+
+  it("records the figures, so a moved value has to be re-recorded", () => {
     const measured = ROOMS.map((theme) => ({
       theme,
       ...Object.fromEntries(
         Object.entries(grounds(theme)).map(([name, ground]) => [
           name,
-          contrast(value(theme, "lit"), ground),
+          contrast(value(theme, "focus-ring"), ground),
         ]),
       ),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", bg: 1.8, recess: 1.55, glass: 2.04, card: 2.13 },
+      { theme: "noon", bg: 12.86, recess: 11.12, glass: 14.61, card: 15.25 },
       { theme: "dusk", bg: 7.47, recess: 5.6, glass: 6.05, card: 5.1 },
     ]);
   });
 
-  it("clears the UI floor in Dusk on every ground", () => {
-    for (const ground of Object.values(grounds("dusk"))) {
-      expect(contrast(value("dusk", "lit"), ground)).toBeGreaterThanOrEqual(UI_FLOOR);
+  it("is not the lamp on Noon, where the lamp fails on every ground", () => {
+    // The reason for the split, kept on the record: what the ring was before.
+    for (const ground of Object.values(grounds("noon"))) {
+      expect(contrast(value("noon", "lit"), ground)).toBeLessThan(UI_FLOOR);
     }
+    expect(value("noon", "focus-ring")).not.toBe(value("noon", "lit"));
+    expect(value("dusk", "focus-ring")).toBe(value("dusk", "lit"));
   });
 
   it("is legal as a fill with --on-lit on it, in both rooms — which is the rule", () => {
@@ -223,7 +232,7 @@ describe("the error state", () => {
       card: contrast(value(theme, "cat-breakage"), grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", recess: 4.47, card: 6.13 },
+      { theme: "noon", recess: 4.47, card: 6.13 },
       { theme: "dusk", recess: 4.31, card: 3.93 },
     ]);
     // The three that are short are short — stated, so the rule above has a
@@ -245,10 +254,10 @@ describe("the error state", () => {
 
 describe("the evidence fill pair", () => {
   // The two halves are used together or not at all, and the ink differs by
-  // room: Exhibition puts `--text` on a solid mint, Dusk puts `--evidence` on a
+  // room: Noon puts `--text` on a solid mint, Dusk puts `--evidence` on a
   // 16% wash of itself. Both are contract pairings; this holds them to it.
-  it("Exhibition puts --text on --evidence-fill", () => {
-    expect(contrast(value("exhibition", "text"), value("exhibition", "evidence-fill"))).toBe(11.89);
+  it("Noon puts --text on --evidence-fill", () => {
+    expect(contrast(value("noon", "text"), value("noon", "evidence-fill"))).toBe(11.89);
   });
 
   it("Dusk puts --evidence on --evidence-fill", () => {
@@ -326,7 +335,7 @@ describe("disabled text", () => {
       onCard: washed(theme, "text2", grounds(theme).card),
     }));
     expect(measured).toEqual([
-      { theme: "exhibition", onBg: 2.06, onCard: 2.17 },
+      { theme: "noon", onBg: 2.06, onCard: 2.17 },
       { theme: "dusk", onBg: 2.93, onCard: 2.47 },
     ]);
     for (const row of measured) {

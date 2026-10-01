@@ -527,7 +527,7 @@ export function MessageInputBar({
               className="p-2"
               style={{
                 // The one primary action on this surface: `--action` fill with
-                // `--on-action` on it, the measured pair (5.65:1 on Exhibition,
+                // `--on-action` on it, the measured pair (5.65:1 on Noon,
                 // 6.35:1 on Dusk). `bg-primary` was a shadcn palette colour and
                 // carried neither room's action hue.
                 borderRadius: r["r-control"],

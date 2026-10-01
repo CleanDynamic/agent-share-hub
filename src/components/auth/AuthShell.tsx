@@ -23,7 +23,7 @@ interface AuthShellProps {
 
    THE GROUND IS `--bg` AND THE WORDMARK IS THE ROOM'S ONLY FURNITURE. What
    stood here was `#25252F` under a 24px dot grid in both themes — the legacy
-   dark paint, which drew a patterned near-black field behind an Exhibition
+   dark paint, which drew a patterned near-black field behind a Noon
    card. Both are gone. The ground is the token, the way BG-P18b settled it for
    the framed pages.
 
@@ -34,7 +34,7 @@ interface AuthShellProps {
    element that was already painting one, not a new positioned layer — no blur,
    no animation, no decorative shape, and no change to `position` or `overflow`.
 
-   The wash is `--lit` on Exhibition and `--action` on Dusk, and that swap is
+   The wash is `--lit` on Noon and `--action` on Dusk, and that swap is
    deliberate rather than symmetric. Amber is the light in this system and it
    reads as daylight falling into the grey room; on the lavender stone at dusk
    the same amber reads as a lamp someone left on, where salmon reads as the
@@ -50,7 +50,7 @@ interface AuthShellProps {
    ──────────────────────────────────────────────────────────────────────────── */
 
 /** Alpha for the wash, per room. Low enough to be light and never a surface. */
-const WASH_ALPHA = { exhibition: 0.09, dusk: 0.1 } as const;
+const WASH_ALPHA = { noon: 0.09, dusk: 0.1 } as const;
 
 export function AuthShell({ children }: AuthShellProps) {
   const { resolved } = useTheme();
@@ -68,7 +68,7 @@ export function AuthShell({ children }: AuthShellProps) {
   const wash =
     resolved === "dusk"
       ? tokenAlpha("action", WASH_ALPHA.dusk)
-      : tokenAlpha("lit", WASH_ALPHA.exhibition);
+      : tokenAlpha("lit", WASH_ALPHA.noon);
 
   const shown = still || mounted;
 

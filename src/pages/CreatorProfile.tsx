@@ -532,7 +532,7 @@ function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClo
         className="sm:max-w-sm"
         data-visual-slot="modal-surface"
         /* The dialog surface, from the theme rather than a near-black hex and
-           the legacy border name: on Exhibition a near-black sheet is a dark
+           the legacy border name: on Noon a near-black sheet is a dark
            rectangle in a lit room. */
         style={{ background: t.glass, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid ${t.glassBorder}`, borderRadius: r.panel }}
       >

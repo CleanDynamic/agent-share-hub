@@ -76,7 +76,7 @@ export default function WideDemo() {
        transparent by design — "no page background, BlobBackground paints it"
        — and BlobBackground is hard-coded to #25252F, a dark ground, in both
        themes. So --text type laid directly on the centre is unreadable in
-       Exhibition: dark ink on a dark room. Every shipping page happens to
+       Noon: dark ink on a dark room. Every shipping page happens to
        dodge it by putting its content inside cards that carry their own
        background; a PageHeader does not, and this is the first surface to
        find out.

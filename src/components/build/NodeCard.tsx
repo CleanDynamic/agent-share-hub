@@ -71,7 +71,7 @@ function CopyButton({ text }: { text: string }) {
        type, in the same place on every card, so the affordance is learned once.
        The confirmed pairing is the measured `--evidence-fill` / `--evidence`
        one — "it worked" is what `--evidence` names — rather than the 14% teal
-       wash it replaces, which nobody measured and which vanished on Exhibition. */
+       wash it replaces, which nobody measured and which vanished on Noon. */
     <button
       type="button"
       onClick={copy}

@@ -435,7 +435,7 @@ export function InspectorDocument({
                    — the action stepped toward a deeper stop. `#B23A0C` has no
                    token, and flattening both arms to `--action` would have left
                    a hover that does nothing. So the step is DERIVED instead:
-                   --action mixed 12% toward --text, which darkens on Exhibition
+                   --action mixed 12% toward --text, which darkens on Noon
                    and lightens on Dusk, because --text inverts between the
                    rooms. Measured: --on-action on it is 6.45:1 and 7.02:1, both
                    ABOVE the resting 5.65:1 and 6.35:1, so the hover never

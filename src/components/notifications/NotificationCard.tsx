@@ -489,7 +489,7 @@ export function NotificationCard({
           style={{
             // The emphasised CTA takes an `--action` wash with `--text` on it,
             // the same ground and ink as an own-message bubble — the hue itself
-            // is not legal as ink on its own wash (3.97:1 on Exhibition).
+            // is not legal as ink on its own wash (3.97:1 on Noon).
             // Everything else is a secondary: a `--line` border and no fill.
             background: isFollowBack ? tokenAlpha("action", 0.14) : "transparent",
             border: `0.5px solid ${isFollowBack ? tokenAlpha("action", 0.4) : tok.line}`,

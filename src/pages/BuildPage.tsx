@@ -280,7 +280,7 @@ function payloadCaption(node: BuildNode | undefined): string | null {
    NO `background`, AND `color: t.text` (BG-P21). The note that used to sit
    here said this page kept the application's dark centre because its header,
    tabs and body were still painted in white alpha and would vanish on an
-   Exhibition ground. They are not any more: BG-P21 repointed
+   Noon ground. They are not any more: BG-P21 repointed
    src/components/build/tokens.ts onto the semantic tokens and repainted every
    surface on this route, so the page inherits the frame's own ground like
    /gallery does and takes `--text` for its ink. There is still no `background`

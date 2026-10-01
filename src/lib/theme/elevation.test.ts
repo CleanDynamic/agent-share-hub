@@ -3,7 +3,7 @@
 // `css-parity.test.ts` proves the two theme blocks declare these shadows. What
 // is proved here is the model: three levels and no fourth, a flat default that
 // casts nothing, and — the claim the whole per-theme arrangement exists for —
-// that Dusk's depth is not Exhibition's depth.
+// that Dusk's depth is not Noon's depth.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -13,7 +13,7 @@ import {
   duskElevation,
   elevation,
   elevationThemes,
-  exhibitionElevation,
+  noonElevation,
 } from "./elevation";
 
 describe("the elevation model", () => {
@@ -45,11 +45,11 @@ describe("the elevation model", () => {
 
 describe("a shadow on a light ground is not a shadow on a dark ground", () => {
   it("overlay differs between the themes", () => {
-    expect(duskElevation["elev-overlay"]).not.toBe(exhibitionElevation["elev-overlay"]);
+    expect(duskElevation["elev-overlay"]).not.toBe(noonElevation["elev-overlay"]);
   });
 
   it("raised differs too", () => {
-    expect(duskElevation["elev-raised"]).not.toBe(exhibitionElevation["elev-raised"]);
+    expect(duskElevation["elev-raised"]).not.toBe(noonElevation["elev-raised"]);
   });
 
   it("Dusk carries a lit top hairline at every level that casts", () => {
@@ -62,16 +62,16 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
     }
   });
 
-  it("Exhibition carries no inset edge — its room does the lighting", () => {
+  it("Noon carries no inset edge — its room does the lighting", () => {
     for (const token of ELEVATION_TOKENS) {
-      expect(exhibitionElevation[token]).not.toContain("inset");
+      expect(noonElevation[token]).not.toContain("inset");
     }
   });
 
-  it("Exhibition's shadows are struck from --text, not from black", () => {
+  it("Noon's shadows are struck from --text, not from black", () => {
     for (const token of ELEVATION_TOKENS) {
-      expect(exhibitionElevation[token]).toContain("rgba(27,32,38,");
-      expect(exhibitionElevation[token]).not.toContain("rgba(0,0,0,");
+      expect(noonElevation[token]).toContain("rgba(27,32,38,");
+      expect(noonElevation[token]).not.toContain("rgba(0,0,0,");
     }
   });
 
@@ -87,7 +87,7 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
   });
 
   it("names the same two tokens in both themes", () => {
-    expect(Object.keys(exhibitionElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
+    expect(Object.keys(noonElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
     expect(Object.keys(duskElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
   });
 });

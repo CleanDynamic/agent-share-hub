@@ -297,7 +297,7 @@
      PREFERENCE. The theme measures --action at 4.80:1 on --bg, which is where
      it is legal as text. The rails are --recess, which is darker, and on the
      12% --action wash the row actually draws, --action measures 3.57:1 on
-     Exhibition and 3.94:1 on Dusk — both under the 4.5:1 text floor. So the
+     Noon and 3.94:1 on Dusk — both under the 4.5:1 text floor. So the
      ladder's first step applies: reuse a legal pairing. --text on that wash is
      9.75:1 and 8.83:1. The hue still carries the state, as the 2px edge and the
      wash, which are graphical marks floored at 3.0:1 and clear it in both
@@ -340,7 +340,7 @@
    --bg; the rail is now --bg, so the hover is --recess. The argument is the same
    one and it still holds in both directions: --recess is the one step from --bg
    that moves the right way in both themes, and --text2 measures 4.55:1 on it in
-   Exhibition and 5.73:1 in Dusk — above the text floor, where the pair it
+   Noon and 5.73:1 in Dusk — above the text floor, where the pair it
    replaces would now be --bg on --bg and no step at all. */
 /* BG-P32 — gated: see the note at the top of this file. */
 @media (hover: hover) and (pointer: fine) {
@@ -350,7 +350,7 @@
   }
 }
 /* 8% rather than 12%. The wash is read against --bg now rather than against
-   --recess, and --bg is the lighter of the two on Exhibition and the darker on
+   --recess, and --bg is the lighter of the two on Noon and the darker on
    Dusk — either way the same alpha of --action reads one step louder on it. The
    2px edge is what carries the state; the wash only has to say "this row". */
 /* THE 2px EDGE IS AN INSET SHADOW, NOT A BORDER, AND THAT IS WHAT KEEPS THE
@@ -560,7 +560,7 @@
    `filter: brightness(1.08)`: this stylesheet bans `filter` outright, and for a
    good reason — a filter on a persistent surface is what made the old shell
    slow. Mixing 12% of --text into --action moves the fill one step AWAY from
-   the ground in both themes, darker on Exhibition and lighter on Dusk, which is
+   the ground in both themes, darker on Noon and lighter on Dusk, which is
    also the direction that gains contrast against --on-action rather than losing
    it. */
 .fs-auth-btn.signin {

@@ -59,7 +59,7 @@
   /* The three cards that read this — ContentCard, FeedItem, BountyCard — are
      cards, and the theme says a card is --glass over --glass-border. It was
      `rgba(255,255,255,0.03)`: a 3% white wash, which is an invisible card on
-     the Exhibition ground and was never a surface tier in this system. */
+     the Noon ground and was never a surface tier in this system. */
   --surface: var(--glass);
   /* The hover step for the same three cards' hairline. `--text2` is what the
      Explore rail's own stylesheet already steps a hairline up to on hover
@@ -83,7 +83,7 @@
    src/lib/theme/semantics.ts — change them there and mirror the change here;
    src/lib/theme/tokens.ts is how components read them.
 
-   The bare :root block duplicates Exhibition so a document with no data-theme
+   The bare :root block duplicates Noon so a document with no data-theme
    attribute still renders correctly. It intentionally redeclares --bg and
    --text from the legacy block above, which is what BG-P29 will finish
    migrating.
@@ -92,7 +92,7 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 :root,
-:root[data-theme="exhibition"] {
+:root[data-theme="noon"] {
   --bg: #E4E6E8;
   --recess: #D3D7DB;
   --text: #1B2026;
@@ -116,6 +116,7 @@
   --evidence-fill: #BFE3DC;
   --lit: #D9A441;
   --on-lit: #1B2026;
+  --focus-ring: #1A2320;
 
   --porthole: #4E565E;
   --chrome-hi: #FFFFFF;
@@ -170,7 +171,7 @@
   --motion-theme: 180ms;
   --motion-ease: cubic-bezier(.2,.6,.35,1);
 
-  /* BG-P04 — elevation. Exhibition's depth is a true shadow: the luminous grey
+  /* BG-P04 — elevation. Noon's depth is a true shadow: the luminous grey
      room has a light source, so a surface above the page casts. Struck from
      --text rather than from black, so the shadow belongs to the room. `flat`
      needs no token — it is no shadow plus a --line hairline. */
@@ -182,7 +183,7 @@
      `text-muted-foreground`, `bg-card`, `border-border` — by the legacy pages
      this prompt repaints, and they were still the ORIGINAL dark-shell values
      in BOTH themes: `--foreground: 0 0% 95%` put near-white type on the
-     Exhibition ground, and `--muted-foreground: 0 0% 60%` measured 2.3:1 on
+     Noon ground, and `--muted-foreground: 0 0% 60%` measured 2.3:1 on
      it. Nothing in the token block could reach them, so a page could be fully
      converted to `var(--token)` inline and still show the old palette through
      every utility class on it.
@@ -220,7 +221,7 @@
   --destructive-foreground: 210 14% 97%;
   --border: 213 11% 80%;
   --input: 213 11% 80%;
-  --ring: 39 67% 55%;
+  --ring: 160 15% 12%;
   --sidebar-background: 210 8% 90%;
   --sidebar-foreground: 213 17% 13%;
   --sidebar-primary: 16 56% 40%;
@@ -228,7 +229,7 @@
   --sidebar-accent: 210 10% 84%;
   --sidebar-accent-foreground: 213 17% 13%;
   --sidebar-border: 213 11% 80%;
-  --sidebar-ring: 39 67% 55%;
+  --sidebar-ring: 160 15% 12%;
 }
 
 :root[data-theme="dusk"] {
@@ -254,6 +255,7 @@
   --evidence-fill: rgba(134,189,211,.16);
   --lit: #D9A441;
   --on-lit: #241B1A;
+  --focus-ring: #D9A441;
 
   --porthole: #141020;
   --chrome-hi: #CBC6E4;
@@ -315,7 +317,7 @@
   --elev-raised: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44);
   --elev-overlay: inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62);
 
-  /* The shadcn bridge, Dusk half. See the note in the Exhibition block. */
+  /* The shadcn bridge, Dusk half. See the note in the Noon block. */
   --background: 255 23% 14%;
   --foreground: 264 31% 94%;
   --card: 258 22% 24%;
@@ -376,7 +378,7 @@
 /* ── One ground (BG-P18b) ─────────────────────────────────────────────────────
    THE PAGE IS `--bg` AND NOTHING ELSE. Until this prompt the ground was painted
    by a fixed inset-0 `BlobBackground` div carrying #25252F under a 20px dot
-   grid in both themes, so Exhibition rendered light panels on a dark patterned
+   grid in both themes, so Noon rendered light panels on a dark patterned
    field. That component is unmounted and deleted; these three elements are now
    the only thing behind the frame.
 
@@ -472,7 +474,7 @@ body {
    what the buildgallery tokens mean; a reader who opens `index.css`, searches
    `--primary`, and lands here learns the opposite.
 
-   The values are Exhibition's, because bare `:root` is Exhibition — the
+   The values are Noon's, because bare `:root` is Noon — the
    default theme for a visitor with no stored preference, and what the block
    directly above declares for the same selector. They are HSL TRIPLES for the
    same reason the theme blocks are: tailwind.config.ts wraps each as
@@ -510,7 +512,7 @@ body {
     --destructive-foreground: 210 14% 97%;
     --border: 213 11% 80%;
     --input: 213 11% 80%;
-    --ring: 39 67% 55%;
+    --ring: 160 15% 12%;
     --radius: var(--r-control);
     --sidebar-background: 210 8% 90%;
     --sidebar-foreground: 213 17% 13%;
@@ -519,7 +521,7 @@ body {
     --sidebar-accent: 210 10% 84%;
     --sidebar-accent-foreground: 213 17% 13%;
     --sidebar-border: 213 11% 80%;
-    --sidebar-ring: 39 67% 55%;
+    --sidebar-ring: 160 15% 12%;
   }
 }
 
@@ -584,7 +586,7 @@ body {
 /* Custom scrollbar.
    BG-P18b. The track was #0a0a10 and the thumb #333 — the legacy dark paint's
    last three hexes on the page ground, which drew a near-black gutter down the
-   right of an Exhibition page. Repointed in place at the tokens: the track is
+   right of a Noon page. Repointed in place at the tokens: the track is
    the ground it runs through, the thumb a hairline, and the hover the step
    `--text2` already is everywhere else. No measurement moved. */
 ::-webkit-scrollbar { width: 5px; }
@@ -673,7 +675,7 @@ input, textarea, select {
    which draws as a shadow and would otherwise stack underneath the outline. */
 input:focus-visible, textarea:focus-visible, select:focus-visible {
   border-color: var(--action);
-  outline: 2px solid var(--lit);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   box-shadow: none !important;
 }

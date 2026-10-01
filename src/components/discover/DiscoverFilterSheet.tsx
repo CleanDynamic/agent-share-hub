@@ -38,7 +38,7 @@ export interface DiscoverFilterSheetProps {
 /* SIXTEEN INVENTED HUES, RESOLVED INTO THE NINE (BG-P28). The list read as a
    rainbow because each entry was picked on its own: a lime for Tutorial, a
    cyan for Model, an amber for Prompt that could not have carried its own dot
-   label on the Exhibition ground. They now resolve exactly as the result cards'
+   label on the Noon ground. They now resolve exactly as the result cards'
    map does, so a filter chip and the card it filters to are the same hue for
    the same reason — which is the whole point of having nine of them. */
 const blockTypes = [

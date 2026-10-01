@@ -144,11 +144,11 @@ export function CategoryChip(props: CategoryChipProps) {
       {label}
       {/* BG-P30. THE COUNT CARRIED `opacity: 0.75` AND THE FILLS HAVE NO ROOM
           FOR IT. Each of the twenty `cat-*`/`cat-*-fill` pairs was struck to
-          land just above the text floor — 4.51 to 4.56 on Exhibition, 4.54 to
+          land just above the text floor — 4.51 to 4.56 on Noon, 4.54 to
           6.09 on Dusk — because the fill is the hue at a low alpha over the
           ground and any more alpha would stop reading as the category. Fading
           the ink to 75% over that fill spends headroom that was never there:
-          the sweep measured 2.96 to 3.06 on Exhibition and 3.28 to 4.20 on
+          the sweep measured 2.96 to 3.06 on Noon and 3.28 to 4.20 on
           Dusk, so the number inside the chip failed in BOTH rooms while the
           label beside it passed.
 

@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(HERE, "../../..");
 
-export const THEMES = ["exhibition", "dusk"] as const;
+export const THEMES = ["noon", "dusk"] as const;
 export type Theme = (typeof THEMES)[number];
 
 type Row = Record<string, unknown>;

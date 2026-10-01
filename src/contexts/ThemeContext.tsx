@@ -28,10 +28,10 @@ import { prefersReducedMotion, THEME_SWITCH } from "@/lib/theme/motion";
 ──────────────────────────────────────────────── */
 
 /** What the visitor chose. "system" defers to the OS. */
-export type ThemeChoice = "exhibition" | "dusk" | "system";
+export type ThemeChoice = "noon" | "dusk" | "system";
 
 /** What is actually painted. "system" has been resolved away. */
-export type ResolvedTheme = "exhibition" | "dusk";
+export type ResolvedTheme = "noon" | "dusk";
 
 export interface ThemeState {
   /** The stored choice, including "system". */
@@ -53,16 +53,21 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
    `motion.test.ts` holds the two to each other. */
 const TRANSITION_MS = THEME_SWITCH;
 
-/* BG-P02. A visitor with no stored preference gets Exhibition, not the Dusk
+/* BG-P02. A visitor with no stored preference gets Noon, not the Dusk
    the theme spec names: a gallery that opens in the dark undersells itself, and
    most visitors arrive with no preference either way. "system" stays
    selectable for anyone who wants their OS to decide. */
-const DEFAULT_THEME: ThemeChoice = "exhibition";
+const DEFAULT_THEME: ThemeChoice = "noon";
 
-const CHOICES: readonly ThemeChoice[] = ["exhibition", "dusk", "system"];
+const CHOICES: readonly ThemeChoice[] = ["noon", "dusk", "system"];
 
 const isThemeChoice = (value: unknown): value is ThemeChoice =>
   typeof value === "string" && (CHOICES as readonly string[]).includes(value);
+
+/* UI-P02. Noon's name before UI-P02. A choice stored under it is read as Noon
+   and written back as Noon, so the old value leaves storage on the first read.
+   The boot script in index.html does the same before paint. */
+const LEGACY_NOON = "exhibition";
 
 /**
  * matchMedia, or null. A private window, an old browser and jsdom can each
@@ -85,6 +90,10 @@ function safeMatchMedia(query: string): MediaQueryList | null {
 export function readStoredTheme(): ThemeChoice {
   try {
     const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw === LEGACY_NOON) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, "noon");
+      return "noon";
+    }
     if (isThemeChoice(raw)) return raw;
   } catch {
     /* Storage unavailable. Fall through to the default. */
@@ -95,7 +104,7 @@ export function readStoredTheme(): ThemeChoice {
 const systemPrefersDark = (): boolean => safeMatchMedia(DARK_QUERY)?.matches ?? false;
 
 const resolveTheme = (theme: ThemeChoice, dark: boolean): ResolvedTheme =>
-  theme === "system" ? (dark ? "dusk" : "exhibition") : theme;
+  theme === "system" ? (dark ? "dusk" : "noon") : theme;
 
 const ThemeContext = createContext<ThemeState | undefined>(undefined);
 

@@ -18,8 +18,8 @@
 // urgent to remove. It is only urgent not to add to.
 //
 // THE NAMES LIE NOW, WHICH IS THE PRICE OF THE ALIAS. `ORANGE` is the action
-// token, which is burnt orange on Exhibition and salmon on Dusk; `TEAL` is the
-// evidence token, which is teal on Exhibition and sky on Dusk; `VOID` is the
+// token, which is burnt orange on Noon and salmon on Dusk; `TEAL` is the
+// evidence token, which is teal on Noon and sky on Dusk; `VOID` is the
 // page ground, which is a luminous grey in the light room. Read every name
 // below as the JOB it does rather than as the colour it was.
 //

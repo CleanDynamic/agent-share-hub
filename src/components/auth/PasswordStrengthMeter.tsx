@@ -17,10 +17,10 @@ interface PasswordStrengthMeterProps {
    which LOOK like a traffic light and are not one: they are three of the nine
    part-category hues doing a second, legitimate job. That distinction matters
    because it is what makes them measurable — every category hue is held to
-   ≥4.83:1 on Exhibition and ≥5.75:1 on Dusk, and `contrast.test.ts` measures
+   ≥4.83:1 on Noon and ≥5.75:1 on Dusk, and `contrast.test.ts` measures
    all three again on the auth card's own glass ground, which is what these
    actually sit on. A hand-picked red and amber would clear neither floor on
-   Exhibition, which is exactly what the old ramp did not do.
+   Noon, which is exactly what the old ramp did not do.
 
    FOUR TIERS, THREE SEGMENTS. `calculatePasswordStrength` keeps its four
    returns untouched — it is validation, and the signup form's own gate reads

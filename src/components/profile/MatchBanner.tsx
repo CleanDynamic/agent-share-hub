@@ -75,7 +75,7 @@ export function MatchBanner({ targetUserId, viewerId, isOwnProfile }: MatchBanne
       role="status"
       className="mt-4 flex items-center gap-3 px-4 py-3"
       /* The measured evidence pair: `--evidence-fill` with `--text` on it.
-         Teal at 6% alpha was a value nobody measured and, on Exhibition, a
+         Teal at 6% alpha was a value nobody measured and, on Noon, a
          banner that was not there. */
       style={{
         background: t.evidenceFill,

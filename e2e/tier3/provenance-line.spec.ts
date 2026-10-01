@@ -9,7 +9,7 @@
 //      rendered end to end, through a query jsdom never runs
 //   2. it is MUTED IN BOTH ROOMS. `--text2` is a string in a style attribute
 //      until an engine resolves it against <html data-theme>, so "quiet on
-//      Exhibition AND quiet on Dusk" is not a claim markup can support — and it
+//      Noon AND quiet on Dusk" is not a claim markup can support — and it
 //      is the claim that matters, because a line that came out at full
 //      contrast, or in the breakage hue, would read as a warning
 //   3. a build with nothing recorded gains NO element and NO blank space. Most
@@ -23,7 +23,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const REST = /\/rest\/v1\//;
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 const SLUG = "inbox-triage-agent";
 const BUILD_ID = "00000000-0000-4000-8000-000000000001";
@@ -260,7 +260,7 @@ async function toRgb(page: Page, value: string): Promise<string> {
 for (const width of [390, 768, 1400] as const) {
   test(`EX-P14 — no sideways scroll at ${width} with the line present`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await openBuild(page, "exhibition", {
+    await openBuild(page, "noon", {
       source: "connector",
       client: "claude-code",
       reader_id: "claude",
@@ -280,7 +280,7 @@ for (const width of [390, 768, 1400] as const) {
    ════════════════════════════════════════════════════════════════════════════ */
 
 test("EX-P14 — a build with no provenance renders no line", async ({ page }) => {
-  await openBuild(page, "exhibition", null);
+  await openBuild(page, "noon", null);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(line(page)).toHaveCount(0);
@@ -297,13 +297,13 @@ test("EX-P14 — a build with no provenance renders no line", async ({ page }) =
  * from the top of the page to the title is unchanged.
  */
 test("EX-P14 — and gains no blank space above the title either", async ({ page }) => {
-  await openBuild(page, "exhibition", null);
+  await openBuild(page, "noon", null);
   const without = await page.getByRole("heading", { level: 1 }).evaluate(
     (el) => el.getBoundingClientRect().top + window.scrollY,
   );
 
   await page.unrouteAll({ behavior: "ignoreErrors" });
-  await openBuild(page, "exhibition", {
+  await openBuild(page, "noon", {
     source: "connector",
     client: "claude-code",
     reader_id: "claude",

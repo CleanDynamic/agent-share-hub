@@ -4,7 +4,7 @@ The discovery RC-P10 to RC-P14b built, judged from its screenshots and measured 
 
 ## Method
 
-- **Screens.** `e2e/audit/rc-critique.spec.ts` captures nine addresses at 390, 768, 1024 and 1440 wide, in Exhibition and Dusk: 72 screenshots in `e2e/audit/critique/phase-3/`, which is gitignored. The addresses are `/`, `/?tab=everyone`, `/gallery`, `/gallery?lens=proven`, `/gallery?q=agent`, `/bounties`, `/bounties/solvers`, `/b2/rc-build-7` (scrolled to its foot, where where-next is) and `/b2/rc-build-7/lineage`. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop`.
+- **Screens.** `e2e/audit/rc-critique.spec.ts` captures nine addresses at 390, 768, 1024 and 1440 wide, in Noon and Dusk: 72 screenshots in `e2e/audit/critique/phase-3/`, which is gitignored. The addresses are `/`, `/?tab=everyone`, `/gallery`, `/gallery?lens=proven`, `/gallery?q=agent`, `/bounties`, `/bounties/solvers`, `/b2/rc-build-7` (scrolled to its foot, where where-next is) and `/b2/rc-build-7/lineage`. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop`.
 - **Fixtures.** The reader is the audit harness's signed-in reader, following two of the three fixture makers. The builds are the thirteen synthetic rows in `e2e/audit/fixtures/rcBuilds.ts`. This pass added a thirteenth build, so there is a three-generation family (1 → 7 → 13), a third open ask (with no reward), two solvers and the board's rows.
 - **Filtered answers.** The spec answers builds, parts, media, bounties, solutions, profiles and follows through `e2e/audit/support/restFilter.ts`, so a lookup by slug gets one build. The harness itself still answers every table with all its rows, a pre-existing test-infrastructure defect deferred as m14. Nothing reaches the network. Reduced motion is emulated.
 - **Probes.** Some findings came from measuring the running app, and each says so: card widths, blurred surfaces, document height, the contrast and focus probes run in RC-P13, RC-P14 and RC-P14b.
@@ -137,9 +137,9 @@ The two majors:
   - Selected lens and facet: --recess fill, --text border, Check (STATES.md row 5).
   - Home's tabs: an --action underline.
   - The tree: "you are here", aria-current.
-  - Focus: the theme's one ring on the lens links, the facet chips, the text links, MakerLink and the tree's titles. On Exhibition the ring measures 1.8:1, the owner-escalated survivor of STATES.md row 9; on Dusk 7.47:1.
+  - Focus: the theme's one ring on the lens links, the facet chips, the text links, MakerLink and the tree's titles. On Noon the ring measures 1.8:1, the owner-escalated survivor of STATES.md row 9; on Dusk 7.47:1.
   - Loading: skeleton rows on the boards and the tree.
-- **Problem.** None new; the Exhibition ring stays escalated.
+- **Problem.** None new; the Noon ring stays escalated.
 - **Fix.** None.
 
 ### CTA Clarity: pass
@@ -320,9 +320,9 @@ The phase's surfaces: the lens row and facet band, the gallery's search field an
 
 1. **Both themes checked.** PASS. 72 screenshots in both rooms, before and after the fixes.
 2. **Every colour a semantic token.** PASS. The phase's files use `t.*` only; src/lib/theme/compliance.test.ts passes.
-3. **Every new pairing measured; no amber text on Exhibition.** PASS.
+3. **Every new pairing measured; no amber text on Noon.** PASS.
    - Contrast probes on /bounties, /bounties/solvers, the lineage page and the build page with where next in view: 0 text failures in both rooms, at 390 and 1440 (RC-P13, RC-P14, RC-P14b).
-   - Amber appears only as light: the freshness lamps and the focus ring (Exhibition 1.8:1, escalated, STATES.md row 9).
+   - Amber appears only as light: the freshness lamps and the focus ring (Noon 1.8:1, escalated, STATES.md row 9).
 4. **Radius from the scale.** PASS. Chips at --r-chip, rows and buttons at --r-control, cards at --r-card. Nothing pill-shaped; avatars are circles.
 5. **Glass.** PASS. audit:glass passes. Where next in view: 9 blurred surfaces on the desktop and 11 on the phone, one blur value, nothing nested. The tree, the boards and the tab add none.
 6. **Display face ≥ 20px; body ≥ 400 under 18px.** PASS. Headlines through PageHeader's sectionHead; everything else Figtree or DM Mono.
@@ -340,5 +340,5 @@ The screenshots were re-taken after CRITIQUE-5 and 6: 72 files, the same nine ad
 
 | Finding | Was | Now | Evidence |
 |---|---|---|---|
-| M1 where-next cards | major (Gestalt: Similarity); minor (Weight) | pass | build-foot-{390,768,1024,1440}-{exhibition,dusk}.png show covers and the open-ask pill; whereNext.test.ts holds the rows' embeds equal to listGallery's |
+| M1 where-next cards | major (Gestalt: Similarity); minor (Weight) | pass | build-foot-{390,768,1024,1440}-{noon,dusk}.png show covers and the open-ask pill; whereNext.test.ts holds the rows' embeds equal to listGallery's |
 | M2 lineage page | major (Entry Point; Action Discoverability) | pass | lineage-*.png name the build in the eyebrow with "Open the build"; Lineage.test.tsx |

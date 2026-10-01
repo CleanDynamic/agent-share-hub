@@ -15,7 +15,7 @@
 // only defines what they will be repointed to.
 //
 // WHY THE VALUES LIVE IN BOTH THEME BLOCKS. They are theme-independent — a card
-// is 14px in Exhibition and 14px in Dusk. They are declared in both blocks
+// is 14px in Noon and 14px in Dusk. They are declared in both blocks
 // anyway so that everything a component reads off the root element comes from
 // one place, and so a future theme could move a radius without a second
 // mechanism being invented for it. `css-parity.test.ts` holds the two blocks to

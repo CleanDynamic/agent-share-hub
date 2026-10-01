@@ -5,7 +5,7 @@
 // `src/components/profile-game/tokens.ts`. Every value here used to be a
 // literal struck for one dark room: three lavender-grey surfaces, four
 // white-alpha ink steps, and six brand hexes headed by `#E8571A`. None of them
-// read `<html data-theme>`, so a challenge card drawn on Exhibition was a
+// read `<html data-theme>`, so a challenge card drawn on Noon was a
 // dark-room object sitting in a lit one.
 //
 // The KEYS are untouched. Eleven components in this folder spend them, and this
@@ -14,7 +14,7 @@
 // no re-render.
 //
 // THE NAMES LIE NOW, WHICH IS THE PRICE OF THE ALIAS. `orange` is the action
-// token — burnt orange on Exhibition, salmon on Dusk. `teal` is evidence, which
+// token — burnt orange on Noon, salmon on Dusk. `teal` is evidence, which
 // is teal in the light room and sky in the dark one. Read every name below as
 // the JOB it does rather than as the colour it was.
 //

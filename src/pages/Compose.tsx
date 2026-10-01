@@ -43,7 +43,7 @@ const DRAFT_TITLE = "Untitled build";
  * the whole point of a shared chrome.
  *
  * The ground is `--bg` and the panel is `--recess`, flat, per the rule in
- * WorkspaceBar.tsx. It was #08080C, which went black on Exhibition.
+ * WorkspaceBar.tsx. It was #08080C, which went black on Noon.
  */
 function Shell({ children }: { children: React.ReactNode }) {
   return (

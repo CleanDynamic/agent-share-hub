@@ -77,7 +77,7 @@ interface Backend {
   paths: () => string[];
 }
 
-async function fakeBackend(page: Page, { theme = "exhibition" }: { theme?: "exhibition" | "dusk" } = {}): Promise<Backend> {
+async function fakeBackend(page: Page, { theme = "noon" }: { theme?: "noon" | "dusk" } = {}): Promise<Backend> {
   const paths: string[] = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
@@ -169,8 +169,8 @@ test("the page is six sections in order: the note, Progress, Needs you, Your bui
   ]);
 });
 
-for (const theme of ["exhibition", "dusk"] as const) {
-  test(`no text is drawn in --lit on ${theme === "exhibition" ? "Exhibition" : "Dusk"}, and the progress fills are`, async ({ page }) => {
+for (const theme of ["noon", "dusk"] as const) {
+  test(`no text is drawn in --lit on ${theme === "noon" ? "Noon" : "Dusk"}, and the progress fills are`, async ({ page }) => {
     await fakeBackend(page, { theme });
     await page.goto("/analytics");
     await settled(page);

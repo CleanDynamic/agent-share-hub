@@ -19,7 +19,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** The prompt's four widths. */
 const WIDTHS = [1400, 1024, 900, 390] as const;

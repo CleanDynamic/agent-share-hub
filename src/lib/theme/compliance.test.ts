@@ -94,7 +94,7 @@ const CATEGORIES: Category[] = [
   {
     why:
       "TESTS THAT ASSERT EXACT TOKEN VALUES. A test proving --action is " +
-      "#9E4B2C on Exhibition has to spell out #9E4B2C or it is not proving " +
+      "#9E4B2C on Noon has to spell out #9E4B2C or it is not proving " +
       "anything; the same goes for the contrast measurements, the category " +
       "table, and the fixtures that carry a stored `node_types.colour`. These " +
       "are the assertions that make the token layer checkable, so forbidding " +
@@ -179,7 +179,7 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "artefact, it renders white with black ink in both rooms, and theming " +
       "it would put Dusk's palette on paper. NOTE FOR BG-P30: the page " +
       "GROUND beside this ink is `var(--chrome-hi)`, which is #FFFFFF on " +
-      "Exhibition but #CBC6E4 on Dusk — so the page does drift lavender in " +
+      "Noon but #CBC6E4 on Dusk — so the page does drift lavender in " +
       "the dark room, which contradicts the note. Worth settling.",
   },
   "src/components/progress/xp-kit/xp-bar.tsx": {

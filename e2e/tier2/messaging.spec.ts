@@ -38,7 +38,7 @@ import {
 } from "./support/supabaseStub";
 
 /** The two rooms, as the boot script in index.html reads them. */
-const THEMES = ["exhibition", "dusk"] as const;
+const THEMES = ["noon", "dusk"] as const;
 
 /** BG-P26 acceptance 1 names these four widths. */
 const WIDTHS = [1400, 1024, 768, 390];

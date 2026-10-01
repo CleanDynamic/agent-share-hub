@@ -71,7 +71,7 @@ export type FieldWidget = ComponentType<FieldWidgetProps>;
    EVERY WIDGET IN THIS DIRECTORY IS REPAINTED BY THESE FIVE CONSTANTS, which is
    why they are here and not in ten files. They were white-alpha values struck
    for one dark room — a 2.5%-white ground, a 6%-white border, a teal focus edge
-   — so on Exhibition the fields were nearly invisible against the panel and the
+   — so on Noon the fields were nearly invisible against the panel and the
    ink was black on black.
 
    `fieldStyle()` is the kit's own answer (src/lib/theme/controls.ts): `--recess`
@@ -91,7 +91,7 @@ export const CONTROL_FOCUS = t.action;
  * The "on" surface of a toggle.
  *
  * KEEPS ITS NAME AND CHANGES ITS VALUE, like everything else in the BG-P21
- * repointing: `TEAL_TRACK` is `--action`, which is burnt orange on Exhibition
+ * repointing: `TEAL_TRACK` is `--action`, which is burnt orange on Noon
  * and salmon on Dusk. Read the name as the job — "a toggle that is on" — rather
  * than as the colour it was. BG-P07's switch uses `--action` for exactly this.
  */

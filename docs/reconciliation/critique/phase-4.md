@@ -4,7 +4,7 @@ The social layer RC-P15 to RC-P20 built, judged from its screenshots and measure
 
 ## Method
 
-- **Screens.** `e2e/audit/rc-critique.spec.ts` captures eleven views at 390, 768, 1024 and 1440 wide, in Exhibition and Dusk: 88 screenshots in `e2e/audit/critique/phase-4/`, which is gitignored. Eight are addresses: `/gallery`, `/b2/rc-build-7` (as it opens, and at `#comments`), `/library`, `/library?tab=collections`, `/notifications`, `/messages/<the fixture thread>` and `/admin` (as an admin, on Reports). Three are dialogs, open over the build page: the report dialog, the delete-comment confirmation and the add-to-collection dialog. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop`.
+- **Screens.** `e2e/audit/rc-critique.spec.ts` captures eleven views at 390, 768, 1024 and 1440 wide, in Noon and Dusk: 88 screenshots in `e2e/audit/critique/phase-4/`, which is gitignored. Eight are addresses: `/gallery`, `/b2/rc-build-7` (as it opens, and at `#comments`), `/library`, `/library?tab=collections`, `/notifications`, `/messages/<the fixture thread>` and `/admin` (as an admin, on Reports). Three are dialogs, open over the build page: the report dialog, the delete-comment confirmation and the add-to-collection dialog. Regenerate them with `npx playwright test e2e/audit/rc-critique.spec.ts --project=desktop`.
 - **Fixtures.** `e2e/audit/fixtures/rcSocial.ts`, on top of phase 3's builds (`rcBuilds.ts`):
   - four comments on rc-build-7: one a reply by the reader (so Delete shows), one attached to its first part;
   - the reader's likes on two builds and saves on three (not rc-build-7, so Save on its page adds it and offers "Add to a collection");
@@ -61,7 +61,7 @@ The three majors:
   - The comment actions are text in --text2, and the Delete confirmation's primary reads "Delete comment".
   - On `/admin`, the report's summary ("Menu costing sheet with live supplier prices") is a link drawn exactly like the body text, in --text with no underline.
   - In the add-to-collection dialog, the collection rows are a name and a count and nothing else.
-  - The dialog's "Create and add" is an outline button. While its field is empty it is disabled, and on the Exhibition panel its --line border is barely there, so it reads as a label.
+  - The dialog's "Create and add" is an outline button. While its field is empty it is disabled, and on the Noon panel its --line border is barely there, so it reads as a label.
 - **Problem.**
   - The report's link has no cue at rest. An admin has to guess that the title opens the build it is about (m4).
   - The collection rows give no sign that choosing one adds the build, and "Create and add" looks like text until something is typed (m5). This is the ghost button in a low-contrast context the skill names.
@@ -236,11 +236,11 @@ All three are the existing Dialog (STATES.md row 17): the --r-panel glass panel 
 
 | Dialog | Room | Scrim | Covers the screen | Bottom-left corner hits | Panel as figure |
 |---|---|---|---|---|---|
-| Report | Exhibition | --porthole at 62% (rgb 78 86 94 / .62) | yes, at every width | the scrim | yes: --text title and radios on the light glass, the page greyed behind |
+| Report | Noon | --porthole at 62% (rgb 78 86 94 / .62) | yes, at every width | the scrim | yes: --text title and radios on the light glass, the page greyed behind |
 | Report | Dusk | --porthole at 62% (rgb 20 16 32 / .62) | yes | the scrim | yes: the panel's --glass-hi top hairline and shadow lift it off the darkened page |
-| Delete confirmation | Exhibition | as above | yes | the scrim | yes |
+| Delete confirmation | Noon | as above | yes | the scrim | yes |
 | Delete confirmation | Dusk | as above | yes | the scrim | yes |
-| Add to a collection | Exhibition | as above | yes | the scrim | yes; "Create and add" is faint (m5) |
+| Add to a collection | Noon | as above | yes | the scrim | yes; "Create and add" is faint (m5) |
 | Add to a collection | Dusk | as above | yes | the scrim | yes |
 
 **Dialogs without a visible scrim in either theme: 0.** At 390 the scrim covers the phone's top bar and bottom bar too (the RC-P17b spec asserts the corner). One ground shows through the figure: the panel is glass. On the report and add-to-collection dialogs the page's headline and its salmon "Rebuild this" read as a blur inside the panel, beside the radios and the collection rows (m6). The figure still wins on contrast. The fix belongs to dialog.tsx's panel (a more opaque panel, or no blur behind a dialog), which is outside the phase's files. Deferred.
@@ -330,7 +330,7 @@ The phase's surfaces:
 
 1. **Both themes checked.** PASS. 88 screenshots in both rooms, before and after the fixes.
 2. **Every colour a semantic token.** PASS. The phase's files use `t.*` only, and src/lib/theme/compliance.test.ts passes.
-3. **Every new pairing measured; no amber text on Exhibition.** PASS.
+3. **Every new pairing measured; no amber text on Noon.** PASS.
    - The phase's pairings are STATES.md's measured ones (its notes; contrast.test.ts): --text and --text2 on --bg and --recess, --action as an icon on --bg.
    - Amber appears only as the plaque's lamp and the focus ring.
 4. **Radius from the scale.** PASS. Chips at --r-chip, rows and buttons at --r-control, cards at --r-card, dialogs and the picker at --r-panel. Avatars are circles.
@@ -350,7 +350,7 @@ The screenshots were re-taken after CRITIQUE-9 and CRITIQUE-10: 88 files, the sa
 
 | Finding | Was | Now | Evidence |
 |---|---|---|---|
-| M1 the Library's empty band | major (Eye Flow) | pass | library-collections-{390,768,1024,1440}-{exhibition,dusk}.png: "New collection" and the list start under the tabs; library-builds.spec.ts reads the gap (309 and 210 before, under 64 now) |
+| M1 the Library's empty band | major (Eye Flow) | pass | library-collections-{390,768,1024,1440}-{noon,dusk}.png: "New collection" and the list start under the tabs; library-builds.spec.ts reads the gap (309 and 210 before, under 64 now) |
 | The picker's empty-state actions (better-ui MEDIUM) | glass secondary | transparent secondary | ThreadReferencePicker.test.tsx reads each action's background |
 | M2 the messages thread at 390 | major (Action Discoverability; Content Priority) | major, deferred | messages-390-*.png unchanged |
 | M3 one path into a collection | major (Action Discoverability) | major, deferred | unchanged |
