@@ -7,10 +7,15 @@
 
 import type { ReactNode } from "react";
 
+import { BreadcrumbView } from "@/components/shell/Breadcrumb";
 import type { FrameViewer } from "@/components/shell/frameTypes";
+import { SiteFooterView } from "@/components/shell/SiteFooter";
 import { SiteHeaderView } from "@/components/shell/SiteHeader";
 import type { PrimarySection } from "@/components/shell/siteNav";
+import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { fixtures } from "@/dev/designFixtures";
+
+import type { Crumb } from "@/components/shell/breadcrumbTrail";
 
 /** The sample viewer, as the chrome takes it. */
 export const FIXTURE_FRAME_VIEWER: FrameViewer = {
@@ -25,6 +30,8 @@ export interface DevChromeOptions {
   /** Which primary link is current (the boards differ). */
   current?: PrimarySection | null;
   activityCurrent?: boolean;
+  /** The breadcrumb trail the board shows. Defaults to Home / Gallery / the sample build. */
+  trail?: readonly Crumb[];
 }
 
 export interface DevChrome {
@@ -37,7 +44,16 @@ export interface DevChrome {
 
 const noop = () => undefined;
 
-export function devChrome({ theme, current = "gallery", activityCurrent = false }: DevChromeOptions): DevChrome {
+/** The sample build's title, for the trails that end in a record. */
+export const FIXTURE_BUILD_TITLE = fixtures.builds[fixtures.build_page.build as number].title;
+
+const DEFAULT_TRAIL: Crumb[] = [
+  { label: "Home", href: "/" },
+  { label: "Gallery", href: "/gallery" },
+  { label: FIXTURE_BUILD_TITLE },
+];
+
+export function devChrome({ theme, current = "gallery", activityCurrent = false, trail = DEFAULT_TRAIL }: DevChromeOptions): DevChrome {
   return {
     header: (
       <SiteHeaderView
@@ -50,6 +66,14 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false 
         onSignIn={noop}
         onSignOut={noop}
         onNewBuild={noop}
+      />
+    ),
+    breadcrumb: <BreadcrumbView trail={trail} />,
+    footer: (
+      <SiteFooterView
+        signedIn
+        onSignOut={noop}
+        themeControl={<ThemeSegmented size={32} fontSize={11} value={theme} onChange={noop} />}
       />
     ),
   };
