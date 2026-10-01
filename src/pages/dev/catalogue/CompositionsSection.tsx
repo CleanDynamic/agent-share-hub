@@ -8,6 +8,8 @@ import { useState } from "react";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { HeroPlate } from "@/components/brand/HeroPlate";
 import { PartViewer, type PartViewerMode } from "@/components/brand/PartViewer";
+import { MarkTile, RankRung, type RankTier } from "@/components/brand/RankRung";
+import { Timeline, type TimelineEvent } from "@/components/brand/Timeline";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import { r } from "@/lib/theme/radius";
 import { fixtures } from "@/dev/designFixtures";
@@ -36,16 +38,21 @@ const TABS = [
 
 type TabValue = (typeof TABS)[number]["value"];
 
+const TIERS: readonly RankTier[] = ["highest", "rare", "common", "none"];
+
 export function CompositionsSection() {
   const [tab, setTab] = useState<TabValue>("anatomy");
   const [mode, setMode] = useState<PartViewerMode>("understand");
   const featured = fixtures.builds[fixtures.gallery.featured.build - 1];
   const build = fixtures.builds[fixtures.build_page.build - 1];
+  const events = fixtures.build_page.events.map(
+    ([kind, at, text]): TimelineEvent => ({ kind: kind as TimelineEvent["kind"], at, text }),
+  );
 
   return (
     <Section
       name="Compositions"
-      note="hero plate (featured, build) · part viewer"
+      note="hero plate (featured, build) · part viewer · timeline · rank rungs · creator-mark tiles"
     >
       <Row style={{ alignItems: "flex-start", gap: 40 }}>
         <Example caption="hero plate · featured">
@@ -100,6 +107,31 @@ export function CompositionsSection() {
               {fixtures.build_page.selected_part_text}
             </PartViewer>
           </div>
+        </Example>
+        <Example caption="timeline · watch it get built">
+          <div style={{ width: 300 }}>
+            <Timeline events={events} />
+          </div>
+        </Example>
+      </Row>
+      <div style={{ height: 24 }} />
+      <Row style={{ alignItems: "flex-end", gap: 32 }}>
+        {([28, 32, 40] as const).map((size) => (
+          <Example key={size} caption={`rank rung · ${size}`}>
+            <Row gap={10}>
+              {TIERS.map((tier, i) => (
+                <RankRung key={tier} rank={i + 1} tier={tier} size={size} />
+              ))}
+            </Row>
+          </Example>
+        ))}
+        <Example caption="creator-mark tiles · highest, rare, common, none">
+          <Row gap={14} style={{ alignItems: "flex-start" }}>
+            <MarkTile tier="highest" caption="First hang" />
+            <MarkTile tier="rare" caption="Proven" />
+            <MarkTile tier="common" caption="Rebuilt" />
+            <MarkTile tier="none" caption="Unsolved" />
+          </Row>
         </Example>
       </Row>
     </Section>

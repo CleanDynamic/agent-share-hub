@@ -15,6 +15,7 @@ import { useDesignTheme } from "@/dev/useDesignTheme";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE, mono } from "@/lib/theme/type";
 
+import { ChartsSection } from "./catalogue/ChartsSection";
 import { CompositionsSection } from "./catalogue/CompositionsSection";
 import { ControlsSection } from "./catalogue/ControlsSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
@@ -53,8 +54,9 @@ export default function KitComponents() {
       <PanelsSection />
       <OrbsSection />
       <TaglineSection />
+      <ChartsSection />
       <CompositionsSection />
-      {/* Later prompts: Build cards, Charts, Frame. */}
+      {/* Later prompts: Build cards, Frame. */}
     </div>
   );
 }
