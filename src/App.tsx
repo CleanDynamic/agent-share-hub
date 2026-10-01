@@ -114,6 +114,13 @@ const Connect = lazy(() => import("./pages/Connect"));
    from nowhere. BG-P30's audit and the prompts after it reach it by URL. */
 const Kit = import.meta.env.DEV ? lazy(() => import("./pages/dev/Kit")) : null;
 
+/* UI-P01 — /dev/kit/components and /dev/kit/pages/:page, the compare pages
+   `npm run audit:design` screenshots against design/reference/. Guarded exactly
+   like /dev/kit above, and for the same reason: they import the sample-data
+   fixtures, which must not exist in a production bundle. */
+const KitComponents = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitComponents")) : null;
+const KitPages = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPages")) : null;
+
 /* BG-P14 — /dev/wide, the wide-layout demo.
 
    GUARDED THE SAME WAY AND FOR THE SAME REASON as /dev/kit above: Vite
@@ -364,6 +371,26 @@ const App = () => (
                   element={
                     <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
                       <Kit />
+                    </Suspense>
+                  }
+                />
+              )}
+              {KitComponents && (
+                <Route
+                  path="/dev/kit/components"
+                  element={
+                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                      <KitComponents />
+                    </Suspense>
+                  }
+                />
+              )}
+              {KitPages && (
+                <Route
+                  path="/dev/kit/pages/:page"
+                  element={
+                    <Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}>
+                      <KitPages />
                     </Suspense>
                   }
                 />
