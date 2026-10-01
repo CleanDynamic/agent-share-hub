@@ -189,13 +189,14 @@ describe("the publish sheet", () => {
     const card = preview.querySelector('[data-visual-slot="gallery-card"]');
     expect(card).not.toBeNull();
     expect(preview).toHaveTextContent("Inbox triage agent");
-    // The card's own chain, not a second one written here: with no picture it
-    // leads with the first evidence node's words, exactly as /gallery does.
-    expect(preview).toHaveTextContent("What it did");
+    // The card's own cover chain, not a second one written here: with no picture
+    // it draws the build's sky, exactly as /gallery does (UI-P14 — the card no
+    // longer leads with a node's words).
+    expect(preview.querySelector('[data-ui="cover-fallback"]')).not.toBeNull();
     expect(preview).toHaveTextContent("not yet reproduced");
   });
 
-  it("falls through to the outcome, set large, when the record has neither picture nor words", async () => {
+  it("draws the sky and the title when the record has neither picture nor words", async () => {
     getBuild.mockResolvedValue(
       record(draft(), [
         node("n1", "prompt", "The triage prompt"),
@@ -206,7 +207,10 @@ describe("the publish sheet", () => {
     await openSheet();
 
     const preview = await screen.findByTestId("publish-card-preview");
-    expect(preview).toHaveTextContent("Triages a full inbox in under a minute.");
+    // UI-P14: the reference card carries no outcome text; with nothing to show
+    // it still draws a cover (the sky) under the title.
+    expect(preview.querySelector('[data-ui="cover-fallback"]')).not.toBeNull();
+    expect(preview).toHaveTextContent("Inbox triage agent");
   });
 
   it("does not carry a creator off to the build page when the preview is clicked", async () => {

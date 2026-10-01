@@ -12,7 +12,7 @@
 
    DEV ONLY: registered behind `import.meta.env.DEV` in App.tsx. */
 
-import { Suspense, type ComponentType, type LazyExoticComponent } from "react";
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 import { useParams } from "react-router-dom";
 import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/useDesignTheme";
 
@@ -22,7 +22,10 @@ export interface DesignPageProps {
 }
 
 /** `:page` (the `page` field of `design/reference/index.json`) → a lazy entry that renders the view with fixtures. */
-const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> | undefined> = {};
+const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> | undefined> = {
+  /* UI-P13 — a throwaway for the page backdrop; not a board, so not in index.json. */
+  backdrop: lazy(() => import("./BackdropDemo")),
+};
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 

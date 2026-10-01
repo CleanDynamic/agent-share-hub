@@ -74,6 +74,30 @@ export function deadlineLabel(
   return `closes in ${Math.floor(days / 30)} months`;
 }
 
+/**
+ * What is left, without the verb: "9 days", "today", "3 weeks". Null for no
+ * deadline. This is `deadlineLabel`'s reading for a line that already says
+ * "closes" by being the vacant frame's countdown (UI-P15): the same day maths
+ * and the same steps, so the two cannot disagree about when a bounty ends.
+ * A date that has passed is "closed", and is not hidden for the same reason.
+ */
+export function closesInLabel(
+  closesAt: string | null | undefined,
+  now: number = Date.now(),
+): string | null {
+  if (!closesAt) return null;
+  const at = Date.parse(closesAt);
+  if (Number.isNaN(at)) return null;
+
+  const days = Math.round((at - now) / 86_400_000);
+  if (days < 0) return "closed";
+  if (days === 0) return "today";
+  if (days === 1) return "1 day";
+  if (days < 14) return `${days} days`;
+  if (days < 60) return `${Math.floor(days / 7)} weeks`;
+  return `${Math.floor(days / 30)} months`;
+}
+
 /** "3 solutions", "1 solution", "no solutions yet". */
 export function solutionCountLabel(count: number): string {
   if (count <= 0) return "no solutions yet";

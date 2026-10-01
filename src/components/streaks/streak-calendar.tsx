@@ -1,6 +1,10 @@
-import { useMemo, useState } from "react"
-import { ChevronLeft, ChevronRight, Snowflake } from "lucide-react"
-import { BORDER, COLORS, FONT, HEAT_RAMP, RADIUS } from "./tokens"
+import { useMemo } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ActivityGrid, type ActivityDay } from "@/components/brand/ActivityGrid"
+import { r } from "@/lib/theme/radius"
+import { t } from "@/lib/theme/tokens"
+import { FIGTREE } from "@/lib/theme/type"
+import { BORDER, COLORS, RADIUS } from "./tokens"
 
 export interface StreakDay {
   /** ISO date string, e.g. "2026-06-01". */
@@ -22,8 +26,6 @@ export interface StreakCalendarProps {
   /** Disable forward navigation (e.g. current month). */
   canGoNext?: boolean
 }
-
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"]
 
 function buildSampleMonth(): StreakDay[] {
   // 30-day sample with varied activity + two frozen days.
@@ -51,17 +53,23 @@ export default function StreakCalendar({
 }: StreakCalendarProps) {
   const data = days ?? useMemo(buildSampleMonth, [])
 
-  // Pad the front so day 1 lands on the correct weekday. June 2026 starts Monday.
-  const leadingPad = 1
+  // UI-P12: the days are drawn as the activity grid — a column per week, `--lit`
+  // by volume, a frozen day an outlined cell — so a month is five columns of
+  // seven, filled from the first day, and carries no weekday header or numbers.
+  const cells: ActivityDay[] = data.map((day) => ({
+    count: day.frozen ? 0 : day.level,
+    frozen: day.frozen,
+    date: `${day.date}${day.frozen ? " · frozen" : ` · level ${day.level}`}`,
+  }))
 
   return (
     <section
       style={{
-        background: COLORS.card,
-        border: BORDER.hairline,
-        borderRadius: RADIUS.panel,
+        background: t.glass,
+        border: `1px solid ${t.glassBorder}`,
+        borderRadius: r.panel,
         padding: 20,
-        fontFamily: FONT.sans,
+        fontFamily: FIGTREE,
         maxWidth: 360,
       }}
     >
@@ -91,67 +99,7 @@ export default function StreakCalendar({
         </div>
       </header>
 
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}
-      >
-        {WEEKDAYS.map((d, i) => (
-          <div
-            key={`wd-${i}`}
-            className="flex items-center justify-center"
-            style={{ fontSize: 11, fontWeight: 500, color: COLORS.textFaint, height: 18 }}
-          >
-            {d}
-          </div>
-        ))}
-
-        {Array.from({ length: leadingPad }).map((_, i) => (
-          <div key={`pad-${i}`} />
-        ))}
-
-        {data.map((day) => {
-          const dayNum = Number(day.date.slice(-2))
-          const bg = day.frozen ? "color-mix(in srgb, var(--evidence) 18%, transparent)" : HEAT_RAMP[Math.min(day.level, 4)]
-          return (
-            <div
-              key={day.date}
-              title={`${day.date}${day.frozen ? " · frozen" : ` · level ${day.level}`}`}
-              className="relative flex items-center justify-center"
-              style={{
-                aspectRatio: "1 / 1",
-                borderRadius: 7,
-                background: bg,
-                border: day.frozen
-                  ? "0.5px solid color-mix(in srgb, var(--evidence) 45%, transparent)"
-                  : "0.5px solid var(--line)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: FONT.mono,
-                  fontSize: 10,
-                  color: day.level >= 3 ? COLORS.text : COLORS.textMuted,
-                }}
-              >
-                {dayNum}
-              </span>
-              {day.frozen && (
-                <Snowflake
-                  size={9}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    top: 2,
-                    right: 2,
-                    color: COLORS.reputationTeal,
-                  }}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
+      <ActivityGrid days={cells} label={`${monthLabel}: ${cells.filter((c) => c.count > 0 || c.frozen).length} days kept`} />
     </section>
   )
 }

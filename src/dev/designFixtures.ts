@@ -61,4 +61,38 @@ export const fixtures = sample as unknown as DesignFixtures;
 /** The moment the mockups were drawn at. Render relative times against this, never `Date.now()`. */
 export const FIXTURE_NOW = new Date(fixtures.now);
 
+/** The fixture's pre-formatted relative time ("3 days ago", "yesterday", "4 months ago") as whole days. */
+function daysAgo(confirmed: string | null): number | null {
+  if (!confirmed) return null;
+  if (confirmed === "yesterday") return 1;
+  const match = /^(\d+) (day|week|month)s? ago$/.exec(confirmed);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return match[2] === "day" ? n : match[2] === "week" ? n * 7 : n * 31;
+}
+
+/**
+ * A fixture build as the plaque and the picture lamp read it: the pre-formatted
+ * "3 days ago" turned back into the timestamps the real record carries, against
+ * `FIXTURE_NOW`, so a catalogue card computes its lamp and its freshness line
+ * the way the live card does. "4 months ago" lands past STALE_AFTER_DAYS.
+ */
+export function fixturePlaque(build: FixtureBuild): {
+  reproduction_count: number;
+  rebuild_count: number;
+  last_confirmed_at: string | null;
+  last_confirmed_model: string | null;
+  published_at: string;
+} {
+  const days = daysAgo(build.confirmed);
+  const at = (d: number) => new Date(FIXTURE_NOW.getTime() - d * 86_400_000).toISOString();
+  return {
+    reproduction_count: build.reproduction_count,
+    rebuild_count: 0,
+    last_confirmed_at: days === null ? null : at(days),
+    last_confirmed_model: days === null ? null : build.last_confirmed_model,
+    published_at: at((days ?? 0) + 30),
+  };
+}
+
 export default fixtures;

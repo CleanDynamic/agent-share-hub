@@ -155,6 +155,26 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "ground, the edge, every ink — is a token. THE CAP IS 2 BECAUSE THAT IS " +
       "ALL THERE IS.",
   },
+  "src/components/bounty/MissingWindow.tsx": {
+    max: 2,
+    why:
+      "THE MISSING WINDOW'S TWO FIXED VALUES — its near-white ink and dashed edge " +
+      "#F7F8F9, and the dark scrim rgba(14,11,20,.55) under it. The window sits on " +
+      "ARTWORK (the build's picture or its painted sky), not on the room, so both " +
+      "are identical in Noon and Dusk and are not tokens: design/tokens/token-map.md " +
+      "names exactly these two as named constants in the component that owns them. " +
+      "THE CAP IS 2 BECAUSE THAT IS ALL THERE IS.",
+  },
+  "src/components/brand/charts.tsx": {
+    max: 2,
+    why:
+      "THE HISTOGRAM'S TWO FIXED VALUES — the salmon #E8A283 of the highlighted bars " +
+      "and the violet rgba(140,120,196,.14) band behind them. Both are identical in " +
+      "Noon and Dusk and sit on a drawing, not on the room, so they are not tokens: " +
+      "design/tokens/token-map.md (UI-P12) names exactly these two as named constants " +
+      "in the component that owns them. Every other colour a chart draws is a token. " +
+      "THE CAP IS 2 BECAUSE THAT IS ALL THERE IS.",
+  },
   "src/components/brand/CoverFallback.tsx": {
     max: 42,
     why:

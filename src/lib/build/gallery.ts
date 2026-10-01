@@ -34,6 +34,7 @@ import {
   type BuildMedia,
   type BuildNode,
   type BuildShape,
+  type NodeCategory,
 } from "./types";
 
 // =============================================================================
@@ -196,6 +197,65 @@ export const GALLERY_NODE_TYPES: readonly string[] = [
   "recording",
   "dataset",
 ] as const;
+
+/**
+ * The part category each of those node types belongs to, as `node_types.category`
+ * has it (the NS-P02 registry seed).
+ *
+ * A STATIC TABLE, AND ONLY FOR THE TYPES THE CARD'S OWN QUERY CARRIES. A card
+ * must not ask the registry for itself — twenty-four cards would mean twenty-four
+ * subscribers to a read that only one page needs — and the window above is
+ * closed, so a table over exactly that window cannot be wrong about a type it
+ * will never be handed. `partCategories` skips anything not named here rather
+ * than guessing, and gallery.test.ts holds this table to GALLERY_NODE_TYPES in
+ * both directions so adding a type to the window without a category fails there.
+ */
+export const GALLERY_NODE_CATEGORY: Readonly<Record<string, NodeCategory>> = {
+  prompt: "instruction",
+  system_prompt: "instruction",
+  dataset: "data",
+  code: "artefact",
+  live_app: "artefact",
+  repo: "artefact",
+  generated_media: "artefact",
+  document: "artefact",
+  result: "evidence",
+  comparison_table: "evidence",
+  eval_run: "evidence",
+  screenshot: "evidence",
+  recording: "evidence",
+};
+
+/** The order a card's part chips read in: how a build is built, instruction first. */
+const PART_CHIP_ORDER: readonly NodeCategory[] = [
+  "instruction",
+  "configuration",
+  "data",
+  "artefact",
+  "evidence",
+  "narrative",
+];
+
+/**
+ * The part categories present among a card's nodes, once each, in reading order.
+ *
+ * `breakage` is never one of them: it is not a node category (a breakage is a
+ * node of the narrative kind, or a gap), and a card says a build is missing a
+ * part with its dashed edge and its open-ask line, not with a chip. A gap node
+ * keeps its own category — a gap on an agent config is still configuration.
+ *
+ * Reads only the nodes the card was handed (at most NODES_PER_BUILD of the
+ * types above), so a category the window did not carry is absent here even when
+ * the build has it; the chip row says what the card can see.
+ */
+export function partCategories(nodes: readonly Pick<GalleryNode, "type">[]): NodeCategory[] {
+  const present = new Set<NodeCategory>();
+  for (const node of nodes) {
+    const category = GALLERY_NODE_CATEGORY[node.type];
+    if (category) present.add(category);
+  }
+  return PART_CHIP_ORDER.filter((category) => present.has(category));
+}
 
 /** Per build, not per page: PostgREST applies an embedded limit per parent. */
 const NODES_PER_BUILD = 6;

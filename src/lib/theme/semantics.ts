@@ -21,19 +21,20 @@
 // language because media wells and hairline highlights still need them. Do not
 // invent decorative uses for them.
 //
-// THE CARD PAIR (BG-P09). `card-frame` and `card-thread` are the two layers of a
-// build card and they are a PAIR rather than two independent surfaces: the frame
-// is the record, the thread box inset in it is the post, and the whole structure
-// is carried by the tonal STEP between them (law-of-common-region — get the step
-// wrong and the grouping vanishes). So neither is a general-purpose surface and
-// neither is `--glass` by another name:
+// THE CARD IS ONE SURFACE (UI-P14). `card-frame` and `card-thread` were the two
+// layers of a build card — the frame the record, the thread box inset in it the
+// post, the whole structure carried by the tonal STEP between them — and the
+// build card no longer has either layer. It is a single `--glass` surface (a
+// `--glass-border` hairline, `--r-card`, `--shadow-card`) with the cover, the
+// title and the plaque directly on it, and it never blurs: the page's blurred
+// surfaces are the header, the Build page's title plate and, on phones, the dock.
 //
-//   Noon  frame .42 white, thread .55 white — the box is LIGHTER.
-//   Dusk  frame .42 stone, thread .06 room light — the box is LIGHTER.
-//
-// The direction is the same in both rooms even though the values are struck from
-// different primitives, which is what makes the card read as one object in both.
-// Only the frame is blurred; see the never-nest rule in buildgallery-theme.
+// BOTH TOKENS ARE KEPT, for one reason each and until UI-P41 removes them:
+// `card-thread` is still the ground of CardThread, the feed's unfolding post,
+// which draws inside the one card; `card-frame` is spent by nothing the card
+// draws any more and stays only so a stale reader of the pair does not break.
+// Neither is a general-purpose surface and neither is `--glass` by another name:
+// do not reach for them for a new component.
 //
 // THE CATEGORY BLOCK (BG-P05). Nine hues, a tenth fallback, and a chip fill for
 // each of the ten. `cat-*-fill` is the measured background a chip may put its
