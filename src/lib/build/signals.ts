@@ -227,6 +227,16 @@ export async function countReproducedToday(now: Date = new Date()): Promise<numb
   return countReproductionsSince("countReproducedToday", startOfUtcDay(now));
 }
 
+/**
+ * How many reproductions were recorded since Monday 00:00 UTC of the week
+ * `now` falls in: the week the weekly challenges and the goal count in
+ * (weekStartUtc). Counted on `created_at`, for the reason countReproducedToday
+ * gives.
+ */
+export async function countRunsThisWeek(now: Date = new Date()): Promise<number> {
+  return countReproductionsSince("countRunsThisWeek", weekStartUtc(now));
+}
+
 /** 00:00 UTC of the day that holds `now`. */
 function startOfUtcDay(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
