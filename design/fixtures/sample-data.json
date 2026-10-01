@@ -1,0 +1,867 @@
+{
+ "_note": "Sample content shown in design/reference. For the dev compare pages ONLY (/dev/kit/pages/*). Never ship these values. 'now' is fixed so relative times render as in the mockups.",
+ "now": "2026-09-30T12:00:00Z",
+ "viewer": {
+  "handle": "@maya",
+  "name": "Maya Okafor",
+  "initials": "MA",
+  "avatar_hue": 1,
+  "unread": 3,
+  "level": 7,
+  "xp": 1840,
+  "xp_next": 2400,
+  "track": "curator",
+  "streak_days": 12,
+  "streak_best": 31
+ },
+ "builds": [
+  {
+   "id": "sample-1",
+   "slug": "invoice-triage-agent",
+   "title": "Invoice triage agent",
+   "maker": "@maya",
+   "reproduction_count": 41,
+   "confirmed": "3 days ago",
+   "last_confirmed_model": "sonnet-4.5",
+   "stale": false,
+   "part_categories": [
+    "instruction",
+    "configuration",
+    "data"
+   ],
+   "cover_sky": 0,
+   "shape": "agent",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": "Inbox sorter",
+   "change_summary": "swapped model, added retry"
+  },
+  {
+   "id": "sample-2",
+   "slug": "support-reply-drafter",
+   "title": "Support reply drafter",
+   "maker": "@ada",
+   "reproduction_count": 63,
+   "confirmed": "yesterday",
+   "last_confirmed_model": "sonnet-4.5",
+   "stale": false,
+   "part_categories": [
+    "instruction",
+    "evidence"
+   ],
+   "cover_sky": 3,
+   "shape": "workflow",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": null,
+   "change_summary": null
+  },
+  {
+   "id": "sample-3",
+   "slug": "research-digest",
+   "title": "Research digest",
+   "maker": "@tomo",
+   "reproduction_count": 9,
+   "confirmed": "2 weeks ago",
+   "last_confirmed_model": "sonnet-4.5",
+   "stale": false,
+   "part_categories": [
+    "instruction",
+    "data"
+   ],
+   "cover_sky": 2,
+   "shape": "study",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": null,
+   "change_summary": null
+  },
+  {
+   "id": "sample-4",
+   "slug": "meeting-notes-to-tasks",
+   "title": "Meeting notes to tasks",
+   "maker": "@ren",
+   "reproduction_count": 17,
+   "confirmed": "9 days ago",
+   "last_confirmed_model": "opus-4.1",
+   "stale": false,
+   "part_categories": [
+    "configuration",
+    "narrative"
+   ],
+   "cover_sky": 1,
+   "shape": "workflow",
+   "has_open_gap": true,
+   "open_gap_reward_gbp": 150,
+   "rebuilt_from": null,
+   "change_summary": null
+  },
+  {
+   "id": "sample-5",
+   "slug": "sales-call-summariser",
+   "title": "Sales call summariser",
+   "maker": "@kofi",
+   "reproduction_count": 28,
+   "confirmed": "5 days ago",
+   "last_confirmed_model": "haiku-4.5",
+   "stale": false,
+   "part_categories": [
+    "instruction",
+    "configuration"
+   ],
+   "cover_sky": 4,
+   "shape": "agent",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": "Call notes",
+   "change_summary": "split summary in two"
+  },
+  {
+   "id": "sample-6",
+   "slug": "contract-clause-finder",
+   "title": "Contract clause finder",
+   "maker": "@lee",
+   "reproduction_count": 12,
+   "confirmed": "4 months ago",
+   "last_confirmed_model": "gpt-5",
+   "stale": true,
+   "part_categories": [
+    "data",
+    "artefact"
+   ],
+   "cover_sky": 5,
+   "shape": "app",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": null,
+   "change_summary": null
+  },
+  {
+   "id": "sample-7",
+   "slug": "bug-report-triage",
+   "title": "Bug report triage",
+   "maker": "@ines",
+   "reproduction_count": 34,
+   "confirmed": "2 days ago",
+   "last_confirmed_model": "sonnet-4.5",
+   "stale": false,
+   "part_categories": [
+    "instruction",
+    "evidence"
+   ],
+   "cover_sky": 3,
+   "shape": "agent",
+   "has_open_gap": true,
+   "open_gap_reward_gbp": 150,
+   "rebuilt_from": null,
+   "change_summary": null
+  },
+  {
+   "id": "sample-8",
+   "slug": "podcast-show-notes",
+   "title": "Podcast show notes",
+   "maker": "@sam",
+   "reproduction_count": 0,
+   "confirmed": null,
+   "last_confirmed_model": null,
+   "stale": false,
+   "part_categories": [
+    "artefact",
+    "narrative"
+   ],
+   "cover_sky": 1,
+   "shape": "media",
+   "has_open_gap": false,
+   "open_gap_reward_gbp": null,
+   "rebuilt_from": null,
+   "change_summary": null
+  }
+ ],
+ "home": {
+  "lit_today": 702,
+  "reproduced_today": 48,
+  "runs_this_week": 312,
+  "challenges": [
+   {
+    "title": "Run three builds you haven’t run before",
+    "done": 1,
+    "target": 3,
+    "xp": 90
+   },
+   {
+    "title": "Solve a gap",
+    "done": 0,
+    "target": 1,
+    "xp": 150
+   },
+   {
+    "title": "Re-confirm one of your stale builds",
+    "done": 1,
+    "target": 1,
+    "xp": 0
+   }
+  ],
+  "week": [
+   "active",
+   "active",
+   "frozen",
+   "active",
+   "active",
+   "future",
+   "future"
+  ],
+  "feed": [
+   {
+    "kind": "build",
+    "actor": "@maya",
+    "initials": "MA",
+    "hue": 1,
+    "who": "@maya hung",
+    "build": 1,
+    "when": "2m"
+   },
+   {
+    "kind": "rebuild",
+    "actor": "@kofi",
+    "initials": "KO",
+    "hue": 0,
+    "who": "@kofi rebuilt Call notes →",
+    "build": 5,
+    "when": "18m",
+    "highlight": true
+   },
+   {
+    "kind": "repro_note",
+    "actor": "@ada",
+    "initials": "AD",
+    "hue": 3,
+    "who": "@ada ran Research digest on haiku-4.5 — “worked first try, slow on long PDFs”",
+    "build": 3,
+    "when": "41m"
+   },
+   {
+    "kind": "bounty",
+    "actor": "@ren",
+    "initials": "RE",
+    "hue": 2,
+    "who": "@ren opened an ask · currency tolerance · £150",
+    "build": 4,
+    "when": "1h"
+   },
+   {
+    "kind": "build",
+    "actor": "@ines",
+    "initials": "IN",
+    "hue": 4,
+    "who": "@ines hung",
+    "build": 7,
+    "when": "2h"
+   }
+  ],
+  "where_next": [
+   {
+    "build": 2,
+    "why": "SAME TOOL · SONNET-4.5"
+   },
+   {
+    "build": 5,
+    "why": "REBUILT FROM ONE YOU RAN"
+   },
+   {
+    "build": 7,
+    "why": "MORE FROM @INES"
+   }
+  ]
+ },
+ "gallery": {
+  "lens_counts": {
+   "all": 1284,
+   "proven": 512,
+   "rebuilt": 148,
+   "unsolved": 23
+  },
+  "in_gallery": 1284,
+  "reproduced_this_week": 312,
+  "fresh_pct": 86,
+  "open_bounty_pool_gbp": 4250,
+  "open_bounties": 23,
+  "facets": {
+   "made_for": [
+    [
+     "myself",
+     402
+    ],
+    [
+     "finance ops",
+     212
+    ],
+    [
+     "support teams",
+     176
+    ],
+    [
+     "researchers",
+     131
+    ]
+   ],
+   "made_with": [
+    [
+     "sonnet-4.5",
+     512
+    ],
+    [
+     "claude opus 5",
+     208
+    ],
+    [
+     "gpt-5",
+     176
+    ],
+    [
+     "haiku-4.5",
+     131
+    ]
+   ],
+   "shape": [
+    [
+     "agent",
+     402
+    ],
+    [
+     "workflow",
+     318
+    ],
+    [
+     "app",
+     201
+    ],
+    [
+     "prompt",
+     164
+    ],
+    [
+     "study",
+     88
+    ],
+    [
+     "dataset",
+     61
+    ]
+   ]
+  },
+  "featured": {
+   "build": 2,
+   "rank": 1,
+   "outcome": "Drafts a first reply to every ticket in the house tone, cites the help page it used, and never sends on its own."
+  },
+  "wall": [
+   1,
+   7,
+   5,
+   3,
+   4,
+   6
+  ]
+ },
+ "build_page": {
+  "build": 1,
+  "outcome": "Reads every supplier invoice in a shared inbox, checks it against the purchase order and routes mismatches to a person with the reason attached.",
+  "created_via": "connector",
+  "rebuilt_from": {
+   "title": "Inbox sorter",
+   "maker": "@kofi"
+  },
+  "change_summary": "swapped model, added retry step",
+  "reproductions": 41,
+  "last_reproduced": "27 Sep",
+  "made_for": "finance ops",
+  "made_with": "sonnet-4.5",
+  "cost": {
+   "setup": 0,
+   "monthly": 12,
+   "currency": "GBP"
+  },
+  "time_to_first_result_min": 20,
+  "needs": "Gmail + Xero",
+  "completeness": 86,
+  "gallery_threshold": 80,
+  "next_missing": "Add a link to where it runs.",
+  "parts": [
+   [
+    "instruction",
+    "System prompt",
+    "1,240 tok",
+    false
+   ],
+   [
+    "instruction",
+    "Routing rules",
+    "18 rules",
+    false
+   ],
+   [
+    "configuration",
+    "Retry policy",
+    "3 × 20s",
+    false
+   ],
+   [
+    "data",
+    "PO lookup schema",
+    "12 fields",
+    false
+   ],
+   [
+    "configuration",
+    "Currency tolerance",
+    "£150 ask",
+    true
+   ],
+   [
+    "evidence",
+    "Run log · 9 Sep",
+    "214 inv.",
+    false
+   ],
+   [
+    "artefact",
+    "Routing sheet",
+    "xlsx",
+    false
+   ],
+   [
+    "narrative",
+    "Why a person decides",
+    "420 w",
+    false
+   ]
+  ],
+  "selected_part_text": "You triage supplier invoices for a small finance team. For each invoice: read supplier, total, currency and PO number; look up the PO; if totals match within tolerance, mark it ready to pay; if not, route it to a person with one sentence saying why. Never approve a payment yourself.",
+  "events": [
+   [
+    "prompt",
+    "00:00",
+    "Wrote the outcome"
+   ],
+   [
+    "milestone",
+    "04:12",
+    "First routed invoice"
+   ],
+   [
+    "breakage",
+    "11:40",
+    "Failed on euro totals"
+   ],
+   [
+    "note",
+    "15:02",
+    "Tolerance should be a setting"
+   ],
+   [
+    "deploy",
+    "26:30",
+    "Running on the shared inbox"
+   ]
+  ]
+ },
+ "rebuild": {
+  "title": "Multi-currency triage",
+  "readiness_pct": 88,
+  "missing": "Add a run log for euro invoices.",
+  "changes": [
+   [
+    "header",
+    "Header",
+    ""
+   ],
+   [
+    "changed",
+    "Title",
+    "Invoice triage agent → Multi-currency triage"
+   ],
+   [
+    "changed",
+    "Made with",
+    "sonnet-4.5 → claude opus 5"
+   ],
+   [
+    "header",
+    "Parts",
+    ""
+   ],
+   [
+    "added",
+    "Currency table",
+    "data · 38 currencies"
+   ],
+   [
+    "changed",
+    "Routing rules",
+    "18 → 22 rules"
+   ],
+   [
+    "changed",
+    "Retry policy",
+    "3 tries → 5 tries"
+   ],
+   [
+    "removed",
+    "Routing sheet",
+    "artefact"
+   ],
+   [
+    "header",
+    "Evidence",
+    ""
+   ],
+   [
+    "added",
+    "Run log · 29 Sep",
+    "evidence · 120 invoices"
+   ]
+  ],
+  "family": [
+   [
+    "Inbox sorter",
+    "@kofi",
+    0,
+    71,
+    "on",
+    null
+   ],
+   [
+    "Invoice triage agent",
+    "@maya",
+    0,
+    41,
+    "on",
+    0
+   ],
+   [
+    "Receipt matcher",
+    "@lee",
+    2,
+    6,
+    "stale",
+    0
+   ],
+   [
+    "Refund router",
+    "@ada",
+    3,
+    19,
+    "on",
+    0
+   ],
+   [
+    "Multi-currency triage",
+    "you · draft",
+    4,
+    0,
+    "draft",
+    1
+   ],
+   [
+    "Triage for NGOs",
+    "@ines",
+    1,
+    3,
+    "on",
+    1
+   ]
+  ]
+ },
+ "bounties": {
+  "pool_gbp": 4250,
+  "open": 23,
+  "solutions": 61,
+  "cards": [
+   [
+    7,
+    "Duplicate detector",
+    "instruction",
+    400,
+    "9 days",
+    5,
+    14,
+    true
+   ],
+   [
+    4,
+    "Currency tolerance",
+    "configuration",
+    150,
+    "4 days",
+    3,
+    6,
+    false
+   ],
+   [
+    6,
+    "UK clause set",
+    "data",
+    250,
+    "12 days",
+    1,
+    3,
+    false
+   ],
+   [
+    8,
+    "Chapter timestamps",
+    "artefact",
+    120,
+    "2 days",
+    0,
+    9,
+    false
+   ],
+   [
+    3,
+    "Comparison run",
+    "evidence",
+    300,
+    "6 days",
+    2,
+    4,
+    false
+   ],
+   [
+    2,
+    "Tone guardrail",
+    "instruction",
+    220,
+    "8 days",
+    6,
+    11,
+    false
+   ]
+  ],
+  "selected": {
+   "problem": "The agent files every report but can’t tell when two describe the same fault. Link duplicates before routing.",
+   "closes": "9 Oct",
+   "extended": true,
+   "opened_by": "@ines",
+   "opened": "21 Sep"
+  },
+  "solutions_list": [
+   [
+    "TO",
+    2,
+    "@tomo",
+    "submitted 2d ago"
+   ],
+   [
+    "AD",
+    3,
+    "@ada",
+    "submitted 3d ago"
+   ],
+   [
+    "LE",
+    4,
+    "@lee",
+    "submitted 5d ago"
+   ]
+  ],
+  "top_solvers": [
+   [
+    "@tomo",
+    9
+   ],
+   [
+    "@ada",
+    6
+   ],
+   [
+    "@lee",
+    4
+   ]
+  ]
+ },
+ "profile": {
+  "place": "Leeds",
+  "since": "Feb 2026",
+  "bio": "builds finance agents a person can check",
+  "builds_hung": 14,
+  "reproduced_by_others": 212,
+  "rebuilds_of_work": 37,
+  "bounties_solved": 5,
+  "bounty_earnings_gbp": 1150,
+  "tabs": {
+   "builds": 14,
+   "rebuilds": 6,
+   "reproduced": 48,
+   "collections": 4
+  },
+  "works": [
+   1,
+   5,
+   3,
+   6
+  ],
+  "marks": [
+   [
+    "First hang",
+    "common"
+   ],
+   [
+    "Ten proven",
+    "common"
+   ],
+   [
+    "Rebuilt 25×",
+    "rare"
+   ],
+   [
+    "Gap closer",
+    "rare"
+   ],
+   [
+    "Curator",
+    "highest"
+   ]
+  ]
+ },
+ "activity": {
+  "unread": 3,
+  "groups": {
+   "Today": [
+    [
+     "reproduced",
+     "AD",
+     "@ada reproduced",
+     "Invoice triage agent",
+     "on haiku-4.5 · “worked first try”",
+     "12m",
+     true
+    ],
+    [
+     "rebuilt",
+     "KO",
+     "@kofi rebuilt",
+     "Invoice triage agent",
+     "Δ added a currency table",
+     "1h",
+     true
+    ],
+    [
+     "solution",
+     "TO",
+     "@tomo submitted a solution to",
+     "Currency tolerance",
+     "£150 ask on Meeting notes to tasks",
+     "3h",
+     true
+    ]
+   ],
+   "Yesterday": [
+    [
+     "solved",
+     "IN",
+     "Your solution was accepted on",
+     "Duplicate detector",
+     "+150 xp · £400",
+     "1d",
+     false
+    ],
+    [
+     "comment",
+     "LE",
+     "@lee commented on",
+     "Support reply drafter",
+     "“does it handle attachments?”",
+     "1d",
+     false
+    ],
+    [
+     "follow",
+     "SA",
+     "@sam followed you",
+     "",
+     "",
+     "1d",
+     false
+    ],
+    [
+     "published",
+     "MA",
+     "Your build reached the gallery",
+     "Invoice triage agent",
+     "completeness 86 · 41 reproduced",
+     "1d",
+     false
+    ]
+   ]
+  },
+  "kind_counts": {
+   "reproduced": 18,
+   "rebuilt": 6,
+   "solution": 4,
+   "solved": 2,
+   "comment": 11,
+   "reply": 5,
+   "like": 23,
+   "follow": 7,
+   "published": 3
+  },
+  "ran_this_week": 41
+ },
+ "import": {
+  "source": "Claude chat · 42 turns · via connector",
+  "secret_turn": 22,
+  "kept_parts": [
+   [
+    "instruction",
+    "System prompt",
+    true
+   ],
+   [
+    "instruction",
+    "Routing rules",
+    true
+   ],
+   [
+    "configuration",
+    "Retry policy",
+    true
+   ],
+   [
+    "configuration",
+    "Currency tolerance",
+    true
+   ],
+   [
+    "data",
+    "Currency table",
+    true
+   ],
+   [
+    "evidence",
+    "Run log (turn 31)",
+    true
+   ],
+   [
+    "narrative",
+    "Turns 1–4 as the story",
+    false
+   ]
+  ],
+  "events": [
+   [
+    "prompt",
+    "Turn 1 — the outcome"
+   ],
+   [
+    "breakage",
+    "Turn 17 — euro totals off"
+   ],
+   [
+    "milestone",
+    "Turn 31 — first clean run"
+   ]
+  ],
+  "completeness": 64
+ }
+}
