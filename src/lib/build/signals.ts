@@ -21,6 +21,7 @@
 // how much of the shape's record is filled in, nothing more.
 
 import { supabase } from "@/integrations/supabase/client";
+import { weekStartUtc } from "@/lib/progress/weekly";
 import {
   buildLayerError,
   type Build,
@@ -180,6 +181,76 @@ export async function recordSelfConfirmation(
 
   if (error) throw buildLayerError("recordSelfConfirmation", error);
   return data as SelfConfirmation;
+}
+
+// =============================================================================
+// Home signals
+// =============================================================================
+
+/** The statuses a signed-out reader can see; drafts never count towards a signal. */
+const SIGNAL_STATUSES = ["published", "gallery"];
+
+/**
+ * How many builds were confirmed working in the last 24 hours, rolling.
+ *
+ * "Lit" is the same word the picture lamp uses: a confirmation is the light
+ * going on. The window is a rolling day from now rather than a calendar day,
+ * so the number does not drop to zero at midnight UTC.
+ *
+ * AN ESTIMATED HEAD COUNT, no rows. It is a headline figure, and the planner's
+ * estimate is what the rest of the home page's counts use. Drafts are left out
+ * so the number is the same for a signed-in creator as for a visitor.
+ */
+export async function countLitToday(): Promise<number> {
+  const since = new Date(Date.now() - MS_PER_DAY).toISOString();
+
+  const { count, error } = await supabase
+    .from("builds")
+    .select("id", { count: "estimated", head: true })
+    .in("status", SIGNAL_STATUSES)
+    .gte("last_confirmed_at", since);
+
+  if (error) throw buildLayerError("countLitToday", error);
+  return count ?? 0;
+}
+
+/**
+ * How many reproductions were recorded since 00:00 UTC of the day `now` falls
+ * in. A calendar day, not a rolling one: "runs today" resets at UTC midnight,
+ * the clock the weekly goal and the XP caps already count by.
+ *
+ * `created_at` and not `confirmed_at`, because a re-run moves confirmed_at
+ * forward on the same row (see recordReproduction) and would count one person
+ * twice. A row is a first run.
+ */
+export async function countReproducedToday(now: Date = new Date()): Promise<number> {
+  return countReproductionsSince("countReproducedToday", startOfUtcDay(now));
+}
+
+/**
+ * How many reproductions were recorded since Monday 00:00 UTC of the week
+ * `now` falls in: the week the weekly challenges and the goal count in
+ * (weekStartUtc). Counted on `created_at`, for the reason countReproducedToday
+ * gives.
+ */
+export async function countRunsThisWeek(now: Date = new Date()): Promise<number> {
+  return countReproductionsSince("countRunsThisWeek", weekStartUtc(now));
+}
+
+/** 00:00 UTC of the day that holds `now`. */
+function startOfUtcDay(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+/** An estimated head count of reproduction rows first recorded at or after `since`. */
+async function countReproductionsSince(operation: string, since: Date): Promise<number> {
+  const { count, error } = await supabase
+    .from("build_reproductions")
+    .select("id", { count: "estimated", head: true })
+    .gte("created_at", since.toISOString());
+
+  if (error) throw buildLayerError(operation, error);
+  return count ?? 0;
 }
 
 // =============================================================================

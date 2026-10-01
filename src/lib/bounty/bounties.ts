@@ -7,6 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BUILD_COLUMNS } from "@/lib/build/builds";
+import { countOpenBountyBuilds } from "@/lib/build/gallery";
 import { NODE_COLUMNS } from "@/lib/build/nodes";
 import type { Build, BuildNode } from "@/lib/build/types";
 import { myMeToo } from "./meToo";
@@ -633,4 +634,84 @@ export async function listBuildBounties({
     solutions: solutions.get(bounty.id) ?? 0,
     meToo: marks.has(bounty.id),
   }));
+}
+
+// =============================================================================
+// The open pool
+// =============================================================================
+
+/** The most open bounties read to total the pool; past it the pool is partial. */
+const OPEN_POOL_LIMIT = 1000;
+
+/**
+ * Bounty ids per solutions count. A uuid is 36 characters, so a thousand in one
+ * `in.(...)` would be a URL no proxy accepts; a hundred is about 4KB.
+ */
+const POOL_SOLUTIONS_CHUNK = 100;
+
+/** The money and counts on the Gallery stats and the Bounties orbs. */
+export interface OpenBountyPool {
+  /** The sum of the open bounties' rewards, in whole pounds. */
+  poolGbp: number;
+  /** Gallery builds carrying an open ask: countOpenBountyBuilds. */
+  open: number;
+  /** Submitted and accepted solutions across the open bounties. */
+  solutions: number;
+  /** How many open bounties have at least one solution. */
+  withSolutions: number;
+}
+
+/**
+ * The open pool: what is on offer, how many asks there are, and how many have
+ * answers.
+ *
+ * `poolGbp` is summed here from the reward column of the bounties
+ * listOpenBounties lists (status = 'open'), because PostgREST has no sum. The
+ * read is capped at OPEN_POOL_LIMIT rows; if the cap is reached the pool is the
+ * sum of those rows, which is logged and still returned. An unpriced bounty
+ * adds nothing. Money stays a whole number of pounds: the view formats it.
+ *
+ * `open` counts builds with an open ask in the gallery (the Gallery's chip), and
+ * `withSolutions` counts bounties, so the two are not the same unit: a build
+ * with two open asks is one in `open`. Callers that draw withSolutions / open
+ * should know that.
+ */
+export async function getOpenBountyPool(): Promise<OpenBountyPool> {
+  const [open, rewards] = await Promise.all([
+    countOpenBountyBuilds(),
+    supabase.from("bounties").select("id, reward_gbp").eq("status", "open").limit(OPEN_POOL_LIMIT),
+  ]);
+
+  if (rewards.error) throw bountyLayerError("getOpenBountyPool", rewards.error);
+
+  const rows = (rewards.data ?? []) as Array<{ id: string; reward_gbp: number | string | null }>;
+  if (rows.length >= OPEN_POOL_LIMIT) {
+    // TODO: replace with an aggregate RPC (`open_bounty_pool()`, security
+    // invoker, returning sum(reward_gbp) and the counts) that has no row cap.
+    console.warn(`[getOpenBountyPool] read the ${OPEN_POOL_LIMIT}-row cap; the pool is partial`);
+  }
+
+  let pool = 0;
+  for (const row of rows) {
+    const reward = Number(row.reward_gbp);
+    if (Number.isFinite(reward) && reward > 0) pool += reward;
+  }
+
+  const ids = rows.map((row) => row.id);
+  const chunks: string[][] = [];
+  for (let at = 0; at < ids.length; at += POOL_SOLUTIONS_CHUNK) {
+    chunks.push(ids.slice(at, at + POOL_SOLUTIONS_CHUNK));
+  }
+  const counted = await Promise.all(chunks.map((chunk) => countSolutionsByBounty(chunk)));
+
+  let solutions = 0;
+  let withSolutions = 0;
+  for (const counts of counted) {
+    for (const count of counts.values()) {
+      solutions += count;
+      if (count > 0) withSolutions += 1;
+    }
+  }
+
+  return { poolGbp: Math.round(pool), open, solutions, withSolutions };
 }

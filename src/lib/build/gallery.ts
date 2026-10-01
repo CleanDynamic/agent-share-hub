@@ -21,10 +21,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
+import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import { normaliseQuery, searchBuildIds } from "./search";
 import {
   SHAPE_RULES,
   STALE_AFTER_DAYS,
+  countRunsThisWeek,
   type MissingItem,
   type RequirementKey,
 } from "./signals";
@@ -525,6 +527,37 @@ export interface GalleryPage {
   total: number | null;
 }
 
+/** The one builder method applyLensFilters calls; every PostgREST filter builder has it. */
+interface LensQuery {
+  gte(column: string, value: string | number): LensQuery;
+}
+
+/** The oldest last_confirmed_at that still counts as fresh: the window isStale reads. */
+function freshSince(now: number): string {
+  return new Date(now - STALE_AFTER_DAYS * DAY_MS).toISOString();
+}
+
+/**
+ * What a lens adds to a gallery query, on top of the membership clauses.
+ *
+ * Shared by listGallery and the counts (countGalleryLenses, getGalleryStats),
+ * so a lens' number and its page cannot drift apart. Unsolved adds nothing
+ * here: it is the inner bounty embed in the select and the `bounties.status`
+ * clause, which a caller applies with the select it builds (see
+ * gallerySelect and countGalleryBuilds).
+ */
+function applyLensFilters<Q>(query: Q, lens: GalleryLens, now: number = Date.now()): Q {
+  const builder = query as unknown as LensQuery;
+  if (lens === "proven") {
+    // Confirmed within the same window isStale reads, from the same constant.
+    return builder.gte("reproduction_count", 1).gte("last_confirmed_at", freshSince(now)) as unknown as Q;
+  }
+  if (lens === "rebuilt") {
+    return builder.gte("rebuild_count", 1) as unknown as Q;
+  }
+  return query;
+}
+
 /**
  * One page of the gallery, in one request.
  *
@@ -597,13 +630,7 @@ export async function listGallery(
     query = query.in("id", ids);
   }
 
-  if (lens === "proven") {
-    // Confirmed within the same window isStale reads, from the same constant.
-    const freshSince = new Date(Date.now() - STALE_AFTER_DAYS * DAY_MS).toISOString();
-    query = query.gte("reproduction_count", 1).gte("last_confirmed_at", freshSince);
-  } else if (lens === "rebuilt") {
-    query = query.gte("rebuild_count", 1);
-  }
+  query = applyLensFilters(query, lens);
 
   const { data, error, count } = await query
     .order("reproduction_count", { ascending: false })
@@ -740,6 +767,206 @@ export async function countOpenBountyBuilds(): Promise<number> {
     return 0;
   }
   return count ?? 0;
+}
+
+// =============================================================================
+// The featured build
+// =============================================================================
+
+/** The window "most reproduced" looks back over. */
+const FEATURED_WINDOW_DAYS = 30;
+
+/** The most reproduction rows read to rank builds; past it the ranking is partial. */
+const FEATURED_ROWS_LIMIT = 5000;
+
+/**
+ * The top builds by count that are checked against the gallery's rule. Ties
+ * are settled among these, which is far more than ever tie at the top.
+ */
+const FEATURED_CANDIDATES = 100;
+
+/** The columns inGallery reads, and the tie-break. */
+const FEATURED_RANK_COLUMNS = "id, status, shape, completeness, last_confirmed_at";
+
+/** The build the Gallery's hero shows, and the numbers beside it. */
+export interface FeaturedBuild {
+  build: GalleryBuild;
+  /** Reproductions recorded in the 30 days before `now`. */
+  reproductions30d: number;
+  /** The one-line outcome, as the build header shows it. */
+  outcome: string | null;
+}
+
+/**
+ * "Most reproduced this month": the gallery build with the most reproductions
+ * in the 30 days before `now`, or null when nothing was reproduced.
+ *
+ * Counted in code from `build_id` rows, newest window first, because grouping
+ * is not something PostgREST does. The read is capped at FEATURED_ROWS_LIMIT
+ * rows; if the cap is reached the ranking covers only those rows, which is
+ * logged and still returned.
+ *
+ * Ties go to the most recently confirmed build. A build outside the gallery
+ * (a draft is never visible; a record under its bar is) is passed over for the
+ * next one down, by the rule `inGallery` applies to a loaded build.
+ */
+export async function getFeaturedBuild(now: Date = new Date()): Promise<FeaturedBuild | null> {
+  const since = new Date(now.getTime() - FEATURED_WINDOW_DAYS * DAY_MS).toISOString();
+
+  const reproductions = await supabase
+    .from("build_reproductions")
+    .select("build_id")
+    .gte("created_at", since)
+    .limit(FEATURED_ROWS_LIMIT);
+
+  if (reproductions.error) throw buildLayerError("getFeaturedBuild (reproductions)", reproductions.error);
+
+  const rows = (reproductions.data ?? []) as Array<{ build_id: string }>;
+  if (rows.length >= FEATURED_ROWS_LIMIT) {
+    // TODO: replace with an RPC that groups build_reproductions by build_id in
+    // SQL (a `most_reproduced_builds(since, limit)` function, security invoker),
+    // which has no row cap to rank around.
+    console.warn(`[getFeaturedBuild] read the ${FEATURED_ROWS_LIMIT}-row cap; the ranking is partial`);
+  }
+
+  const counts = new Map<string, number>();
+  for (const { build_id } of rows) counts.set(build_id, (counts.get(build_id) ?? 0) + 1);
+  if (counts.size === 0) return null;
+
+  const ranked = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, FEATURED_CANDIDATES);
+
+  const candidates = await supabase
+    .from("builds")
+    .select(FEATURED_RANK_COLUMNS)
+    .in("id", ranked.map(([id]) => id))
+    .limit(FEATURED_CANDIDATES);
+
+  if (candidates.error) throw buildLayerError("getFeaturedBuild (candidates)", candidates.error);
+
+  type RankRow = Pick<Build, "id" | "status" | "shape" | "completeness" | "last_confirmed_at">;
+  const inGalleryById = new Map<string, RankRow>();
+  for (const row of (candidates.data ?? []) as unknown as RankRow[]) {
+    if (inGallery(row)) inGalleryById.set(row.id, row);
+  }
+
+  const confirmedAt = (id: string) => Date.parse(inGalleryById.get(id)?.last_confirmed_at ?? "") || 0;
+  const top = ranked
+    .filter(([id]) => inGalleryById.has(id))
+    .sort((a, b) => b[1] - a[1] || confirmedAt(b[0]) - confirmedAt(a[0]))[0];
+  if (!top) return null;
+
+  const [id, reproductions30d] = top;
+
+  // The card's own select, so the hero has the nodes and pictures a card has.
+  const loaded = await withCardEmbeds(
+    supabase.from("builds").select(gallerySelect(false)).eq("id", id).limit(1),
+  );
+  if (loaded.error) throw buildLayerError("getFeaturedBuild (build)", loaded.error);
+
+  const row = ((loaded.data ?? []) as unknown as GalleryRow[])[0];
+  if (!row) return null;
+
+  const build = toGalleryBuild(row);
+  return { build, reproductions30d, outcome: build.outcome?.trim() || null };
+}
+
+// =============================================================================
+// The lens counts
+// =============================================================================
+
+/**
+ * An estimated head count of the gallery's builds under one lens: the same
+ * membership clauses and the same lens filters listGallery applies, and no rows.
+ *
+ * ESTIMATED, because PostgREST answers an estimated count with the exact one
+ * until the table is large enough for the planner's figure to be close, so a
+ * small gallery is counted exactly and a large one cheaply. Unsolved joins
+ * bounties as countOpenBountyBuilds does.
+ *
+ * `freshOnly` adds the confirmed-within-STALE_AFTER_DAYS clause on its own,
+ * without Proven's reproduction clause: the freshness figure getGalleryStats
+ * reports counts every gallery build, run by someone or not.
+ */
+async function countGalleryBuilds(
+  operation: string,
+  lens: GalleryLens,
+  now: number,
+  freshOnly = false,
+): Promise<number> {
+  const unsolved = lens === "unsolved";
+
+  let query = supabase
+    .from("builds")
+    .select(unsolved ? "id, bounties!bounties_build_id_fkey!inner(id)" : "id", {
+      count: "estimated",
+      head: true,
+    })
+    .in("status", ["published", "gallery"])
+    .or(galleryPredicate());
+
+  if (unsolved) query = query.eq("bounties.status", "open");
+  query = applyLensFilters(query, lens, now);
+  if (freshOnly) query = query.gte("last_confirmed_at", freshSince(now));
+
+  const { count, error } = await query;
+  if (error) throw buildLayerError(operation, error);
+  return count ?? 0;
+}
+
+/**
+ * How many gallery builds each lens holds, for the numbers on the lens row.
+ * One head request per lens, sent together.
+ */
+export async function countGalleryLenses(): Promise<Record<GalleryLens, number>> {
+  const now = Date.now();
+  const counts = await Promise.all(
+    GALLERY_LENSES.map((lens) => countGalleryBuilds("countGalleryLenses", lens, now)),
+  );
+
+  const out = {} as Record<GalleryLens, number>;
+  GALLERY_LENSES.forEach((lens, index) => {
+    out[lens] = counts[index];
+  });
+  return out;
+}
+
+/** The numbers on the Gallery's stats row. */
+export interface GalleryStats {
+  /** Builds in the gallery: the All lens' count. */
+  inGallery: number;
+  /** Reproductions recorded since Monday 00:00 UTC. */
+  reproducedThisWeek: number;
+  /** WEEKLY_REPRODUCTION_GOAL; null while no target is set. */
+  weeklyGoal: number | null;
+  /** Gallery builds confirmed within STALE_AFTER_DAYS, as a whole percentage of inGallery. */
+  freshPct: number;
+}
+
+/**
+ * The stats row: how many builds the gallery holds, how many runs this week,
+ * and how much of the gallery is still fresh. Three head counts, sent together.
+ *
+ * `freshPct` reads the same window isStale does, over the same builds the
+ * gallery shows, and is 0 for an empty gallery rather than a divide by zero.
+ */
+export async function getGalleryStats(): Promise<GalleryStats> {
+  const now = Date.now();
+  const [inGalleryCount, freshCount, reproducedThisWeek] = await Promise.all([
+    countGalleryBuilds("getGalleryStats", "all", now),
+    countGalleryBuilds("getGalleryStats (fresh)", "all", now, true),
+    countRunsThisWeek(new Date(now)),
+  ]);
+
+  return {
+    inGallery: inGalleryCount,
+    reproducedThisWeek,
+    weeklyGoal: WEEKLY_REPRODUCTION_GOAL,
+    // Counts are estimates, so the fresh figure can overshoot the total.
+    freshPct:
+      inGalleryCount > 0 ? Math.min(100, Math.round((freshCount / inGalleryCount) * 100)) : 0,
+  };
 }
 
 // =============================================================================
