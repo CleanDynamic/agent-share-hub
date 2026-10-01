@@ -58,7 +58,7 @@ export default function KitComponents() {
       <BuildCardsSection />
       <ChartsSection />
       <CompositionsSection />
-      {/* Later prompts: the vacant frames (UI-P15), Frame. */}
+      {/* Later prompts: Frame. */}
     </div>
   );
 }
