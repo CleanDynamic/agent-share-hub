@@ -22,6 +22,7 @@ import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import Home from "./pages/Home";
+import { FrameRoute } from "./components/shell/FrameRoute";
 
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
@@ -76,6 +77,9 @@ const Lineage = lazy(() => import("./pages/Lineage"));
 // level chip (every signed-in reader's way here) bounced them to Home, and a
 // direct load raced the profile fetch and bounced creators too.
 const Analytics = lazy(() => import("./pages/Analytics"));
+// UI-P27 — Home in the site frame. Its own chunk, so the entry bundle keeps the
+// legacy Home alone; `FrameRoute` picks one by the `site_frame` flag.
+const HomePage = lazy(() => import("./pages/site/home/HomePage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -170,7 +174,21 @@ const App = () => (
             <AddToCollectionHost />
             <Routes>
               <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
+                <Route
+                  path="/"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <HomePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
+                      legacy={<Home />}
+                    />
+                  }
+                />
                 {/* RC-P05 — the old discovery addresses. Each one duplicated
                     the Gallery, so each now lands on it (hicks-law › Remedies
                     1 Remove); the addresses stay reachable so a bookmark is
