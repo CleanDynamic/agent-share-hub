@@ -35,7 +35,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { countLitToday } from "@/lib/build/signals";
+import { countLitToday, countReproducedToday } from "@/lib/build/signals";
 
 const of = (method: string) => calls.filter((entry) => entry.method === method);
 
@@ -83,5 +83,45 @@ describe("countLitToday", () => {
   it("throws an error naming the operation when the request fails", async () => {
     answer = { count: null, error: { message: "boom" } };
     await expect(countLitToday()).rejects.toThrow("countLitToday failed: boom");
+  });
+});
+
+describe("countReproducedToday", () => {
+  it("counts reproductions created since 00:00 UTC, as an estimated head count", async () => {
+    answer = { count: 48, error: null };
+
+    await expect(countReproducedToday(new Date("2026-10-01T15:20:00Z"))).resolves.toBe(48);
+
+    expect(of("from")[0].args).toEqual(["build_reproductions"]);
+    expect(of("select")[0].args).toEqual(["id", { count: "estimated", head: true }]);
+    expect(of("gte")).toEqual([
+      { method: "gte", args: ["created_at", "2026-10-01T00:00:00.000Z"] },
+    ]);
+  });
+
+  it("still counts from the same midnight at 23:59 UTC", async () => {
+    await countReproducedToday(new Date("2026-09-30T23:59:00Z"));
+    expect(of("gte")[0].args).toEqual(["created_at", "2026-09-30T00:00:00.000Z"]);
+  });
+
+  it("starts a new day at 00:01 UTC", async () => {
+    await countReproducedToday(new Date("2026-10-01T00:01:00Z"));
+    expect(of("gte")[0].args).toEqual(["created_at", "2026-10-01T00:00:00.000Z"]);
+  });
+
+  it("reads the day in UTC whatever the clock's zone", async () => {
+    // 00:30 on 2 October in UTC+1 is 23:30 on 1 October in UTC.
+    await countReproducedToday(new Date("2026-10-02T00:30:00+01:00"));
+    expect(of("gte")[0].args).toEqual(["created_at", "2026-10-01T00:00:00.000Z"]);
+  });
+
+  it("returns 0 when the count comes back empty", async () => {
+    answer = { count: null, error: null };
+    await expect(countReproducedToday()).resolves.toBe(0);
+  });
+
+  it("throws an error naming the operation when the request fails", async () => {
+    answer = { count: null, error: { message: "boom" } };
+    await expect(countReproducedToday()).rejects.toThrow("countReproducedToday failed: boom");
   });
 });

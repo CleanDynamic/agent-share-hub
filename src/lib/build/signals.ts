@@ -21,6 +21,7 @@
 // how much of the shape's record is filled in, nothing more.
 
 import { supabase } from "@/integrations/supabase/client";
+import { weekStartUtc } from "@/lib/progress/weekly";
 import {
   buildLayerError,
   type Build,
@@ -210,6 +211,35 @@ export async function countLitToday(): Promise<number> {
     .gte("last_confirmed_at", since);
 
   if (error) throw buildLayerError("countLitToday", error);
+  return count ?? 0;
+}
+
+/**
+ * How many reproductions were recorded since 00:00 UTC of the day `now` falls
+ * in. A calendar day, not a rolling one: "runs today" resets at UTC midnight,
+ * the clock the weekly goal and the XP caps already count by.
+ *
+ * `created_at` and not `confirmed_at`, because a re-run moves confirmed_at
+ * forward on the same row (see recordReproduction) and would count one person
+ * twice. A row is a first run.
+ */
+export async function countReproducedToday(now: Date = new Date()): Promise<number> {
+  return countReproductionsSince("countReproducedToday", startOfUtcDay(now));
+}
+
+/** 00:00 UTC of the day that holds `now`. */
+function startOfUtcDay(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+/** An estimated head count of reproduction rows first recorded at or after `since`. */
+async function countReproductionsSince(operation: string, since: Date): Promise<number> {
+  const { count, error } = await supabase
+    .from("build_reproductions")
+    .select("id", { count: "estimated", head: true })
+    .gte("created_at", since.toISOString());
+
+  if (error) throw buildLayerError(operation, error);
   return count ?? 0;
 }
 
