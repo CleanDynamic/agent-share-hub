@@ -61,10 +61,10 @@ const heroMedia: CSSProperties = {
  * `type.hero` is the display role, and it is RE-CLAMPED here rather than taken
  * whole: the scale's own bound is 44–78px, struck for a page whose title is the
  * only thing above the fold. This one sits under a running artefact, and 78px
- * of Bodoni beneath a screenshot fights the screenshot for the reader's first
+ * of Sentient beneath a screenshot fights the screenshot for the reader's first
  * look — which `visual-hierarchy` says the artefact wins on this page. 40–64
  * keeps the face, the weight and the balance and gives the hero the room. The
- * lower bound is 40, twice the 20px floor the display face is held to.
+ * lower bound is 40, more than twice the 17px floor the display face is held to.
  */
 const buildTitle: CSSProperties = {
   ...type.hero,

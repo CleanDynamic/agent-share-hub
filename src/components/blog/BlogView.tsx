@@ -25,7 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { notifyEngagement } from "@/lib/notifications";
 import { toast } from "sonner";
 import { BookmarkButton } from "@/components/BookmarkButton";
-import { BODONI, type } from "@/lib/theme/type";
+import { SENTIENT, type } from "@/lib/theme/type";
 import { scrollBehavior } from "@/lib/theme/motion";
 
 const lowlight = createLowlight(common);
@@ -429,7 +429,7 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror > * + * { margin-top: 1.1em; }
         .blog-view-prose .ProseMirror h1,
         .blog-view-prose .ProseMirror h2 {
-          font-family: ${BODONI};
+          font-family: ${SENTIENT};
           font-weight: 700;
           color: var(--text);
           line-height: 1.25;

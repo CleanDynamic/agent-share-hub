@@ -1,9 +1,28 @@
-/* BG-P03. Inter and Playfair Display are retired. The three faces that
-   replace them — Figtree, Bodoni Moda, DM Mono — are loaded from <link> tags
-   in index.html rather than from an @import here, because an @import cannot
-   start until this stylesheet has been fetched and parsed, which puts the
-   font request one serial hop further from the document. The preconnects live
-   there too. src/lib/theme/type.ts is how components spend them. */
+/* BG-P03. Inter and Playfair Display are retired. The faces that replace
+   them — Figtree and DM Mono from Google Fonts, Sentient self-hosted — are
+   requested from <link> tags in index.html rather than from an @import here,
+   because an @import cannot start until this stylesheet has been fetched and
+   parsed, which puts the font request one serial hop further from the
+   document. The preconnects live there too. src/lib/theme/type.ts is how
+   components spend them.
+
+   UI-P05. Sentient is the display face (Bodoni Moda is retired). It is not on
+   Google Fonts, so the two weights the overhaul uses are served from
+   /public/fonts. The 500 is preloaded in index.html. */
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/Sentient-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/Sentient-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;

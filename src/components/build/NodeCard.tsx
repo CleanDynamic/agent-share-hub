@@ -145,9 +145,9 @@ export function NodeCard({
       </div>
 
       {/* BODY AT 600, NOT THE DISPLAY FACE. A node title is a heading inside a
-          list that can run to twenty of them; `cardTitle` is Bodoni at 22 and
+          list that can run to twenty of them; `cardTitle` is Sentient at 22 and
           belongs to the build's own card, where there is one per object. Twenty
-          didone headings in a tree would out-shout the build's title two
+          Sentient headings in a tree would out-shout the build's title two
           screens above them, which is the hierarchy this page cannot afford to
           lose. Figtree at the body size, at the weight the face publishes for
           emphasis, is the heading a list row gets. */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { BODONI, FIGTREE } from "@/lib/theme/type";
+import { SENTIENT, FIGTREE } from "@/lib/theme/type";
 import {
   ArrowLeft,
   MoreHorizontal,
@@ -334,7 +334,7 @@ export function ContentDetailShell({
   // face. This is for the h1 only: the sticky header renders the same string
   // at 13px, which is below the display floor, so that site takes FIGTREE
   // directly rather than reading this.
-  const titleFont = isBlog ? BODONI : FIGTREE;
+  const titleFont = isBlog ? SENTIENT : FIGTREE;
   const descStyle: React.CSSProperties = isBlog
     ? { fontStyle: "italic", fontFamily: FIGTREE }
     : { fontFamily: FIGTREE };

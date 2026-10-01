@@ -495,7 +495,7 @@ describe("BuildPage", () => {
     expect(state.getAttribute("role")).toBe("status");
     // The display face where the title would be, and one paragraph at the
     // reading measure where the outcome would be: the same page, emptied.
-    expect(state.querySelector("h1")?.style.fontFamily).toContain("Bodoni");
+    expect(state.querySelector("h1")?.style.fontFamily).toContain("Sentient");
     expect(state.querySelector("p")?.style.maxWidth).toBe("68ch");
   });
 });

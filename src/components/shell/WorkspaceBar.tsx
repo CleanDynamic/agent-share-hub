@@ -69,7 +69,7 @@ import {
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { BODONI, FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type";
+import { SENTIENT, FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type";
 
 /**
  * The bar's height, in pixels.
@@ -311,20 +311,20 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
           style={exitControlStyle(state)}
         >
           <Chevron />
-          {/* The wordmark, in the display face, from the BODONI stack rather
+          {/* The wordmark, in the display face, from the SENTIENT stack rather
               than a hand-written family — naming the face in source is what
               `type.test.ts` forbids, because that guard is what keeps the
-              20px display floor enforceable across the whole product.
+              17px display floor enforceable across the whole product.
 
-              TWENTY IS THAT FLOOR EXACTLY, and the smallest the display face
-              may ever be set: below it a didone's hairlines break up, worst on
+              SEVENTEEN IS THAT FLOOR EXACTLY, and the smallest the display face
+              may ever be set: below it the display face loses its shape, worst on
               Dusk. The rails set the wordmark at 22; a control inside a 52px
               bar takes the floor instead. WorkspaceBar.test.tsx asserts it,
               because the scale's own sweep only sees sizes written into CSS
               template literals and this one is a style object. */}
           <span
             style={{
-              fontFamily: BODONI,
+              fontFamily: SENTIENT,
               fontSize: 20,
               fontWeight: 500,
               lineHeight: 1,

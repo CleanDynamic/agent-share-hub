@@ -357,7 +357,7 @@ function Step({
 
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         {/* The display face, at the card-title size — 22px, which clears the
-            20px floor Bodoni may never render below. */}
+            17px floor Sentient may never render below. */}
         <h2 style={{ ...cardTitle, color: t.text, margin: 0 }}>{title}</h2>
         {children}
       </div>
@@ -681,7 +681,7 @@ export default function ImportPage() {
               aria-expanded={compilerOpen}
               style={{
                 /* The body face at label weight rather than the display face:
-                   this is a control that opens a fold, and Bodoni on a button
+                   this is a control that opens a fold, and Sentient on a button
                    reads as a heading that happens to be clickable. */
                 ...bodyText,
                 fontWeight: 500,
