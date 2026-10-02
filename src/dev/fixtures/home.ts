@@ -5,6 +5,7 @@
    home` points at builds by their 1-based position in `builds`, and gives its
    times as "2m", "1h". Nothing here reaches a production bundle. */
 
+import type { DesignState } from "@/dev/useDesignTheme";
 import type { HomeViewProps } from "@/pages/site/home/HomeView";
 import {
   type HomeChallengeRow,
@@ -69,12 +70,60 @@ const whereNext = (): HomeWhereNextRow[] =>
 
 const noop = () => undefined;
 
+/**
+ * UI-P37 — the same page in its other three states, from the same sample. Loading
+ * has every panel waiting; empty is a visitor with nothing yet (signed out, so the
+ * personal panels ask them in); error has every panel failing, and each says so in
+ * its own place.
+ */
+function inState(base: Omit<HomeViewProps, "fit">, state: DesignState): Omit<HomeViewProps, "fit"> {
+  if (state === "loading") {
+    return {
+      ...base,
+      litToday: null,
+      reproducedToday: null,
+      runsThisWeek: null,
+      feed: { ...base.feed, status: "loading", rows: [] },
+      challenges: { status: "loading" },
+      streak: { status: "loading" },
+      whereNext: { status: "loading" },
+    };
+  }
+  if (state === "empty") {
+    return {
+      ...base,
+      litToday: 0,
+      reproducedToday: 0,
+      runsThisWeek: 0,
+      feed: { ...base.feed, rows: [] },
+      challenges: { status: "signed-out" },
+      streak: { status: "signed-out" },
+      whereNext: { status: "ready", data: [] },
+    };
+  }
+  if (state === "error") {
+    const failure = { onRetry: noop };
+    return {
+      ...base,
+      litToday: null,
+      reproducedToday: null,
+      runsThisWeek: null,
+      orbsError: failure,
+      feed: { ...base.feed, status: "error", rows: [] },
+      challenges: { status: "error", ...failure },
+      streak: { status: "error", ...failure },
+      whereNext: { status: "error", ...failure },
+    };
+  }
+  return base;
+}
+
 /** Everything `HomeView` needs except `fit`, from the sample data. */
-export function homeFixture(): Omit<HomeViewProps, "fit"> {
+export function homeFixture(state: DesignState = "populated"): Omit<HomeViewProps, "fit"> {
   const week = fixtures.home.week.map((day) => (day === "active" || day === "frozen" ? day : "none"));
   const rows = feedRows();
 
-  return {
+  return inState({
     now: FIXTURE_NOW.getTime(),
     scope: "everyone",
     onScopeChange: noop,
@@ -96,5 +145,5 @@ export function homeFixture(): Omit<HomeViewProps, "fit"> {
     },
     whereNext: { status: "ready", data: whereNext() },
     onNavigate: noop,
-  };
+  }, state);
 }

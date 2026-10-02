@@ -1,10 +1,11 @@
 // The bounties board's choice budgets, counted in the rendered page (RC-P12)
 // ⟦hicks-law › Enforcing It in the Code⟧.
 //
-// One facet group, six options before More, no sort control, no filled button
-// while there are rows, and exactly one control per row that goes anywhere.
-// RC-P13 adds one text link at the trailing end of the title row, Solvers, and
-// nothing else: the page's only way out that is not a row.
+// REWRITTEN FOR UI-P33 (the board became a wall of vacant frames with a solve
+// panel; the facet group, the lens row and the "Open the build" rows it counted no
+// longer exist) and kept for UI-P37. What the old budget stood for stands: one
+// switch for the order (three options), one for the board (two), no filled button
+// while there are asks, exactly one control per ask, and no other way out.
 
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,7 +20,10 @@ vi.mock("@/lib/bounty", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/bounty")>()),
   listOpenBountyCards: (options: unknown) => listOpenBountyCards(options),
   bountyFacetsMadeWith: () => bountyFacetsMadeWith(),
+  listTopSolvers: () => Promise.resolve([]),
+  myMeToo: () => Promise.resolve(new Set()),
 }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import Bounties from "@/pages/Bounties";
@@ -58,73 +62,37 @@ function renderBoard(width = 1440) {
 describe("the bounties board's choice budgets", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    bountyFacetsMadeWith.mockResolvedValue(
-      ["Claude", "n8n", "Zapier", "Gmail", "Sheets", "Xero", "ChatGPT", "Make"].map((value, i) => ({
-        value,
-        count: 10 - i,
-      })),
-    );
+    bountyFacetsMadeWith.mockResolvedValue([]);
     listOpenBountyCards.mockResolvedValue({
       cards: [card(1), card(2, null), card(3)],
       nextCursor: null,
     });
   });
 
-  it("has exactly one facet group, Made with, showing at most six options before More", async () => {
+  it("has one order switch of three and one board switch of two", async () => {
     renderBoard();
     await screen.findAllByTestId("bounty-row");
 
-    const groups = within(screen.getByRole("region", { name: "Filters" })).getAllByRole("group");
-    expect(groups).toHaveLength(1);
-    expect(groups[0]).toHaveTextContent("Made with");
-
-    const options = within(groups[0])
-      .getAllByRole("button")
-      .filter((element) => element.hasAttribute("aria-pressed"));
-    expect(options.length).toBeLessThanOrEqual(6);
-    expect(within(groups[0]).getByRole("button", { name: "More" })).toBeInTheDocument();
+    const sort = screen.getByRole("group", { name: "Sort by" });
+    expect(within(sort).getAllByRole("button")).toHaveLength(3);
+    const board = screen.getByRole("group", { name: "Board" });
+    expect(within(board).getAllByRole("link")).toHaveLength(2);
   });
 
-  it("has no sort control and no lens row", async () => {
-    renderBoard();
-    await screen.findAllByTestId("bounty-row");
-
-    expect(screen.queryAllByRole("button", { name: /sort/i })).toHaveLength(0);
-    expect(screen.queryAllByRole("combobox", { name: /sort/i })).toHaveLength(0);
-    expect(screen.queryByRole("radiogroup")).toBeNull();
-  });
-
-  it("has no filled button while it has rows", async () => {
+  it("has no filled button while it has asks", async () => {
     renderBoard();
     await screen.findAllByTestId("bounty-row");
 
     expect(document.querySelectorAll('[data-visual-slot="btn-primary"]')).toHaveLength(0);
   });
 
-  it("has one text link beside the title, Solvers, to the solvers board (RC-P13)", async () => {
-    renderBoard();
-    await screen.findAllByTestId("bounty-row");
-
-    const header = screen.getByRole("banner");
-    const links = within(header).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveTextContent("Solvers");
-    expect(links[0]).toHaveAttribute("href", "/bounties/solvers");
-    expect(within(header).queryAllByRole("button")).toHaveLength(0);
-  });
-
-  it("gives each row exactly one control that goes anywhere: Open the build", async () => {
+  it("gives each ask exactly one control", async () => {
     renderBoard();
     const rows = await screen.findAllByTestId("bounty-row");
 
     for (const row of rows) {
-      const controls = [
-        ...within(row).queryAllByRole("link"),
-        ...within(row).queryAllByRole("button"),
-      ];
+      const controls = [...within(row).queryAllByRole("link"), ...within(row).queryAllByRole("button")];
       expect(controls).toHaveLength(1);
-      expect(controls[0]).toHaveTextContent("Open the build");
     }
-    expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/b2/build-1");
   });
 });

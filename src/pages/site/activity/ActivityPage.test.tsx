@@ -5,7 +5,7 @@
 
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -106,10 +106,12 @@ const unreadRows = () => screen.queryAllByTestId("activity-row").filter((item) =
 
 function deferred() {
   let resolve!: () => void;
-  const promise = new Promise<void>((done) => {
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<void>((done, fail) => {
     resolve = done;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 beforeEach(() => {
@@ -177,23 +179,26 @@ describe("ActivityPage loading", () => {
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
   });
 
-  it("says it could not load the list, and tries again", async () => {
-    getNotifications.mockRejectedValueOnce(new Error("down"));
+  it("says That didn't load. for the list, never the exception, and tries again", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    getNotifications.mockRejectedValueOnce(new Error("down: 503 upstream connect error"));
     mount();
-    expect(await screen.findByText("This could not be loaded.")).toBeTruthy();
+    const failed = await screen.findByTestId("activity-error");
+    expect(failed.textContent).toContain("That didn't load.");
+    expect(failed.textContent).not.toContain("503");
+    expect(log.mock.calls.filter((call) => call.some((arg) => arg instanceof Error && arg.message.startsWith("down")))).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findAllByTestId("activity-row")).toHaveLength(2);
     expect(getNotifications).toHaveBeenCalledTimes(2);
+    log.mockRestore();
   });
 
-  it("draws the empty state, reads no covers, and leads to the gallery", async () => {
+  it("draws the empty state, All caught up., and reads no covers", async () => {
     getNotifications.mockResolvedValue({ notifications: [], total: 0 });
     getUnreadCount.mockResolvedValue(0);
     mount();
-    expect(await screen.findByTestId("activity-empty")).toBeTruthy();
+    expect((await screen.findByTestId("activity-empty")).textContent).toBe("All caught up.");
     expect(resolveNotificationCovers).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Enter the gallery" }));
-    expect(screen.getByTestId("location").textContent).toBe("/gallery");
   });
 
   it("asks for nothing without a signed-in viewer", () => {
@@ -203,7 +208,7 @@ describe("ActivityPage loading", () => {
     expect(getUnreadCount).not.toHaveBeenCalled();
     expect(countPeople).not.toHaveBeenCalled();
     expect(getRuns).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Loading your activity")).toBeTruthy();
+    expect(screen.getByTestId("activity-loading")).toBeTruthy();
   });
 });
 
@@ -263,6 +268,33 @@ describe("ActivityPage reading", () => {
     await waitFor(() => expect(refreshUnread).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(unreadRows()).toHaveLength(1));
     expect(screen.getByText("1 unread · live")).toBeTruthy();
+  });
+
+  it("rolls a failed Mark all read back with a line in the list, never silently, and asks again from it", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const write = deferred();
+    markAllNotificationsRead.mockReturnValueOnce(write.promise).mockResolvedValue(undefined);
+    getNotifications.mockResolvedValue({ notifications: [notification(1), notification(2)], total: 2 });
+    getUnreadCount.mockResolvedValue(2);
+    mount();
+    expect(await screen.findByText("2 unread · live")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark all read" }));
+    // The new state is shown at once, before the write has answered …
+    await waitFor(() => expect(screen.getByText("0 unread · live")).toBeTruthy());
+    expect(screen.queryByTestId("activity-write-error")).toBeNull();
+    // … and a failed write puts it back and says so, naming the panel and not the cause.
+    await act(async () => write.reject(new Error("refused: row-level security")));
+    const failed = await screen.findByTestId("activity-write-error");
+    expect(failed.textContent).toContain("That didn't save.");
+    expect(failed.textContent).not.toContain("row-level");
+    await waitFor(() => expect(unreadRows()).toHaveLength(2));
+    expect(screen.getByText("2 unread · live")).toBeTruthy();
+
+    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.queryByTestId("activity-write-error")).toBeNull());
+    await waitFor(() => expect(markAllNotificationsRead).toHaveBeenCalledTimes(2));
+    log.mockRestore();
   });
 });
 

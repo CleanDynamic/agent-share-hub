@@ -13,8 +13,8 @@ import type { DesignPageProps } from "./KitPages";
 
 const PHONE_ROWS = 4;
 
-export default function HomeDemo({ fit = "board", viewport }: DesignPageProps) {
-  const sample = homeFixture();
+export default function HomeDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
+  const sample = homeFixture(state);
   const feed = viewport === "mobile" ? { ...sample.feed, rows: sample.feed.rows.slice(0, PHONE_ROWS) } : sample.feed;
   return <HomeView fit={fit} {...sample} feed={feed} />;
 }

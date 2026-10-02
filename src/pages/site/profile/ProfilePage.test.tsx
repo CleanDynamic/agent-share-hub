@@ -194,8 +194,9 @@ describe("ProfilePage", () => {
 
   it("counts the tabs: builds from the figures, the rest from their own reads", async () => {
     renderAt("/profile/maya");
-    const tabs = await screen.findByRole("tablist", { name: "Works" });
-    await waitFor(() => expect(within(tabs).getByRole("tab", { name: "Reproduced 48" })).toBeTruthy());
+    // The loading page has a tablist of its own (the panels keep their heads while they wait), so ask again for the loaded one.
+    await waitFor(() => expect(within(screen.getByRole("tablist", { name: "Works" })).getByRole("tab", { name: "Reproduced 48" })).toBeTruthy());
+    const tabs = screen.getByRole("tablist", { name: "Works" });
     expect(within(tabs).getByRole("tab", { name: "Builds 14" })).toBeTruthy();
     expect(within(tabs).getByRole("tab", { name: "Rebuilds 6" })).toBeTruthy();
     expect(within(tabs).getByRole("tab", { name: "Collections 0" })).toBeTruthy();

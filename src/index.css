@@ -893,6 +893,17 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { background-position: -100% 0; }
 }
 
+/* UI-P37 — the brand skeleton's pulse. A `--recess` block fades to .55 and back,
+   1.4s a turn. Opacity is the only property that moves: nothing here touches a
+   layout property, so a skeleton never shifts the page it stands in for. It is
+   the one keyframe the three state primitives add; `Skeleton` references it by
+   name from an inline `animation`, which `animation()` drops under reduced
+   motion (and the global rule at the end of this file covers the rest). */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+
 /* BG-P07's per-surface reset, SUPERSEDED BY THE GLOBAL RULE at the end of this
    file. It was scoped to `[data-bg-animated]` because a global reset "would
    reach every animation in the application, including Radix's mount and unmount

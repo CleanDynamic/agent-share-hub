@@ -16,10 +16,8 @@
 
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/brand/Button";
+import { ErrorState } from "@/components/brand/ErrorState";
 import { Panel, PanelHead } from "@/components/brand/Panel";
-import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
 
 import type { WhereNextRowView } from "./buildModel";
 
@@ -77,15 +75,10 @@ export function WhereNextPanels({ rows, phone }: { rows: readonly WhereNextRowVi
 }
 
 /** Where next could not be read: one sentence and a retry. */
-export function WhereNextError({ onRetry }: { onRetry: () => void }) {
+export function WhereNextError({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
   return (
     <Panel padding="16px 18px">
-      <div data-testid="where-next-error" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>Where to go next could not be loaded.</p>
-        <Button variant="secondary" size={30} fontSize={12} onClick={onRetry}>
-          Try again
-        </Button>
-      </div>
+      <ErrorState panel="Where next" onRetry={onRetry} error={error} data-testid="where-next-error" />
     </Panel>
   );
 }

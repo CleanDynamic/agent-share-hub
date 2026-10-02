@@ -200,12 +200,29 @@ export function GalleryPage() {
 
   /* ── mapped for the view ── */
 
+  /* A facet read that failed costs its groups and nothing else: each says so in its own place. */
+  const factsFailure = facets.isError && !facets.data ? { onRetry: () => void facets.refetch(), error: facets.error } : undefined;
+  const shapesFailure =
+    shapeFacets.isError && !shapeFacets.data ? { onRetry: () => void shapeFacets.refetch(), error: shapeFacets.error } : undefined;
+
+  /* The figures need both their reads: if either fails, they say so and one retry asks again for whichever failed. */
+  const statsFailed = !stats && ((statsQuery.isError && !statsQuery.data) || (poolQuery.isError && !poolQuery.data));
+  const statsError = statsFailed
+    ? {
+        onRetry: () => {
+          if (statsQuery.isError) void statsQuery.refetch();
+          if (poolQuery.isError) void poolQuery.refetch();
+        },
+        error: statsQuery.error ?? poolQuery.error,
+      }
+    : undefined;
+
   const groups: FacetGroupView[] = [
     {
       key: "made-for",
       label: "Made for",
       loading: facets.isLoading,
-      emptyText: "No roles named yet.",
+      failure: factsFailure,
       rows: topOptions(facets.data?.roles ?? [], TOP_ROLES, madeFor).map((option) => ({
         value: option.value,
         // The registry's name where one matched, the creator's own spelling where it did not.
@@ -219,7 +236,7 @@ export function GalleryPage() {
       key: "made-with",
       label: "Made with",
       loading: facets.isLoading,
-      emptyText: "No tools named yet.",
+      failure: factsFailure,
       rows: topOptions(facets.data?.tools ?? [], TOP_TOOLS, madeWith).map((option) => ({
         value: option.value,
         label: option.label ?? option.value,
@@ -232,7 +249,7 @@ export function GalleryPage() {
       key: "shape",
       label: "Shape",
       loading: shapeFacets.isLoading,
-      emptyText: "No shapes yet.",
+      failure: shapesFailure,
       rows: topOptions(shapeFacets.data ?? [], TOP_SHAPES, shapes).map((option) => ({
         value: option.value,
         label: option.value,
@@ -303,6 +320,7 @@ export function GalleryPage() {
         onLensChange={(next) => go({ lens: next })}
         lensCounts={lensCounts.data ?? null}
         stats={stats}
+        statsError={statsError}
         facets={groups}
         query={query}
         onSearch={(next) => go({ query: next })}
@@ -320,6 +338,7 @@ export function GalleryPage() {
           loadingMore: wallQuery.isFetchingNextPage,
           onMore: () => void wallQuery.fetchNextPage(),
           onRetry: () => void wallQuery.refetch(),
+          error,
         }}
         onNavigate={navigate}
       />

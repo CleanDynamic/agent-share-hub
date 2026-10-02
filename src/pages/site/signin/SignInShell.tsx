@@ -58,6 +58,7 @@ export function SignInShell({ mode, children }: { mode: AuthMode; children: Reac
       onBack={onBack}
       reproducedToday={reproduced.data ?? null}
       inGallery={stats.data?.inGallery ?? null}
+      countsFailed={(reproduced.isError && reproduced.data === undefined) || (stats.isError && stats.data === undefined)}
     >
       {children}
     </SignInView>

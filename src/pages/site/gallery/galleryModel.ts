@@ -6,6 +6,7 @@
 
 import type { ReactNode } from "react";
 
+import type { PanelFailure } from "@/components/brand/ErrorState";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { GalleryLens } from "@/lib/build/gallery";
 
@@ -84,9 +85,14 @@ export interface FacetGroupView {
   key: "made-for" | "made-with" | "shape";
   label: string;
   loading: boolean;
-  emptyText: string;
+  /** This group's counts could not be read: it says so in its own place, and the other groups carry on. */
+  failure?: PanelFailure;
+  /** No counts is no group: a group with no rows is left out, not drawn as an apology. */
   rows: readonly FacetRowView[];
 }
+
+/** Rows each group shows before it has loaded: the page's own top-N, so the column is the height it will be. */
+export const FACET_SKELETON_ROWS: Record<FacetGroupView["key"], number> = { "made-for": 4, "made-with": 4, shape: 6 };
 
 /**
  * The most-used `limit` options, by count — and any selected option that falls
@@ -131,4 +137,6 @@ export interface GalleryWallState {
   loadingMore: boolean;
   onMore: () => void;
   onRetry: () => void;
+  /** The real error behind `status: "error"`; logged once by the panel, never shown. */
+  error?: unknown;
 }

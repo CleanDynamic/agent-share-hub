@@ -473,13 +473,13 @@ describe("the audit's slop categories", () => {
      fixed. */
 
   it("has no decorative infinite pulse", () => {
-    /* Kept, and legal: a spinner, a skeleton sweep, a typing indicator and a
+    /* Kept, and legal: a spinner, a skeleton sweep or pulse (UI-P37), a typing indicator and a
        text caret, where the movement IS the information and stopping it would
        remove the signal. Removed: a skill node's available ring, a skill-tree
        connector, the streak flame and the XP bar's sheen — four loops that
        throbbed to draw the eye at something the colour already said, in
        persistent chrome where they never stopped. */
-    const LEGAL = /[Ss]pin|shimmer|Shimmer|Sweep|sweep|TypingDot|CaretBlink|snapPoint/;
+    const LEGAL = /[Ss]pin|shimmer|Shimmer|Sweep|sweep|skeletonPulse|TypingDot|CaretBlink|snapPoint/;
     const offenders = SCANNED.flatMap((file) =>
       file.code
         .split("\n")

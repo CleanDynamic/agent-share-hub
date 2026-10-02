@@ -100,8 +100,10 @@ describe("the works", () => {
     expect(tabLabel("Builds", undefined)).toBe("Builds");
   });
 
-  it("has one sentence for every empty tab, in the owner's voice on their own profile", () => {
-    for (const tab of ["builds", "rebuilds", "reproduced", "collections"] as const) {
+  it("has one sentence for every empty tab; Builds says what the Works panel says, the others speak in the owner's voice", () => {
+    expect(emptyLine("builds", true)).toBe("No builds hung yet.");
+    expect(emptyLine("builds", false)).toBe("No builds hung yet.");
+    for (const tab of ["rebuilds", "reproduced", "collections"] as const) {
       expect(emptyLine(tab, true).length).toBeGreaterThan(0);
       expect(emptyLine(tab, true)).not.toBe(emptyLine(tab, false));
     }

@@ -35,6 +35,7 @@ import { ArrowLeft } from "lucide-react";
 import { Lockup } from "@/components/brand/Lockup";
 import { OrbGlass } from "@/components/brand/OrbGlass";
 import { OrbSolid } from "@/components/brand/OrbSolid";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { Panel } from "@/components/brand/Panel";
 import { Segmented } from "@/components/brand/Segmented";
 import { Tagline } from "@/components/brand/Tagline";
@@ -67,6 +68,8 @@ export interface SignInViewProps {
   reproducedToday: number | null;
   /** Builds hung in the gallery; null while it loads or when it could not be read. */
   inGallery: number | null;
+  /** A count could not be read: its orb is left out rather than left pulsing. */
+  countsFailed?: boolean;
   /** The compare page draws the room it was asked for; the live page leaves this out and the control reads the stored choice. */
   themeValue?: ThemeChoice;
   /** The card's body: a form, or one of the reset and verify states. */
@@ -79,24 +82,38 @@ export function SignInView(props: SignInViewProps) {
 
 /* ── the pieces both share ── */
 
-function OrbPlaceholder() {
-  return <div aria-hidden="true" style={{ width: 140, height: 140, borderRadius: r.full, background: t.recess, flexShrink: 0 }} />;
+/**
+ * An orb before its number has arrived: a circle of the orb's diameter. A count that could not
+ * be read draws nothing — these are the entrance's decoration, and a retry button on a sign-in
+ * page would be noise next to the form — so a failed read never leaves a circle pulsing forever.
+ */
+function OrbPlaceholder({ failed }: { failed?: boolean }) {
+  return failed ? null : <Skeleton width={140} height={140} radius="50%" />;
 }
 
-function Orbs({ reproducedToday, inGallery }: Pick<SignInViewProps, "reproducedToday" | "inGallery">) {
-  return (
-    <div style={{ display: "flex", gap: 12 }}>
+function Orbs({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
+  const waiting = (reproducedToday === null || inGallery === null) && !countsFailed;
+  const row = { display: "flex", gap: 12 } as const;
+  const orbs = (
+    <>
       {reproducedToday === null ? (
-        <OrbPlaceholder />
+        <OrbPlaceholder failed={countsFailed} />
       ) : (
         <OrbGlass size={140} label="Reproduced" sub={`${reproducedToday.toLocaleString("en-GB")} today`} />
       )}
       {inGallery === null ? (
-        <OrbPlaceholder />
+        <OrbPlaceholder failed={countsFailed} />
       ) : (
         <OrbSolid size={140} top="Hung" value={inGallery.toLocaleString("en-GB")} bottom="builds" />
       )}
-    </div>
+    </>
+  );
+  return waiting ? (
+    <LoadingRegion what="the counts" style={row}>
+      {orbs}
+    </LoadingRegion>
+  ) : (
+    <div style={row}>{orbs}</div>
   );
 }
 
@@ -149,7 +166,7 @@ function BackLink({ onBack }: { onBack: () => void }) {
 
 /* ── desktop ── */
 
-function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToday, inGallery, themeValue, children }: SignInViewProps) {
+function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToday, inGallery, countsFailed, themeValue, children }: SignInViewProps) {
   return (
     <div
       data-testid="signin-view"
@@ -172,7 +189,7 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
       <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
         <Lockup size={70} />
         <Tagline lines={TAGLINE} size={40} offsets={[0, 70, 24]} />
-        <Orbs reproducedToday={reproducedToday} inGallery={inGallery} />
+        <Orbs reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>

@@ -28,6 +28,9 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LampDot } from "@/components/brand/LampDot";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { Segmented, type SegmentedItem } from "@/components/brand/Segmented";
@@ -324,19 +327,38 @@ export interface FamilyPanelProps {
   onSelect?: (id: string) => void;
   /** Fill the track (desktop). */
   fill?: boolean;
+  /** The family is on its way: the head stays, the tree's canvas (or the list's rows) is bones. */
+  loading?: boolean;
+  /** The family could not be read: said in the panel, with a retry. */
+  failure?: PanelFailure;
 }
 
-export function FamilyPanel({ root, fit = "content", phone = false, selectedId = null, onSelect, fill = false }: FamilyPanelProps) {
+/** The family before it has arrived: the canvas's own box on desktop, a few rows of the list on a phone. */
+function FamilySkeleton({ phone }: { phone: boolean }) {
+  return (
+    <LoadingRegion what="the family" data-testid="family-loading" style={{ marginTop: phone ? 8 : 18 }}>
+      {phone ? (
+        Array.from({ length: 6 }, (_, i) => <Skeleton key={i} height={52} radius={r.control} />)
+      ) : (
+        <Skeleton height={CANVAS_HEIGHT} radius={r.control} />
+      )}
+    </LoadingRegion>
+  );
+}
+
+export function FamilyPanel({ root, fit = "content", phone = false, selectedId = null, onSelect, fill = false, loading = false, failure }: FamilyPanelProps) {
   const { builds } = familyStats(root);
   const [reading, setReading] = useState<FamilyReading>(builds > TREE_MAX_NODES ? "list" : "tree");
   const title = `Family of ${root?.title ?? "this build"}`;
+  /* A build nobody has rebuilt is a family of one: nothing to draw, and a line saying so. */
+  const lone = Boolean(root) && builds <= 1;
 
   if (phone) {
     return (
       <Panel padding="14px 16px">
         <div data-testid="family-panel">
           <PanelHead headingLevel={2} title={title} subtitle="Lamps show which still work" />
-          {root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
+          {failure ? <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="family-error" /> : loading ? <FamilySkeleton phone /> : root && lone ? <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
         </div>
       </Panel>
     );
@@ -349,9 +371,19 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           headingLevel={2}
           title={title}
           subtitle={familySubtitle(root)}
-          right={<Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={30} fontSize={11} label="Read the family as" />}
+          right={
+            lone || loading || failure ? undefined : (
+              <Segmented<FamilyReading> items={READINGS} value={reading} onChange={setReading} size={30} fontSize={11} label="Read the family as" />
+            )
+          }
         />
-        {root ? (
+        {failure ? (
+          <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="family-error" />
+        ) : loading ? (
+          <FamilySkeleton phone={false} />
+        ) : root && lone ? (
+          <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" />
+        ) : root ? (
           reading === "tree" ? (
             <FamilyTree root={root} fit={fit} selectedId={selectedId} onSelect={onSelect} />
           ) : (

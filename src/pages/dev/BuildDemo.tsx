@@ -18,17 +18,33 @@ import { useSearchParams } from "react-router-dom";
 import { LAYER_BLURB } from "@/lib/build";
 import { SAMPLE_TABS, buildFixture, buildLowerFixture, buildTabFixture } from "@/dev/fixtures/build";
 import { LowerSections } from "@/pages/site/build/BuildLower";
-import { BuildView } from "@/pages/site/build/BuildView";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { BuildView, BuildViewFailed, BuildViewSkeleton } from "@/pages/site/build/BuildView";
 import { buildTabs, tabLayer, type BuildTabKey } from "@/pages/site/build/buildModel";
 
 import type { DesignPageProps } from "./KitPages";
 
-export default function BuildDemo({ fit = "board", viewport }: DesignPageProps) {
+export default function BuildDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
   const asked = params.get("tab") as BuildTabKey | null;
   const tab: BuildTabKey = asked && SAMPLE_TABS.includes(asked) ? asked : "anatomy";
   const lower = params.get("lower") === "1";
   const props = buildFixture(viewport);
+
+  /* UI-P37 — the other three states, from the same sample. */
+  if (state === "loading") return <BuildViewSkeleton fit={fit} />;
+  if (state === "error") return <BuildViewFailed onRetry={() => undefined} />;
+  if (state === "empty") {
+    return (
+      <BuildView
+        fit={fit}
+        {...props}
+        anatomy={{ ...props.anatomy, parts: [], gaps: 0, selectedId: null, full: null }}
+        timeline={{ ...props.timeline, events: [], duration: null }}
+        viewer={{ ...props.viewer, content: <EmptyState line="This build has no parts yet." /> }}
+      />
+    );
+  }
 
   if (tab === "anatomy" && !lower) return <BuildView fit={fit} {...props} />;
 

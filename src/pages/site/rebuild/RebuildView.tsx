@@ -17,11 +17,13 @@
 
 import type { ReactNode } from "react";
 
+import { ErrorState } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { VISUALLY_HIDDEN as HIDDEN } from "@/components/brand/VisuallyHidden";
 import { Panel } from "@/components/brand/Panel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { skeletonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, display } from "@/lib/theme/type";
@@ -54,14 +56,15 @@ export interface RebuildViewProps {
   /** The draft's workspace, where the missing things get done. */
   workspaceTo?: string;
   publishing?: boolean;
-  publishError?: string | null;
+  /** The publish did not save: the readiness panel says so with a retry. */
+  publishFailure?: { onRetry: () => void; error?: unknown } | null;
 }
 
 /** The readiness panel's height on the desktop board. */
 const READINESS_HEIGHT = 290;
 
 export function RebuildView(props: RebuildViewProps) {
-  const { fit = "content", draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishError } = props;
+  const { fit = "content", draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishFailure } = props;
   const phone = useIsPhone();
   const board = fit === "board";
 
@@ -73,7 +76,7 @@ export function RebuildView(props: RebuildViewProps) {
       onKeepDraft={onKeepDraft}
       workspaceTo={workspaceTo}
       publishing={publishing}
-      error={publishError}
+      failure={publishFailure}
       phone={phone}
       fill={!phone}
     />
@@ -84,7 +87,7 @@ export function RebuildView(props: RebuildViewProps) {
       <div data-testid="rebuild-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
         <PageHeading eyebrow="Rebuild · draft" title={draftTitle} sub={rebuildingLine(source)} size={32} />
         {readinessPanel}
-        <ChangesPanel groups={changes} phone placeholder={changes ? undefined : "Working out what changed…"} />
+        <ChangesPanel groups={changes} phone loading={changes === null} />
         <FamilyPanel root={family} phone />
       </div>
     );
@@ -99,7 +102,7 @@ export function RebuildView(props: RebuildViewProps) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <ChangesPanel groups={changes} fill placeholder={changes ? undefined : "Working out what changed…"} />
+            <ChangesPanel groups={changes} fill loading={changes === null} />
           </div>
           <div style={{ flexShrink: 0, ...(board ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>{readinessPanel}</div>
         </div>
@@ -110,38 +113,68 @@ export function RebuildView(props: RebuildViewProps) {
 
 /* ── loading, missing, failed ── */
 
-function Bone({ height, radius = r.panel }: { height: number | string; radius?: string | number }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), height, borderRadius: radius }} />;
+/** The readiness panel before the records arrive: the orb's circle, the headline, the credit box and the buttons, as bones. */
+function ReadinessSkeleton({ phone }: { phone: boolean }) {
+  return (
+    <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
+      <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+        <Skeleton width={phone ? 112 : 120} height={phone ? 112 : 120} radius="50%" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>
+          <Skeleton width={110} height={11} />
+          <Skeleton width="80%" height={phone ? 22 : 24} />
+          <Skeleton width="60%" height={14} />
+        </div>
+      </div>
+      <Skeleton height={phone ? 91 : 66} radius={r.control} style={{ marginTop: 14 }} />
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        <Skeleton width={phone ? "100%" : 140} height={phone ? 48 : 36} radius={r.control} />
+        {phone ? null : <Skeleton width={110} height={36} radius={r.control} />}
+      </div>
+    </Panel>
+  );
 }
 
-/** The page's shape in `--recess`, while the source, the draft and the family arrive. */
+/** The page's shape while the source, the draft and the family arrive: the panels' own heads and padding, bones inside. */
 export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebuild" }: { fit?: PageFit; label?: string }) {
   const phone = useIsPhone();
+  const what = label.replace(/^Loading /, "");
   if (phone) {
     return (
-      <div data-testid="rebuild-loading" role="status" aria-busy="true" aria-label={label} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Bone height={96} radius={r.control} />
-        <Bone height={300} />
-        <Bone height={260} />
-      </div>
+      <LoadingRegion what={what} announce data-testid="rebuild-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <Skeleton height={96} radius={r.control} />
+        <ReadinessSkeleton phone />
+        <ChangesPanel groups={null} phone loading />
+        <FamilyPanel root={null} phone loading />
+      </LoadingRegion>
     );
   }
   return (
-    <div
+    <LoadingRegion
+      what={what}
+      announce
       data-testid="rebuild-loading"
-      role="status"
-      aria-busy="true"
-      aria-label={label}
       style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 470px", gap: 12, ...boardHeight(fit) }}
     >
-      <Bone height="100%" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ flexGrow: 1 }}>
-          <Bone height="100%" />
+      <FamilyPanel root={null} fit={fit} fill loading />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
+        <div style={{ flexGrow: 1, minHeight: 0 }}>
+          <ChangesPanel groups={null} fill loading />
         </div>
-        <Bone height={READINESS_HEIGHT} />
+        <div style={{ flexShrink: 0, ...(fit === "board" ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>
+          <ReadinessSkeleton phone={false} />
+        </div>
       </div>
-    </div>
+    </LoadingRegion>
+  );
+}
+
+/** A page-level read that failed: the page's own panel says so, inside the frame, with a retry. The h1 is for assistive technology. */
+export function RebuildViewFailed({ panel, onRetry, error }: { panel: string; onRetry: () => void; error?: unknown }) {
+  return (
+    <Panel padding="24px 24px">
+      <h1 style={HIDDEN}>{panel}</h1>
+      <ErrorState panel={panel} onRetry={onRetry} error={error} data-testid="rebuild-error" />
+    </Panel>
   );
 }
 

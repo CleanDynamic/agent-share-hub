@@ -15,7 +15,7 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from "react";
 import { useParams } from "react-router-dom";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
-import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/useDesignTheme";
+import { useDesignState, useDesignTheme, useDesignViewport, type DesignState, type DesignViewport } from "@/dev/useDesignTheme";
 
 import type { Crumb } from "@/components/shell/breadcrumbTrail";
 
@@ -28,6 +28,12 @@ export interface DesignPageProps {
   viewport: DesignViewport;
   /** Page views are compared in `board` fit (UI-P16). */
   fit?: "board" | "content";
+  /**
+   * UI-P37 — `?state=loading|empty|error` draws that state of the page from the
+   * same sample data, in the same frame and the same fit. Absent (or anything
+   * else) is the populated board, which is what the reference images show.
+   */
+  state?: DesignState;
 }
 
 /** `:page` (the `page` field of `design/reference/index.json`) → a lazy entry that renders the view with fixtures. */
@@ -49,6 +55,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   profile: lazy(() => import("./ProfileDemo")),
   /* UI-P35 — Activity. */
   activity: lazy(() => import("./ActivityDemo")),
+  /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
+  "bounty-board": lazy(() => import("./BountyBoardDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
   signin: lazy(() => import("./SignInDemo")),
 };
@@ -86,6 +94,7 @@ export default function KitPages() {
   const { page = "" } = useParams();
   const theme = useDesignTheme();
   const viewport = useDesignViewport();
+  const state = useDesignState();
   const View = Object.prototype.hasOwnProperty.call(VIEWS, page) ? VIEWS[page] : undefined;
 
   if (!View) return <div data-design-ready="false">Not built yet</div>;
@@ -96,14 +105,15 @@ export default function KitPages() {
       data-design-page={page}
       data-design-theme={theme}
       data-design-viewport={viewport}
+      data-design-state={state}
       style={{ width: WIDTH[viewport] }}
     >
       <Suspense fallback={null}>
         {UNFRAMED.has(page) ? (
-          <View viewport={viewport} fit="board" />
+          <View viewport={viewport} fit="board" state={state} />
         ) : (
           <SiteFrameView viewport={viewport} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
-            <View viewport={viewport} fit="board" />
+            <View viewport={viewport} fit="board" state={state} />
           </SiteFrameView>
         )}
       </Suspense>

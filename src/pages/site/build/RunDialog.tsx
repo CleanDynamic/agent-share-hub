@@ -66,8 +66,6 @@ const input: CSSProperties = {
 export function RunDialog({ open, onOpenChange, creator, suggestions, initialModel = "", onSubmit }: RunDialogProps) {
   const [model, setModel] = useState(initialModel);
   const [note, setNote] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const ids = useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
   /* Each opening starts from what the page knows, not from the last attempt. */
@@ -75,29 +73,22 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
     if (!open) return;
     setModel(initialModel);
     setNote("");
-    setError(null);
   }, [open, initialModel]);
 
-  const submit = async (worked: boolean) => {
-    setPending(true);
-    setError(null);
-    try {
-      await onSubmit({ worked, model, note });
-      onOpenChange(false);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "That could not be recorded. Try again in a moment.");
-    } finally {
-      setPending(false);
-    }
+  /* OPTIMISTIC: the page shows the new count at once and writes after, so the dialog closes on submit rather than
+     waiting. A write that fails is the page's to say (in the proof panel, with a retry), never an exception here. */
+  const submit = (worked: boolean) => {
+    onOpenChange(false);
+    void onSubmit({ worked, model, note });
   };
 
   const onForm = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void submit(true);
+    submit(true);
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={(next) => (pending ? undefined : onOpenChange(next))}>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
@@ -127,7 +118,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
               <Dialog.Close asChild>
-                <IconButton icon={X} label="Close" size={38} disabled={pending} />
+                <IconButton icon={X} label="Close" size={38} />
               </Dialog.Close>
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: t.text2 }}>
@@ -177,22 +168,16 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
               </div>
             )}
 
-            {error ? (
-              <p role="alert" style={{ margin: 0, fontSize: 13, color: t.catBreakage }}>
-                {error}
-              </p>
-            ) : null}
-
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               {creator ? (
                 <span />
               ) : (
-                <Button variant="ghost" size={44} fontSize={13} disabled={pending} onClick={() => void submit(false)}>
+                <Button variant="ghost" size={44} fontSize={13} onClick={() => submit(false)}>
                   It did not work
                 </Button>
               )}
-              <Button type="submit" variant="primary" size={44} fontSize={14} disabled={pending}>
-                {pending ? "Recording…" : creator ? "It still works" : "It worked"}
+              <Button type="submit" variant="primary" size={44} fontSize={14}>
+                {creator ? "It still works" : "It worked"}
               </Button>
             </div>
           </form>

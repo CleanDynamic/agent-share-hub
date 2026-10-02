@@ -9,6 +9,7 @@
 
 import { BuildCard, CardCredit } from "@/components/brand/BuildCard";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import type { DesignState } from "@/dev/useDesignTheme";
 import type { GalleryViewProps } from "@/pages/site/gallery/GalleryView";
 import type { FacetGroupView, FeaturedView, WallCard } from "@/pages/site/gallery/galleryModel";
 
@@ -52,12 +53,65 @@ const group = (
   key,
   label,
   loading: false,
-  emptyText: "",
   rows: rows.map(([value, count]) => ({ value: String(value), label: String(value), count: Number(count), selected: false, onToggle: noop })),
 });
 
+/**
+ * UI-P37 — the same page in its other three states, from the same sample. Loading has
+ * every panel waiting (the wall leads with the featured plate's place, as it will);
+ * empty is a gallery with nothing in it under a lens, its facet groups left out
+ * because they have no counts; error has the wall, the figures and every facet group
+ * failing, each in its own place.
+ */
+function inState(base: Omit<GalleryViewProps, "fit">, state: DesignState): Omit<GalleryViewProps, "fit"> {
+  if (state === "loading") {
+    return {
+      ...base,
+      lensCounts: null,
+      stats: null,
+      facets: base.facets.map((group) => ({ ...group, loading: true, rows: [] })),
+      featured: null,
+      wall: { ...base.wall, status: "loading", cards: [] },
+    };
+  }
+  if (state === "empty") {
+    return {
+      ...base,
+      lens: "unsolved",
+      lensCounts: { all: 0, proven: 0, rebuilt: 0, unsolved: 0 },
+      stats: base.stats && {
+        ...base.stats,
+        inGallery: 0,
+        reproducedThisWeek: 0,
+        freshPct: 0,
+        poolGbp: 0,
+        open: 0,
+        withSolutions: 0,
+      },
+      facets: base.facets.map((group) => ({ ...group, rows: [] })),
+      narrowed: true,
+      total: 0,
+      featured: null,
+      wall: { ...base.wall, cards: [] },
+    };
+  }
+  if (state === "error") {
+    const failure = { onRetry: noop };
+    return {
+      ...base,
+      lensCounts: null,
+      stats: null,
+      statsError: failure,
+      facets: base.facets.map((group) => ({ ...group, rows: [], failure })),
+      featured: null,
+      wall: { ...base.wall, status: "error", cards: [], onRetry: noop },
+    };
+  }
+  return base;
+}
+
 /** Everything `GalleryView` needs except `fit`, from the sample data. */
-export function galleryFixture(): Omit<GalleryViewProps, "fit"> {
+export function galleryFixture(state: DesignState = "populated"): Omit<GalleryViewProps, "fit"> {
   const g = fixtures.gallery;
   const featuredBuild = build(g.featured.build);
   const featured: FeaturedView = {
@@ -68,7 +122,7 @@ export function galleryFixture(): Omit<GalleryViewProps, "fit"> {
     cover: cover(featuredBuild),
   };
 
-  return {
+  return inState({
     now,
     lens: "all",
     onLensChange: noop,
@@ -105,5 +159,5 @@ export function galleryFixture(): Omit<GalleryViewProps, "fit"> {
       onRetry: noop,
     },
     onNavigate: noop,
-  };
+  }, state);
 }

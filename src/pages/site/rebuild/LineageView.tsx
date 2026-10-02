@@ -13,6 +13,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import type { PanelFailure } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -36,6 +37,9 @@ export interface LineageSelection {
   groups: ChangeGroupView[] | null;
   loading: boolean;
   failed: boolean;
+  /** Asks for the two records again. */
+  onRetry?: () => void;
+  error?: unknown;
 }
 
 export interface LineageViewProps {
@@ -48,6 +52,10 @@ export interface LineageViewProps {
   selection: LineageSelection | null;
   /** What to say when the family is this build alone (nobody has rebuilt it), in place of the prompt to pick. */
   alone?: ReactNode;
+  /** The family is being read. */
+  familyLoading?: boolean;
+  /** The family could not be read. */
+  familyFailure?: PanelFailure;
 }
 
 export const PICK_PROMPT = "Pick a build in the family to see what changed.";
@@ -89,7 +97,14 @@ function SelectionPanel({
   fill: boolean;
   alone?: ReactNode;
 }) {
-  if (!selection) return <ChangesPanel groups={null} phone={phone} fill={fill} placeholder={alone || PICK_PROMPT} />;
+  /* A family of one has nothing to compare: the list says nothing has changed. Otherwise the panel asks for a pick. */
+  if (!selection) {
+    return alone ? (
+      <ChangesPanel groups={[]} phone={phone} fill={fill} />
+    ) : (
+      <ChangesPanel groups={null} phone={phone} fill={fill} placeholder={PICK_PROMPT} />
+    );
+  }
 
   const about = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
@@ -106,13 +121,12 @@ function SelectionPanel({
     </div>
   );
 
-  const placeholder = !selection.parentTitle
-    ? ROOT_NOTE
-    : selection.failed
-      ? "What changed could not be worked out. Pick the build again to retry."
-      : selection.loading
-        ? "Working out what changed…"
-        : undefined;
+  const placeholder = !selection.parentTitle ? ROOT_NOTE : undefined;
+  const working = Boolean(selection.parentTitle) && selection.loading;
+  const failure =
+    selection.parentTitle && selection.failed && !selection.loading
+      ? { onRetry: selection.onRetry ?? (() => undefined), error: selection.error }
+      : undefined;
 
   return (
     <ChangesPanel
@@ -121,18 +135,20 @@ function SelectionPanel({
       fill={fill}
       about={about}
       placeholder={placeholder}
+      loading={working}
+      failure={failure}
     />
   );
 }
 
-export function LineageView({ fit = "content", title, family, selectedId, onSelect, selection, alone }: LineageViewProps) {
+export function LineageView({ fit = "content", title, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
   const phone = useIsPhone();
 
   if (phone) {
     return (
       <div data-testid="lineage-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
         <PageHeading eyebrow="Lineage" title={title} sub="Every published rebuild in this family. Pick one to see what it changed." size={32} />
-        <FamilyPanel root={family} phone selectedId={selectedId} onSelect={onSelect} />
+        <FamilyPanel root={family} phone selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
         <SelectionPanel selection={selection} phone fill={false} alone={alone} />
       </div>
     );
@@ -143,7 +159,7 @@ export function LineageView({ fit = "content", title, family, selectedId, onSele
       <h1 style={VISUALLY_HIDDEN}>{`The family of ${title}`}</h1>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 470px", gap: 12, flexGrow: 1, minHeight: 0 }}>
         <div style={{ minHeight: 0 }}>
-          <FamilyPanel root={family} fit={fit} fill selectedId={selectedId} onSelect={onSelect} />
+          <FamilyPanel root={family} fit={fit} fill selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
         </div>
         <div style={{ minHeight: 0, minWidth: 0 }}>
           <SelectionPanel selection={selection} phone={false} fill alone={alone} />

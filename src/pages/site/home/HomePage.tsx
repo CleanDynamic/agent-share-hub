@@ -57,7 +57,7 @@ function loadable<T, U>(
   if (!gate.signedIn) return { status: "signed-out" };
   if (query.isLoading) return { status: "loading" };
   if (query.data === undefined) {
-    return query.error ? { status: "error", onRetry: () => void query.refetch() } : { status: "loading" };
+    return query.error ? { status: "error", onRetry: () => void query.refetch(), error: query.error } : { status: "loading" };
   }
   return { status: "ready", data: map(query.data) };
 }
@@ -161,6 +161,18 @@ export function HomePage() {
     [items, signed],
   );
 
+  /* The orbs' two counts fail together: one retry asks for both, and the panel says so in place of the orbs. */
+  const orbsFailed = (reproduced.isError && reproduced.data === undefined) || (runsWeek.isError && runsWeek.data === undefined);
+  const orbsError = orbsFailed
+    ? {
+        onRetry: () => {
+          void reproduced.refetch();
+          void runsWeek.refetch();
+        },
+        error: reproduced.error ?? runsWeek.error,
+      }
+    : undefined;
+
   const gate = { authLoading, signedIn: !!userId };
   const challenges = loadable(gate, week, (events) => challengeRows(weeklyProgress(events, new Date(now))));
   const streak = loadable(gate, streakQuery, (days) => streakOf(days, new Date(now)));
@@ -183,6 +195,7 @@ export function HomePage() {
         litToday={lit.data ?? null}
         reproducedToday={reproduced.data ?? null}
         runsThisWeek={runsWeek.data ?? null}
+        orbsError={orbsError}
         feed={{
           status: feedQuery.isError && items.length === 0 ? "error" : feedQuery.isPending ? "loading" : "ready",
           rows: feedRows,
@@ -190,6 +203,7 @@ export function HomePage() {
           loadingMore: feedQuery.isFetchingNextPage,
           onMore: () => void feedQuery.fetchNextPage(),
           onRetry: () => void feedQuery.refetch(),
+          error: feedQuery.error,
         }}
         seenAt={seenAt}
         challenges={challenges}

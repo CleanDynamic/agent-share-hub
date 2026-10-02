@@ -211,13 +211,19 @@ export interface WorksView {
   loadingMore: boolean;
   onMore: () => void;
   onRetry: () => void;
+  /** The real error behind `status: "error"`; logged once by the panel, never shown. */
+  error?: unknown;
 }
 
-/** One sentence for an empty tab, in the viewer's voice for their own profile. */
+/**
+ * One sentence for an empty tab. The Builds tab says what the Works panel says
+ * everywhere ("No builds hung yet."); the others keep their own wording, in the
+ * viewer's voice for their own profile.
+ */
 export function emptyLine(tab: WorksTab, own: boolean): string {
   switch (tab) {
     case "builds":
-      return own ? "You haven't published a build yet." : "Nothing published yet.";
+      return "No builds hung yet.";
     case "rebuilds":
       return own ? "You haven't rebuilt anyone's work yet." : "No rebuilds yet.";
     case "reproduced":

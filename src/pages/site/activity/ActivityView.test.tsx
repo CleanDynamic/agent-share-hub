@@ -205,26 +205,62 @@ describe("ActivityView on a desktop", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("draws a skeleton while the list loads", () => {
+  it("draws row-shaped bones while the list loads, as many as the board has, under two day headings", () => {
     mount({ list: { ...activityFixture().list, status: "loading", groups: [] } });
-    expect(screen.getByLabelText("Loading your activity").getAttribute("aria-busy")).toBe("true");
+    const loading = screen.getByTestId("activity-loading");
+    expect(loading.getAttribute("aria-busy")).toBe("true");
+    expect(loading.textContent).toContain("Loading your activity");
     expect(screen.queryByTestId("activity-row")).toBeNull();
+    // Three rows under the first day, four under the second, an avatar and a thumbnail in each.
+    expect(loading.querySelectorAll('[data-ui="skeleton"][style*="border-radius: 9px"]')).toHaveLength(7);
   });
 
-  it("says it could not load the list, with a retry", () => {
+  it("holds the orb's place and the chart's box while they load, and shows bones for the filter's counts", () => {
+    mount({ list: { ...activityFixture().list, status: "loading", groups: [] }, peopleThisWeek: null, runs: { status: "loading" } });
+    expect(screen.getByTestId("activity-orbs").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("activity-runs-loading").textContent).toContain("Loading the runs chart");
+    // One bone per kind in place of a count that would otherwise read as zero.
+    const toggles = screen.getAllByTestId("activity-kind");
+    expect(toggles).toHaveLength(9);
+    for (const toggle of toggles) expect(toggle.querySelector('[data-ui="skeleton"]')).toBeTruthy();
+  });
+
+  it("says That didn't load. for the list, naming it, with a retry", () => {
     const onRetry = vi.fn();
     mount({ list: { ...activityFixture().list, status: "error", groups: [], onRetry } });
-    expect(screen.getByText("This could not be loaded.")).toBeTruthy();
+    expect(screen.getByTestId("activity-error").textContent).toContain("That didn't load.");
+    expect(screen.getByTestId("activity-error").textContent).toContain("Your activity");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("says what an empty list means and leads to the gallery", () => {
-    const onNavigate = vi.fn();
-    mount({ list: { ...activityFixture().list, groups: [] }, onNavigate });
-    expect(screen.getByTestId("activity-empty")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Enter the gallery" }));
-    expect(onNavigate).toHaveBeenCalledWith("/gallery");
+  it("says why the orb is missing when its count could not be read, and leaves the live orb", () => {
+    const onRetry = vi.fn();
+    mount({ peopleThisWeek: null, peopleError: { onRetry } });
+    const failed = screen.getByTestId("activity-orbs-error");
+    expect(failed.textContent).toContain("People this week");
+    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Listening")).toBeTruthy();
+  });
+
+  it("says All caught up. for an empty list, with no action", () => {
+    mount({ list: { ...activityFixture().list, groups: [] } });
+    const empty = screen.getByTestId("activity-empty");
+    expect(empty.textContent).toBe("All caught up.");
+    expect(within(empty).queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("says a mark-read that did not save, in the list's own place, and asks again from there", () => {
+    const onRetry = vi.fn();
+    mount({ writeError: { onRetry } });
+    const failed = screen.getByTestId("activity-write-error");
+    expect(failed.textContent).toContain("That didn't save.");
+    expect(failed.textContent).toContain("Activity");
+    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    // The rows are still there: the failure is a line in the panel, not a blank page.
+    expect(screen.getAllByTestId("activity-row")).toHaveLength(7);
   });
 
   it("offers Show more when there is more, and is disabled while it loads", () => {
@@ -301,7 +337,7 @@ describe("ActivityView on a phone", () => {
     unmount();
 
     const loading = mount({ list: { ...base, status: "loading", groups: [] } });
-    expect(screen.getByLabelText("Loading your activity").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("activity-loading").getAttribute("aria-busy")).toBe("true");
     loading.unmount();
 
     const onRetry = vi.fn();
@@ -310,10 +346,8 @@ describe("ActivityView on a phone", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     failed.unmount();
 
-    const onNavigate = vi.fn();
-    const empty = mount({ list: { ...base, groups: [] }, onNavigate });
-    fireEvent.click(screen.getByRole("button", { name: "Enter the gallery" }));
-    expect(onNavigate).toHaveBeenCalledWith("/gallery");
+    const empty = mount({ list: { ...base, groups: [] } });
+    expect(screen.getByTestId("activity-empty").textContent).toBe("All caught up.");
     empty.unmount();
 
     const onMore = vi.fn();

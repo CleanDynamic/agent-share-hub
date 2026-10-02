@@ -14,9 +14,9 @@ import type { DesignPageProps } from "./KitPages";
 
 const PHONE_OUTCOME = "Drafts a first reply to every ticket in the house tone. Never sends on its own.";
 
-export default function GalleryDemo({ fit = "board", viewport }: DesignPageProps) {
-  const sample = galleryFixture();
-  if (viewport !== "mobile") return <GalleryView fit={fit} {...sample} />;
+export default function GalleryDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
+  const sample = galleryFixture(state);
+  if (viewport !== "mobile" || state !== "populated") return <GalleryView fit={fit} {...sample} />;
 
   const cards = [...sample.wall.cards];
   [cards[3], cards[4]] = [cards[4], cards[3]];

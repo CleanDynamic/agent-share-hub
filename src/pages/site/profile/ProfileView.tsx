@@ -21,13 +21,17 @@ import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { ActivityGrid, type ActivityDay } from "@/components/brand/ActivityGrid";
-import { Button } from "@/components/brand/Button";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { OrbRing } from "@/components/brand/OrbRing";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { MarkTile } from "@/components/brand/RankRung";
 import { Segmented } from "@/components/brand/Segmented";
+import { CardSkeleton, LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { Button } from "@/components/brand/Button";
 import { Stat } from "@/components/brand/Stat";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { WallLabel } from "@/components/brand/WallLabel";
@@ -35,7 +39,6 @@ import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { TrackId } from "@/lib/progress";
-import { skeletonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE, mono } from "@/lib/theme/type";
@@ -64,7 +67,8 @@ import {
 
 export interface ProfileViewProps {
   fit?: PageFit;
-  maker: ProfileMakerView;
+  /** Null while the profile itself is on its way: the banner holds its place and every panel waits. */
+  maker: ProfileMakerView | null;
   /** The viewer is the maker: Edit profile in place of Follow, and the track can be changed. */
   isOwn: boolean;
   following: boolean;
@@ -80,11 +84,19 @@ export interface ProfileViewProps {
   onTrack?: (track: TrackId) => void;
   /** Null while it loads. */
   figures: FiguresView | null;
+  /**
+   * Whether the figures will carry bars, so that while they load each cell holds its
+   * bar's place and the row is the height it will be. The live page has no creator-mark
+   * thresholds to measure against and says false; the sample draws them.
+   */
+  figuresBarsExpected?: boolean;
   works: WorksView;
   /** Null while it loads. */
   activity: readonly ActivityDay[] | null;
   /** Null while it loads. */
   marks: readonly MarkView[] | null;
+  /** A panel whose read failed says so in its own place, and the rest carry on. */
+  failed?: Partial<Record<"level" | "figures" | "activity" | "marks", PanelFailure>>;
 }
 
 export const ACTIVITY_TITLE = "Activity";
@@ -93,10 +105,6 @@ export const MARKS_TITLE = "Creator marks";
 export const MARKS_SUBTITLE = "Common · rare · highest";
 
 const COLUMN: CSSProperties = { display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 };
-
-function Skeleton({ width, height, style }: { width?: number | string; height: number; style?: CSSProperties }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), width, height, ...style }} />;
-}
 
 /* ── the level panel ── */
 
@@ -111,13 +119,43 @@ function StreakRow({ view, phone }: { view: LevelView; phone: boolean }) {
   );
 }
 
+/** The level panel before it has arrived: the orb's circle, the track and its figures as bones — and on a phone the track chips' row. */
+function LevelSkeleton({ phone }: { phone: boolean }) {
+  const orb = phone ? 118 : 150;
+  return (
+    <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
+      <LoadingRegion what="the level" data-testid="profile-level-loading">
+        <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+          <Skeleton width={orb} height={orb} radius="50%" />
+          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 6 : 8, flexGrow: 1, minWidth: 0 }}>
+            <Skeleton width={phone ? 96 : 48} height={11} />
+            {phone ? null : <Skeleton height={30} radius={r.control} />}
+            <Skeleton width={phone ? "70%" : "54%"} height={phone ? 15 : 14} />
+            {phone ? <Skeleton width="56%" height={15} /> : null}
+            <Skeleton width="42%" height={15} />
+          </div>
+        </div>
+        {phone ? (
+          <div style={{ display: "flex", gap: 6, margin: "14px -2px 0" }}>
+            {[78, 70, 66, 74].map((width, index) => (
+              <Skeleton key={index} width={width} height={36} radius={r.media} />
+            ))}
+          </div>
+        ) : null}
+      </LoadingRegion>
+    </Panel>
+  );
+}
+
 function LevelPanel({
   level,
+  failure,
   isOwn,
   onTrack,
   phone,
 }: {
   level: LevelView | null;
+  failure?: PanelFailure;
   isOwn: boolean;
   onTrack?: (track: TrackId) => void;
   phone: boolean;
@@ -125,20 +163,15 @@ function LevelPanel({
   const orb = phone ? 118 : 150;
   const editable = isOwn && Boolean(onTrack);
 
-  if (!level) {
+  if (failure) {
     return (
       <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
-        <div data-testid="profile-level" role="status" aria-label="Loading level" style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
-          <Skeleton width={orb} height={orb} style={{ borderRadius: "50%", flexShrink: 0 }} />
-          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 6 : 8, flexGrow: 1 }}>
-            <Skeleton width={90} height={13} />
-            <Skeleton width="80%" height={phone ? 15 : 30} />
-            <Skeleton width="60%" height={14} />
-          </div>
-        </div>
+        <ErrorState panel="Level" onRetry={failure.onRetry} error={failure.error} data-testid="profile-level-error" />
       </Panel>
     );
   }
+
+  if (!level) return <LevelSkeleton phone={phone} />;
 
   const xp = xpLine(level);
   const remaining = remainingLine(level);
@@ -208,8 +241,39 @@ function LevelPanel({
 
 /* ── the stats ── */
 
-function StatsWall({ figures, phone }: { figures: FiguresView | null; phone: boolean }) {
-  const loading = <Skeleton width={46} height={22} />;
+function StatsWall({
+  figures,
+  barsExpected,
+  failure,
+  phone,
+}: {
+  figures: FiguresView | null;
+  barsExpected: boolean;
+  failure?: PanelFailure;
+  phone: boolean;
+}) {
+  if (failure) {
+    return (
+      <div
+        data-testid="profile-stats-error"
+        style={{
+          minHeight: phone ? 169 : 84,
+          boxSizing: "border-box",
+          padding: "12px 14px",
+          borderRadius: r.control,
+          border: `1px solid ${t.line}`,
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <ErrorState panel="Maker figures" onRetry={failure.onRetry} error={failure.error} />
+      </div>
+    );
+  }
+
+  /* A figure's bone is as tall as the number's line (25px), and holds its bar's place where the figures will carry one. */
+  const loading = <Skeleton width={46} height={22} style={{ margin: "1px 0 2px" }} />;
+  const waiting = figures === null && barsExpected;
   const bars = figures?.bars;
   const cells = [
     <Stat key="builds" label="Builds hung" value={figures ? formatCount(figures.buildsHung) : loading} />,
@@ -217,6 +281,7 @@ function StatsWall({ figures, phone }: { figures: FiguresView | null; phone: boo
       key="reproduced"
       label="Reproduced by others"
       value={figures ? formatCount(figures.reproducedByOthers) : loading}
+      barLoading={waiting}
       bar={
         figures && bars?.reproduced !== undefined
           ? { value: bars.reproduced, colour: t.evidence, label: "Progress to the next creator mark for reproductions" }
@@ -227,6 +292,7 @@ function StatsWall({ figures, phone }: { figures: FiguresView | null; phone: boo
       key="rebuilds"
       label="Rebuilds of their work"
       value={figures ? formatCount(figures.rebuildsOfWork) : loading}
+      barLoading={waiting}
       bar={
         figures && bars?.rebuilds !== undefined
           ? { value: bars.rebuilds, colour: t.catAgents, label: "Progress to the next creator mark for rebuilds" }
@@ -238,6 +304,7 @@ function StatsWall({ figures, phone }: { figures: FiguresView | null; phone: boo
       label="Bounties solved"
       value={figures ? formatCount(figures.bountiesSolved) : loading}
       of={figures && !phone ? formatPounds(figures.bountyEarningsGbp) : undefined}
+      barLoading={waiting}
       bar={
         figures && bars?.bounties !== undefined
           ? { value: bars.bounties, colour: t.action, label: "Progress to the next creator mark for bounties" }
@@ -245,10 +312,13 @@ function StatsWall({ figures, phone }: { figures: FiguresView | null; phone: boo
       }
     />,
   ];
-  return (
-    <div data-testid="profile-stats" aria-busy={figures ? undefined : true}>
-      <WallLabel columns={phone ? 2 : 4} cells={cells} />
-    </div>
+  const label = <WallLabel columns={phone ? 2 : 4} cells={cells} />;
+  return figures ? (
+    <div data-testid="profile-stats">{label}</div>
+  ) : (
+    <LoadingRegion what="the maker’s figures" data-testid="profile-stats">
+      {label}
+    </LoadingRegion>
   );
 }
 
@@ -302,6 +372,14 @@ function CollectionTile({ tile, phone }: { tile: CollectionTileView; phone: bool
   );
 }
 
+/** What a tab's panel is loading, as `Loading …` reads it. */
+const WORKS_NOUN: Record<WorksTab, string> = {
+  builds: "builds",
+  rebuilds: "rebuilds",
+  reproduced: "reproduced builds",
+  collections: "collections",
+};
+
 function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; phone: boolean }) {
   const columns = phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))";
   const grid: CSSProperties = { display: "grid", gridTemplateColumns: columns, gap: phone ? "6px 10px" : 12, alignItems: "start" };
@@ -309,36 +387,31 @@ function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; 
 
   if (works.status === "loading") {
     return (
-      <div data-testid="profile-works-loading" role="status" aria-label="Loading builds" style={grid}>
-        {Array.from({ length: phone ? 2 : 4 }, (_, index) => (
-          <Skeleton key={index} height={phone ? 214 : 206} style={{ borderRadius: r.card }} />
+      <LoadingRegion what={WORKS_NOUN[works.tab]} data-testid="profile-works-loading" style={grid}>
+        {Array.from({ length: 4 }, (_, index) => (
+          <CardSkeleton key={index} cover={phone ? 90 : 86} body={138} />
         ))}
-      </div>
+      </LoadingRegion>
     );
   }
 
   if (works.status === "error") {
     return (
-      <div data-testid="profile-works-error" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, paddingTop: 8 }}>
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
-          {works.errorKind === "permission" ? "You don't have access to this." : "Something went wrong."}
-        </p>
-        <Button variant="secondary" size={36} onClick={works.onRetry}>
-          Try again
-        </Button>
-      </div>
+      <ErrorState
+        /* A refusal is its own sentence, never an empty tab. */
+        line={works.errorKind === "permission" ? "You don't have access to this." : undefined}
+        panel="Works"
+        onRetry={works.onRetry}
+        error={works.error}
+        style={{ paddingTop: 8 }}
+        data-testid="profile-works-error"
+      />
     );
   }
 
   const collections = works.tab === "collections";
   const count = collections ? works.collections.length : works.cards.length;
-  if (count === 0) {
-    return (
-      <p data-testid="profile-works-empty" style={{ margin: 0, paddingTop: 8, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
-        {emptyLine(works.tab, isOwn)}
-      </p>
-    );
-  }
+  if (count === 0) return <EmptyState line={emptyLine(works.tab, isOwn)} data-testid="profile-works-empty" />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -414,16 +487,30 @@ function PhoneWorks({ works, isOwn }: { works: WorksView; isOwn: boolean }) {
 
 /* ── activity and creator marks ── */
 
-function ActivityPanel({ days, phone, fill }: { days: readonly ActivityDay[] | null; phone: boolean; fill: boolean }) {
+function ActivityPanel({
+  days,
+  failure,
+  phone,
+  fill,
+}: {
+  days: readonly ActivityDay[] | null;
+  failure?: PanelFailure;
+  phone: boolean;
+  fill: boolean;
+}) {
   return (
     <Panel padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-activity">
         <PanelHead title={ACTIVITY_TITLE} subtitle={ACTIVITY_SUBTITLE} titleSize={13} headingLevel={2} />
         <div style={{ marginTop: 12, overflow: phone ? "hidden" : undefined }}>
-          {days ? (
+          {failure ? (
+            <ErrorState panel="Activity" onRetry={failure.onRetry} error={failure.error} data-testid="profile-activity-error" />
+          ) : days ? (
             <ActivityGrid days={days} />
           ) : (
-            <Skeleton height={7 * 12 + 6 * 3} style={{ width: "100%" }} />
+            <LoadingRegion what="the activity grid" data-testid="profile-activity-loading">
+              <Skeleton height={7 * 12 + 6 * 3} />
+            </LoadingRegion>
           )}
         </div>
       </div>
@@ -431,18 +518,37 @@ function ActivityPanel({ days, phone, fill }: { days: readonly ActivityDay[] | n
   );
 }
 
-function MarksPanel({ marks, isOwn, phone, fill }: { marks: readonly MarkView[] | null; isOwn: boolean; phone: boolean; fill: boolean }) {
+function MarksPanel({
+  marks,
+  failure,
+  isOwn,
+  phone,
+  fill,
+}: {
+  marks: readonly MarkView[] | null;
+  failure?: PanelFailure;
+  isOwn: boolean;
+  phone: boolean;
+  fill: boolean;
+}) {
   const tiles = (marks ?? []).map((mark) => <MarkTile key={mark.key} tier={mark.tier} caption={mark.name} />);
   return (
     <Panel padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-marks">
         <PanelHead title={MARKS_TITLE} subtitle={MARKS_SUBTITLE} titleSize={13} headingLevel={2} />
-        {marks === null ? (
-          <Skeleton height={64} style={{ marginTop: 12, width: "100%" }} />
+        {failure ? (
+          <ErrorState panel="Creator marks" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="profile-marks-error" />
+        ) : marks === null ? (
+          <LoadingRegion what="the creator marks" data-testid="profile-marks-loading" style={{ marginTop: 12 }}>
+            {/* Five tiles of 64, spread across the panel as the marks are. */}
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {Array.from({ length: 5 }, (_, index) => (
+                <Skeleton key={index} width={64} height={64} radius={r.control} />
+              ))}
+            </div>
+          </LoadingRegion>
         ) : tiles.length === 0 ? (
-          <p style={{ margin: "12px 0 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
-            {isOwn ? "Publish a build to earn your first." : "No creator marks yet."}
-          </p>
+          <EmptyState line={isOwn ? "Publish a build to earn your first." : "No creator marks yet."} data-testid="profile-marks-empty" />
         ) : phone ? (
           <div style={{ margin: "12px -2px 0" }}>
             <ScrollRow gap={8} label="Creator marks">
@@ -459,6 +565,15 @@ function MarksPanel({ marks, isOwn, phone, fill }: { marks: readonly MarkView[] 
 
 /* ── the page ── */
 
+/** The banner's place while the profile is on its way: the page's own announcement, and a block as tall as the banner. */
+function BannerSkeleton({ phone }: { phone: boolean }) {
+  return (
+    <LoadingRegion what="the profile" announce data-testid="profile-banner-loading" style={phone ? undefined : { height: "100%" }}>
+      <Skeleton height={phone ? 290 : "100%"} radius={phone ? 18 : r.panel} />
+    </LoadingRegion>
+  );
+}
+
 export function ProfileView({
   fit = "content",
   maker,
@@ -472,9 +587,11 @@ export function ProfileView({
   level,
   onTrack,
   figures,
+  figuresBarsExpected = false,
   works,
   activity,
   marks,
+  failed = {},
 }: ProfileViewProps) {
   const phone = useIsPhone();
   const actions = { isOwn, following, followBusy, onFollow, onUnfollow, onMessage: isOwn ? undefined : onMessage, onEdit };
@@ -483,15 +600,19 @@ export function ProfileView({
   if (phone) {
     return (
       <div data-testid="profile-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
-        <ProfileBanner maker={maker} phone {...actions} />
-        <div style={{ display: "grid", gridTemplateColumns: twoActions ? "1fr 1fr" : "1fr", gap: 8 }}>
-          <ProfileActions {...actions} phone />
-        </div>
-        <LevelPanel level={level} isOwn={isOwn} onTrack={onTrack} phone />
-        <StatsWall figures={figures} phone />
+        {maker ? <ProfileBanner maker={maker} phone {...actions} /> : <BannerSkeleton phone />}
+        {maker ? (
+          <div style={{ display: "grid", gridTemplateColumns: twoActions ? "1fr 1fr" : "1fr", gap: 8 }}>
+            <ProfileActions {...actions} phone />
+          </div>
+        ) : (
+          <Skeleton height={48} radius={r.control} />
+        )}
+        <LevelPanel level={level} failure={failed.level} isOwn={isOwn} onTrack={onTrack} phone />
+        <StatsWall figures={figures} barsExpected={figuresBarsExpected} failure={failed.figures} phone />
         <PhoneWorks works={works} isOwn={isOwn} />
-        <ActivityPanel days={activity} phone fill={false} />
-        <MarksPanel marks={marks} isOwn={isOwn} phone fill={false} />
+        <ActivityPanel days={activity} failure={failed.activity} phone fill={false} />
+        <MarksPanel marks={marks} failure={failed.marks} isOwn={isOwn} phone fill={false} />
       </div>
     );
   }
@@ -499,15 +620,13 @@ export function ProfileView({
   return (
     <div data-testid="profile-view" data-viewport="desktop" style={{ ...COLUMN, gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 440px", gap: 12, height: 220, flexShrink: 0 }}>
+        <div style={{ minHeight: 0 }}>{maker ? <ProfileBanner maker={maker} {...actions} /> : <BannerSkeleton phone={false} />}</div>
         <div style={{ minHeight: 0 }}>
-          <ProfileBanner maker={maker} {...actions} />
-        </div>
-        <div style={{ minHeight: 0 }}>
-          <LevelPanel level={level} isOwn={isOwn} onTrack={onTrack} phone={false} />
+          <LevelPanel level={level} failure={failed.level} isOwn={isOwn} onTrack={onTrack} phone={false} />
         </div>
       </div>
       <div style={{ flexShrink: 0 }}>
-        <StatsWall figures={figures} phone={false} />
+        <StatsWall figures={figures} barsExpected={figuresBarsExpected} failure={failed.figures} phone={false} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 12, flexGrow: 1, minHeight: 0 }}>
         <div style={{ minHeight: 0 }}>
@@ -515,10 +634,10 @@ export function ProfileView({
         </div>
         <div style={{ ...COLUMN, gap: 12 }}>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <ActivityPanel days={activity} phone={false} fill />
+            <ActivityPanel days={activity} failure={failed.activity} phone={false} fill />
           </div>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <MarksPanel marks={marks} isOwn={isOwn} phone={false} fill />
+            <MarksPanel marks={marks} failure={failed.marks} isOwn={isOwn} phone={false} fill />
           </div>
         </div>
       </div>
@@ -526,33 +645,55 @@ export function ProfileView({
   );
 }
 
-/** The profile before it has arrived: the banner and level panel, the stats and the works, in `--recess`. */
-export function ProfileViewSkeleton() {
-  const phone = useIsPhone();
+const noop = () => undefined;
+
+/** A works panel that has not been read: the Builds tab, waiting. */
+const WORKS_LOADING: WorksView = {
+  tab: "builds",
+  onTab: noop,
+  counts: {},
+  status: "loading",
+  cards: [],
+  collections: [],
+  hasMore: false,
+  loadingMore: false,
+  onMore: noop,
+  onRetry: noop,
+};
+
+/**
+ * The profile before it has arrived: the same view, every panel waiting. The panels,
+ * their heads and their padding are the real ones; only what is inside them is a bone.
+ */
+export function ProfileViewSkeleton({ fit = "content", figuresBarsExpected }: { fit?: PageFit; figuresBarsExpected?: boolean }) {
   return (
-    <div
-      data-testid="profile-skeleton"
-      role="status"
-      aria-label="Loading profile"
-      style={{ display: "flex", flexDirection: "column", gap: 12 }}
-    >
-      {phone ? (
-        <>
-          <Skeleton height={290} style={{ borderRadius: 18 }} />
-          <Skeleton height={48} style={{ borderRadius: r.control }} />
-          <Skeleton height={150} style={{ borderRadius: r.panel }} />
-        </>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 440px", gap: 12 }}>
-            <Skeleton height={220} style={{ borderRadius: r.panel }} />
-            <Skeleton height={220} style={{ borderRadius: r.panel }} />
-          </div>
-          <Skeleton height={76} style={{ borderRadius: r.control }} />
-          <Skeleton height={420} style={{ borderRadius: r.panel }} />
-        </>
-      )}
-    </div>
+    <ProfileView
+      fit={fit}
+      maker={null}
+      isOwn={false}
+      following={false}
+      onFollow={noop}
+      onUnfollow={noop}
+      level={null}
+      figures={null}
+      figuresBarsExpected={figuresBarsExpected}
+      works={WORKS_LOADING}
+      activity={null}
+      marks={null}
+    />
+  );
+}
+
+/**
+ * The profile itself could not be read: the page's own panel says so, with a way to ask
+ * again, inside the frame. Not "Profile not found": that is for a handle nobody has.
+ */
+export function ProfileLoadFailed({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
+  return (
+    <Panel padding="24px 24px">
+      <h1 style={VISUALLY_HIDDEN}>Profile</h1>
+      <ErrorState panel="Profile" onRetry={onRetry} error={error} data-testid="profile-load-error" />
+    </Panel>
   );
 }
 

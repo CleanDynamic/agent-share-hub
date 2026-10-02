@@ -14,8 +14,8 @@ import type { DesignPageProps } from "./KitPages";
 
 const PHONE_BIO = "finance agents a person can check";
 
-export default function ProfileDemo({ fit = "board", viewport }: DesignPageProps) {
-  const sample = profileFixture();
-  if (viewport !== "mobile") return <ProfileView fit={fit} {...sample} />;
+export default function ProfileDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
+  const sample = profileFixture(state);
+  if (viewport !== "mobile" || !sample.maker) return <ProfileView fit={fit} {...sample} />;
   return <ProfileView fit={fit} {...sample} maker={{ ...sample.maker, bio: PHONE_BIO }} />;
 }

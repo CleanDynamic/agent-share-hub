@@ -31,7 +31,7 @@ const noop = () => undefined;
 
 const PAGE: Record<SigninMode, AuthMode> = { login: "login", signup: "signup", reset: "reset", confirm: "reset", verify: "verify" };
 
-export default function SignInDemo({ fit = "board", viewport }: DesignPageProps) {
+export default function SignInDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
   const theme = useDesignTheme();
   const [params] = useSearchParams();
   const asked = params.get("mode") as SigninMode | null;
@@ -44,8 +44,10 @@ export default function SignInDemo({ fit = "board", viewport }: DesignPageProps)
         fit={mode === "login" ? fit : "content"}
         mode={PAGE[mode]}
         onBack={noop}
-        reproducedToday={sample.reproducedToday}
-        inGallery={sample.inGallery}
+        /* UI-P37: the counts waiting (loading), none yet (empty), or unreadable and left out (error). */
+        reproducedToday={state === "loading" || state === "error" ? null : state === "empty" ? 0 : sample.reproducedToday}
+        inGallery={state === "loading" || state === "error" ? null : state === "empty" ? 0 : sample.inGallery}
+        countsFailed={state === "error"}
         themeValue={theme}
       >
         {mode === "signup" ? (

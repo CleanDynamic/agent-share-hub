@@ -53,7 +53,7 @@ import {
 } from "@/lib/build";
 import { deltaLine } from "@/pages/site/build/buildModel";
 
-import { RebuildView, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
+import { RebuildView, RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
 import { changeGroups, familyView, readinessView } from "./rebuildModel";
 
 /** A source does not change while somebody is rebuilding it. */
@@ -204,17 +204,7 @@ export function RebuildPage() {
   );
 
   if (sourceHeader.isError) {
-    return (
-      <RebuildViewNotice
-        line="This build could not be read."
-        detail="Nothing has been forked. Try again in a moment."
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => void sourceHeader.refetch()}>
-            Try again
-          </Button>
-        }
-      />
-    );
+    return <RebuildViewFailed panel="The rebuild" onRetry={() => void sourceHeader.refetch()} error={sourceHeader.error} />;
   }
 
   if (!sourceHeader.isPending && !source) {
@@ -233,32 +223,27 @@ export function RebuildPage() {
 
   if (startError || draftHeader.isError) {
     return (
-      <RebuildViewNotice
-        line="The rebuild could not be started."
-        detail={(startError ?? (draftHeader.error as Error | null))?.message ?? "Try again in a moment."}
-        action={backToBuild}
+      <RebuildViewFailed
+        panel="Your draft"
+        error={startError ?? draftHeader.error}
+        onRetry={() => {
+          started.current = false;
+          setStartError(null);
+          void draftHeader.refetch();
+        }}
       />
     );
   }
 
   if (sourceRecord.isError || draftRecord.isError) {
     return (
-      <RebuildViewNotice
-        line="This rebuild could not be read."
-        detail="Your draft is safe; the page could not load it just now."
-        action={
-          <Button
-            variant="secondary"
-            size={36}
-            fontSize={13}
-            onClick={() => {
-              void sourceRecord.refetch();
-              void draftRecord.refetch();
-            }}
-          >
-            Try again
-          </Button>
-        }
+      <RebuildViewFailed
+        panel="The rebuild"
+        error={sourceRecord.error ?? draftRecord.error}
+        onRetry={() => {
+          void sourceRecord.refetch();
+          void draftRecord.refetch();
+        }}
       />
     );
   }
@@ -295,7 +280,16 @@ export function RebuildPage() {
         onKeepDraft={() => navigate(workspace)}
         workspaceTo={workspace}
         publishing={publish.isPending}
-        publishError={publish.isError ? `The rebuild could not be published: ${(publish.error as Error).message}` : null}
+        publishFailure={
+          publish.isError
+            ? {
+                onRetry: () => {
+                  if (computed.readiness.ready) publish.mutate(draftRecord.data?.build ?? draft);
+                },
+                error: publish.error,
+              }
+            : null
+        }
       />
     </>
   );

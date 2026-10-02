@@ -32,7 +32,7 @@ import {
 import { t } from "@/lib/theme/tokens";
 
 import { LineageView, type LineageSelection } from "./LineageView";
-import { RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
+import { RebuildViewFailed, RebuildViewNotice, RebuildViewSkeleton } from "./RebuildView";
 import { changeGroups, familyView } from "./rebuildModel";
 
 /** A family does not change while somebody is looking at it. */
@@ -106,16 +106,7 @@ export function LineagePage() {
   if (header.isPending && Boolean(slug)) return <RebuildViewSkeleton label="Loading the family" />;
 
   if (header.isError) {
-    return (
-      <RebuildViewNotice
-        line="This family could not be loaded."
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => void header.refetch()}>
-            Try again
-          </Button>
-        }
-      />
-    );
+    return <RebuildViewFailed panel="The family" onRetry={() => void header.refetch()} error={header.error} />;
   }
 
   if (!build) {
@@ -126,19 +117,6 @@ export function LineagePage() {
         action={
           <Button variant="secondary" size={36} fontSize={13} onClick={() => navigate("/gallery")}>
             See the gallery
-          </Button>
-        }
-      />
-    );
-  }
-
-  if (family.isError) {
-    return (
-      <RebuildViewNotice
-        line="This family could not be loaded."
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => void family.refetch()}>
-            Try again
           </Button>
         }
       />
@@ -156,6 +134,11 @@ export function LineagePage() {
         parentTitle: parentId ? ((parentNode?.title ?? parentRecord.data?.build.title ?? "").trim() || "its source") : null,
         groups,
         loading: Boolean(parentId) && !loaded,
+        onRetry: () => {
+          void pickedRecord.refetch();
+          void parentRecord.refetch();
+        },
+        error: pickedRecord.error ?? parentRecord.error,
         failed:
           pickedRecord.isError || parentRecord.isError || (Boolean(parentId) && loaded && (!pickedRecord.data || !parentRecord.data)),
       }
@@ -178,16 +161,9 @@ export function LineagePage() {
         selectedId={selectedId}
         onSelect={(id) => setSelectedId((current) => (current === id ? null : id))}
         selection={selection}
-        alone={
-          alone ? (
-            <>
-              Nobody has rebuilt this yet.{" "}
-              <Link to={`/rebuild/${encodeURIComponent(build.slug)}`} style={{ color: t.action, textDecoration: "underline", textUnderlineOffset: 3 }}>
-                Rebuild this
-              </Link>
-            </>
-          ) : null
-        }
+        alone={alone}
+        familyLoading={family.isPending}
+        familyFailure={family.isError ? { onRetry: () => void family.refetch(), error: family.error } : undefined}
       />
     </>
   );

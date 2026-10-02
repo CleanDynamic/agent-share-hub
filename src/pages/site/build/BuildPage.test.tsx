@@ -326,18 +326,33 @@ describe("BuildPage (site frame)", () => {
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
   });
 
-  it("says why a reproduction could not be recorded, and keeps the dialog open", async () => {
+  it("shows a reproduction at once, and rolls it back with a line in the proof panel if the write fails — never the exception", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     auth.isLoggedIn = true;
     auth.userId = "reader";
-    recordReproduction.mockRejectedValue(new Error("recordReproduction failed: new row violates row-level security policy"));
+    let fail!: (reason: unknown) => void;
+    recordReproduction.mockReturnValue(new Promise((_, reject) => (fail = reject)));
     renderAt();
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    expect(screen.getByText("not yet reproduced")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "I ran this and it worked" }));
     const dialog = await screen.findByRole("dialog", { name: "You ran this build" });
-    await act(async () => {
-      fireEvent.click(within(dialog).getByRole("button", { name: "It worked" }));
-    });
-    expect(within(dialog).getByRole("alert").textContent).toContain("row-level security");
+    fireEvent.click(within(dialog).getByRole("button", { name: "It worked" }));
+
+    // The new state is on screen before the server has answered, and the dialog has closed.
+    await waitFor(() => expect(screen.queryByText("not yet reproduced")).toBeNull());
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("build-run-error")).toBeNull();
+
+    await act(async () => fail(new Error("recordReproduction failed: new row violates row-level security policy")));
+    const failed = await screen.findByTestId("build-run-error");
+    expect(failed.textContent).toContain("That didn't save.");
+    expect(failed.textContent).not.toContain("row-level security");
+    expect(screen.getByText("not yet reproduced")).toBeTruthy();
+
+    fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("dialog", { name: "You ran this build" })).toBeTruthy();
+    vi.restoreAllMocks();
   });
 
   it("credits a rebuild's source and says what changed against it", async () => {
@@ -372,9 +387,11 @@ describe("BuildPage (site frame)", () => {
   });
 
   it("says when the build could not be read, and tries again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     getBuildBySlug.mockRejectedValueOnce(new Error("boom"));
     renderAt();
-    expect(await screen.findByRole("heading", { level: 1, name: "This build could not be loaded." })).toBeTruthy();
+    expect((await screen.findByTestId("build-error")).textContent).toContain("That didn't load.");
+    expect(screen.queryByText(/boom/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
   });

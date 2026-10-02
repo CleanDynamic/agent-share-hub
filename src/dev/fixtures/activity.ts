@@ -11,6 +11,7 @@
    board's polyline into the unit interval the chart takes, with the rebuild at
    point 23). They are sample pictures, not data. */
 
+import type { DesignState } from "@/dev/useDesignTheme";
 import type { ActivityRuns, ActivityViewProps } from "@/pages/site/activity/ActivityView";
 import type { ActivityDay, ActivityGroup, ActivityKind, ActivityRow, KindCounts } from "@/pages/site/activity/activityModel";
 
@@ -82,8 +83,46 @@ export const ACTIVITY_RUNS: ActivityRuns = {
 
 const noop = () => undefined;
 
-export function activityFixture(): Omit<ActivityViewProps, "fit"> {
-  return {
+/**
+ * UI-P37 — the same page in its other three states, from the same sample. Loading has
+ * the list, the orb and the chart waiting; empty is nothing to catch up on; error has
+ * the list, the orb and the chart failing, each in its own place.
+ */
+function inState(base: Omit<ActivityViewProps, "fit">, state: DesignState): Omit<ActivityViewProps, "fit"> {
+  if (state === "loading") {
+    return {
+      ...base,
+      list: { ...base.list, status: "loading", groups: [] },
+      unread: null,
+      peopleThisWeek: null,
+      runs: { status: "loading" },
+    };
+  }
+  if (state === "empty") {
+    return {
+      ...base,
+      list: { ...base.list, groups: [] },
+      unread: 0,
+      kindCounts: Object.fromEntries(Object.keys(base.kindCounts).map((kind) => [kind, 0])) as unknown as KindCounts,
+      peopleThisWeek: 0,
+    };
+  }
+  if (state === "error") {
+    const failure = { onRetry: noop };
+    return {
+      ...base,
+      list: { ...base.list, status: "error", groups: [] },
+      unread: null,
+      peopleThisWeek: null,
+      peopleError: failure,
+      runs: { status: "error", ...failure },
+    };
+  }
+  return base;
+}
+
+export function activityFixture(state: DesignState = "populated"): Omit<ActivityViewProps, "fit"> {
+  return inState({
     now: FIXTURE_NOW.getTime(),
     list: { status: "ready", groups: activityGroups(), hasMore: false, loadingMore: false, onMore: noop, onRetry: noop },
     unread: sample.unread,
@@ -93,6 +132,5 @@ export function activityFixture(): Omit<ActivityViewProps, "fit"> {
     runs: { status: "ready", data: ACTIVITY_RUNS },
     onOpen: noop,
     onMarkAllRead: noop,
-    onNavigate: noop,
-  };
+  }, state);
 }

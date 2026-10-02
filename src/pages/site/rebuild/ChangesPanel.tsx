@@ -14,7 +14,10 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -111,9 +114,13 @@ export interface ChangesPanelProps {
   placeholder?: ReactNode;
   /** A line under the head naming whose changes these are (the lineage page). */
   about?: ReactNode;
+  /** The diff is being worked out: bones where the rows go. */
+  loading?: boolean;
+  /** The diff could not be worked out: said in the panel, with a retry. */
+  failure?: PanelFailure;
 }
 
-export function ChangesPanel({ groups, phone = false, fill = false, placeholder, about }: ChangesPanelProps) {
+export function ChangesPanel({ groups, phone = false, fill = false, placeholder, about, loading = false, failure }: ChangesPanelProps) {
   return (
     <Panel padding={phone ? "14px 16px" : "16px 18px"} style={fill ? { height: "100%", overflowY: "auto" } : undefined}>
       <div data-testid="changes-panel">
@@ -124,14 +131,20 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
           right={!phone && groups ? <Eyebrow>{changesEyebrow(groups)}</Eyebrow> : undefined}
         />
         {about}
-        {groups && groups.length > 0 ? (
+        {failure ? (
+          <ErrorState panel="What changed" onRetry={failure.onRetry} error={failure.error} style={{ marginTop: 12 }} data-testid="changes-error" />
+        ) : loading ? (
+          <LoadingRegion what="what changed" data-testid="changes-loading" style={{ marginTop: 12 }}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <Skeleton key={i} height={phone ? 40 : 30} radius={0} style={{ marginBottom: 1 }} />
+            ))}
+          </LoadingRegion>
+        ) : groups && groups.length > 0 ? (
           <ChangeList groups={groups} phone={phone} />
         ) : placeholder ? (
           <div style={{ marginTop: 12, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
         ) : groups ? (
-          <p style={{ margin: "12px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
-            Nothing in the record reads differently from its source yet.
-          </p>
+          <EmptyState line="Nothing has changed yet." data-testid="changes-empty" />
         ) : null}
       </div>
     </Panel>
