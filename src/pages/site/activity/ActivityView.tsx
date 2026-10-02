@@ -294,16 +294,12 @@ function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpe
       {row.unread ? <LampDot /> : <span />}
       <Who row={row} size={34} />
       <div style={{ minWidth: 0 }}>
+        {/* The board keeps the title span and the detail line when they are empty: they set a follow row's height. */}
         <div style={whoStyle}>
-          {row.who}
-          {row.title ? (
-            <>
-              {" "}
-              <span style={{ ...display(17), lineHeight: "normal", color: t.text }}>{row.title}</span>
-            </>
-          ) : null}
+          {row.who}{" "}
+          <span style={{ ...display(17), letterSpacing: "normal", lineHeight: "normal", color: t.text }}>{row.title}</span>
         </div>
-        {row.detail ? <div style={detailStyle}>{row.detail}</div> : null}
+        <div style={detailStyle}>{row.detail}</div>
       </div>
       <Thumb row={row} />
       <When row={row} now={now} style={{ textAlign: "right" }} />
