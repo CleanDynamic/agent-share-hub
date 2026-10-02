@@ -60,8 +60,15 @@
 // the database.
 
 import { supabase } from "@/integrations/supabase/client";
-import { deleteBuild, getBuildHeader, updateBuild } from "./builds";
+import { BUILD_COLUMNS, deleteBuild, getBuildHeader, updateBuild } from "./builds";
 import { forkBuild } from "./fork";
+import {
+  gallerySelect,
+  toGalleryBuild,
+  withCardEmbeds,
+  type GalleryBuild,
+  type GalleryRow,
+} from "./gallery";
 import { canonicalJson } from "./layers";
 import {
   publishBuild,
@@ -228,6 +235,46 @@ export async function startRebuild({
     await deleteBuild(draft.id).catch(() => undefined);
     throw error;
   }
+}
+
+export interface GetRebuildDraftInput {
+  /** The build being rebuilt: the draft's parent_build_id. */
+  sourceBuildId: string;
+  /** The reader, who owns the draft. */
+  creatorId: string;
+}
+
+/**
+ * The reader's own draft rebuild of a build, the one they last worked on, or
+ * null (UI-P31).
+ *
+ * /rebuild/:slug names the SOURCE. Before startRebuild forks another draft of
+ * it, the rebuild page asks whether the reader is already in the middle of one:
+ * someone who pressed Rebuild yesterday and comes back today should land on the
+ * draft they started, not on a second copy beside it carrying the same credit.
+ *
+ * ONE REQUEST, NAMED COLUMNS, ONE ROW: drafts with this parent and this
+ * creator, most recently updated first. The builds read policy already shows a
+ * creator their own drafts and nobody else's; the creator filter says so out
+ * loud rather than relying on it, and keeps another reader's draft from ever
+ * being the answer.
+ */
+export async function getRebuildDraft({
+  sourceBuildId,
+  creatorId,
+}: GetRebuildDraftInput): Promise<Build | null> {
+  const { data, error } = await supabase
+    .from("builds")
+    .select(BUILD_COLUMNS)
+    .eq("parent_build_id", sourceBuildId)
+    .eq("creator_id", creatorId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw buildLayerError("getRebuildDraft", error);
+  return (data as Build | null) ?? null;
 }
 
 /**
@@ -985,6 +1032,40 @@ export async function countRebuilds(buildId: string): Promise<number> {
 
   if (error) throw buildLayerError("countRebuilds", error);
   return count ?? 0;
+}
+
+/**
+ * The published rebuilds of one build, as gallery cards, newest first (UI-P30).
+ *
+ * THE REBUILDS TAB DRAWS BUILD CARDS, and a card is the gallery's card only
+ * when it carries what the gallery's query gives it: the nodes its body reads,
+ * its pictures, its open ask (withCardEmbeds). RebuildSummary is a row for a
+ * list of names and carries none of that, so this is its own read rather than
+ * a widening of listRebuilds, whose rows the replay's divergence markers and
+ * the tab's presence already depend on.
+ *
+ * THE SAME QUESTION AS listRebuilds, asked for a card: published or gallery
+ * children of this build, newest first by created_at, at most
+ * REBUILDS_PAGE_SIZE. One request, on the card's select.
+ */
+export async function listRebuildCards(
+  buildId: string,
+  options: ListRebuildsOptions = {}
+): Promise<GalleryBuild[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? REBUILDS_PAGE_SIZE, REBUILDS_PAGE_SIZE));
+
+  const { data, error } = await withCardEmbeds(
+    supabase
+      .from("builds")
+      .select(gallerySelect(false))
+      .eq("parent_build_id", buildId)
+      .in("status", [...PUBLISHED_STATUSES])
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  );
+
+  if (error) throw buildLayerError("listRebuildCards", error);
+  return ((data ?? []) as unknown as GalleryRow[]).map(toGalleryBuild);
 }
 
 /** The row as PostgREST returns it: the embed keyed by its alias. */

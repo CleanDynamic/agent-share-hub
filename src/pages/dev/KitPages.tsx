@@ -17,7 +17,9 @@ import { useParams } from "react-router-dom";
 import { SiteFrameView } from "@/components/shell/SiteFrame";
 import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/useDesignTheme";
 
-import { devChrome } from "./frameChrome";
+import type { Crumb } from "@/components/shell/breadcrumbTrail";
+
+import { FIXTURE_BUILD_TITLE, devChrome } from "./frameChrome";
 
 /** What a registered compare entry receives. The view reads the 768px breakpoint itself; this is for sizing the wrapper. */
 export interface DesignPageProps {
@@ -38,10 +40,29 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   gallery: lazy(() => import("./GalleryDemo")),
   /* UI-P29 — the Build page's first screen. */
   build: lazy(() => import("./BuildDemo")),
+  /* UI-P31 — Rebuild, and the lineage page built from the same pieces (no board). */
+  rebuild: lazy(() => import("./RebuildDemo")),
+  lineage: lazy(() => import("./LineageDemo")),
 };
 
 /** Entries that draw their own room and are not wrapped in the site frame. */
 const UNFRAMED = new Set(["backdrop"]);
+
+/** The trail a board draws, where it is not the default Home / Gallery / the sample build. */
+const TRAILS: Record<string, readonly Crumb[]> = {
+  rebuild: [
+    { label: "Home", href: "/" },
+    { label: "Gallery", href: "/gallery" },
+    { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
+    { label: "Rebuild" },
+  ],
+  lineage: [
+    { label: "Home", href: "/" },
+    { label: "Gallery", href: "/gallery" },
+    { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
+    { label: "Lineage" },
+  ],
+};
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 
@@ -65,7 +86,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) ? (
           <View viewport={viewport} fit="board" />
         ) : (
-          <SiteFrameView viewport={viewport} {...devChrome({ theme })}>
+          <SiteFrameView viewport={viewport} {...devChrome({ theme, trail: TRAILS[page] })}>
             <View viewport={viewport} fit="board" />
           </SiteFrameView>
         )}

@@ -9,21 +9,30 @@ import {
   MISSING,
   anatomySubtitle,
   askLabel,
+  breakageRows,
   buildTabs,
   clockLabel,
   deltaLine,
+  divergenceSummary,
   durationLabel,
   eventText,
+  evidenceDate,
   formatFirstResult,
   formatMoney,
+  layerSteps,
   makerLabel,
   needsLine,
+  openGaps,
   partMeta,
   partsInOrder,
   proofDetails,
   ranIt,
+  replayEvents,
+  replayMarkers,
+  runBody,
   shortDate,
   tabLayer,
+  tabReadsPart,
   timelineFrom,
   timelineSubtitle,
 } from "./buildModel";
@@ -246,5 +255,118 @@ describe("the timeline", () => {
       events: [{ kind: "prompt", at: MISSING, text: "x" }],
       duration: null,
     });
+  });
+});
+
+/* ── UI-P30 — the tab bodies ── */
+
+describe("which tabs read the selected part", () => {
+  it("keeps the switch, Copy and blurb on the anatomy, Run and Understand, and drops them elsewhere", () => {
+    expect(BUILD_TABS.filter((tab) => tabReadsPart(tab.value)).map((tab) => tab.value)).toEqual(["anatomy", "run", "understand"]);
+  });
+});
+
+describe("the replay's steps", () => {
+  const at = (minutes: number) => new Date(Date.parse("2026-09-09T10:00:00Z") + minutes * 60_000).toISOString();
+
+  it("walks the visible steps in ordinal order, clocked from the first, in their phase runs", () => {
+    const steps = replayEvents([
+      event(3, { kind: "breakage", occurred_at: at(11), payload: { symptom: "Euro totals" }, phase: 2, phase_title: "Testing" }),
+      event(1, { kind: "prompt", occurred_at: at(0), payload: { text: "Wrote the outcome" }, phase: 1, phase_title: "Setup" }),
+      event(2, { kind: "note", occurred_at: at(4), visibility: "hidden", payload: { text: "private" }, phase: 1 }),
+      event(4, { kind: "milestone", occurred_at: at(26.5), visibility: "folded", payload: { text: "Done" }, phase: 2 }),
+    ]);
+    expect(steps.map((step) => [step.ordinal, step.kind, step.at, step.text, step.phaseTitle])).toEqual([
+      [1, "prompt", "00:00", "Wrote the outcome", "Setup"],
+      [3, "breakage", "11:00", "Euro totals", "Testing"],
+      [4, "milestone", "26:30", "Done", "Testing"],
+    ]);
+    expect(steps[1].phaseKey).toBe(steps[2].phaseKey);
+    expect(steps[0].phaseKey).not.toBe(steps[1].phaseKey);
+  });
+
+  it("puts a dot over each step somebody rebuilt from, and none for a whole-build rebuild or an unseen step", () => {
+    const steps = replayEvents([event(1), event(2), event(3)]);
+    const rebuild = (id: string, username: string, from: string | null) =>
+      ({ id, slug: id, title: id, creator: { id, username, display_name: null, avatar_url: null }, rebuild_note: null,
+         created_at: "", forked_from_event_id: from, reproduction_count: 0 }) as never;
+    const markers = replayMarkers(steps, [rebuild("a", "sam", "e2"), rebuild("b", "rae", "e2"), rebuild("c", "kofi", null), rebuild("d", "ada", "gone")]);
+    expect(markers).toEqual([
+      { index: 1, label: "2 people rebuilt from here", rebuilds: [{ id: "a", label: "@sam rebuilt from here" }, { id: "b", label: "@rae rebuilt from here" }] },
+    ]);
+    expect(divergenceSummary(markers)).toBe("2 rebuilds started from a step in this sequence");
+  });
+});
+
+describe("the run sequence", () => {
+  const types = [
+    { key: "system_prompt", label: "System prompt", category: "instruction", copyable: true, schema: { fields: [{ key: "text", label: "Text", type: "text" }] } },
+    { key: "prerequisite", label: "Prerequisite", category: "narrative", copyable: false, schema: { fields: [] } },
+    { key: "result", label: "Result", category: "evidence", copyable: false, schema: { fields: [] } },
+  ] as unknown as NodeType[];
+  const tree = [
+    node("p", { type: "prerequisite", title: "An API key", payload: { requirement: "Any provider." } }),
+    node("s", { type: "system_prompt", title: "The prompt", note: "Never shown", payload: { text: "Do the thing." } }),
+    node("r", { type: "result", title: "It worked" }),
+  ];
+  const build = { title: "Thing doer" } as never;
+
+  it("reads the copyable parts as steps and the prerequisites as a checklist, never a note", () => {
+    const run = runBody(build, tree, types, null, () => undefined);
+    expect(run.steps).toEqual([{ id: "s", title: "The prompt", kind: "System prompt", copyText: "Do the thing." }]);
+    expect(run.prerequisites).toEqual([{ id: "p", title: "An API key", requirement: "Any provider." }]);
+    expect(run.allText).toContain("1. The prompt\nDo the thing.");
+    expect(run.allText).not.toContain("Never shown");
+    expect(run.words).toBeNull();
+  });
+
+  it("offers the run layer in words, naming the parts that still resolve, under its attribution", () => {
+    const layer = { content: { steps: [{ n: 1, title: " Paste it ", body: "Into a chat.", node_ref: "s" }, { n: 2, title: "Then", body: "", node_ref: "gone" }] } };
+    const words = layerSteps(layer as never, (id) => (id === "s" ? (tree[1] as never) : undefined));
+    expect(words.attribution).toMatch(/^Written by buildgallery/);
+    expect(words.steps).toEqual([
+      { n: 1, title: "Paste it", body: "Into a chat.", part: { id: "s", title: "The prompt" } },
+      { n: 2, title: "Then", body: "", part: null },
+    ]);
+    expect(runBody(build, tree, types, layer as never, () => undefined).words?.steps).toHaveLength(2);
+  });
+});
+
+describe("where it broke", () => {
+  const types = [{ key: "breakage", label: "Breakage", category: "narrative", renderer: "breakage", schema: { fields: [] } }] as unknown as NodeType[];
+
+  it("reads a written-up breakage's symptom, fix and attempts, and an event-only one's own line, in step order", () => {
+    const rows = breakageRows(
+      [node("k", { type: "breakage", title: "Euro totals", event_id: "e5", payload: { symptom: "Totals were off.", resolution: "Parse the currency.", attempts: 3 } })],
+      [event(2, { kind: "breakage", payload: { text: "It timed out." } }), event(5, { kind: "breakage" })],
+      types,
+    );
+    expect(rows).toEqual([
+      { key: "event-e2", name: "Breakage at step 2", happened: "It timed out.", fix: null, span: "step 2", start: 2, attempts: null },
+      { key: "node-k", name: "Euro totals", happened: "Totals were off.", fix: "Parse the currency.", span: "step 5", start: 5, attempts: "3 attempts" },
+    ]);
+  });
+
+  it("lists every gap still open, with the reward and a way to solve it only where a bounty is open", () => {
+    const tree = [
+      node("g1", { is_gap: true, title: "Delegation", payload: { gap_problem: "Who to hand it to." } }),
+      node("g2", { is_gap: true, title: "Calendar" }),
+      node("n", { title: "Not a gap" }),
+    ];
+    const bounties = new Map([["g1", { bounty: { id: "x", status: "open", reward_gbp: 150 }, solutions: 0, meToo: false }]]) as never;
+    expect(openGaps(tree, bounties)).toEqual([
+      { id: "g1", title: "Delegation", problem: "Who to hand it to.", reward: "£150", solvable: true },
+      { id: "g2", title: "Calendar", problem: null, reward: null, solvable: false },
+    ]);
+  });
+});
+
+describe("a result's date", () => {
+  it("is when the run was made, else the step it was recorded at, else when the part was placed", () => {
+    const events = [event(1, { id: "e1", occurred_at: "2026-09-12T08:00:00Z" })];
+    expect(evidenceDate({ payload: { run_at: "2026-09-29T10:00:00Z" }, event_id: "e1", created_at: "2026-09-01T00:00:00Z" }, events)).toBe("29 Sep");
+    expect(evidenceDate({ payload: {}, event_id: "e1", created_at: "2026-09-01T00:00:00Z" }, events)).toBe("12 Sep");
+    expect(evidenceDate({ payload: {}, event_id: null, created_at: "2026-09-01T00:00:00Z" }, events)).toBe("1 Sep");
+    expect(evidenceDate({ payload: {}, event_id: null, created_at: "" }, events)).toBeNull();
   });
 });

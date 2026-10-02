@@ -52,6 +52,9 @@ const DOT: Record<EventKind, string> = {
 /** The kind's name, which is read: deploy swaps the lamp for its legible ink. */
 const INK: Record<EventKind, string> = { ...DOT, deploy: t.litInk };
 
+/** The same two maps for anything else that names an event's kind (the replay, UI-P30), so the colours cannot drift. */
+export { DOT as EVENT_DOT, INK as EVENT_INK };
+
 export function Timeline({ events, label = "Events", size = "desktop" }: TimelineProps) {
   const dusk = useRoom() === "dusk";
   const phone = size === "phone";

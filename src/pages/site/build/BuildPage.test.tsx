@@ -20,6 +20,8 @@ const recordReproduction = vi.fn();
 const recordSelfConfirmation = vi.fn();
 const getBuildFamily = vi.fn().mockResolvedValue(null);
 const getWhereNext = vi.fn().mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
+const listRebuildCards = vi.fn().mockResolvedValue([]);
+const listBuildBounties = vi.fn().mockResolvedValue([]);
 const getCreatedVia = vi.fn().mockResolvedValue(null);
 const isBuildHidden = vi.fn().mockResolvedValue(false);
 const auth = vi.hoisted(() => ({ isLoggedIn: false, userId: null as string | null }));
@@ -41,9 +43,14 @@ vi.mock("@/lib/profile/makerName", () => ({ getMakerName: vi.fn(async () => "May
 vi.mock("@/lib/build/provenance", () => ({ getCreatedVia: (buildId: string) => getCreatedVia(buildId) }));
 vi.mock("@/lib/bounty", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/bounty")>()),
-  listBuildBounties: vi.fn(async () => []),
+  listBuildBounties: (input: unknown) => listBuildBounties(input),
   listSolverHandles: vi.fn(async () => new Map()),
   listSolutionBuilds: vi.fn(async () => new Map()),
+}));
+/* UI-P30 — the solve sheet is the bounty layer's own component; here it only has to open. */
+vi.mock("@/components/bounty/SolvePanel", () => ({
+  SolvePanel: ({ open, bounty, gapNode }: { open: boolean; bounty: { id: string }; gapNode: { title: string } }) =>
+    open ? <div role="dialog" aria-label="Solve" data-bounty-id={bounty.id}>{`Solving ${gapNode.title}`}</div> : null,
 }));
 vi.mock("@/lib/build", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build")>()),
@@ -57,6 +64,7 @@ vi.mock("@/lib/build", async (importOriginal) => ({
   recordSelfConfirmation: (input: unknown) => recordSelfConfirmation(input),
   getBuildFamily: (input: unknown) => getBuildFamily(input),
   getWhereNext: (input: unknown) => getWhereNext(input),
+  listRebuildCards: (buildId: string) => listRebuildCards(buildId),
   signedMediaUrl: async (media: { path: string }) => `https://media.test/${media.path}`,
 }));
 
@@ -146,6 +154,9 @@ beforeEach(() => {
   getBuild.mockResolvedValue(null);
   getCreatedVia.mockResolvedValue(null);
   isBuildHidden.mockResolvedValue(false);
+  getWhereNext.mockResolvedValue({ rebuilds: [], sharedTool: null, fromMaker: [], makerName: null });
+  listRebuildCards.mockResolvedValue([]);
+  listBuildBounties.mockResolvedValue([]);
   auth.isLoggedIn = false;
   auth.userId = null;
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -202,7 +213,8 @@ describe("BuildPage (site frame)", () => {
 
     fireEvent.click(tab("Watch it get built"));
     expect(tab("Watch it get built").getAttribute("aria-selected")).toBe("true");
-    expect(viewer.querySelector('[data-visual-slot="build-replay"]')).not.toBeNull();
+    // UI-P30: the replay is the site frame's own body now, not the legacy Replay.
+    expect(within(viewer).getByTestId("build-replay")).toBeTruthy();
 
     fireEvent.click(tab("Run it yourself"));
     expect(within(viewer).getByRole("button", { name: "Run" }).getAttribute("aria-pressed")).toBe("true");
@@ -365,5 +377,191 @@ describe("BuildPage (site frame)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "This build could not be loaded." })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
+  });
+});
+
+/* ── UI-P30 — the tab bodies and the sections under the first screen ── */
+
+/** A build as a card reads it (GalleryBuild): the header, with its nodes, pictures and asks. */
+const galleryCard = (id: string, title: string) => ({
+  ...header,
+  id,
+  slug: id,
+  title,
+  rebuild_note: null,
+  nodes: [],
+  media: [],
+  bounties: [],
+});
+
+async function openTab(name: string) {
+  renderAt();
+  await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+  const viewer = screen.getByTestId("build-viewer");
+  fireEvent.click(within(viewer).getByRole("tab", { name }));
+  return viewer;
+}
+
+describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
+  it("replays the build: a slider over the steps, play and pause, and the step's kind and line", async () => {
+    const viewer = await openTab("Watch it get built");
+    // A body that is not a reading of the part drops the switch and Copy.
+    expect(within(viewer).queryByRole("button", { name: "Run" })).toBeNull();
+
+    const slider = within(viewer).getByRole("slider", { name: "Step through the build" });
+    expect(slider.getAttribute("max")).toBe("3");
+    const current = within(viewer).getByTestId("build-replay-current");
+    expect(current.textContent).toContain("prompt");
+    expect(current.textContent).toContain("Wrote the outcome");
+
+    fireEvent.change(slider, { target: { value: "2" } });
+    expect(current.textContent).toContain("breakage");
+    expect(current.textContent).toContain("Long threads came back archive.");
+    expect(within(viewer).getByText("step 3 of 4")).toBeTruthy();
+
+    const steps = within(viewer).getAllByTestId("build-replay-step");
+    expect(steps).toHaveLength(4);
+    fireEvent.click(steps[3]);
+    expect(current.textContent).toContain("91% after the fix");
+    expect(steps[3].getAttribute("aria-current")).toBe("step");
+
+    fireEvent.click(within(viewer).getByRole("button", { name: "Play the build" }));
+    expect(within(viewer).getByRole("button", { name: "Pause the build" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(viewer).getByRole("button", { name: "Rebuild from here" })).toBeTruthy();
+  });
+
+  it("marks a step somebody rebuilt from, and the Rebuilds tab draws them as cards with the way to the family", async () => {
+    listRebuilds.mockResolvedValue([
+      {
+        id: "rb1",
+        slug: "rb1",
+        title: "Inbox triage, faster",
+        creator: { id: "u2", username: "kofi", display_name: null, avatar_url: null },
+        rebuild_note: null,
+        created_at: "2026-09-20T00:00:00Z",
+        forked_from_event_id: "e3",
+        reproduction_count: 2,
+      },
+    ]);
+    listRebuildCards.mockResolvedValue([galleryCard("rb1", "Inbox triage, faster")]);
+    renderAt();
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    const viewer = screen.getByTestId("build-viewer");
+
+    fireEvent.click(await within(viewer).findByRole("tab", { name: "Watch it get built" }));
+    const marker = await within(viewer).findByTestId("divergence-marker");
+    expect(marker.getAttribute("aria-label")).toBe("@kofi rebuilt from here");
+    expect(marker.getAttribute("data-divergence-ordinal")).toBe("3");
+
+    fireEvent.click(within(viewer).getByRole("tab", { name: "Rebuilds" }));
+    await waitFor(() => expect(within(viewer).getAllByTestId("build-rebuild-card")).toHaveLength(1));
+    expect(listRebuildCards).toHaveBeenCalledWith("b");
+    expect(within(viewer).getByRole("link", { name: "Inbox triage, faster" }).getAttribute("href")).toBe("/b2/rb1");
+    expect(within(viewer).getByRole("link", { name: "See the family tree" }).getAttribute("href")).toBe("/b2/inbox-triage/lineage");
+  });
+
+  it("lists the sequence to run: numbered steps in a well, each with its own Copy, and the checklist before them", async () => {
+    const viewer = await openTab("Run it yourself");
+    // Run and Understand stay a reading of the part, so the switch stays.
+    expect(within(viewer).getByRole("button", { name: "Run" }).getAttribute("aria-pressed")).toBe("true");
+
+    const steps = within(viewer).getAllByTestId("build-run-step");
+    expect(steps).toHaveLength(1);
+    expect(steps[0].textContent).toContain("01");
+    expect(within(steps[0]).getByTestId("build-run-well").textContent).toBe("You triage a professional inbox.");
+    expect(within(viewer).getByTestId("build-run-before").textContent).toContain("A Google account — Gmail API access.");
+
+    await act(async () => {
+      fireEvent.click(within(steps[0]).getByRole("button", { name: "Copy step 1: Triage system prompt" }));
+    });
+    expect(writeText).toHaveBeenLastCalledWith("You triage a professional inbox.");
+    await act(async () => {
+      fireEvent.click(within(viewer).getByRole("button", { name: "Copy all steps" }));
+    });
+    expect(writeText.mock.calls.at(-1)?.[0]).toContain("1. Triage system prompt\nYou triage a professional inbox.");
+  });
+
+  it("offers an approved run layer beside the sequence, in words that name their parts, under its attribution", async () => {
+    getApprovedLayers.mockResolvedValue([
+      { id: "l1", build_id: "b", layer: "run", status: "approved", content: { steps: [{ n: 1, title: "Paste the prompt", body: "Into a new chat.", node_ref: "n1" }] } },
+    ]);
+    const viewer = await openTab("Run it yourself");
+    fireEvent.click(await within(viewer).findByRole("button", { name: "In words" }));
+    expect(within(viewer).getByTestId("layer-attribution").textContent).toBe(
+      "Written by buildgallery from this build’s record, reviewed by the creator.",
+    );
+    expect(within(viewer).getByTestId("build-layer-step").textContent).toContain("Paste the prompt");
+    fireEvent.click(within(viewer).getByRole("button", { name: "Triage system prompt in the anatomy →" }));
+    expect(within(viewer).getByRole("tab", { name: "Anatomy" }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("lists where it broke, opens the replay at that step, and shows the gap still open", async () => {
+    const viewer = await openTab("Where it broke");
+    const rows = within(viewer).getAllByTestId("build-breakage-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain("Breakage at step 3");
+    expect(rows[0].textContent).toContain("Long threads came back archive.");
+
+    const gap = within(viewer).getByTestId("build-open-gap");
+    expect(gap.textContent).toContain("Calendar-aware delegation");
+    expect(gap.textContent).toContain("It cannot tell who to delegate to.");
+    // No bounty pays for this gap, so there is nothing to solve through.
+    expect(within(gap).queryByRole("button", { name: /Solve it/ })).toBeNull();
+
+    fireEvent.click(within(rows[0]).getByRole("button", { name: "Watch step 3 in the replay" }));
+    expect(within(viewer).getByRole("tab", { name: "Watch it get built" }).getAttribute("aria-selected")).toBe("true");
+    expect(within(viewer).getByTestId("build-replay-current").textContent).toContain("Long threads came back archive.");
+  });
+
+  it("opens a gap's bounty from Where it broke: its reward, and Solve it", async () => {
+    listBuildBounties.mockResolvedValue([
+      { bounty: { id: "bounty-1", gap_node_id: "n4", status: "open", reward_gbp: 150, closes_at: null, me_too_count: 0 }, solutions: 0, meToo: false },
+    ]);
+    const viewer = await openTab("Where it broke");
+    const gap = within(viewer).getByTestId("build-open-gap");
+    await waitFor(() => expect(gap.textContent).toContain("£150"));
+    fireEvent.click(within(gap).getByRole("button", { name: "Solve it: Calendar-aware delegation" }));
+    const sheet = await screen.findByRole("dialog", { name: "Solve" });
+    expect(sheet.getAttribute("data-bounty-id")).toBe("bounty-1");
+    expect(sheet.textContent).toBe("Solving Calendar-aware delegation");
+  });
+
+  it("shows a result in its frame, with the evidence chip and the date it carries", async () => {
+    getBuildBySlug.mockResolvedValue({
+      ...record,
+      nodeTypes: [
+        ...nodeTypes,
+        { key: "result", label: "Result", category: "evidence", renderer: "evidence", copyable: false, is_active: true, sort: 6,
+          schema: { fields: [{ key: "summary", label: "Summary", type: "text" }] } },
+      ],
+      tree: [node("r1", "result", "Run log", { payload: { summary: "214 invoices routed." }, created_at: "2026-09-29T08:00:00Z" }), ...record.tree],
+    });
+    renderAt();
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    const result = within(screen.getByTestId("build-viewer")).getByTestId("build-result");
+    expect(result.textContent).toContain("evidence");
+    expect(result.textContent).toContain("29 Sep");
+    expect(within(result).getByTestId("build-result-frame").textContent).toContain("214 invoices routed.");
+  });
+
+  it("puts the comments and where next in glass panels under the first screen", async () => {
+    getWhereNext.mockResolvedValue({
+      rebuilds: [],
+      sharedTool: null,
+      fromMaker: [galleryCard("m1", "Meeting notes agent")],
+      makerName: "Maya Okafor",
+    });
+    renderAt();
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    const lower = screen.getByTestId("build-lower");
+    expect(within(lower).getByTestId("build-comments-panel").closest('[data-ui="panel"]')).not.toBeNull();
+
+    const row = await within(lower).findByTestId("where-next-maker");
+    expect(row.closest('[data-ui="panel"]')).not.toBeNull();
+    expect(within(row).getByRole("heading", { level: 2, name: "More from Maya Okafor" })).toBeTruthy();
+    expect(within(row).getAllByTestId("where-next-card")).toHaveLength(1);
+    expect(getWhereNext).toHaveBeenCalledWith({ buildId: "b", creatorId: "maker", madeWith: ["claude-opus-4-5"] });
+    // A row with nothing in it is left out.
+    expect(within(lower).queryByTestId("where-next-rebuilds")).toBeNull();
   });
 });

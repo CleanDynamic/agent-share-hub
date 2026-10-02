@@ -165,3 +165,82 @@ test.describe("no horizontal scroll", () => {
     }
   }
 });
+
+/* UI-P30 — every other tab's body inside the viewer, and the sections under the
+   first screen. There is no board for these, so they are driven on the compare
+   page with the sample build: `&tab=` draws a tab's body, `&lower=1` the
+   sections under the first screen. */
+
+const BODIES = {
+  watch: "build-replay",
+  run: "build-run",
+  understand: "build-layer",
+  broke: "build-breakage",
+  rebuilds: "build-rebuilds",
+} as const;
+
+async function openSampleTab(page: Page, query: string, theme: (typeof THEMES)[number] = "noon") {
+  const viewport = isPhone(page) ? "mobile" : "desktop";
+  await page.goto(`/dev/kit/pages/build?theme=${theme}&viewport=${viewport}&${query}`);
+  await expect(page.getByTestId("build-view")).toBeVisible();
+}
+
+test.describe("the other tabs, with the sample build (UI-P30)", () => {
+  for (const theme of THEMES) {
+    for (const [tab, body] of Object.entries(BODIES)) {
+      test(`draws ${tab} in the viewer on ${theme}, without moving sideways`, async ({ page }) => {
+        await openSampleTab(page, `tab=${tab}`, theme);
+        await expect(page.getByTestId("build-viewer").getByTestId(body)).toBeVisible();
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(overflow).toBeLessThanOrEqual(1);
+      });
+    }
+  }
+
+  test("moves the replay with the keyboard, and plays it from the button", async ({ page }) => {
+    await openSampleTab(page, "tab=watch");
+    const replay = page.getByTestId("build-replay");
+    await expect(replay.getByText("step 1 of 5")).toBeVisible();
+    const slider = replay.getByRole("slider", { name: "Step through the build" });
+    await slider.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(replay.getByText("step 2 of 5")).toBeVisible();
+    await page.keyboard.press("End");
+    await expect(replay.getByText("step 5 of 5")).toBeVisible();
+    await expect(replay.getByTestId("build-replay-current")).toContainText("Running on the shared inbox");
+    await replay.getByRole("button", { name: "Play the build" }).click();
+    await expect(replay.getByText("step 1 of 5")).toBeVisible();
+    await expect(replay.getByRole("button", { name: "Pause the build" })).toBeVisible();
+  });
+
+  test("keeps the reading switch for Run, and drops it for a body that is not a reading of the part", async ({ page }) => {
+    await openSampleTab(page, "tab=run");
+    const viewer = page.getByTestId("build-viewer");
+    await expect(viewer.getByRole("button", { name: "Run", exact: true })).toBeVisible();
+    await expect(viewer.getByTestId("build-run-step")).toHaveCount(3);
+    await expect(viewer.getByRole("button", { name: "Copy all steps" })).toBeVisible();
+
+    await openSampleTab(page, "tab=broke");
+    await expect(page.getByTestId("build-viewer").getByRole("button", { name: "Run", exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("build-open-gap")).toContainText("£150");
+    await expect(page.getByRole("button", { name: /^Solve it/ })).toBeVisible();
+  });
+
+  test("draws the rebuilds as cards, then the way to the family tree", async ({ page }) => {
+    await openSampleTab(page, "tab=rebuilds");
+    await expect(page.getByTestId("build-rebuild-card")).toHaveCount(3);
+    await expect(page.getByRole("link", { name: "See the family tree" })).toHaveAttribute("href", "/b2/invoice-triage-agent/lineage");
+  });
+
+  for (const theme of THEMES) {
+    test(`puts where next under the first screen in glass panels on ${theme}, without moving sideways`, async ({ page }) => {
+      await openSampleTab(page, "lower=1", theme);
+      const lower = page.getByTestId("build-lower");
+      await expect(lower.locator('[data-ui="panel"]')).toHaveCount(2);
+      await expect(lower.getByRole("heading", { level: 2, name: "Rebuilds of this" })).toBeVisible();
+      await expect(lower.getByTestId("where-next-card")).toHaveCount(6);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+  }
+});

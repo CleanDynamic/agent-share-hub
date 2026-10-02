@@ -56,6 +56,7 @@ import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 import {
   anatomySubtitle,
   ranIt,
+  tabReadsPart,
   timelineSubtitle,
   type BuildActionsView,
   type BuildAnatomyView,
@@ -652,6 +653,7 @@ function Viewer({
         blurb={viewer.blurb}
         onCopy={() => void copy()}
         panelId={VIEWER_PANEL}
+        tools={tabReadsPart(viewer.tab)}
       >
         {viewer.content}
       </PartViewer>

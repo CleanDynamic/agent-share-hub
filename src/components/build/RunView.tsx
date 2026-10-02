@@ -351,4 +351,9 @@ export function RunView({ tree, nodeTypes, build }: RunViewProps) {
   );
 }
 
+/* UI-P30 — the site frame's Run tab draws the same sequence in its own
+   grammar, so it reads it through the same walk and copies the same text. */
+export { collect as collectRunSequence, sequenceText as runSequenceText };
+export type { Step as RunStep, Prerequisite as RunPrerequisite };
+
 export default RunView;
