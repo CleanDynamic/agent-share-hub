@@ -102,7 +102,7 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={44} style={{ marginLeft: "auto" }} />
+              <IconButton icon={X} label="Close" size={38} style={{ marginLeft: "auto" }} />
             </Dialog.Close>
           </div>
           {children}
