@@ -76,8 +76,11 @@ export function Tagline({ lines, size, offsets, as: Heading = "h1" }: TaglinePro
           style={{
             ...display(size),
             /* The tagline sets −0.03em at every size, where `display()` steps to
-               −0.035em from 44px; and it never wraps, so no balancing. */
+               −0.035em from 44px; and it never wraps, so no balancing. Its
+               leading is 1 at every size too: `display()` gives 1.05 below 30px,
+               which is the 26px sign-in tagline's chip 1.3px too tall. */
             letterSpacing: "-0.03em",
+            lineHeight: 1,
             textWrap: "nowrap",
             marginLeft: offsets[i],
             background: t.taglineChip,

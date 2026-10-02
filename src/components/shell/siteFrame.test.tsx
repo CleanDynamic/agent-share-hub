@@ -21,7 +21,7 @@ describe("boardHeight", () => {
 });
 
 describe("usesSiteFrame", () => {
-  it("lists Home (UI-P27), the Gallery (UI-P28), the Build page (UI-P29), its lineage and Rebuild (UI-P31), /notifications (UI-P20) and the Profile (UI-P34), and nothing else yet", () => {
+  it("lists Home (UI-P27), the Gallery (UI-P28), the Build page (UI-P29), its lineage and Rebuild (UI-P31), /notifications (UI-P20), the Profile (UI-P34) and the sign-in pages (UI-P36), and nothing else yet", () => {
     expect(SITE_FRAME_ROUTES).toEqual([
       "/",
       "/gallery",
@@ -31,6 +31,12 @@ describe("usesSiteFrame", () => {
       "/notifications",
       "/profile/:handle",
       "/profile",
+      "/login",
+      "/signup",
+      "/reset-password",
+      "/reset-password/:token",
+      "/verify-email",
+      "/verify-email/:token",
     ]);
     expect(usesSiteFrame("/")).toBe(true);
     expect(usesSiteFrame("/gallery")).toBe(true);
@@ -40,6 +46,16 @@ describe("usesSiteFrame", () => {
     expect(usesSiteFrame("/notifications")).toBe(true);
     expect(usesSiteFrame("/profile/maya")).toBe(true);
     expect(usesSiteFrame("/profile")).toBe(true);
+    expect(usesSiteFrame("/login")).toBe(true);
+    expect(usesSiteFrame("/signup")).toBe(true);
+    expect(usesSiteFrame("/reset-password")).toBe(true);
+    expect(usesSiteFrame("/reset-password/a-token")).toBe(true);
+    expect(usesSiteFrame("/verify-email")).toBe(true);
+    expect(usesSiteFrame("/verify-email/a-token")).toBe(true);
+    // The callback and the consent screen are not repainted here, and stay in their own shell.
+    expect(usesSiteFrame("/auth/callback")).toBe(false);
+    expect(usesSiteFrame("/oauth/consent")).toBe(false);
+    expect(usesSiteFrame("/login/extra")).toBe(false);
     expect(usesSiteFrame("/profile/maya/extra")).toBe(false);
     expect(usesSiteFrame("/gallery/extra")).toBe(false);
     expect(usesSiteFrame("/b2/invoice-triage-agent/extra")).toBe(false);
@@ -72,5 +88,13 @@ describe("SiteFrameView", () => {
     expect(screen.queryByTestId("h")).toBeNull();
     expect(screen.queryByTestId("f")).toBeNull();
     expect(screen.getByText("page")).toBeTruthy();
+  });
+
+  it("bare draws the entrance's own backdrop, on desktop and on a phone", () => {
+    const { unmount } = frame({ variant: "bare", viewport: "desktop", children: <p>page</p> });
+    expect(screen.getByTestId("site-frame").querySelector('[data-ui="page-backdrop"]')?.getAttribute("data-tone")).toBe("signin");
+    unmount();
+    frame({ variant: "bare", viewport: "mobile", children: <p>page</p> });
+    expect(screen.getByTestId("site-frame").querySelector('[data-ui="page-backdrop"]')?.getAttribute("data-tone")).toBe("signin");
   });
 });

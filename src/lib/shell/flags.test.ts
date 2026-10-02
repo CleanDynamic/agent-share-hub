@@ -6,7 +6,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { from: () => ({ select: () => ({ eq: () => ({ limit }) }) }) },
 }));
 
-import { isSiteFrameOn, loadSiteFrameFlag, resetSiteFrameFlag } from "./flags";
+import { isSiteFrameKnown, isSiteFrameOn, loadSiteFrameFlag, resetSiteFrameFlag } from "./flags";
 
 describe("site_frame flag", () => {
   beforeEach(() => {
@@ -46,5 +46,23 @@ describe("site_frame flag", () => {
     expect(isSiteFrameOn()).toBe(true);
     window.history.replaceState({}, "", "/?frame=flat");
     expect(isSiteFrameOn()).toBe(false);
+  });
+
+  it("is not known until the row has been read, and is known after a read that found nothing or failed", async () => {
+    expect(isSiteFrameKnown()).toBe(false);
+    await loadSiteFrameFlag();
+    expect(isSiteFrameKnown()).toBe(true);
+
+    resetSiteFrameFlag();
+    rows.error = { message: "denied" };
+    expect(isSiteFrameKnown()).toBe(false);
+    await loadSiteFrameFlag();
+    expect(isSiteFrameKnown()).toBe(true);
+  });
+
+  it("is known at once when a dev override decides it, with no read", () => {
+    window.history.replaceState({}, "", "/?frame=site");
+    expect(isSiteFrameKnown()).toBe(true);
+    expect(limit).not.toHaveBeenCalled();
   });
 });

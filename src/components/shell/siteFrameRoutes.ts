@@ -9,11 +9,29 @@
    UI-P31: /b2/:slug/lineage and /rebuild/:slug. The rebuild route lives outside
    Layout, so its site branch renders SiteFrame itself (see App.tsx).
    UI-P34: /profile/:handle, and /profile (your own).
-   UI-P35: /notifications keeps its place and gets its own page (ActivityPage). */
+   UI-P35: /notifications keeps its place and gets its own page (ActivityPage).
+   UI-P36: /login, /signup, /reset-password and /verify-email, and the two token
+   addresses, in the bare frame. Layout hands these straight through, outside
+   AppShell, so their site branch renders SiteFrame itself, as /rebuild/:slug does. */
 
 import { matchPath } from "react-router-dom";
 
-export const SITE_FRAME_ROUTES: string[] = ["/", "/gallery", "/b2/:slug", "/b2/:slug/lineage", "/rebuild/:slug", "/notifications", "/profile/:handle", "/profile"];
+export const SITE_FRAME_ROUTES: string[] = [
+  "/",
+  "/gallery",
+  "/b2/:slug",
+  "/b2/:slug/lineage",
+  "/rebuild/:slug",
+  "/notifications",
+  "/profile/:handle",
+  "/profile",
+  "/login",
+  "/signup",
+  "/reset-password",
+  "/reset-password/:token",
+  "/verify-email",
+  "/verify-email/:token",
+];
 
 /** True when `pathname` is one of `SITE_FRAME_ROUTES`. */
 export function usesSiteFrame(pathname: string): boolean {

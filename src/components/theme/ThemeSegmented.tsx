@@ -22,9 +22,11 @@ export interface ThemeSegmentedProps {
   fontSize?: SegmentedFontSize;
   value?: ThemeChoice;
   onChange?: (choice: ThemeChoice) => void;
+  /** `radio` for the sign-in page, whose theme control has always been a radio group named Theme. */
+  semantics?: "buttons" | "radio";
 }
 
-export function ThemeSegmented({ size = 32, fontSize = 11, value, onChange }: ThemeSegmentedProps) {
+export function ThemeSegmented({ size = 32, fontSize = 11, value, onChange, semantics }: ThemeSegmentedProps) {
   const { theme, setTheme } = useTheme();
   return (
     <Segmented<ThemeChoice>
@@ -34,6 +36,7 @@ export function ThemeSegmented({ size = 32, fontSize = 11, value, onChange }: Th
       size={size}
       fontSize={fontSize}
       label="Theme"
+      semantics={semantics}
     />
   );
 }

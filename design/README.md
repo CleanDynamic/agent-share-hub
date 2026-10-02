@@ -36,7 +36,7 @@ http://localhost:5173/notifications?frame=site      # the new frame
 http://localhost:5173/notifications?frame=flat      # back to the old one
 ```
 
-The override is held for the browser session (sessionStorage), so it survives in-app navigation that drops the query, and it does not exist in a production build. A route that is not in `SITE_FRAME_ROUTES` still renders in the old frame under `?frame=site`; each page prompt adds its own. `/notifications` is the first. The tier-1 spec `e2e/tier1/site-frame.spec.ts` runs with this override.
+The override is held for the browser session (sessionStorage), so it survives in-app navigation that drops the query, and it does not exist in a production build. The entrance pages (`/login`, `/signup`, `/reset-password`, `/verify-email`) sit outside `AppShell`, so their site branch draws its own bare frame; open one with `?frame=site`, and `?mode=signup|reset|confirm|verify` on `/dev/kit/pages/signin` draws the other three cards. An address an emailed link can open (a token, a code or an error in it) is held until the flag is known, because a link's token works once and the legacy page must not mount first and spend it. A route that is not in `SITE_FRAME_ROUTES` still renders in the old frame under `?frame=site`; each page prompt adds its own. `/notifications` is the first. The tier-1 spec `e2e/tier1/site-frame.spec.ts` runs with this override.
 
 ## Where things are
 
@@ -110,6 +110,7 @@ Deliberate, and expected in every compare report:
 - **The vacant frame's lamp is always dimmed.** It marks a missing part, not a stale build.
 - **The footer's last link** reads "Sign out" for a signed-in visitor; the reference draws the signed-out state.
 - **Following** on Home is disabled until the feed has a scope — the RPC takes none today.
+- **The Sign-in boards draw the live form's own controls.** The fields keep their placeholders ("Email or username", "Enter your password") where the board shows sample text, and the password field keeps its show / hide button at the right; the three providers draw their real marks (Google, GitHub, X) at 16px where the board draws neutral squares; "Keep me signed in" is a drawn box where the board uses the browser's checkbox. The phone's "Forgot?" is named "Forgot password?".
 
 ## A note on the sample content
 

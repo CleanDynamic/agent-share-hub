@@ -9,6 +9,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Plus } from "lucide-react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { Avatar, AVATAR_HUES, avatarHue, initialsOf } from "./Avatar";
@@ -181,6 +182,115 @@ describe("Segmented", () => {
   it("defaults to 12px type", () => {
     const html = markup(<Segmented label="L" items={items} value="a" onChange={() => {}} />);
     expect(html).toContain("font-size:12px");
+  });
+
+  describe("an item with an href (UI-P36)", () => {
+    const pages = [
+      { value: "in", label: "Sign in", href: "/login" },
+      { value: "join", label: "Join free", href: "/signup" },
+    ];
+
+    it("is a real link, the current one marked aria-current, and not a button", () => {
+      render(
+        <MemoryRouter>
+          <Segmented label="Account" items={pages} value="in" />
+        </MemoryRouter>,
+      );
+      const [signIn, join] = screen.getAllByRole("link");
+      expect(signIn.getAttribute("href")).toBe("/login");
+      expect(signIn.getAttribute("aria-current")).toBe("page");
+      expect(join.getAttribute("href")).toBe("/signup");
+      expect(join.hasAttribute("aria-current")).toBe(false);
+      expect(screen.queryAllByRole("button")).toHaveLength(0);
+      expect(screen.getByRole("group", { name: "Account" })).toBeTruthy();
+    });
+
+    it("leaves the navigating to the router, so onChange is not called for it", () => {
+      const onChange = vi.fn();
+      render(
+        <MemoryRouter>
+          <Segmented label="Account" items={pages} value="in" onChange={onChange} />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByRole("link", { name: "Join free" }));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("is drawn as the buttons are: same track, same item height, the current one filled", () => {
+      const html = renderToStaticMarkup(
+        <MemoryRouter>
+          <Segmented label="Account" items={pages} value="in" size={32} fontSize={12} />
+        </MemoryRouter>,
+      );
+      expect(html).toContain("height:24px");
+      expect(html).toContain("padding:0 12px");
+      expect(html).toContain("background:var(--text);color:var(--on-text);font-weight:600");
+      expect(html).toContain("background:transparent;color:var(--text2);font-weight:500");
+      expect(html).toContain("text-decoration:none");
+    });
+  });
+
+  describe('semantics="radio" (UI-P36)', () => {
+    it("is a named radio group of radios, the current one checked and the only tab stop", () => {
+      render(<Segmented label="Theme" items={items} value="b" onChange={() => {}} semantics="radio" />);
+      expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
+      const [alpha, beta, gamma] = screen.getAllByRole("radio");
+      expect(beta.getAttribute("aria-checked")).toBe("true");
+      expect(alpha.getAttribute("aria-checked")).toBe("false");
+      expect([alpha.tabIndex, beta.tabIndex, gamma.tabIndex]).toEqual([-1, 0, -1]);
+      expect(beta.hasAttribute("aria-pressed")).toBe(false);
+      expect(screen.queryByRole("button")).toBeNull();
+    });
+
+    it("picks on a click", () => {
+      const onChange = vi.fn();
+      render(<Segmented label="Theme" items={items} value="a" onChange={onChange} semantics="radio" />);
+      fireEvent.click(screen.getByRole("radio", { name: "Gamma" }));
+      expect(onChange).toHaveBeenCalledWith("c");
+    });
+
+    it("moves the choice with the arrows, wrapping at both ends, and moves the focus with it", () => {
+      const onChange = vi.fn();
+      const { rerender } = render(<Segmented label="Theme" items={items} value="b" onChange={onChange} semantics="radio" />);
+      const group = screen.getByRole("radiogroup", { name: "Theme" });
+
+      fireEvent.keyDown(group, { key: "ArrowRight" });
+      expect(onChange).toHaveBeenLastCalledWith("c");
+      expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Gamma" }));
+      fireEvent.keyDown(group, { key: "ArrowDown" });
+      expect(onChange).toHaveBeenLastCalledWith("c");
+      fireEvent.keyDown(group, { key: "ArrowLeft" });
+      expect(onChange).toHaveBeenLastCalledWith("a");
+      fireEvent.keyDown(group, { key: "ArrowUp" });
+      expect(onChange).toHaveBeenLastCalledWith("a");
+
+      rerender(<Segmented label="Theme" items={items} value="c" onChange={onChange} semantics="radio" />);
+      fireEvent.keyDown(screen.getByRole("radiogroup", { name: "Theme" }), { key: "ArrowRight" });
+      expect(onChange).toHaveBeenLastCalledWith("a");
+
+      rerender(<Segmented label="Theme" items={items} value="a" onChange={onChange} semantics="radio" />);
+      fireEvent.keyDown(screen.getByRole("radiogroup", { name: "Theme" }), { key: "ArrowLeft" });
+      expect(onChange).toHaveBeenLastCalledWith("c");
+    });
+
+    it("ignores every other key, and every key when it is read-only", () => {
+      const onChange = vi.fn();
+      const { rerender } = render(<Segmented label="Theme" items={items} value="a" onChange={onChange} semantics="radio" />);
+      fireEvent.keyDown(screen.getByRole("radiogroup"), { key: "Enter" });
+      fireEvent.keyDown(screen.getByRole("radiogroup"), { key: "Tab" });
+      expect(onChange).not.toHaveBeenCalled();
+
+      rerender(<Segmented label="Theme" items={items} value="a" onChange={onChange} semantics="radio" readOnly />);
+      fireEvent.keyDown(screen.getByRole("radiogroup"), { key: "ArrowRight" });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("leaves the default semantics as they were: a group of aria-pressed buttons", () => {
+      render(<Segmented label="Letters" items={items} value="b" onChange={() => {}} />);
+      expect(screen.getByRole("group", { name: "Letters" })).toBeTruthy();
+      expect(screen.queryByRole("radiogroup")).toBeNull();
+      expect(screen.getByRole("button", { name: "Beta" }).hasAttribute("tabindex")).toBe(false);
+    });
   });
 });
 

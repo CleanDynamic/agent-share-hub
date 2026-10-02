@@ -65,6 +65,28 @@ describe("Tagline", () => {
   it("puts the mark on line 2 only", () => {
     expect(markup(<Tagline lines={LINES} size={40} offsets={[0, 70, 24]} />).match(/data-ui="mark"/g)).toHaveLength(1);
   });
+
+  it("sets its leading at 1 at every size the reference draws it (UI-P36's 26px has no 1.05)", () => {
+    for (const [size, offsets] of [
+      [46, [0, 90, 30]],
+      [40, [0, 70, 24]],
+      [30, [0, 44, 14]],
+      [26, [0, 40, 12]],
+    ] as const) {
+      const html = markup(<Tagline lines={LINES} size={size} offsets={offsets} />);
+      expect(html, `at ${size}px`).toContain("line-height:1;");
+      expect(html, `at ${size}px`).not.toContain("line-height:1.05");
+    }
+  });
+
+  it("derives the sign-in phone tagline's chip from 26: padding 5px 8px 6px, gap 6px, a 15px mark", () => {
+    const html = markup(<Tagline lines={LINES} size={26} offsets={[0, 40, 12]} />);
+    expect(html).toContain("padding:5px 8px 6px");
+    expect(html).toContain("gap:6px");
+    expect(html).toContain('width="15"');
+    expect(html).toContain("margin-left:40px");
+    expect(html).toContain("margin-left:12px");
+  });
 });
 
 describe("Plaque tone", () => {

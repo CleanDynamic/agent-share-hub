@@ -5,7 +5,15 @@ import { render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Arc, ARC_BUILD_HERO, ARC_BUILD_HERO_MOBILE, ARC_PAGE_DESKTOP, ARC_PAGE_MOBILE, ARC_PROFILE_BANNER } from "./Arc";
+import {
+  Arc,
+  ARC_BUILD_HERO,
+  ARC_BUILD_HERO_MOBILE,
+  ARC_PAGE_DESKTOP,
+  ARC_PAGE_MOBILE,
+  ARC_PROFILE_BANNER,
+  ARC_SIGNIN_DESKTOP,
+} from "./Arc";
 import { PageBackdrop } from "./PageBackdrop";
 
 const room = (name: "noon" | "dusk") => {
@@ -72,6 +80,56 @@ describe("PageBackdrop", () => {
       const html = render(<PageBackdrop />).container.innerHTML;
       expect(html).not.toMatch(/<animate|<set|feDisplacementMap|animation/i);
     }
+  });
+});
+
+describe("PageBackdrop tone=\"signin\" (UI-P36)", () => {
+  it("paints --ambient over the flat --bg on desktop, with the glowing edge as its own box-shadow", () => {
+    room("noon");
+    const html = renderToStaticMarkup(<PageBackdrop viewport="desktop" tone="signin" />);
+    expect(html).toContain("background:var(--ambient), var(--bg)");
+    expect(html).toContain("box-shadow:var(--signin-edge)");
+    expect(html).toContain('data-tone="signin"');
+    // The horizon is the page's ground, not the entrance's.
+    expect(html).not.toContain("var(--backdrop)");
+    // Still the same inert, absolute, non-fixed layer.
+    expect(html).toContain("position:absolute;inset:0;z-index:0");
+    expect(html).toContain("pointer-events:none");
+    expect(html).not.toContain("position:fixed");
+  });
+
+  it("draws the arc on a 1440 × 1000 board, centred at (1800, −560) with r 1060", () => {
+    room("noon");
+    expect(ARC_SIGNIN_DESKTOP).toEqual({ width: 1440, height: 1000, cx: 1800, cy: -560, r: 1060 });
+    const { container } = render(<PageBackdrop viewport="desktop" tone="signin" />);
+    const svg = container.querySelector('svg[data-ui="arc"]')!;
+    expect(svg.getAttribute("viewBox")).toBe("0 0 1440 1000");
+    const c = circles(container)[0];
+    expect([c.getAttribute("cx"), c.getAttribute("cy"), c.getAttribute("r")]).toEqual(["1800", "-560", "1060"]);
+    const gradient = container.querySelector("linearGradient")!;
+    expect(["x1", "y1", "x2", "y2"].map((a) => gradient.getAttribute(a))).toEqual(["740", "0", "1440", "1000"]);
+    expect(renderToStaticMarkup(<PageBackdrop viewport="desktop" tone="signin" />)).toContain("aspect-ratio:1440 / 1000");
+  });
+
+  it("keeps Dusk's grain", () => {
+    room("dusk");
+    const { container } = render(<PageBackdrop viewport="desktop" tone="signin" />);
+    expect(container.querySelector('svg[data-ui="grain"]')).not.toBeNull();
+  });
+
+  it("is the page's own backdrop on a phone, which is what the reference draws there", () => {
+    room("noon");
+    const html = renderToStaticMarkup(<PageBackdrop viewport="mobile" tone="signin" />);
+    expect(html).toContain("background:var(--ambient), var(--backdrop)");
+    expect(html).not.toContain("--signin-edge");
+    expect(html).toContain("aspect-ratio:390 / 640");
+  });
+
+  it("leaves the page tone without an edge", () => {
+    room("noon");
+    const html = renderToStaticMarkup(<PageBackdrop viewport="desktop" />);
+    expect(html).not.toContain("--signin-edge");
+    expect(html).toContain('data-tone="page"');
   });
 });
 

@@ -19,29 +19,45 @@
 // because this element is its own stacking context.
 //
 // STATIC. No animation, no displacement, nothing reading the scroll.
+//
+// THE ENTRANCE HAS ITS OWN TONE (UI-P36). Sign in, join, reset and verify are
+// lit from the edges: on desktop the horizon gives way to `--ambient` over the
+// flat `--bg`, the box gets `--signin-edge` (the glowing inner edge the brand
+// tile has), and the arc is drawn on a 1440 × 1000 board.
+// The edge is the backdrop's own box-shadow, because a shadow on the page root
+// would be painted over by this opaque layer. Grain is Dusk's here too. On a
+// phone the reference draws the page's own backdrop, so `signin` changes
+// nothing there.
 
 import { useId } from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { t } from "@/lib/theme/tokens";
 
-import { Arc, ARC_PAGE_DESKTOP, ARC_PAGE_MOBILE } from "./Arc";
+import { Arc, ARC_PAGE_DESKTOP, ARC_PAGE_MOBILE, ARC_SIGNIN_DESKTOP } from "./Arc";
 import { useRoom } from "./useRoom";
+
+export type PageBackdropTone = "page" | "signin";
 
 export interface PageBackdropProps {
   /** Which artboard to draw. Defaults to the app's 768px breakpoint. */
   viewport?: "desktop" | "mobile";
+  /** `signin` is the entrance's room on desktop; every other page is `page`. */
+  tone?: PageBackdropTone;
 }
 
-export function PageBackdrop({ viewport }: PageBackdropProps) {
+export function PageBackdrop({ viewport, tone = "page" }: PageBackdropProps) {
   const dusk = useRoom() === "dusk";
   const isMobile = useIsMobile();
-  const geometry = (viewport ?? (isMobile ? "mobile" : "desktop")) === "mobile" ? ARC_PAGE_MOBILE : ARC_PAGE_DESKTOP;
+  const phone = (viewport ?? (isMobile ? "mobile" : "desktop")) === "mobile";
+  const entrance = tone === "signin" && !phone;
+  const geometry = phone ? ARC_PAGE_MOBILE : entrance ? ARC_SIGNIN_DESKTOP : ARC_PAGE_DESKTOP;
   const grain = `grain-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   return (
     <div
       data-ui="page-backdrop"
+      data-tone={tone}
       aria-hidden="true"
       style={{
         position: "absolute",
@@ -49,7 +65,8 @@ export function PageBackdrop({ viewport }: PageBackdropProps) {
         zIndex: 0,
         overflow: "hidden",
         pointerEvents: "none",
-        background: `${t.ambient}, ${t.backdrop}`,
+        background: `${t.ambient}, ${entrance ? t.bg : t.backdrop}`,
+        boxShadow: entrance ? t.signinEdge : undefined,
       }}
     >
       <div
