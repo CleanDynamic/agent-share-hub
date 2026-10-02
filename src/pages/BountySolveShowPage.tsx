@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 
 import { SolvePanel } from "@/components/bounty/SolvePanel";
-import { getBounty } from "@/lib/bounty";
+import { getBounty, type Bounty } from "@/lib/bounty";
 import { getBuild } from "@/lib/build";
-import type { BuildNode } from "@/lib/build/types";
+import type { BuildNode, Build } from "@/lib/build/types";
 import {
   type ResolveMedia,
   type ResolveNode,
@@ -21,24 +21,19 @@ export default function BountySolveShowPage() {
   const { bountyId } = useParams<{ bountyId: string }>();
   const navigate = useNavigate();
 
-  const bounty = useQuery({
-    queryKey: ["bounty", bountyId],
+  const bountyRecord = useQuery({
+    queryKey: ["bounty-record", bountyId],
     queryFn: () => (bountyId ? getBounty(bountyId) : Promise.reject("No bounty ID")),
     enabled: !!bountyId,
   });
 
   const build = useQuery({
-    queryKey: ["build", bounty.data?.build_id],
-    queryFn: () => (bounty.data?.build_id ? getBuild(bounty.data.build_id) : Promise.reject("No build")),
-    enabled: !!bounty.data?.build_id,
+    queryKey: ["build", bountyRecord.data?.build?.id],
+    queryFn: () => (bountyRecord.data?.build?.id ? getBuild(bountyRecord.data.build.id) : Promise.reject("No build")),
+    enabled: !!bountyRecord.data?.build?.id,
   });
 
-  // Find the gap node in the build's nodes
-  const gapNode = useMemo(() => {
-    if (!build.data || !bounty.data?.gap_node_id) return null;
-    const nodeId = bounty.data.gap_node_id;
-    return (build.data.nodes ?? []).find((n) => n.id === nodeId) || null;
-  }, [build.data, bounty.data?.gap_node_id]);
+  const gapNode = useMemo(() => bountyRecord.data?.gapNode || null, [bountyRecord.data?.gapNode]);
 
   const nodeType = useQuery({
     queryKey: ["node-type", gapNode?.type],
@@ -59,8 +54,8 @@ export default function BountySolveShowPage() {
   const resolveNode: ResolveNode = (nodeId) => buildNodes.get(nodeId) || null;
   const resolveMedia: ResolveMedia = (mediaId) => buildMedia.get(mediaId) || null;
 
-  const isLoading = bounty.isLoading || build.isLoading;
-  const error = bounty.error || build.error;
+  const isLoading = bountyRecord.isLoading || build.isLoading;
+  const error = bountyRecord.error || build.error;
 
   if (error) {
     return (
@@ -74,7 +69,7 @@ export default function BountySolveShowPage() {
     );
   }
 
-  if (isLoading || !bounty.data || !build.data || !gapNode) {
+  if (isLoading || !bountyRecord.data || !bountyRecord.data.build || !gapNode) {
     return (
       <div style={{ padding: SPACE.md, textAlign: "center" }}>
         <p style={{ color: t.text2 }}>Loading...</p>
@@ -83,11 +78,12 @@ export default function BountySolveShowPage() {
   }
 
   const breadcrumbPart = gapNode.title || "Missing part";
+  const buildTitle = bountyRecord.data.build.title;
 
   return (
     <>
       <Helmet>
-        <title>Solve · {build.data.title} — buildgallery</title>
+        <title>Solve · {buildTitle} — buildgallery</title>
         <meta name="description" content={`Solve this gap: ${breadcrumbPart}`} />
       </Helmet>
 
@@ -108,8 +104,8 @@ export default function BountySolveShowPage() {
         {/* Solve panel displayed full-width, not as a sheet */}
         <Suspense fallback={<div style={{ color: t.text2 }}>Loading...</div>}>
           <SolvePanelFullWidth
-            bounty={bounty.data}
-            build={build.data}
+            bounty={bountyRecord.data.bounty}
+            build={bountyRecord.data.build}
             gapNode={gapNode}
             nodeType={nodeType.data}
             resolveNode={resolveNode}
@@ -127,8 +123,8 @@ export default function BountySolveShowPage() {
  * This renders the solve interface without the Sheet wrapper.
  */
 interface SolvePanelFullWidthProps {
-  bounty: Awaited<ReturnType<typeof getBounty>>;
-  build: Awaited<ReturnType<typeof getBuild>>;
+  bounty: Bounty;
+  build: Build;
   gapNode: BuildNode;
   nodeType?: Awaited<ReturnType<typeof getNodeType>>;
   resolveNode: ResolveNode;
