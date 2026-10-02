@@ -189,6 +189,41 @@ export async function getRebuildTree(rootId: string): Promise<RebuildTreeNode | 
   return buildTree(rows.map((row) => ({ ...row, maker: byId.get(row.creator_id) ?? null })));
 }
 
+/** When one build in a family was made, and when it was last confirmed working. */
+export interface BuildClock {
+  created_at: string;
+  last_confirmed_at: string | null;
+}
+
+/**
+ * The two clocks a drawn family reads (UI-P31), by build id: when each build
+ * was made — siblings stand in that order — and when each was last confirmed
+ * working, which is what lights, dims or leaves dark its lamp (plaqueState).
+ *
+ * rebuild_tree returns neither, and widening its RETURNS TABLE is a migration;
+ * this is one request by id instead, named columns, capped at the family's own
+ * row cap plus one (a draft drawn into the family is not one of its rows). A
+ * build the reader cannot see is simply absent from the map.
+ */
+export async function getBuildClocks(ids: readonly string[]): Promise<Map<string, BuildClock>> {
+  const wanted = [...new Set(ids)].slice(0, REBUILD_TREE_ROW_CAP + 1);
+  if (wanted.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("builds")
+    .select("id, created_at, last_confirmed_at")
+    .in("id", wanted)
+    .limit(wanted.length);
+  if (error) throw buildLayerError("getBuildClocks", error);
+
+  return new Map(
+    ((data ?? []) as Array<BuildClock & { id: string }>).map(({ id, created_at, last_confirmed_at }) => [
+      id,
+      { created_at, last_confirmed_at },
+    ]),
+  );
+}
+
 export interface GetBuildFamilyInput {
   /** The family's root: root_build_id, or the build itself when it has none. */
   rootId: string;
