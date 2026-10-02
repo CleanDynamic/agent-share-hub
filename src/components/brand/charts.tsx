@@ -46,8 +46,12 @@ const svgA11y = (label?: string) =>
 export interface LineChartProps extends ChartBase {
   /** The series, 0–1, oldest first. */
   values: readonly number[];
-  /** Where the marker falls: the point at which something changed (a rebuild went live). */
-  markerIndex: number;
+  /**
+   * Where the marker falls: the point at which something changed (a rebuild
+   * went live). Null when nothing did (UI-P35): no dashed line, and the whole
+   * series is drawn as the part after it, since there is no before.
+   */
+  markerIndex: number | null;
 }
 
 /** Room under the series and over it, so a series never touches either edge. */
@@ -65,8 +69,9 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
   const y = (v: number) => height - LINE_BOTTOM - clamp01(v) * (height - LINE_BOTTOM - LINE_TOP);
   const point = (i: number) => `${f(x(i))},${f(y(values[i]))}`;
 
-  const marker = Math.min(Math.max(Math.round(markerIndex), 0), Math.max(n - 1, 0));
-  const before = values.map((_, i) => i).slice(0, marker + 1);
+  const marked = markerIndex !== null && Number.isFinite(markerIndex);
+  const marker = marked ? Math.min(Math.max(Math.round(markerIndex), 0), Math.max(n - 1, 0)) : 0;
+  const before = marked ? values.map((_, i) => i).slice(0, marker + 1) : [];
   const after = values.map((_, i) => i).slice(marker);
   const mx = x(marker);
 
@@ -107,15 +112,19 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
             d={`M${f(mx)},${baseline} ${after.map((i) => `L${point(i)}`).join(" ")} L${width},${baseline} Z`}
             fill={`url(#${gradient})`}
           />
-          <polyline
-            points={before.map(point).join(" ")}
-            fill="none"
-            stroke={t.label}
-            strokeWidth={1.5}
-            opacity={0.7}
-          />
+          {marked ? (
+            <polyline
+              points={before.map(point).join(" ")}
+              fill="none"
+              stroke={t.label}
+              strokeWidth={1.5}
+              opacity={0.7}
+            />
+          ) : null}
           <polyline points={after.map(point).join(" ")} fill="none" stroke={t.evidence} strokeWidth={1.8} />
-          <line x1={f(mx)} y1={0} x2={f(mx)} y2={height} stroke={t.text} strokeWidth={1.4} strokeDasharray="3 3" />
+          {marked ? (
+            <line x1={f(mx)} y1={0} x2={f(mx)} y2={height} stroke={t.text} strokeWidth={1.4} strokeDasharray="3 3" />
+          ) : null}
         </>
       ) : null}
     </svg>

@@ -47,6 +47,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   lineage: lazy(() => import("./LineageDemo")),
   /* UI-P34 — Profile. */
   profile: lazy(() => import("./ProfileDemo")),
+  /* UI-P35 — Activity. */
+  activity: lazy(() => import("./ActivityDemo")),
 };
 
 /** Entries that draw their own room and are not wrapped in the site frame. */
@@ -67,11 +69,13 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: "Lineage" },
   ],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
+  activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
 };
 
-/** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock. */
+/** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock; the Activity board lights no link, the bell, and the dock's Activity tile. */
 const CHROME: Record<string, Partial<DevChromeOptions>> = {
   profile: { current: "home", dockCurrent: "home" },
+  activity: { current: null, activityCurrent: true, dockCurrent: "activity" },
 };
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
