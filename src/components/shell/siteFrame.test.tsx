@@ -21,14 +21,26 @@ describe("boardHeight", () => {
 });
 
 describe("usesSiteFrame", () => {
-  it("lists Home (UI-P27), the Gallery (UI-P28), the Build page (UI-P29), its lineage and Rebuild (UI-P31) and /notifications (UI-P20), and nothing else yet", () => {
-    expect(SITE_FRAME_ROUTES).toEqual(["/", "/gallery", "/b2/:slug", "/b2/:slug/lineage", "/rebuild/:slug", "/notifications"]);
+  it("lists Home (UI-P27), the Gallery (UI-P28), the Build page (UI-P29), its lineage and Rebuild (UI-P31), /notifications (UI-P20) and the Profile (UI-P34), and nothing else yet", () => {
+    expect(SITE_FRAME_ROUTES).toEqual([
+      "/",
+      "/gallery",
+      "/b2/:slug",
+      "/b2/:slug/lineage",
+      "/rebuild/:slug",
+      "/notifications",
+      "/profile/:handle",
+      "/profile",
+    ]);
     expect(usesSiteFrame("/")).toBe(true);
     expect(usesSiteFrame("/gallery")).toBe(true);
     expect(usesSiteFrame("/b2/invoice-triage-agent")).toBe(true);
     expect(usesSiteFrame("/b2/invoice-triage-agent/lineage")).toBe(true);
     expect(usesSiteFrame("/rebuild/invoice-triage-agent")).toBe(true);
     expect(usesSiteFrame("/notifications")).toBe(true);
+    expect(usesSiteFrame("/profile/maya")).toBe(true);
+    expect(usesSiteFrame("/profile")).toBe(true);
+    expect(usesSiteFrame("/profile/maya/extra")).toBe(false);
     expect(usesSiteFrame("/gallery/extra")).toBe(false);
     expect(usesSiteFrame("/b2/invoice-triage-agent/extra")).toBe(false);
     // The legacy post system's lineage address stays in the old frame.

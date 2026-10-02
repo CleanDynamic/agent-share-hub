@@ -7,11 +7,12 @@
    UI-P20: /notifications, with its existing page, to prove the frame end to end.
    UI-P27: / (Home). UI-P28: /gallery. UI-P29: /b2/:slug (the Build page).
    UI-P31: /b2/:slug/lineage and /rebuild/:slug. The rebuild route lives outside
-   Layout, so its site branch renders SiteFrame itself (see App.tsx). */
+   Layout, so its site branch renders SiteFrame itself (see App.tsx).
+   UI-P34: /profile/:handle, and /profile (your own). */
 
 import { matchPath } from "react-router-dom";
 
-export const SITE_FRAME_ROUTES: string[] = ["/", "/gallery", "/b2/:slug", "/b2/:slug/lineage", "/rebuild/:slug", "/notifications"];
+export const SITE_FRAME_ROUTES: string[] = ["/", "/gallery", "/b2/:slug", "/b2/:slug/lineage", "/rebuild/:slug", "/notifications", "/profile/:handle", "/profile"];
 
 /** True when `pathname` is one of `SITE_FRAME_ROUTES`. */
 export function usesSiteFrame(pathname: string): boolean {

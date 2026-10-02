@@ -37,6 +37,12 @@ export interface SegmentedProps<V extends string = string> {
   fontSize?: SegmentedFontSize;
   /** The group's accessible name. */
   label: string;
+  /**
+   * Shown, not changeable: every segment is `aria-disabled` and ignores a click.
+   * The Profile's track switch on somebody else's profile. The current segment
+   * keeps its fill, so the control still says what the value is.
+   */
+  readOnly?: boolean;
 }
 
 function Segment({
@@ -44,6 +50,7 @@ function Segment({
   height,
   fontSize,
   ariaLabel,
+  readOnly,
   onSelect,
   children,
 }: {
@@ -51,6 +58,7 @@ function Segment({
   height: number;
   fontSize: number;
   ariaLabel?: string;
+  readOnly?: boolean;
   onSelect: () => void;
   children: ReactNode;
 }) {
@@ -60,7 +68,8 @@ function Segment({
       type="button"
       aria-pressed={current}
       aria-label={ariaLabel}
-      onClick={onSelect}
+      aria-disabled={readOnly || undefined}
+      onClick={readOnly ? undefined : onSelect}
       {...handlers}
       style={{
         height,
@@ -69,7 +78,7 @@ function Segment({
         borderRadius: r.chip,
         fontFamily: FIGTREE,
         fontSize,
-        cursor: "pointer",
+        cursor: readOnly ? "default" : "pointer",
         whiteSpace: "nowrap",
         background: current ? t.text : "transparent",
         color: current ? t.onText : t.text2,
@@ -89,6 +98,7 @@ export function Segmented<V extends string = string>({
   size = 34,
   fontSize = 12,
   label,
+  readOnly = false,
 }: SegmentedProps<V>) {
   return (
     <div
@@ -111,6 +121,7 @@ export function Segmented<V extends string = string>({
           height={size - 8}
           fontSize={fontSize}
           ariaLabel={item.ariaLabel}
+          readOnly={readOnly}
           onSelect={() => onChange(item.value)}
         >
           {item.label}

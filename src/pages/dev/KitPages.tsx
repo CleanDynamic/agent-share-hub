@@ -19,7 +19,9 @@ import { useDesignTheme, useDesignViewport, type DesignViewport } from "@/dev/us
 
 import type { Crumb } from "@/components/shell/breadcrumbTrail";
 
-import { FIXTURE_BUILD_TITLE, devChrome } from "./frameChrome";
+import { fixtures } from "@/dev/designFixtures";
+
+import { FIXTURE_BUILD_TITLE, devChrome, type DevChromeOptions } from "./frameChrome";
 
 /** What a registered compare entry receives. The view reads the 768px breakpoint itself; this is for sizing the wrapper. */
 export interface DesignPageProps {
@@ -43,6 +45,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   /* UI-P31 — Rebuild, and the lineage page built from the same pieces (no board). */
   rebuild: lazy(() => import("./RebuildDemo")),
   lineage: lazy(() => import("./LineageDemo")),
+  /* UI-P34 — Profile. */
+  profile: lazy(() => import("./ProfileDemo")),
 };
 
 /** Entries that draw their own room and are not wrapped in the site frame. */
@@ -62,6 +66,12 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
+  profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
+};
+
+/** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock. */
+const CHROME: Record<string, Partial<DevChromeOptions>> = {
+  profile: { current: "home", dockCurrent: "home" },
 };
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
@@ -86,7 +96,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) ? (
           <View viewport={viewport} fit="board" />
         ) : (
-          <SiteFrameView viewport={viewport} {...devChrome({ theme, trail: TRAILS[page] })}>
+          <SiteFrameView viewport={viewport} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
             <View viewport={viewport} fit="board" />
           </SiteFrameView>
         )}
