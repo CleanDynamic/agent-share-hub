@@ -153,18 +153,17 @@ function FramesGrid({ cards, selected, onSelect }: { cards: OpenBountyCard[]; se
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px 14px" }}>
       {cards.slice(0, 6).map((card) => (
-        <div key={card.bounty.id} onClick={() => onSelect(card.bounty.id)}>
-          <VacantFrame
-            title={card.build.title}
-            cover={<CoverFallback />}
-            part={card.gapTitle || "Part"}
-            reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
-            solutions={card.solutions}
-            meToo={card.bounty.me_too_count || 0}
-            onSelect={() => onSelect(card.bounty.id)}
-            selected={selected === card.bounty.id}
-          />
-        </div>
+        <VacantFrame
+          key={card.bounty.id}
+          title={card.build.title}
+          cover={<CoverFallback />}
+          part={card.gapTitle || "Part"}
+          reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
+          solutions={card.solutions}
+          meToo={card.bounty.me_too_count || 0}
+          to={`/bounties/${card.bounty.id}/solve`}
+          selected={selected === card.bounty.id}
+        />
       ))}
     </div>
   );
@@ -427,16 +426,16 @@ function MobileContent({ cards, solvers }: { cards: OpenBountyCard[]; solvers: S
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {cards.slice(0, 6).map((card) => (
-        <div key={card.bounty.id} style={{ cursor: "pointer" }}>
-          <VacantFrame
-            title={card.build.title}
-            cover={<CoverFallback />}
-            part={card.gapTitle || "Part"}
-            reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
-            solutions={card.solutions}
-            meToo={card.bounty.me_too_count || 0}
-          />
-        </div>
+        <VacantFrame
+          key={card.bounty.id}
+          title={card.build.title}
+          cover={<CoverFallback />}
+          part={card.gapTitle || "Part"}
+          reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
+          solutions={card.solutions}
+          meToo={card.bounty.me_too_count || 0}
+          to={`/bounties/${card.bounty.id}/solve`}
+        />
       ))}
 
       <div
