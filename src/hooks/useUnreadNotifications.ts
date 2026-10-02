@@ -3,6 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeToNewNotifications } from "@/lib/notifications/realtime";
 
+/** UI-P35 — every mounted count's refresh, so the page that marks rows read can have the badges catch up at once. */
+const mounted = new Set<() => void>();
+
+/**
+ * Have every mounted unread count (the header's bell, the dock's tile) read its
+ * count again. Called after rows are marked read, so the badges do not wait on
+ * a realtime UPDATE that a connection may never deliver.
+ */
+export function refreshUnreadNotifications(): void {
+  for (const refresh of mounted) refresh();
+}
+
 export function useUnreadNotifications() {
   const { isLoggedIn, user } = useAuth();
   const [count, setCount] = useState(0);
@@ -19,6 +31,14 @@ export function useUnreadNotifications() {
 
   useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const again = () => void refresh();
+    mounted.add(again);
+    return () => {
+      mounted.delete(again);
+    };
   }, [refresh]);
 
   // Refresh on window focus

@@ -8,7 +8,8 @@
    UI-P27: / (Home). UI-P28: /gallery. UI-P29: /b2/:slug (the Build page).
    UI-P31: /b2/:slug/lineage and /rebuild/:slug. The rebuild route lives outside
    Layout, so its site branch renders SiteFrame itself (see App.tsx).
-   UI-P34: /profile/:handle, and /profile (your own). */
+   UI-P34: /profile/:handle, and /profile (your own).
+   UI-P35: /notifications keeps its place and gets its own page (ActivityPage). */
 
 import { matchPath } from "react-router-dom";
 

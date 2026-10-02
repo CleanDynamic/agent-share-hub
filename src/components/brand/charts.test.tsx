@@ -61,6 +61,16 @@ describe("LineChart", () => {
     expect(html).toMatch(/<path d="M131.4,110 L/);
   });
 
+  it("draws no marker and no before-series when nothing changed in the window (UI-P35)", () => {
+    const none = markup(<LineChart width={360} height={120} values={values} markerIndex={null} />);
+    expect(none).not.toContain('stroke-dasharray="3 3"');
+    expect(none).not.toMatch(/stroke="var\(--label\)"/);
+    const polylines = none.match(/<polyline points="([^"]+)"/g) ?? [];
+    expect(polylines).toHaveLength(1);
+    expect(polylines[0].slice(18, -1).split(" ")).toHaveLength(64);
+    expect(none).toMatch(/<path d="M0.0,110 L0.0,/);
+  });
+
   it("is decorative unless named", () => {
     expect(html).toContain('aria-hidden="true"');
     expect(markup(<LineChart width={10} height={20} values={[0.5]} markerIndex={0} label="Runs" />)).toContain(

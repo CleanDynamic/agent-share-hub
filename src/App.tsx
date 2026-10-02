@@ -92,6 +92,8 @@ const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 // UI-P34 — the Profile in the site frame; its own chunk, picked by `FrameRoute`.
 const ProfileSitePage = lazy(() => import("./pages/site/profile/ProfilePage"));
+// UI-P35 — Activity in the site frame; its own chunk (it draws a chart), picked by `FrameRoute`.
+const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -301,7 +303,23 @@ const App = () => (
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
                 <Route path="/feed" element={<Navigate to="/gallery" replace />} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <FrameRoute
+                        site={
+                          <RouteBoundary>
+                            <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                              <ActivitySitePage />
+                            </Suspense>
+                          </RouteBoundary>
+                        }
+                        legacy={<NotificationsPage />}
+                      />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/messages/:threadId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ProtectedRoute><Analytics /></ProtectedRoute></Suspense></RouteBoundary>} />

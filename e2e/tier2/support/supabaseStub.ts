@@ -315,9 +315,20 @@ interface OpenSocket {
 
 /* ───────────────────────── install ───────────────────────── */
 
+export interface StubOptions {
+  /**
+   * Apply a PATCH body to the rows its filters match, as PostgREST does, so a
+   * read after a write sees the write. Off by default: the messaging specs only
+   * need to know the write was sent, and a stub that changed under them would
+   * change what they read back.
+   */
+  applyPatches?: boolean;
+}
+
 export async function installSupabaseStub(
   page: Page,
-  seed: Seed = defaultSeed()
+  seed: Seed = defaultSeed(),
+  options: StubOptions = {}
 ): Promise<StubHandle> {
   const ref = projectRef();
 
@@ -411,6 +422,9 @@ export async function installSupabaseStub(
         body = {};
       }
       (patchedRows[table] ??= []).push({ body, query: url.search });
+      if (options.applyPatches && Object.prototype.hasOwnProperty.call(tables, table)) {
+        for (const row of filterRows(tables[table], url, { paginate: false })) Object.assign(row, body);
+      }
       return route.fulfill({
         status: 200,
         contentType: "application/json",
