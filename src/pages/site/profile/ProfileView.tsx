@@ -468,17 +468,18 @@ function WorksPanel({ works, isOwn, fill }: { works: WorksView; isOwn: boolean; 
 function PhoneWorks({ works, isOwn }: { works: WorksView; isOwn: boolean }) {
   return (
     <div data-testid="profile-works" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <ScrollRow gap={6} label="Works">
+      <ScrollRow gap={6} label="Works" tablist>
         {WORKS_TABS.map((tab) => (
           <FilterChip
             key={tab.value}
             label={tabLabel(tab.label, works.counts[tab.value])}
             on={tab.value === works.tab}
+            tab={{ id: `profile-tab-${tab.value}`, controls: "profile-panel" }}
             onClick={() => works.onTab(tab.value)}
           />
         ))}
       </ScrollRow>
-      <div role="region" aria-label="Works">
+      <div role="tabpanel" id="profile-panel" aria-labelledby={`profile-tab-${works.tab}`}>
         <WorksBody works={works} isOwn={isOwn} phone />
       </div>
     </div>

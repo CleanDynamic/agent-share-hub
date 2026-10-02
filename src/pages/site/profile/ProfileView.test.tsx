@@ -309,14 +309,14 @@ describe("ProfileView on a phone", () => {
     const onTab = vi.fn();
     const base = profileFixture();
     mount({ works: { ...base.works, onTab } });
-    const row = screen.getByRole("group", { name: "Works" });
-    expect(within(row).getAllByRole("button").map((chip) => chip.textContent)).toEqual([
+    const row = screen.getByRole("tablist", { name: "Works" });
+    expect(within(row).getAllByRole("tab").map((chip) => chip.textContent)).toEqual([
       "Builds 14",
       "Rebuilds 6",
       "Reproduced 48",
       "Collections 4",
     ]);
-    fireEvent.click(within(row).getByRole("button", { name: "Collections 4" }));
+    fireEvent.click(within(row).getByRole("tab", { name: "Collections 4" }));
     expect(onTab).toHaveBeenCalledWith("collections");
     expect(screen.queryByText(/\/ £1,150/)).toBeNull();
     expect(screen.getAllByTestId("profile-card")).toHaveLength(4);

@@ -601,6 +601,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
           <button
             type="button"
             data-testid="build-anatomy-more"
+            data-ring-inset=""
             onClick={() => setExpanded(true)}
             style={{
               display: "block",
@@ -758,12 +759,13 @@ function PhoneBuild(props: BuildViewProps) {
       <Hero hero={hero} actions={actions} phone announce={announce} />
       <ActionDock actions={actions} phone announce={announce} />
       <ProofPanel proof={proof} phone now={now} />
-      <ScrollRow gap={6} label="Sections of this build">
+      <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (
           <FilterChip
             key={tab.value}
             label={tab.label}
             on={tab.value === viewer.tab}
+            tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
             onClick={() => {
               viewer.onTabChange(tab.value);
               reveal();
@@ -779,7 +781,7 @@ function PhoneBuild(props: BuildViewProps) {
           reveal();
         }}
       />
-      <div ref={viewerRef} style={{ scrollMarginTop: 72 }}>
+      <div ref={viewerRef} role="tabpanel" id="build-tabpanel" aria-labelledby={`build-tab-${viewer.tab}`} style={{ scrollMarginTop: 72 }}>
         <Viewer viewer={viewer} part={selectedPart(anatomy)} phone announce={announce} />
       </div>
       <TimelinePanel

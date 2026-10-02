@@ -82,6 +82,7 @@ export function LoginForm({
           </AuthCheck>
           <FrameLink
             to="/reset-password"
+            data-hit=""
             /* The reference's phone says "Forgot?"; the name is the whole sentence. */
             aria-label={phone ? "Forgot password?" : undefined}
             style={{

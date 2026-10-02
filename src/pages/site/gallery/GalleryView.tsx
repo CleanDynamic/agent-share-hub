@@ -527,6 +527,7 @@ function FeaturedDesktop({ featured, now }: { featured: FeaturedView; now?: numb
       <Link
         to={featured.to}
         data-testid="gallery-featured"
+        data-ring-inset=""
         aria-label={`Most reproduced this month: ${featured.title}`}
         style={{ display: "block", height: "100%", textDecoration: "none", color: "inherit" }}
       >

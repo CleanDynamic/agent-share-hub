@@ -23,23 +23,12 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { changesEyebrow, type ChangeGroupView, type ChangeRowKind } from "./rebuildModel";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
 const SYMBOL: Record<ChangeRowKind, { glyph: string; colour: string }> = {
   added: { glyph: "+", colour: t.catConfiguration },
   changed: { glyph: "~", colour: t.litInk },
   removed: { glyph: "−", colour: t.catBreakage },
-};
-
-const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  padding: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
 };
 
 export function ChangeList({ groups, phone = false }: { groups: readonly ChangeGroupView[]; phone?: boolean }) {

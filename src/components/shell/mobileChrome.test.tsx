@@ -94,7 +94,7 @@ describe("ScrollRow", () => {
     );
     const row = document.querySelector<HTMLElement>('[data-ui="scroll-row"]')!;
     expect(row.style.overflowX).toBe("auto");
-    expect(row.style.margin).toBe("0px -14px");
+    expect(row.style.margin).toBe("-4px -14px");
     expect(row.style.gap).toBe("6px");
     expect(Array.from(row.children).every((c) => (c as HTMLElement).style.flexShrink === "0")).toBe(true);
   });

@@ -95,6 +95,7 @@ function NextLink({ to, children }: { to: string; children: string }) {
     <Link
       to={to}
       data-testid="rebuild-next"
+      data-hit=""
       {...handlers}
       style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}
     >

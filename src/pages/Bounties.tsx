@@ -11,6 +11,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { SeoHead } from "@/components/SeoHead";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -139,6 +140,7 @@ export default function Bounties() {
     queryFn: async () => (await myMeToo([bountyId as string], user!.id)).has(bountyId as string),
   });
   const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  const [announcement, say] = useAnnouncer();
 
   const onMeToo = useCallback(() => {
     if (!bountyId || !chosen) return;
@@ -149,6 +151,7 @@ export default function Bounties() {
     const was = Boolean(mine.data);
     const wasCount = chosen.meToo;
     setFailure(null);
+    say(was ? "Me too removed" : "Me too added");
     // Shown at once …
     qc.setQueryData(meTooKey, !was);
     qc.setQueryData<typeof board.data>(["bounty-board"], (data) =>
@@ -167,14 +170,16 @@ export default function Bounties() {
     // … and put back if the write is refused.
     toggleMeToo({ bountyId, userId: user.id }).catch((error: unknown) => {
       qc.setQueryData(meTooKey, was);
+      say("That didn't save");
       void qc.invalidateQueries({ queryKey: ["bounty-board"] });
       setFailure({ error });
     });
-  }, [bountyId, chosen, user, mine.data, qc, meTooKey, navigate, setFailure, board.data]);
+  }, [bountyId, chosen, user, mine.data, qc, meTooKey, navigate, setFailure, board.data, say]);
 
   return (
     <>
       <SeoHead title="Bounties — buildgallery" description="Open asks on real builds, with rewards for solutions." path="/bounties" />
+      <LiveRegion message={announcement} />
       <BountiesView
         frames={frames}
         solvers={solvers}

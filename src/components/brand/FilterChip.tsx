@@ -3,7 +3,8 @@
 // 36px tall, radius 10 (the media step), Figtree 13/500. Off is a glass fill with
 // a hairline; on is the inverse — `--text` fill, `--on-text` label — so a chosen
 // filter is carried by fill and not by colour. An optional count rides inside,
-// in DM Mono 10px at 70%. It is a toggle, so it is a button with `aria-pressed`.
+// in DM Mono 10px at 70%. It is a toggle, so it is a button with `aria-pressed`; as a tab (`tab`) it is
+// `role="tab"` inside a `ScrollRow tablist`.
 
 import type { ButtonHTMLAttributes } from "react";
 
@@ -19,12 +20,15 @@ export interface FilterChipProps
   /** Whether this filter is on. */
   on?: boolean;
   count?: number | string;
+  /** The chip is a tab (UI-P38): `role="tab"` with `aria-selected` in place of `aria-pressed`, and only the chosen one in the tab order. */
+  tab?: { id: string; controls: string };
 }
 
 export function FilterChip({
   label,
   on = false,
   count,
+  tab,
   type = "button",
   style,
   onFocus,
@@ -37,7 +41,9 @@ export function FilterChip({
     <button
       data-ui="filter-chip"
       type={type}
-      aria-pressed={on}
+      {...(tab
+        ? { role: "tab", id: tab.id, "aria-controls": tab.controls, "aria-selected": on, tabIndex: on ? 0 : -1 }
+        : { "aria-pressed": on })}
       {...rest}
       {...handlers}
       style={{

@@ -30,6 +30,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import type { PartViewerMode } from "@/components/brand/PartViewer";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { CreditLine } from "@/components/build/CreditLine";
@@ -565,6 +566,7 @@ export function BuildPage() {
 
   /* OPTIMISTIC. The new count and clock are shown the moment the run is submitted; the write follows. If it fails the
      header goes back to what it was and the proof panel says so, with a way to run it again — never an exception. */
+  const [announcement, say] = useAnnouncer();
   const [runFailure, setRunFailure] = useState<{ error: unknown } | null>(null);
 
   const submitRun = useCallback(
@@ -572,6 +574,7 @@ export function BuildPage() {
       if (!build) return;
       const before = build;
       setRunFailure(null);
+      say(viewerIsCreator ? "Reconfirmed" : worked ? "Reproduction recorded" : "Report recorded");
       if (worked || viewerIsCreator) {
         putHeader({
           ...build,
@@ -588,10 +591,11 @@ export function BuildPage() {
         if (fresh) putHeader(fresh);
       } catch (error) {
         putHeader(before);
+        say("That didn't save");
         setRunFailure({ error });
       }
     },
-    [build, viewerIsCreator, putHeader],
+    [build, viewerIsCreator, putHeader, say],
   );
 
   const onBountyChanged = useCallback(
@@ -831,6 +835,7 @@ export function BuildPage() {
           An admin has hidden this build.
         </div>
       ) : null}
+      <LiveRegion message={announcement} />
       <BuildView
         fit="content"
         hero={{

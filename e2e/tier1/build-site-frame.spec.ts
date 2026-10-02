@@ -101,8 +101,8 @@ test.describe("the first screen, with the sample build", () => {
     await openSample(page);
     const names = ["Anatomy", "Watch it get built", "Run it yourself", "Understand it", "Where it broke"];
     if (isPhone(page)) {
-      const row = page.getByRole("group", { name: "Sections of this build" });
-      for (const name of names) await expect(row.getByRole("button", { name })).toHaveCount(1);
+      const row = page.getByRole("tablist", { name: "Sections of this build" });
+      for (const name of names) await expect(row.getByRole("tab", { name })).toHaveCount(1);
       await expect(page.getByTestId("build-viewer").getByRole("tablist")).toHaveCount(0);
     } else {
       const tabs = page.getByTestId("build-viewer").getByRole("tab");

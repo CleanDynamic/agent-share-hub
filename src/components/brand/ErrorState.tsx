@@ -75,7 +75,8 @@ export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, s
     <div
       data-ui="error-state"
       {...rest}
-      role="alert"
+      role="status"
+      aria-live="polite"
       style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, ...style }}
     >
       <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: "normal", color: t.text }}>{line}</p>

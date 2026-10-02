@@ -189,9 +189,9 @@ describe("ErrorState", () => {
     expect(screen.queryByText("That didn't load.")).toBeNull();
   });
 
-  it("is an alert, so a failure that arrives late is announced, with its panel's name in it", () => {
+  it("is a polite status, so a failure that arrives late is announced, with its panel's name in it", () => {
     render(<ErrorState panel="Streak" onRetry={() => {}} />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Streak");
+    expect(screen.getByRole("status")).toHaveTextContent("Streak");
   });
 
   it("never shows the exception: not its message, not its stack", () => {

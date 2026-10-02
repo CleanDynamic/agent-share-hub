@@ -18,21 +18,10 @@ import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode
 import { IconButton } from "@/components/brand/IconButton";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
 /** A downward drag of more than this many px on the grabber closes the sheet. */
 export const SHEET_DRAG_CLOSE_PX = 80;
-
-const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  padding: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
-};
 
 export interface BottomSheetProps {
   open: boolean;
@@ -113,7 +102,7 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={38} style={{ marginLeft: "auto" }} />
+              <IconButton icon={X} label="Close" size={44} style={{ marginLeft: "auto" }} />
             </Dialog.Close>
           </div>
           {children}

@@ -236,13 +236,19 @@ describe("BuildView on a phone", () => {
     const onTabChange = vi.fn();
     const base = buildFixture("mobile");
     mount({ viewer: { ...base.viewer, onTabChange } }, "mobile");
-    const row = screen.getByRole("group", { name: "Sections of this build" });
-    const chips = within(row).getAllByRole("button");
+    const row = screen.getByRole("tablist", { name: "Sections of this build" });
+    const chips = within(row).getAllByRole("tab");
     expect(chips.map((chip) => chip.textContent)).toEqual(buildTabs(false).map((tab) => tab.label));
-    expect(chips[0].getAttribute("aria-pressed")).toBe("true");
+    expect(chips[0].getAttribute("aria-selected")).toBe("true");
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([0, -1, -1, -1, -1]);
     fireEvent.click(chips[4]);
     expect(onTabChange).toHaveBeenCalledWith("broke");
     expect(within(screen.getByTestId("build-viewer")).queryByRole("tablist")).toBeNull();
+    // The arrow keys move between the chips, and the panel is named by the chosen one.
+    chips[0].focus();
+    fireEvent.keyDown(chips[0], { key: "ArrowRight" });
+    expect(onTabChange).toHaveBeenLastCalledWith(buildTabs(false)[1].value);
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", `build-tab-${base.viewer.tab}`);
   });
 
   it("shows the first six parts, then the rest on request", () => {

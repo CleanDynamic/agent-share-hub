@@ -305,6 +305,7 @@ export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
   return (
     <label
       htmlFor={id}
+      data-hit=""
       style={{
         display: "flex",
         alignItems: "center",

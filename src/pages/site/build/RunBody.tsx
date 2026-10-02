@@ -33,23 +33,12 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
 import type { LayerStepsView, RunBodyView, RunStepView } from "./buildModel";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
 /** A step's text is shown in full up to this many lines, then on request. */
 export const WELL_LINES = 20;
 /** How long a Copy button says it worked. */
 const COPIED_MS = 1500;
-
-const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  padding: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
-};
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 

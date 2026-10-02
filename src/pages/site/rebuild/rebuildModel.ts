@@ -449,18 +449,7 @@ export function readinessView(readiness: PublishReadiness, changes: ChangeSet): 
 export const rebuildingLine = (source: { title: string; maker: string | null }): string =>
   `Rebuilding ${source.title}${source.maker ? ` by ${source.maker}` : ""}.`;
 
-/** Read by assistive technology, drawn nowhere: the desktop boards draw no page heading. */
-export const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  padding: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
-};
+export { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
 /* ══ the credit ══════════════════════════════════════════════════════════════ */
 
