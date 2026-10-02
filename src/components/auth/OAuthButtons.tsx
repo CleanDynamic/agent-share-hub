@@ -15,10 +15,11 @@ export type OAuthProvider = "google" | "github" | "x";
    monochrome by its own guidelines and takes `currentColor`, which is now
    `--text` — the same thing it has always been, one token later. */
 
-// Google G Icon SVG
-function GoogleIcon() {
+// Google G Icon SVG. `size` is for the repainted sign-in pages, which draw the
+// same mark at 16px (UI-P36); every other caller keeps the 24px it always had.
+export function GoogleIcon({ size = 24 }: { size?: number } = {}) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
@@ -39,10 +40,10 @@ function GoogleIcon() {
   );
 }
 
-// X (Twitter) Logo SVG
-function XIcon() {
+// X (Twitter) Logo SVG, at 18px unless a caller says otherwise.
+export function XIcon({ size = 18 }: { size?: number } = {}) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
   );

@@ -21,7 +21,8 @@
 //
 // `bare` (sign in, join, reset, verify) is the backdrop and the page and nothing
 // else. The backdrop is the root's first child, `position: absolute` inside a
-// `position: relative` root (see PageBackdrop) — never `fixed`.
+// `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
+// entrance's own tone (`signin`, UI-P36).
 
 import type { CSSProperties, ReactNode } from "react";
 
@@ -122,7 +123,7 @@ export function SiteFrameView({
   if (variant === "bare") {
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
-        <PageBackdrop viewport={viewport} />
+        <PageBackdrop viewport={phone ? "mobile" : "desktop"} tone="signin" />
         <SkipLink />
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}

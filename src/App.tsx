@@ -24,6 +24,7 @@ import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import Home from "./pages/Home";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { SiteFrame } from "./components/shell/SiteFrame";
+import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
 
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
@@ -94,6 +95,11 @@ const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 const ProfileSitePage = lazy(() => import("./pages/site/profile/ProfilePage"));
 // UI-P35 — Activity in the site frame; its own chunk (it draws a chart), picked by `FrameRoute`.
 const ActivitySitePage = lazy(() => import("./pages/site/activity/ActivityPage"));
+// UI-P36 — Sign in, Join, reset and verify in the entrance's frame; each its own chunk, picked by `FrameRoute`.
+const LoginSitePage = lazy(() => import("./pages/site/signin/LoginPage"));
+const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
+const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
+const VerifyEmailSitePage = lazy(() => import("./pages/site/signin/VerifyEmailPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -253,13 +259,20 @@ const App = () => (
                 {/* /path/:id route removed */}
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/login" element={<Login />} />
+                {/* UI-P36 — the four entrance pages in the site frame behind the
+                    flag. Layout hands these straight through, outside AppShell,
+                    so the site branch brings its own bare frame (as /rebuild/:slug
+                    does). The two an emailed link can open are held until the
+                    flag is known, because a link's token works once: the legacy
+                    page must not mount first and spend it. /auth/callback is not
+                    repainted here. */}
+                <Route path="/signup" element={<FrameRoute site={<SignInSite><SignupSitePage /></SignInSite>} legacy={<Signup />} />} />
+                <Route path="/login" element={<FrameRoute site={<SignInSite><LoginSitePage /></SignInSite>} legacy={<Login />} />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/verify-email/:token" element={<VerifyEmail />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<VerifyEmail />} />} />
+                <Route path="/verify-email/:token" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<VerifyEmail />} />} />
+                <Route path="/reset-password" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<ResetPassword />} />} />
+                <Route path="/reset-password/:token" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<ResetPassword />} />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route

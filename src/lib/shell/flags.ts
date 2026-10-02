@@ -113,6 +113,21 @@ export function useSiteFrameFlag(): boolean {
   return useSyncExternalStore(subscribe, isSiteFrameOn, () => false);
 }
 
+/** Whether the answer is in: a dev override decides it, or the row has been read (or has failed to be). */
+export function isSiteFrameKnown(): boolean {
+  return readOverride() !== null || cached !== null;
+}
+
+/**
+ * `isSiteFrameKnown()` as a hook. For a route that must not mount the wrong page
+ * first: `isSiteFrameOn()` reads false until the row arrives, so a page that
+ * spends a one-time token on mount would be mounted as the legacy page and then
+ * again as the site page.
+ */
+export function useSiteFrameKnown(): boolean {
+  return useSyncExternalStore(subscribe, isSiteFrameKnown, () => false);
+}
+
 /** Test seam: forget the cache and the override. */
 export function resetSiteFrameFlag(): void {
   cached = null;

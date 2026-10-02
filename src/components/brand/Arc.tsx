@@ -43,6 +43,8 @@ export interface ArcGeometry {
 /** The page arc, desktop (1440 wide) and mobile (390 wide). */
 export const ARC_PAGE_DESKTOP: ArcGeometry = { width: 1440, height: 1066, cx: 1780, cy: -520, r: 1080 };
 export const ARC_PAGE_MOBILE: ArcGeometry = { width: 390, height: 640, cx: 560, cy: -300, r: 470 };
+/** The sign-in page's arc, desktop: a 1440 × 1000 board, its circle a little further out than the page's. Phones draw the page's own. */
+export const ARC_SIGNIN_DESKTOP: ArcGeometry = { width: 1440, height: 1000, cx: 1800, cy: -560, r: 1060 };
 /** The smaller arcs: the Build hero (desktop, mobile) and the Profile banner. */
 export const ARC_BUILD_HERO: ArcGeometry = { width: 900, height: 400, cx: 1100, cy: -260, r: 620 };
 export const ARC_BUILD_HERO_MOBILE: ArcGeometry = { width: 362, height: 380, cx: 520, cy: -240, r: 420 };

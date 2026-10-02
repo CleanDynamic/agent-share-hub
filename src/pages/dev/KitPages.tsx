@@ -49,10 +49,12 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   profile: lazy(() => import("./ProfileDemo")),
   /* UI-P35 — Activity. */
   activity: lazy(() => import("./ActivityDemo")),
+  /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
+  signin: lazy(() => import("./SignInDemo")),
 };
 
-/** Entries that draw their own room and are not wrapped in the site frame. */
-const UNFRAMED = new Set(["backdrop"]);
+/** Entries that draw their own room and are not wrapped in the site frame (Sign in draws the bare one itself). */
+const UNFRAMED = new Set(["backdrop", "signin"]);
 
 /** The trail a board draws, where it is not the default Home / Gallery / the sample build. */
 const TRAILS: Record<string, readonly Crumb[]> = {
