@@ -68,6 +68,8 @@ const Gallery = lazy(() => import("./pages/Gallery"));
 const Bounties = lazy(() => import("./pages/Bounties"));
 // RC-P13 — the solvers board, under the bounties board. Its own chunk.
 const Solvers = lazy(() => import("./pages/Solvers"));
+// Solve route for a specific bounty.
+const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
 // address, /b/:slug/lineage. Its own chunk, like every route the RC series adds.
 const Lineage = lazy(() => import("./pages/Lineage"));
@@ -380,6 +382,8 @@ const App = () => (
                 {/* RC-P13 — the solvers board, lazy inside its own RouteBoundary
                     like the board it sits under (CONTRACT §2.6). */}
                 <Route path="/bounties/solvers" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Solvers /></Suspense></RouteBoundary>} />
+                {/* Solve route for a specific bounty, inside its own RouteBoundary. */}
+                <Route path="/bounties/:bountyId/solve" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BountySolveShowPage /></Suspense></RouteBoundary>} />
                 <Route path="/import" element={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><ImportPage /></Suspense>} />
               </Route>
               {/* ── BG-P16 — the four authoring routes.

@@ -1,493 +1,493 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { SeoHead } from "@/components/SeoHead";
 import { Link, useSearchParams } from "react-router-dom";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import { gapEdge } from "@/components/brand/GapMarker";
-import { FacetRail, type FacetGroup, type SelectedFacet } from "@/components/gallery/FacetRail";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { Button } from "@/components/ui/button";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import {
-  OPEN_BOUNTIES_PAGE_SIZE,
-  bountyFacetsMadeWith,
   listOpenBountyCards,
+  listTopSolvers,
   type OpenBountyCard,
+  type Solver,
 } from "@/lib/bounty";
-import { isPermissionError } from "@/lib/errors/permission";
-import { ring, skeletonStyle } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, body, bodyLarge, tabular } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { VacantFrame } from "@/components/brand/VacantFrame";
+import { CoverFallback } from "@/components/brand/CoverFallback";
 
-/* ────────────────────────────────────────────────────────────────────────────
-   RC-P12 — /bounties, the open bounties board: help where something is stuck
-   (CONTRACT §14).
-
-   EVERY OPEN ASK ON EVERY BUILD, NEWEST FIRST, and the order is stated in the
-   sentence under the title rather than offered as a control ⟦hicks-law ›
-   Readers table: time⟧. One facet group, Made with, folded to six options and
-   More exactly as the gallery's is (FacetRail), so both boards filter alike.
-   No lens row and no sort.
-
-   A LIST, NOT A GRID ⟦layout-grid⟧, as RC-P09b drew it: an ask is read across —
-   reward, then the ask and whose build it is on, then how many have answered
-   and the way in — and a list keeps those three at one column each. Max 960
-   wide, on the title's leading edge ⟦better-layout › Align to shared edges⟧.
-
-   THE WEAKEST CONTAINER ⟦law-of-common-region⟧: rows are flat, parted by a
-   --line hairline. A bounty is a gap in a list, so each row wears STATES.md
-   row 13's dashed breakage edge on its leading side and nothing else
-   ⟦buildgallery-theme › Gap / bounty⟧: an invitation, not a defect.
-
-   ONE WAY IN PER ROW ⟦von-restorff-effect⟧: the row is not a link, its outline
-   "Open the build" is. Nothing on the page is filled while it has rows.
-
-   THREE REQUESTS A PAGE (listOpenBountyCards) plus the facets, cached; "Show
-   more" asks for the next keyset page. No infinite scroll.
-
-   WHERE THE ANSWERS WENT (RC-P13): a "Solvers" text link at the trailing end
-   of the title row opens /bounties/solvers, the people whose solutions were
-   accepted.
-   ──────────────────────────────────────────────────────────────────────────── */
-
-/** The facet options change slowly; one answer serves a visit. */
-const FACETS_STALE_MS = 5 * 60 * 1000;
-
-/** How many placeholder rows stand in for the first page. */
-const LOADING_ROWS = 4;
-
-/** The reward, as money: "£50" for whole pounds, "£49.50" otherwise. */
-const wholePounds = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  maximumFractionDigits: 0,
-});
-const poundsAndPence = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-function rewardLabel(reward: number | string | null): string | null {
-  if (reward === null || reward === undefined || reward === "") return null;
-  const amount = Number(reward);
-  if (!Number.isFinite(amount)) return null;
-  return (Number.isInteger(amount) ? wholePounds : poundsAndPence).format(amount);
-}
-
-/**
- * The row's three columns. THE LIST HOLDS THEM AND EVERY ROW USES THEM through
- * `subgrid`, so the reward, the ask and the way in line up down the whole
- * board ⟦law-of-continuity › Alignment⟧ rather than each row sizing its own
- * reward column to its own label ("No reward" is wider than "£50").
- */
-const ROW_COLUMNS = "minmax(72px, auto) minmax(0, 1fr) auto";
-
-/** Trimmed, empty entries dropped, first occurrence kept. */
-function cleanValues(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
-}
+/* UI-P33 — /bounties in the site frame, with desktop and mobile layouts */
 
 export default function Bounties() {
   const breakpoint = useBreakpoint();
   const phone = breakpoint === "mobile";
-  /* THE ROW REFLOWS BELOW 1024, NOT 768. The wide frame keeps its 240px nav
-     down to 768, so at 768 the list is about 408 wide: the reward and the
-     action take most of it and the ask wraps a word a line under the count.
-     The row stops fitting where the content does ⟦better-layout › Hold
-     structure until it breaks⟧, and 1024 is where FacetRail already folds its
-     band, so the board adds no breakpoint of its own. */
-  const stacked = breakpoint === "mobile" || breakpoint === "md";
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [solvePanelOpen, setSolvePanelOpen] = useState(false);
 
-  const madeWith = useMemo(() => cleanValues(searchParams.getAll("with")), [searchParams]);
-
-  const setMadeWith = (next: string[]) => {
-    const params = new URLSearchParams();
-    for (const value of cleanValues(next)) params.append("with", value);
-    setSearchParams(params);
-  };
-
-  const facets = useQuery({
-    queryKey: ["bounty-facets"],
-    queryFn: bountyFacetsMadeWith,
-    staleTime: FACETS_STALE_MS,
+  const board = useQuery({
+    queryKey: ["bounty-board"],
+    queryFn: () => listOpenBountyCards({ limit: 100 }),
   });
 
-  const board = useInfiniteQuery({
-    queryKey: ["bounty-board", madeWith],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
-      listOpenBountyCards({ before: pageParam, madeWith, limit: OPEN_BOUNTIES_PAGE_SIZE }),
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  const solvers = useQuery({
+    queryKey: ["top-solvers"],
+    queryFn: () => listTopSolvers({ limit: 3 }),
   });
 
-  const cards = useMemo(() => board.data?.pages.flatMap((page) => page.cards) ?? [], [board.data]);
-
-  const toggled = (value: string) =>
-    madeWith.includes(value) ? madeWith.filter((entry) => entry !== value) : [...madeWith, value];
-
-  const groups: FacetGroup[] = [
-    {
-      key: "made-with",
-      label: "Made with",
-      loading: facets.isLoading,
-      emptyText: "No tools named yet.",
-      options: (facets.data ?? []).map((option) => ({
-        value: option.value,
-        label: option.value,
-        count: option.count,
-        selected: madeWith.includes(option.value),
-        onToggle: () => setMadeWith(toggled(option.value)),
-      })),
-    },
-  ];
-
-  const selected: SelectedFacet[] = madeWith.map((value) => ({
-    id: `made-with-${value}`,
-    label: value,
-    onRemove: () => setMadeWith(toggled(value)),
-  }));
+  const cards = board.data?.cards ?? [];
+  const selectedCard = cards.find((c) => c.bounty.id === selectedId) ?? cards[0];
 
   return (
-    /* 24 around the page on the wide frame, which has no inset of its own
-       there. On a phone the frame's own 16 is the page margin the full-width
-       buttons sit inside ⟦better-layout › Inset buttons⟧, so the page adds
-       only the 16 above its title. */
     <div
       data-visual-slot="bounties-frame"
       style={phone ? { paddingTop: SPACE.sm } : { padding: SPACE.md }}
     >
-      {/* RC-P16b — the board's title, description and share tags. */}
       <SeoHead
-        title="Open bounties — buildgallery"
-        description="Open asks on real AI builds, with rewards."
+        title="Bounties — buildgallery"
+        description="Open asks on real builds, with rewards for solutions."
         path="/bounties"
       />
 
-      <PageHeader
-        title="Bounties"
-        description="Open asks on real builds. Newest first."
-        actions={<SolversLink />}
-      />
+      {!phone && (
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.md }}>
+          <HeaderPanel onSolversClick={() => {}} />
 
-      <FacetRail groups={groups} selected={selected} onClearAll={() => setMadeWith([])} />
-
-      <div data-visual-slot="bounty-board-column" style={{ maxWidth: 960, paddingTop: SPACE.md }}>
-        <BoardBody
-          cards={cards}
-          stacked={stacked}
-          filtered={madeWith.length > 0}
-          isLoading={board.isLoading}
-          error={(board.error as Error | null) ?? null}
-          onRetry={() => void board.refetch()}
-        />
-
-        {board.hasNextPage ? (
-          <div style={{ paddingTop: SPACE.md }}>
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="bounties-show-more"
-              disabled={board.isFetchingNextPage}
-              onClick={() => void board.fetchNextPage()}
-              style={{ background: "transparent", borderRadius: r.control, minHeight: 44 }}
-            >
-              Show more
-            </Button>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 420px", gap: SPACE.md }}>
+            <FramesGrid cards={cards} selected={selectedId} onSelect={setSelectedId} />
+            <RightColumn
+              card={selectedCard}
+              solvers={solvers.data ?? []}
+              onSolveClick={() => {
+                if (selectedCard) setSolvePanelOpen(true);
+              }}
+            />
           </div>
-        ) : null}
-      </div>
+        </div>
+      )}
+
+      {phone && (
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.md }}>
+          <MobileHeader />
+          <MobileContent cards={cards} solvers={solvers.data ?? []} />
+        </div>
+      )}
     </div>
   );
 }
 
-/**
- * The way to the solvers board (RC-P13): one text link at the trailing end of
- * the title row. Not a button, and not a navigation entry ⟦hicks-law ›
- * Budgets: nine destinations⟧: it is where this board's answers went.
- * Underlined at rest, because a link told apart by colour alone fails WCAG
- * 1.4.1 and a touch reader never gets a hover; 44 tall for a finger
- * ⟦responsive-design › Input Method Adaptation⟧; the theme's one focus ring
- * on the link itself.
- */
-function SolversLink() {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  return (
-    <Link
-      to="/bounties/solvers"
-      data-testid="bounties-solvers-link"
-      {...handlers}
-      style={{
-        ...body,
-        display: "inline-flex",
-        alignItems: "center",
-        minHeight: 44,
-        color: t.text,
-        textDecoration: "underline",
-        textUnderlineOffset: "4px",
-        textDecorationThickness: "1px",
-        borderRadius: r.chip,
-        ...ring(state.focusVisible),
-      }}
-    >
-      Solvers
-    </Link>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
-   The board's states
-   ──────────────────────────────────────────────────────────────────────────── */
-
-function BoardBody({
-  cards,
-  stacked,
-  filtered,
-  isLoading,
-  error,
-  onRetry,
-}: {
-  cards: OpenBountyCard[];
-  stacked: boolean;
-  filtered: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  onRetry: () => void;
-}) {
-  /* STATES.md row 21: a refusal is its own sentence, never an empty board. */
-  if (error) {
-    return (
-      <StateLine
-        testId="bounties-error"
-        sentence={isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
-        action={
-          <Button type="button" variant="outline" onClick={onRetry} style={{ background: "transparent" }}>
-            Try again
-          </Button>
-        }
-      />
-    );
-  }
-
-  if (isLoading) return <LoadingRows stacked={stacked} />;
-
-  /* STATES.md row 19: one sentence and one action, secondary (row 2), because
-     the frame's own controls spend the primary on the phone and signed out.
-     With a filter on, "none right now" would not be true, so it says what is. */
-  if (cards.length === 0) {
-    return filtered ? (
-      <StateLine
-        testId="bounties-empty-filtered"
-        sentence="No open bounties are made with that."
-        action={
-          <Button asChild variant="outline" style={{ background: "transparent" }}>
-            <Link to="/bounties">Clear filters</Link>
-          </Button>
-        }
-      />
-    ) : (
-      <StateLine
-        testId="bounties-empty"
-        sentence="No open bounties right now."
-        action={
-          <Button asChild variant="outline" style={{ background: "transparent" }}>
-            <Link to="/gallery">Browse the gallery</Link>
-          </Button>
-        }
-      />
-    );
-  }
-
-  return (
-    <ol
-      data-testid="bounty-board"
-      aria-label="Open bounties, newest first"
-      style={{
-        listStyle: "none",
-        margin: 0,
-        padding: 0,
-        ...(stacked ? {} : { display: "grid", gridTemplateColumns: ROW_COLUMNS }),
-      }}
-    >
-      {cards.map((card, index) => (
-        <BountyRow key={card.bounty.id} card={card} stacked={stacked} first={index === 0} />
-      ))}
-    </ol>
-  );
-}
-
-function StateLine({
-  testId,
-  sentence,
-  action,
-}: {
-  testId: string;
-  sentence: string;
-  action: React.ReactNode;
-}) {
+function HeaderPanel({ onSolversClick }: { onSolversClick: () => void }) {
   return (
     <div
-      data-testid={testId}
       style={{
+        background: "rgba(255, 255, 255, 0.68)",
+        border: "1px solid rgba(255, 255, 255, 0.95)",
+        borderRadius: 16,
+        padding: "16px 20px",
+        boxShadow: "0 14px 30px rgba(26, 35, 32, 0.11), inset 0 1px 0 rgba(255, 255, 255, 1)",
         display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: SPACE.sm,
-        paddingTop: SPACE.md,
-        paddingBottom: SPACE.lg,
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        gap: 20,
       }}
     >
-      <p style={{ ...body, margin: 0, color: t.text2 }}>{sentence}</p>
-      {action}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontFamily: DM_MONO, fontSize: 11, letterSpacing: 0.09, textTransform: "uppercase", color: t.text2 }}>
+          Bounties
+        </div>
+        <h1 style={{ margin: 0, fontFamily: "Sentient, serif", fontWeight: 500, fontSize: 44, letterSpacing: -0.035, lineHeight: 1, color: t.text }}>
+          Open asks on real builds
+        </h1>
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+          The build works. One part is left open on purpose, with a reward for whoever solves it.
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "inline-flex", gap: 2, padding: 4, borderRadius: 12, background: "rgba(255, 255, 255, 0.58)", border: "1px solid rgba(26, 35, 32, 0.15)" }}>
+          <button style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 8, fontFamily: FIGTREE, fontSize: 12, background: t.text, color: t.bg, fontWeight: 600, cursor: "pointer" }}>
+            Newest
+          </button>
+          <button style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 8, fontFamily: FIGTREE, fontSize: 12, background: "transparent", color: t.text2, cursor: "pointer" }}>
+            Reward
+          </button>
+          <button style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 8, fontFamily: FIGTREE, fontSize: 12, background: "transparent", color: t.text2, cursor: "pointer" }}>
+            Closing soon
+          </button>
+        </div>
+        <div style={{ display: "inline-flex", gap: 2, padding: 4, borderRadius: 12, background: "rgba(255, 255, 255, 0.58)", border: "1px solid rgba(26, 35, 32, 0.15)" }}>
+          <button style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 8, fontFamily: FIGTREE, fontSize: 12, background: t.text, color: t.bg, fontWeight: 600, cursor: "pointer" }}>
+            Bounties
+          </button>
+          <Link
+            to="/bounties/solvers"
+            style={{
+              height: 26,
+              padding: "0 12px",
+              border: 0,
+              borderRadius: 8,
+              fontFamily: FIGTREE,
+              fontSize: 12,
+              background: "transparent",
+              color: t.text2,
+              cursor: "pointer",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Solvers
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   One ask
-   ──────────────────────────────────────────────────────────────────────────── */
-
-/**
- * One open ask: reward | the ask and whose build it is on | answers and the
- * way in ⟦law-of-proximity⟧. A NEW element, so its grid is its own.
- *
- * THE EDGE IS LOGICAL. gapEdge("row") names the physical left edge; the row
- * spends the same width, style and token on its inline start, so the dashes
- * stay on the leading side in a right-to-left layout ⟦better-layout › Align to
- * shared edges⟧.
- *
- * BELOW 1024 IT REFLOWS ⟦responsive-design › Reflow⟧ (see the page's note on
- * why not 768): one column, 8 between the three parts, and the button full
- * width with a 44px hit area ⟦better-layout › Inset buttons⟧.
- */
-function BountyRow({
-  card,
-  stacked,
-  first,
-}: {
-  card: OpenBountyCard;
-  stacked: boolean;
-  first: boolean;
-}) {
-  const edge = gapEdge("row");
-  const reward = rewardLabel(card.bounty.reward_gbp);
-  const ask = card.gapTitle ?? card.build.title;
-  const maker =
-    card.author.display_name?.trim() ||
-    (card.author.username ? `@${card.author.username}` : "a maker");
-  const answers = `${card.solutions} ${card.solutions === 1 ? "solution" : "solutions"}`;
+function FramesGrid({ cards, selected, onSelect }: { cards: OpenBountyCard[]; selected: string | null; onSelect: (id: string) => void }) {
+  const wholePounds = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  });
 
   return (
-    <li
-      data-testid="bounty-row"
-      style={{
-        display: "grid",
-        ...(stacked
-          ? { gridTemplateColumns: "1fr" }
-          : { gridTemplateColumns: "subgrid", gridColumn: "1 / -1" }),
-        columnGap: SPACE.md,
-        rowGap: stacked ? SPACE.xs : 0,
-        alignItems: stacked ? "start" : "center",
-        paddingBlock: SPACE.sm,
-        paddingInlineStart: SPACE.sm,
-        borderInlineStartWidth: edge.borderLeftWidth,
-        borderInlineStartStyle: edge.borderLeftStyle,
-        borderInlineStartColor: edge.borderLeftColor,
-        ...(first ? {} : { borderTop: `1px solid ${t.line}` }),
-      }}
-    >
-      <span
-        data-testid="bounty-reward"
-        style={{
-          fontFamily: DM_MONO,
-          fontSize: 16,
-          fontWeight: 500,
-          lineHeight: 1.4,
-          ...tabular,
-          color: reward ? t.text : t.text2,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {reward ?? "No reward"}
-      </span>
-
-      <div style={{ minWidth: 0 }}>
-        <p data-testid="bounty-ask" style={{ ...bodyLarge, margin: 0, color: t.text }}>
-          {ask}
-        </p>
-        <p style={{ ...body, margin: 0, color: t.text2 }}>
-          on {card.build.title} · by {maker}
-        </p>
-      </div>
-
-      {/* Right-aligned across the board, so every "Open the build" sits on one
-          edge and every count ends against its button. */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: stacked ? "column" : "row",
-          alignItems: stacked ? "stretch" : "center",
-          justifyContent: stacked ? "flex-start" : "flex-end",
-          gap: stacked ? SPACE.xs : SPACE.sm,
-        }}
-      >
-        <span
-          data-testid="bounty-solutions"
-          style={{
-            fontFamily: DM_MONO,
-            fontSize: 12,
-            fontWeight: 500,
-            lineHeight: 1.3,
-            ...tabular,
-            color: t.text2,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {answers}
-        </span>
-        <Button
-          asChild
-          variant="outline"
-          style={{
-            background: "transparent",
-            borderRadius: r.control,
-            minHeight: 44,
-            ...(stacked ? { width: "100%" } : {}),
-          }}
-        >
-          <Link to={`/b2/${card.build.slug}`}>Open the build</Link>
-        </Button>
-      </div>
-    </li>
-  );
-}
-
-/** STATES.md row 20: the rows' shape before the rows, in --recess. */
-function LoadingRows({ stacked }: { stacked: boolean }) {
-  return (
-    <div data-testid="bounties-loading" aria-hidden>
-      {Array.from({ length: LOADING_ROWS }, (_, index) => (
-        <div
-          key={index}
-          style={{
-            display: "grid",
-            gridTemplateColumns: stacked ? "1fr" : "72px minmax(0, 1fr) 200px",
-            columnGap: SPACE.md,
-            rowGap: SPACE.xs,
-            paddingBlock: SPACE.sm,
-            borderTop: index === 0 ? undefined : `1px solid ${t.line}`,
-          }}
-        >
-          <div style={{ ...skeletonStyle(), height: 20 }} />
-          <div style={{ ...skeletonStyle(), height: 44 }} />
-          <div style={{ ...skeletonStyle(), height: 44 }} />
-        </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "6px 14px" }}>
+      {cards.slice(0, 6).map((card) => (
+        <VacantFrame
+          key={card.bounty.id}
+          title={card.build.title}
+          cover={<CoverFallback />}
+          part={card.gapTitle || "Part"}
+          reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
+          solutions={card.solutions}
+          meToo={card.bounty.me_too_count || 0}
+          to={`/bounties/${card.bounty.id}/solve`}
+          selected={selected === card.bounty.id}
+        />
       ))}
     </div>
   );
 }
+
+function RightColumn({ card, solvers, onSolveClick }: { card?: OpenBountyCard; solvers: Solver[]; onSolveClick: () => void }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: SPACE.md, minHeight: 0 }}>
+      {card && (
+        <div
+          style={{
+            background: "rgba(255, 255, 255, 0.68)",
+            border: "1px solid rgba(255, 255, 255, 0.95)",
+            borderRadius: 16,
+            padding: 0,
+            overflow: "hidden",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          <div style={{ padding: 0 }}>
+            <SolvePreview card={card} onSolveClick={onSolveClick} />
+          </div>
+        </div>
+      )}
+
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.68)",
+          border: "1px solid rgba(255, 255, 255, 0.95)",
+          borderRadius: 16,
+          padding: "12px 16px",
+          boxShadow: "0 14px 30px rgba(26, 35, 32, 0.11), inset 0 1px 0 rgba(255, 255, 255, 1)",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>
+            Top solvers
+          </div>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+            Solutions accepted
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          {solvers.slice(0, 3).map((solver, i) => (
+            <div key={solver.id} style={{ display: "flex", alignItems: "center", gap: 10, height: 38, borderBottom: i < 2 ? `1px solid rgba(26, 35, 32, 0.09)` : "none" }}>
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: i === 0 ? "50%" : 9,
+                  background: i === 0 ? "#D9A441" : i === 1 ? "#D7DBD5" : "transparent",
+                  border: i === 2 ? `1.5px solid rgba(26, 35, 32, 0.15)` : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "Sentient, serif",
+                  fontWeight: 500,
+                  fontSize: 16,
+                  color: t.text,
+                }}
+              >
+                {i + 1}
+              </div>
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: t.recess,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: FIGTREE,
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: t.text,
+                }}
+              >
+                {solver.username?.[0]?.toUpperCase()}
+              </div>
+              <div style={{ flex: 1, fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
+                @{solver.username}
+              </div>
+              <div style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>
+                {solver.solved} solved
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <Link
+          to="/bounties/solvers"
+          style={{
+            display: "inline-block",
+            marginTop: 12,
+            fontFamily: FIGTREE,
+            fontSize: 12,
+            color: t.text,
+            textDecoration: "underline",
+            textUnderlineOffset: "4px",
+          }}
+        >
+          All solvers
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function SolvePreview({ card, onSolveClick }: { card: OpenBountyCard; onSolveClick: () => void }) {
+  const wholePounds = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  });
+
+  const reward = card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : "No reward";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14 }}>
+      <div
+        style={{
+          border: `1.5px dashed ${t.catBreakage}`,
+          borderRadius: 14,
+          padding: 14,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontFamily: DM_MONO, fontSize: 10, color: t.catBreakage, textTransform: "uppercase" }}>
+            OPEN
+          </div>
+        </div>
+        <div style={{ fontFamily: "Sentient, serif", fontWeight: 500, fontSize: 24, letterSpacing: -0.02, lineHeight: 1.05, color: t.text }}>
+          {card.gapTitle || "Part of " + card.build.title}
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onSolveClick}
+            style={{
+              fontFamily: FIGTREE,
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "0 14px",
+              height: 36,
+              borderRadius: 12,
+              background: t.action,
+              color: t.onAction,
+              border: `1px solid ${t.action}`,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+            }}
+          >
+            Submit a solution
+          </button>
+          <button
+            style={{
+              fontFamily: FIGTREE,
+              fontSize: 13,
+              fontWeight: 500,
+              padding: "0 14px",
+              height: 36,
+              borderRadius: 12,
+              background: "rgba(255, 255, 255, 0.58)",
+              color: t.text,
+              border: "1px solid rgba(26, 35, 32, 0.15)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+            }}
+          >
+            Me too
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1, background: "rgba(26, 35, 32, 0.09)", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ background: "rgba(255, 255, 255, 0.55)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+          <div style={{ fontFamily: DM_MONO, fontSize: 10, letterSpacing: 0.09, textTransform: "uppercase", color: t.text2 }}>
+            Reward
+          </div>
+          <div style={{ fontFamily: DM_MONO, fontSize: 14, color: "#D9A441" }}>{reward}</div>
+        </div>
+        <div style={{ background: "rgba(255, 255, 255, 0.55)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+          <div style={{ fontFamily: DM_MONO, fontSize: 10, letterSpacing: 0.09, textTransform: "uppercase", color: t.text2 }}>
+            Closes
+          </div>
+          <div style={{ fontFamily: DM_MONO, fontSize: 14, color: t.text }}>—</div>
+        </div>
+        <div style={{ background: "rgba(255, 255, 255, 0.55)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 }}>
+          <div style={{ fontFamily: DM_MONO, fontSize: 10, letterSpacing: 0.09, textTransform: "uppercase", color: t.text2 }}>
+            Me too
+          </div>
+          <div style={{ fontFamily: DM_MONO, fontSize: 14, color: t.text }}>0</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileHeader() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontFamily: DM_MONO, fontSize: 11, letterSpacing: 0.09, textTransform: "uppercase", color: t.text2 }}>
+          Bounties
+        </div>
+        <h1 style={{ margin: 0, fontFamily: "Sentient, serif", fontWeight: 500, fontSize: 34, letterSpacing: -0.035, lineHeight: 1, color: t.text }}>
+          Open asks on real builds
+        </h1>
+        <div style={{ fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+          The build works. One part is left open on purpose, with a reward.
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "inline-flex", gap: 2, padding: 4, borderRadius: 12, background: "rgba(255, 255, 255, 0.58)", border: "1px solid rgba(26, 35, 32, 0.15)" }}>
+          <button style={{ height: 26, padding: "0 12px", border: 0, borderRadius: 8, fontFamily: FIGTREE, fontSize: 13, background: t.text, color: t.bg, fontWeight: 600, cursor: "pointer" }}>
+            Bounties
+          </button>
+          <Link
+            to="/bounties/solvers"
+            style={{
+              height: 26,
+              padding: "0 12px",
+              border: 0,
+              borderRadius: 8,
+              fontFamily: FIGTREE,
+              fontSize: 13,
+              background: "transparent",
+              color: t.text2,
+              cursor: "pointer",
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            Solvers
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileContent({ cards, solvers }: { cards: OpenBountyCard[]; solvers: Solver[] }) {
+  const wholePounds = new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {cards.slice(0, 6).map((card) => (
+        <VacantFrame
+          key={card.bounty.id}
+          title={card.build.title}
+          cover={<CoverFallback />}
+          part={card.gapTitle || "Part"}
+          reward={card.bounty.reward_gbp ? wholePounds.format(card.bounty.reward_gbp) : undefined}
+          solutions={card.solutions}
+          meToo={card.bounty.me_too_count || 0}
+          to={`/bounties/${card.bounty.id}/solve`}
+        />
+      ))}
+
+      <div
+        style={{
+          background: "rgba(255, 255, 255, 0.68)",
+          border: "1px solid rgba(255, 255, 255, 0.95)",
+          borderRadius: 16,
+          padding: "14px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>
+            Top solvers
+          </div>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+            Solutions accepted
+          </div>
+        </div>
+
+        {solvers.slice(0, 3).map((solver) => (
+          <div key={solver.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: t.recess,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: FIGTREE,
+                fontSize: 10,
+                fontWeight: 600,
+                color: t.text,
+                flexShrink: 0,
+              }}
+            >
+              {solver.username?.[0]?.toUpperCase()}
+            </div>
+            <div style={{ flex: 1, fontFamily: FIGTREE, fontSize: 14, color: t.text }}>
+              @{solver.username}
+            </div>
+            <div style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
+              {solver.solved} solved
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
