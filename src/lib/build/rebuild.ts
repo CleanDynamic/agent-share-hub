@@ -60,7 +60,7 @@
 // the database.
 
 import { supabase } from "@/integrations/supabase/client";
-import { deleteBuild, getBuildHeader, updateBuild } from "./builds";
+import { BUILD_COLUMNS, deleteBuild, getBuildHeader, updateBuild } from "./builds";
 import { forkBuild } from "./fork";
 import {
   gallerySelect,
@@ -235,6 +235,46 @@ export async function startRebuild({
     await deleteBuild(draft.id).catch(() => undefined);
     throw error;
   }
+}
+
+export interface GetRebuildDraftInput {
+  /** The build being rebuilt: the draft's parent_build_id. */
+  sourceBuildId: string;
+  /** The reader, who owns the draft. */
+  creatorId: string;
+}
+
+/**
+ * The reader's own draft rebuild of a build, the one they last worked on, or
+ * null (UI-P31).
+ *
+ * /rebuild/:slug names the SOURCE. Before startRebuild forks another draft of
+ * it, the rebuild page asks whether the reader is already in the middle of one:
+ * someone who pressed Rebuild yesterday and comes back today should land on the
+ * draft they started, not on a second copy beside it carrying the same credit.
+ *
+ * ONE REQUEST, NAMED COLUMNS, ONE ROW: drafts with this parent and this
+ * creator, most recently updated first. The builds read policy already shows a
+ * creator their own drafts and nobody else's; the creator filter says so out
+ * loud rather than relying on it, and keeps another reader's draft from ever
+ * being the answer.
+ */
+export async function getRebuildDraft({
+  sourceBuildId,
+  creatorId,
+}: GetRebuildDraftInput): Promise<Build | null> {
+  const { data, error } = await supabase
+    .from("builds")
+    .select(BUILD_COLUMNS)
+    .eq("parent_build_id", sourceBuildId)
+    .eq("creator_id", creatorId)
+    .eq("status", "draft")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw buildLayerError("getRebuildDraft", error);
+  return (data as Build | null) ?? null;
 }
 
 /**
