@@ -22,6 +22,11 @@
 //
 // CONTROLLED. The viewer holds no state: the page owns which tab and which mode
 // are current, because both of them decide what content to load.
+//
+// THE SWITCH ROW IS FOR READING A PART (UI-P30). The Run / Understand switch,
+// Copy and the blurb say how to read the part in the strip; a tab whose body is
+// not a reading of it — the replay, the breakages, the rebuilds — passes
+// `tools={false}` and the body starts with its own content.
 
 import type { ReactNode } from "react";
 import { Copy } from "lucide-react";
@@ -67,6 +72,8 @@ export interface PartViewerProps<V extends string = string> {
   panelId?: string;
   /** `phone`: the 390 board's viewer — a 44px strip, no tab row, a larger body. */
   variant?: "desktop" | "phone";
+  /** The switch, Copy and the blurb above the content. `false` for a body that is not a reading of the part. */
+  tools?: boolean;
 }
 
 export function PartViewer<V extends string = string>({
@@ -85,6 +92,7 @@ export function PartViewer<V extends string = string>({
   tabsLabel = "Sections of this build",
   panelId,
   variant = "desktop",
+  tools = true,
 }: PartViewerProps<V>) {
   const phone = variant === "phone";
   const n = number === null ? "—" : String(number).padStart(2, "0");
@@ -174,20 +182,24 @@ export function PartViewer<V extends string = string>({
           minHeight: 0,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <Segmented
-            items={MODES}
-            value={mode}
-            onChange={onModeChange}
-            size={phone ? 34 : 30}
-            fontSize={phone ? 12 : 11}
-            label="View"
-          />
-          <Button variant="secondary" size={phone ? 34 : 30} fontSize={12} icon={Copy} onClick={onCopy}>
-            Copy
-          </Button>
-        </div>
-        <div style={{ fontFamily: FIGTREE, fontSize: phone ? 12 : 11, color: t.text2 }}>{blurb}</div>
+        {tools ? (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <Segmented
+                items={MODES}
+                value={mode}
+                onChange={onModeChange}
+                size={phone ? 34 : 30}
+                fontSize={phone ? 12 : 11}
+                label="View"
+              />
+              <Button variant="secondary" size={phone ? 34 : 30} fontSize={12} icon={Copy} onClick={onCopy}>
+                Copy
+              </Button>
+            </div>
+            <div style={{ fontFamily: FIGTREE, fontSize: phone ? 12 : 11, color: t.text2 }}>{blurb}</div>
+          </>
+        ) : null}
         <div style={{ fontFamily: FIGTREE, fontSize: phone ? 15 : 14, lineHeight: 1.65, color: t.text }}>{children}</div>
       </div>
     </section>

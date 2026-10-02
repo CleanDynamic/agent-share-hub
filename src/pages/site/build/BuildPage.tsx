@@ -14,15 +14,16 @@
      downloading      Download → the portable file, as PortableExport writes it
      rebuilding       Rebuild → /rebuild/:slug (which calls startRebuild()), or
                       sign in first and come back to it
-     every tab        BuildTabs' six keys in the part viewer: the anatomy's part,
-                      Replay, Run it yourself, the understand layer, Where it
-                      broke, Rebuilds — each the component the old page renders
+     every tab        BuildTabs' six keys in the part viewer (UI-P30): the
+                      anatomy's part (evidence in its result frame), the replay
+                      with its scrubber and "Rebuild from here", the run sequence
+                      and its words, the understand layer, the breakages and the
+                      gaps still open ("Solve it" opens that bounty's solve
+                      sheet), the rebuilds as build cards
+     under it         the comments and where next, each a glass panel (UI-P30);
+                      where next asks for nothing until the reader nears it */
 
-   UI-P30 restyles the tab contents and brings the lower sections into the same
-   grammar. Until then the comments and "where next" sit under the first screen
-   as they are, so nothing a reader could do on the old page is missing here. */
-
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -31,21 +32,20 @@ import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import type { PartViewerMode } from "@/components/brand/PartViewer";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
-import { BreakageView } from "@/components/build/BreakageView";
 import { CreditLine } from "@/components/build/CreditLine";
 import { useForkBuild } from "@/components/build/ForkControl";
 import { GapPanel, SolvedCredit } from "@/components/build/GapPanel";
-import { LayerView, RunItPanel } from "@/components/build/LayerView";
 import { MEDIA_WIDTH, useMediaSrc, type ResolveMedia } from "@/components/build/MediaFigure";
-import { RebuildsTab } from "@/components/build/RebuildsTab";
-import { Replay } from "@/components/build/Replay";
-import { RunView } from "@/components/build/RunView";
-import { WhereNext } from "@/components/build/WhereNext";
+import { producedAt } from "@/components/build/Replay";
 import { getNodeCopyText, resolveRenderer } from "@/components/build/renderers";
+import { GalleryCard } from "@/components/gallery/GalleryCard";
+import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { Comments } from "@/components/social/Comments";
 import { useAuth } from "@/contexts/AuthContext";
+import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import {
   listBuildBounties,
   listSolutionBuilds,
@@ -59,26 +59,32 @@ import {
   changeSet,
   collectGaps,
   computeCompleteness,
+  firstTool,
   galleryThreshold,
   getApprovedLayers,
   getBuild,
   getBuildBySlug,
   getBuildHeader,
   getMediaForBuild,
+  getWhereNext,
   layerOf,
+  listRebuildCards,
   listRebuilds,
   recordReproduction,
   recordSelfConfirmation,
   resolveCover,
   serialiseChangeSet,
   type Build,
+  type BuildEvent,
   type BuildLayer,
   type BuildMedia,
   type BuildNode,
   type BuildRecord,
+  type GalleryBuild,
   type NodeTree,
   type NodeType,
   type RebuildSummary,
+  type WhereNext,
 } from "@/lib/build";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
@@ -90,22 +96,46 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { BreakageBody } from "./BreakageBody";
+import { CommentsPanel, LowerSections, WhereNextError, WhereNextPanels } from "./BuildLower";
 import { BuildView, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import {
   askLabel,
+  breakageRows,
   buildTabs,
   deltaLine,
+  evidenceDate,
+  layerSteps,
   makerLabel,
+  openGaps,
   partMeta,
   partsInOrder,
   proofDetails,
+  replayEvents,
+  replayMarkers,
+  runBody,
   shortDate,
   tabLayer,
   timelineFrom,
   type BuildTabKey,
+  type CardView,
   type PartRowView,
+  type WhereNextRowView,
 } from "./buildModel";
+import { RebuildsBody, REBUILD_CARD } from "./RebuildsBody";
+import { ReplayBody } from "./ReplayBody";
+import { ResultFrame } from "./ResultFrame";
 import { RunDialog, type RunSubmission } from "./RunDialog";
+import { LayerSteps, RunBody } from "./RunBody";
+
+/**
+ * The bounty's solve sheet, opened from "Solve it" on Where it broke. Lazy for
+ * the reason GapPanel gives: it renders the gap type's whole form, and none of
+ * that belongs in the chunk a reader downloads to read a build.
+ */
+const SolvePanel = lazy(() =>
+  import("@/components/bounty/SolvePanel").then((module) => ({ default: module.SolvePanel })),
+);
 
 /** A build record does not change while a reader is looking at it. */
 const STALE_TIME = 60_000;
@@ -168,10 +198,29 @@ async function copyText(text: string | null | undefined): Promise<boolean> {
 
 /* ── the anatomy tab's body: one part, read one of two ways ── */
 
+/** A part drawn by its own renderer: the anatomy's reading of it, and the replay's "what existed". */
+function NodeBody({
+  node,
+  nodeType,
+  build,
+  resolveNode,
+  resolveMedia,
+}: {
+  node: BuildNode;
+  nodeType: NodeType | undefined;
+  build: Build;
+  resolveNode: (id: string) => BuildNode | undefined;
+  resolveMedia: ResolveMedia;
+}) {
+  const Renderer = resolveRenderer(nodeType?.renderer);
+  return <Renderer node={node} nodeType={nodeType} build={build} resolveNode={resolveNode} resolveMedia={resolveMedia} />;
+}
+
 function PartContent({
   node,
   nodeType,
   build,
+  events,
   mode,
   understand,
   resolveNode,
@@ -181,6 +230,7 @@ function PartContent({
   node: BuildNode;
   nodeType: NodeType | undefined;
   build: Build;
+  events: readonly BuildEvent[];
   mode: PartViewerMode;
   understand: BuildLayer | null;
   resolveNode: (id: string) => BuildNode | undefined;
@@ -206,14 +256,55 @@ function PartContent({
     );
   }
 
-  const Renderer = resolveRenderer(nodeType?.renderer);
+  const body = <NodeBody node={node} nodeType={nodeType} build={build} resolveNode={resolveNode} resolveMedia={resolveMedia} />;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }} data-node-id={node.id}>
-      <Renderer node={node} nodeType={nodeType} build={build} resolveNode={resolveNode} resolveMedia={resolveMedia} />
+      {/* A result says what it is and when before it shows itself (UI-P30). */}
+      {nodeType?.category === "evidence" ? <ResultFrame date={evidenceDate(node, events)}>{body}</ResultFrame> : body}
       {footer}
     </div>
   );
 }
+
+/**
+ * True once the element is within `margin` of the viewport, and from then on.
+ * A callback ref, so the element can arrive after the record does.
+ */
+function useNear(margin = "400px"): [(element: HTMLElement | null) => void, boolean] {
+  const [near, setNear] = useState(false);
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  const ref = useCallback(
+    (element: HTMLElement | null) => {
+      observer.current?.disconnect();
+      observer.current = null;
+      if (!element || near) return;
+      /* No observer to ask: a browser without one gets the section, as one with one does once the reader comes near. */
+      if (typeof IntersectionObserver === "undefined") {
+        setNear(true);
+        return;
+      }
+      const watch = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            setNear(true);
+            watch.disconnect();
+          }
+        },
+        { rootMargin: `${margin} 0px` },
+      );
+      watch.observe(element);
+      observer.current = watch;
+    },
+    [near, margin],
+  );
+
+  useEffect(() => () => observer.current?.disconnect(), []);
+  return [ref, near];
+}
+
+/** Where-next answers change slowly: one answer serves a visit, as the old foot of the page had it. */
+const WHERE_NEXT_STALE = 5 * STALE_TIME;
 
 /* ── the page ── */
 
@@ -412,6 +503,57 @@ export function BuildPage() {
 
   const forkState = useForkBuild(build);
 
+  /* ── UI-P30: the tab bodies' own reads, and what sits under the first screen ── */
+
+  const phone = useIsPhone();
+  /** The gap whose bounty's solve sheet is open, from "Solve it" on Where it broke. */
+  const [solving, setSolving] = useState<string | null>(null);
+
+  /* The rebuilds as cards, asked for once the tab is opened. */
+  const rebuildCards = useQuery<GalleryBuild[]>({
+    queryKey: ["build", "listRebuildCards", buildId],
+    queryFn: () => listRebuildCards(buildId as string),
+    enabled: Boolean(buildId) && tab === "rebuilds",
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+
+  /* Where next asks for nothing until the reader comes within 400px of the page's foot. */
+  const [footRef, nearFoot] = useNear();
+  const creatorId = build?.creator_id;
+  const madeWith = build?.made_with;
+  const whereNext = useQuery<WhereNext>({
+    queryKey: ["build", "getWhereNext", buildId, creatorId, firstTool(madeWith)],
+    queryFn: () => getWhereNext({ buildId: buildId as string, creatorId: creatorId as string, madeWith }),
+    enabled: nearFoot && Boolean(buildId) && Boolean(creatorId),
+    staleTime: WHERE_NEXT_STALE,
+    refetchOnWindowFocus: false,
+  });
+
+  /* Build on it, use the same tool, follow the same hands — a row with nothing in it is left out. */
+  const nextRows = useMemo(() => {
+    const data = whereNext.data;
+    if (!data) return [];
+    const rows: { key: string; heading: string; builds: GalleryBuild[] }[] = [
+      { key: "rebuilds", heading: "Rebuilds of this", builds: data.rebuilds },
+      ...(data.sharedTool ? [{ key: "made-with", heading: `More made with ${data.sharedTool.tool}`, builds: data.sharedTool.builds }] : []),
+      { key: "maker", heading: `More from ${data.makerName ?? "this maker"}`, builds: data.fromMaker },
+    ];
+    return rows
+      .map((row) => ({ ...row, builds: row.builds.filter((card) => card.id !== buildId) }))
+      .filter((row) => row.builds.length > 0);
+  }, [whereNext.data, buildId]);
+
+  /* Every card picture on the page, signed in one pass and never per card: the gallery's rule. */
+  const cardRows = useMemo(
+    () => [...nextRows.flatMap((row) => row.builds), ...(rebuildCards.data ?? [])].flatMap(cardMedia),
+    [nextRows, rebuildCards.data],
+  );
+  const srcByPath = useSignedMedia(cardRows);
+  /* One engagement call for where next's cards, as the old foot of the page made. */
+  const nextIds = useMemo(() => nextRows.flatMap((row) => row.builds.map((card) => card.id)), [nextRows]);
+  const engagement = useEngagement(nextIds);
+
   /* ── writes ── */
 
   const putHeader = useCallback(
@@ -521,47 +663,100 @@ export function BuildPage() {
   const hasRebuilds = (rebuilds.data ?? []).length > 0;
   const loginBack = (to: string) => `/login?redirect=${encodeURIComponent(to)}`;
 
+  /** A card on one of the page's walls: the gallery's own card, its picture signed with the rest. */
+  const cardOf = (card: GalleryBuild, size: "rebuild" | "wall"): CardView => ({
+    key: card.id,
+    render: (variant) =>
+      size === "rebuild" ? (
+        <GalleryCard build={card} srcByPath={srcByPath} coverHeight={REBUILD_CARD.coverHeight} titleSize={REBUILD_CARD.titleSize} />
+      ) : (
+        <GalleryCard
+          build={card}
+          srcByPath={srcByPath}
+          engagement={engagementFor(engagement, card.id)}
+          coverHeight={variant === "phone" ? 96 : 92}
+          titleSize={variant === "phone" ? 18 : 19}
+        />
+      ),
+  });
+
   const content: ReactNode = (() => {
     switch (tab) {
-      case "watch":
+      case "watch": {
+        /* The visible steps in ordinal order: the list the scrubber walks and the one producedAt reads. */
+        const steps = [...record.events].filter((event) => event.visibility !== "hidden").sort((a, b) => a.ordinal - b.ordinal);
+        const replay = replayEvents(steps);
         return (
-          <Replay
-            build={build}
-            events={record.events}
-            nodeTypes={nodeTypes}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            focusOrdinal={jumpTo}
-            onFork={forkState.fork}
-            forkPending={forkState.pending}
-            divergences={rebuilds.data}
-            onOpenRebuild={(rebuild) => navigate(`/b2/${rebuild.slug}`)}
+          <ReplayBody
+            phone={phone}
+            replay={{
+              events: replay,
+              markers: replayMarkers(replay, rebuilds.data ?? []),
+              focusOrdinal: jumpTo,
+              produced: (index) => {
+                const made = producedAt(steps, index, resolveNode);
+                return made
+                  ? {
+                      ordinal: made.event.ordinal,
+                      node: (
+                        <NodeBody
+                          node={made.node}
+                          nodeType={typesByKey.get(made.node.type)}
+                          build={build}
+                          resolveNode={resolveNode}
+                          resolveMedia={resolveMedia}
+                        />
+                      ),
+                    }
+                  : null;
+              },
+              onFork: forkState.fork,
+              forkPending: forkState.pending,
+              onOpenRebuild: (id) => {
+                const rebuild = (rebuilds.data ?? []).find((candidate) => candidate.id === id);
+                if (rebuild) navigate(`/b2/${rebuild.slug}`);
+              },
+            }}
           />
         );
-      case "run": {
-        const sequence = <RunView tree={tree} nodeTypes={nodeTypes} build={build} />;
-        return runLayer ? <RunItPanel sequence={sequence} layer={runLayer} resolveNode={resolveNode} onOpenNode={selectPart} /> : sequence;
       }
+      case "run":
+        return (
+          <RunBody
+            phone={phone}
+            run={runBody(build, tree, nodeTypes, runLayer, resolveNode)}
+            onCopy={copyText}
+            onOpenPart={selectPart}
+          />
+        );
       case "understand":
         return understandLayer ? (
-          <LayerView layer={understandLayer} resolveNode={resolveNode} onOpenNode={selectPart} />
+          <LayerSteps layer={layerSteps(understandLayer, resolveNode)} phone={phone} onOpenPart={selectPart} />
         ) : (
           <p style={{ margin: 0, color: t.text2 }}>There is no plain-language reading of this build yet.</p>
         );
       case "broke":
         return (
-          <BreakageView
-            build={build}
-            events={record.events}
-            tree={tree}
-            nodeTypes={nodeTypes}
-            resolveNode={resolveNode}
-            resolveMedia={resolveMedia}
-            onOpenReplay={openReplayAt}
+          <BreakageBody
+            breakage={{
+              rows: breakageRows(tree, record.events, nodeTypes),
+              gaps: openGaps(tree, bountyByNode),
+              onOpenReplay: openReplayAt,
+              onSolve: setSolving,
+            }}
           />
         );
       case "rebuilds":
-        return <RebuildsTab rebuilds={rebuilds.data ?? []} family={{ rootId: build.root_build_id ?? build.id, currentId: build.id }} />;
+        return (
+          <RebuildsBody
+            phone={phone}
+            rebuilds={{
+              cards: (rebuildCards.data ?? []).map((card) => cardOf(card, "rebuild")),
+              loading: rebuildCards.isPending,
+              lineageTo: `/b2/${build.slug}/lineage`,
+            }}
+          />
+        );
       case "anatomy":
       default:
         return selected ? (
@@ -569,6 +764,7 @@ export function BuildPage() {
             node={selected}
             nodeType={typesByKey.get(selected.type)}
             build={build}
+            events={record.events}
             mode={mode}
             understand={understandLayer}
             resolveNode={resolveNode}
@@ -580,6 +776,15 @@ export function BuildPage() {
         );
     }
   })();
+
+  /* The bounty "Solve it" opened, when its gap still has one open. */
+  const solvingNode = solving ? nodesById.get(solving) : undefined;
+  const solvingEntry = solving ? bountyByNode.get(solving) : undefined;
+  const nextPanels: WhereNextRowView[] = nextRows.map((row) => ({
+    key: row.key,
+    heading: row.heading,
+    cards: row.builds.map((card) => cardOf(card, "wall")),
+  }));
 
   const coverNode = coverSrc ? (
     <img
@@ -699,24 +904,51 @@ export function BuildPage() {
         onSubmit={submitRun}
       />
 
-      {/* Under the first screen, as they are until UI-P30: the comments and where next. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 24 }}>
+      {/* UI-P30 — under the first screen, in the order they always came: the
+          report control, the comments, where next. Each section a glass panel,
+          12 apart. */}
+      <LowerSections>
         {isLoggedIn && !viewerIsCreator ? (
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <CreditLine maker={null} onReport={() => setReporting({ type: "build", id: build.id })} />
           </div>
         ) : null}
         {build.status !== "draft" ? (
-          <Comments
-            build={{ id: build.id, slug: build.slug }}
-            parts={numberParts(tree)}
-            attachRequest={null}
-            onOpenPart={selectPart}
-          />
+          <CommentsPanel>
+            <Comments
+              build={{ id: build.id, slug: build.slug }}
+              parts={numberParts(tree)}
+              attachRequest={null}
+              onOpenPart={selectPart}
+            />
+          </CommentsPanel>
         ) : null}
-        <WhereNext buildId={build.id} creatorId={build.creator_id} madeWith={build.made_with} />
-      </div>
+        {whereNext.isError ? (
+          <WhereNextError onRetry={() => void whereNext.refetch()} />
+        ) : (
+          <WhereNextPanels rows={nextPanels} phone={phone} />
+        )}
+        {/* The foot of the page: where next is asked for once the reader comes near it. */}
+        <div ref={footRef} data-testid="where-next-sentinel" aria-hidden="true" style={{ height: 1, marginTop: -12 }} />
+      </LowerSections>
       <ReportDialog target={reporting} onClose={() => setReporting(null)} />
+      {solving && solvingNode && solvingEntry && solvingEntry.bounty.status === "open" ? (
+        <Suspense fallback={null}>
+          <SolvePanel
+            open
+            onOpenChange={(open) => {
+              if (!open) setSolving(null);
+            }}
+            bounty={solvingEntry.bounty}
+            build={build}
+            gapNode={solvingNode}
+            nodeType={typesByKey.get(solvingNode.type)}
+            resolveNode={resolveNode}
+            resolveMedia={resolveMedia}
+            onChanged={onBountyChanged}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 }
