@@ -260,6 +260,7 @@ export {
   changeCount,
   changeSet,
   countRebuilds,
+  listRebuildCards,
   listRebuilds,
   matchNodes,
   publishRebuild,

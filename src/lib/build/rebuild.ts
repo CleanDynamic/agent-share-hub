@@ -62,6 +62,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { deleteBuild, getBuildHeader, updateBuild } from "./builds";
 import { forkBuild } from "./fork";
+import {
+  gallerySelect,
+  toGalleryBuild,
+  withCardEmbeds,
+  type GalleryBuild,
+  type GalleryRow,
+} from "./gallery";
 import { canonicalJson } from "./layers";
 import {
   publishBuild,
@@ -985,6 +992,40 @@ export async function countRebuilds(buildId: string): Promise<number> {
 
   if (error) throw buildLayerError("countRebuilds", error);
   return count ?? 0;
+}
+
+/**
+ * The published rebuilds of one build, as gallery cards, newest first (UI-P30).
+ *
+ * THE REBUILDS TAB DRAWS BUILD CARDS, and a card is the gallery's card only
+ * when it carries what the gallery's query gives it: the nodes its body reads,
+ * its pictures, its open ask (withCardEmbeds). RebuildSummary is a row for a
+ * list of names and carries none of that, so this is its own read rather than
+ * a widening of listRebuilds, whose rows the replay's divergence markers and
+ * the tab's presence already depend on.
+ *
+ * THE SAME QUESTION AS listRebuilds, asked for a card: published or gallery
+ * children of this build, newest first by created_at, at most
+ * REBUILDS_PAGE_SIZE. One request, on the card's select.
+ */
+export async function listRebuildCards(
+  buildId: string,
+  options: ListRebuildsOptions = {}
+): Promise<GalleryBuild[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? REBUILDS_PAGE_SIZE, REBUILDS_PAGE_SIZE));
+
+  const { data, error } = await withCardEmbeds(
+    supabase
+      .from("builds")
+      .select(gallerySelect(false))
+      .eq("parent_build_id", buildId)
+      .in("status", [...PUBLISHED_STATUSES])
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  );
+
+  if (error) throw buildLayerError("listRebuildCards", error);
+  return ((data ?? []) as unknown as GalleryRow[]).map(toGalleryBuild);
 }
 
 /** The row as PostgREST returns it: the embed keyed by its alias. */
