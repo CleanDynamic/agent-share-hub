@@ -4,7 +4,14 @@ export { getNotifications } from "./getNotifications";
 export { markNotificationRead, markAllNotificationsRead } from "./markRead";
 export { createNotification } from "./createNotification";
 export { getUnreadCount } from "./getUnreadCount";
-export { subscribeToNewNotifications, useNewNotifications } from "./realtime";
+export {
+  subscribeToNewNotifications,
+  useNewNotifications,
+  useNotificationChannel,
+  type NotificationChannelStatus,
+} from "./realtime";
+// UI-P35a: resolveNotificationCovers is imported from "./covers" directly, so
+// the gallery's card query does not ride into every module that imports this.
 export {
   buildIdOf,
   isBuildNotificationKind,
