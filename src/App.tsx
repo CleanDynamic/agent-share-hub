@@ -90,6 +90,8 @@ const BuildSitePage = lazy(() => import("./pages/site/build/BuildPage"));
 // UI-P31 — Rebuild and lineage in the site frame; their own chunks, picked by `FrameRoute`.
 const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
 const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
+// UI-P34 — the Profile in the site frame; its own chunk, picked by `FrameRoute`.
+const ProfileSitePage = lazy(() => import("./pages/site/profile/ProfilePage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -258,8 +260,38 @@ const App = () => (
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/profile/:handle" element={<Profile />} />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <FrameRoute
+                        site={
+                          <RouteBoundary>
+                            <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                              <ProfileSitePage />
+                            </Suspense>
+                          </RouteBoundary>
+                        }
+                        legacy={<Profile />}
+                      />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/:handle"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <ProfileSitePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
+                      legacy={<Profile />}
+                    />
+                  }
+                />
                 <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
                 <Route path="/library/collections/:collectionId" element={<CollectionDetailRoute />} />
                 <Route path="/library/:handle/collections/:collectionId" element={<CollectionDetailRoute />} />

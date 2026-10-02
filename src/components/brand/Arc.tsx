@@ -47,6 +47,7 @@ export const ARC_PAGE_MOBILE: ArcGeometry = { width: 390, height: 640, cx: 560, 
 export const ARC_BUILD_HERO: ArcGeometry = { width: 900, height: 400, cx: 1100, cy: -260, r: 620 };
 export const ARC_BUILD_HERO_MOBILE: ArcGeometry = { width: 362, height: 380, cx: 520, cy: -240, r: 420 };
 export const ARC_PROFILE_BANNER: ArcGeometry = { width: 900, height: 260, cx: 1150, cy: -420, r: 760 };
+export const ARC_PROFILE_BANNER_MOBILE: ArcGeometry = { width: 362, height: 180, cx: 520, cy: -300, r: 440 };
 
 export interface ArcProps {
   geometry: ArcGeometry;
