@@ -243,3 +243,104 @@ export async function listMakerSolvedBuilds(
   const builds = order.map((id) => byId.get(id)).filter((build): build is GalleryBuild => Boolean(build));
   return { builds, next };
 }
+
+/* ── UI-P34a: the Profile's other two figures and its Reproduced tab ───────── */
+
+/** The counts the Profile's tabs carry that `maker_stats` does not: Builds is its `builds`. */
+export interface MakerWorkCounts {
+  /** Their published or gallery builds that name a parent. */
+  rebuilds: number;
+  /** Builds of other people's that they ran and got working. */
+  reproduced: number;
+}
+
+/** Where the next page of Reproduced starts: the last reproduction read. */
+export interface ReproducedBuildsCursor {
+  confirmedAt: string;
+  reproductionId: string;
+}
+
+export interface ListMakerReproducedBuildsOptions {
+  after?: ReproducedBuildsCursor | null;
+  limit?: number;
+}
+
+/**
+ * Two counts for the Profile's tab labels: their rebuilds, and the builds they
+ * reproduced. Two head requests, planner-estimated past the point where the
+ * database would not run an exact count (PostgREST `count=estimated`).
+ */
+export async function countMakerWorks(userId: string): Promise<MakerWorkCounts> {
+  const [rebuilds, reproduced] = await Promise.all([
+    supabase
+      .from("builds")
+      .select("id", { count: "estimated", head: true })
+      .eq("creator_id", userId)
+      .in("status", [...PUBLISHED])
+      .not("parent_build_id", "is", null),
+    supabase
+      .from("build_reproductions")
+      .select("id", { count: "estimated", head: true })
+      .eq("user_id", userId)
+      .eq("worked", true),
+  ]);
+  if (rebuilds.error) throw failure("countMakerWorks (rebuilds)", userId, rebuilds);
+  if (reproduced.error) throw failure("countMakerWorks (reproduced)", userId, reproduced);
+  return { rebuilds: rebuilds.count ?? 0, reproduced: reproduced.count ?? 0 };
+}
+
+interface ReproducedRow {
+  id: string;
+  build_id: string;
+  confirmed_at: string;
+}
+
+/** The reproductions strictly after `cursor`: confirmed_at DESC, id DESC. */
+export function afterInReproducedOrder(cursor: ReproducedBuildsCursor): string {
+  return `confirmed_at.lt.${quoted(cursor.confirmedAt)},and(confirmed_at.eq.${quoted(cursor.confirmedAt)},id.lt.${cursor.reproductionId})`;
+}
+
+/**
+ * The builds this maker ran and got working, the most recently confirmed
+ * first. Two requests a page, as Solutions makes: their reproductions, then
+ * those builds by id. A build that is no longer published is left out; the
+ * cursor still moves past it.
+ */
+export async function listMakerReproducedBuilds(
+  userId: string,
+  { after = null, limit }: ListMakerReproducedBuildsOptions = {},
+): Promise<MakerBuildsPage<ReproducedBuildsCursor>> {
+  const size = clampLimit(limit);
+
+  let query = supabase
+    .from("build_reproductions")
+    .select("id, build_id, confirmed_at")
+    .eq("user_id", userId)
+    .eq("worked", true);
+  if (after) query = query.or(afterInReproducedOrder(after));
+
+  const reproductions = await query
+    .order("confirmed_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(size + 1);
+  if (reproductions.error) throw failure("listMakerReproducedBuilds (reproductions)", userId, reproductions);
+
+  const all = (reproductions.data ?? []) as unknown as ReproducedRow[];
+  const page = all.slice(0, size);
+  const last = page[page.length - 1];
+  const next = all.length > size && last ? { confirmedAt: last.confirmed_at, reproductionId: last.id } : null;
+
+  const order = [...new Set(page.map((row) => row.build_id))];
+  if (order.length === 0) return { builds: [], next };
+
+  const response = await withCardEmbeds(
+    supabase.from("builds").select(CARD_SELECT).in("id", order).in("status", [...PUBLISHED]).limit(order.length),
+  );
+  if (response.error) throw failure("listMakerReproducedBuilds (builds)", userId, response);
+
+  const byId = new Map(
+    ((response.data ?? []) as unknown as GalleryRow[]).map((row) => [row.id, toGalleryBuild(row)]),
+  );
+  const builds = order.map((id) => byId.get(id)).filter((build): build is GalleryBuild => Boolean(build));
+  return { builds, next };
+}
