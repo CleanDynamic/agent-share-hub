@@ -23,6 +23,7 @@ import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import Home from "./pages/Home";
 import { FrameRoute } from "./components/shell/FrameRoute";
+import { SiteFrame } from "./components/shell/SiteFrame";
 
 import Upload from "./pages/Upload";
 import UploadTypeSelector from "./pages/UploadTypeSelector";
@@ -84,6 +85,9 @@ const HomePage = lazy(() => import("./pages/site/home/HomePage"));
 const GalleryPage = lazy(() => import("./pages/site/gallery/GalleryPage"));
 // UI-P29 — the Build page in the site frame; its own chunk, picked by `FrameRoute`.
 const BuildSitePage = lazy(() => import("./pages/site/build/BuildPage"));
+// UI-P31 — Rebuild and lineage in the site frame; their own chunks, picked by `FrameRoute`.
+const RebuildSitePage = lazy(() => import("./pages/site/rebuild/RebuildPage"));
+const LineageSitePage = lazy(() => import("./pages/site/rebuild/LineagePage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
@@ -335,8 +339,24 @@ const App = () => (
                   }
                 />
                 {/* RC-P14 — every published rebuild in a build's family, beside
-                    the build page it belongs to. Wide through /b2/*. */}
-                <Route path="/b2/:slug/lineage" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage /></Suspense></RouteBoundary>} />
+                    the build page it belongs to. Wide through /b2/*. UI-P31 —
+                    in the site frame behind the flag: the family as a tree, and
+                    what each rebuild changed. */}
+                <Route
+                  path="/b2/:slug/lineage"
+                  element={
+                    <FrameRoute
+                      site={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <LineageSitePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
+                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage /></Suspense></RouteBoundary>}
+                    />
+                  }
+                />
                 <Route
                   path="/gallery"
                   element={
@@ -384,7 +404,28 @@ const App = () => (
                   fallback is the room the route is about to paint. ── */}
               <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
               <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />
-              <Route path="/rebuild/:slug" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildRoute /></Suspense>} />
+              {/* UI-P31 — /rebuild/:slug behind the flag is a page in the site
+                  frame (the family, what changed, readiness), not a door. It
+                  stays out here so the legacy door renders exactly as it did,
+                  outside every frame; the site page brings its own SiteFrame,
+                  which is the frame AppShell would have chosen for it. */}
+              <Route
+                path="/rebuild/:slug"
+                element={
+                  <FrameRoute
+                    site={
+                      <SiteFrame>
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <RebuildSitePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      </SiteFrame>
+                    }
+                    legacy={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildRoute /></Suspense>}
+                  />
+                }
+              />
               <Route path="/convert/:contentItemId" element={<Suspense fallback={<div style={{ minHeight: "100vh", background: "var(--bg)" }} />}><ConvertPrompt /></Suspense>} />
               {/* ── EX-P03 — /oauth/consent.
 

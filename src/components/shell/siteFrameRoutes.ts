@@ -5,12 +5,13 @@
    own. A route that is not here renders in `FlatShell` whatever the flag says.
 
    UI-P20: /notifications, with its existing page, to prove the frame end to end.
-   UI-P27: / (Home). UI-P28: /gallery. UI-P29: /b2/:slug (the Build page; its
-   lineage address stays in the old frame until UI-P31). */
+   UI-P27: / (Home). UI-P28: /gallery. UI-P29: /b2/:slug (the Build page).
+   UI-P31: /b2/:slug/lineage and /rebuild/:slug. The rebuild route lives outside
+   Layout, so its site branch renders SiteFrame itself (see App.tsx). */
 
 import { matchPath } from "react-router-dom";
 
-export const SITE_FRAME_ROUTES: string[] = ["/", "/gallery", "/b2/:slug", "/notifications"];
+export const SITE_FRAME_ROUTES: string[] = ["/", "/gallery", "/b2/:slug", "/b2/:slug/lineage", "/rebuild/:slug", "/notifications"];
 
 /** True when `pathname` is one of `SITE_FRAME_ROUTES`. */
 export function usesSiteFrame(pathname: string): boolean {
