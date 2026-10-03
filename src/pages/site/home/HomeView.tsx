@@ -37,7 +37,7 @@ import { Sparkline } from "@/components/brand/charts";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
@@ -803,6 +803,8 @@ function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["w
 function DesktopHome(props: HomeViewProps) {
   const { fit = "content", now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
   const [filter, setFilter] = useState<HomeFilter>("all");
+  /* UI-P39: below 1024 the right track stacks under the left, its panels already in the phone's order. */
+  const stacked = useWidthTier() === "stacked";
 
   return (
     <div
@@ -810,8 +812,8 @@ function DesktopHome(props: HomeViewProps) {
       data-viewport="desktop"
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) 420px",
-        gridTemplateRows: fit === "board" ? "minmax(0, 1fr)" : undefined,
+        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
+        gridTemplateRows: fit === "board" && !stacked ? "minmax(0, 1fr)" : undefined,
         gap: 12,
         ...boardHeight(fit),
       }}
@@ -924,7 +926,8 @@ function PhoneHome(props: HomeViewProps) {
 
 export function HomeView(props: HomeViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneHome {...props} /> : <DesktopHome {...props} />;
+  const fit = useTierFit(props.fit);
+  return phone ? <PhoneHome {...props} /> : <DesktopHome {...props} fit={fit} />;
 }
 
 export default HomeView;

@@ -49,7 +49,7 @@ import { LineChart } from "@/components/brand/charts";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { shortAgo } from "@/pages/site/home/homeModel";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -594,7 +594,7 @@ function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
       <div data-testid="activity-runs" style={{ marginTop: 10 }}>
         {runs.status === "loading" ? (
           <LoadingRegion what="the runs chart" data-testid="activity-runs-loading">
-            <Skeleton width={360} height={120} />
+            <Skeleton width={360} height={120} style={{ maxWidth: "100%" }} />
           </LoadingRegion>
         ) : runs.status === "error" ? (
           <ErrorState panel="Runs of your builds" onRetry={runs.onRetry} error={runs.error} data-testid="activity-runs-error" />
@@ -696,7 +696,9 @@ const SHOW_ME_MIN = BOARD_GRID_HEIGHT - 180 - 190 - 12 * 2;
 function DesktopActivity(props: ActivityViewProps) {
   const { fit = "content", now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
-  const board = fit === "board";
+  /* UI-P39: below 1024 the right track stacks under the list. */
+  const stacked = useWidthTier() === "stacked";
+  const board = fit === "board" && !stacked;
 
   return (
     <div
@@ -704,7 +706,7 @@ function DesktopActivity(props: ActivityViewProps) {
       data-viewport="desktop"
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) 400px",
+        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(400)}`,
         gridTemplateRows: board ? "minmax(0, 1fr)" : undefined,
         gap: 12,
         lineHeight: "normal",
@@ -747,7 +749,7 @@ function DesktopActivity(props: ActivityViewProps) {
             <RunsChart runs={runs} />
           </Panel>
         </div>
-        <div style={{ display: "flex", flexGrow: 1, minHeight: board ? 0 : SHOW_ME_MIN }}>
+        <div style={{ display: "flex", flexGrow: 1, minHeight: board || stacked ? 0 : SHOW_ME_MIN }}>
           <Panel padding="14px 16px" style={{ flex: 1 }}>
             <ShowMe
               kindCounts={kindCounts}
@@ -802,7 +804,8 @@ function PhoneActivity(props: ActivityViewProps) {
 
 export function ActivityView(props: ActivityViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} />;
+  const fit = useTierFit(props.fit);
+  return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} fit={fit} />;
 }
 
 export default ActivityView;

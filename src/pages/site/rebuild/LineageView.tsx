@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 import type { PanelFailure } from "@/components/brand/ErrorState";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -141,8 +141,11 @@ function SelectionPanel({
   );
 }
 
-export function LineageView({ fit = "content", title, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
+export function LineageView({ fit: givenFit = "content", title, family, selectedId, onSelect, selection, alone, familyLoading, familyFailure }: LineageViewProps) {
   const phone = useIsPhone();
+  const fit = useTierFit(givenFit);
+  /* UI-P39: below 1024 the selection stacks under the family, as on the phone. */
+  const stacked = useWidthTier() === "stacked";
 
   if (phone) {
     return (
@@ -157,12 +160,20 @@ export function LineageView({ fit = "content", title, family, selectedId, onSele
   return (
     <div data-testid="lineage-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
       <h1 style={VISUALLY_HIDDEN}>{`The family of ${title}`}</h1>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 470px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
+          gap: 12,
+          flexGrow: 1,
+          minHeight: 0,
+        }}
+      >
         <div style={{ minHeight: 0 }}>
-          <FamilyPanel root={family} fit={fit} fill selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
+          <FamilyPanel root={family} fit={fit} fill={!stacked} selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
         </div>
         <div style={{ minHeight: 0, minWidth: 0 }}>
-          <SelectionPanel selection={selection} phone={false} fill alone={alone} />
+          <SelectionPanel selection={selection} phone={false} fill={!stacked} alone={alone} />
         </div>
       </div>
     </div>

@@ -23,7 +23,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN as HIDDEN } from "@/components/brand/VisuallyHidden";
 import { Panel } from "@/components/brand/Panel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE, display } from "@/lib/theme/type";
@@ -64,8 +64,11 @@ export interface RebuildViewProps {
 const READINESS_HEIGHT = 290;
 
 export function RebuildView(props: RebuildViewProps) {
-  const { fit = "content", draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishFailure } = props;
+  const { draftTitle, source, family, changes, readiness, credit, onPublish, onKeepDraft, workspaceTo, publishing, publishFailure } = props;
   const phone = useIsPhone();
+  const fit = useTierFit(props.fit ?? "content");
+  /* UI-P39: below 1024 the right track stacks under the family, readiness first as on the phone. */
+  const stacked = useWidthTier() === "stacked";
   const board = fit === "board";
 
   const readinessPanel = (
@@ -78,7 +81,7 @@ export function RebuildView(props: RebuildViewProps) {
       publishing={publishing}
       failure={publishFailure}
       phone={phone}
-      fill={!phone}
+      fill={!phone && !stacked}
     />
   );
 
@@ -96,15 +99,26 @@ export function RebuildView(props: RebuildViewProps) {
   return (
     <div data-testid="rebuild-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
       <h1 style={VISUALLY_HIDDEN}>{`${draftTitle}: ${rebuildingLine(source)}`}</h1>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 470px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
+          gap: 12,
+          flexGrow: 1,
+          minHeight: 0,
+        }}
+      >
         <div style={{ minHeight: 0 }}>
-          <FamilyPanel root={family} fit={fit} fill />
+          <FamilyPanel root={family} fit={fit} fill={!stacked} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
+          {stacked ? <div style={{ minHeight: READINESS_HEIGHT }}>{readinessPanel}</div> : null}
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <ChangesPanel groups={changes} fill loading={changes === null} />
+            <ChangesPanel groups={changes} fill={!stacked} loading={changes === null} />
           </div>
-          <div style={{ flexShrink: 0, ...(board ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>{readinessPanel}</div>
+          {stacked ? null : (
+            <div style={{ flexShrink: 0, ...(board ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>{readinessPanel}</div>
+          )}
         </div>
       </div>
     </div>
@@ -137,6 +151,8 @@ function ReadinessSkeleton({ phone }: { phone: boolean }) {
 /** The page's shape while the source, the draft and the family arrive: the panels' own heads and padding, bones inside. */
 export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebuild" }: { fit?: PageFit; label?: string }) {
   const phone = useIsPhone();
+  const tierFit = useTierFit(fit);
+  const stacked = useWidthTier() === "stacked";
   const what = label.replace(/^Loading /, "");
   if (phone) {
     return (
@@ -153,14 +169,19 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
       what={what}
       announce
       data-testid="rebuild-loading"
-      style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 470px", gap: 12, ...boardHeight(fit) }}
+      style={{
+        display: "grid",
+        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
+        gap: 12,
+        ...boardHeight(tierFit),
+      }}
     >
-      <FamilyPanel root={null} fit={fit} fill loading />
+      <FamilyPanel root={null} fit={tierFit} fill={!stacked} loading />
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
         <div style={{ flexGrow: 1, minHeight: 0 }}>
           <ChangesPanel groups={null} fill loading />
         </div>
-        <div style={{ flexShrink: 0, ...(fit === "board" ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>
+        <div style={{ flexShrink: 0, ...(tierFit === "board" ? { height: READINESS_HEIGHT } : { minHeight: READINESS_HEIGHT }) }}>
           <ReadinessSkeleton phone={false} />
         </div>
       </div>

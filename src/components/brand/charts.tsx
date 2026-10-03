@@ -81,7 +81,8 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
       width={width}
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      style={{ display: "block" }}
+      /* Never wider than its panel (UI-P39): a narrower side track scales the drawing down, keeping its shape. */
+      style={{ display: "block", maxWidth: "100%", height: "auto" }}
       {...svgA11y(label)}
     >
       <defs>

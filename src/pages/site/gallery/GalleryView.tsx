@@ -38,7 +38,7 @@ import { CardSkeleton, LoadingRegion, Skeleton } from "@/components/brand/Skelet
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { useIsPhone, useTierFit, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import type { GalleryLens } from "@/lib/build/gallery";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -118,12 +118,15 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 
-/** The wall's grid: four columns of cards 14 apart, two rows of 250 on the board and rows that grow with their cards elsewhere. */
-function wallGrid(columns: 2 | 4, board: boolean): CSSProperties {
-  return columns === 4
+/** The desktop wall's columns at each width tier (UI-P39): 4 from 1280, 3 to 1024, 2 below. */
+const WALL_COLUMNS: Record<WidthTier, 2 | 3 | 4> = { full: 4, split: 3, stacked: 2 };
+
+/** The wall's grid: desktop columns of cards 14 apart, two rows of 250 on the board and rows that grow with their cards elsewhere; the phone's two. */
+function wallGrid(columns: 2 | 3 | 4, board: boolean, phone = false): CSSProperties {
+  return !phone
     ? {
         display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gridTemplateRows: board ? `${ROW}px ${ROW}px` : undefined,
         gridAutoRows: board ? undefined : `minmax(${ROW}px, auto)`,
         gap: 14,
@@ -494,10 +497,10 @@ function WallStates({
 }
 
 /** The wall before it has arrived: a plate and six cards where the featured build leads, eight cards where nothing does. */
-function WallSkeleton({ board, phone, leadsWithFeatured }: { board: boolean; phone: boolean; leadsWithFeatured: boolean }) {
+function WallSkeleton({ board, phone, leadsWithFeatured, columns = 4 }: { board: boolean; phone: boolean; leadsWithFeatured: boolean; columns?: 2 | 3 | 4 }) {
   if (phone) {
     return (
-      <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(2, false)}>
+      <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(2, false, true)}>
         {Array.from({ length: 6 }, (_, i) => (
           <CardSkeleton key={i} cover={96} body={144} />
         ))}
@@ -505,7 +508,7 @@ function WallSkeleton({ board, phone, leadsWithFeatured }: { board: boolean; pho
     );
   }
   return (
-    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(4, board)}>
+    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(columns, board)}>
       {leadsWithFeatured ? (
         <div style={{ gridColumn: "span 2", minHeight: ROW, minWidth: 0, display: "flex" }}>
           <Skeleton height="auto" radius={r.panel} style={{ flexGrow: 1 }} />
@@ -631,6 +634,10 @@ function DesktopGallery(props: GalleryViewProps) {
   const board = fit === "board";
   /* No counts is no group, and no group at all is no column: the wall takes the width. */
   const showFacets = drawn(facets).length > 0;
+  const tier = useWidthTier();
+  const columns = WALL_COLUMNS[tier];
+  /* Below 1024 the facet column sits over the wall and the featured build is the phone's stacked plate. */
+  const stacked = tier === "stacked";
 
   return (
     <div
@@ -640,8 +647,8 @@ function DesktopGallery(props: GalleryViewProps) {
     >
       <div style={{ flexShrink: 0 }}>
         <Panel padding="18px 20px">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
               <Eyebrow>Gallery</Eyebrow>
               <h1 style={{ ...display(50), margin: 0, color: t.text }}>Builds worth running</h1>
               <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, maxWidth: 560, lineHeight: 1.5 }}>{INTRO_DESKTOP}</div>
@@ -658,7 +665,7 @@ function DesktopGallery(props: GalleryViewProps) {
         </Panel>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: showFacets ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: showFacets && !stacked ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 12, flexGrow: 1, minHeight: 0 }}>
         {showFacets ? (
           <div style={{ minHeight: 0 }}>
             <FacetColumn groups={facets} />
@@ -667,12 +674,20 @@ function DesktopGallery(props: GalleryViewProps) {
         <div style={{ minHeight: 0, minWidth: 0, overflow: board ? "hidden" : undefined, padding: "0 4px" }}>
           {aboveWall}
           {wall.status === "loading" ? (
-            <WallSkeleton board={board} phone={false} leadsWithFeatured={!narrowed} />
+            <WallSkeleton board={board && !stacked} phone={false} leadsWithFeatured={!narrowed} columns={columns} />
           ) : wall.status === "error" || (wall.cards.length === 0 && !featured) ? (
             <WallStates wall={wall} narrowed={narrowed} onClearAll={onClearAll} onNavigate={onNavigate} />
           ) : (
-            <div data-testid="gallery-wall" style={wallGrid(4, board)}>
-              {featured ? <FeaturedDesktop featured={featured} now={now} /> : null}
+            <div data-testid="gallery-wall" style={wallGrid(columns, board && !stacked)}>
+              {featured ? (
+                stacked ? (
+                  <div style={{ gridColumn: "1 / -1", minWidth: 0 }}>
+                    <FeaturedPhone featured={featured} now={now} />
+                  </div>
+                ) : (
+                  <FeaturedDesktop featured={featured} now={now} />
+                )
+              ) : null}
               {wall.cards.map((card) => (
                 <Fragment key={card.key}>{card.render("desktop")}</Fragment>
               ))}
@@ -789,7 +804,7 @@ function PhoneGallery(props: GalleryViewProps) {
       ) : wall.status === "error" || wall.cards.length === 0 ? (
         <WallStates wall={wall} narrowed={narrowed} onClearAll={onClearAll} onNavigate={onNavigate} />
       ) : (
-        <div data-testid="gallery-wall" style={wallGrid(2, false)}>
+        <div data-testid="gallery-wall" style={wallGrid(2, false, true)}>
           {wall.cards.map((card) => (
             <Fragment key={card.key}>{card.render("phone")}</Fragment>
           ))}
@@ -816,7 +831,8 @@ function PhoneGallery(props: GalleryViewProps) {
 
 export function GalleryView(props: GalleryViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneGallery {...props} /> : <DesktopGallery {...props} />;
+  const fit = useTierFit(props.fit);
+  return phone ? <PhoneGallery {...props} /> : <DesktopGallery {...props} fit={fit} />;
 }
 
 export default GalleryView;

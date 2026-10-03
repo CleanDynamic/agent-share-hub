@@ -47,8 +47,8 @@ import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { Timeline } from "@/components/brand/Timeline";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import { categoryColour } from "@/lib/theme/category";
 import { GLASS_BLUR, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -91,6 +91,32 @@ export interface BuildViewProps {
 
 /** The first row's height on the desktop board. */
 const HERO_ROW = 402;
+
+/** The bottom row's height on the board: what the 820 leaves under the hero row. */
+const BOTTOM_ROW = BOARD_GRID_HEIGHT - HERO_ROW - 12;
+
+/* UI-P39 — the two rows between the boards. The hero row keeps both tracks to
+   1024 (the proof narrowing to 340) and stacks below. The bottom row's narrowest
+   panel, the timeline, drops below the anatomy and the viewer under 1280, full
+   width at the row's height. */
+function heroRow(tier: WidthTier): CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
+    gridAutoRows: tier === "stacked" ? `minmax(${HERO_ROW}px, auto)` : undefined,
+    gap: 12,
+    flexShrink: 0,
+  };
+}
+
+function bottomRow(tier: WidthTier): CSSProperties {
+  return tier === "full"
+    ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 0 }
+    : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 12, flexGrow: 1 };
+}
+
+/** The timeline's cell: its own track at 1280 and up, the row's full width below. */
+const dropped = (tier: WidthTier): CSSProperties => (tier === "full" ? {} : { gridColumn: "1 / -1" });
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
 
@@ -703,7 +729,8 @@ const selectedPart = (anatomy: BuildAnatomyView): PartRowView | null =>
 
 function DesktopBuild(props: BuildViewProps) {
   const { fit = "content", now, hero, actions, proof, anatomy, viewer, timeline } = props;
-  const board = fit === "board";
+  const tier = useWidthTier();
+  const board = fit === "board" && tier === "full";
   const { announce, region } = useAnnouncer();
 
   return (
@@ -712,15 +739,7 @@ function DesktopBuild(props: BuildViewProps) {
       data-viewport="desktop"
       style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 420px",
-          gap: 12,
-          flexShrink: 0,
-          ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }),
-        }}
-      >
+      <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
           <Hero hero={hero} actions={actions} phone={false} announce={announce} />
         </div>
@@ -728,14 +747,14 @@ function DesktopBuild(props: BuildViewProps) {
           <ProofPanel proof={proof} phone={false} now={now} />
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div style={bottomRow(tier)}>
         <div style={{ minHeight: 0 }}>
           <AnatomyPanel anatomy={anatomy} phone={false} onSelect={anatomy.onSelect} />
         </div>
         <div style={{ minHeight: 0, minWidth: 0 }}>
           <Viewer viewer={viewer} part={selectedPart(anatomy)} phone={false} announce={announce} />
         </div>
-        <div style={{ minHeight: 0 }}>
+        <div style={{ minHeight: 0, ...dropped(tier) }}>
           <TimelinePanel timeline={timeline} phone={false} onPlay={timeline.onPlay} />
         </div>
       </div>
@@ -799,7 +818,8 @@ function PhoneBuild(props: BuildViewProps) {
 
 export function BuildView(props: BuildViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneBuild {...props} /> : <DesktopBuild {...props} />;
+  const fit = useTierFit(props.fit);
+  return phone ? <PhoneBuild {...props} /> : <DesktopBuild {...props} fit={fit} />;
 }
 
 /* ── loading, missing, failed ── */
@@ -829,6 +849,7 @@ function ProofSkeleton({ phone }: { phone: boolean }) {
 /** The first screen's shape before the record arrives: the panels, their heads and padding are the real ones; only what is inside them is a bone. */
 export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
   const phone = useIsPhone();
+  const tier = useWidthTier();
   const rows = (height: number, count: number, gap: number) =>
     Array.from({ length: count }, (_, i) => <Skeleton key={i} height={height} radius={r.control} style={i ? { marginTop: gap } : undefined} />);
   if (phone) {
@@ -852,7 +873,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       </LoadingRegion>
     );
   }
-  const board = fit === "board";
+  const board = fit === "board" && tier === "full";
   return (
     <LoadingRegion
       what="the build"
@@ -860,7 +881,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       data-testid="build-loading"
       style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 420px", gap: 12, flexShrink: 0, ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
+      <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
           <Skeleton height="100%" radius={r.panel} style={{ minHeight: HERO_ROW + 2, boxSizing: "border-box" }} />
         </div>
@@ -868,13 +889,13 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
           <ProofSkeleton phone={false} />
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div style={bottomRow(tier)}>
         <Panel padding="14px 12px" style={{ height: "100%" }}>
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 8 }}>{rows(40, MOCK_ROWS, 2)}</div>
         </Panel>
         <Skeleton height="100%" radius={r.panel} />
-        <Panel padding="14px 16px" style={{ height: "100%" }}>
+        <Panel padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
           <div style={{ marginTop: 12 }}>{rows(41, 5, 0)}</div>
         </Panel>

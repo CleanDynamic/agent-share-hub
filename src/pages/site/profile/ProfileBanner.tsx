@@ -176,9 +176,10 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
       </div>
       <Arc geometry={ARC_PROFILE_BANNER} preserveAspectRatio="xMinYMin slice" style={{ width: 900, height: 260 }} />
       <div style={{ ...FILL, background: `linear-gradient(0deg, ${t.bannerScrim} 0%, transparent 70%)` }} />
-      <div style={{ position: "absolute", left: 20, bottom: 18, right: 20, display: "flex", alignItems: "flex-end", gap: 18 }}>
+      {/* Narrower than the board (UI-P39), the actions take their own line rather than cut the name short. */}
+      <div style={{ position: "absolute", left: 20, bottom: 18, right: 20, display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "12px 18px" }}>
         {mark(104, 14, 78)}
-        <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <Eyebrow style={{ color: t.text }}>{eyebrowLine(maker.place, maker.since)}</Eyebrow>
           <h1 style={{ ...display(52), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
           <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text, ...ELLIPSIS }}>{line}</div>
