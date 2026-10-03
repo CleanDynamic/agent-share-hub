@@ -23,7 +23,6 @@ import { RouteBoundary } from "@/components/routing/RouteBoundary";
 import { SearchRedirect } from "@/components/routing/SearchRedirect";
 import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { lazyPage } from "@/components/routing/lazyPage";
-import Home from "./pages/Home";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { SiteFrame } from "./components/shell/SiteFrame";
 import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
@@ -214,7 +213,13 @@ const App = () => (
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Home />}
+                      legacy={
+                        <RouteBoundary>
+                          <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
+                            <HomePage />
+                          </Suspense>
+                        </RouteBoundary>
+                      }
                     />
                   }
                 />
