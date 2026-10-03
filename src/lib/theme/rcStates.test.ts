@@ -16,7 +16,6 @@ import { CategoryChip } from "@/components/brand/CategoryChip";
 import { GapMarker, gapEdge } from "@/components/brand/GapMarker";
 import { Plaque, plaqueState } from "@/components/brand/Plaque";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { MobileBottomNav } from "@/components/shell/MobileBottomNav";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import * as controlsModule from "./controls";
@@ -48,7 +47,6 @@ const NAMES: Record<string, unknown> = {
   Plaque,
   plaqueState,
   GalleryCard,
-  MobileBottomNav,
   Check,
 };
 

@@ -142,7 +142,6 @@ import { getReblogsOfPost } from "@/lib/reblog/getReblogsOfPost";
 import { checkExcerptStillValid } from "@/lib/reblog/checkExcerptStillValid";
 import { createRemix } from "@/lib/remix/createRemix";
 import { RemixValidationError } from "@/lib/remix/flags";
-import Lineage from "@/pages/Lineage";
 
 const REBLOG_MESSAGE = "Reblogging has been replaced by Rebuild.";
 
@@ -238,51 +237,6 @@ describe("live — the reblog read path answers as it did", () => {
   });
 });
 
-/* RC-P14 — THE OLD LINEAGE ADDRESS STILL ANSWERS. It drew remix lineage until
-   RC-P14 made lineage the family of rebuilds; it now lands on the build's own
-   /b2/:slug/lineage when the slug names a build (rewritten, not deleted, while
-   the address is reachable: CONTRACT §3.4). */
-describe("live — /b/:slug/lineage, the old lineage address, still answers", () => {
-  function renderOldAddress() {
-    return render(
-      <HelmetProvider>
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-          <MemoryRouter initialEntries={["/b/original-prompt/lineage"]}>
-            <Routes>
-              <Route path="/b/:slug/lineage" element={<Lineage legacy />} />
-              <Route path="/b2/:slug/lineage" element={<p>the family of original-prompt</p>} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </HelmetProvider>
-    );
-  }
-
-  it("lands on the build's family when the slug names a build", async () => {
-    renderOldAddress();
-    await waitFor(() => expect(screen.getByText("the family of original-prompt")).toBeTruthy());
-    // No tombstone in place of the retired remix page.
-    expect(screen.queryByText(/remix(ing)? (is|has been) (retired|disabled)/i)).toBeNull();
-  });
-
-  it("says there is no build at it when the slug names none", async () => {
-    const builds = db.rows.builds;
-    db.rows.builds = [];
-    try {
-      renderOldAddress();
-      await waitFor(() => expect(screen.getByText("No build at this address.")).toBeTruthy());
-      expect(screen.queryByText("the family of original-prompt")).toBeNull();
-    } finally {
-      db.rows.builds = builds;
-    }
-  });
-});
-
-/* UI-P41 — FLATSHELL DELETED, SITEFRAME UNCONDITIONAL. The site_frame feature
-   flag and all legacy frame components (FlatShell, MobileTopBar, MobileBottomNav,
-   ProfileDrawer, wideRoutes) have been deleted. AppShell now renders SiteFrame
-   unconditionally, and FrameRoute always renders the site page regardless of path
-   or flag state. The old conditional frame selection logic no longer exists. */
 describe("deleted — UI-P41 legacy frame components", () => {
   it("FrameRoute always renders the site page, ignoring the legacy prop", () => {
     const { FrameRoute } = require("@/components/shell/FrameRoute");
