@@ -243,7 +243,7 @@ function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: 
         <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />
       </div>
 
-      <Panel padding="16px">
+      <Panel surface="glass" padding="16px">
         <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {hasSwitch(mode) ? <AccountSwitch mode={mode} carry={carry} size={38} fontSize={13} /> : null}
           {children}

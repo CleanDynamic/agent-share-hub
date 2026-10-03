@@ -714,7 +714,7 @@ function DesktopActivity(props: ActivityViewProps) {
       }}
     >
       <div style={{ display: "flex", minHeight: 0, minWidth: 0 }}>
-        <Panel padding="14px 16px" style={{ flex: 1 }}>
+        <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
           <PanelHead
             title="Activity"
             subtitle={unread === null ? " " : unreadLine(unread, live)}
@@ -740,17 +740,17 @@ function DesktopActivity(props: ActivityViewProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0, alignSelf: board ? undefined : "start" }}>
         <div style={{ height: 180, flexShrink: 0 }}>
-          <Panel padding="12px" style={{ height: "100%" }}>
+          <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
             <Orbs peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
           </Panel>
         </div>
         <div style={{ height: 190, flexShrink: 0 }}>
-          <Panel padding="14px 16px" style={{ height: "100%" }}>
+          <Panel surface="glass" padding="14px 16px" style={{ height: "100%" }}>
             <RunsChart runs={runs} />
           </Panel>
         </div>
         <div style={{ display: "flex", flexGrow: 1, minHeight: board || stacked ? 0 : SHOW_ME_MIN }}>
-          <Panel padding="14px 16px" style={{ flex: 1 }}>
+          <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
             <ShowMe
               kindCounts={kindCounts}
               listStatus={list.status}

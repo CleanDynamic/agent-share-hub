@@ -19,6 +19,10 @@
 // `14px 14px 110px` (110 clears the 68px dock, its 16px lift and some air, plus
 // the safe-area inset) and a 12px column gap, and the fixed dock slot.
 //
+// THE GLASS FILTER (UI-P09b). `<GlassFilter />` follows the backdrop in every variant, so the backdrop stays the
+// root's first child. It is the one SVG filter `.bg-glass` panels refract through, mounted once per frame and
+// before the page, and it is a 0 x 0 hidden SVG that paints nothing.
+//
 // `bare` (sign in, join, reset, verify) is the backdrop and the page and nothing
 // else. The backdrop is the root's first child, `position: absolute` inside a
 // `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
@@ -26,6 +30,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import { GlassFilter } from "@/components/brand/GlassFilter";
 import { PageBackdrop } from "@/components/brand/PageBackdrop";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -128,6 +133,7 @@ export function SiteFrameView({
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
         <PageBackdrop viewport={phone ? "mobile" : "desktop"} tone="signin" />
+        <GlassFilter />
         <SkipLink />
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}
@@ -140,6 +146,7 @@ export function SiteFrameView({
     return (
       <div data-testid="site-frame" data-variant="site" data-viewport="mobile" style={root}>
         <PageBackdrop viewport="mobile" />
+        <GlassFilter />
         <SkipLink />
         <div
           data-slot="mobile-header"
@@ -169,6 +176,7 @@ export function SiteFrameView({
   return (
     <div data-testid="site-frame" data-variant="site" data-viewport="desktop" style={root}>
       <PageBackdrop viewport="desktop" />
+      <GlassFilter />
       <SkipLink />
       <div data-slot="header" style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 64 }}>
         {header}

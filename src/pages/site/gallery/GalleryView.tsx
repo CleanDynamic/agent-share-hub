@@ -382,7 +382,7 @@ const drawn = (groups: readonly FacetGroupView[]) =>
 
 function FacetColumn({ groups }: { groups: readonly FacetGroupView[] }) {
   return (
-    <Panel padding="4px 16px" style={{ height: "100%" }}>
+    <Panel surface="glass" padding="4px 16px" style={{ height: "100%" }}>
       <nav aria-label="Filter the gallery">
         {drawn(groups).map((group) => (
           <div
@@ -646,7 +646,7 @@ function DesktopGallery(props: GalleryViewProps) {
       style={{ display: "flex", flexDirection: "column", gap: 12, ...boardHeight(fit) }}
     >
       <div style={{ flexShrink: 0 }}>
-        <Panel padding="18px 20px">
+        <Panel surface="glass" padding="18px 20px">
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
               <Eyebrow>Gallery</Eyebrow>

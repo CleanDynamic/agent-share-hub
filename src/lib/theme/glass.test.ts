@@ -1,8 +1,11 @@
-/* UI-P40 — the blur budget: exactly four surfaces may blur — the desktop
+/* UI-P40 — the blur budget: exactly four chrome surfaces may blur — the desktop
  * header, the mobile header, the dock, and the build page's title plate and
- * action dock — and every one of them at the one value. The files that draw
- * them are BUDGET below; a blur anywhere else fails. Before UI-P40 there were
- * some two hundred declarations across a hundred and fourteen files.
+ * action dock — and every one of them at the one value. UI-P09b adds ONE more
+ * kind of surface to the budget: page-level panels, which blur through the
+ * `.bg-glass` class in src/index.css and nowhere else (Panel sets no blur of its
+ * own). The files that draw them are BUDGET below; a blur anywhere else fails.
+ * Before UI-P40 there were some two hundred declarations across a hundred and
+ * fourteen files.
  *
  * BG-P31 — §Glass's static half: exactly one blur value in the whole codebase.
  *
@@ -65,11 +68,13 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Strip comments, so a blur documented in prose is not read as a declaration. */
+/** Strip comments, so a blur documented in prose is not read as a declaration, and `@supports` conditions, which
+ * ask whether a property exists and paint nothing (`@supports not (backdrop-filter: blur(2px))`, UI-P09b). */
 function code(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+    .replace(/@supports[^{]*\{/g, "@supports {");
 }
 
 const DECLARATION =
@@ -102,6 +107,7 @@ const BUDGET: Record<string, string> = {
   "src/components/shell/Dock.tsx": "the dock",
   "src/components/brand/HeroPlate.tsx": "the build page's title plate",
   "src/pages/site/build/BuildView.tsx": "the build page's action dock",
+  "src/index.css": "page-level panels, through the one .bg-glass class (UI-P09b)",
 };
 
 /** Every backdrop blur in a file, whatever its value is spelled as: a literal,
@@ -123,7 +129,7 @@ function blurredFiles(): Found[] {
 describe("§Glass — the blur budget (UI-P40)", () => {
   const all = blurredFiles();
 
-  it("blurs only in the files that draw the four budgeted surfaces", () => {
+  it("blurs only in the files that draw the four chrome surfaces and the page-level panels", () => {
     const offenders = all
       .filter((d) => !BUDGET[d.file] && !EXEMPT[d.file])
       .map((d) => `${d.file}: ${d.declaration}`);
@@ -170,5 +176,35 @@ describe("§Glass — one blur value", () => {
       const px = Number(/blur\(([\d.]+)px\)/.exec(d.blur)![1]);
       expect(px, `${d.file} blurs at ${px}px`).toBeGreaterThanOrEqual(16);
     }
+  });
+});
+
+describe("§Glass — liquid glass (UI-P09b)", () => {
+  const sources = walk(SRC)
+    .filter((full) => !IS_TEST.test(full))
+    .map((full) => ({ file: relative(ROOT, full).split(sep).join("/"), text: code(readFileSync(full, "utf8")) }));
+
+  it("uses feDisplacementMap in exactly one file, the one filter mounted by GlassFilter", () => {
+    const files = sources.filter((s) => /feDisplacementMap/.test(s.text)).map((s) => s.file);
+    expect(files).toEqual(["src/components/brand/GlassFilter.tsx"]);
+  });
+
+  it("points at that filter from exactly one stylesheet rule, and nothing else references it", () => {
+    const files = sources.filter((s) => /bg-glass-distortion/.test(s.text)).map((s) => s.file).sort();
+    expect(files).toEqual(["src/components/brand/GlassFilter.tsx", "src/index.css"]);
+    const css = sources.find((s) => s.file === "src/index.css")!.text;
+    expect(css.match(/(?<!-webkit-)filter:\s*url\(#bg-glass-distortion\)/g)).toHaveLength(1);
+  });
+
+  it("spends the .bg-glass class in Panel and nowhere else", () => {
+    const files = sources.filter((s) => /(?<![\w-])bg-glass(?![\w-])/.test(s.text)).map((s) => s.file).sort();
+    expect(files).toEqual(["src/components/brand/Panel.tsx", "src/index.css"]);
+  });
+
+  it("drops the displacement below 768px and under reduced transparency, and the blur too in the latter", () => {
+    const css = readFileSync(join(SRC, "index.css"), "utf8");
+    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*\.bg-glass::after \{ filter: none; -webkit-filter: none; \}/);
+    expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)[\s\S]*?backdrop-filter: none/);
+    expect(css).toMatch(/@supports not \(backdrop-filter: blur\(2px\)\)[\s\S]*?filter: none/);
   });
 });

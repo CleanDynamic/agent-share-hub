@@ -254,7 +254,7 @@ function SolvePanel({
   onNavigate: (to: string) => void;
 }) {
   return (
-    <Panel padding="14px 16px" style={{ flex: 1 }}>
+    <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
       <PanelHead title="The ask" subtitle="One part, left open on purpose" headingLevel={2} />
       {loading ? (
         <LoadingRegion what="the ask" data-testid="bounties-solve-loading" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -403,7 +403,7 @@ function DesktopBounties(props: BountiesViewProps) {
 
   return (
     <div data-testid="bounties-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
-      <Panel padding="16px 20px">
+      <Panel surface="glass" padding="16px 20px">
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
             <Eyebrow>Bounties</Eyebrow>

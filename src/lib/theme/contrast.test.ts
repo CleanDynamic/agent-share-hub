@@ -392,3 +392,76 @@ describe("the password strength meter", () => {
     ).toBeGreaterThanOrEqual(UI_FLOOR);
   });
 });
+
+/* ── liquid glass (UI-P09b) ───────────────────────────────────────────────── */
+//
+// A page-level panel's body text sits on `--glass-fill` composited over WHATEVER
+// IS BEHIND IT, and that is a gradient, not a flat colour — so the floor is
+// measured at the backdrop's lightest and darkest points, the two that bound
+// every other. A panel over the middle of the gradient lands between them.
+//
+// THE POINTS, from the backdrop gradients in primitives.ts:
+//   Noon  lightest  the ambient's white at .8 over #D2DADA (the 24% stop)
+//         lightest  the ground itself, #E9EBE7 (the bottom stop)
+//         darkest   #C2CFCF (the top stop), and the salmon horizon #F2BEA8
+//   Dusk  lightest  where the violet glow (.42) and the salmon glow (.22) overlap
+//                   at the top right, over the #241C33 top of the field
+//         darkest   #1A1523 (the bottom stop)
+//
+// THE BLUR AND THE SATURATE ARE NOT MODELLED. A blur of a smooth gradient is the
+// gradient, and saturate(1.2) moves chroma, not the luminance a ratio is made of.
+// The fills are NOT symmetric on purpose (Noon .58, Dusk .80); if a pair fails,
+// raise that theme's `--glass-fill` alone and never lighten the text.
+//
+// DUSK IS .80 AND NOT THE PROMPT'S .74, because .74 failed a pair: `--label` on the
+// highlighted feed row (`--row-highlight` over the fill) over the lightest point is
+// 4.26:1 at .74, 4.35 at .76, 4.44 at .78 and 4.56 at .80. Only Dusk was raised.
+
+describe("text on --glass-fill over the backdrop's extremes", () => {
+  const rgb = (c: string) => parse(c).slice(0, 3) as [number, number, number];
+  const mix = (top: string, alpha: number, below: string) => over(`rgba(${rgb(top).join(",")},${alpha})`, below);
+
+  const POINTS = {
+    noon: {
+      "lightest (ambient over the 24% stop)": mix("#FFFFFF", 0.8, "#D2DADA"),
+      "lightest (the ground)": "#E9EBE7",
+      "darkest (top stop)": "#C2CFCF",
+      "darkest (salmon horizon)": "#F2BEA8",
+    },
+    dusk: {
+      "lightest (violet and salmon glow)": mix("#D98C6B", 0.22, mix("#8C78C4", 0.42, "#241C33")),
+      "darkest (bottom stop)": "#1A1523",
+    },
+  } as const;
+
+  const TEXT = ["text", "text2", "label", "action", "evidence"] as const;
+
+  const cases = (["noon", "dusk"] as const).flatMap((theme) =>
+    Object.entries(POINTS[theme]).flatMap(([point, backdrop]) =>
+      TEXT.map((token) => ({ theme, point, backdrop, token })),
+    ),
+  );
+
+  it.each(cases)("$theme $token clears 4.5:1 on --glass-fill over the $point", ({ theme, backdrop, token }) => {
+    const fill = theme === "noon" ? "rgba(255,255,255,.58)" : "rgba(26,21,35,.80)";
+    expect(THEMES[theme]["glass-fill"]).toBe(fill);
+    const ground = over(THEMES[theme]["glass-fill"], backdrop);
+    const actual = round(contrast(THEMES[theme][token], ground));
+    expect(actual, `${theme} ${token} is ${actual}:1`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+  });
+
+  /** The tightest pair: 10px mono labels on the one highlighted feed row, itself a translucent layer on the fill. */
+  it.each(
+    (["noon", "dusk"] as const).flatMap((theme) =>
+      Object.entries(POINTS[theme]).map(([point, backdrop]) => ({ theme, point, backdrop })),
+    ),
+  )("$theme --label clears 4.5:1 on --row-highlight over --glass-fill over the $point", ({ theme, backdrop }) => {
+    const ground = over(THEMES[theme]["row-highlight"], over(THEMES[theme]["glass-fill"], backdrop));
+    const actual = round(contrast(THEMES[theme].label, ground));
+    expect(actual, `${theme} label is ${actual}:1`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+  });
+
+  it("keeps the two fills different on purpose, and raises neither to match the other", () => {
+    expect(THEMES.noon["glass-fill"]).not.toBe(THEMES.dusk["glass-fill"]);
+  });
+});

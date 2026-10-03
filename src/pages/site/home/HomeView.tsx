@@ -462,7 +462,7 @@ function OrbsRow({
   if (failure) {
     const error = <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />;
     return framed ? (
-      <Panel padding="14px 16px">{error}</Panel>
+      <Panel surface="glass" padding="14px 16px">{error}</Panel>
     ) : (
       /* In the panel's own padding: the failure reads from the panel's top-left, as every other panel's does. */
       <div style={{ ...row, justifyContent: "flex-start", alignItems: "flex-start", padding: "2px 4px" }}>{error}</div>
@@ -619,7 +619,7 @@ function ChallengesPanel({
     ) : undefined;
 
   return (
-    <Panel padding={phone ? "14px 16px 6px" : "14px 16px"} style={phone ? undefined : { flex: 1 }}>
+    <Panel surface="glass" padding={phone ? "14px 16px 6px" : "14px 16px"} style={phone ? undefined : { flex: 1 }}>
       <PanelHead title="This week’s challenges" subtitle="Resets Monday 00:00 UTC" headingLevel={2} right={expand} />
       <ChallengesBody challenges={challenges} phone={phone} onNavigate={onNavigate} />
     </Panel>
@@ -668,7 +668,7 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
   if (streak.status === "ready" && streak.data.count > 0) {
     const { count, frozenUsed, week } = streak.data;
     return (
-      <Panel padding="14px 16px">
+      <Panel surface="glass" padding="14px 16px">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <PanelHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
           <span style={{ color: t.litInk, display: "flex" }}>
@@ -698,14 +698,14 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
 
   if (streak.status === "loading") {
     return (
-      <Panel padding="14px 16px">
+      <Panel surface="glass" padding="14px 16px">
         <StreakSkeleton />
       </Panel>
     );
   }
 
   return (
-    <Panel padding="14px 16px">
+    <Panel surface="glass" padding="14px 16px">
       <PanelHead title="Streak" headingLevel={2} />
       {streak.status === "error" ? (
         <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} style={{ paddingTop: 14 }} data-testid="home-streak-error" />
@@ -746,7 +746,7 @@ function WhereNextRowSkeleton() {
 
 function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["whereNext"]; onNavigate: (to: string) => void }) {
   return (
-    <Panel padding="14px 16px" style={{ flex: 1 }}>
+    <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
       <PanelHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
       {whereNext.status === "loading" ? (
         <LoadingRegion what="suggestions" data-testid="home-where-next-loading" style={{ marginTop: 6 }}>
@@ -820,7 +820,7 @@ function DesktopHome(props: HomeViewProps) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
         <div style={{ height: 340, flexShrink: 0 }}>
-          <Panel padding="22px 24px" style={{ height: "100%" }}>
+          <Panel surface="glass" padding="22px 24px" style={{ height: "100%" }}>
             <HeroArt scrim={`linear-gradient(90deg, ${t.scrim} 0%, transparent 60%)`} />
             <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -841,7 +841,7 @@ function DesktopHome(props: HomeViewProps) {
         </div>
 
         <div style={{ flexGrow: 1, minHeight: 0, display: "flex" }}>
-          <Panel padding="14px 16px" style={{ flex: 1 }}>
+          <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
             <PanelHead
               title="The visitors’ book"
               subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
@@ -859,7 +859,7 @@ function DesktopHome(props: HomeViewProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
         <div style={{ height: 180, flexShrink: 0 }}>
-          <Panel padding="12px" style={{ height: "100%" }}>
+          <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
             <OrbsRow size={150} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} style={{ height: "100%" }} />
           </Panel>
         </div>
@@ -889,7 +889,7 @@ function PhoneHome(props: HomeViewProps) {
         <LitBadge litToday={litToday} phone />
       </div>
 
-      <Panel padding="16px" style={{ height: 270 }}>
+      <Panel surface="glass" padding="16px" style={{ height: 270 }}>
         <HeroArt scrim={`linear-gradient(180deg, transparent 30%, ${t.scrim} 100%)`} />
         <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <Tagline lines={TAGLINE} size={30} offsets={[0, 44, 14]} />
@@ -905,7 +905,7 @@ function PhoneHome(props: HomeViewProps) {
 
       <ChallengesPanel challenges={challenges} phone onNavigate={onNavigate} />
 
-      <Panel padding="14px 12px">
+      <Panel surface="glass" padding="14px 12px">
         <PanelHead title="The visitors’ book" subtitle="Newest first" headingLevel={2} />
         <div style={{ margin: "10px -4px 0" }}>
           <ScrollRow gap={6} label="Show">

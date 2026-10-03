@@ -19,23 +19,30 @@ export function PanelsSection() {
   return (
     <Section
       name="Panels"
-      note="glass panel · flat panel (workspace) · panel head · wall label · stat · striped bar"
+      note="liquid glass panel · plain panel · flat panel (workspace) · panel head · wall label · stat · striped bar"
     >
       <Row style={TOP}>
-        <Example caption="panel · glass">
+        <Example caption="panel · glass (liquid)">
           <div style={{ width: 320, height: 150 }}>
-            <Panel variant="glass" padding="14px 16px" style={{ height: "100%" }}>
+            <Panel surface="glass" padding="14px 16px" style={{ height: "100%" }}>
               <PanelHead
-                title="Glass panel"
-                subtitle="reading surfaces"
+                title="Liquid glass panel"
+                subtitle="page-level, on the backdrop"
                 right={<IconButton icon={Maximize2} label="Open" size={34} />}
               />
             </Panel>
           </div>
         </Example>
+        <Example caption="panel · plain">
+          <div style={{ width: 320, height: 150 }}>
+            <Panel surface="plain" padding="14px 16px" style={{ height: "100%" }}>
+              <PanelHead title="Plain panel" subtitle="inside a panel or a grid" />
+            </Panel>
+          </div>
+        </Example>
         <Example caption="panel · flat">
           <div style={{ width: 320, height: 150 }}>
-            <Panel variant="flat" padding="14px 16px" style={{ height: "100%" }}>
+            <Panel surface="flat" padding="14px 16px" style={{ height: "100%" }}>
               <PanelHead title="Flat panel" subtitle="compose / import only" />
             </Panel>
           </div>
