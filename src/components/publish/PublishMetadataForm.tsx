@@ -834,7 +834,6 @@ export function PublishMetadataForm({
         style={{
           borderTop: "0.5px solid var(--line)",
           backgroundColor: "var(--recess)",
-          backdropFilter: "blur(16px)",
         }}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">

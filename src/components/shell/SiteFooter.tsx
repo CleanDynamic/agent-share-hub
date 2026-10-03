@@ -6,7 +6,7 @@
 // button in the same style — when signed in; the reference draws the signed-out
 // item, so that difference is expected in the compare.
 
-import type { CSSProperties, ReactNode } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Lockup } from "@/components/brand/Lockup";
@@ -81,7 +81,7 @@ export function SiteFooterView({ signedIn, onSignOut, themeControl }: SiteFooter
 }
 
 /** The container: signed-in state and sign-out from `useAuth()`. */
-export function SiteFooter() {
+function SiteFooterContainer() {
   const { isLoggedIn, signOut } = useAuth();
   const navigate = useNavigate();
   return (
@@ -94,5 +94,10 @@ export function SiteFooter() {
     />
   );
 }
+
+/* UI-P40: memoised, and it takes no props, so a page's data changing (which
+   re-renders the frame around it) never re-renders the chrome. It updates on
+   its own hooks only. */
+export const SiteFooter = memo(SiteFooterContainer);
 
 export default SiteFooter;

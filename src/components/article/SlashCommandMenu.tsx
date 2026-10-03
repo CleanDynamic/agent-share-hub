@@ -275,8 +275,6 @@ export function SlashCommandMenu({
         width: 320,
         maxHeight: 400,
         background: 'var(--bg)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid var(--line)',
         borderRadius: 12,
         boxShadow: '0 12px 32px var(--line)',

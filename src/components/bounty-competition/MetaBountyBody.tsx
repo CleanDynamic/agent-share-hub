@@ -293,7 +293,6 @@ function PledgeModal({
         position: "fixed",
         inset: 0,
         background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-        backdropFilter: "blur(16px)",
         zIndex: 1000,
         display: "flex",
         alignItems: "center",

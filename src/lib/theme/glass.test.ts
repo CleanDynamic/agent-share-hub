@@ -1,4 +1,10 @@
-/* BG-P31 — §Glass's static half: exactly one blur value in the whole codebase.
+/* UI-P40 — the blur budget: exactly four surfaces may blur — the desktop
+ * header, the mobile header, the dock, and the build page's title plate and
+ * action dock — and every one of them at the one value. The files that draw
+ * them are BUDGET below; a blur anywhere else fails. Before UI-P40 there were
+ * some two hundred declarations across a hundred and fourteen files.
+ *
+ * BG-P31 — §Glass's static half: exactly one blur value in the whole codebase.
  *
  * WHY THIS IS A SOURCE SCAN AND NOT A BROWSER TEST. The count of blurred
  * surfaces and their nesting are properties of a RENDERED tree and are asserted
@@ -89,12 +95,50 @@ function declarations(): Found[] {
   return found;
 }
 
+/** The files that draw the four blurred surfaces (UI-P40). */
+const BUDGET: Record<string, string> = {
+  "src/components/shell/SiteHeader.tsx": "the desktop header",
+  "src/components/shell/MobileHeader.tsx": "the mobile header",
+  "src/components/shell/Dock.tsx": "the dock",
+  "src/components/brand/HeroPlate.tsx": "the build page's title plate",
+  "src/pages/site/build/BuildView.tsx": "the build page's action dock",
+};
+
+/** Every backdrop blur in a file, whatever its value is spelled as: a literal,
+ * a constant such as GLASS_BLUR, or a Tailwind `backdrop-blur` class. */
+const ANY_BLUR = /(?:-webkit-)?backdrop-filter\s*:\s*(?!none)[^;}"'\n]+|[Bb]ackdropFilter\s*:\s*(?!["'`]none)[^,}\n]+|\bbackdrop-blur\b[\w-[\]]*/g;
+
+function blurredFiles(): Found[] {
+  const found: Found[] = [];
+  for (const full of walk(SRC)) {
+    const file = relative(ROOT, full).split(sep).join("/");
+    if (IS_TEST.test(file)) continue;
+    for (const match of code(readFileSync(full, "utf8")).match(ANY_BLUR) ?? []) {
+      found.push({ file, blur: match, declaration: match.trim().slice(0, 90) });
+    }
+  }
+  return found;
+}
+
+describe("§Glass — the blur budget (UI-P40)", () => {
+  const all = blurredFiles();
+
+  it("blurs only in the files that draw the four budgeted surfaces", () => {
+    const offenders = all
+      .filter((d) => !BUDGET[d.file] && !EXEMPT[d.file])
+      .map((d) => `${d.file}: ${d.declaration}`);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("still finds every budgeted surface, so a green run is not an empty scan", () => {
+    for (const file of Object.keys(BUDGET)) {
+      expect(all.some((d) => d.file === file), `${file} declares no blur`).toBe(true);
+    }
+  });
+});
+
 describe("§Glass — one blur value", () => {
   const all = declarations();
-
-  it("finds the declarations at all, so a green run is not an empty scan", () => {
-    expect(all.length).toBeGreaterThan(50);
-  });
 
   it("declares exactly one blur value outside the recorded exemptions", () => {
     const values = new Set(all.filter((d) => !EXEMPT[d.file]).map((d) => d.blur));
@@ -102,7 +146,7 @@ describe("§Glass — one blur value", () => {
       .filter((d) => !EXEMPT[d.file] && d.blur !== "blur(16px)")
       .map((d) => `${d.file}: ${d.declaration}`);
     expect(offenders, offenders.join("\n")).toEqual([]);
-    expect(values).toEqual(new Set(["blur(16px)"]));
+    expect([...values].every((v) => v === "blur(16px)")).toBe(true);
   });
 
   it("uses the value GLASS_BLUR names, so the constant is the source of truth", () => {

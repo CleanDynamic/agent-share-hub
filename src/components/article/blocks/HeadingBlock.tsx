@@ -59,7 +59,7 @@ export function HeadingBlockNode({ id, data, selected }: NodeProps) {
     <div
       className={cn(
         'group relative rounded-xl border bg-[var(--recess)]',
-        'backdrop-blur-md shadow-lg w-[320px]',
+        'shadow-lg w-[320px]',
         selected ? 'border-white/30' : 'border-white/10',
       )}
       style={{ padding: 12 }}

@@ -45,7 +45,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FOCUS_RING_CLASS,
-  GLASS_BLUR,
   prefersReducedMotion,
   uiTransition,
 } from "@/lib/theme/controls";
@@ -352,8 +351,6 @@ function FeedTabBar({
            `--recess` and opaque, with a `--r-control` radius that made it a
            floating widget rather than the top edge of the column. */
         background: t.glass,
-        backdropFilter: GLASS_BLUR,
-        WebkitBackdropFilter: GLASS_BLUR,
         borderBottom: `1px solid ${t.line}`,
         borderRadius: 0,
         /* `min-width: 0` IS NOT ENOUGH, and the reason is worth keeping because

@@ -206,8 +206,6 @@ export function StageResultCard({ stage, parent, author, onClick }: StageResultC
         padding: "14px 16px",
         marginBottom: "10px",
         background: "var(--glass)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
         border: "1px solid var(--line)",
         borderTopColor: "var(--line)",
         borderLeftColor: "var(--line)",

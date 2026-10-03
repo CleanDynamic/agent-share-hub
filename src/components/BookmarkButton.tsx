@@ -225,7 +225,7 @@ export function BookmarkButton({ contentId, projectId, className }: BookmarkButt
         <div
           ref={popRef}
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 top-full mt-1 z-50 min-w-[220px] max-w-[280px] rounded-xl border border-border bg-card/95 backdrop-blur-md p-3 shadow-xl"
+          className="absolute right-0 top-full mt-1 z-50 min-w-[220px] max-w-[280px] rounded-xl border border-border bg-card/95 p-3 shadow-xl"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-2">

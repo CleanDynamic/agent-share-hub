@@ -91,7 +91,8 @@ describe("AuthShell", () => {
     expect(style).toContain("border-color:var(--glass-border)");
     expect(style).toContain("border-radius:var(--r-panel)");
     expect(style).toContain("box-shadow:var(--elev-raised)");
-    expect(style).toContain("backdrop-filter:blur(16px) saturate(1.15)");
+    // UI-P40: the blur budget is four surfaces, and this card is not one.
+    expect(style).not.toContain("backdrop-filter");
   });
 
   it("puts the room's choice on the page, as a labelled radio group", () => {

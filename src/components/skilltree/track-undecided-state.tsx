@@ -30,8 +30,6 @@ export default function TrackUndecidedState({
         padding: "48px 24px",
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         border: tokens.border,
         fontFamily: sans,
       }}

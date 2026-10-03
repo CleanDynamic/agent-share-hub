@@ -39,8 +39,6 @@ export default function DailyDigestCard({
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
         border: tokens.borderStrong,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         boxShadow: "var(--elev-overlay)",
         padding: 18,
       }}

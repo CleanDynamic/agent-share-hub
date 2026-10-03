@@ -28,7 +28,6 @@
 // colour on it, and there is no second stop legal in both rooms. The export
 // survives so its call sites keep compiling.
 
-import { GLASS_BLUR } from "@/lib/theme/controls"
 import { r } from "@/lib/theme/radius"
 import { t } from "@/lib/theme/tokens"
 import { DM_MONO, FIGTREE } from "@/lib/theme/type"
@@ -85,8 +84,6 @@ export const FONT = {
 // a system that has exactly one, and 28px of backdrop on a shell-tier surface is
 // the cost the theme's budget exists to stop.
 export const GLASS = {
-  backdropFilter: GLASS_BLUR,
-  WebkitBackdropFilter: GLASS_BLUR,
 } as const
 
 export const ORANGE_GRADIENT = t.action

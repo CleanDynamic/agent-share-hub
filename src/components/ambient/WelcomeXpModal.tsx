@@ -60,8 +60,6 @@ export default function WelcomeXpModal({
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
           border: tokens.borderStrong,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           boxShadow: "var(--elev-overlay)",
           padding: 24,
         }}

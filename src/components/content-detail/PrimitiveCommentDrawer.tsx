@@ -1001,8 +1001,6 @@ export function PrimitiveCommentDrawer({
           width: "100%",
           maxWidth: 380,
           background: "var(--bg)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
           borderLeft: "0.5px solid var(--line)",
           zIndex: 999,
           display: "flex",

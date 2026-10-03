@@ -58,7 +58,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-background/95 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 h-16 border-b border-border bg-background/95">
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="text-lg font-bold tracking-tight text-primary">
             buildgallery.ai
@@ -137,7 +137,7 @@ export function Navbar() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-background/80" />
           {/* Panel */}
           <div
             ref={panelRef}

@@ -39,8 +39,6 @@ export default function PerkDetailPanel({
         padding: 22,
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         border: tokens.border,
         fontFamily: sans,
         color: tokens.text,

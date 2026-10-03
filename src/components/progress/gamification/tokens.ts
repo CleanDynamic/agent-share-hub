@@ -38,7 +38,6 @@
  * it, and there is no second stop legal in both rooms.
  */
 
-import { GLASS_BLUR } from "@/lib/theme/controls"
 import { r } from "@/lib/theme/radius"
 import { colourAlpha, t } from "@/lib/theme/tokens"
 import { DM_MONO } from "@/lib/theme/type"
@@ -97,8 +96,6 @@ export const radius = {
 // a system that has exactly one, and 28px of backdrop on a shell-tier surface is
 // the cost the theme's budget exists to stop.
 export const glass = {
-  backdropFilter: GLASS_BLUR,
-  WebkitBackdropFilter: GLASS_BLUR,
 } as const
 
 /**

@@ -26,7 +26,6 @@ export function ComposerBar({ user }: { user?: User }) {
         padding: '14px 16px',
         marginBottom: '0px',
         background: "var(--recess)",
-        backdropFilter: "blur(16px)",
         border: `1px solid ${isFocused ? "color-mix(in srgb, var(--action) 30%, transparent)" : "var(--line)"}`,
       }}
     >

@@ -66,8 +66,6 @@ export default function PerkGateTooltip({
           borderRadius: tokens.radiusCard,
           background: tokens.shell,
           border: tokens.borderStrong,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           boxShadow: "var(--elev-raised)",
         }}
       >

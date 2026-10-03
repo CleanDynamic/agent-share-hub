@@ -149,7 +149,7 @@ export function WorksWithPicker({ value, onChange, onSubmitToolClick }: WorksWit
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Search AI tools..."
-          className="w-full h-10 pl-9 pr-3 text-sm rounded-xl border border-border bg-card/60 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ring-offset-background"
+          className="w-full h-10 pl-9 pr-3 text-sm rounded-xl border border-border bg-card/60 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 ring-offset-background"
         />
       </div>
 

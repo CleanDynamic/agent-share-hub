@@ -295,6 +295,7 @@ export function GalleryPage() {
             <img
               src={src}
               alt={mediaAlt(featuredBuild.build, media)}
+              decoding="async"
               style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
             />
           ) : (

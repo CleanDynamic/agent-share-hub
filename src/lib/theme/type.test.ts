@@ -289,15 +289,15 @@ describe("the retired faces", () => {
     expect(css).not.toMatch(/font-family:[^;]*Bodoni/);
   });
 
-  it("self-hosts Sentient: two files, two @font-face rules, the 500 preloaded", () => {
+  it("self-hosts Sentient: two Latin WOFF2 files, two @font-face rules, both preloaded", () => {
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
-    for (const file of ["Sentient-Medium.otf", "Sentient-Bold.otf"]) {
+    for (const file of ["Sentient-Medium-latin.woff2", "Sentient-Bold-latin.woff2"]) {
       expect(existsSync(join(process.cwd(), "public/fonts", file)), `${file} is shipped`).toBe(true);
+      expect(html).toMatch(
+        new RegExp(`<link\\s+rel="preload"\\s+as="font"\\s+type="font/woff2"\\s+href="/fonts/${file.replace(/\./g, "\\.")}"\\s+crossorigin`),
+      );
     }
-    expect(html).toMatch(
-      /<link\s+rel="preload"\s+as="font"\s+type="font\/otf"\s+href="\/fonts\/Sentient-Medium\.otf"\s+crossorigin/,
-    );
     const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
     const sentient = faces.filter((f) => /font-family:\s*"Sentient"/.test(f));
     expect(sentient).toHaveLength(2);
@@ -305,6 +305,8 @@ describe("the retired faces", () => {
       const face = sentient.find((f) => new RegExp(`font-weight:\\s*${weight}\\b`).test(f));
       expect(face, `Sentient ${weight} is declared`).toBeDefined();
       expect(face).toMatch(/font-display:\s*swap/);
+      expect(face).toMatch(/format\("woff2"\)/);
+      expect(face).toMatch(/unicode-range:/);
     }
   });
 });

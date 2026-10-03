@@ -126,8 +126,6 @@ export default function NavProgressChip({
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
           border: tokens.borderStrong,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           boxShadow: "var(--elev-overlay)",
         }}
       >

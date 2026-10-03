@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useTheme } from "@/contexts/ThemeContext";
-import { GLASS_BLUR, prefersReducedMotion } from "@/lib/theme/controls";
+import { prefersReducedMotion } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
@@ -129,8 +129,6 @@ export function AuthShell({ children }: AuthShellProps) {
             width: "420px",
             maxWidth: "92vw",
             background: t.glass,
-            backdropFilter: GLASS_BLUR,
-            WebkitBackdropFilter: GLASS_BLUR,
             borderWidth: 1,
             borderStyle: "solid",
             borderColor: t.glassBorder,

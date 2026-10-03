@@ -215,8 +215,6 @@ export function FloatingEngagementBar({
         width: "auto",
         height: 48,
         background: "var(--glass)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
         border: "0.5px solid var(--line)",
         borderRadius: 'var(--r-chip)',
         boxShadow: "var(--elev-raised)",

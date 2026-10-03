@@ -448,8 +448,6 @@ export function CoverImageField({
             style={{
               padding: "4px",
               background: "var(--recess)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
               border: "0.5px solid var(--line)",
               borderRadius: 'var(--r-chip)',
             }}

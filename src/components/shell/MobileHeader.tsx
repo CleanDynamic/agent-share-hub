@@ -11,7 +11,7 @@
 // row: the app has no settings route to send it to.
 
 import { Search } from "lucide-react";
-import { useState, type CSSProperties } from "react";
+import { memo, useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -119,7 +119,7 @@ const row: CSSProperties = {
 };
 
 /** The container: the account, the route, and the two sheets. */
-export function MobileHeader() {
+function MobileHeaderContainer() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, user, profile, signOut } = useAuth();
@@ -171,5 +171,10 @@ export function MobileHeader() {
     </>
   );
 }
+
+/* UI-P40: memoised, and it takes no props, so a page's data changing (which
+   re-renders the frame around it) never re-renders the chrome. It updates on
+   its own hooks only. */
+export const MobileHeader = memo(MobileHeaderContainer);
 
 export default MobileHeader;

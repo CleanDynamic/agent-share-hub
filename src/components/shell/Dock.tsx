@@ -12,7 +12,7 @@
 // is `fixed` everywhere except the catalogue, which draws it inside a strip.
 
 import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "lucide-react";
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
@@ -146,7 +146,7 @@ export function DockView({ current, unread, placement = "fixed" }: DockViewProps
 }
 
 /** The container: the current tile from the route, the unread count from the notifications hook. */
-export function Dock() {
+function DockContainer() {
   const { pathname } = useLocation();
   const { count } = useUnreadNotifications();
   const section = sectionForPath(pathname);
@@ -157,5 +157,10 @@ export function Dock() {
       : null;
   return <DockView current={current} unread={count} />;
 }
+
+/* UI-P40: memoised, and it takes no props, so a page's data changing (which
+   re-renders the frame around it) never re-renders the chrome. It updates on
+   its own hooks only. */
+export const Dock = memo(DockContainer);
 
 export default Dock;

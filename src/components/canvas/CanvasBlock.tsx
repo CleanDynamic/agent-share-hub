@@ -610,7 +610,6 @@ export function CanvasBlock({
             background: block.type === 'section_heading' ? 'transparent' : 'var(--recess)',
             border: block.type === 'section_heading' ? 'none' : '1px solid var(--line)',
             borderRadius: 10, overflow: 'hidden',
-            backdropFilter: 'blur(16px)',
             position: 'relative',
           }}>
             {showAnnotations && block.creatorAnnotation && (
@@ -634,7 +633,7 @@ export function CanvasBlock({
 
             {block.isLocked && block.lockType === 'blur' && (
               <div style={{
-                position: 'absolute', inset: 0, backdropFilter: 'blur(16px)',
+                position: 'absolute', inset: 0,
                 background: 'var(--recess)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', borderRadius: 10,
               }}>

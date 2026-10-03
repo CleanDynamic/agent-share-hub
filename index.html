@@ -8,9 +8,9 @@
     <meta name="author" content="buildgallery.ai" />
 
     <!-- UI-P05: SENTIENT REPLACES BODONI MODA AS THE DISPLAY FACE. Sentient is
-         not on Google Fonts, so it is self-hosted: two .otf files in
-         /public/fonts (500 and 700), declared by the @font-face rules in
-         src/index.css and preloaded below so the first heading does not wait on
+         not on Google Fonts, so it is self-hosted: two Latin-subset .woff2
+         files in /public/fonts (500 and 700, UI-P40), declared by the @font-face rules in
+         src/index.css and both preloaded below so the first heading does not wait on
          the stylesheet. Bodoni Moda is gone from the request, and from every
          role in src/lib/theme/type.ts. The measurements further down were taken
          when Bodoni was still in the request and are kept as the record of why
@@ -70,7 +70,8 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
     />
-    <link rel="preload" as="font" type="font/otf" href="/fonts/Sentient-Medium.otf" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/Sentient-Medium-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/Sentient-Bold-latin.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody
          sees a flash of the other room. Mirrors src/contexts/ThemeContext.tsx —

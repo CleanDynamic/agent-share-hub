@@ -46,7 +46,6 @@
 
 import type { CSSProperties } from "react"
 
-import { GLASS_BLUR } from "@/lib/theme/controls"
 import { r } from "@/lib/theme/radius"
 import { colourAlpha, t } from "@/lib/theme/tokens"
 
@@ -115,8 +114,6 @@ export const radius = {
 // value in a system that has exactly one, and 28px of backdrop on a shell-tier
 // surface is the cost the theme's budget exists to stop.
 export const glass: CSSProperties = {
-  backdropFilter: GLASS_BLUR,
-  WebkitBackdropFilter: GLASS_BLUR,
 }
 
 /**

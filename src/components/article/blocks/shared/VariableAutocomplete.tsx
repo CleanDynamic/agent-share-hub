@@ -191,7 +191,6 @@ export function useVariableAutocomplete({
         left: state.left,
         background: 'var(--bg)',
         border: '1px solid var(--line)',
-        backdropFilter: 'blur(16px)',
       }}
     >
       {filtered.length === 0 ? (

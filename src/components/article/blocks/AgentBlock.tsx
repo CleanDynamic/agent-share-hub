@@ -158,7 +158,7 @@ export function AgentBlockNode({ id, data, selected }: NodeProps) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={selectThis}
-        className={cn('group relative rounded-lg p-2.5 backdrop-blur-md transition-feedback')}
+        className={cn('group relative rounded-lg p-2.5 transition-feedback')}
         style={{
           width: 240,
           background: 'var(--recess)',

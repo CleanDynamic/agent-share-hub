@@ -23,9 +23,8 @@ export interface MobileBottomNavProps {
 const ACTIVE = t.action;
 const INACTIVE = t.text2;
 
-/* 64px of fixed chrome, not a full-height panel, so the theme still allows a
-   blur here — at its single 16px value, not the 20px this carried. */
-const BAR_BLUR = "blur(16px) saturate(1.15)";
+/* No blur (UI-P40): the frame's blur budget is the site header, the mobile
+   header, the dock and the build page's plate and dock. */
 
 /* The press wash. A neutral scrim mixed from --text reads on either ground in
    either theme, where a fixed rgba only ever reads on one of them. */
@@ -141,8 +140,6 @@ export function MobileBottomNav({
         alignItems: "stretch",
         gap: 0,
         background: t.glass,
-        backdropFilter: BAR_BLUR,
-        WebkitBackdropFilter: BAR_BLUR,
         borderTop: `1px solid ${t.line}`,
         zIndex: 1000,
       }}

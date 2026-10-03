@@ -402,14 +402,11 @@ export function PublishSheet({
         }}
         style={{
           /* THE KIT'S GLASS IS OVERRIDDEN HERE AND ONLY HERE. `dialogPanelStyle`
-             spreads `--glass` plus a 16px backdrop blur, which is the right
-             treatment for a reading surface and the wrong one for the last
-             screen of the authoring workspace. `backdropFilter: "none"` is
-             explicit rather than omitted, because the kit has already set it on
-             this element and an omission would leave it standing. */
+             spreads `--glass`, which is the right treatment for a reading
+             surface and the wrong one for the last screen of the authoring
+             workspace. (It carried a backdrop blur too until UI-P40's blur
+             budget took it off every dialog.) */
           background: t.bg,
-          backdropFilter: "none",
-          WebkitBackdropFilter: "none",
           borderWidth: 1,
           borderStyle: "solid",
           borderColor: t.line,

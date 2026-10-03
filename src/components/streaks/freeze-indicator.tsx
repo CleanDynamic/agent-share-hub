@@ -76,8 +76,6 @@ export default function FreezeIndicator({
             border: BORDER.hairlineStrong,
             borderRadius: RADIUS.card,
             padding: "10px 12px",
-            backdropFilter: "blur(16px) saturate(160%)",
-            WebkitBackdropFilter: "blur(16px) saturate(160%)",
             fontSize: 12.5,
             lineHeight: 1.5,
             color: COLORS.text,

@@ -100,7 +100,7 @@ describe("SignInView · desktop", () => {
     expect(container.querySelector('[data-ui="orb-solid"]')!.textContent).toBe("Hung0builds");
   });
 
-  it("draws the card 420 wide, padding 26, radius 20, on --header, the only blurred surface", () => {
+  it("draws the card 420 wide, padding 26, radius 20, on --header, unblurred (UI-P40)", () => {
     const html = markup();
     const card = html.slice(html.indexOf('data-testid="signin-card"'));
     expect(card).toContain("width:420px");
@@ -109,10 +109,9 @@ describe("SignInView · desktop", () => {
     expect(card).toContain("background:var(--header)");
     expect(card).toContain("border:1px solid var(--header-border)");
     expect(card).toContain("box-shadow:var(--shadow-float), var(--panel-highlight)");
-    expect(card).toContain("backdrop-filter:blur(16px) saturate(1.15)");
     expect(card).toContain("gap:12px");
-    // One surface blurs: the card (its -webkit- twin is the same declaration).
-    expect(html.match(/[;"]backdrop-filter:/g)).toHaveLength(1);
+    // UI-P40: the card is not one of the four budgeted surfaces.
+    expect(html).not.toMatch(/[;"]backdrop-filter:/);
   });
 
   it("puts the body in the card, and the theme control under it", () => {

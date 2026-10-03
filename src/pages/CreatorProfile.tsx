@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FeedItem } from "@/components/FeedItem";
 import { PortfolioCard } from "@/components/PortfolioCard";
 import { categoryFill } from "@/lib/theme/category";
-import { buttonStyle, chipType, GLASS_BLUR, uiTransition } from "@/lib/theme/controls";
+import { buttonStyle, chipType, uiTransition } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -343,7 +343,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
           underline plus a step up to full `--text`, exactly as on /profile and
           in the feed. The strip is short and sticky, which is the one case the
           theme lets a surface spend the single blur value on. */}
-      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: t.glass, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, paddingBottom: 12, borderBottom: `1px solid ${t.line}`, marginBottom: 20 }}>
+      <div className="flex items-center gap-1 mt-4 sticky top-0 z-10 overflow-x-auto" style={{ background: t.glass, paddingBottom: 12, borderBottom: `1px solid ${t.line}`, marginBottom: 20 }}>
         {allTabs.map((tab) => {
           const active = activeTab === tab.key;
           return (
@@ -534,7 +534,7 @@ function FollowListModal({ open, onClose, userId, mode }: { open: boolean; onClo
         /* The dialog surface, from the theme rather than a near-black hex and
            the legacy border name: on Noon a near-black sheet is a dark
            rectangle in a lit room. */
-        style={{ background: t.glass, backdropFilter: GLASS_BLUR, WebkitBackdropFilter: GLASS_BLUR, border: `1px solid ${t.glassBorder}`, borderRadius: r.panel }}
+        style={{ background: t.glass, border: `1px solid ${t.glassBorder}`, borderRadius: r.panel }}
       >
         <DialogHeader>
           <DialogTitle>{mode === "followers" ? "Followers" : "Following"}</DialogTitle>

@@ -258,6 +258,7 @@ export function ProfilePage() {
               <img
                 src={src}
                 alt={mediaAlt(bannerBuild, media)}
+                decoding="async"
                 style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
               />
             ) : (
@@ -315,7 +316,7 @@ export function ProfilePage() {
     count: buildsCount(collection.itemCount),
     covers: collection.coverItems.slice(0, 4).map((item) =>
       item.cover_image_url ? (
-        <img key={item.id} src={item.cover_image_url} alt="" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+        <img key={item.id} src={item.cover_image_url} alt="" loading="lazy" decoding="async" style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
         <CoverFallback key={item.id} seed={item.id} radius={0} />
       ),

@@ -42,8 +42,6 @@ export function ProgressHero({
         display: "flex",
         gap: 20,
         alignItems: "flex-start",
-        backdropFilter: "blur(16px) saturate(160%)",
-        WebkitBackdropFilter: "blur(16px) saturate(160%)",
       }}
     >
       <LevelRing

@@ -308,7 +308,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
         onClick={selectThis}
         className={cn(
           'group relative rounded-lg p-2.5',
-          'bg-[var(--recess)] backdrop-blur-md',
+          'bg-[var(--recess)]',
         )}
         style={{
           width: isExpanded ? 480 : 240,
