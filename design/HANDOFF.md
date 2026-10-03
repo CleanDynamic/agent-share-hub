@@ -96,9 +96,9 @@ The theme skill puts the focus ring in `--lit`. On Noon (and on the old Exhibiti
 
 ## 3. The frame — the largest structural change
 
-### 3.1 What exists
+### 3.1 What exists — UI-P41 delivered
 
-`src/components/AppShell.tsx` (nav list `allNavItems`, drawer and mobile bottom-nav handlers) mounts `src/components/shell/FlatShell.tsx`, which lays out `.fs-frame` (max 1200px; wide mode 1600px under `.fs-wide`), a 240px left nav, a 634px centre and a 300px right rail from `flat-shell.css`. `src/lib/…/wideRoutes.ts` decides which routes go wide. Phone chrome is `MobileTopBar`, `MobileBottomNav`, `ProfileDrawer`, `RightRailDrawer`. `ShellHeader`, `PageHeader`, `NavSearch` and `WorkspaceBar` live in `components/shell/`.
+`src/components/AppShell.tsx` mounts `src/components/shell/SiteFrame.tsx` unconditionally for all routes. `SiteFrame` replaces the previous conditional frame selection logic (`FlatShell`, `MobileTopBar`, `MobileBottomNav`, `ProfileDrawer`, `RightRailDrawer`, `wideRoutes`) — these components and the `site_frame` feature flag have been deleted. The new frame renders the same three-layer layout shown in 3.2 below for every route and viewport.
 
 ### 3.2 What the mockups show — a website, in the browser
 
@@ -114,14 +114,15 @@ There is **no floating window and no dock on desktop.** An earlier version frame
 
 Each desktop board shows the first screenful plus the footer. In the browser the page scrolls: panels cut to fit a board (the feed, the gallery wall, long lists) continue down the page with their normal paging.
 
-### 3.3 How to build it without breaking the review rules
+### 3.3 Implementation — UI-P41 completed
 
-The code review treats two things as automatic failures that this layout would trip if done by editing in place: changing structural CSS on an existing layout element, and modifying an externally supplied visual shell. So:
+UI-P41 unified all routes around `SiteFrame` and removed the legacy frame components:
 
-- Build a **new shell component** (suggested `src/components/shell/SiteFrame.tsx`: backdrop, sticky header, content column, breadcrumb, footer — plus the mobile header and dock) beside `FlatShell`, not inside it. `FlatShell` and `flat-shell.css` stay untouched until every route has moved.
-- Gate it with the existing `feature_flags` table (a `site_frame` flag), read once in `AppShell`, so routes move one at a time and the old frame is one flag away.
-- The left nav (`allNavItems`) becomes the header links. The right rail (`RightRailExplore`) has no place in the new layout; its content moves into page panels (the Home right column is its successor). Retire both only once the flag is fully on.
-- `/compose/*` and `/import` are working surfaces: same header and column, but no glass on their own panels (section 5.5). Compose stays `React.lazy` and never enters the initial bundle.
+- **Deleted:** `FlatShell`, `flat-shell.css`, `wideRoutes.ts`, `MobileTopBar`, `MobileBottomNav`, `ProfileDrawer`, `RightRailDrawer`, and the `site_frame` feature flag from the database.
+- **Changed:** `AppShell` now renders `<SiteFrame><Outlet /></SiteFrame>` unconditionally; `FrameRoute` always renders the `site` prop, ignoring `legacy`.
+- **Result:** All routes render in the same unified frame without conditional logic or flag checking.
+
+`/compose/*` and `/import` render inside `SiteFrame` with flat panels (no glass on their own panels) as specified in section 5.5. Compose stays `React.lazy` and never enters the initial bundle.
 
 ### 3.4 Performance
 
@@ -279,7 +280,8 @@ Twenty boards (ten screens × Noon and Dusk). Long boards show the whole scrolli
 ## 7. What is new versus what exists
 
 - **Exists and is only repainted**: GalleryCard / CardThread, Plaque, CategoryChip, GapMarker, RebuildCredit, LensRow, FacetRail, BuildHeader, BuildTabs, AnatomyTree, NodeCard, LayerView, Replay, ReproductionAction, PortableExport, ForkControl, RebuildTree, SolvePanel, MissingBlockOverlay, AcceptSolutionDialog, NotificationRow, LevelRing, LitBar, streak components, Login / Signup forms.
-- **New components**: SiteFrame (backdrop, sticky site header, content column, breadcrumb, footer; mobile header and dock), PictureLamp, Orb, WallLabel, Tagline, HeroPlate, PartViewer, timeline rail, rank rungs.
+- **Unified frame (UI-P41 delivered)**: `SiteFrame` (`src/components/shell/SiteFrame.tsx`) is now the only frame for all routes — backdrop, sticky site header, content column, breadcrumb, footer; mobile header and dock. The legacy `FlatShell`, `MobileTopBar`, `MobileBottomNav`, and `ProfileDrawer` have been deleted. The `site_frame` feature flag has been removed from the database.
+- **Other new components**: PictureLamp, Orb, WallLabel, Tagline, HeroPlate, PartViewer, timeline rail, rank rungs.
 - **New data functions** (each in its own commit, in `src/lib/…`, typed, limited, estimated counts where possible): `countLitToday`, `countGalleryLenses`, a shapes facet in `getGalleryFacets`, `mostReproducedThisMonth`, open-bounty £ sum, `getWhereNextForViewer`, `getMakerFigures`, `getRunsOfMyBuilds`.
 - **No new state for the header**: the breadcrumb is derived from the route and the loaded record's title.
 
@@ -299,9 +301,10 @@ The waves, in short:
 
 - **Wave 0 (UI-P00–P05)** — the kit in the repository, the compare harness and its dev pages, Exhibition → Noon, the token values, the focus ring, Sentient.
 - **Wave 1 (UI-P06–P15)** — the primitives, one prompt each, all shown in a component catalogue that is compared against `reference/components/`: identity, controls, the lamp and plaque, panels and wall labels, orbs, tagline and compositions, charts and timeline, the backdrop, the build card, the vacant frame.
-- **Wave 2 (UI-P16–P20)** — `SiteFrame` beside `FlatShell` behind the `site_frame` flag: the skeleton, the site header, breadcrumb and footer, the mobile header, dock and sheets, then `/notifications` moved across to prove it.
+- **Wave 2 (UI-P16–P20)** — `SiteFrame` built beside `FlatShell` behind the `site_frame` flag: the skeleton, the site header, breadcrumb and footer, the mobile header, dock and sheets, then `/notifications` moved across to prove it.
 - **Wave 3 (UI-P21–P26)** — the data functions section 7 lists as new, one commit each.
 - **Wave 4 (UI-P27–P36)** — one prompt per page, desktop and mobile together, each as a pure view plus a thin container, compared against its four boards.
-- **Wave 5 (UI-P37–P41)** — loading, empty and error states; the accessibility pass; the widths between the boards; the performance pass; and finally retiring `FlatShell`, the right rail, the flag and the dead tokens.
+- **Wave 5 (UI-P37–P40)** — loading, empty and error states; the accessibility pass; the widths between the boards; the performance pass.
+- **Wave 5 completion (UI-P41)** — retired `FlatShell`, `MobileTopBar`, `MobileBottomNav`, `ProfileDrawer`, the `site_frame` flag, and `wideRoutes.ts`. `SiteFrame` is now the unified frame for all routes.
 
 Where a prompt names a function, component or column that does not exist or has been renamed, the file on disk wins — `RULES.md` §8 says what to do, and it is never "invent a table".

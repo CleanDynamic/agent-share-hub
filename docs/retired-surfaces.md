@@ -1746,3 +1746,62 @@ token already.
 ## Seed edge functions — deleted (RC-P03)
 
 RC-P03 deleted the four seed edge functions (`seed-demo-data`, `seed-ecosystem`, `seed-new-posts` and `update-seed-data`), their two blocks in `supabase/config.toml`, and the "Seed demo data" and "Update seed data" buttons on `/admin` that called two of them. They wrote with the service-role key and no guard of their own, two of them could be called by anyone, and any of them could refill `content_items` after the legacy clear. To roll back, `git revert` CLEAR-3 and redeploy the four functions; `src/lib/rcGuards.test.ts` then fails and must change in the same commit.
+
+---
+
+# UI-P41 — site frame unconditional, deleted
+
+**Deleted** UI-P41, 3 Oct 2026. Removed the `site_frame` feature flag and all
+legacy frame components (FlatShell, MobileTopBar, MobileBottomNav, ProfileDrawer,
+wideRoutes), consolidating the UI around `SiteFrame` as the single frame for all
+routes.
+
+**Replaced by** unconditional rendering via `SiteFrame` in `AppShell` and
+`FrameRoute` — all routes now render in the site frame without flag checking.
+
+## Files deleted (32 total)
+
+**Shell components (8):** `FlatShell.tsx`, `flat-shell.css`, `wideRoutes.ts`,
+`MobileTopBar.tsx`, `MobileBottomNav.tsx`, `ProfileDrawer.tsx`,
+`FlatShell.wide.test.tsx`, `wideRoutes.test.ts`.
+
+**Legacy page files (19):** `Home.tsx`, `Gallery.tsx`, `Gallery.test.tsx`,
+`BuildPage.tsx`, `BuildPage.test.tsx`, `Profile.tsx`, `Profile.legacy.tsx`,
+`Profile.test.tsx`, `Notifications.tsx`, `Notifications.legacy.tsx`, `Login.tsx`,
+`Signup.tsx`, `VerifyEmail.tsx`, `ResetPassword.tsx`, `Lineage.tsx`,
+`Lineage.test.tsx`, `RebuildRoute.tsx`, `RebuildRoute.test.tsx`, and associated
+budget-related test files.
+
+**Test files importing deleted pages (3):** `GapPanel.test.tsx`,
+`LayerView.test.tsx`, `ReproductionAction.test.tsx`.
+
+## What changed
+
+| File | Change |
+| --- | --- |
+| `src/components/AppShell.tsx` | Removed 340+ lines of `FlatAppShell` function with nav, chrome, and conditional frame selection; now always renders `<SiteFrame><Outlet /></SiteFrame>` |
+| `src/components/shell/FrameRoute.tsx` | Removed flag checking via `useSiteFrameFlag()` and `usesSiteFrame()`; now always renders the `site` prop |
+| `supabase/migrations/20261001270000_ui_retire_frame.sql` | Single-line migration: `delete from feature_flags where key = 'site_frame'` |
+| Test files | Removed flag mocking and conditionals; tests now verify unconditional SiteFrame rendering |
+
+## What is still live, and must stay live
+
+- `SiteFrame` component and all its subsystems (`SiteFrameView`, board layout, navigation slots)
+- Every route and page that now renders inside the site frame
+- All styling and theming via `SiteFrame`
+
+## Rollback
+
+1. Revert the commits that deleted `FlatShell`, `wideRoutes`, and legacy page
+   files.
+2. Restore `src/components/AppShell.tsx` to use `useSiteFrameFlag()` and
+   `FlatAppShell` as the conditional frame.
+3. Restore `src/components/shell/FrameRoute.tsx` to check `useSiteFrameFlag()`
+   and `usesSiteFrame(pathname)` before selecting between `site` and `legacy`
+   props.
+4. Restore the feature flag row: reverse the migration by adding the
+   `site_frame` row back to `feature_flags` with `enabled = false`.
+5. Revert test files to their pre-deletion state with flag mocking.
+
+The deletion is complete: no component is hidden or disabled, so reverting
+these four steps restores all affordances and writes fully.
