@@ -126,8 +126,8 @@ The code review treats two things as automatic failures that this layout would t
 ### 3.4 Performance
 
 - The only blurred surfaces are the sticky header (64px tall, not a full-height panel, so the theme skill's rule holds) and, on phones, the header and dock. Panels, cards and chips never blur, and nothing blurred is nested.
-- Backdrop, arc and grain are static: no animation and no `feDisplacementMap` in them. The one `feDisplacementMap` in the app is the liquid-glass filter (UI-P09b, `GlassFilter`), mounted once by `SiteFrame` and used only by `.bg-glass`.
-- The backdrop is a CSS background on the page, not a fixed full-screen layer, so it costs one paint.
+- The backdrop is a continuously rendering WebGL canvas (`PageBackdrop.tsx`) that renders at `min(devicePixelRatio, 1.5) × 0.85` of viewport size (× 0.72 above 2.2 megapixels). It pauses on visibility change and stops the animation loop when `prefers-reduced-motion` is set and no ripples are active. The arc and grain are now part of the shader field. The one `feDisplacementMap` in the app is the liquid-glass filter (UI-P09b, `GlassFilter`), mounted once by `SiteFrame` and used only by `.bg-glass`.
+- The backdrop is `position: fixed` behind the site frame. It includes interactive ripple effects triggered by pointer events or keyboard activation.
 
 ## 4. Shared visual primitives
 
