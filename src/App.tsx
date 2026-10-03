@@ -38,18 +38,18 @@ const ContentOrReblogRoute = lazyPage(() => import("@/components/routing/Content
 const ProjectDetail = lazyPage(() => import("./pages/ProjectDetail"));
 const Admin = lazyPage(() => import("./pages/Admin"));
 const AdminLogin = lazyPage(() => import("./pages/AdminLogin"));
-const Signup = lazyPage(() => import("./pages/Signup"));
-const Login = lazyPage(() => import("./pages/Login"));
+
+
 const AuthCallback = lazyPage(() => import("./pages/AuthCallback"));
-const VerifyEmail = lazyPage(() => import("./pages/VerifyEmail"));
+
 const Onboarding = lazyPage(() => import("./pages/Onboarding"));
 const OnboardingProfile = lazyPage(() => import("./pages/OnboardingProfile"));
-const ResetPassword = lazyPage(() => import("./pages/ResetPassword"));
-const Profile = lazyPage(() => import("./pages/Profile"));
+
+
 const LibraryPage = lazyPage(() => import("./pages/Library"));
 const CollectionDetailRoute = lazyPage(() => import("./pages/CollectionDetail"));
 const NotFound = lazyPage(() => import("./pages/NotFound"));
-const NotificationsPage = lazyPage(() => import("./pages/Notifications"));
+
 const MessagesPage = lazyPage(() => import("./pages/Messages"));
 const CollectionDetail = lazyPage(() => import("./pages/CollectionDetail"));
 // LearningPathDetail removed from UI
@@ -60,11 +60,11 @@ const PostPreviewPage = lazyPage(() => import("./pages/PostPreview"));
 const PublishMetadata = lazyPage(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazyPage(() => import("./pages/ContentEdit"));
 const BountyUpload = lazyPage(() => import("@/pages/BountyUpload"));
-const BuildPage = lazy(() => import("./pages/BuildPage"));
+
 // The gallery. Its own chunk: a reader who never opens it never pays for the
 // card bodies. Reachable from the primary navigation (RC-P05), directly, and
 // from the publish confirmation.
-const Gallery = lazy(() => import("./pages/Gallery"));
+
 // RC-P05 — the Bounties board. Its own chunk, like every route the RC series
 // adds (CONTRACT §2.6).
 const Bounties = lazy(() => import("./pages/Bounties"));
@@ -74,7 +74,7 @@ const Solvers = lazy(() => import("./pages/Solvers"));
 const BountySolveShowPage = lazy(() => import("./pages/BountySolveShowPage"));
 // RC-P14 — a build's family of rebuilds, at /b2/:slug/lineage and, for the old
 // address, /b/:slug/lineage. Its own chunk, like every route the RC series adds.
-const Lineage = lazy(() => import("./pages/Lineage"));
+
 // RC-P23 — progress and the maker's build numbers, signed in only. Its own
 // chunk: nobody reading the gallery pays for the XP panels or the table. The
 // route asks for a session and nothing more: it used to require
@@ -84,6 +84,10 @@ const Lineage = lazy(() => import("./pages/Lineage"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 // UI-P27 — Home in the site frame. Its own chunk, so the entry bundle keeps the
 // legacy Home alone; `FrameRoute` picks one by the `site_frame` flag.
+function OldLineageRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/b2/${slug}/lineage`} replace />;
+}
 const HomePage = lazy(() => import("./pages/site/home/HomePage"));
 // UI-P28 — the Gallery in the site frame; its own chunk, picked by `FrameRoute`.
 const GalleryPage = lazy(() => import("./pages/site/gallery/GalleryPage"));
@@ -109,7 +113,7 @@ const ComposeNew = lazy(() => import("./pages/ComposeNew"));
 // The door into a rebuild: resolve a slug, fork it, hand the creator to their
 // own workspace. Its own chunk — it is two queries and a sentence, and nothing
 // that is not rebuilding should carry it.
-const RebuildRoute = lazy(() => import("./pages/RebuildRoute"));
+
 // The Build File kit: two documents and the three steps that use them. Its
 // own chunk — the prose is only read by someone who came to import a build.
 const ImportPage = lazy(() => import("./pages/ImportPage"));
@@ -256,7 +260,7 @@ const App = () => (
                 {/* RC-P14 — the old lineage address. It drew remix lineage; it
                     now lands on /b2/:slug/lineage when the slug names a build,
                     and says there is no build at it otherwise. */}
-                <Route path="/b/:slug/lineage" element={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage legacy /></Suspense></RouteBoundary>} />
+                <Route path="/b/:slug/lineage" element={<OldLineageRedirect />} />
                 <Route path="/content/:id/edit" element={<ProtectedRoute requireCreator><ContentEditPage /></ProtectedRoute>} />
                 <Route path="/project/:id" element={<ProjectDetail />} />
                 {/* RC-P22 — one address for each thing. The old creator page,
@@ -280,13 +284,13 @@ const App = () => (
                     flag is known, because a link's token works once: the legacy
                     page must not mount first and spend it. /auth/callback is not
                     repainted here. */}
-                <Route path="/signup" element={<FrameRoute site={<SignInSite><SignupSitePage /></SignInSite>} legacy={<Signup />} />} />
-                <Route path="/login" element={<FrameRoute site={<SignInSite><LoginSitePage /></SignInSite>} legacy={<Login />} />} />
+                <Route path="/signup" element={<FrameRoute site={<SignInSite><SignupSitePage /></SignInSite>} legacy={<SignInSite><SignupSitePage /></SignInSite>} />} />
+                <Route path="/login" element={<FrameRoute site={<SignInSite><LoginSitePage /></SignInSite>} legacy={<SignInSite><LoginSitePage /></SignInSite>} />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/verify-email" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<VerifyEmail />} />} />
-                <Route path="/verify-email/:token" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<VerifyEmail />} />} />
-                <Route path="/reset-password" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<ResetPassword />} />} />
-                <Route path="/reset-password/:token" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<ResetPassword />} />} />
+                <Route path="/verify-email" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<SignInSite><VerifyEmailSitePage /></SignInSite>} />} />
+                <Route path="/verify-email/:token" element={<LinkFrameRoute site={<SignInSite><VerifyEmailSitePage /></SignInSite>} legacy={<SignInSite><VerifyEmailSitePage /></SignInSite>} />} />
+                <Route path="/reset-password" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<SignInSite><ResetPasswordSitePage /></SignInSite>} />} />
+                <Route path="/reset-password/:token" element={<LinkFrameRoute site={<SignInSite><ResetPasswordSitePage /></SignInSite>} legacy={<SignInSite><ResetPasswordSitePage /></SignInSite>} />} />
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/onboarding/profile" element={<ProtectedRoute><OnboardingProfile /></ProtectedRoute>} />
                 <Route
@@ -301,7 +305,7 @@ const App = () => (
                             </Suspense>
                           </RouteBoundary>
                         }
-                        legacy={<Profile />}
+                        legacy={<Suspense fallback={null}><ProfileSitePage /></Suspense>}
                       />
                     </ProtectedRoute>
                   }
@@ -317,7 +321,7 @@ const App = () => (
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Profile />}
+                      legacy={<Suspense fallback={null}><ProfileSitePage /></Suspense>}
                     />
                   }
                 />
@@ -342,7 +346,7 @@ const App = () => (
                             </Suspense>
                           </RouteBoundary>
                         }
-                        legacy={<NotificationsPage />}
+                        legacy={<Suspense fallback={null}><ActivitySitePage /></Suspense>}
                       />
                     </ProtectedRoute>
                   }
@@ -413,7 +417,7 @@ const App = () => (
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildPage /></Suspense>}
+                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><BuildSitePage /></Suspense>}
                     />
                   }
                 />
@@ -432,7 +436,7 @@ const App = () => (
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Lineage /></Suspense></RouteBoundary>}
+                      legacy={<RouteBoundary><Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><LineageSitePage /></Suspense></RouteBoundary>}
                     />
                   }
                 />
@@ -447,7 +451,7 @@ const App = () => (
                           </Suspense>
                         </RouteBoundary>
                       }
-                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><Gallery /></Suspense>}
+                      legacy={<Suspense fallback={<div style={{ minHeight: "60vh", background: "var(--bg)" }} />}><GalleryPage /></Suspense>}
                     />
                   }
                 />
@@ -503,7 +507,7 @@ const App = () => (
                         </RouteBoundary>
                       </SiteFrame>
                     }
-                    legacy={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildRoute /></Suspense>}
+                    legacy={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><RebuildSitePage /></Suspense>}
                   />
                 }
               />
