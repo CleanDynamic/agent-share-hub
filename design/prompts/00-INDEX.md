@@ -1,10 +1,14 @@
 # The prompt series
 
-42 prompts, `UI-P00` to `UI-P41`. One prompt per Claude Code session, in order. Paste the prompt file's contents (or `Run design/prompts/UI-P07.md`); each one starts by pointing at `design/RULES.md`, which holds everything the prompts do not repeat.
+46 prompts. One per Claude Code session, in this order. Each starts by pointing at `design/RULES.md`, which holds everything the prompts do not repeat.
 
-`ALL-PROMPTS.md` in this folder is the whole series in one file, for reading or for pasting into a chatbot that writes the prompts for you.
+`ALL-PROMPTS.md` is the whole series in one file. `UI-D01` is a read-only diagnostic — run it any time the site does not look like the boards.
 
 ## Order
+
+### Before you start
+
+- **[UI-D01](UI-D01.md)** — What actually landed
 
 ### Wave 0 — foundation
 
@@ -21,10 +25,12 @@
 - **[UI-P07](UI-P07.md)** — Controls
 - **[UI-P08](UI-P08.md)** — The lamp and the plaque
 - **[UI-P09](UI-P09.md)** — Panels, wall labels, stats and striped bars
+- **[UI-P09b](UI-P09b.md)** — Liquid glass, on main panels only
 - **[UI-P10](UI-P10.md)** — Orbs
 - **[UI-P11](UI-P11.md)** — Tagline, hero plate and part viewer
 - **[UI-P12](UI-P12.md)** — Charts, timeline, activity grid and rank rungs
 - **[UI-P13](UI-P13.md)** — The page backdrop: horizon, arc and grain
+- **[UI-P13b](UI-P13b.md)** — The living backdrop
 - **[UI-P14](UI-P14.md)** — The build card
 - **[UI-P15](UI-P15.md)** — The vacant frame (bounty card)
 
@@ -57,6 +63,7 @@
 - **[UI-P34](UI-P34.md)** — Page: Profile
 - **[UI-P35](UI-P35.md)** — Page: Activity
 - **[UI-P36](UI-P36.md)** — Pages: Sign in, Join, reset and verify
+- **[UI-P36b](UI-P36b.md)** — Turn the frame on
 
 ### Wave 5 — finish
 
@@ -68,12 +75,12 @@
 
 ## Rules of the road
 
-- **In order.** Each prompt assumes the one before it landed. The three that must not be skipped or reordered: `UI-P01` (the compare harness — without it "verbatim" is an opinion), `UI-P03` (the tokens — every later prompt spends them), and `UI-P16` (the frame skeleton, which every page then fills).
-- **One prompt, one session, one commit** (a few prompts say "one commit per function" and name each). A prompt that ends without a green `PASS` report is not done: re-run it with the failures quoted rather than moving on.
-- **Check as you go.** `npm run audit:design -- --grep "<board>"` after every prompt that touches a board. A prompt is finished when its boards compare inside the threshold *or* the report explains each remaining difference.
-- **Names come from the code.** Where a prompt names a function, component or column that does not exist, `RULES.md` §8 says what to do — never invent a table or widen a policy to make a prompt fit.
-- **Both themes, both viewports, every time.** Noon and Dusk, 1440 and 390.
+- **In order.** Four must not be skipped or moved: `UI-P01` (the compare harness), `UI-P03` (the tokens), `UI-P16` (the frame skeleton) and **`UI-P36b`** (the switch — until it runs, everything from `UI-P16` on is built but invisible to visitors).
+- **Three prompts amend the standing rules** rather than follow them, each saying so in its own text: `UI-P09b` (one CSS class, and `feDisplacementMap` on one filter), `UI-P13b` (the backdrop is no longer static) and `UI-P41` (the only prompt that deletes).
+- **One prompt, one session, one commit.** A prompt that ends without a green `PASS` is not done.
+- **Names come from the code.** `RULES.md` §8 — never invent a table or widen a policy to make a prompt fit.
+- **Both themes, both viewports, every time.**
 
-## If you only run five
+## If the site still looks the same
 
-A viable, much smaller slice: `UI-P01`, `UI-P03`, `UI-P05`, `UI-P16`, `UI-P17`. That gives the compare harness, the palette, the display face and the new frame with its header — the site reads as the mockups from the top down, and the pages can follow later.
+Run `UI-D01`. The usual cause is the `site_frame` flag being off, which `UI-P36b` fixes.

@@ -6,38 +6,6 @@ It exists because the last attempt described the design in prose and got the old
 
 Two themes: **Noon** (light — "Birch Mist", a forest sunrise) and **Dusk** (dark — deep aubergine with a violet-and-salmon glow near the arc). Ten screens each, desktop and mobile.
 
-## Checking a change
-
-```
-npm run audit:design                                  # every board
-npm run audit:design -- --grep "desktop/noon/home"    # one board
-npm run audit:design -- --grep "components"           # the component catalogue
-```
-
-Test titles are `<kind>/<theme>/<page>` (`desktop/dusk/gallery`, `mobile/noon/build`, `components/noon/catalogue`), so `--grep` takes any slice of them. `DESIGN_MAX_DIFF=0.02` tightens the allowed share of differing pixels from the 0.04 default; `DESIGN_MAX_DIFF=0` makes every board report its exact difference. In a sandbox with its own Chromium, add `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`. A page that has no view yet is skipped ("not built yet"), not failed. Open the report with `npx playwright show-report e2e/audit/out/playwright-report`: every board shows expected (the reference), actual (the app) and the difference. Do not pass `--update-snapshots`; the reference is re-shot on every run.
-
-The harness opens each reference HTML and the matching dev page at the same size and screenshots both. Desktop boards are clipped below the drawn 84px browser strip, so the compared area is 1440 × (height − 84). The dev pages it points at:
-
-```
-/dev/kit/components?theme=noon|dusk
-/dev/kit/pages/:page?theme=noon|dusk&viewport=desktop|mobile
-/dev/kit/pages/:page?state=loading|empty|error        (after UI-P37)
-```
-
-They render the page views with `fixtures/sample-data.json`, so a comparison tests the UI and not the database. Dev-only, never in a production bundle. `?theme=` sets the page's theme without touching the stored preference.
-
-### Viewing any route in the new frame
-
-The site frame is behind the `site_frame` row of `feature_flags` (missing row = off) and a route list, `SITE_FRAME_ROUTES` in `src/components/shell/siteFrameRoutes.ts`. The flag is never turned on in production data by a prompt. To see a listed route in the new frame locally, open it in a development build with `?frame=site`:
-
-```
-npm run dev
-http://localhost:5173/notifications?frame=site      # the new frame
-http://localhost:5173/notifications?frame=flat      # back to the old one
-```
-
-The override is held for the browser session (sessionStorage), so it survives in-app navigation that drops the query, and it does not exist in a production build. The entrance pages (`/login`, `/signup`, `/reset-password`, `/verify-email`) sit outside `AppShell`, so their site branch draws its own bare frame; open one with `?frame=site`, and `?mode=signup|reset|confirm|verify` on `/dev/kit/pages/signin` draws the other three cards. An address an emailed link can open (a token, a code or an error in it) is held until the flag is known, because a link's token works once and the legacy page must not mount first and spend it. A route that is not in `SITE_FRAME_ROUTES` still renders in the old frame under `?frame=site`; each page prompt adds its own. `/notifications` is the first. The tier-1 spec `e2e/tier1/site-frame.spec.ts` runs with this override.
-
 ## Where things are
 
 ```
@@ -95,9 +63,32 @@ Run design/prompts/UI-P00.md
 
 or paste the file's contents. Each prompt opens with "Follow `design/RULES.md`", which carries everything the prompts don't repeat: how code is written here, what the code review fails automatically, both themes and both viewports every time, the checks before a commit, and the shape of the report back.
 
-`UI-P00` first — it puts this folder in the repository and records a baseline. Then in order. Three cannot be skipped or moved: **UI-P01** (the compare harness — without it "verbatim" is just an opinion), **UI-P03** (the tokens — everything after spends them) and **UI-P16** (the frame skeleton, which every page then fills).
+`UI-P00` first — it puts this folder in the repository and records a baseline. Then in order. Four cannot be skipped or moved: **UI-P01** (the compare harness — without it "verbatim" is just an opinion), **UI-P03** (the tokens — everything after spends them), **UI-P16** (the frame skeleton, which every page then fills) and **UI-P36b** (the switch — everything from UI-P16 on is built behind the `site_frame` flag, and until this one runs a visitor still sees the old frame).
+
+If the live site does not look like the boards, run **`UI-D01`** before anything else. It is read-only and tells you which of three things is true: the work is on an unmerged branch, the work is there and the flag is off, or the prompts never ran.
 
 Each prompt ends with a report. A prompt whose report is not `PASS` is not done: run it again with the failures quoted, rather than moving on.
+
+## Checking a change
+
+```
+npm run audit:design                                  # every board
+npm run audit:design -- --grep "desktop/noon/home"    # one board
+npm run audit:design -- --grep "components"           # the component catalogue
+DESIGN_MAX_DIFF=0.02 npm run audit:design             # tighter than the 0.04 default
+```
+
+The harness (built in UI-P01) opens the reference HTML and the matching dev page at the same size, screenshots both and diffs them; Playwright's report shows expected, actual and difference for every board. The dev pages it points at:
+
+```
+/dev/kit/components?theme=noon|dusk
+/dev/kit/pages/:page?theme=noon|dusk&viewport=desktop|mobile
+/dev/kit/pages/:page?state=loading|empty|error        (after UI-P37)
+```
+
+They render the page views with `fixtures/sample-data.json`, so a comparison tests the UI and not the database. Dev-only, never in a production bundle.
+
+To see a real route in the new frame before the flag is on anywhere: `?frame=site` (development builds only).
 
 ## Known deviations from the reference
 
@@ -110,7 +101,6 @@ Deliberate, and expected in every compare report:
 - **The vacant frame's lamp is always dimmed.** It marks a missing part, not a stale build.
 - **The footer's last link** reads "Sign out" for a signed-in visitor; the reference draws the signed-out state.
 - **Following** on Home is disabled until the feed has a scope — the RPC takes none today.
-- **The Sign-in boards draw the live form's own controls.** The fields keep their placeholders ("Email or username", "Enter your password") where the board shows sample text, and the password field keeps its show / hide button at the right; the three providers draw their real marks (Google, GitHub, X) at 16px where the board draws neutral squares; "Keep me signed in" is a drawn box where the board uses the browser's checkbox. The phone's "Forgot?" is named "Forgot password?".
 
 ## A note on the sample content
 

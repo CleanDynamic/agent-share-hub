@@ -1,6 +1,6 @@
 # UI-P41 — Retire the old frame
 
-Follow `design/RULES.md`. **This is the only prompt that deletes anything.** Run it when every route is on the new frame and the flag has been on in production long enough to trust.
+Follow `design/RULES.md`. **This is the only prompt that deletes anything.** Run it when every route is on the new frame and the flag has been on in production — switched on by `UI-P36b` — long enough to trust. If `UI-P36b` has not run, the overhaul is not live yet and this prompt would delete the way back.
 
 **Read first.** `design/RULES.md` §3, `AppShell.tsx`, `FlatShell.tsx`, `flat-shell.css`, `wideRoutes.ts`, `RightRailExplore.tsx`, `right-rail-explore.css`, `RightRailDrawer.tsx`, `hooks/useRightRailData.ts`, `MobileTopBar.tsx`, `MobileBottomNav.tsx`, `ProfileDrawer.tsx`, `src/lib/theme/semantics.ts`, and the tests `AppShell.test.tsx`, `FlatShell.wide.test.tsx`, `wideRoutes.test.ts`, `e2e/tier3/moved-routes-frame.spec.ts`, `src/lib/retiredSurfaces.test.tsx`, `docs/retired-surfaces.md`.
 

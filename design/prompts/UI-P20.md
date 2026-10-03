@@ -14,7 +14,7 @@ Follow `design/RULES.md`.
 5. Add a tier1 spec `e2e/tier1/site-frame.spec.ts` that runs with the dev override `?frame=site`: `/notifications` shows `site-frame`, `site-header` (desktop) or `mobile-header` + `dock` (mobile), `breadcrumb` reading "Home / Activity", and `site-footer` (desktop); the Activity link / tile has `aria-current="page"` and the header search takes focus on "/".
 6. Document in `design/README.md` → "Checking a change" how to view any route in the new frame locally (`?frame=site`).
 
-**Do not.** Turn the flag on in production data. Change `FlatShell` or any other route.
+**Do not.** Turn the flag on in production data — that is `UI-P36b`, once all ten pages are rebuilt. Change `FlatShell` or any other route.
 
 **Done when.** With the flag off, every tier1 spec passes unchanged; with `?frame=site`, `/notifications` renders in the new frame at 390, 768, 1280 and 1440 with no horizontal scroll and the new spec passes on both Playwright projects.
 

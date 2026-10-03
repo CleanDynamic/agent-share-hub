@@ -25,7 +25,7 @@ In this order:
 
 ## 3. How code is written here (from the code review — these are automatic failures)
 
-- **Inline styles** through `t` from `@/lib/theme/tokens` and the roles in `@/lib/theme/type`. No new CSS classes for styling; Tailwind's generated utilities override them. Keyframes are the only CSS that goes in `src/index.css`.
+- **Inline styles** through `t` from `@/lib/theme/tokens` and the roles in `@/lib/theme/type`. No new CSS classes for styling; Tailwind's generated utilities override them. Keyframes are the only CSS that goes in `src/index.css`. The one exception is `.bg-glass` (UI-P09b), which needs two pseudo-elements that inline styles cannot express; its colours are still tokens.
 - **Never change structural CSS** (`position`, `width`, `height`, `overflow`, `zIndex`, `display`, `flex`, `grid`, `gap`, `padding`, `margin`) **on an existing layout element.** The overhaul builds new components beside the old ones (`SiteFrame` beside `FlatShell`, a new card body beside the old one) and switches over behind the `site_frame` flag. Old components are deleted only in UI-P41.
 - **Never install a dependency.** Propose it and stop. Icons come from `lucide-react` (already installed) using the icon table in §6. Charts are hand-written SVG; do not import `recharts` for anything new.
 - **All data access lives in `src/lib/<domain>/`** as named, typed functions. No Supabase call in a component. Name columns (no `select('*')`), put `.limit()` on every list, prefer estimated counts, and use `(select auth.uid())` in any policy. A page that needs data no function returns gets that function in its own prompt first (UI-P21 to UI-P26).
@@ -89,6 +89,10 @@ Every page prompt builds the same five pieces. The prompts do not repeat this.
 Layout numbers in the page prompts are exact at 1440 (desktop, 1280 column) and 390 (mobile, 362 column after 14px gutters). Columns written as `minmax(0, 1fr) 420px` are CSS grid tracks with a 12px gap unless a prompt says otherwise. "Fills" means `flex-grow: 1; min-height: 0` in `board` fit and `min-height: <board height>` in `content` fit.
 
 Copy in the prompts is the copy to ship. Where a reference board shows a designer's note in a subtitle (for example "rank by weight and fill, not colour"), the prompt gives the real subtitle instead.
+
+## 7b. Where glass is allowed
+
+Liquid glass (`.bg-glass`, UI-P09b) is for **page-level panels only** — a panel that is a direct child of the content column and sits on the backdrop. Anything that repeats inside one — build cards, vacant frames, feed and notification rows, wall-label cells, wells, chips, the part viewer — stays slightly translucent and flat: a fill, a 1px border, no `backdrop-filter`, no `filter`. Glass is never nested inside glass, and compose and import stay flat.
 
 ## 8. Names, and the live database
 

@@ -2,6 +2,75 @@
 
 One prompt per Claude Code session, in this order. Each is also a single file in this folder. Read `../RULES.md` first; every prompt assumes it.
 
+## UI-D01 — What actually landed
+
+Follow `design/RULES.md`.
+
+**This prompt changes nothing.** It reads the repository and reports. Do not edit a file, do not commit, do not run a migration. If something is obviously broken, say so in the report rather than fixing it.
+
+**Goal.** The deployed site still shows the old frame. Find out which of `UI-P00` to `UI-P41` actually landed on this branch, and which of three causes is responsible, so the next prompt is the right one.
+
+**Do, in order, and quote the real output of each — never a summary.**
+
+1. **Where am I.** `git branch --show-current`, `git log --oneline -40`, and `git log --oneline --grep='^UI-P' | wc -l`. List every `UI-Pnn` commit subject you find, in order. Name the ones between `UI-P00` and `UI-P41` that are **absent**.
+2. **Is this what is deployed?** `git status -sb` and `git log --oneline origin/HEAD -5` (or the default branch's remote ref). State plainly whether this branch is merged into the default branch. Lovable deploys the default branch, so work sitting on an unmerged branch is invisible on the live site no matter what else is true.
+3. **Does the kit exist?** `ls design/` and `python3 design/build-kit.py --check` if it is there.
+4. **Does the new frame exist in the code?** For each path, say exists / missing, and for the ones that exist give the line count:
+   - `src/components/shell/SiteFrame.tsx`, `SiteHeader.tsx`, `Breadcrumb.tsx`, `SiteFooter.tsx`, `MobileHeader.tsx` (or wherever UI-P19 put the dock), `FrameRoute.tsx`, `siteFrameRoutes.ts`
+   - `src/lib/shell/flags.ts`
+   - `src/components/brand/` — list it
+   - `src/pages/site/` — list it, one line per page
+5. **Is the frame wired in?** Print the part of `src/components/AppShell.tsx` that chooses between `SiteFrame` and `FlatShell`. Print the whole of `siteFrameRoutes.ts` (the actual contents of `SITE_FRAME_ROUTES`). Then `grep -rn "FrameRoute" src/App.tsx | head -40`. Say how many routes are on the new frame.
+6. **What does the flag do when it cannot find a row?** Print `isSiteFrameOn()` in full. State what it returns when the `feature_flags` table has no `site_frame` row — that is the production case.
+7. **What is not behind the flag?** These change the live site whether the flag is on or off, so they tell us whether the early waves landed:
+   - `grep -rn "exhibition" src e2e index.html | head` — should be empty but for a migration line.
+   - `grep -rn "Sentient" src/index.css src/lib/theme/* index.html | head` — did `UI-P05` land?
+   - `grep -n "\-\-lit-ink\|--focus-ring\|--picture-lamp-glow" src/index.css | head` — did `UI-P03` land?
+8. **Does it build and pass?** `npx tsc --noEmit -p tsconfig.app.json`, `npm test`, `npm run build`. Report pass/fail and any failing test names. If `npm run audit:design` exists, run it and report the first ten lines.
+
+**Report back exactly this, and nothing else:**
+
+```
+BRANCH: <name> · merged into <default>: yes / no
+COMMITS: <n> UI-P commits · missing: <list, or none>
+KIT: present / missing · build-kit --check: <result>
+
+CODE PRESENT
+  frame components : <list of exists / missing>
+  page views       : <n> of 10
+  data functions   : <n> of the UI-P21..P26 set
+
+WIRING
+  AppShell branches on the flag : yes / no
+  SITE_FRAME_ROUTES             : <the actual array>
+  routes using FrameRoute       : <n>
+  isSiteFrameOn() with no row   : true / false
+
+NOT BEHIND THE FLAG
+  exhibition removed : yes / no
+  Sentient installed : yes / no
+  new tokens present : yes / no
+
+CHECKS: tsc <r> · test <r> · build <r> · audit:design <r>
+
+VERDICT: one of
+  A — the work is not on the deployed branch
+  B — the work is there and the flag is off
+  C — the work is not in the repository at all
+  D — something else: <say what>
+```
+
+**How to read the verdict** (state which one applies and why, in one sentence):
+
+- **A** — `UI-Pnn` commits exist on a branch that is not merged into the default branch. Nothing is wrong with the code; it is not deployed. The fix is a pull request, not a prompt.
+- **B** — the components exist, `AppShell` branches on the flag, routes are in `SITE_FRAME_ROUTES`, and `isSiteFrameOn()` returns false with no row. This is the expected state after `UI-P36` and the fix is `UI-P36b`.
+- **C** — the frame components are missing and there are few or no `UI-P` commits. The sessions did not do the work. Say which prompts have no commit, and stop; re-running them is the fix, starting from the lowest missing number.
+- **D** — anything else. Describe what you found; do not guess.
+
+**Commit.** None. This prompt commits nothing.
+
+---
+
 ## UI-P00 — Put the design kit in the repo and record a baseline
 
 Follow `design/RULES.md`.
@@ -271,6 +340,86 @@ Follow `design/RULES.md`.
 
 ---
 
+## UI-P09b — Liquid glass, on main panels only
+
+Follow `design/RULES.md`.
+
+**Goal.** The page-level panels become liquid glass: a refracted edge where the backdrop bends through them, over a fill solid enough to read body text on. Everything inside a panel — build cards, feed rows, wall labels, wells — stays as it is: slightly translucent and flat.
+
+**Read first.** `components/brand/Panel.tsx` (UI-P09), `src/index.css`, `src/lib/theme/glass.ts` and `glass.test.ts` (the blur rules and the test that enforces them), `src/components/shell/SiteFrame.tsx`.
+
+**This prompt amends three standing rules. Make each change deliberately, and say so in the report.**
+
+1. `RULES.md` §3 says no new CSS classes for styling. Liquid glass needs two pseudo-elements, which inline styles cannot express. **One** class, `.bg-glass`, is added to `src/index.css` for this and nothing else. Every colour inside it is a custom property, so the tokens still govern it.
+2. `glass.test.ts` asserts a small set of blurred surfaces. The budget becomes: the four chrome surfaces from `UI-P40` **plus** page-level panels. Update the assertion and its comment in this commit.
+3. The performance guidance forbids `feDisplacementMap`. It is the whole effect here, so it is permitted on this one filter, under the guards in step 5. Nothing else in the app may use one.
+
+**Build.**
+
+1. **The filter, mounted once.** `src/components/brand/GlassFilter.tsx` renders a hidden `<svg width="0" height="0" aria-hidden="true" style="position:absolute">` holding one filter. `SiteFrame` renders it once, above everything. Values, as measured over the real backdrop at panel size:
+
+   ```
+   <filter id="bg-glass-distortion" x="0%" y="0%" width="100%" height="100%">
+     <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="2" seed="92" result="noise"/>
+     <feGaussianBlur in="noise" stdDeviation="2" result="blurred"/>
+     <feDisplacementMap in="SourceGraphic" in2="blurred" scale="42"
+                        xChannelSelector="R" yChannelSelector="G"/>
+   </filter>
+   ```
+
+   The source this came from uses `baseFrequency 0.035` and `scale 180`, tuned for a 400×300 card. At 1280px those values tear the panel apart: the frequency drops to `0.012` so one wave spans the panel instead of twenty, and the scale to `42` so the edge bends without smearing. Keep `x/y/width/height` at `0%/100%` — it clips the displacement to the panel and stops the corners pulling in content from outside.
+
+2. **The class**, in `src/index.css`, exactly these rules:
+
+   ```css
+   .bg-glass { position: relative; isolation: isolate; }
+   .bg-glass > * { position: relative; z-index: 1; }
+   .bg-glass::before {
+     content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit;
+     pointer-events: none; background: var(--glass-fill);
+     border: 1px solid var(--glass-border);
+     box-shadow: inset 0 1px 0 var(--panel-highlight-color),
+                 inset 0 0 20px -12px var(--glass-rim);
+   }
+   .bg-glass::after {
+     content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+     pointer-events: none; isolation: isolate;
+     backdrop-filter: blur(7px) saturate(1.2);
+     -webkit-backdrop-filter: blur(7px) saturate(1.2);
+     filter: url(#bg-glass-distortion);
+     -webkit-filter: url(#bg-glass-distortion);
+   }
+   ```
+
+   **`.bg-glass > * { position: relative; z-index: 1 }` is not optional.** The tint layer is positioned, so without it the tint paints over the panel's own text and every word goes muddy. This is the single easiest way to get this wrong.
+
+3. **Tokens** (UI-P03's system, both themes). `--glass-fill` is the one that matters: it is what body text sits on, so it is not the near-transparent fill the source uses.
+   - `--glass-fill`: Noon `rgba(255,255,255,.58)`, Dusk `rgba(26,21,35,.74)` — **the two themes are not symmetric on purpose.** Noon's text is near-black on a light backdrop, so the fill can stay thin and let the horizon's salmon through; measured over the backdrop it still gives `--text` 13.2:1 and `--text2` 5.9:1. Dusk's text is near-white over a field that lifts into violet and salmon, so at `.58` the light areas eat the text; `.74` is where it holds. Do not "tidy" these to the same number.
+   - `--glass-rim`: Noon `rgba(255,255,255,.55)`, Dusk `rgba(255,255,255,.55)`
+   - `--panel-highlight-color`: Noon `rgba(255,255,255,1)`, Dusk `rgba(238,234,244,.12)`
+   - `--glass-halo` (the outer edge light): Noon `0 0 21px -10px rgba(26,35,32,.18)`, Dusk `0 0 21px -8px rgba(255,255,255,.22)`
+   `Panel` keeps `--shadow-card` and adds `--glass-halo` before it.
+
+4. **Where it applies, and where it must not.** `Panel` gains `surface: "glass" | "flat" | "plain"`; only `glass` adds `.bg-glass`.
+   - **Liquid glass:** a panel that is a direct child of the page column and sits on the backdrop — the Home hero, the visitors' book, the orbs panel, challenges, streak, where-next, the Gallery header and facet column, the Build proof panel, anatomy, timeline, the Bounties header and solve panel, the Profile level panel, works, activity, marks, the Activity list and its right column, and the sign-in card.
+   - **Never:** anything that repeats inside a panel or a grid — build cards, vacant frames, feed rows, notification rows, wall-label cells, part viewer, `--recess` wells, chips, buttons, the inner preview on the import page. These keep what they have now: a slightly translucent fill, 1px border, no backdrop-filter, no filter.
+   - **Never nested:** a `.bg-glass` inside another `.bg-glass` doubles the blur cost and reads as fog. Add a dev-only assertion that warns in the console if one is found.
+   - Compose and import stay `flat` (§5.5 of the handoff) — a working surface does not refract.
+
+5. **Guards**, all of them:
+   - Below 768px, drop the `filter` and keep the blur and fill. Phone GPUs and mobile Safari pay for the displacement on every scroll frame, and at phone width the refraction is a few pixels wide and invisible anyway. Do this in CSS with a media query, not in JS.
+   - `@media (prefers-reduced-transparency: reduce)` — drop both `filter` and `backdrop-filter`, and raise `--glass-fill` to `.96` in both themes.
+   - `@supports not (backdrop-filter: blur(2px))` — fill only, no filter.
+   - Safari applies the SVG filter to the element but not reliably to what is behind it, so it degrades to frosted glass without the refracted edge. That is acceptable; do not add a Safari-specific hack.
+
+6. **Contrast.** Re-run `npm run audit:contrast` with panels composited over the *lightest* and *darkest* points of the backdrop, not over a flat colour. Every text token on `--glass-fill` must still pass 4.5:1 at both extremes. Measured at the values above, Noon's worst case is `--text2` at about 5.9:1 and Dusk's is tighter — check it rather than assuming. If a pair fails, raise that theme's `--glass-fill`; never lighten the text, and never raise both themes because one failed.
+
+**Done when.** The listed panels refract the backdrop at their edges in both themes; no card, row or cell does; text contrast passes at both backdrop extremes; `glass.test.ts` passes with its updated assertion; scrolling the Gallery at 1440 holds 60fps with paint flashing on; and the phone build has no `feDisplacementMap` in its computed styles.
+
+**Commit.** `UI-P09b: liquid glass on page panels`
+
+---
+
 ## UI-P10 — Orbs
 
 Follow `design/RULES.md`.
@@ -363,6 +512,44 @@ Follow `design/RULES.md`.
 **Done when.** A throwaway `/dev/kit/pages/backdrop` shows the backdrop at 1440 and 390 in both themes and matches the empty areas of the reference boards by eye.
 
 **Commit.** `UI-P13: page backdrop — horizon, arc and grain`
+
+---
+
+## UI-P13b — The living backdrop
+
+Follow `design/RULES.md`. **This replaces what `UI-P13` built.** If `UI-P13` has not run, build it from here instead and skip its static arc.
+
+**Goal.** The backdrop stops being a static SVG and becomes a slow, continuous gradient field: silk folds that drift on their own, bottoming out at the darkest purple on Dusk, with the arc region lifting into violet and salmon. A click sends a soft wavefront through the folds.
+
+**Read first.** `UI-P13`'s `PageBackdrop`, `src/lib/theme/tokens.ts`, `design/tokens/tokens.json` (the `backdrop`, `ambient`, `arc*` and `haze` values per theme), `src/components/shell/SiteFrame.tsx`, and the reference boards for the colour it has to match.
+
+**This prompt amends a standing rule.** `RULES.md` §3.4 and the performance guidance say the backdrop is static, one paint, no animation. It is now a continuously rendering WebGL canvas. Update that line in `RULES.md` and in `HANDOFF.md` §3.4 in this commit, with the budget in step 4.
+
+**Build** `src/components/brand/PageBackdrop.tsx`.
+
+1. **The canvas.** One `<canvas>`, `position: fixed; inset: 0; z-index: 0`, `aria-hidden`, behind everything in `SiteFrame`. One WebGL context, one fullscreen triangle, no library and no dependency. Buffer at `min(devicePixelRatio, 1.5) × 0.85` of the viewport (`× 0.72` above 2.2 megapixels) and upscaled — the field has no hard edges, so nobody can tell.
+
+2. **The field.** A fragment shader. Value noise → 5-octave fbm → two rounds of domain warp (`q` from the fbm, then `r` from `p + 1.7q`, then the final `f` from `p + 1.9r`). That second warp is what makes folds instead of blobs; one round looks like smoke. Then:
+   - start at `--bg` (Dusk `#1A1523`, the darkest purple — the whole field bottoms out here);
+   - mix toward a fold shadow by `smoothstep(0.30, 0.95, f)`, at full strength on Dusk and `0.42` on Noon so the light theme stays light;
+   - Noon only: a warm horizon band, `exp(-((uv.y - 0.52) / 0.09)²)`, in the arc's salmon;
+   - lift the top-right toward the arc's violet by `pow(glow, 1.6)` and its salmon by `pow(glow, 1.9)`, where `glow = smoothstep(1.05, 0.05, distance(uv, vec2(0.92, 0.04)))` — this is where the old SVG arc crossed, so the composition does not move;
+   - a pale sheen from the second warp's `r.x`, and ±0.016 of hash grain so the gradient never bands.
+   Theme values come from uniforms read off the tokens — no hexes in the shader source.
+
+3. **The click.** Up to 8 live ripples, each `{x, y, startTime}` in viewport coordinates. Each is a ring `exp(-((d - age·0.40) / 0.10)²) · exp(-age·1.05)`, faded by distance, gone after about 4 seconds. Where the ring is, offset the sampling point by `wave · 0.075` **and sample each colour channel a step apart** (`×1.22`, `×1.00`, `×0.74`) so the field separates into its components at the moving edge. Everywhere else, one sample. Attach the listener to `window` as `pointerdown`, and fire one from the centre of the focused element on Enter or Space so keyboard users get it too.
+
+4. **Budget.** Pause via `visibilitychange` when the tab is hidden. Stop the loop when no ripple is live and `prefers-reduced-motion` is set — that case renders exactly one frame, at a fixed time, and ignores clicks. Never render more than one canvas: it is mounted once in `SiteFrame`, never per page. Measure a scroll of `/gallery` with paint flashing on and record the frame time in `design/BASELINE.md`.
+
+5. **Fallback.** If `getContext("webgl")` returns null, hide the canvas and put the existing `--ambient, --backdrop` CSS gradients on the element instead. The page must look finished, not broken, with no WebGL at all.
+
+6. **The boards.** The reference boards still show the static arc, so every page board will now differ in the backdrop region. Teach the compare harness to mask it: pass a mask rectangle covering everything outside the content column and panels, or compare only the panel bounding boxes. Say in `design/README.md` which it is, so the next person is not surprised by a 12% diff that is not a bug.
+
+**Do not.** Animate the lamp, the arc colour or anything inside a panel. Add a second canvas. Sample the backdrop in JS for any purpose.
+
+**Done when.** The backdrop drifts continuously at 60fps on a laptop in both themes, a click sends a visible wavefront through the folds, the reduced-motion case renders one static frame, the no-WebGL case renders the CSS gradient, and `npm run audit:design` passes with the backdrop masked.
+
+**Commit.** `UI-P13b: living backdrop`
 
 ---
 
@@ -554,7 +741,7 @@ Follow `design/RULES.md`.
 5. Add a tier1 spec `e2e/tier1/site-frame.spec.ts` that runs with the dev override `?frame=site`: `/notifications` shows `site-frame`, `site-header` (desktop) or `mobile-header` + `dock` (mobile), `breadcrumb` reading "Home / Activity", and `site-footer` (desktop); the Activity link / tile has `aria-current="page"` and the header search takes focus on "/".
 6. Document in `design/README.md` → "Checking a change" how to view any route in the new frame locally (`?frame=site`).
 
-**Do not.** Turn the flag on in production data. Change `FlatShell` or any other route.
+**Do not.** Turn the flag on in production data — that is `UI-P36b`, once all ten pages are rebuilt. Change `FlatShell` or any other route.
 
 **Done when.** With the flag off, every tier1 spec passes unchanged; with `?frame=site`, `/notifications` renders in the new frame at 390, 768, 1280 and 1440 with no horizontal scroll and the new spec passes on both Playwright projects.
 
@@ -1028,6 +1215,37 @@ No orbs on phones.
 
 ---
 
+## UI-P36b — Turn the frame on
+
+Follow `design/RULES.md`.
+
+**Run this only after `UI-D01` reports verdict B.** If it reported A, merge the branch instead. If C, go back and run the missing prompts. Turning on a flag in front of pages that were never built shows visitors a broken site.
+
+**Goal.** The ten rebuilt pages are what a visitor sees. Everything from `UI-P16` on was built behind the `site_frame` flag, which is off by default — so until this prompt runs, every route renders its `legacy` branch and the overhaul is invisible outside a dev session.
+
+**Read first.** `src/lib/shell/flags.ts` (what `isSiteFrameOn()` reads, and what it returns when the row is absent), `src/components/shell/siteFrameRoutes.ts`, `src/components/AppShell.tsx`, the `feature_flags` table **as it exists in the live database** (its real column names — `RULES.md` §8: the live schema has drifted from `supabase/migrations/`, so confirm rather than trust a migration file), and the newest filename in `supabase/migrations/`.
+
+**Do.**
+
+1. **Check the routes first.** Every route inside the layout must be in `SITE_FRAME_ROUTES`. List any that are not and **stop** if there are any: a half-flagged app shows a visitor the new frame on one page and the old one on the next. Name the missing routes and which prompt owns each.
+2. **Walk the app with the flag forced on**, before changing any data — `?frame=site` (the dev override from `UI-P16`), at 1440 and 390, in Noon and in Dusk, signed in and signed out: `/`, `/gallery`, a build page, `/rebuild/:slug`, the lineage route, `/import`, `/bounties`, a profile, `/notifications`, `/login`. For each: does it render, does the header show, does the breadcrumb read correctly, are there console errors. **Stop and report** if any page throws, renders the old frame, or loses data that the legacy page showed.
+3. **Enable the flag** with a migration that inserts the row, named to continue the project's sequence (`YYYYMMDDHHMMSS_snake_case.sql`, after the newest existing one). Write it so it is correct whether or not the row is already there, and so re-running it is harmless:
+   - insert `site_frame` enabled, `on conflict do update`;
+   - use the table's real column names from the step above;
+   - no `auth.uid()` bare in any policy you touch — `(select auth.uid())`.
+   Do not change any other flag's row.
+4. **Keep the way back.** In the migration file's header comment, write the one-line SQL that disables it again. The point of the flag is that a bad deploy is one `update` away from the old frame, and whoever needs that at 2am should not have to read this prompt.
+5. **Verify with the flag genuinely on**, not overridden: the ten routes again, desktop and mobile, both themes. Then `npm run audit:design` across every board.
+6. Update `design/README.md` — under "Checking a change", note that the frame is now on for everyone and `?frame=flat` shows the old one until `UI-P41` deletes it.
+
+**Do not.** Delete `FlatShell`, the legacy branches or the flag — that is `UI-P41`, and only once this has been live long enough to trust. Turn on any other flag. Change a policy to make the flag readable; if a signed-out visitor cannot read `feature_flags`, **stop and propose** the policy rather than widening one.
+
+**Done when.** A signed-out visitor in a clean browser gets the new frame on all ten routes at 1440 and 390 in both themes; `npm run audit:design` compares every board within its threshold; `npx tsc --noEmit -p tsconfig.app.json`, `npm test`, `npm run build` and `npx playwright test e2e/tier1 --project=desktop --project=mobile` all pass; and the migration's header carries the one-line rollback.
+
+**Commit.** `UI-P36b: turn on the site frame`
+
+---
+
 ## UI-P37 — Every state: loading, empty, error
 
 Follow `design/RULES.md`.
@@ -1125,7 +1343,7 @@ Follow `design/RULES.md`.
 
 ## UI-P41 — Retire the old frame
 
-Follow `design/RULES.md`. **This is the only prompt that deletes anything.** Run it when every route is on the new frame and the flag has been on in production long enough to trust.
+Follow `design/RULES.md`. **This is the only prompt that deletes anything.** Run it when every route is on the new frame and the flag has been on in production — switched on by `UI-P36b` — long enough to trust. If `UI-P36b` has not run, the overhaul is not live yet and this prompt would delete the way back.
 
 **Read first.** `design/RULES.md` §3, `AppShell.tsx`, `FlatShell.tsx`, `flat-shell.css`, `wideRoutes.ts`, `RightRailExplore.tsx`, `right-rail-explore.css`, `RightRailDrawer.tsx`, `hooks/useRightRailData.ts`, `MobileTopBar.tsx`, `MobileBottomNav.tsx`, `ProfileDrawer.tsx`, `src/lib/theme/semantics.ts`, and the tests `AppShell.test.tsx`, `FlatShell.wide.test.tsx`, `wideRoutes.test.ts`, `e2e/tier3/moved-routes-frame.spec.ts`, `src/lib/retiredSurfaces.test.tsx`, `docs/retired-surfaces.md`.
 
