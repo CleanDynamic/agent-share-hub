@@ -34,6 +34,10 @@ In this order:
 - **`data-testid`** may be added to existing components; their structure may not change.
 - **The content path stays live** (`Upload.tsx`, `content_items`). Nothing here touches it.
 
+### 3.4 The animated backdrop (UI-P13b)
+
+The page backdrop (`PageBackdrop.tsx`) is a WebGL canvas that continuously renders a drifting noise field with domain warping, creating silk folds that drift on their own. It is `position: fixed; inset: 0; z-index: 0` behind the site frame. The canvas renders at `min(devicePixelRatio, 1.5) × 0.85` of viewport size (× 0.72 above 2.2 megapixels, for performance). It pauses when the tab is hidden via `visibilitychange` and stops the animation loop when `prefers-reduced-motion` is set and no ripples are active, rendering exactly one static frame. Up to 8 interactive ripples can be triggered by pointer events or keyboard activation (Enter/Space on a focused element), each creating a soft wavefront with chromatic aberration. If `getContext("webgl")` returns null, the canvas is hidden and the page falls back to CSS gradients. Do not add a second canvas or sample the backdrop in JavaScript for any purpose.
+
 ## 4. Every prompt, every time
 
 - **Both themes** (Noon and Dusk) and **both viewports** (1440 desktop, 390 mobile; the app swaps chrome below 768px). If a board exists for it in `design/reference/`, compare against it.

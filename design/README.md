@@ -94,6 +94,7 @@ To see a real route in the new frame before the flag is on anywhere: `?frame=sit
 
 Deliberate, and expected in every compare report:
 
+- **The animated backdrop (UI-P13b).** The reference boards show a static gradient and arc; the live app renders a continuously drifting WebGL field with domain warping and interactive ripples. Comparisons mask the entire backdrop region (outside the content column and panels) to prevent the 12% diffs from being flagged as failures. Only the panel contents are compared.
 - **10px minimum text.** A few mono labels are 9px at 1440 in the reference; in code they are 10px.
 - **`--lit-ink` for amber that is read.** Amber (`--lit`) is light, never text: it fails contrast. Where the reference draws a word or a glyph in amber — the `~` in a change list, the deploy label, the streak flame, a reward figure — code uses `--lit-ink` (darkened on Noon, unchanged on Dusk).
 - **The Noon focus ring** is ink, not amber (UI-P04).

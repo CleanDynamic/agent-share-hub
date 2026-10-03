@@ -91,7 +91,27 @@ Every page improves on LCP and TBT, none is worse on CLS, and CLS is below 0.1 e
 
 `backdrop-filter` is declared only by `SiteHeader`, `MobileHeader`, `Dock`, `HeroPlate` (the build page's title plate) and `BuildView` (its action dock). `src/lib/theme/glass.test.ts` fails on any other declaration, Tailwind `backdrop-blur` class included. `RightPanelExplore` keeps its recorded exemption: it is an externally supplied shell, and editing it is an automatic fail.
 
+## After the animated backdrop (UI-P13b)
+
+The page backdrop changes from a static SVG/CSS gradient to a continuously rendering WebGL canvas with drifting noise, domain warping, and interactive ripples.
+
+**Performance targets:**
+- Frame rate: 60fps (16.67ms per frame) maintained during scroll and animation
+- Canvas buffer: `min(devicePixelRatio, 1.5) × 0.85` of viewport (× 0.72 above 2.2 megapixels)
+- Pause on visibility change, stop animation loop when `prefers-reduced-motion` + no ripples
+
+**Measurement to be taken:**
+- Scroll `/gallery` with Chrome DevTools paint flashing enabled
+- Average frame time during scroll
+- Frame time 95th percentile
+- GPU memory usage
+- Test on both desktop and throttled mobile (6x CPU slowdown, slow 4G)
+
+Entry chunk size impact (WebGL code inline, no new dependencies):
+- Expected: <10 KB increase from shader and ripple logic
+
 ## Still open
 
 - Card covers are signed one storage request per card (`signedMediaUrl` in `src/components/gallery/cardMedia.ts`). Supabase's batch `createSignedUrls` does not take an image transform, so batching them needs a server-side signer. That is a backend change and is out of scope for this pass.
 - The 60fps scroll check with paint flashing is a manual DevTools check and was not run in this sandbox.
+- UI-P13b backdrop performance baseline to be measured when app is running with the animated WebGL backdrop.
