@@ -241,7 +241,8 @@ describe("SignInView · phone", () => {
   it("puts the form in a glass panel, a 10px column with padding 16", () => {
     const { container } = render(tree());
     const panel = container.querySelector('[data-ui="panel"]')!;
-    expect(panel.getAttribute("data-variant")).toBe("glass");
+    expect(panel.getAttribute("data-surface")).toBe("glass");
+    expect(panel.classList.contains("bg-glass")).toBe(true);
     expect(panel.getAttribute("style")).toContain("padding: 16px");
     const card = within(panel as HTMLElement).getByTestId("signin-card");
     expect(card.getAttribute("style")).toContain("flex-direction: column");

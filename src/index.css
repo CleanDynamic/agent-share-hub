@@ -218,6 +218,10 @@
   --arc-outer: #8FA79B;
   --shadow-float: 0 40px 90px rgba(26,35,32,.20);
   --panel-highlight: inset 0 1px 0 rgba(255,255,255,1);
+  --glass-fill: rgba(255,255,255,.58);
+  --glass-rim: rgba(255,255,255,.55);
+  --panel-highlight-color: rgba(255,255,255,1);
+  --glass-halo: 0 0 21px -10px rgba(26,35,32,.18);
   --ring-track: rgba(27,32,38,.10);
   --lamp-glow: none;
   --picture-lamp-glow: none;
@@ -422,6 +426,10 @@
   --arc-outer: #CBC6E4;
   --shadow-float: 0 40px 100px rgba(4,3,8,.6);
   --panel-highlight: inset 0 1px 0 rgba(238,234,244,.10);
+  --glass-fill: rgba(26,21,35,.80);
+  --glass-rim: rgba(255,255,255,.55);
+  --panel-highlight-color: rgba(238,234,244,.12);
+  --glass-halo: 0 0 21px -8px rgba(255,255,255,.22);
   --ring-track: rgba(238,234,244,.10);
   --lamp-glow: 0 0 10px rgba(217,164,65,.6);
   --picture-lamp-glow: 0 0 14px rgba(217,164,65,.65);
@@ -1211,4 +1219,56 @@ input[type="search"] { border-radius: var(--r-control); }
 [data-ring-inset]:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -4px;
+}
+
+/* UI-P09b — liquid glass, on page-level panels only. THE ONE CLASS THIS STYLESHEET ADDS FOR STYLING: RULES.md §3
+   forbids new classes, and this is the single amendment, because a refracted edge needs two pseudo-elements and an
+   inline style cannot express one. Every colour in it is a custom property, so the tokens still govern it.
+
+   Three layers inside one stacking context. ::after (z -1) blurs and refracts what is behind the panel; ::before (z 0)
+   is the tint body text sits on and the rim light; the panel's own children (z 1) sit above both. THE
+   `.bg-glass > *` RULE IS NOT OPTIONAL: the tint is positioned, so without it the tint paints over the panel's
+   own text.
+
+   The blur is 16px, the one radius the codebase uses (glass.test.ts); the saturate is 1.2 where GLASS_BLUR's is 1.15.
+   The filter is #bg-glass-distortion, mounted once by GlassFilter in SiteFrame, and it is the only
+   feDisplacementMap in the app. */
+.bg-glass { position: relative; isolation: isolate; }
+.bg-glass > * { position: relative; z-index: 1; }
+.bg-glass::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit;
+  pointer-events: none; background: var(--glass-fill);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--panel-highlight-color),
+              inset 0 0 20px -12px var(--glass-rim);
+}
+.bg-glass::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  pointer-events: none; isolation: isolate;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  filter: url(#bg-glass-distortion);
+  -webkit-filter: url(#bg-glass-distortion);
+}
+
+/* Guards. Phone: keep the blur and the fill, drop the displacement — phone GPUs and mobile Safari pay for it on every
+   scroll frame, and at phone width the refraction is a few pixels wide. In CSS, not JS. */
+@media (max-width: 767px) {
+  .bg-glass::after { filter: none; -webkit-filter: none; }
+}
+
+/* Reduced transparency: no filter, no backdrop-filter, and a fill near-opaque in both themes. */
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root[data-theme="noon"] { --glass-fill: rgba(255,255,255,.96); }
+  :root[data-theme="dusk"] { --glass-fill: rgba(26,21,35,.96); }
+  .bg-glass::after {
+    filter: none; -webkit-filter: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+}
+
+/* No backdrop-filter at all: the fill alone, and no filter either (a filter with nothing behind it to bend is cost
+   for no picture). */
+@supports not (backdrop-filter: blur(2px)) {
+  .bg-glass::after { filter: none; -webkit-filter: none; }
 }

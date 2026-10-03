@@ -1,11 +1,11 @@
-// UI-P09 — panel, panel head, wall label, detail, stat, striped bar, page heading.
+// UI-P09, UI-P09b — panel, panel head, wall label, detail, stat, striped bar, page heading.
 //
 // Styles are asserted through SSR markup (jsdom's cssstyle drops var() values);
 // roles and structure on the rendered tree.
 
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { Detail } from "./Detail";
 import { PageHeading } from "./PageHeading";
@@ -17,9 +17,10 @@ import { WallLabel } from "./WallLabel";
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
 
 describe("Panel", () => {
-  it("is glass by default: --glass over a --glass-border hairline, radius 16, the card shadow and the top highlight", () => {
+  it("is plain by default: --glass over a --glass-border hairline, radius 16, the card shadow and the top highlight", () => {
     const html = markup(<Panel>x</Panel>);
-    expect(html).toContain('data-variant="glass"');
+    expect(html).toContain('data-surface="plain"');
+    expect(html).not.toContain("bg-glass");
     expect(html).toContain("background:var(--glass)");
     expect(html).toContain("border:1px solid var(--glass-border)");
     expect(html).toContain("border-radius:var(--r-panel)");
@@ -28,9 +29,23 @@ describe("Panel", () => {
     expect(html).toContain("padding:16px 18px");
   });
 
+  it("is liquid glass when asked: the .bg-glass class, the halo before the card shadow, and no fill or border of its own", () => {
+    const html = markup(<Panel surface="glass">x</Panel>);
+    expect(html).toContain('data-surface="glass"');
+    expect(html).toContain('class="bg-glass"');
+    expect(html).toContain("box-shadow:var(--glass-halo), var(--shadow-card)");
+    expect(html).toContain("background:none");
+    expect(html).toContain("border:none");
+    expect(html).not.toContain("var(--glass)");
+    expect(html).not.toContain("var(--panel-highlight)");
+    expect(html).toContain("border-radius:var(--r-panel)");
+    expect(html).toContain("padding:16px 18px");
+  });
+
   it("is flat for the workspace: --flat, the same hairline, no shadow", () => {
-    const html = markup(<Panel variant="flat">x</Panel>);
-    expect(html).toContain('data-variant="flat"');
+    const html = markup(<Panel surface="flat">x</Panel>);
+    expect(html).toContain('data-surface="flat"');
+    expect(html).not.toContain("bg-glass");
     expect(html).toContain("background:var(--flat)");
     expect(html).toContain("border:1px solid var(--glass-border)");
     expect(html).toContain("box-shadow:none");
@@ -41,16 +56,37 @@ describe("Panel", () => {
     expect(markup(<Panel padding="14px 16px">x</Panel>)).toContain("padding:14px 16px");
   });
 
-  it("is not a blurred surface, in either variant", () => {
-    for (const variant of ["glass", "flat"] as const) {
-      expect(markup(<Panel variant={variant}>x</Panel>)).not.toMatch(/backdrop-filter|blur/i);
+  it("sets no blur of its own on any surface: the blur lives in index.css, on .bg-glass::after", () => {
+    for (const surface of ["glass", "plain", "flat"] as const) {
+      expect(markup(<Panel surface={surface}>x</Panel>)).not.toMatch(/backdrop-filter|blur|filter:/i);
     }
   });
 
   it("carries no raw colour", () => {
-    const html = markup(<Panel>x</Panel>) + markup(<Panel variant="flat">x</Panel>);
+    const html = (["glass", "plain", "flat"] as const).map((surface) => markup(<Panel surface={surface}>x</Panel>)).join("");
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     expect(html).not.toMatch(/rgba?\(/);
+  });
+
+  it("warns in development when liquid glass is nested inside liquid glass, and not otherwise", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(
+        <Panel surface="glass">
+          <Panel surface="plain">fine</Panel>
+        </Panel>,
+      );
+      expect(warn).not.toHaveBeenCalled();
+      render(
+        <Panel surface="glass">
+          <Panel surface="glass">nested</Panel>
+        </Panel>,
+      );
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toContain("nested inside another liquid-glass panel");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

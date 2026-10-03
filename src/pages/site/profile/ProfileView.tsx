@@ -123,7 +123,7 @@ function StreakRow({ view, phone }: { view: LevelView; phone: boolean }) {
 function LevelSkeleton({ phone }: { phone: boolean }) {
   const orb = phone ? 118 : 150;
   return (
-    <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
+    <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
       <LoadingRegion what="the level" data-testid="profile-level-loading">
         <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
           <Skeleton width={orb} height={orb} radius="50%" />
@@ -165,7 +165,7 @@ function LevelPanel({
 
   if (failure) {
     return (
-      <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
+      <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
         <ErrorState panel="Level" onRetry={failure.onRetry} error={failure.error} data-testid="profile-level-error" />
       </Panel>
     );
@@ -183,7 +183,7 @@ function LevelPanel({
   if (phone) {
     const name = trackLabel(track);
     return (
-      <Panel padding="16px">
+      <Panel surface="glass" padding="16px">
         <div data-testid="profile-level" style={{ display: "flex", gap: 14, alignItems: "center" }}>
           {orbNode}
           <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
@@ -212,7 +212,7 @@ function LevelPanel({
   }
 
   return (
-    <Panel padding="16px 18px" style={{ height: "100%" }}>
+    <Panel surface="glass" padding="16px 18px" style={{ height: "100%" }}>
       <div data-testid="profile-level" style={{ display: "flex", gap: 16, alignItems: "center" }}>
         {orbNode}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>
@@ -450,7 +450,7 @@ function tabItems(counts: WorksView["counts"]) {
 
 function WorksPanel({ works, isOwn, fill }: { works: WorksView; isOwn: boolean; fill: boolean }) {
   return (
-    <Panel padding="12px 16px 14px" style={fill ? { height: "100%" } : undefined}>
+    <Panel surface="glass" padding="12px 16px 14px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-works" style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ marginBottom: 4 }}>
           <UnderlineTabs<WorksTab>
@@ -504,7 +504,7 @@ function ActivityPanel({
   fill: boolean;
 }) {
   return (
-    <Panel padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
+    <Panel surface="glass" padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-activity">
         <PanelHead title={ACTIVITY_TITLE} subtitle={ACTIVITY_SUBTITLE} titleSize={13} headingLevel={2} />
         <div style={{ marginTop: 12, overflow: phone ? "hidden" : undefined }}>
@@ -538,7 +538,7 @@ function MarksPanel({
 }) {
   const tiles = (marks ?? []).map((mark) => <MarkTile key={mark.key} tier={mark.tier} caption={mark.name} />);
   return (
-    <Panel padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
+    <Panel surface="glass" padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-marks">
         <PanelHead title={MARKS_TITLE} subtitle={MARKS_SUBTITLE} titleSize={13} headingLevel={2} />
         {failure ? (

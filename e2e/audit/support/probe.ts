@@ -24,6 +24,11 @@
  * and its first opaque ground, the pair is reported as `image-beneath` with the
  * composite it WOULD have had. A gradient has no single ratio, and inventing
  * one is exactly the eye-repainting this prompt forbids.
+ *
+ * LIQUID GLASS IS THE ONE EXCEPTION (UI-P09b). A `.bg-glass` panel paints its fill
+ * in `::before`, and what is behind it is the page's gradient. The sweep reads that
+ * pseudo-element, stops the walk there, and composites the fill over the backdrop's
+ * lightest and darkest points, reporting the worse ratio.
  */
 
 export interface TokenMap {
@@ -145,12 +150,33 @@ export const collectContrast = (tokenNames: string[]) => {
     rgb: Rgba;
     imageBeneath: boolean;
     glass: boolean;
+    /** UI-P09b: the walk ended at a liquid-glass panel, whose fill sits over a backdrop that is not one colour. */
+    glassFill: boolean;
   }
 
-  const groundOf = (start: Element | null, includeSelf: boolean): Ground => {
+  /* UI-P09b — THE BACKDROP BEHIND A LIQUID-GLASS PANEL IS A GRADIENT, so a panel's fill has no single ground. Text on
+     one is measured over the backdrop's lightest and darkest points instead and the WORSE ratio is reported. The
+     points are those of the "text on --glass-fill over the backdrop's extremes" block in
+     src/lib/theme/contrast.test.ts, which derives them from the gradients in primitives.ts; edit the two together. */
+  const GLASS_POINTS: Record<string, Rgba[]> = {
+    noon: [
+      [246, 248, 248, 1],
+      [233, 235, 231, 1],
+      [194, 207, 207, 1],
+      [242, 190, 168, 1],
+    ],
+    dusk: [
+      [110, 83, 111, 1],
+      [26, 21, 35, 1],
+    ],
+  };
+  const themeName = document.documentElement.getAttribute("data-theme") === "dusk" ? "dusk" : "noon";
+
+  const groundOf = (start: Element | null, includeSelf: boolean, point?: Rgba): Ground => {
     const layers: Rgba[] = [];
     let imageBeneath = false;
     let glass = false;
+    let glassFill = false;
     let n: Element | null = includeSelf ? start : start && start.parentElement;
     while (n && n.nodeType === 1) {
       const s = getComputedStyle(n);
@@ -163,11 +189,22 @@ export const collectContrast = (tokenNames: string[]) => {
         layers.push(eff);
         if (eff[3] >= 0.995) break;
       }
+      /* A liquid-glass panel paints its fill in ::before, which no ancestor walk over backgroundColor can see. */
+      if (n.classList.contains("bg-glass")) {
+        const f = parse(getComputedStyle(n, "::before").backgroundColor);
+        if (f[3] > 0) layers.push([f[0], f[1], f[2], f[3] * opacityFrom(n)]);
+        glassFill = true;
+        break;
+      }
       n = n.parentElement;
     }
     let base: Rgba = [255, 255, 255, 1];
+    if (glassFill) {
+      const bg = parse(tokenValue["bg"] || "");
+      base = point || (bg[3] > 0 ? bg : base);
+    }
     for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base);
-    return { rgb: base, imageBeneath, glass };
+    return { rgb: base, imageBeneath, glass, glassFill };
   };
 
   /** An <img>/<video>/<canvas> painted between this text and its ground. */
@@ -238,9 +275,21 @@ export const collectContrast = (tokenNames: string[]) => {
       const rect = range.getBoundingClientRect();
       const chain = opacityFrom(el);
       if (!visuallyHidden(el, s, rect) && chain >= 0.06) {
-        const ground = groundOf(el, true);
         const raw_fg = parse(s.color);
         const fg: Rgba = [raw_fg[0], raw_fg[1], raw_fg[2], raw_fg[3] * chain];
+        let ground = groundOf(el, true);
+        if (ground.glassFill) {
+          /* The worse of the backdrop's extremes, not the middle of it. */
+          let worstRatio = Infinity;
+          for (const point of GLASS_POINTS[themeName]) {
+            const g = groundOf(el, true, point);
+            const gr = ratio(over(fg, g.rgb), g.rgb);
+            if (gr < worstRatio) {
+              worstRatio = gr;
+              ground = g;
+            }
+          }
+        }
         const painted = over(fg, ground.rgb);
         const r = ratio(painted, ground.rgb);
         const media = ground.imageBeneath || paintedMediaUnder(el, rect);
@@ -260,6 +309,7 @@ export const collectContrast = (tokenNames: string[]) => {
         const notes: string[] = [];
         if (large) notes.push("large-text");
         if (ground.glass) notes.push("glass");
+        if (ground.glassFill) notes.push("liquid glass, worst of the backdrop's extremes");
         if (chain < 0.999) notes.push(`opacity ${Math.round(chain * 100) / 100}`);
         if (inactive) notes.push("disabled — WCAG 1.4.3 exempts an inactive component");
         push({
@@ -641,10 +691,17 @@ export const collectGlass = () => {
     return el.tagName.toLowerCase() + (slot ? `[${slot}]` : cls ? `.${cls}` : "");
   };
 
-  const isBlurred = (el: Element) => {
-    const s = getComputedStyle(el);
+  const backdropOf = (s: CSSStyleDeclaration) => {
     const bf = s.backdropFilter || (s as unknown as Record<string, string>).webkitBackdropFilter;
     return bf && bf !== "none" ? bf : "";
+  };
+
+  /* UI-P09b: a liquid-glass panel blurs through its ::after, which querySelectorAll("*") cannot see. The panel is
+     the surface, so it is counted once and nested under another panel it shows as depth > 0. */
+  const isBlurred = (el: Element) => {
+    const own = backdropOf(getComputedStyle(el));
+    if (own) return own;
+    return el.classList.contains("bg-glass") ? backdropOf(getComputedStyle(el, "::after")) : "";
   };
 
   const els = Array.from(document.querySelectorAll("*"));

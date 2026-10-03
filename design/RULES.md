@@ -92,7 +92,7 @@ Copy in the prompts is the copy to ship. Where a reference board shows a designe
 
 ## 7b. Where glass is allowed
 
-Liquid glass (`.bg-glass`, UI-P09b) is for **page-level panels only** — a panel that is a direct child of the content column and sits on the backdrop. Anything that repeats inside one — build cards, vacant frames, feed and notification rows, wall-label cells, wells, chips, the part viewer — stays slightly translucent and flat: a fill, a 1px border, no `backdrop-filter`, no `filter`. Glass is never nested inside glass, and compose and import stay flat.
+Liquid glass (`.bg-glass`, UI-P09b) is for **page-level panels only** — a panel that is a direct child of the content column and sits on the backdrop. Anything that repeats inside one — build cards, vacant frames, feed and notification rows, wall-label cells, wells, chips, the part viewer — stays slightly translucent and flat: a fill, a 1px border, no `backdrop-filter`, no `filter`. Glass is never nested inside glass (a dev-only console warning in `Panel` says so), and compose and import stay flat. `Panel` takes `surface="glass" | "plain" | "flat"`; `plain` is the default, so a panel is liquid glass only when somebody chose it. The one `feDisplacementMap` in the app is the `#bg-glass-distortion` filter in `GlassFilter`, dropped below 768px, under `prefers-reduced-transparency` and without `backdrop-filter`. Its blur is 16px like every other blur in the app (`glass.test.ts` holds the codebase to one value); `src/index.css` is the one stylesheet allowed to declare it.
 
 ## 8. Names, and the live database
 

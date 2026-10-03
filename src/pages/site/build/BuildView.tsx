@@ -424,7 +424,7 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
 
   if (phone) {
     return (
-      <Panel padding="16px">
+      <Panel surface="glass" padding="16px">
         <div data-testid="build-proof">
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             {orb}
@@ -448,7 +448,7 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
   }
 
   return (
-    <Panel padding="16px 18px" style={{ height: "100%" }}>
+    <Panel surface="glass" padding="16px 18px" style={{ height: "100%" }}>
       <div data-testid="build-proof">
         <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
           {orb}
@@ -602,7 +602,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
   const more = parts.length - shown.length;
 
   return (
-    <Panel padding={phone ? "14px 10px" : "14px 12px"} style={phone ? undefined : { height: "100%" }}>
+    <Panel surface="glass" padding={phone ? "14px 10px" : "14px 12px"} style={phone ? undefined : { height: "100%" }}>
       <div data-testid="build-anatomy">
         <PanelHead
           headingLevel={2}
@@ -702,7 +702,7 @@ function Viewer({
 function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineView; phone: boolean; onPlay: () => void }) {
   const { events, duration } = timeline;
   return (
-    <Panel padding="14px 16px" style={phone ? undefined : { height: "100%" }}>
+    <Panel surface="glass" padding="14px 16px" style={phone ? undefined : { height: "100%" }}>
       <div data-testid="build-timeline">
         <PanelHead
           headingLevel={2}
@@ -830,7 +830,7 @@ const MOCK_ROWS = 6;
 function ProofSkeleton({ phone }: { phone: boolean }) {
   const orb = phone ? 118 : 128;
   return (
-    <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? { minHeight: 440 } : { height: "100%" }}>
+    <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? { minHeight: 440 } : { height: "100%" }}>
       <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
         <Skeleton width={orb} height={orb} radius="50%" />
         <div style={{ display: "flex", flexDirection: "column", gap: 9, flexGrow: 1, minWidth: 0 }}>
@@ -859,14 +859,14 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
         <Skeleton height={36} radius={r.media} />
-        <Panel padding="14px 10px">
+        <Panel surface="glass" padding="14px 10px">
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 8 }}>{rows(46, MOCK_ROWS, 2)}</div>
           {/* "Show n more parts" */}
           <Skeleton width={120} height={13} style={{ margin: "14px 0 0 10px" }} />
         </Panel>
         <Skeleton height={317} radius={r.panel} />
-        <Panel padding="14px 16px">
+        <Panel surface="glass" padding="14px 16px">
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
           <div style={{ marginTop: 12 }}>{rows(43, 4, 0)}</div>
         </Panel>
@@ -890,12 +890,12 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
         </div>
       </div>
       <div style={bottomRow(tier)}>
-        <Panel padding="14px 12px" style={{ height: "100%" }}>
+        <Panel surface="glass" padding="14px 12px" style={{ height: "100%" }}>
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 8 }}>{rows(40, MOCK_ROWS, 2)}</div>
         </Panel>
         <Skeleton height="100%" radius={r.panel} />
-        <Panel padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
+        <Panel surface="glass" padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
           <div style={{ marginTop: 12 }}>{rows(41, 5, 0)}</div>
         </Panel>

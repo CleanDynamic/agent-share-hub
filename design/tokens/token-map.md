@@ -66,6 +66,10 @@ Every colour in `design/reference/**` resolves to one of these tokens. When port
 | `--arc-outer` | `#8FA79B` | `#CBC6E4` | the thin outer ring 12px outside the arc |
 | `--shadow-float` | `0 40px 90px rgba(26,35,32,.20)` | `0 40px 100px rgba(4,3,8,.6)` | floating things: sign-in card, bottom sheets |
 | `--panel-highlight` | `inset 0 1px 0 rgba(255,255,255,1)` | `inset 0 1px 0 rgba(238,234,244,.10)` | 1px top highlight added to every glass panel's box-shadow |
+| `--glass-fill` | `rgba(255,255,255,.58)` | `rgba(26,21,35,.80)` | the tint under body text on a liquid-glass page panel (`.bg-glass`). Not symmetric on purpose; `.96` under reduced transparency |
+| `--glass-rim` | `rgba(255,255,255,.55)` | `rgba(255,255,255,.55)` | inner rim light of a liquid-glass panel |
+| `--panel-highlight-color` | `rgba(255,255,255,1)` | `rgba(238,234,244,.12)` | the colour of the 1px top highlight inside `.bg-glass::before` |
+| `--glass-halo` | `0 0 21px -10px rgba(26,35,32,.18)` | `0 0 21px -8px rgba(255,255,255,.22)` | outer edge light of a liquid-glass panel, placed before `--shadow-card` |
 | `--ring-track` | `rgba(27,32,38,.10)` | `rgba(238,234,244,.10)` | unfilled part of the level / readiness ring |
 | `--lamp-glow` | `none` | `0 0 10px rgba(217,164,65,.6)` | glow on a lit lamp dot (Dusk only — a glow needs darkness) |
 | `--picture-lamp-glow` | `none` | `0 0 14px rgba(217,164,65,.65)` | glow on a lit picture lamp (Dusk only) |

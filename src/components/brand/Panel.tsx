@@ -1,26 +1,37 @@
-// The panel and its head (UI-P09).
+// The panel and its head (UI-P09, UI-P09b).
 //
-// TWO SURFACES. `glass` is every reading surface: `--glass` over a `--glass-border`
-// hairline, radius 16, `--shadow-card` plus the 1px top highlight
-// `--panel-highlight`, and `overflow: hidden`. `flat` is the workspace — compose
-// and import only — a solid `--flat` with the same hairline and no shadow, because
-// a place you work in is not a thing on display.
+// THREE SURFACES.
+//   `glass` is LIQUID GLASS (UI-P09b): the `.bg-glass` class in index.css — a refracted edge where the backdrop bends
+//   through the panel, over `--glass-fill`, a fill solid enough to read body text on. It is for the page-level panel
+//   that is a direct child of the page column and sits on the backdrop, and for nothing else.
+//   `plain` is every other reading surface: `--glass` over a `--glass-border` hairline, radius 16, `--shadow-card`
+//   plus the 1px top highlight `--panel-highlight`, `overflow: hidden`. Slightly translucent and flat, no blur and
+//   no filter. It is what anything that repeats inside a panel or a grid keeps, and it is the default, so a panel
+//   is liquid glass only when somebody chose it.
+//   `flat` is the workspace — compose and import only — a solid `--flat` with the same hairline and no shadow,
+//   because a place you work in is not a thing on display. A working surface does not refract.
 //
-// NO BLUR. Neither surface sets `backdrop-filter`: panels nest inside panels, and
-// glass in this system carries light, never meaning — a panel is a tinted
-// surface, not a blurred one. `glass.test.ts` holds the codebase to one blur
-// value, and that value belongs to the portalled overlays, which cannot nest.
+// THE BLUR BELONGS TO `glass` ALONE, and `glass` never nests: a `.bg-glass` inside another doubles the blur cost
+// and reads as fog. In development a nested one warns in the console. `glass.test.ts` holds the codebase to one blur
+// value and to the files that may declare one; `src/index.css` is the file for panels.
+//
+// A glass panel draws its own hairline and fill in `::before`, so the element itself carries neither — only the
+// halo and the card shadow, which sit outside the border box. The border is dropped rather than made transparent
+// so the pseudo-element's hairline is the panel's edge.
 //
 // The padding is the caller's to set: 16px 18px by default, 14px 16px for lists.
 
+import { useEffect, useRef } from "react";
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+export type PanelSurface = "glass" | "flat" | "plain";
+
 export interface PanelProps {
-  variant?: "glass" | "flat";
+  surface?: PanelSurface;
   /** CSS padding. 16px 18px by default; lists use 14px 16px. */
   padding?: string;
   as?: ElementType;
@@ -29,18 +40,45 @@ export interface PanelProps {
   className?: never;
 }
 
-export function Panel({ variant = "glass", padding = "16px 18px", as: Tag = "section", style, children }: PanelProps) {
+/** The class `src/index.css` defines. The only one this module spends. */
+const GLASS_CLASS = "bg-glass";
+
+/** Dev only: a liquid-glass panel inside another one doubles the blur cost, so say so. */
+function useWarnOnNestedGlass(active: boolean) {
+  const ref = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!import.meta.env.DEV || !active) return;
+    const parent = ref.current?.parentElement;
+    if (parent?.closest(`.${GLASS_CLASS}`)) {
+      console.warn(
+        '[Panel] surface="glass" is nested inside another liquid-glass panel. Nested glass doubles the blur cost and reads as fog; use surface="plain" for anything inside a panel.',
+        ref.current,
+      );
+    }
+  }, [active]);
+  return ref;
+}
+
+export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "section", style, children }: PanelProps) {
+  const glass = surface === "glass";
+  const ref = useWarnOnNestedGlass(glass);
   return (
     <Tag
+      ref={ref}
       data-ui="panel"
-      data-variant={variant}
+      data-surface={surface}
+      className={glass ? GLASS_CLASS : undefined}
       style={{
         position: "relative",
-        background: variant === "glass" ? t.glass : t.flat,
-        border: `1px solid ${t.glassBorder}`,
+        background: glass ? "none" : surface === "flat" ? t.flat : t.glass,
+        border: glass ? "none" : `1px solid ${t.glassBorder}`,
         borderRadius: r.panel,
         padding,
-        boxShadow: variant === "glass" ? `${t.shadowCard}, ${t.panelHighlight}` : "none",
+        boxShadow: glass
+          ? `${t.glassHalo}, ${t.shadowCard}`
+          : surface === "flat"
+            ? "none"
+            : `${t.shadowCard}, ${t.panelHighlight}`,
         overflow: "hidden",
         minWidth: 0,
         minHeight: 0,

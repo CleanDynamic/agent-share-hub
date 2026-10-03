@@ -126,7 +126,7 @@ The code review treats two things as automatic failures that this layout would t
 ### 3.4 Performance
 
 - The only blurred surfaces are the sticky header (64px tall, not a full-height panel, so the theme skill's rule holds) and, on phones, the header and dock. Panels, cards and chips never blur, and nothing blurred is nested.
-- Backdrop, arc and grain are static: no animation and no `feDisplacementMap` anywhere.
+- Backdrop, arc and grain are static: no animation and no `feDisplacementMap` in them. The one `feDisplacementMap` in the app is the liquid-glass filter (UI-P09b, `GlassFilter`), mounted once by `SiteFrame` and used only by `.bg-glass`.
 - The backdrop is a CSS background on the page, not a fixed full-screen layer, so it costs one paint.
 
 ## 4. Shared visual primitives
