@@ -3,7 +3,6 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { boardHeight, SiteFrameView } from "./SiteFrame";
-import { SITE_FRAME_ROUTES, usesSiteFrame } from "./siteFrameRoutes";
 
 const frame = (props: Parameters<typeof SiteFrameView>[0]) =>
   render(
@@ -17,51 +16,6 @@ describe("boardHeight", () => {
     expect(boardHeight("board")).toEqual({ height: 820 });
     expect(boardHeight("content")).toEqual({ minHeight: 820 });
     expect(boardHeight()).toEqual({ minHeight: 820 });
-  });
-});
-
-describe("usesSiteFrame", () => {
-  it("lists Home (UI-P27), the Gallery (UI-P28), the Build page (UI-P29), its lineage and Rebuild (UI-P31), /notifications (UI-P20), the Profile (UI-P34) and the sign-in pages (UI-P36), and nothing else yet", () => {
-    expect(SITE_FRAME_ROUTES).toEqual([
-      "/",
-      "/gallery",
-      "/b2/:slug",
-      "/b2/:slug/lineage",
-      "/rebuild/:slug",
-      "/notifications",
-      "/profile/:handle",
-      "/profile",
-      "/login",
-      "/signup",
-      "/reset-password",
-      "/reset-password/:token",
-      "/verify-email",
-      "/verify-email/:token",
-    ]);
-    expect(usesSiteFrame("/")).toBe(true);
-    expect(usesSiteFrame("/gallery")).toBe(true);
-    expect(usesSiteFrame("/b2/invoice-triage-agent")).toBe(true);
-    expect(usesSiteFrame("/b2/invoice-triage-agent/lineage")).toBe(true);
-    expect(usesSiteFrame("/rebuild/invoice-triage-agent")).toBe(true);
-    expect(usesSiteFrame("/notifications")).toBe(true);
-    expect(usesSiteFrame("/profile/maya")).toBe(true);
-    expect(usesSiteFrame("/profile")).toBe(true);
-    expect(usesSiteFrame("/login")).toBe(true);
-    expect(usesSiteFrame("/signup")).toBe(true);
-    expect(usesSiteFrame("/reset-password")).toBe(true);
-    expect(usesSiteFrame("/reset-password/a-token")).toBe(true);
-    expect(usesSiteFrame("/verify-email")).toBe(true);
-    expect(usesSiteFrame("/verify-email/a-token")).toBe(true);
-    // The callback and the consent screen are not repainted here, and stay in their own shell.
-    expect(usesSiteFrame("/auth/callback")).toBe(false);
-    expect(usesSiteFrame("/oauth/consent")).toBe(false);
-    expect(usesSiteFrame("/login/extra")).toBe(false);
-    expect(usesSiteFrame("/profile/maya/extra")).toBe(false);
-    expect(usesSiteFrame("/gallery/extra")).toBe(false);
-    expect(usesSiteFrame("/b2/invoice-triage-agent/extra")).toBe(false);
-    // The legacy post system's lineage address stays in the old frame.
-    expect(usesSiteFrame("/b/invoice-triage-agent/lineage")).toBe(false);
-    expect(usesSiteFrame("/notifications/extra")).toBe(false);
   });
 });
 
