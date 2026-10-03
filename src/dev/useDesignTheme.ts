@@ -18,6 +18,11 @@ import { useTheme, type ResolvedTheme } from "@/contexts/ThemeContext";
 
 export type DesignViewport = "desktop" | "mobile";
 
+/** UI-P37 — which of a page's four states the compare page draws. `populated` is the board itself. */
+export type DesignState = "populated" | "loading" | "empty" | "error";
+
+export const DESIGN_STATES: readonly DesignState[] = ["populated", "loading", "empty", "error"];
+
 const isTheme = (value: string | null): value is ResolvedTheme => value === "noon" || value === "dusk";
 
 /** The theme the URL asks for. No `?theme=` (or a bad one) means Noon, the reference's first room. */
@@ -50,4 +55,11 @@ export function useDesignTheme(): ResolvedTheme {
 export function useDesignViewport(): DesignViewport {
   const [params] = useSearchParams();
   return params.get("viewport") === "mobile" ? "mobile" : "desktop";
+}
+
+/** UI-P37 — `?state=loading|empty|error`. Anything else, or nothing, is the populated board the references show. */
+export function useDesignState(): DesignState {
+  const [params] = useSearchParams();
+  const asked = params.get("state");
+  return DESIGN_STATES.find((state) => state === asked) ?? "populated";
 }

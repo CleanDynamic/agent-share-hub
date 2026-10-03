@@ -78,6 +78,9 @@ export const REVEAL_SHIFT = 14;
 /** The skeleton's highlight sweep. */
 export const SHIMMER_MS = 1600;
 
+/** The brand skeleton's pulse (UI-P37): opacity 1 → .55 → 1 and nothing else. */
+export const SKELETON_PULSE_MS = 1400;
+
 /** One turn of a spinner. Paired with `LINEAR`, never with `STANDARD`. */
 export const SPIN_MS = 1000;
 

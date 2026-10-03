@@ -25,6 +25,7 @@ import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
+import { ErrorState } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { OrbRing } from "@/components/brand/OrbRing";
 import { Panel } from "@/components/brand/Panel";
@@ -50,8 +51,8 @@ export interface ReadinessPanelProps {
   workspaceTo?: string;
   /** The publish is in flight. */
   publishing?: boolean;
-  /** Why the last publish failed, in a sentence. */
-  error?: string | null;
+  /** The last publish did not save: said in the panel, with a way to ask again. */
+  failure?: { onRetry: () => void; error?: unknown } | null;
   phone?: boolean;
   /** The desktop column's fixed height. */
   fill?: boolean;
@@ -94,6 +95,7 @@ function NextLink({ to, children }: { to: string; children: string }) {
     <Link
       to={to}
       data-testid="rebuild-next"
+      data-hit=""
       {...handlers}
       style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3, borderRadius: r.chip, ...ring(state.focusVisible) }}
     >
@@ -109,7 +111,7 @@ export function ReadinessPanel({
   onKeepDraft,
   workspaceTo,
   publishing = false,
-  error = null,
+  failure = null,
   phone = false,
   fill = false,
 }: ReadinessPanelProps) {
@@ -168,10 +170,15 @@ export function ReadinessPanel({
             </Button>
           </div>
         )}
-        {error ? (
-          <p role="alert" style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.catBreakage }}>
-            {error}
-          </p>
+        {failure ? (
+          <ErrorState
+            line="That didn't save."
+            panel="Publish rebuild"
+            onRetry={failure.onRetry}
+            error={failure.error}
+            style={{ marginTop: 12 }}
+            data-testid="rebuild-publish-error"
+          />
         ) : null}
       </div>
     </Panel>

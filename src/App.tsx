@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { AddToCollectionHost } from "@/components/library/AddToCollectionHost";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { isPermissionError } from "@/lib/errors/permission";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PresenceProvider } from "@/components/PresenceProvider";
@@ -158,7 +159,14 @@ const KitPages = import.meta.env.DEV ? lazy(() => import("./pages/dev/KitPages")
    guard. RC-P06 deleted its second path, /dev/wide/rail, with the right rail
    it demonstrated. */
 const WideDemo = import.meta.env.DEV ? lazy(() => import("./pages/dev/WideDemo")) : null;
-const queryClient = new QueryClient();
+/* UI-P37: one retry, not three. TanStack's default backs off for about seven
+   seconds before a panel may say "That didn't load.", seven seconds of skeleton;
+   one retry is about one. A refusal is never retried: asking again changes nothing. */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: (count, error) => count < 1 && !isPermissionError(error) },
+  },
+});
 
 const App = () => (
   <ErrorBoundary>

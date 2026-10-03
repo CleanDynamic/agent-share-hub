@@ -6,10 +6,15 @@
    list; `rebuildFixture` takes the viewport. */
 
 import { rebuildFixture } from "@/dev/fixtures/rebuild";
-import { RebuildView } from "@/pages/site/rebuild/RebuildView";
+import { RebuildView, RebuildViewFailed, RebuildViewSkeleton } from "@/pages/site/rebuild/RebuildView";
 
 import type { DesignPageProps } from "./KitPages";
 
-export default function RebuildDemo({ fit = "board", viewport }: DesignPageProps) {
-  return <RebuildView fit={fit} {...rebuildFixture(viewport)} />;
+export default function RebuildDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
+  const sample = rebuildFixture(viewport);
+  /* UI-P37 — the other three states, from the same sample. */
+  if (state === "loading") return <RebuildViewSkeleton fit={fit} />;
+  if (state === "error") return <RebuildViewFailed panel="The rebuild" onRetry={() => undefined} />;
+  if (state === "empty") return <RebuildView fit={fit} {...sample} family={{ ...sample.family!, children: [] }} changes={[]} />;
+  return <RebuildView fit={fit} {...sample} />;
 }

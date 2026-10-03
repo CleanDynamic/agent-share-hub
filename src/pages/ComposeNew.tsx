@@ -1042,7 +1042,8 @@ export default function ComposeNew() {
                 borderRadius: 100,
                 background: "var(--glass-2)",
                 border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-                color: busy ? TEXT_MUTED : TEAL,
+                /* UI-P38: the hue stays on the border; text in evidence teal read 4.41:1 on dusk glass. */
+                color: busy ? TEXT_MUTED : TEXT_PRIMARY,
                 cursor: busy ? "wait" : "pointer",
                 whiteSpace: "nowrap",
               }}
@@ -1106,7 +1107,7 @@ export default function ComposeNew() {
                 borderRadius: 100,
                 background: "var(--glass-2)",
                 border: `1px solid ${hexToRgba(TEAL, 0.32)}`,
-                color: busy ? TEXT_MUTED : TEAL,
+                color: busy ? TEXT_MUTED : TEXT_PRIMARY,
                 cursor: busy ? "wait" : "pointer",
                 whiteSpace: "nowrap",
               }}

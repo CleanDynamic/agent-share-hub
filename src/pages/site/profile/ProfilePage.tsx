@@ -56,7 +56,7 @@ import {
 import { getStreakDays, respecTrack, setUserTrack, type TrackId } from "@/lib/progress";
 import { getMyBadgeKeys } from "@/lib/progress/badges";
 
-import { ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
+import { ProfileLoadFailed, ProfileNotice, ProfileView, ProfileViewSkeleton } from "./ProfileView";
 import type { ProfileMakerView } from "./ProfileBanner";
 import {
   ACTIVITY_DAYS,
@@ -133,7 +133,7 @@ export function ProfilePage() {
   const makerId = summary?.id ?? null;
   const isOwn = Boolean(summary?.isOwnProfile);
 
-  useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : "Not found");
+  useCrumbTitle(summary ? summary.displayName : summaryQuery.isPending ? null : summaryQuery.isError && !(summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found")) ? "Profile" : "Not found");
 
   /* ── the panels, each on its own ── */
 
@@ -329,6 +329,7 @@ export function ProfilePage() {
     counts,
     status: listError && (tab === "collections" ? collectionRows.length === 0 : builds.length === 0) ? "error" : list.isPending ? "loading" : "ready",
     errorKind: listError && isPermissionError(listError) ? "permission" : "error",
+    error: listError,
     cards,
     collections,
     hasMore: Boolean(list.hasNextPage),
@@ -337,13 +338,19 @@ export function ProfilePage() {
     onRetry: () => void list.refetch(),
   };
 
-  const activity = streakQuery.data
-    ? activityDays(streakQuery.data, new Date())
-    : streakQuery.isError
-      ? activityDays([], new Date())
-      : null;
+  const activity = streakQuery.data ? activityDays(streakQuery.data, new Date()) : null;
 
-  const marks = marksQuery.data ? marksView(marksQuery.data) : marksQuery.isError ? [] : null;
+  const marks = marksQuery.data ? marksView(marksQuery.data) : null;
+
+  /* A read that failed says so in its own panel — never as an empty grid or a start at zero — and the rest carry on. */
+  const failure = (query: { isError: boolean; data: unknown; error: unknown; refetch: () => unknown }) =>
+    query.isError && query.data === undefined ? { onRetry: () => void query.refetch(), error: query.error } : undefined;
+  const failed = {
+    level: failure(progressQuery),
+    figures: failure(figuresQuery),
+    activity: failure(streakQuery),
+    marks: failure(marksQuery),
+  };
 
   /* ── follow ── */
 
@@ -449,6 +456,12 @@ export function ProfilePage() {
   /* No lookup yet is a session still arriving, or a signed-out reader on their way to /login. */
   if (authLoading || !lookup || summaryQuery.isPending) return <ProfileViewSkeleton />;
 
+  /* getProfileSummary throws "Profile not found" for a handle nobody has: that is a missing page, not a failed read. */
+  const missing = summaryQuery.error instanceof Error && summaryQuery.error.message.startsWith("Profile not found");
+  if (summaryQuery.isError && !summary && !missing) {
+    return <ProfileLoadFailed onRetry={() => void summaryQuery.refetch()} error={summaryQuery.error} />;
+  }
+
   if (!summary || !maker) {
     return (
       <ProfileNotice
@@ -486,6 +499,7 @@ export function ProfilePage() {
         works={works}
         activity={activity}
         marks={marks}
+        failed={failed}
       />
 
       {isOwn && viewerId ? (

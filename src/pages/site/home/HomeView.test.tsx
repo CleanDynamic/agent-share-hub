@@ -179,8 +179,14 @@ describe("HomeView's empty and failed states", () => {
     expect(screen.getByText("Run a build this week and suggestions appear here.")).toBeTruthy();
     expect(screen.queryByTestId("weekly-challenge")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(onNavigate).toHaveBeenCalledWith("/login?redirect=/");
+    /* One Sign in in each personal panel — never a disabled control with no reason. */
+    const signIns = screen.getAllByRole("button", { name: "Sign in" });
+    expect(signIns).toHaveLength(3);
+    for (const signIn of signIns) {
+      onNavigate.mockClear();
+      fireEvent.click(signIn);
+      expect(onNavigate).toHaveBeenCalledWith("/login?redirect=/");
+    }
   });
 
   it("an empty streak and an empty where-next say so", () => {
@@ -196,6 +202,121 @@ describe("HomeView's empty and failed states", () => {
     mount({ litToday: null, reproducedToday: null, runsThisWeek: null });
     expect(screen.queryByTestId("home-lit-badge")).toBeNull();
     expect(screen.queryByText(/runs$/)).toBeNull();
+  });
+});
+
+describe("HomeView while it loads (UI-P37)", () => {
+  const loading = () => homeFixture("loading");
+
+  it("holds every panel in place with bones, each region busy and named for assistive technology", () => {
+    mount(loading());
+    for (const [id, what] of [
+      ["home-feed-loading", "Loading the visitors’ book"],
+      ["home-challenges-loading", "Loading this week’s challenges"],
+      ["home-streak-loading", "Loading your streak"],
+      ["home-where-next-loading", "Loading suggestions"],
+    ] as const) {
+      const region = screen.getByTestId(id);
+      expect(region.getAttribute("aria-busy")).toBe("true");
+      expect(region.textContent).toContain(what);
+    }
+    expect(screen.getByText("Loading the run counts").closest("[aria-busy]")?.getAttribute("aria-busy")).toBe("true");
+  });
+
+  it("draws the book's rows and nothing that looks like content", () => {
+    mount(loading());
+    expect(screen.queryAllByTestId("home-row")).toHaveLength(0);
+    expect(screen.queryAllByTestId("weekly-challenge")).toHaveLength(0);
+    expect(screen.queryByText("Nothing hung yet.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.getByTestId("home-feed-loading").querySelectorAll('[data-ui="skeleton"]').length).toBeGreaterThan(10);
+  });
+
+  it("keeps the panels' heads while their content loads", () => {
+    mount(loading());
+    for (const name of ["The visitors’ book", "This week’s challenges", "Streak", "Where next"]) {
+      expect(screen.getByRole("heading", { level: 2, name })).toBeTruthy();
+    }
+  });
+
+  it("is as tall a row as a loaded one: a row is its padding, its content and its hairline", () => {
+    mount(loading());
+    const rows = screen.getByTestId("home-feed-loading").children;
+    // The region's first child is the hidden "Loading …" text; the rows follow it.
+    const heights = [...rows].slice(1).map((row) => (row as HTMLElement).style.height);
+    expect(heights).toEqual(["74px", "74px", "74px", "74px", "74px"]);
+  });
+});
+
+describe("HomeView when its panels fail (UI-P37)", () => {
+  it("says That didn't load. in each panel that failed, naming it, and leaves the rest as they were", () => {
+    const base = homeFixture();
+    mount({ feed: { ...base.feed, status: "error", rows: [] }, streak: { status: "error", onRetry: vi.fn() } });
+    const feed = screen.getByTestId("home-feed-error");
+    expect(feed.textContent).toContain("That didn't load.");
+    expect(feed.textContent).toContain("The visitors’ book");
+    expect(screen.getByTestId("home-streak-error").textContent).toContain("Streak");
+    // The panels that loaded are still there.
+    expect(screen.getAllByTestId("weekly-challenge")).toHaveLength(3);
+    expect(screen.getAllByTestId("home-where-next-row")).toHaveLength(3);
+  });
+
+  it("asks again from the panel that failed, and only that one", () => {
+    const base = homeFixture();
+    const feedRetry = vi.fn();
+    const streakRetry = vi.fn();
+    mount({
+      feed: { ...base.feed, status: "error", rows: [], onRetry: feedRetry },
+      streak: { status: "error", onRetry: streakRetry },
+    });
+    fireEvent.click(within(screen.getByTestId("home-streak-error")).getByRole("button", { name: "Try again" }));
+    expect(streakRetry).toHaveBeenCalledTimes(1);
+    expect(feedRetry).not.toHaveBeenCalled();
+  });
+
+  it("puts the orbs' failure in their panel, in place of the orbs", () => {
+    const onRetry = vi.fn();
+    mount({ reproducedToday: null, runsThisWeek: null, orbsError: { onRetry } });
+    const failure = screen.getByTestId("home-orbs-error");
+    expect(failure.textContent).toContain("Run counts");
+    expect(screen.queryByText(/runs reported/)).toBeNull();
+    fireEvent.click(within(failure).getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("never shows the exception behind a failure, but logs it", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const base = homeFixture();
+    const error = new Error("PGRST301: JWT expired");
+    mount({ feed: { ...base.feed, status: "error", rows: [], error } });
+    expect(document.body.textContent).not.toContain("PGRST301");
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+});
+
+describe("HomeView's empty panels (UI-P37)", () => {
+  it("says each in one sentence, with at most one action", () => {
+    mount(homeFixture("empty"));
+    for (const id of ["home-feed-empty", "home-challenges-signed-out", "home-streak-empty", "home-where-next-empty"]) {
+      const empty = screen.getByTestId(id);
+      expect(empty.querySelectorAll("p")).toHaveLength(1);
+      expect(within(empty).queryAllByRole("button").length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("asks a signed-out visitor in with Sign in, in each personal panel, and a signed-in one on to the gallery", () => {
+    mount(homeFixture("empty"));
+    expect(within(screen.getByTestId("home-challenges-signed-out")).getByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(within(screen.getByTestId("home-streak-empty")).getByRole("button", { name: "Sign in" })).toBeTruthy();
+    expect(within(screen.getByTestId("home-where-next-empty")).getByRole("button", { name: "Enter the gallery" })).toBeTruthy();
+  });
+
+  it("says Run a build today to start a streak. to a signed-in reader with no streak, with no action", () => {
+    mount({ streak: { status: "ready", data: { count: 0, frozenUsed: 0, week: Array(7).fill("none") } } });
+    const empty = screen.getByTestId("home-streak-empty");
+    expect(empty.textContent).toContain("Run a build today to start a streak.");
+    expect(within(empty).queryAllByRole("button")).toHaveLength(0);
   });
 });
 

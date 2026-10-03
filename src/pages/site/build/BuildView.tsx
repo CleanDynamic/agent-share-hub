@@ -30,7 +30,10 @@ import { Link } from "react-router-dom";
 
 import { Arc, ARC_BUILD_HERO, ARC_BUILD_HERO_MOBILE } from "@/components/brand/Arc";
 import { Button } from "@/components/brand/Button";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { Detail } from "@/components/brand/Detail";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { HeroPlate } from "@/components/brand/HeroPlate";
@@ -39,6 +42,7 @@ import { OrbGlass } from "@/components/brand/OrbGlass";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { PartViewer } from "@/components/brand/PartViewer";
 import { Plaque } from "@/components/brand/Plaque";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { Timeline } from "@/components/brand/Timeline";
 import { WallLabel } from "@/components/brand/WallLabel";
@@ -46,7 +50,7 @@ import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { categoryColour } from "@/lib/theme/category";
-import { GLASS_BLUR, ring, skeletonStyle } from "@/lib/theme/controls";
+import { GLASS_BLUR, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
@@ -105,17 +109,6 @@ const tabId = (tab: BuildTabKey) => `build-viewer-tab-${tab}`;
 /** How long a tile or a button says it worked. */
 const CONFIRMED_MS = 1500;
 
-const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  margin: -1,
-  padding: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-  border: 0,
-};
 
 /* ── the polite "Copied" ── */
 
@@ -384,6 +377,20 @@ function CompletenessBlock({ completeness }: { completeness: CompletenessView })
   );
 }
 
+/** An optimistic run that the server refused: said once in the panel, with a retry. */
+function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
+  return (
+    <ErrorState
+      line="That didn't save."
+      panel="Reproduction"
+      onRetry={failure.onRetry}
+      error={failure.error}
+      style={{ marginTop: 12 }}
+      data-testid="build-run-error"
+    />
+  );
+}
+
 function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boolean; now?: number }) {
   const count = proof.build.reproduction_count ?? 0;
   const orb = <OrbGlass size={phone ? 118 : 128} label={ranIt(count)} sub={proof.lastRun ? `last ${proof.lastRun}` : undefined} />;
@@ -403,6 +410,7 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
           <div style={{ marginTop: 14 }}>
             <ProofButton action={proof.action} phone />
           </div>
+          {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
           <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "center", marginTop: 8 }}>{NOTE}</div>
           <div style={{ marginTop: 14 }}>
             <WallLabel columns={2} cells={cells} />
@@ -425,6 +433,7 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
             <div style={{ fontFamily: FIGTREE, fontSize: 11, color: t.text2 }}>{NOTE}</div>
           </div>
         </div>
+        {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
         <div style={{ marginTop: 14 }}>
           <WallLabel columns={3} cells={cells} />
         </div>
@@ -580,7 +589,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
           }
         />
         {parts.length === 0 ? (
-          <p style={{ margin: "8px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>Nothing has been placed in this build yet.</p>
+          <EmptyState line="This build has no parts yet." data-testid="build-anatomy-empty" />
         ) : (
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
             {shown.map((part) => (
@@ -592,6 +601,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
           <button
             type="button"
             data-testid="build-anatomy-more"
+            data-ring-inset=""
             onClick={() => setExpanded(true)}
             style={{
               display: "block",
@@ -678,7 +688,7 @@ function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineVie
           {events.length > 0 ? (
             <Timeline events={events} size={phone ? "phone" : "desktop"} label="Kept steps" />
           ) : (
-            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>No steps were kept for this build.</p>
+            <EmptyState line="No events were kept for this build." data-testid="build-timeline-empty" style={{ padding: "16px 0" }} />
           )}
         </div>
       </div>
@@ -749,12 +759,13 @@ function PhoneBuild(props: BuildViewProps) {
       <Hero hero={hero} actions={actions} phone announce={announce} />
       <ActionDock actions={actions} phone announce={announce} />
       <ProofPanel proof={proof} phone now={now} />
-      <ScrollRow gap={6} label="Sections of this build">
+      <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (
           <FilterChip
             key={tab.value}
             label={tab.label}
             on={tab.value === viewer.tab}
+            tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
             onClick={() => {
               viewer.onTabChange(tab.value);
               reveal();
@@ -770,7 +781,7 @@ function PhoneBuild(props: BuildViewProps) {
           reveal();
         }}
       />
-      <div ref={viewerRef} style={{ scrollMarginTop: 72 }}>
+      <div ref={viewerRef} role="tabpanel" id="build-tabpanel" aria-labelledby={`build-tab-${viewer.tab}`} style={{ scrollMarginTop: 72 }}>
         <Viewer viewer={viewer} part={selectedPart(anatomy)} phone announce={announce} />
       </div>
       <TimelinePanel
@@ -793,40 +804,92 @@ export function BuildView(props: BuildViewProps) {
 
 /* ── loading, missing, failed ── */
 
-function Bone({ height, radius = r.panel, style }: { height: number | string; radius?: string | number; style?: CSSProperties }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), height, borderRadius: radius, ...style }} />;
+const MOCK_ROWS = 6;
+
+/** The proof panel before the record arrives: the orb's circle, the plaque, the button and the details, as bones. */
+function ProofSkeleton({ phone }: { phone: boolean }) {
+  const orb = phone ? 118 : 128;
+  return (
+    <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? { minHeight: 440 } : { height: "100%" }}>
+      <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+        <Skeleton width={orb} height={orb} radius="50%" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, flexGrow: 1, minWidth: 0 }}>
+          <Skeleton width={90} height={11} />
+          <Skeleton height={phone ? 38 : 52} radius={r.chip} />
+          {phone ? null : <Skeleton height={38} radius={r.control} />}
+          {phone ? null : <Skeleton width="80%" height={11} />}
+        </div>
+      </div>
+      {phone ? <Skeleton height={48} radius={r.control} style={{ marginTop: 14 }} /> : null}
+      <Skeleton height={phone ? 176 : 117} radius={r.control} style={{ marginTop: 14 }} />
+    </Panel>
+  );
 }
 
-/** The first screen's shape in `--recess`, before the record arrives. */
+/** The first screen's shape before the record arrives: the panels, their heads and padding are the real ones; only what is inside them is a bone. */
 export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
   const phone = useIsPhone();
+  const rows = (height: number, count: number, gap: number) =>
+    Array.from({ length: count }, (_, i) => <Skeleton key={i} height={height} radius={r.control} style={i ? { marginTop: gap } : undefined} />);
   if (phone) {
     return (
-      <div data-testid="build-loading" role="status" aria-busy="true" aria-label="Loading the build" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Bone height={382} radius={18} />
-        <Bone height={76} radius={18} />
-        <Bone height={438} />
-      </div>
+      <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <Skeleton height={382} radius={18} />
+        <Skeleton height={76} radius={18} />
+        <ProofSkeleton phone />
+        <Skeleton height={36} radius={r.media} />
+        <Panel padding="14px 10px">
+          <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
+          <div style={{ marginTop: 8 }}>{rows(46, MOCK_ROWS, 2)}</div>
+          {/* "Show n more parts" */}
+          <Skeleton width={120} height={13} style={{ margin: "14px 0 0 10px" }} />
+        </Panel>
+        <Skeleton height={317} radius={r.panel} />
+        <Panel padding="14px 16px">
+          <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
+          <div style={{ marginTop: 12 }}>{rows(43, 4, 0)}</div>
+        </Panel>
+      </LoadingRegion>
     );
   }
+  const board = fit === "board";
   return (
-    <div
+    <LoadingRegion
+      what="the build"
+      announce
       data-testid="build-loading"
-      role="status"
-      aria-busy="true"
-      aria-label="Loading the build"
-      style={{ display: "flex", flexDirection: "column", gap: 12, ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 420px", gap: 12, height: HERO_ROW, flexShrink: 0 }}>
-        <Bone height="100%" />
-        <Bone height="100%" />
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 420px", gap: 12, flexShrink: 0, ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
+        <div style={{ minHeight: 0 }}>
+          <Skeleton height="100%" radius={r.panel} style={{ minHeight: HERO_ROW + 2, boxSizing: "border-box" }} />
+        </div>
+        <div style={{ minHeight: 0 }}>
+          <ProofSkeleton phone={false} />
+        </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 406 }}>
-        <Bone height="100%" />
-        <Bone height="100%" />
-        <Bone height="100%" />
+      <div style={{ display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+        <Panel padding="14px 12px" style={{ height: "100%" }}>
+          <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
+          <div style={{ marginTop: 8 }}>{rows(40, MOCK_ROWS, 2)}</div>
+        </Panel>
+        <Skeleton height="100%" radius={r.panel} />
+        <Panel padding="14px 16px" style={{ height: "100%" }}>
+          <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
+          <div style={{ marginTop: 12 }}>{rows(41, 5, 0)}</div>
+        </Panel>
       </div>
-    </div>
+    </LoadingRegion>
+  );
+}
+
+/** The record could not be read: the page's own panel says so, inside the frame, with a retry. The h1 is for assistive technology alone. */
+export function BuildViewFailed({ onRetry, error }: { onRetry: () => void; error?: unknown }) {
+  return (
+    <Panel padding="24px 24px">
+      <h1 style={VISUALLY_HIDDEN}>The build</h1>
+      <ErrorState panel="The build" onRetry={onRetry} error={error} data-testid="build-error" />
+    </Panel>
   );
 }
 

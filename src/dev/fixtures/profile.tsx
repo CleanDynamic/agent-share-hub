@@ -10,6 +10,7 @@
 import { BuildCard, CardCredit } from "@/components/brand/BuildCard";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import type { ActivityDay } from "@/components/brand/ActivityGrid";
+import type { DesignState } from "@/dev/useDesignTheme";
 import type { ProfileViewProps } from "@/pages/site/profile/ProfileView";
 import {
   ACTIVITY_DAYS,
@@ -79,11 +80,55 @@ function activity(): ActivityDay[] {
 const marks = (): MarkView[] =>
   fixtures.profile.marks.map(([name, tier]) => ({ key: name, name, tier: tier as MarkView["tier"] }));
 
+/**
+ * UI-P37 — the same page in its other three states, from the same sample. Loading has
+ * the banner and every panel waiting (the figures hold their bars' places, as the
+ * sample draws them); empty is a maker with nothing yet; error has every panel
+ * failing, each in its own place.
+ */
+function inState(base: Omit<ProfileViewProps, "fit">, state: DesignState): Omit<ProfileViewProps, "fit"> {
+  if (state === "loading") {
+    return {
+      ...base,
+      maker: null,
+      level: null,
+      figures: null,
+      figuresBarsExpected: true,
+      works: { ...base.works, status: "loading", counts: {}, cards: [] },
+      activity: null,
+      marks: null,
+    };
+  }
+  if (state === "empty") {
+    return {
+      ...base,
+      level: base.level && { ...base.level, percent: 0, xp: 0, remaining: base.level.xpNext, streakDays: 0, streakBest: 0 },
+      figures: { buildsHung: 0, reproducedByOthers: 0, rebuildsOfWork: 0, bountiesSolved: 0, bountyEarningsGbp: 0 },
+      works: { ...base.works, counts: { builds: 0, rebuilds: 0, reproduced: 0, collections: 0 }, cards: [] },
+      activity: Array.from({ length: ACTIVITY_DAYS }, () => ({ count: 0, frozen: false })),
+      marks: [],
+    };
+  }
+  if (state === "error") {
+    const failure = { onRetry: noop };
+    return {
+      ...base,
+      level: null,
+      figures: null,
+      works: { ...base.works, status: "error", counts: {}, cards: [], onRetry: noop },
+      activity: null,
+      marks: null,
+      failed: { level: failure, figures: failure, activity: failure, marks: failure },
+    };
+  }
+  return base;
+}
+
 /** Everything `ProfileView` needs except `fit`, from the sample data. */
-export function profileFixture(): Omit<ProfileViewProps, "fit"> {
+export function profileFixture(state: DesignState = "populated"): Omit<ProfileViewProps, "fit"> {
   const p = fixtures.profile;
   const v = fixtures.viewer;
-  return {
+  return inState({
     maker: {
       id: "sample-maya",
       name: v.name,
@@ -127,7 +172,7 @@ export function profileFixture(): Omit<ProfileViewProps, "fit"> {
     },
     activity: activity(),
     marks: marks(),
-  };
+  }, state);
 }
 
 /** What the Collections tab draws, from the sample's builds: four collections of builds. */

@@ -35,6 +35,8 @@ import {
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { LampDot } from "@/components/brand/LampDot";
@@ -42,13 +44,14 @@ import { OrbGlass } from "@/components/brand/OrbGlass";
 import { OrbSolid } from "@/components/brand/OrbSolid";
 import { PageHeading } from "@/components/brand/PageHeading";
 import { Panel, PanelHead } from "@/components/brand/Panel";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { LineChart } from "@/components/brand/charts";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { shortAgo } from "@/pages/site/home/homeModel";
-import { ring, skeletonStyle } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -73,7 +76,7 @@ import {
 /** What a panel that loads on its own shows. */
 export type ActivityLoad<T> =
   | { status: "loading" }
-  | { status: "error"; onRetry: () => void }
+  | ({ status: "error" } & PanelFailure)
   | { status: "ready"; data: T };
 
 export interface ActivityListProps {
@@ -84,6 +87,8 @@ export interface ActivityListProps {
   loadingMore: boolean;
   onMore: () => void;
   onRetry: () => void;
+  /** The real error behind `status: "error"`; logged once by the panel, never shown. */
+  error?: unknown;
 }
 
 export interface ActivityRuns {
@@ -108,12 +113,18 @@ export interface ActivityViewProps {
   kindCounts: KindCounts;
   /** Different people who ran the viewer's builds this week; null until known. */
   peopleThisWeek: number | null;
+  /** That count could not be read: its orb's place says so. */
+  peopleError?: PanelFailure;
   runs: ActivityLoad<ActivityRuns>;
+  /**
+   * A mark-read the server refused. The row and the count have already gone back to
+   * unread (the page re-reads them), and the list says so in its own place with a way
+   * to ask again — an optimistic action that fails rolls back with a line, not silence.
+   */
+  writeError?: PanelFailure;
   /** A row was followed: it marks itself read. */
   onOpen: (row: ActivityRow) => void;
   onMarkAllRead: () => void;
-  /** Navigation from a button (links are links). */
-  onNavigate: (to: string) => void;
 }
 
 const GALLERY = "/gallery";
@@ -153,31 +164,82 @@ const whoStyle: CSSProperties = {
 
 const detailStyle: CSSProperties = mono(11, { color: t.label, marginTop: 3, overflowWrap: "anywhere" });
 
-function Skeleton({ height, style }: { height: number; style?: CSSProperties }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), height, ...style }} />;
+/** A mark-read that did not save: the rows are unread again, and this says so where they are. */
+function WriteFailed({ failure }: { failure: PanelFailure }) {
+  return (
+    <ErrorState
+      line="That didn't save."
+      panel="Activity"
+      onRetry={failure.onRetry}
+      error={failure.error}
+      style={{ paddingTop: 14 }}
+      data-testid="activity-write-error"
+    />
+  );
 }
 
-function Failed({ onRetry, size }: { onRetry: () => void; size: 30 | 44 }) {
+/** A day's heading before its rows have arrived: the eyebrow's own line. */
+function DayHeadingSkeleton() {
+  return <Skeleton width={84} height={13} />;
+}
+
+/** An activity row before it has arrived: the desktop row's grid and 64px of content in its own padding. */
+function DesktopRowSkeleton() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, paddingTop: 14 }}>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>This could not be loaded.</p>
-      <Button variant="secondary" size={size} fontSize={size === 44 ? 13 : 12} onClick={onRetry}>
-        Try again
-      </Button>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "14px 38px minmax(0, 1fr) 76px 40px",
+        gap: 12,
+        alignItems: "center",
+        minHeight: 64,
+        padding: "6px 12px",
+        boxSizing: "content-box",
+        borderRadius: 14,
+      }}
+    >
+      <Skeleton width={10} height={7} radius={r.full} />
+      <Skeleton width={34} height={34} radius="50%" />
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <Skeleton width="62%" height={17} />
+        <Skeleton width="38%" height={11} />
+      </div>
+      <Skeleton width={76} height={46} radius={9} />
+      <Skeleton width={26} height={10} style={{ justifySelf: "end" }} />
     </div>
   );
 }
 
-function Empty({ phone, onNavigate }: { phone: boolean; onNavigate: (to: string) => void }) {
+/** The phone's row before it has arrived: 77px with its hairline. */
+function PhoneRowSkeleton() {
   return (
-    <div data-testid="activity-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 14, paddingTop: 14 }}>
-      <p style={{ ...display(phone ? 20 : 22), color: t.text, margin: 0 }}>When someone runs one of your builds, it shows here.</p>
-      <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} onClick={() => onNavigate(GALLERY)}>
-        Enter the gallery
-      </Button>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "38px minmax(0, 1fr) auto",
+        gap: 12,
+        alignItems: "center",
+        padding: "12px 10px",
+        borderRadius: 14,
+        borderBottom: `1px solid ${t.hairline}`,
+        boxSizing: "border-box",
+        height: 77,
+      }}
+    >
+      <Skeleton width={36} height={36} radius="50%" />
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <Skeleton width="48%" height={13} />
+        <Skeleton width="66%" height={19} />
+        <Skeleton width="36%" height={11} />
+      </div>
+      <Skeleton width={24} height={10} />
     </div>
   );
 }
+
+/** Today's three rows and yesterday's four, as the board draws them. */
+const DESKTOP_LOADING_DAYS = [3, 4] as const;
+const PHONE_LOADING_ROWS = 3;
 
 /** The actor, with the kind's badge on their shoulder. Hidden from assistive tech: the row's words name both. */
 function Who({ row, size }: { row: ActivityRow; size: 34 | 36 }) {
@@ -371,25 +433,32 @@ function DesktopList({
   chosen,
   now,
   onOpen,
-  onNavigate,
 }: {
   list: ActivityListProps;
   chosen: ReadonlySet<ActivityKind>;
   now: number;
   onOpen: (row: ActivityRow) => void;
-  onNavigate: (to: string) => void;
 }) {
   if (list.status === "loading") {
     return (
-      <div aria-busy="true" aria-label="Loading your activity" style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 14 }}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} height={76} style={{ borderRadius: 14 }} />
+      <LoadingRegion what="your activity" data-testid="activity-loading">
+        {DESKTOP_LOADING_DAYS.map((rows, day) => (
+          <div key={day}>
+            <div style={{ padding: "14px 4px 6px" }}>
+              <DayHeadingSkeleton />
+            </div>
+            {Array.from({ length: rows }, (_, i) => (
+              <DesktopRowSkeleton key={i} />
+            ))}
+          </div>
         ))}
-      </div>
+      </LoadingRegion>
     );
   }
-  if (list.status === "error") return <Failed onRetry={list.onRetry} size={30} />;
-  if (list.groups.length === 0) return <Empty phone={false} onNavigate={onNavigate} />;
+  if (list.status === "error") {
+    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} style={{ paddingTop: 14 }} data-testid="activity-error" />;
+  }
+  if (list.groups.length === 0) return <EmptyState line="All caught up." data-testid="activity-empty" />;
 
   const groups = filterGroups(list.groups, chosen);
   return (
@@ -419,36 +488,37 @@ function PhoneList({
   chosen,
   now,
   onOpen,
-  onNavigate,
 }: {
   list: ActivityListProps;
   chosen: ReadonlySet<ActivityKind>;
   now: number;
   onOpen: (row: ActivityRow) => void;
-  onNavigate: (to: string) => void;
 }) {
   if (list.status === "loading") {
     return (
       <Panel padding="14px 8px">
-        <div aria-busy="true" aria-label="Loading your activity" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} height={76} style={{ borderRadius: 14 }} />
-          ))}
-        </div>
+        <LoadingRegion what="your activity" data-testid="activity-loading">
+          <DayHeadingSkeleton />
+          <div style={{ marginTop: 6 }}>
+            {Array.from({ length: PHONE_LOADING_ROWS }, (_, i) => (
+              <PhoneRowSkeleton key={i} />
+            ))}
+          </div>
+        </LoadingRegion>
       </Panel>
     );
   }
   if (list.status === "error") {
     return (
       <Panel padding="14px 16px">
-        <Failed onRetry={list.onRetry} size={44} />
+        <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} data-testid="activity-error" />
       </Panel>
     );
   }
   if (list.groups.length === 0) {
     return (
-      <Panel padding="14px 16px">
-        <Empty phone onNavigate={onNavigate} />
+      <Panel padding="0 16px">
+        <EmptyState line="All caught up." data-testid="activity-empty" />
       </Panel>
     );
   }
@@ -482,24 +552,36 @@ function PhoneList({
 
 /* ── the right column ── */
 
-function OrbPlaceholder() {
-  return <div aria-hidden="true" style={{ width: 140, height: 140, borderRadius: r.full, background: t.recess, flexShrink: 0 }} />;
-}
-
-function Orbs({ peopleThisWeek, live }: { peopleThisWeek: number | null; live: boolean }) {
-  return (
-    <div data-testid="activity-orbs" style={{ display: "flex", gap: 12, justifyContent: "center", alignItems: "center", height: "100%" }}>
-      {peopleThisWeek === null ? (
-        <OrbPlaceholder />
-      ) : (
-        <OrbSolid
-          size={140}
-          top="This week"
-          value={peopleThisWeek.toLocaleString("en-GB")}
-          bottom={peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}
-        />
-      )}
+function Orbs({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; live: boolean }) {
+  const row: CSSProperties = { display: "flex", gap: 12, justifyContent: "center", alignItems: "center", height: "100%" };
+  const people =
+    peopleThisWeek !== null ? (
+      <OrbSolid
+        size={140}
+        top="This week"
+        value={peopleThisWeek.toLocaleString("en-GB")}
+        bottom={peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}
+      />
+    ) : peopleError ? (
+      <div style={{ width: 140, display: "flex", justifyContent: "center" }}>
+        <ErrorState panel="People this week" onRetry={peopleError.onRetry} error={peopleError.error} data-testid="activity-orbs-error" />
+      </div>
+    ) : (
+      <Skeleton width={140} height={140} radius="50%" />
+    );
+  const content = (
+    <>
+      {people}
       <OrbGlass size={140} label={live ? "Listening" : "Reconnecting"} sub={live ? "live" : "offline"} />
+    </>
+  );
+  return peopleThisWeek === null && !peopleError ? (
+    <LoadingRegion what="the people who ran your builds" data-testid="activity-orbs" style={row}>
+      {content}
+    </LoadingRegion>
+  ) : (
+    <div data-testid="activity-orbs" style={row}>
+      {content}
     </div>
   );
 }
@@ -511,9 +593,11 @@ function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
       <PanelHead title="Runs of your builds" subtitle={chartSubtitle(marker)} titleSize={13} headingLevel={2} />
       <div data-testid="activity-runs" style={{ marginTop: 10 }}>
         {runs.status === "loading" ? (
-          <Skeleton height={120} style={{ width: 360 }} />
+          <LoadingRegion what="the runs chart" data-testid="activity-runs-loading">
+            <Skeleton width={360} height={120} />
+          </LoadingRegion>
         ) : runs.status === "error" ? (
-          <Failed onRetry={runs.onRetry} size={30} />
+          <ErrorState panel="Runs of your builds" onRetry={runs.onRetry} error={runs.error} data-testid="activity-runs-error" />
         ) : (
           <LineChart width={360} height={120} values={runs.data.values} markerIndex={runs.data.markerIndex} label={runs.data.label} />
         )}
@@ -529,7 +613,8 @@ function KindToggle({
   onToggle,
 }: {
   kind: ActivityKind;
-  count: number;
+  /** Of the loaded rows. Null while the list loads (a bone says it, not a zero), undefined when it could not be read (nothing does). */
+  count: number | null | undefined;
   on: boolean;
   onToggle: () => void;
 }) {
@@ -565,17 +650,23 @@ function KindToggle({
       <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", fontWeight: on ? 600 : 400, color: t.text, flexGrow: 1 }}>
         {kind}
       </span>
-      <span style={mono(11, { color: t.label })}>{count.toLocaleString("en-GB")}</span>
+      {count === null ? (
+        <Skeleton width={16} height={11} />
+      ) : count === undefined ? null : (
+        <span style={mono(11, { color: t.label })}>{count.toLocaleString("en-GB")}</span>
+      )}
     </button>
   );
 }
 
 function ShowMe({
   kindCounts,
+  listStatus,
   chosen,
   onToggle,
 }: {
   kindCounts: KindCounts;
+  listStatus: ActivityListProps["status"];
   chosen: ReadonlySet<ActivityKind>;
   onToggle: (kind: ActivityKind) => void;
 }) {
@@ -584,7 +675,13 @@ function ShowMe({
       <PanelHead title="Show me" titleSize={14} headingLevel={2} />
       <div role="group" aria-label="Show me" style={{ marginTop: 6 }}>
         {ACTIVITY_KINDS.map((kind) => (
-          <KindToggle key={kind} kind={kind} count={kindCounts[kind]} on={chosen.has(kind)} onToggle={() => onToggle(kind)} />
+          <KindToggle
+            key={kind}
+            kind={kind}
+            count={listStatus === "ready" ? kindCounts[kind] : listStatus === "loading" ? null : undefined}
+            on={chosen.has(kind)}
+            onToggle={() => onToggle(kind)}
+          />
         ))}
       </div>
     </>
@@ -597,7 +694,7 @@ function ShowMe({
 const SHOW_ME_MIN = BOARD_GRID_HEIGHT - 180 - 190 - 12 * 2;
 
 function DesktopActivity(props: ActivityViewProps) {
-  const { fit = "content", now, list, unread, live, kindCounts, peopleThisWeek, runs, onOpen, onMarkAllRead, onNavigate } = props;
+  const { fit = "content", now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
   const board = fit === "board";
 
@@ -634,14 +731,15 @@ function DesktopActivity(props: ActivityViewProps) {
               </Button>
             }
           />
-          <DesktopList list={list} chosen={chosen} now={now} onOpen={onOpen} onNavigate={onNavigate} />
+          {writeError ? <WriteFailed failure={writeError} /> : null}
+          <DesktopList list={list} chosen={chosen} now={now} onOpen={onOpen} />
         </Panel>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0, alignSelf: board ? undefined : "start" }}>
         <div style={{ height: 180, flexShrink: 0 }}>
           <Panel padding="12px" style={{ height: "100%" }}>
-            <Orbs peopleThisWeek={peopleThisWeek} live={live} />
+            <Orbs peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
           </Panel>
         </div>
         <div style={{ height: 190, flexShrink: 0 }}>
@@ -651,7 +749,12 @@ function DesktopActivity(props: ActivityViewProps) {
         </div>
         <div style={{ display: "flex", flexGrow: 1, minHeight: board ? 0 : SHOW_ME_MIN }}>
           <Panel padding="14px 16px" style={{ flex: 1 }}>
-            <ShowMe kindCounts={kindCounts} chosen={chosen} onToggle={(kind) => setChosen((current) => toggleKind(current, kind))} />
+            <ShowMe
+              kindCounts={kindCounts}
+              listStatus={list.status}
+              chosen={chosen}
+              onToggle={(kind) => setChosen((current) => toggleKind(current, kind))}
+            />
           </Panel>
         </div>
       </div>
@@ -660,7 +763,7 @@ function DesktopActivity(props: ActivityViewProps) {
 }
 
 function PhoneActivity(props: ActivityViewProps) {
-  const { now, list, unread, kindCounts, onOpen, onMarkAllRead, onNavigate } = props;
+  const { now, list, unread, kindCounts, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
 
   return (
@@ -680,14 +783,19 @@ function PhoneActivity(props: ActivityViewProps) {
           <FilterChip
             key={kind}
             label={label}
-            count={kindCounts[kind].toLocaleString("en-GB")}
+            count={list.status === "ready" ? kindCounts[kind].toLocaleString("en-GB") : undefined}
             on={chosen.has(kind)}
             onClick={() => setChosen((current) => toggleKind(current, kind))}
           />
         ))}
       </ScrollRow>
 
-      <PhoneList list={list} chosen={chosen} now={now} onOpen={onOpen} onNavigate={onNavigate} />
+      {writeError ? (
+        <Panel padding="14px 16px">
+          <WriteFailed failure={writeError} />
+        </Panel>
+      ) : null}
+      <PhoneList list={list} chosen={chosen} now={now} onOpen={onOpen} />
     </div>
   );
 }

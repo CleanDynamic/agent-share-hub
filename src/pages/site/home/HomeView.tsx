@@ -20,6 +20,8 @@ import { ArrowRight, Flame, Maximize2 } from "lucide-react";
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { IconButton } from "@/components/brand/IconButton";
 import { LampDot } from "@/components/brand/LampDot";
@@ -28,6 +30,7 @@ import { OrbSolid } from "@/components/brand/OrbSolid";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { Plaque } from "@/components/brand/Plaque";
 import { Segmented } from "@/components/brand/Segmented";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { StripedBar } from "@/components/brand/StripedBar";
 import { Tagline } from "@/components/brand/Tagline";
 import { Sparkline } from "@/components/brand/charts";
@@ -35,7 +38,6 @@ import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { skeletonStyle } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
@@ -63,7 +65,7 @@ export type HomeScope = "following" | "everyone";
 export type Loadable<T> =
   | { status: "signed-out" }
   | { status: "loading" }
-  | { status: "error"; onRetry: () => void }
+  | ({ status: "error" } & PanelFailure)
   | { status: "ready"; data: T };
 
 export interface HomeFeedProps {
@@ -73,6 +75,8 @@ export interface HomeFeedProps {
   loadingMore: boolean;
   onMore: () => void;
   onRetry: () => void;
+  /** The real error behind `status: "error"`; logged once by the panel, never shown. */
+  error?: unknown;
 }
 
 export interface HomeViewProps {
@@ -85,6 +89,8 @@ export interface HomeViewProps {
   litToday: number | null;
   reproducedToday: number | null;
   runsThisWeek: number | null;
+  /** The two run counts could not be read: the orbs' panel says so, in place of the orbs. */
+  orbsError?: PanelFailure;
   feed: HomeFeedProps;
   /** When this browser last loaded Home (epoch ms), or null on a first visit. */
   seenAt: number | null;
@@ -115,36 +121,6 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   lineHeight: "normal",
   ...extra,
 });
-
-/** One Sentient line, the empty state's sentence. */
-function EmptyLine({ children, size = 18 }: { children: ReactNode; size?: number }) {
-  return <p style={{ ...display(size), color: t.text, margin: 0 }}>{children}</p>;
-}
-
-function Empty({ line, action, size, children }: { line: string; action?: ReactNode; size?: number; children?: ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 14, paddingTop: 14 }}>
-      <EmptyLine size={size}>{line}</EmptyLine>
-      {action}
-      {children}
-    </div>
-  );
-}
-
-function Failed({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, paddingTop: 14 }}>
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>This could not be loaded.</p>
-      <Button variant="secondary" size={30} fontSize={12} onClick={onRetry}>
-        Try again
-      </Button>
-    </div>
-  );
-}
-
-function Skeleton({ height, style }: { height: number; style?: CSSProperties }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), height, ...style }} />;
-}
 
 /** The thumbnail: the signed cover, or the fallback landscape for the build. */
 function Thumb({ cover, width, height, radius }: { cover: HomeCover; width: number | string; height: number | string; radius: number }) {
@@ -261,6 +237,65 @@ function PhoneRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolea
   );
 }
 
+/** A book row's height on the board: its padding, its content and its hairline. A loading row is as tall, so the page does not move. */
+const DESKTOP_ROW_HEIGHT = 74;
+const PHONE_ROW_HEIGHT = 130;
+
+/** A row of the visitors' book before it has arrived: the same grid and padding, bones where the content goes. */
+function RowSkeleton({ phone }: { phone: boolean }) {
+  if (phone) {
+    return (
+      <div
+        style={{
+          ...rowFrame(false),
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) 72px",
+          gap: 12,
+          alignItems: "center",
+          padding: 12,
+          boxSizing: "border-box",
+          height: PHONE_ROW_HEIGHT,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Skeleton width={22} height={22} radius="50%" />
+            <Skeleton width={64} height={10} />
+          </div>
+          <Skeleton width="55%" height={12} />
+          <Skeleton width="80%" height={20} />
+          <Skeleton width="60%" height={14} />
+        </div>
+        <Skeleton width={72} height={72} radius={10} />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        ...rowFrame(false),
+        display: "grid",
+        gridTemplateColumns: "92px 30px minmax(0, 1fr) 84px 32px",
+        gap: 12,
+        alignItems: "center",
+        padding: "9px 12px",
+        boxSizing: "border-box",
+        height: DESKTOP_ROW_HEIGHT,
+      }}
+    >
+      <Skeleton width={56} height={10} />
+      <Skeleton width={28} height={28} radius="50%" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+        <Skeleton width="38%" height={12} />
+        <Skeleton width="62%" height={20} />
+        <Skeleton width="46%" height={14} />
+      </div>
+      <Skeleton width={84} height={54} radius={10} />
+      <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
+    </div>
+  );
+}
+
 function BookBody({
   feed,
   filter,
@@ -280,28 +315,20 @@ function BookBody({
 
   if (feed.status === "loading") {
     return (
-      <div aria-busy="true" aria-label="Loading the visitors’ book" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} height={phone ? 96 : 72} style={{ borderRadius: 14 }} />
+      <LoadingRegion what="the visitors’ book" data-testid="home-feed-loading" style={{ display: "flex", flexDirection: "column" }}>
+        {Array.from({ length: phone ? 4 : 5 }, (_, i) => (
+          <RowSkeleton key={i} phone={phone} />
         ))}
-      </div>
+      </LoadingRegion>
     );
   }
 
-  if (feed.status === "error") return <Failed onRetry={feed.onRetry} />;
+  if (feed.status === "error") {
+    return <ErrorState panel="The visitors’ book" onRetry={feed.onRetry} error={feed.error} data-testid="home-feed-error" />;
+  }
 
   if (feed.rows.length === 0) {
-    return (
-      <Empty
-        line="Nothing hung yet."
-        size={22}
-        action={
-          <Button size={phone ? 44 : 34} fontSize={phone ? 13 : 12} variant="secondary" onClick={() => onNavigate(GALLERY)}>
-            Enter the gallery
-          </Button>
-        }
-      />
-    );
+    return <EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }} data-testid="home-feed-empty" />;
   }
 
   const visible = feed.rows.filter((row) => matchesFilter(row.kind, filter));
@@ -402,27 +429,68 @@ function HeroArt({ scrim }: { scrim: string }) {
 
 /* ── the orbs ── */
 
-function OrbPlaceholder({ size }: { size: number }) {
-  return <div aria-hidden="true" style={{ width: size, height: size, borderRadius: r.full, background: t.recess, flexShrink: 0 }} />;
+/** An orb before its number has arrived: a circle of the orb's diameter. */
+function OrbSkeleton({ size }: { size: number }) {
+  return <Skeleton width={size} height={size} radius="50%" />;
 }
 
 const runs = (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "run" : "runs"}`;
 
-function Orbs({ size, reproducedToday, runsThisWeek }: { size: number; reproducedToday: number | null; runsThisWeek: number | null }) {
-  return (
+/**
+ * The two orbs in their row, in whichever of their states they are in: the numbers,
+ * a circle each while a number is on its way, or — when a count could not be read —
+ * the panel's failure in their place (the page passes `failure` only then). On a phone the orbs sit straight on the page, so
+ * a failure there needs a surface (`framed`).
+ */
+function OrbsRow({
+  size,
+  reproducedToday,
+  runsThisWeek,
+  failure,
+  framed = false,
+  style,
+}: {
+  size: number;
+  reproducedToday: number | null;
+  runsThisWeek: number | null;
+  failure?: PanelFailure;
+  framed?: boolean;
+  style?: CSSProperties;
+}) {
+  const row: CSSProperties = { display: "flex", justifyContent: "center", gap: 12, alignItems: "center", ...style };
+
+  if (failure) {
+    const error = <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />;
+    return framed ? (
+      <Panel padding="14px 16px">{error}</Panel>
+    ) : (
+      /* In the panel's own padding: the failure reads from the panel's top-left, as every other panel's does. */
+      <div style={{ ...row, justifyContent: "flex-start", alignItems: "flex-start", padding: "2px 4px" }}>{error}</div>
+    );
+  }
+
+  const orbs = (
     <>
       {reproducedToday === null ? (
-        <OrbPlaceholder size={size} />
+        <OrbSkeleton size={size} />
       ) : (
         <OrbGlass size={size} label="Reproduced today" sub={runs(reproducedToday)} />
       )}
       {runsThisWeek === null ? (
-        <OrbPlaceholder size={size} />
+        <OrbSkeleton size={size} />
       ) : (
         <OrbSolid size={size} top="This week" value={runsThisWeek.toLocaleString("en-GB")} bottom="runs reported" />
       )}
     </>
   );
+  if (reproducedToday === null || runsThisWeek === null) {
+    return (
+      <LoadingRegion what="the run counts" style={row}>
+        {orbs}
+      </LoadingRegion>
+    );
+  }
+  return <div style={row}>{orbs}</div>;
 }
 
 /* ── challenges ── */
@@ -472,6 +540,27 @@ function ChallengeList({ rows, phone }: { rows: readonly HomeChallengeRow[]; pho
   );
 }
 
+/** A challenge before it has arrived: the row's own padding and hairline round a line of text and a 9px bar. */
+function ChallengeRowSkeleton({ phone }: { phone: boolean }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 7,
+        padding: phone ? "11px 0" : "10px 0",
+        borderBottom: `1px solid ${t.hairline}`,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, height: phone ? 16 : 15 }}>
+        <Skeleton width="58%" height={phone ? 13 : 12} />
+        <Skeleton width={phone ? 28 : 72} height={11} />
+      </div>
+      <Skeleton height={9} radius={5} />
+    </div>
+  );
+}
+
 function ChallengesBody({
   challenges,
   phone,
@@ -483,26 +572,33 @@ function ChallengesBody({
 }) {
   if (challenges.status === "signed-out") {
     return (
-      <Empty
+      <EmptyState
         line="Sign in to take this week's challenges."
-        action={
-          <Button size={phone ? 44 : 34} fontSize={phone ? 13 : 12} variant="secondary" onClick={() => onNavigate(SIGN_IN)}>
-            Sign in
-          </Button>
-        }
+        action={{ label: "Sign in", onClick: () => onNavigate(SIGN_IN) }}
+        data-testid="home-challenges-signed-out"
       />
     );
   }
   if (challenges.status === "loading") {
     return (
-      <div aria-busy="true" aria-label="Loading this week’s challenges" style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 14 }}>
+      <LoadingRegion what="this week’s challenges" data-testid="home-challenges-loading">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} height={34} />
+          <ChallengeRowSkeleton key={i} phone={phone} />
         ))}
-      </div>
+      </LoadingRegion>
     );
   }
-  if (challenges.status === "error") return <Failed onRetry={challenges.onRetry} />;
+  if (challenges.status === "error") {
+    return (
+      <ErrorState
+        panel="This week’s challenges"
+        onRetry={challenges.onRetry}
+        error={challenges.error}
+        style={{ paddingTop: 14 }}
+        data-testid="home-challenges-error"
+      />
+    );
+  }
   return <ChallengeList rows={challenges.data} phone={phone} />;
 }
 
@@ -548,77 +644,128 @@ function DayMark({ state }: { state: HomeStreak["week"][number] }) {
   );
 }
 
-function StreakPanel({ streak }: { streak: HomeViewProps["streak"] }) {
-  const lines = (() => {
-    if (streak.status === "ready" && streak.data.count > 0) {
-      const { count, frozenUsed, week } = streak.data;
-      return (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <PanelHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
-            <span style={{ color: t.litInk, display: "flex" }}>
-              <Flame size={22} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
-            </span>
+/** The head's mark, and the week below it, before the streak has arrived: the populated panel's own rows, as bones. */
+function StreakSkeleton() {
+  return (
+    <LoadingRegion what="your streak" data-testid="home-streak-loading">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <PanelHead title="Streak" subtitle={"\u00a0"} headingLevel={2} />
+        <Skeleton width={22} height={22} radius="50%" />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+        {DAY_LETTERS.map((_, index) => (
+          <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <Skeleton width={20} height={12} radius={r.full} />
+            <Skeleton width={8} height={11} radius={3} />
           </div>
-          <ul
-            data-testid="home-streak-week"
-            style={{ display: "flex", justifyContent: "space-between", margin: "12px 0 0", padding: 0, listStyle: "none" }}
-          >
-            {week.map((state, index) => (
-              <li
-                key={index}
-                aria-label={`${DAY_NAMES[index]}: ${state === "active" ? "lit" : state === "frozen" ? "frozen" : "not lit"}`}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
-              >
-                <DayMark state={state} />
-                <span aria-hidden="true" style={mono(10, { color: t.label })}>
-                  {DAY_LETTERS[index]}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      );
-    }
-    return (
-      <>
-        <PanelHead title="Streak" headingLevel={2} />
-        {streak.status === "loading" ? (
-          <Skeleton height={44} style={{ marginTop: 12 }} />
-        ) : streak.status === "error" ? (
-          <Failed onRetry={streak.onRetry} />
-        ) : (
-          <Empty line="Run a build today to start a streak." />
-        )}
-      </>
-    );
-  })();
+        ))}
+      </div>
+    </LoadingRegion>
+  );
+}
 
-  return <Panel padding="14px 16px">{lines}</Panel>;
+function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; onNavigate: (to: string) => void }) {
+  if (streak.status === "ready" && streak.data.count > 0) {
+    const { count, frozenUsed, week } = streak.data;
+    return (
+      <Panel padding="14px 16px">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <PanelHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
+          <span style={{ color: t.litInk, display: "flex" }}>
+            <Flame size={22} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
+          </span>
+        </div>
+        <ul
+          data-testid="home-streak-week"
+          style={{ display: "flex", justifyContent: "space-between", margin: "12px 0 0", padding: 0, listStyle: "none" }}
+        >
+          {week.map((state, index) => (
+            <li
+              key={index}
+              aria-label={`${DAY_NAMES[index]}: ${state === "active" ? "lit" : state === "frozen" ? "frozen" : "not lit"}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+            >
+              <DayMark state={state} />
+              <span aria-hidden="true" style={mono(10, { color: t.label })}>
+                {DAY_LETTERS[index]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    );
+  }
+
+  if (streak.status === "loading") {
+    return (
+      <Panel padding="14px 16px">
+        <StreakSkeleton />
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel padding="14px 16px">
+      <PanelHead title="Streak" headingLevel={2} />
+      {streak.status === "error" ? (
+        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} style={{ paddingTop: 14 }} data-testid="home-streak-error" />
+      ) : (
+        <EmptyState
+          line="Run a build today to start a streak."
+          action={streak.status === "signed-out" ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) } : undefined}
+          data-testid="home-streak-empty"
+        />
+      )}
+    </Panel>
+  );
 }
 
 /* ── where next ── */
 
-function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["whereNext"]; onNavigate: (to: string) => void }) {
-  const gallery = (
-    <Button size={34} fontSize={12} variant="secondary" onClick={() => onNavigate(GALLERY)}>
-      Enter the gallery
-    </Button>
+/** A suggestion before it has arrived: the row's padding and hairline round a 34px picture, two lines and a sparkline. */
+function WhereNextRowSkeleton() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "7px 0",
+        borderBottom: `1px solid ${t.hairline}`,
+      }}
+    >
+      <Skeleton width={34} height={34} radius={8} />
+      <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <Skeleton width="62%" height={13} />
+        <Skeleton width="40%" height={10} />
+      </div>
+      <Skeleton width={54} height={18} radius={6} />
+    </div>
   );
+}
 
+function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["whereNext"]; onNavigate: (to: string) => void }) {
   return (
     <Panel padding="14px 16px" style={{ flex: 1 }}>
       <PanelHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
       {whereNext.status === "loading" ? (
-        <div aria-busy="true" aria-label="Loading suggestions" style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+        <LoadingRegion what="suggestions" data-testid="home-where-next-loading" style={{ marginTop: 6 }}>
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} height={34} />
+            <WhereNextRowSkeleton key={i} />
           ))}
-        </div>
+        </LoadingRegion>
       ) : whereNext.status === "error" ? (
-        <Failed onRetry={whereNext.onRetry} />
+        <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} style={{ paddingTop: 14 }} data-testid="home-where-next-error" />
       ) : whereNext.status === "signed-out" || whereNext.data.length === 0 ? (
-        <Empty line="Run a build this week and suggestions appear here." action={gallery} />
+        <EmptyState
+          line="Run a build this week and suggestions appear here."
+          action={
+            whereNext.status === "signed-out"
+              ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) }
+              : { label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }
+          }
+          data-testid="home-where-next-empty"
+        />
       ) : (
         <div data-testid="home-where-next" style={{ marginTop: 6 }}>
           {whereNext.data.map((row) => (
@@ -654,7 +801,7 @@ function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["w
 /* ── the two layouts ── */
 
 function DesktopHome(props: HomeViewProps) {
-  const { fit = "content", now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
+  const { fit = "content", now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
   const [filter, setFilter] = useState<HomeFilter>("all");
 
   return (
@@ -711,9 +858,7 @@ function DesktopHome(props: HomeViewProps) {
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
         <div style={{ height: 180, flexShrink: 0 }}>
           <Panel padding="12px" style={{ height: "100%" }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 12, alignItems: "center", height: "100%" }}>
-              <Orbs size={150} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} />
-            </div>
+            <OrbsRow size={150} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} style={{ height: "100%" }} />
           </Panel>
         </div>
 
@@ -721,7 +866,7 @@ function DesktopHome(props: HomeViewProps) {
           <ChallengesPanel challenges={challenges} thisWeekHref={thisWeekHref} phone={false} onNavigate={onNavigate} />
         </div>
 
-        <StreakPanel streak={streak} />
+        <StreakPanel streak={streak} onNavigate={onNavigate} />
 
         <div style={{ flexGrow: 1, minHeight: 0, display: "flex" }}>
           <WhereNextPanel whereNext={whereNext} onNavigate={onNavigate} />
@@ -732,7 +877,7 @@ function DesktopHome(props: HomeViewProps) {
 }
 
 function PhoneHome(props: HomeViewProps) {
-  const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, feed, seenAt, challenges, streak, onNavigate } = props;
+  const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, streak, onNavigate } = props;
   const [filter, setFilter] = useState<HomeFilter>("all");
 
   return (
@@ -754,9 +899,7 @@ function PhoneHome(props: HomeViewProps) {
         </div>
       </Panel>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 12, padding: "4px 0" }}>
-        <Orbs size={162} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} />
-      </div>
+      <OrbsRow size={162} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} framed style={{ padding: "4px 0" }} />
 
       <ChallengesPanel challenges={challenges} phone onNavigate={onNavigate} />
 
@@ -774,7 +917,7 @@ function PhoneHome(props: HomeViewProps) {
         </div>
       </Panel>
 
-      <StreakPanel streak={streak} />
+      <StreakPanel streak={streak} onNavigate={onNavigate} />
     </div>
   );
 }

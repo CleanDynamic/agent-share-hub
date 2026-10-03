@@ -21,10 +21,10 @@
    tile are told to read their count again when it lands. A write that fails
    reads everything again from the server. */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 
+import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { SeoHead } from "@/components/SeoHead";
 import { MEDIA_WIDTH } from "@/components/build/MediaFigure";
 import { stillFor, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
@@ -88,7 +88,6 @@ function markPages(data: Pages | undefined, read: (item: Notification) => boolea
 export function ActivityPage() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const navigate = useNavigate();
   const qc = useQueryClient();
 
   /* ── the list ── */
@@ -185,22 +184,45 @@ export function ActivityPage() {
     refreshUnreadNotifications();
   }, [qc, userId]);
 
+  /* A write that fails is rolled back, not hidden: the page reads the list and the count again from the server (the
+     rows are unread once more) and says so in the list's own place, with a way to ask again. */
+  const [announcement, say] = useAnnouncer();
+  const [writeFailure, setWriteFailure] = useState<{ again: () => void; error: unknown } | null>(null);
+
   const open = useCallback(
     (row: ActivityRow) => {
       if (!row.unread) return;
+      say("Marked read");
       qc.setQueryData<Pages>(listKey, (data) => markPages(data, (item) => item.id === row.id));
       qc.setQueryData<number>(unreadKey, (count) => (typeof count === "number" ? Math.max(0, count - 1) : count));
-      markNotificationRead(row.id).then(refreshUnreadNotifications, resync);
+      markNotificationRead(row.id).then(refreshUnreadNotifications, (error: unknown) => {
+        resync();
+        setWriteFailure({ again: () => open(row), error });
+      });
     },
-    [qc, listKey, unreadKey, resync],
+    [qc, listKey, unreadKey, resync, say],
   );
 
   const markAll = useCallback(() => {
     if (!userId) return;
+    say("Marked read");
     qc.setQueryData<Pages>(listKey, (data) => markPages(data, () => true));
     qc.setQueryData<number>(unreadKey, 0);
-    markAllNotificationsRead(userId).then(refreshUnreadNotifications, resync);
-  }, [qc, userId, listKey, unreadKey, resync]);
+    markAllNotificationsRead(userId).then(refreshUnreadNotifications, (error: unknown) => {
+      resync();
+      setWriteFailure({ again: markAll, error });
+    });
+  }, [qc, userId, listKey, unreadKey, resync, say]);
+
+  const writeError = writeFailure
+    ? {
+        onRetry: () => {
+          setWriteFailure(null);
+          writeFailure.again();
+        },
+        error: writeFailure.error,
+      }
+    : undefined;
 
   /* ── the view ── */
 
@@ -216,6 +238,7 @@ export function ActivityPage() {
     loadingMore: listQuery.isFetchingNextPage,
     onMore: () => void listQuery.fetchNextPage(),
     onRetry: () => void listQuery.refetch(),
+    error: listQuery.error,
   };
 
   const runs: ActivityLoad<ActivityRuns> = runsQuery.data
@@ -228,12 +251,18 @@ export function ActivityPage() {
         },
       }
     : runsQuery.isError
-      ? { status: "error", onRetry: () => void runsQuery.refetch() }
+      ? { status: "error", onRetry: () => void runsQuery.refetch(), error: runsQuery.error }
       : { status: "loading" };
+
+  const peopleError =
+    peopleQuery.isError && peopleQuery.data === undefined
+      ? { onRetry: () => void peopleQuery.refetch(), error: peopleQuery.error }
+      : undefined;
 
   return (
     <>
       <SeoHead title="Activity — buildgallery" description="What happened to your builds." path="/notifications" noIndex />
+      <LiveRegion message={announcement} />
       <ActivityView
         now={now}
         list={list}
@@ -241,10 +270,11 @@ export function ActivityPage() {
         live={live}
         kindCounts={kindCounts}
         peopleThisWeek={typeof peopleQuery.data === "number" ? peopleQuery.data : null}
+        peopleError={peopleError}
         runs={runs}
+        writeError={writeError}
         onOpen={open}
         onMarkAllRead={markAll}
-        onNavigate={(to) => navigate(to)}
       />
     </>
   );

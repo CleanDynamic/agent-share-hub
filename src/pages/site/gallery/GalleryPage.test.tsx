@@ -230,19 +230,29 @@ describe("GalleryPage", () => {
     await waitFor(() => expect(address()).toBe("/gallery"));
   });
 
-  it("says the gallery could not be loaded when the read fails, and a retry asks again", async () => {
-    listGallery.mockRejectedValueOnce(new Error("boom")).mockResolvedValue(page(["a"], 1));
+  it("says That didn't load. when the read fails, never the exception, and a retry asks again", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    listGallery.mockRejectedValueOnce(new Error("boom: relation builds does not exist")).mockResolvedValue(page(["a"], 1));
     renderAt("/gallery");
-    expect(await screen.findByText("The gallery could not be loaded.")).toBeTruthy();
+    const notice = await screen.findByTestId("gallery-notice");
+    expect(notice.textContent).toContain("That didn't load.");
+    expect(notice.textContent).not.toContain("boom");
+    // The real error went to the console, once.
+    expect(log.mock.calls.filter((call) => call.some((arg) => arg instanceof Error && arg.message.startsWith("boom")))).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByTestId("gallery-wall");
     expect(listGallery).toHaveBeenCalledTimes(2);
+    log.mockRestore();
   });
 
   it("a failed stats read costs the stats, never the wall", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
     getGalleryStats.mockRejectedValue(new Error("nope"));
     renderAt("/gallery");
     await screen.findByTestId("gallery-wall");
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    const failed = await screen.findByTestId("gallery-stats-error");
+    expect(failed.textContent).toContain("Gallery figures");
+    expect(screen.queryByText("—")).toBeNull();
+    log.mockRestore();
   });
 });

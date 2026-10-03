@@ -893,6 +893,17 @@ input[type="search"] { border-radius: var(--r-control); }
   to   { background-position: -100% 0; }
 }
 
+/* UI-P37 — the brand skeleton's pulse. A `--recess` block fades to .55 and back,
+   1.4s a turn. Opacity is the only property that moves: nothing here touches a
+   layout property, so a skeleton never shifts the page it stands in for. It is
+   the one keyframe the three state primitives add; `Skeleton` references it by
+   name from an inline `animation`, which `animation()` drops under reduced
+   motion (and the global rule at the end of this file covers the rest). */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
+}
+
 /* BG-P07's per-surface reset, SUPERSEDED BY THE GLOBAL RULE at the end of this
    file. It was scoped to `[data-bg-animated]` because a global reset "would
    reach every animation in the application, including Radix's mount and unmount
@@ -1147,4 +1158,49 @@ input[type="search"] { border-radius: var(--r-control); }
   html:focus-within {
     scroll-behavior: auto !important;
   }
+}
+
+
+/* UI-P38 — touch targets. On a phone every control answers a 44 x 44 touch, drawn at whatever size the design gives
+   it: a transparent ::after, centred on the control, grows its hit area to 44 in each direction that is short of it.
+   Nothing is repainted and nothing moves, so the boards compare as they did. `:where` keeps the rule at zero
+   specificity: a control that sets its own `position` keeps it. */
+@media (max-width: 767px) {
+  :where(
+      [data-ui="filter-chip"],
+      [data-ui="icon-button"],
+      [data-ui="button"],
+      [data-ui="segmented"] button,
+      [data-ui="segmented"] a,
+      [data-ui="tabs"] button,
+      a[data-ui="lockup"],
+      [data-hit]
+    ) {
+    position: relative;
+  }
+  :where(
+      [data-ui="filter-chip"],
+      [data-ui="icon-button"],
+      [data-ui="button"],
+      [data-ui="segmented"] button,
+      [data-ui="segmented"] a,
+      [data-ui="tabs"] button,
+      a[data-ui="lockup"],
+      [data-hit]
+    )::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* UI-P38 — a control flush with the edge of something that clips (a panel, the board) draws the shared ring INSIDE
+   its own box rather than outside it, where `overflow: hidden` would cut it. Same width and colour. */
+[data-ring-inset]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -4px;
 }

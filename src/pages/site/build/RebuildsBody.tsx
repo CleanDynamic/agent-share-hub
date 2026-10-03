@@ -14,7 +14,9 @@
 import { Network } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { ring, skeletonStyle } from "@/lib/theme/controls";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { CardSkeleton, LoadingRegion } from "@/components/brand/Skeleton";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -61,11 +63,11 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
   return (
     <section data-testid="build-rebuilds" aria-label="Rebuilds" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {loading ? (
-        <div aria-busy="true" aria-label="Loading the rebuilds" style={{ display: "grid", gridTemplateColumns: columns, gap }}>
+        <LoadingRegion what="the rebuilds" data-testid="build-rebuilds-loading" style={{ display: "grid", gridTemplateColumns: columns, gap, alignItems: "start" }}>
           {Array.from({ length: phone ? 2 : 3 }, (_, index) => (
-            <div key={index} aria-hidden="true" style={{ ...skeletonStyle(), height: 214, borderRadius: r.card, marginTop: 18 }} />
+            <CardSkeleton key={index} cover={REBUILD_CARD.coverHeight} body={phone ? 144 : 124} />
           ))}
-        </div>
+        </LoadingRegion>
       ) : cards.length > 0 ? (
         <ul
           aria-label="Rebuilds of this build"
@@ -78,7 +80,7 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
           ))}
         </ul>
       ) : (
-        <p style={{ margin: 0, color: t.text2 }}>Nobody has rebuilt this yet.</p>
+        <EmptyState line="This build has no rebuilds yet." data-testid="build-rebuilds-empty" />
       )}
       <FamilyLink to={lineageTo} phone={phone} />
     </section>

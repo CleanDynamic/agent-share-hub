@@ -163,21 +163,33 @@ describe("ProfileView on a desktop", () => {
     const onRetry = vi.fn();
     const base = profileFixture();
     const { unmount } = mount({ works: { ...base.works, cards: [], status: "ready" } });
-    expect(screen.getByTestId("profile-works-empty").textContent).toBe("Nothing published yet.");
+    expect(screen.getByTestId("profile-works-empty").textContent).toBe("No builds hung yet.");
     unmount();
 
     const own = mount({ isOwn: true, works: { ...base.works, cards: [], status: "ready" } });
-    expect(screen.getByTestId("profile-works-empty").textContent).toBe("You haven't published a build yet.");
+    expect(screen.getByTestId("profile-works-empty").textContent).toBe("No builds hung yet.");
     own.unmount();
 
     const loading = mount({ works: { ...base.works, status: "loading" } });
-    expect(screen.getByRole("status", { name: "Loading builds" })).toBeTruthy();
+    expect(screen.getByTestId("profile-works-loading").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("profile-works-loading").textContent).toContain("Loading builds");
     loading.unmount();
 
     mount({ works: { ...base.works, status: "error", errorKind: "permission", onRetry } });
     expect(screen.getByText("You don't have access to this.")).toBeTruthy();
+    expect(screen.getByTestId("profile-works-error").textContent).toContain("Works");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("says That didn't load. for a failed works read, and leaves the other tabs' lines for their own", () => {
+    const base = profileFixture();
+    const { unmount } = mount({ works: { ...base.works, status: "error", cards: [] } });
+    expect(screen.getByTestId("profile-works-error").textContent).toContain("That didn't load.");
+    unmount();
+
+    mount({ works: { ...base.works, tab: "rebuilds", cards: [], status: "ready" } });
+    expect(screen.getByTestId("profile-works-empty").textContent).toBe("No rebuilds yet.");
   });
 
   it("titles the activity and the creator marks as the reference does, and names every mark", () => {
@@ -195,9 +207,10 @@ describe("ProfileView on a desktop", () => {
     }
   });
 
-  it("says so when there are no creator marks, in the owner's voice on their own profile", () => {
+  it("says so when there are no creator marks, in the owner's voice on their own profile, as one sentence and no action", () => {
     const { unmount } = mount({ marks: [] });
-    expect(screen.getByText("No creator marks yet.")).toBeTruthy();
+    expect(screen.getByTestId("profile-marks-empty").textContent).toBe("No creator marks yet.");
+    expect(within(screen.getByTestId("profile-marks-empty")).queryAllByRole("button")).toHaveLength(0);
     unmount();
     mount({ marks: [], isOwn: true });
     expect(screen.getByText("Publish a build to earn your first.")).toBeTruthy();
@@ -205,8 +218,67 @@ describe("ProfileView on a desktop", () => {
 
   it("draws placeholders in the shape of what is coming while the panels load", () => {
     mount({ level: null, figures: null, activity: null, marks: null });
-    expect(screen.getByRole("status", { name: "Loading level" })).toBeTruthy();
+    expect(screen.getByTestId("profile-level-loading").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("profile-level-loading").textContent).toContain("Loading the level");
     expect(screen.getByTestId("profile-stats").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("profile-activity-loading").textContent).toContain("Loading the activity grid");
+    expect(screen.getByTestId("profile-marks-loading").textContent).toContain("Loading the creator marks");
+    // Five bones for five marks, in tiles' size.
+    expect(screen.getByTestId("profile-marks-loading").querySelectorAll('[data-ui="skeleton"]')).toHaveLength(5);
+  });
+
+  it("holds the banner's place with a block, and every panel's head, while the profile itself loads", () => {
+    mount({ maker: null, level: null, figures: null, activity: null, marks: null });
+    const banner = screen.getByTestId("profile-banner-loading");
+    expect(banner.getAttribute("aria-busy")).toBe("true");
+    // The whole page announces itself, once.
+    expect(banner.getAttribute("role")).toBe("status");
+    expect(banner.textContent).toContain("Loading the profile");
+    expect(screen.queryByTestId("profile-banner")).toBeNull();
+    expect(screen.getByText("Activity")).toBeTruthy();
+    expect(screen.getByText("Creator marks")).toBeTruthy();
+  });
+
+  it("holds each stat's bar's place while the figures load, where the figures will have bars", () => {
+    const { unmount } = mount({ figures: null, figuresBarsExpected: true });
+    const withBars = screen.getByTestId("profile-stats").querySelectorAll('[data-ui="skeleton"]').length;
+    unmount();
+    mount({ figures: null });
+    const without = screen.getByTestId("profile-stats").querySelectorAll('[data-ui="skeleton"]').length;
+    // Four figures either way; three bars more where the board draws them.
+    expect(withBars - without).toBe(3);
+  });
+
+  it("says each failed panel in its own place, naming it, and leaves the others as they were", () => {
+    const retries = { level: vi.fn(), figures: vi.fn(), activity: vi.fn(), marks: vi.fn() };
+    mount({
+      level: null,
+      figures: null,
+      activity: null,
+      marks: null,
+      failed: {
+        level: { onRetry: retries.level },
+        figures: { onRetry: retries.figures },
+        activity: { onRetry: retries.activity },
+        marks: { onRetry: retries.marks },
+      },
+    });
+    const names = {
+      "profile-level-error": ["Level", retries.level],
+      "profile-stats-error": ["Maker figures", retries.figures],
+      "profile-activity-error": ["Activity", retries.activity],
+      "profile-marks-error": ["Creator marks", retries.marks],
+    } as const;
+    for (const [id, [name, retry]] of Object.entries(names)) {
+      const failed = screen.getByTestId(id);
+      expect(failed.textContent).toContain("That didn't load.");
+      expect(failed.textContent).toContain(name);
+      fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
+      expect(retry).toHaveBeenCalledTimes(1);
+    }
+    // The banner and the works carry on.
+    expect(screen.getByRole("heading", { level: 1, name: "Maya Okafor" })).toBeTruthy();
+    expect(screen.getAllByTestId("profile-card")).toHaveLength(4);
   });
 });
 
@@ -237,14 +309,14 @@ describe("ProfileView on a phone", () => {
     const onTab = vi.fn();
     const base = profileFixture();
     mount({ works: { ...base.works, onTab } });
-    const row = screen.getByRole("group", { name: "Works" });
-    expect(within(row).getAllByRole("button").map((chip) => chip.textContent)).toEqual([
+    const row = screen.getByRole("tablist", { name: "Works" });
+    expect(within(row).getAllByRole("tab").map((chip) => chip.textContent)).toEqual([
       "Builds 14",
       "Rebuilds 6",
       "Reproduced 48",
       "Collections 4",
     ]);
-    fireEvent.click(within(row).getByRole("button", { name: "Collections 4" }));
+    fireEvent.click(within(row).getByRole("tab", { name: "Collections 4" }));
     expect(onTab).toHaveBeenCalledWith("collections");
     expect(screen.queryByText(/\/ £1,150/)).toBeNull();
     expect(screen.getAllByTestId("profile-card")).toHaveLength(4);

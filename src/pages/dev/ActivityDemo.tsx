@@ -35,8 +35,8 @@ function forPhone(groups: readonly ActivityGroup[]): ActivityGroup[] {
     .filter((group) => group.rows.length > 0);
 }
 
-export default function ActivityDemo({ fit = "board", viewport }: DesignPageProps) {
-  const sample = activityFixture();
-  if (viewport !== "mobile") return <ActivityView fit={fit} {...sample} />;
+export default function ActivityDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
+  const sample = activityFixture(state);
+  if (viewport !== "mobile" || state !== "populated") return <ActivityView fit={fit} {...sample} />;
   return <ActivityView fit={fit} {...sample} list={{ ...sample.list, groups: forPhone(sample.list.groups) }} />;
 }

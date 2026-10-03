@@ -10,6 +10,7 @@ import { t } from "@/lib/theme/tokens";
 import { mono } from "@/lib/theme/type";
 
 import { Eyebrow } from "./Eyebrow";
+import { Skeleton } from "./Skeleton";
 import { StripedBar, type StripedBarProps } from "./StripedBar";
 
 export interface StatProps {
@@ -19,9 +20,14 @@ export interface StatProps {
   of?: ReactNode;
   /** A bar under the number. `height` is fixed at 10 here. */
   bar?: Pick<StripedBarProps, "value" | "colour" | "label" | "valueText" | "ticks">;
+  /**
+   * UI-P37 — the bar's place while the figure loads: a 10px bone, so the cell is the
+   * height it will be. Never a bar drawn at zero, which would say a number nobody knows.
+   */
+  barLoading?: boolean;
 }
 
-export function Stat({ label, value, of, bar }: StatProps) {
+export function Stat({ label, value, of, bar, barLoading = false }: StatProps) {
   return (
     <span data-ui="stat" style={{ display: "contents" }}>
       <Eyebrow size={10}>{label}</Eyebrow>
@@ -31,7 +37,7 @@ export function Stat({ label, value, of, bar }: StatProps) {
           <span style={{ ...mono(12), lineHeight: "normal", color: t.text2 }}>&nbsp;/ {of}</span>
         ) : null}
       </div>
-      {bar ? <StripedBar {...bar} height={10} /> : null}
+      {bar ? <StripedBar {...bar} height={10} /> : barLoading ? <Skeleton height={10} radius={5} /> : null}
     </span>
   );
 }

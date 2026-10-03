@@ -30,6 +30,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import type { PartViewerMode } from "@/components/brand/PartViewer";
 import { AnatomyTree } from "@/components/build/AnatomyTree";
 import { CreditLine } from "@/components/build/CreditLine";
@@ -98,7 +99,8 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { BreakageBody } from "./BreakageBody";
 import { CommentsPanel, LowerSections, WhereNextError, WhereNextPanels } from "./BuildLower";
-import { BuildView, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import {
   askLabel,
   breakageRows,
@@ -562,16 +564,38 @@ export function BuildPage() {
     [queryClient, slug],
   );
 
+  /* OPTIMISTIC. The new count and clock are shown the moment the run is submitted; the write follows. If it fails the
+     header goes back to what it was and the proof panel says so, with a way to run it again — never an exception. */
+  const [announcement, say] = useAnnouncer();
+  const [runFailure, setRunFailure] = useState<{ error: unknown } | null>(null);
+
   const submitRun = useCallback(
     async ({ worked, model, note }: RunSubmission) => {
       if (!build) return;
-      if (viewerIsCreator) await recordSelfConfirmation({ buildId: build.id, modelUsed: model });
-      else await recordReproduction({ buildId: build.id, worked, modelUsed: model, note });
-      // The count and the clock are kept by the database; read them back rather than guess.
-      const fresh = await getBuildHeader(build.id);
-      if (fresh) putHeader(fresh);
+      const before = build;
+      setRunFailure(null);
+      say(viewerIsCreator ? "Reconfirmed" : worked ? "Reproduction recorded" : "Report recorded");
+      if (worked || viewerIsCreator) {
+        putHeader({
+          ...build,
+          reproduction_count: (build.reproduction_count ?? 0) + (viewerIsCreator ? 0 : 1),
+          last_confirmed_at: new Date().toISOString(),
+          last_confirmed_model: model.trim() || build.last_confirmed_model,
+        });
+      }
+      try {
+        if (viewerIsCreator) await recordSelfConfirmation({ buildId: build.id, modelUsed: model });
+        else await recordReproduction({ buildId: build.id, worked, modelUsed: model, note });
+        // The count and the clock are kept by the database; read them back rather than guess.
+        const fresh = await getBuildHeader(build.id);
+        if (fresh) putHeader(fresh);
+      } catch (error) {
+        putHeader(before);
+        say("That didn't save");
+        setRunFailure({ error });
+      }
     },
-    [build, viewerIsCreator, putHeader],
+    [build, viewerIsCreator, putHeader, say],
   );
 
   const onBountyChanged = useCallback(
@@ -614,18 +638,7 @@ export function BuildPage() {
 
   if (recordQuery.isPending && Boolean(slug)) return <BuildViewSkeleton />;
 
-  if (recordQuery.isError) {
-    return (
-      <BuildViewNotice
-        line="This build could not be loaded."
-        action={
-          <Button variant="secondary" size={36} fontSize={13} onClick={() => void recordQuery.refetch()}>
-            Try again
-          </Button>
-        }
-      />
-    );
-  }
+  if (recordQuery.isError) return <BuildViewFailed onRetry={() => void recordQuery.refetch()} error={recordQuery.error} />;
 
   if (!record || !build) {
     return (
@@ -733,7 +746,7 @@ export function BuildPage() {
         return understandLayer ? (
           <LayerSteps layer={layerSteps(understandLayer, resolveNode)} phone={phone} onOpenPart={selectPart} />
         ) : (
-          <p style={{ margin: 0, color: t.text2 }}>There is no plain-language reading of this build yet.</p>
+          <EmptyState line="There is no plain-language reading of this build yet." />
         );
       case "broke":
         return (
@@ -772,7 +785,7 @@ export function BuildPage() {
             footer={renderFooter(selected)}
           />
         ) : (
-          <p style={{ margin: 0, color: t.text2 }}>Nothing has been placed in this build yet.</p>
+          <EmptyState line="This build has no parts yet." />
         );
     }
   })();
@@ -822,6 +835,7 @@ export function BuildPage() {
           An admin has hidden this build.
         </div>
       ) : null}
+      <LiveRegion message={announcement} />
       <BuildView
         fit="content"
         hero={{
@@ -851,6 +865,15 @@ export function BuildPage() {
             kind: !isLoggedIn ? "sign-in" : viewerIsCreator ? "reconfirm" : "reproduce",
             onPress: () => (isLoggedIn ? setRunning(true) : navigate(loginBack(location.pathname))),
           },
+          writeError: runFailure
+            ? {
+                onRetry: () => {
+                  setRunFailure(null);
+                  setRunning(true);
+                },
+                error: runFailure.error,
+              }
+            : undefined,
           details: proofDetails(build, tree),
           completeness: completeness
             ? {
@@ -924,7 +947,7 @@ export function BuildPage() {
           </CommentsPanel>
         ) : null}
         {whereNext.isError ? (
-          <WhereNextError onRetry={() => void whereNext.refetch()} />
+          <WhereNextError onRetry={() => void whereNext.refetch()} error={whereNext.error} />
         ) : (
           <WhereNextPanels rows={nextPanels} phone={phone} />
         )}

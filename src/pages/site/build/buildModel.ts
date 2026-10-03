@@ -123,6 +123,8 @@ export interface BuildProofView {
   details: readonly ProofDetailView[];
   /** The creator's own view only; null for everyone else. */
   completeness: CompletenessView | null;
+  /** A run that did not save: the count has gone back, and the panel says so with a way to ask again. */
+  writeError?: { onRetry: () => void; error?: unknown };
 }
 
 export interface PartRowView {

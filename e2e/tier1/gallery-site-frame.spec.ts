@@ -72,7 +72,7 @@ test.describe("/gallery in the site frame", () => {
       await page.getByRole("button", { name: /^Filters/ }).click();
       const sheet = page.getByRole("dialog", { name: "Filters" });
       await expect(sheet).toBeVisible();
-      for (const label of ["Made for", "Made with", "Shape"]) await expect(sheet.getByText(label)).toBeVisible();
+      for (const label of ["Made for", "Made with", "Shape"]) await expect(sheet.getByText(label, { exact: true })).toBeVisible();
       await page.keyboard.press("Escape");
       await expect(sheet).toHaveCount(0);
     } else {

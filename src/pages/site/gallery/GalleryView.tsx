@@ -22,6 +22,8 @@ import { Check, Search, SlidersHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { HeroPlate } from "@/components/brand/HeroPlate";
@@ -32,12 +34,12 @@ import { Plaque, plaqueState } from "@/components/brand/Plaque";
 import { Stat } from "@/components/brand/Stat";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { Segmented } from "@/components/brand/Segmented";
+import { CardSkeleton, LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { GalleryLens } from "@/lib/build/gallery";
-import { skeletonStyle } from "@/lib/theme/controls";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
@@ -45,6 +47,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
 import {
+  FACET_SKELETON_ROWS,
   LENS_ITEMS,
   formatCount,
   formatPounds,
@@ -66,8 +69,10 @@ export interface GalleryViewProps {
   onLensChange: (lens: GalleryLens) => void;
   /** Builds under each lens; null until known. */
   lensCounts: Record<GalleryLens, number> | null;
-  /** Null until known: the cells show a dash and draw no bar. */
+  /** Null until known: the cells hold bones, never a made-up number. */
   stats: GalleryStatsView | null;
+  /** The figures could not be read: the header's figures say so, in place of the cells. */
+  statsError?: PanelFailure;
   facets: readonly FacetGroupView[];
   /** The tidied search, or null. */
   query: string | null;
@@ -101,6 +106,9 @@ const FEATURED_TAG = "MOST REPRODUCED THIS MONTH";
 /** Wall card slots on the board: two rows of 250. */
 const ROW = 250;
 
+/** The featured build's stacked plate on a phone: the cover, the inverse panel and the rank square across both. */
+const FEATURED_PHONE_HEIGHT = 390;
+
 /* ── small shared pieces ── */
 
 const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
@@ -110,48 +118,17 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 
-function Skeleton({ height, style }: { height: number | string; style?: CSSProperties }) {
-  return <div aria-hidden="true" style={{ ...skeletonStyle(), height, ...style }} />;
-}
-
-/** A card-shaped placeholder at the real card's proportions: lamp spacer, cover, title, plaque. */
-function CardSkeleton({ cover }: { cover: number }) {
-  return (
-    <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-      <div style={{ height: 18 }} />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 7,
-          padding: 7,
-          background: t.glass,
-          borderRadius: r.card,
-          border: `1px solid ${t.glassBorder}`,
-          boxSizing: "border-box",
-        }}
-      >
-        <Skeleton height={cover} />
-        <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <Skeleton height={20} style={{ width: "70%", borderRadius: r.chip }} />
-          <Skeleton height={18} style={{ width: "78%", borderRadius: r.chip }} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** The empty and failed states: one Sentient line, one action. */
-function Notice({ line, action }: { line: string; action: ReactNode }) {
-  return (
-    <div
-      data-testid="gallery-notice"
-      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 14, padding: "16px 4px" }}
-    >
-      <p style={{ ...display(22), color: t.text, margin: 0 }}>{line}</p>
-      {action}
-    </div>
-  );
+/** The wall's grid: four columns of cards 14 apart, two rows of 250 on the board and rows that grow with their cards elsewhere. */
+function wallGrid(columns: 2 | 4, board: boolean): CSSProperties {
+  return columns === 4
+    ? {
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gridTemplateRows: board ? `${ROW}px ${ROW}px` : undefined,
+        gridAutoRows: board ? undefined : `minmax(${ROW}px, auto)`,
+        gap: 14,
+      }
+    : { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px" };
 }
 
 /* ── the header ── */
@@ -177,18 +154,44 @@ function LensControl({
   );
 }
 
-function StatsLabel({ stats, columns }: { stats: GalleryStatsView | null; columns: 2 | 4 }) {
+/** A figure before it has arrived: a bone as tall as the number's line (25px), so the cell is the height it will be. */
+const figureBone = <Skeleton width={64} height={22} style={{ margin: "1px 0 2px" }} />;
+
+/** The figures could not be read: the label's own box, as tall as the label, holding the failure. */
+function StatsFailed({ failure, phone }: { failure: PanelFailure; phone: boolean }) {
+  return (
+    <div
+      data-testid="gallery-stats-error"
+      style={{
+        minHeight: phone ? 169 : 84,
+        boxSizing: "border-box",
+        padding: "12px 14px",
+        borderRadius: r.control,
+        border: `1px solid ${t.line}`,
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <ErrorState panel="Gallery figures" onRetry={failure.onRetry} error={failure.error} />
+    </div>
+  );
+}
+
+function StatsLabel({ stats, columns, failure }: { stats: GalleryStatsView | null; columns: 2 | 4; failure?: PanelFailure }) {
   const phone = columns === 2;
-  const dash = "—";
+  if (failure && !stats) return <StatsFailed failure={failure} phone={phone} />;
+
+  const loading = stats === null;
   const week = stats ? weekBar(stats) : null;
   const goal = stats?.weeklyGoal ?? null;
 
   const cells = [
-    <Stat key="in" label="In the gallery" value={stats ? formatCount(stats.inGallery) : dash} />,
+    <Stat key="in" label="In the gallery" value={stats ? formatCount(stats.inGallery) : figureBone} />,
     <Stat
       key="week"
       label={phone ? "This week" : "Reproduced this week"}
-      value={stats ? formatCount(stats.reproducedThisWeek) : dash}
+      value={stats ? formatCount(stats.reproducedThisWeek) : figureBone}
+      barLoading={loading}
       of={!phone && goal ? formatCount(goal) : undefined}
       bar={
         week
@@ -206,7 +209,8 @@ function StatsLabel({ stats, columns }: { stats: GalleryStatsView | null; column
     <Stat
       key="fresh"
       label={phone ? "Fresh" : "Fresh · under 120 days"}
-      value={stats ? `${stats.freshPct}%` : dash}
+      value={stats ? `${stats.freshPct}%` : figureBone}
+      barLoading={loading}
       bar={
         stats
           ? { value: stats.freshPct, colour: t.evidence, label: "Fresh, confirmed within 120 days", valueText: `${stats.freshPct}%` }
@@ -216,7 +220,8 @@ function StatsLabel({ stats, columns }: { stats: GalleryStatsView | null; column
     <Stat
       key="bounties"
       label={phone ? "Open asks" : "Open bounties"}
-      value={stats ? formatPounds(stats.poolGbp) : dash}
+      value={stats ? formatPounds(stats.poolGbp) : figureBone}
+      barLoading={loading}
       of={!phone && stats ? `${formatCount(stats.open)} ${stats.open === 1 ? "ask" : "asks"}` : undefined}
       bar={
         stats
@@ -231,7 +236,14 @@ function StatsLabel({ stats, columns }: { stats: GalleryStatsView | null; column
     />,
   ];
 
-  return <WallLabel columns={columns} cells={cells} />;
+  const label = <WallLabel columns={columns} cells={cells} />;
+  return loading ? (
+    <LoadingRegion what="the gallery’s figures" data-testid="gallery-stats-loading">
+      {label}
+    </LoadingRegion>
+  ) : (
+    label
+  );
 }
 
 function QueryLine({ query, onSearch }: { query: string; onSearch: (query: string | null) => void }) {
@@ -308,20 +320,43 @@ function MiniBar({ percent }: { percent: number }) {
   );
 }
 
-/** A facet group's rows: skeletons while it loads, one line when it is empty, else the toggles. */
+/** A facet row before it has arrived: the row's own height (23 on the desktop column, 44 in the phone's sheet) with a name, a bar and a count. */
+function FacetRowSkeleton({ phone }: { phone: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, height: phone ? 44 : 23 }}>
+      <Skeleton width="auto" height={phone ? 14 : 12} style={{ flex: "0 1 110px", minWidth: 0 }} />
+      <span style={{ flexGrow: 1 }} />
+      {phone ? null : <Skeleton width={44} height={4} radius={2} />}
+      <Skeleton width={30} height={phone ? 11 : 10} />
+    </div>
+  );
+}
+
+/** A facet group's rows: bones while it loads, its own failure if its counts could not be read, else the toggles. A group with no counts never gets here: it is left out. */
 function FacetGroupBody({ group, phone }: { group: FacetGroupView; phone: boolean }) {
-  if (group.loading) {
+  if (group.failure) {
     return (
-      <div aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} height={phone ? 28 : 17} style={{ borderRadius: r.chip }} />
-        ))}
-      </div>
+      <ErrorState
+        panel={`${group.label} filters`}
+        onRetry={group.failure.onRetry}
+        error={group.failure.error}
+        data-testid={`gallery-facets-${group.key}-error`}
+      />
     );
   }
 
-  if (group.rows.length === 0) {
-    return <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>{group.emptyText}</p>;
+  if (group.loading) {
+    return (
+      <LoadingRegion
+        what={`${group.label.toLowerCase()} filters`}
+        data-testid={`gallery-facets-${group.key}-loading`}
+        style={{ display: "flex", flexDirection: "column", gap: phone ? 0 : 6 }}
+      >
+        {Array.from({ length: FACET_SKELETON_ROWS[group.key] }, (_, i) => (
+          <FacetRowSkeleton key={i} phone={phone} />
+        ))}
+      </LoadingRegion>
+    );
   }
 
   const max = Math.max(1, ...group.rows.map((row) => row.count));
@@ -338,11 +373,15 @@ function FacetGroupBody({ group, phone }: { group: FacetGroupView; phone: boolea
   );
 }
 
+/** The groups worth drawing: those still loading, those that failed and those with a count to show. */
+const drawn = (groups: readonly FacetGroupView[]) =>
+  groups.filter((group) => group.loading || group.failure || group.rows.length > 0);
+
 function FacetColumn({ groups }: { groups: readonly FacetGroupView[] }) {
   return (
     <Panel padding="4px 16px" style={{ height: "100%" }}>
       <nav aria-label="Filter the gallery">
-        {groups.map((group) => (
+        {drawn(groups).map((group) => (
           <div
             key={group.key}
             data-testid={`gallery-facets-${group.key}`}
@@ -423,45 +462,61 @@ function WallStates({
   onNavigate,
 }: Pick<GalleryViewProps, "wall" | "narrowed" | "onClearAll" | "onNavigate">) {
   if (wall.status === "error") {
-    return wall.errorKind === "permission" ? (
-      <Notice
-        line="You don't have access to this."
-        action={
-          <Button variant="secondary" size={34} fontSize={12} onClick={wall.onRetry}>
-            Try again
-          </Button>
-        }
-      />
-    ) : (
-      <Notice
-        line="The gallery could not be loaded."
-        action={
-          <Button variant="secondary" size={34} fontSize={12} onClick={wall.onRetry}>
-            Try again
-          </Button>
-        }
-      />
+    return (
+      <div data-testid="gallery-notice">
+        <Panel padding="16px 18px">
+          {/* A refusal is its own sentence, never an empty gallery. */}
+          <ErrorState
+            line={wall.errorKind === "permission" ? "You don't have access to this." : undefined}
+            panel="The gallery"
+            onRetry={wall.onRetry}
+            error={wall.error}
+          />
+        </Panel>
+      </div>
     );
   }
 
-  return narrowed ? (
-    <Notice
-      line="Nothing here yet."
-      action={
-        <Button variant="secondary" size={34} fontSize={12} onClick={onClearAll}>
-          See all builds
-        </Button>
-      }
-    />
-  ) : (
-    <Notice
-      line="Nothing has been shown here yet."
-      action={
-        <Button variant="secondary" size={34} fontSize={12} onClick={() => onNavigate("/compose/new")}>
-          Show what you built
-        </Button>
-      }
-    />
+  return (
+    <div data-testid="gallery-notice">
+      <Panel padding="0 18px">
+        {narrowed ? (
+          <EmptyState line="Nothing here yet." action={{ label: "See all builds", onClick: onClearAll }} />
+        ) : (
+          <EmptyState
+            line="Nothing has been shown here yet."
+            action={{ label: "Show what you built", onClick: () => onNavigate("/compose/new") }}
+          />
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+/** The wall before it has arrived: a plate and six cards where the featured build leads, eight cards where nothing does. */
+function WallSkeleton({ board, phone, leadsWithFeatured }: { board: boolean; phone: boolean; leadsWithFeatured: boolean }) {
+  if (phone) {
+    return (
+      <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(2, false)}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <CardSkeleton key={i} cover={96} body={144} />
+        ))}
+      </LoadingRegion>
+    );
+  }
+  return (
+    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={wallGrid(4, board)}>
+      {leadsWithFeatured ? (
+        <div style={{ gridColumn: "span 2", minHeight: ROW, minWidth: 0, display: "flex" }}>
+          <Skeleton height="auto" radius={r.panel} style={{ flexGrow: 1 }} />
+        </div>
+      ) : null}
+      {Array.from({ length: leadsWithFeatured ? 6 : 8 }, (_, i) => (
+        <div key={i} style={{ minWidth: 0 }}>
+          <CardSkeleton cover={92} />
+        </div>
+      ))}
+    </LoadingRegion>
   );
 }
 
@@ -472,6 +527,7 @@ function FeaturedDesktop({ featured, now }: { featured: FeaturedView; now?: numb
       <Link
         to={featured.to}
         data-testid="gallery-featured"
+        data-ring-inset=""
         aria-label={`Most reproduced this month: ${featured.title}`}
         style={{ display: "block", height: "100%", textDecoration: "none", color: "inherit" }}
       >
@@ -570,9 +626,11 @@ function FeaturedPhone({ featured, now }: { featured: FeaturedView; now?: number
 /* ── desktop ── */
 
 function DesktopGallery(props: GalleryViewProps) {
-  const { fit = "content", now, lens, onLensChange, lensCounts, stats, facets, query, onSearch, narrowed, onClearAll, featured, aboveWall, wall, onNavigate } =
+  const { fit = "content", now, lens, onLensChange, lensCounts, stats, statsError, facets, query, onSearch, narrowed, onClearAll, featured, aboveWall, wall, onNavigate } =
     props;
   const board = fit === "board";
+  /* No counts is no group, and no group at all is no column: the wall takes the width. */
+  const showFacets = drawn(facets).length > 0;
 
   return (
     <div
@@ -595,39 +653,25 @@ function DesktopGallery(props: GalleryViewProps) {
             </div>
           </div>
           <div style={{ marginTop: 14 }}>
-            <StatsLabel stats={stats} columns={4} />
+            <StatsLabel stats={stats} columns={4} failure={statsError} />
           </div>
         </Panel>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "230px minmax(0, 1fr)", gap: 12, flexGrow: 1, minHeight: 0 }}>
-        <div style={{ minHeight: 0 }}>
-          <FacetColumn groups={facets} />
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: showFacets ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 12, flexGrow: 1, minHeight: 0 }}>
+        {showFacets ? (
+          <div style={{ minHeight: 0 }}>
+            <FacetColumn groups={facets} />
+          </div>
+        ) : null}
         <div style={{ minHeight: 0, minWidth: 0, overflow: board ? "hidden" : undefined, padding: "0 4px" }}>
           {aboveWall}
           {wall.status === "loading" ? (
-            <div
-              data-testid="gallery-loading"
-              style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}
-            >
-              {Array.from({ length: 8 }, (_, i) => (
-                <CardSkeleton key={i} cover={92} />
-              ))}
-            </div>
+            <WallSkeleton board={board} phone={false} leadsWithFeatured={!narrowed} />
           ) : wall.status === "error" || (wall.cards.length === 0 && !featured) ? (
             <WallStates wall={wall} narrowed={narrowed} onClearAll={onClearAll} onNavigate={onNavigate} />
           ) : (
-            <div
-              data-testid="gallery-wall"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                gridTemplateRows: board ? `${ROW}px ${ROW}px` : undefined,
-                gridAutoRows: board ? undefined : `minmax(${ROW}px, auto)`,
-                gap: 14,
-              }}
-            >
+            <div data-testid="gallery-wall" style={wallGrid(4, board)}>
               {featured ? <FeaturedDesktop featured={featured} now={now} /> : null}
               {wall.cards.map((card) => (
                 <Fragment key={card.key}>{card.render("desktop")}</Fragment>
@@ -698,9 +742,11 @@ function SearchField({ query, onSearch }: { query: string | null; onSearch: (que
 }
 
 function PhoneGallery(props: GalleryViewProps) {
-  const { now, lens, onLensChange, lensCounts, stats, facets, query, onSearch, appliedCount, narrowed, onClearAll, total, featured, aboveWall, wall, onNavigate } =
+  const { now, lens, onLensChange, lensCounts, stats, statsError, facets, query, onSearch, appliedCount, narrowed, onClearAll, total, featured, aboveWall, wall, onNavigate } =
     props;
   const [sheet, setSheet] = useState(false);
+  /* Nothing to filter by is no Filters button: the search takes its place. */
+  const showFacets = drawn(facets).length > 0;
 
   return (
     <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -720,29 +766,30 @@ function PhoneGallery(props: GalleryViewProps) {
 
       <div style={{ display: "flex", gap: 8 }}>
         <SearchField query={query} onSearch={onSearch} />
-        <Button variant="secondary" size={44} fontSize={13} icon={SlidersHorizontal} onClick={() => setSheet(true)}>
-          {appliedCount > 0 ? `Filters · ${appliedCount}` : "Filters"}
-        </Button>
+        {showFacets ? (
+          <Button variant="secondary" size={44} fontSize={13} icon={SlidersHorizontal} onClick={() => setSheet(true)}>
+            {appliedCount > 0 ? `Filters · ${appliedCount}` : "Filters"}
+          </Button>
+        ) : null}
       </div>
       {query ? <QueryLine query={query} onSearch={onSearch} /> : null}
 
-      <StatsLabel stats={stats} columns={2} />
+      <StatsLabel stats={stats} columns={2} failure={statsError} />
 
       {featured && wall.status === "ready" ? <FeaturedPhone featured={featured} now={now} /> : null}
+      {wall.status === "loading" && !narrowed ? (
+        <Skeleton height={FEATURED_PHONE_HEIGHT} radius={r.panel} />
+      ) : null}
 
       <div style={mono(11, { color: t.label, padding: "0 2px" })}>{ORDER_NOTE}</div>
 
       {aboveWall}
       {wall.status === "loading" ? (
-        <div data-testid="gallery-loading" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px" }}>
-          {Array.from({ length: 4 }, (_, i) => (
-            <CardSkeleton key={i} cover={96} />
-          ))}
-        </div>
+        <WallSkeleton board={false} phone leadsWithFeatured={false} />
       ) : wall.status === "error" || wall.cards.length === 0 ? (
         <WallStates wall={wall} narrowed={narrowed} onClearAll={onClearAll} onNavigate={onNavigate} />
       ) : (
-        <div data-testid="gallery-wall" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px" }}>
+        <div data-testid="gallery-wall" style={wallGrid(2, false)}>
           {wall.cards.map((card) => (
             <Fragment key={card.key}>{card.render("phone")}</Fragment>
           ))}
@@ -751,7 +798,7 @@ function PhoneGallery(props: GalleryViewProps) {
       )}
 
       <BottomSheet open={sheet} onOpenChange={setSheet} title="Filters">
-        {facets.map((group) => (
+        {drawn(facets).map((group) => (
           <div key={group.key} style={{ display: "flex", flexDirection: "column" }}>
             <Eyebrow size={10} style={{ marginBottom: 4 }}>
               {group.label}

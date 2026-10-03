@@ -170,10 +170,9 @@ describe("the solvers board", () => {
 
     const empty = await screen.findByTestId("solvers-empty");
     expect(empty).toHaveTextContent("Nobody has solved a bounty yet.");
-    const links = within(empty).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveTextContent("See open bounties");
-    expect(links[0]).toHaveAttribute("href", "/bounties");
+    const actions = within(empty).getAllByRole("button");
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toHaveTextContent("See open bounties");
     expect(screen.queryByTestId("solvers-board")).toBeNull();
   });
 
@@ -196,7 +195,7 @@ describe("the solvers board", () => {
     renderBoard();
 
     const error = await screen.findByTestId("solvers-error");
-    expect(error).toHaveTextContent("Something went wrong.");
+    expect(error).toHaveTextContent("That didn't load.");
     within(error).getByRole("button", { name: "Try again" }).click();
 
     expect(await screen.findAllByTestId("solver-row")).toHaveLength(1);

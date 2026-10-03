@@ -1,15 +1,16 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { MakerLink } from "@/components/profile/MakerLink";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/brand/EmptyState";
+import { ErrorState } from "@/components/brand/ErrorState";
+import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { TOP_SOLVERS_LIMIT, listTopSolvers, type Solver } from "@/lib/bounty";
 import { isPermissionError } from "@/lib/errors/permission";
-import { skeletonStyle } from "@/lib/theme/controls";
 import { SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, data as dataText, tabular } from "@/lib/theme/type";
@@ -126,36 +127,29 @@ function BoardBody({
   error: Error | null;
   onRetry: () => void;
 }) {
-  /* STATES.md row 21: a refusal is its own sentence, never an empty board. */
+  const navigate = useNavigate();
+  /* A refusal is its own sentence, never an empty board. */
   if (error) {
     return (
-      <StateLine
-        testId="solvers-error"
-        sentence={isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
-        action={
-          <Button type="button" variant="outline" onClick={onRetry} style={{ background: "transparent" }}>
-            Try again
-          </Button>
-        }
+      <ErrorState
+        data-testid="solvers-error"
+        line={isPermissionError(error) ? "You don't have access to this." : undefined}
+        panel="Solvers"
+        onRetry={onRetry}
+        error={error}
       />
     );
   }
 
   if (isLoading) return <LoadingRows phone={phone} />;
 
-  /* STATES.md row 19: one sentence and one action, secondary (row 2), as the
-     bounties board's is, because the frame's own controls spend the primary on
-     the phone and signed out. The action is where solving starts. */
+  /* One sentence and one action: where solving starts. */
   if (solvers.length === 0) {
     return (
-      <StateLine
-        testId="solvers-empty"
-        sentence="Nobody has solved a bounty yet."
-        action={
-          <Button asChild variant="outline" style={{ background: "transparent" }}>
-            <Link to="/bounties">See open bounties</Link>
-          </Button>
-        }
+      <EmptyState
+        data-testid="solvers-empty"
+        line="Nobody has solved a bounty yet."
+        action={{ label: "See open bounties", onClick: () => navigate("/bounties") }}
       />
     );
   }
@@ -170,32 +164,6 @@ function BoardBody({
         <SolverRow key={solver.id} solver={solver} position={index + 1} phone={phone} />
       ))}
     </ol>
-  );
-}
-
-function StateLine({
-  testId,
-  sentence,
-  action,
-}: {
-  testId: string;
-  sentence: string;
-  action: React.ReactNode;
-}) {
-  return (
-    <div
-      data-testid={testId}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        gap: SPACE.sm,
-        paddingBottom: SPACE.lg,
-      }}
-    >
-      <p style={{ ...body, margin: 0, color: t.text2 }}>{sentence}</p>
-      {action}
-    </div>
   );
 }
 
@@ -339,7 +307,7 @@ function SolverIdentity({ solver }: { solver: Solver }) {
 /** STATES.md row 20: the rows' shape before the rows, in --recess. */
 function LoadingRows({ phone }: { phone: boolean }) {
   return (
-    <div data-testid="solvers-loading" aria-hidden>
+    <LoadingRegion what="the solvers" data-testid="solvers-loading">
       {Array.from({ length: LOADING_ROWS }, (_, index) => (
         <div
           key={index}
@@ -353,11 +321,11 @@ function LoadingRows({ phone }: { phone: boolean }) {
             borderTop: index === 0 ? undefined : `1px solid ${t.line}`,
           }}
         >
-          <div style={{ ...skeletonStyle(), height: 20 }} />
-          <div style={{ ...skeletonStyle(), height: 44 }} />
-          <div style={{ ...skeletonStyle(), height: 20, ...(phone ? { gridColumn: 2 } : {}) }} />
+          <Skeleton height={20} />
+          <Skeleton height={44} />
+          <Skeleton height={20} style={phone ? { gridColumn: 2 } : undefined} />
         </div>
       ))}
-    </div>
+    </LoadingRegion>
   );
 }

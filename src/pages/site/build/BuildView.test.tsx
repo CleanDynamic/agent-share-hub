@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildFixture } from "@/dev/fixtures/build";
 
-import { BuildView, BuildViewNotice, BuildViewSkeleton, PHONE_PARTS, type BuildViewProps } from "./BuildView";
+import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton, PHONE_PARTS, type BuildViewProps } from "./BuildView";
 import { buildTabs } from "./buildModel";
 
 function mount(over: Partial<BuildViewProps> = {}, viewport: "desktop" | "mobile" = "desktop") {
@@ -212,8 +212,8 @@ describe("BuildView on a desktop", () => {
       anatomy: { ...base.anatomy, parts: [], gaps: 0, selectedId: null },
       timeline: { events: [], duration: null, onPlay: vi.fn() },
     });
-    expect(screen.getByText("Nothing has been placed in this build yet.")).toBeTruthy();
-    expect(screen.getByText("No steps were kept for this build.")).toBeTruthy();
+    expect(screen.getByTestId("build-anatomy-empty").textContent).toBe("This build has no parts yet.");
+    expect(screen.getByTestId("build-timeline-empty").textContent).toBe("No events were kept for this build.");
     expect(screen.getByRole("button", { name: "Play the build" })).toHaveProperty("disabled", true);
     expect(screen.getByLabelText("Nothing placed yet")).toBeTruthy();
   });
@@ -236,13 +236,19 @@ describe("BuildView on a phone", () => {
     const onTabChange = vi.fn();
     const base = buildFixture("mobile");
     mount({ viewer: { ...base.viewer, onTabChange } }, "mobile");
-    const row = screen.getByRole("group", { name: "Sections of this build" });
-    const chips = within(row).getAllByRole("button");
+    const row = screen.getByRole("tablist", { name: "Sections of this build" });
+    const chips = within(row).getAllByRole("tab");
     expect(chips.map((chip) => chip.textContent)).toEqual(buildTabs(false).map((tab) => tab.label));
-    expect(chips[0].getAttribute("aria-pressed")).toBe("true");
+    expect(chips[0].getAttribute("aria-selected")).toBe("true");
+    expect(chips.map((chip) => chip.tabIndex)).toEqual([0, -1, -1, -1, -1]);
     fireEvent.click(chips[4]);
     expect(onTabChange).toHaveBeenCalledWith("broke");
     expect(within(screen.getByTestId("build-viewer")).queryByRole("tablist")).toBeNull();
+    // The arrow keys move between the chips, and the panel is named by the chosen one.
+    chips[0].focus();
+    fireEvent.keyDown(chips[0], { key: "ArrowRight" });
+    expect(onTabChange).toHaveBeenLastCalledWith(buildTabs(false)[1].value);
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", `build-tab-${base.viewer.tab}`);
   });
 
   it("shows the first six parts, then the rest on request", () => {
@@ -264,10 +270,26 @@ describe("BuildView on a phone", () => {
 });
 
 describe("the states", () => {
-  it("holds the first screen's shape while loading", () => {
+  it("holds the first screen's shape while loading, with the panels' own heads, and announces itself once", () => {
     render(<BuildViewSkeleton />);
     const loading = screen.getByTestId("build-loading");
     expect(loading.getAttribute("aria-busy")).toBe("true");
+    expect(loading.getAttribute("role")).toBe("status");
+    expect(loading.textContent).toContain("Loading the build");
+    expect(screen.getByRole("heading", { level: 2, name: "Anatomy" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Watch it get built" })).toBeTruthy();
+  });
+
+  it("says That didn't load. in the page's own panel, naming it, with a retry, and never the exception", () => {
+    const onRetry = vi.fn();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<BuildViewFailed onRetry={onRetry} error={new Error("PGRST116")} />);
+    expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
+    expect(screen.getByTestId("build-error").textContent).toContain("That didn't load.");
+    expect(screen.getByTestId("build-error").textContent).not.toContain("PGRST116");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
   });
 
   it("says what went wrong in one line, with one action", () => {

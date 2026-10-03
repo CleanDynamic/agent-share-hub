@@ -211,14 +211,18 @@ describe("RebuildPage (site frame)", () => {
     expect(startRebuild).not.toHaveBeenCalled();
   });
 
-  it("says so when the fork fails, with the way back to the build", async () => {
+  it("says That didn't load. when the fork fails, naming the draft, never the cause, and asks again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     getRebuildDraft.mockResolvedValue(null);
-    startRebuild.mockRejectedValue(new Error("startRebuild failed: permission denied"));
+    startRebuild.mockRejectedValueOnce(new Error("startRebuild failed: permission denied")).mockResolvedValue(undefined);
     renderAt("/rebuild/invoice-triage");
-    expect(await screen.findByRole("heading", { level: 1, name: "The rebuild could not be started." })).toBeTruthy();
-    expect(screen.getByText("startRebuild failed: permission denied")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Back to the build" }));
-    expect(screen.getByTestId("path").textContent).toBe("/b2/invoice-triage");
+    const failed = await screen.findByTestId("rebuild-error");
+    expect(failed.textContent).toContain("That didn't load.");
+    expect(failed.textContent).toContain("Your draft");
+    expect(screen.queryByText(/permission denied/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(startRebuild).toHaveBeenCalledTimes(2));
+    vi.restoreAllMocks();
   });
 });
 
@@ -267,12 +271,12 @@ describe("LineagePage (site frame)", () => {
     expect(getBuild).not.toHaveBeenCalled();
   });
 
-  it("offers to rebuild a build nobody has rebuilt yet", async () => {
+  it("says a build nobody has rebuilt has no rebuilds, and that nothing has changed", async () => {
     getBuildFamily.mockResolvedValue(familyRow("src", "Invoice triage agent", null, 0));
     renderAt("/b2/invoice-triage/lineage");
     await screen.findByTestId("lineage-view");
-    await waitFor(() => expect(screen.getByTestId("changes-panel").textContent).toContain("Nobody has rebuilt this yet."));
-    expect(screen.getByRole("link", { name: "Rebuild this" }).getAttribute("href")).toBe("/rebuild/invoice-triage");
+    expect((await screen.findByTestId("family-empty")).textContent).toBe("This build has no rebuilds yet.");
+    expect(screen.getByTestId("changes-empty").textContent).toBe("Nothing has changed yet.");
   });
 
   it("says when there is no build at the address", async () => {
