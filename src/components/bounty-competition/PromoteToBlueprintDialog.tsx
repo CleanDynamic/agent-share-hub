@@ -26,7 +26,7 @@ export function PromoteToBlueprintDialog({
 }: PromoteToBlueprintDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] p-6 border border-border bg-background/95 backdrop-blur-xl">
+      <DialogContent className="sm:max-w-[520px] p-6 border border-border bg-background/95">
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
             <Sparkles className="w-5 h-5" style={{ color: "var(--evidence)" }} />

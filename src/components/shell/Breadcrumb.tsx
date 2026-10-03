@@ -8,7 +8,7 @@
 //
 // `BreadcrumbView` is pure (a trail in, a nav out); `Breadcrumb` reads the route.
 
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -78,8 +78,13 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
   );
 }
 
-export function Breadcrumb() {
+function BreadcrumbContainer() {
   return <BreadcrumbView trail={useBreadcrumb()} />;
 }
+
+/* UI-P40: memoised, and it takes no props, so a page's data changing (which
+   re-renders the frame around it) never re-renders the chrome. It updates on
+   its own hooks only. */
+export const Breadcrumb = memo(BreadcrumbContainer);
 
 export default Breadcrumb;

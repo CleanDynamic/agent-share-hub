@@ -883,7 +883,7 @@ const MessagesPage = () => {
                       isMobile={false}
                     />
                   </ContextMenuTrigger>
-                  <ContextMenuContent className="bg-card/95 backdrop-blur-md border-border">
+                  <ContextMenuContent className="bg-card/95 border-border">
                     <ContextMenuItem onClick={() => togglePin(t)} className="text-sm gap-2">
                       <Pin className="h-4 w-4" /> {t.is_pinned ? "Unpin" : "Pin"}
                     </ContextMenuItem>

@@ -29,7 +29,6 @@
 
 import type { CSSProperties } from "react";
 
-import { GLASS_BLUR } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -143,8 +142,6 @@ export function hexToRgba(colour: string, alpha: number): string {
  */
 export const panelGlass: CSSProperties = {
   background: t.glass,
-  backdropFilter: GLASS_BLUR,
-  WebkitBackdropFilter: GLASS_BLUR,
   border: `1px solid ${t.glassBorder}`,
 };
 

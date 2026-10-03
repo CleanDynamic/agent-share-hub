@@ -33,11 +33,9 @@ export interface MobileTopBarProps {
   onNotificationsOpen?: () => void;
 }
 
-/* BG-P13. The bar is glass rather than a flat fill: it is 56px of fixed
-   chrome, not a full-height panel, so it is one of the surfaces the theme
-   still allows a blur under — at the system's single 16px value, not the 20px
-   this carried. */
-const BAR_BLUR = "blur(16px) saturate(1.15)";
+/* BG-P13 made this bar glass; UI-P40 takes the blur off. It keeps the glass
+   fill, and the frame's blur budget is the site header, the mobile header,
+   the dock and the build page's plate and dock. */
 
 const TITLE_STYLE: React.CSSProperties = {
   color: t.text,
@@ -108,8 +106,6 @@ export function MobileTopBar({
         gridTemplateColumns: "56px 1fr 56px",
         alignItems: "center",
         background: t.glass,
-        backdropFilter: BAR_BLUR,
-        WebkitBackdropFilter: BAR_BLUR,
         borderBottom: `1px solid ${t.line}`,
         zIndex: 1000,
       }}

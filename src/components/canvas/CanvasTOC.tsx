@@ -205,7 +205,6 @@ export function CanvasTOC({
         borderRight: '1px solid var(--line)',
         overflow: 'hidden',
         background: 'var(--recess)',
-        backdropFilter: 'blur(16px)',
         position: 'relative',
       }}>
 

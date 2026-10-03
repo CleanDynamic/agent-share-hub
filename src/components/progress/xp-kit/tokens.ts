@@ -45,7 +45,6 @@
 // gradient is decoration, the theme's primary is a fill with a measured label
 // colour on it, and there is no second stop legal in both rooms.
 
-import { GLASS_BLUR } from "@/lib/theme/controls"
 import { r } from "@/lib/theme/radius"
 import { t } from "@/lib/theme/tokens"
 import { DM_MONO, FIGTREE } from "@/lib/theme/type"
@@ -103,8 +102,6 @@ export const tokens = {
   // Glass — THE one blur value. It was `blur(28px) saturate(160%)`, a second
   // blur value in a system that has exactly one.
   glass: {
-    backdropFilter: GLASS_BLUR,
-    WebkitBackdropFilter: GLASS_BLUR,
   } as const,
 
   // Fonts. BG-P03 retired the old stacks: Figtree is the body face and DM Mono

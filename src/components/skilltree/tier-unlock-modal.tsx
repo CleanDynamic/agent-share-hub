@@ -34,8 +34,6 @@ export default function TierUnlockModal({
         alignItems: "center",
         justifyContent: "center",
         background: "var(--recess)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
         fontFamily: sans,
         padding: 16,
       }}
@@ -48,8 +46,6 @@ export default function TierUnlockModal({
           padding: 26,
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           border: `1px solid ${color}`,
           boxShadow: `0 0 40px color-mix(in srgb, ${color} 35%, transparent)`,
           color: tokens.text,

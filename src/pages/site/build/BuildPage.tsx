@@ -803,6 +803,7 @@ export function BuildPage() {
     <img
       src={coverSrc}
       alt={coverAlt(build, cover, nodesById)}
+      decoding="async"
       style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
     />
   ) : coverStill || media.isPending ? (

@@ -96,7 +96,7 @@ export function NoteBlockNode({ id, data, selected }: NodeProps) {
   return (
     <div
       className={cn(
-        'group relative rounded-xl border backdrop-blur-md shadow-lg w-[260px]',
+        'group relative rounded-xl border shadow-lg w-[260px]',
         styles.bg,
         styles.border,
         selected && 'ring-2 ring-border',

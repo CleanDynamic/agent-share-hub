@@ -407,7 +407,6 @@ export default function ReblogComposeSheet({
 
   const sheetBackground = "var(--recess)"
   const sheetBorder = "0.5px solid var(--line)"
-  const sheetBackdropFilter = "blur(40px) saturate(160%)"
 
   if (variant === "desktop") {
     return (
@@ -415,7 +414,6 @@ export default function ReblogComposeSheet({
         className="fixed inset-0 z-50 flex items-center justify-center"
         style={{
           background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-          backdropFilter: "blur(16px)",
           opacity: visible ? 1 : 0,
           transition: feedback("opacity"),
         }}
@@ -432,8 +430,6 @@ export default function ReblogComposeSheet({
             background: sheetBackground,
             border: sheetBorder,
             borderRadius: 16,
-            backdropFilter: sheetBackdropFilter,
-            WebkitBackdropFilter: sheetBackdropFilter,
             transform: visible ? "scale(1)" : "scale(0.96)",
             opacity: visible ? 1 : 0,
             transition: feedback("transform", "opacity"),
@@ -479,7 +475,6 @@ export default function ReblogComposeSheet({
       className="fixed inset-0 z-50"
       style={{
         background: "color-mix(in srgb, var(--porthole) 62%, transparent)",
-        backdropFilter: "blur(16px)",
         opacity: visible ? 1 : 0,
         transition: feedback("opacity"),
       }}
@@ -498,8 +493,6 @@ export default function ReblogComposeSheet({
           background: sheetBackground,
           border: sheetBorder,
           borderRadius: "16px 16px 0 0",
-          backdropFilter: sheetBackdropFilter,
-          WebkitBackdropFilter: sheetBackdropFilter,
           transform: visible
             ? `translateY(${dragOffsetY}px)`
             : "translateY(100%)",

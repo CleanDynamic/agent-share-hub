@@ -31,8 +31,6 @@ export default function Tooltip({ label, children }: TooltipProps) {
           background: 'var(--bg)',
           border: tokens.borderSoft,
           color: tokens.text,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           boxShadow: 'var(--elev-raised)',
         }}
       >

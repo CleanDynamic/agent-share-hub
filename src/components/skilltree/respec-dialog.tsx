@@ -28,8 +28,6 @@ export default function RespecDialog({
         alignItems: "center",
         justifyContent: "center",
         background: "var(--recess)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
         fontFamily: sans,
         padding: 16,
       }}
@@ -43,8 +41,6 @@ export default function RespecDialog({
           padding: 24,
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           border: tokens.border,
           color: tokens.text,
         }}

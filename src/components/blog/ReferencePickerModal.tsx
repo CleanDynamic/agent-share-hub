@@ -78,8 +78,6 @@ const styles = {
     width: 560,
     maxHeight: 540,
     backgroundColor: "var(--bg)",
-    backdropFilter: "blur(16px)",
-    WebkitBackdropFilter: "blur(16px)",
     border: "0.5px solid var(--line)",
     borderRadius: 12,
     boxShadow: "var(--elev-overlay)",

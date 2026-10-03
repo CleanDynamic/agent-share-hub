@@ -179,13 +179,15 @@ test.describe("one ground", () => {
     });
   }
 
-  test("blurs exactly one surface with no cards loaded", async ({ page }) => {
+  test("blurs nothing in the legacy frame with no cards loaded", async ({ page }) => {
     await open(page, "/", "noon");
     /* The theme's budget is about twenty blurred surfaces a page, and the rule
        that matters more is that a full-height fixed panel is never one. With an
        empty feed on a desktop viewport the only blurred surface on this route
        is the tab bar, which is a 52px sticky strip — the case the spec allows.
-       Both rails and all three frame elements are flat. */
+       Both rails and all three frame elements are flat. UI-P40's blur budget
+       took the tab bar's blur off too: only the site frame's header, mobile
+       header and dock, and the build page's plate and dock, may blur. */
     const blurred = await page.evaluate(() =>
       [...document.querySelectorAll("body *")]
         .filter((el) => {
@@ -195,7 +197,7 @@ test.describe("one ground", () => {
         })
         .map((el) => el.getAttribute("data-testid") ?? el.tagName),
     );
-    expect(blurred).toEqual(["feed-tabs"]);
+    expect(blurred).toEqual([]);
   });
 });
 

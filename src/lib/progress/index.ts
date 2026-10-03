@@ -176,6 +176,9 @@ export async function getQuestState(userId: string): Promise<QuestStateApi> {
   }) as QuestStateApi;
 }
 
+/** UI-P40: every list read is bounded. Far above any real reader's count of these rows. */
+const LIST_CAP = 200;
+
 export async function getChallenges(userId: string): Promise<DailyChallengeRow[]> {
   // Auto-seed today's challenge row if none active
   const { data: existing } = await (supabase as any)
@@ -183,7 +186,8 @@ export async function getChallenges(userId: string): Promise<DailyChallengeRow[]
     .select("*")
     .eq("user_id", userId)
     .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(LIST_CAP);
 
   if (existing && existing.length > 0) return existing as DailyChallengeRow[];
 
@@ -227,7 +231,8 @@ export async function getCreatorMarks(userId: string) {
     .from("creator_marks")
     .select("*")
     .eq("user_id", userId)
-    .order("earned_at", { ascending: false });
+    .order("earned_at", { ascending: false })
+    .limit(LIST_CAP);
   return (data ?? []) as CreatorMarkRow[];
 }
 
@@ -276,7 +281,8 @@ export async function getPerksCatalogue(): Promise<PerkRow[]> {
   const { data } = await (supabase as any)
     .from("perks")
     .select("*")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .limit(LIST_CAP);
   return (data ?? []) as PerkRow[];
 }
 
@@ -284,7 +290,8 @@ export async function getUserPerks(userId: string): Promise<UserPerkRow[]> {
   const { data } = await (supabase as any)
     .from("user_perks")
     .select("perk_slug, earned_at")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .limit(LIST_CAP);
   return (data ?? []) as UserPerkRow[];
 }
 
@@ -296,7 +303,9 @@ export async function getStreakDays(userId: string, sinceDays = 60): Promise<Str
     .select("date, kind")
     .eq("user_id", userId)
     .gte("date", since.toISOString().slice(0, 10))
-    .order("date", { ascending: true });
+    .order("date", { ascending: true })
+    // A day can carry more than one kind; the window bounds the rest.
+    .limit((sinceDays + 1) * 4);
   return (data ?? []) as StreakDayRow[];
 }
 
@@ -311,7 +320,8 @@ export async function getPendingRevealBadges(userId: string) {
     .from("user_badges")
     .select("id, badge_key, title, description, metadata")
     .eq("user_id", userId)
-    .eq("state", "pending_reveal");
+    .eq("state", "pending_reveal")
+    .limit(LIST_CAP);
   return (data ?? []) as Array<{
     id: string; badge_key: string; title: string | null;
     description: string | null; metadata: Record<string, any>;

@@ -217,7 +217,6 @@ export function SolutionSubmissionShell({
         style={{
           height: 60,
           background: "var(--bg)",
-          backdropFilter: "blur(16px)",
           borderTop: "0.5px solid var(--line)",
           padding: "12px 24px",
         }}

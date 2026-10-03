@@ -39,8 +39,6 @@ export default function ChallengeNudgePill({
         borderRadius: tokens.radiusPill,
         background: tokens.card,
         border: `0.5px solid ${colourAlpha(accent, 0.302)}`,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         boxShadow: "var(--elev-raised)",
       }}
     >

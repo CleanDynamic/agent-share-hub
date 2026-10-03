@@ -30,8 +30,6 @@ export default function BadgeEarnedToast({
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
         border: `0.5px solid ${colourAlpha(tokens.orange, 0.4)}`,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         boxShadow:
           "var(--elev-overlay), 0 0 0 1px color-mix(in srgb, var(--action) 14%, transparent)",
         fontFamily: tokens.fontSans,

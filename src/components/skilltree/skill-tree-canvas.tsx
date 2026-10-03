@@ -72,8 +72,6 @@ export default function SkillTreeCanvas({
         height: 320,
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         border: tokens.border,
         overflow: "hidden",
         cursor: dragging ? "grabbing" : "grab",

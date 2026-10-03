@@ -55,8 +55,6 @@ import { feedback } from '@/lib/theme/motion';
 const styles = {
   toolbar: {
     background: 'var(--recess)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
     borderBottom: '1px solid var(--line)',
   },
   divider: {

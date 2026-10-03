@@ -128,8 +128,6 @@ export default function LineageTreeView({ root, collapseDepth = 2 }: LineageTree
         borderRadius: tokens.panel,
         background: tokens.shell,
         border: tokens.borderSoft,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
       }}
     >
       <div className="mb-1 flex items-center gap-2">

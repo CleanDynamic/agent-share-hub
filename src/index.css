@@ -8,17 +8,25 @@
 
    UI-P05. Sentient is the display face (Bodoni Moda is retired). It is not on
    Google Fonts, so the two weights the overhaul uses are served from
-   /public/fonts. The 500 is preloaded in index.html. */
+   /public/fonts. Both are preloaded in index.html.
+
+   UI-P40. Each weight is subset to Latin (Basic Latin, Latin-1, Latin
+   Extended-A, punctuation, Δ) and served as WOFF2: about 22 kB a weight, from
+   about 46 kB of OTF. A character outside the range falls back to the
+   display stack. Regenerate from the full OTFs with
+   `pyftsubset <otf> --unicodes="<the range below>" --layout-features='*' --flavor=woff2`. */
 @font-face {
   font-family: "Sentient";
-  src: url("/fonts/Sentient-Medium.otf") format("opentype");
+  src: url("/fonts/Sentient-Medium-latin.woff2") format("woff2");
+  unicode-range: U+0000-017F, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+0394, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Sentient";
-  src: url("/fonts/Sentient-Bold.otf") format("opentype");
+  src: url("/fonts/Sentient-Bold-latin.woff2") format("woff2");
+  unicode-range: U+0000-017F, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+0394, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
   font-weight: 700;
   font-style: normal;
   font-display: swap;

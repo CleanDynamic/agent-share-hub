@@ -121,9 +121,9 @@ describe("hexToRgba tints a token instead of returning it whole", () => {
 });
 
 describe("the glass surfaces", () => {
-  it("blurs the panel once, at the theme's only blur value", () => {
+  it("fills the panel with glass and does not blur it (UI-P40's blur budget)", () => {
     expect(panelGlass.background).toBe("var(--glass)");
-    expect(panelGlass.backdropFilter).toBe(GLASS_BLUR);
+    expect(panelGlass.backdropFilter).toBeUndefined();
     expect(GLASS_BLUR).toBe("blur(16px) saturate(1.15)");
   });
 

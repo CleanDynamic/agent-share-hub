@@ -136,9 +136,12 @@ describe("no blurred surface nests inside another", () => {
   // The rule the previous shell broke. A blurred item inside a blurred panel is
   // two stacked compositing layers, each re-reading the pixels beneath it every
   // frame — that nesting, not the blur radius, is what made scrolling stutter.
-  it("blurs the portalled panels and nothing else", () => {
-    expect(menuPanelStyle.backdropFilter).toBe(GLASS_BLUR);
-    expect(dialogPanelStyle.backdropFilter).toBe(GLASS_BLUR);
+  // UI-P40: the blur budget is the site header, the mobile header, the dock and
+  // the build page's plate and dock. No kit panel is one of them.
+  it("blurs no kit panel, portalled or not", () => {
+    expect(menuPanelStyle.backdropFilter).toBeUndefined();
+    expect(dialogPanelStyle.backdropFilter).toBeUndefined();
+    expect(sheetPanelStyle("right").backdropFilter).toBeUndefined();
   });
 
   it("never blurs anything that can come to rest inside a panel", () => {
@@ -295,9 +298,8 @@ describe("the sheet is anchored, and its style knows it", () => {
     }
   });
 
-  it("carries the overlay elevation and the blur, like the dialog", () => {
+  it("carries the overlay elevation, like the dialog", () => {
     expect(sheetPanelStyle("right").boxShadow).toBe(dialogPanelStyle.boxShadow);
-    expect(sheetPanelStyle("right").backdropFilter).toBe(GLASS_BLUR);
   });
 });
 

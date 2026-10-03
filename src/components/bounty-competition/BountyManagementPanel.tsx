@@ -170,7 +170,7 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 z-[80] backdrop-blur-sm animate-in fade-in"
+        className="fixed inset-0 z-[80] animate-in fade-in"
         style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}
       />
 
@@ -179,7 +179,6 @@ export function BountyManagementPanel(props: BountyManagementPanelProps) {
         className="fixed right-0 top-0 z-[81] h-full w-full max-w-[480px] flex flex-col animate-in slide-in-from-right duration-200"
         style={{
           backgroundColor: "var(--bg)",
-          backdropFilter: "blur(16px)",
           borderLeft: "1px solid var(--line)",
         }}
       >

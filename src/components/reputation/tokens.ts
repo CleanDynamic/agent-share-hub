@@ -66,8 +66,6 @@ export const tokens = {
 
   // glass
   glass: {
-    backdropFilter: "blur(16px) saturate(160%)",
-    WebkitBackdropFilter: "blur(16px) saturate(160%)",
   },
 } as const
 

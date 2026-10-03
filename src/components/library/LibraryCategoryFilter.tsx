@@ -131,8 +131,6 @@ export function LibraryCategoryFilter({
               fontSize: 12,
               fontWeight: isActive ? 600 : 400,
               color: isActive ? cat.color : "var(--text2)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
             }}
           >
             <Icon className="h-3.5 w-3.5" />

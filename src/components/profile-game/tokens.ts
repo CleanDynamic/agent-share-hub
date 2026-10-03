@@ -69,8 +69,6 @@ export const tokens = {
     // THE one blur value. It was blur(28px) saturate(160%), which is a second
     // blur value in a system that has exactly one, and 28px of backdrop on a
     // shell-tier surface is the cost the theme's budget exists to stop.
-    backdropFilter: "blur(16px) saturate(1.15)",
-    WebkitBackdropFilter: "blur(16px) saturate(1.15)",
   },
   brand: {
     orange: t.action,

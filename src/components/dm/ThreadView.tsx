@@ -1101,7 +1101,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
                   {bubbleContent()}
                 </div>
               </ContextMenuTrigger>
-              <ContextMenuContent className="bg-card/95 backdrop-blur-md border-border">
+              <ContextMenuContent className="bg-card/95 border-border">
                 <div className="flex gap-1 px-2 py-1.5 border-b border-border">
                   {QUICK_REACTIONS.map((emoji) => (
                     <button

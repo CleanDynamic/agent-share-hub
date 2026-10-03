@@ -49,7 +49,7 @@ import LevelRing from "@/components/profile-game/LevelRing";
 import CreatorMarkChip, { type CreatorMark } from "@/components/profile-game/CreatorMarkChip";
 import { EarnedNumbers } from "@/components/profile/EarnedNumbers";
 import { categoryFill } from "@/lib/theme/category";
-import { buttonStyle, chipType, GLASS_BLUR, menuItemStyle, menuPanelStyle } from "@/lib/theme/controls";
+import { buttonStyle, chipType, menuItemStyle, menuPanelStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -235,8 +235,6 @@ export function ProfileHeader({
             className="absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8"
             style={{
               background: t.glass,
-              backdropFilter: GLASS_BLUR,
-              WebkitBackdropFilter: GLASS_BLUR,
               color: t.text,
               border: `1px solid ${t.glassBorder}`,
               borderRadius: r.control,
@@ -289,8 +287,6 @@ export function ProfileHeader({
                     className="absolute bottom-1 right-1 inline-flex items-center justify-center w-7 h-7"
                     style={{
                       background: t.glass,
-                      backdropFilter: GLASS_BLUR,
-                      WebkitBackdropFilter: GLASS_BLUR,
                       color: t.text,
                       border: `1px solid ${t.glassBorder}`,
                       borderRadius: r.full,

@@ -83,8 +83,6 @@ export default function TrackPicker({
                 padding: 18,
                 borderRadius: tokens.radiusCard,
                 background: tokens.card,
-                backdropFilter: tokens.glass,
-                WebkitBackdropFilter: tokens.glass,
                 border: isSel
                   ? `1px solid ${t.color}`
                   : tokens.border,

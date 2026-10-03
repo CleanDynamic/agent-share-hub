@@ -59,8 +59,6 @@ export default function PostXpFootnote({
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
           border: `0.5px solid color-mix(in srgb, var(--action) 40%, transparent)`,
-          backdropFilter: tokens.glass,
-          WebkitBackdropFilter: tokens.glass,
           boxShadow: "var(--elev-raised), 0 0 0 1px color-mix(in srgb, var(--action) 10%, transparent)",
         }}
       >

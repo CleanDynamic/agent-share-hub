@@ -329,8 +329,6 @@ export default function LibraryPage() {
             className="fixed inset-0 z-50 flex items-center justify-center"
             style={{
               background: "var(--recess)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
             }}
             onClick={() => setConfirmDeleteId(null)}
           >
@@ -338,8 +336,6 @@ export default function LibraryPage() {
               className="max-w-sm mx-4"
               style={{
                 background: "var(--recess)",
-                backdropFilter: "blur(16px) saturate(180%)",
-                WebkitBackdropFilter: "blur(16px) saturate(180%)",
                 border: "1px solid var(--line)",
                 borderRadius: 16,
                 padding: 24,

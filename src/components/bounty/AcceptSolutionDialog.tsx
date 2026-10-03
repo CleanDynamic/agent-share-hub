@@ -41,7 +41,7 @@ export function AcceptSolutionDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-[480px] p-6 border border-border bg-background/95 backdrop-blur-xl"
+        className="sm:max-w-[480px] p-6 border border-border bg-background/95"
       >
         <DialogHeader className="space-y-2">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-foreground">

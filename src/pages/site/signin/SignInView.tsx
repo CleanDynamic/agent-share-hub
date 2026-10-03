@@ -44,7 +44,6 @@ import type { PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import type { ThemeChoice } from "@/contexts/ThemeContext";
-import { GLASS_BLUR } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -204,8 +203,6 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
             background: t.header,
             border: `1px solid ${t.headerBorder}`,
             boxShadow: `${t.shadowFloat}, ${t.panelHighlight}`,
-            backdropFilter: GLASS_BLUR,
-            WebkitBackdropFilter: GLASS_BLUR,
             display: "flex",
             flexDirection: "column",
             gap: 12,

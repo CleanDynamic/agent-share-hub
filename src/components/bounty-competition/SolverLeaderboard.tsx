@@ -12,7 +12,6 @@ import {
 import type { CSSProperties } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { categoryFill } from "@/lib/theme/category";
-import { GLASS_BLUR } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
 import { t as tok, tokenAlpha } from "@/lib/theme/tokens";
 import {
@@ -346,8 +345,6 @@ export function SolverLeaderboard({
     backgroundColor: tok.glass,
     border: `1px solid ${tok.glassBorder}`,
     borderRadius: r.panel,
-    backdropFilter: GLASS_BLUR,
-    WebkitBackdropFilter: GLASS_BLUR,
   };
 
   const headerStyle: React.CSSProperties = {

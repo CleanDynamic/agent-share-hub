@@ -51,7 +51,6 @@ import { Link } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
-import { GLASS_BLUR } from "@/lib/theme/controls";
 import { elevation } from "@/lib/theme/elevation";
 import { focusRing } from "@/lib/theme/focus";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -134,8 +133,6 @@ const COLUMN_MAX = 720 + 2 * SPACE.sm;
  */
 const glassSurface: CSSProperties = {
   background: t.glass,
-  backdropFilter: GLASS_BLUR,
-  WebkitBackdropFilter: GLASS_BLUR,
   ...elevation.flat,
   borderColor: t.glassBorder,
 };

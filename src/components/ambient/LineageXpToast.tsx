@@ -24,8 +24,6 @@ export default function LineageXpToast({
         borderRadius: tokens.radiusCard,
         background: tokens.card,
         border: tokens.borderSoft,
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         boxShadow: 'var(--elev-raised)',
         minWidth: 280,
       }}

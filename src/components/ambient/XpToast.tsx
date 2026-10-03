@@ -24,8 +24,6 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
         border: "0.5px solid color-mix(in srgb, var(--action) 32%, transparent)",
-        backdropFilter: tokens.glass,
-        WebkitBackdropFilter: tokens.glass,
         boxShadow: "var(--elev-raised)",
         fontFamily: tokens.fontSans,
       }}

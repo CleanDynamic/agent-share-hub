@@ -19,7 +19,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
-import { useState, type CSSProperties } from "react";
+import { memo, useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -319,7 +319,7 @@ export function SiteHeaderView({
 }
 
 /** The container: the route, the reader, the theme and the unread count, around the pure view. */
-export function SiteHeader() {
+function SiteHeaderContainer() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { isLoggedIn, user, profile, signOut } = useAuth();
@@ -357,5 +357,10 @@ export function SiteHeader() {
     />
   );
 }
+
+/* UI-P40: memoised, and it takes no props, so a page's data changing (which
+   re-renders the frame around it) never re-renders the chrome. It updates on
+   its own hooks only. */
+export const SiteHeader = memo(SiteHeaderContainer);
 
 export default SiteHeader;
