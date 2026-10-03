@@ -35,6 +35,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { BottomSheet } from "./BottomSheet";
 import { FrameLink } from "./FrameLink";
 import type { FrameViewer } from "./frameTypes";
 import { HeaderSearch, useGallerySearch } from "./HeaderSearch";
@@ -59,8 +60,6 @@ export interface SiteHeaderViewProps {
   /** Search submit. Defaults to nothing (the compare page). */
   onSearch?: (query: string) => boolean | void;
   searchInitial?: string;
-  /** Compact widths: the Search icon goes to the gallery's own search field. */
-  onOpenSearch?: () => void;
 }
 
 const linkBase: CSSProperties = {
@@ -72,13 +71,17 @@ const linkBase: CSSProperties = {
   fontSize: 14,
 };
 
-/* THE HEADER'S THREE WIDTHS. The reference draws 1280 and nothing else; the
-   column needs about 1210px of room, so below that it gives ground in steps:
-   `full` (≥1260) is the reference exactly; `mid` (960–1259) tightens the gaps
-   and lets the search field shrink; `compact` (<960) turns Search and New build
-   into icon buttons. Nothing is dropped and nothing scrolls sideways. */
+/* THE HEADER BETWEEN THE BOARDS (UI-P39). The reference draws 1280 and nothing
+   else, so below it the header gives ground in steps and drops nothing:
+   ≥1260 is the reference's gaps; 960–1259 tightens them; below 960 tightens
+   them again. The search is the reference's 280 to 1100 and 200 below it, and
+   below 900 an icon button that opens the search sheet. New build loses its
+   label below 980 and keeps it as its accessible name. */
 const MID_MIN = 960;
 const FULL_MIN = 1260;
+const SEARCH_FULL_MIN = 1100;
+const SEARCH_FIELD_MIN = 900;
+const NEW_LABEL_MIN = 980;
 
 const visuallyHidden: CSSProperties = {
   position: "absolute",
@@ -187,11 +190,14 @@ export function SiteHeaderView({
   onNewBuild,
   onSearch,
   searchInitial,
-  onOpenSearch,
 }: SiteHeaderViewProps) {
   const wide = useMinWidth(1328);
   const full = useMinWidth(FULL_MIN);
   const compact = !useMinWidth(MID_MIN);
+  const searchFull = useMinWidth(SEARCH_FULL_MIN);
+  const searchField = useMinWidth(SEARCH_FIELD_MIN);
+  const newLabel = useMinWidth(NEW_LABEL_MIN);
+  const [searchOpen, setSearchOpen] = useState(false);
   const signedIn = viewer !== null;
   const gap = full ? 28 : compact ? 8 : 14;
   const linkPad = full ? "0 14px" : compact ? "0 8px" : "0 10px";
@@ -244,18 +250,14 @@ export function SiteHeaderView({
 
         <span style={{ flexGrow: 1 }} />
 
-        {compact ? (
-          <IconButton icon={Search} label="Search" size={38} onClick={onOpenSearch} />
+        {searchField ? (
+          <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} width={searchFull ? 280 : 200} />
         ) : (
-          <HeaderSearch
-            onSubmit={onSearch ?? (() => undefined)}
-            initialValue={searchInitial}
-            width={full ? 280 : undefined}
-          />
+          <IconButton icon={Search} label="Search" size={38} onClick={() => setSearchOpen(true)} />
         )}
 
-        <Button size={38} icon={Plus} onClick={onNewBuild} style={compact ? { width: 38, padding: 0 } : undefined}>
-          {compact ? <span style={visuallyHidden}>New build</span> : "New build"}
+        <Button size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
+          {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
         </Button>
 
         {signedIn && (
@@ -297,6 +299,21 @@ export function SiteHeaderView({
           </Button>
         )}
       </div>
+
+      {searchField ? null : (
+        <BottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
+          <HeaderSearch
+            variant="sheet"
+            autoFocus
+            initialValue={searchInitial}
+            onSubmit={(query) => {
+              const used = onSearch?.(query);
+              if (used) setSearchOpen(false);
+              return used;
+            }}
+          />
+        </BottomSheet>
+      )}
     </header>
   );
 }
@@ -337,7 +354,6 @@ export function SiteHeader() {
       onNewBuild={() => navigate(SITE_NAV.create)}
       onSearch={search}
       searchInitial={pathname === "/gallery" ? (params.get("q") ?? "") : ""}
-      onOpenSearch={() => navigate("/gallery?focus=search")}
     />
   );
 }

@@ -30,7 +30,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VacantFrame } from "@/components/brand/VacantFrame";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display, mono } from "@/lib/theme/type";
@@ -166,11 +166,12 @@ function FramesBody({
   selectedId,
   onSelect,
   phone,
+  columns = 3,
   onNavigate,
-}: Pick<BountiesViewProps, "frames" | "selectedId" | "onSelect" | "onNavigate"> & { phone: boolean }) {
+}: Pick<BountiesViewProps, "frames" | "selectedId" | "onSelect" | "onNavigate"> & { phone: boolean; columns?: 2 | 3 }) {
   const grid = {
     display: "grid",
-    gridTemplateColumns: phone ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: phone ? "minmax(0, 1fr)" : `repeat(${columns}, minmax(0, 1fr))`,
     gap: phone ? "4px 0" : "6px 14px",
     alignContent: "start",
   } as const;
@@ -397,12 +398,14 @@ function DesktopBounties(props: BountiesViewProps) {
   const { fit = "content", frames, solvers, selectedId, onSelect, sort, onSortChange, meToo, onNavigate } = props;
   const list = frames.status === "ready" ? frames.data : [];
   const chosen = list.find((frame) => frame.id === selectedId) ?? list[0] ?? null;
+  /* UI-P39: below 1024 the frames go to two columns and the right track stacks under them. */
+  const stacked = useWidthTier() === "stacked";
 
   return (
     <div data-testid="bounties-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
       <Panel padding="16px 20px">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
             <Eyebrow>Bounties</Eyebrow>
             <h1 style={{ ...display(44), margin: 0, color: t.text }}>Open asks on real builds</h1>
             <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{SENTENCE_DESKTOP}</div>
@@ -412,9 +415,16 @@ function DesktopBounties(props: BountiesViewProps) {
           </div>
         </div>
       </Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 420px", gap: 12, ...boardHeight(fit, 0) }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
+          gap: 12,
+          ...boardHeight(fit, 0),
+        }}
+      >
         <div style={{ minWidth: 0 }}>
-          <FramesBody frames={frames} selectedId={chosen?.id ?? null} onSelect={onSelect} phone={false} onNavigate={onNavigate} />
+          <FramesBody frames={frames} selectedId={chosen?.id ?? null} onSelect={onSelect} phone={false} columns={stacked ? 2 : 3} onNavigate={onNavigate} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           {frames.status === "error" || (frames.status === "ready" && !chosen) ? null : (
@@ -443,7 +453,8 @@ function PhoneBounties(props: BountiesViewProps) {
 
 export function BountiesView(props: BountiesViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneBounties {...props} /> : <DesktopBounties {...props} />;
+  const fit = useTierFit(props.fit);
+  return phone ? <PhoneBounties {...props} /> : <DesktopBounties {...props} fit={fit} />;
 }
 
 export default BountiesView;

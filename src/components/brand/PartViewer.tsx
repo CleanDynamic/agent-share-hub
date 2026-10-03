@@ -164,7 +164,8 @@ export function PartViewer<V extends string = string>({
       </div>
 
       {phone ? null : (
-        <div style={{ padding: "10px 14px 0" }}>
+        /* A viewer narrower than its tabs (UI-P39, 768–1279) scrolls them sideways, as a phone's row does, rather than cutting the last off. */
+        <div className="bg-scroll-row" style={{ padding: "10px 14px 4px", marginBottom: -4, overflowX: "auto", scrollbarWidth: "none" }}>
           <UnderlineTabs tabs={tabs} value={tab} onChange={onTabChange} fontSize={12} label={tabsLabel} />
         </div>
       )}

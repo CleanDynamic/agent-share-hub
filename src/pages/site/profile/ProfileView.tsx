@@ -37,7 +37,7 @@ import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { sideTrack, useIsPhone, useTierFit, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import type { TrackId } from "@/lib/progress";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -380,8 +380,12 @@ const WORKS_NOUN: Record<WorksTab, string> = {
   collections: "collections",
 };
 
+/** The desktop works grid's columns at each width tier (UI-P39): 4 from 1280, 3 to 1024, 2 below. */
+const WORKS_COLUMNS: Record<WidthTier, number> = { full: 4, split: 3, stacked: 2 };
+
 function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; phone: boolean }) {
-  const columns = phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))";
+  const tier = useWidthTier();
+  const columns = `repeat(${phone ? 2 : WORKS_COLUMNS[tier]}, minmax(0, 1fr))`;
   const grid: CSSProperties = { display: "grid", gridTemplateColumns: columns, gap: phone ? "6px 10px" : 12, alignItems: "start" };
   const variant = phone ? "phone" : "desktop";
 
@@ -576,7 +580,7 @@ function BannerSkeleton({ phone }: { phone: boolean }) {
 }
 
 export function ProfileView({
-  fit = "content",
+  fit: givenFit = "content",
   maker,
   isOwn,
   following,
@@ -595,8 +599,11 @@ export function ProfileView({
   failed = {},
 }: ProfileViewProps) {
   const phone = useIsPhone();
+  const fit = useTierFit(givenFit);
   const actions = { isOwn, following, followBusy, onFollow, onUnfollow, onMessage: isOwn ? undefined : onMessage, onEdit };
   const twoActions = !isOwn && Boolean(actions.onMessage);
+  /* UI-P39: below 1024 each row's right track stacks under its left, in the phone's order. */
+  const stacked = useWidthTier() === "stacked";
 
   if (phone) {
     return (
@@ -620,7 +627,15 @@ export function ProfileView({
 
   return (
     <div data-testid="profile-view" data-viewport="desktop" style={{ ...COLUMN, gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 440px", gap: 12, height: 220, flexShrink: 0 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(440)}`,
+          gridAutoRows: 220,
+          gap: 12,
+          flexShrink: 0,
+        }}
+      >
         <div style={{ minHeight: 0 }}>{maker ? <ProfileBanner maker={maker} {...actions} /> : <BannerSkeleton phone={false} />}</div>
         <div style={{ minHeight: 0 }}>
           <LevelPanel level={level} failure={failed.level} isOwn={isOwn} onTrack={onTrack} phone={false} />
@@ -629,16 +644,25 @@ export function ProfileView({
       <div style={{ flexShrink: 0 }}>
         <StatsWall figures={figures} barsExpected={figuresBarsExpected} failure={failed.figures} phone={false} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 360px", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div
+        style={{
+          display: "grid",
+          /* The 22-week grid is 327 wide and does not scale, so this track keeps the board's 360 until the row stacks. */
+          gridTemplateColumns: stacked ? "minmax(0, 1fr)" : "minmax(0, 1fr) 360px",
+          gap: 12,
+          flexGrow: 1,
+          minHeight: 0,
+        }}
+      >
         <div style={{ minHeight: 0 }}>
-          <WorksPanel works={works} isOwn={isOwn} fill />
+          <WorksPanel works={works} isOwn={isOwn} fill={!stacked} />
         </div>
         <div style={{ ...COLUMN, gap: 12 }}>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <ActivityPanel days={activity} failure={failed.activity} phone={false} fill />
+            <ActivityPanel days={activity} failure={failed.activity} phone={false} fill={!stacked} />
           </div>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
-            <MarksPanel marks={marks} failure={failed.marks} isOwn={isOwn} phone={false} fill />
+            <MarksPanel marks={marks} failure={failed.marks} isOwn={isOwn} phone={false} fill={!stacked} />
           </div>
         </div>
       </div>

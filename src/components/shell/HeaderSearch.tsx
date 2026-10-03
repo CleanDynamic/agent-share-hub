@@ -127,7 +127,8 @@ export function HeaderSearch({
           ref={field}
           type="search"
           aria-label="Search builds"
-          placeholder="Search builds, makers, tools"
+          /* The 200px field (UI-P39) has room for the short form only. */
+          placeholder={!sheet && width !== undefined && width < 280 ? "Search builds" : "Search builds, makers, tools"}
           className={INPUT_CLASS}
           maxLength={SEARCH_MAX}
           value={value}
