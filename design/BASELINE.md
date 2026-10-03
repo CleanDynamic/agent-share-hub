@@ -98,7 +98,7 @@ The page backdrop changes from a static SVG/CSS gradient to a continuously rende
 **Performance targets:**
 - Frame rate: 60fps (16.67ms per frame) maintained during scroll and animation
 - Canvas buffer: `min(devicePixelRatio, 1.5) × 0.85` of viewport (× 0.72 above 2.2 megapixels)
-- Pause on visibility change, stop animation loop when `prefers-reduced-motion` + no ripples
+- Pause on visibility change; under `prefers-reduced-motion`, one static frame and no input
 
 **Measurement to be taken:**
 - Scroll `/gallery` with Chrome DevTools paint flashing enabled

@@ -126,8 +126,8 @@ The code review treats two things as automatic failures that this layout would t
 ### 3.4 Performance
 
 - The only blurred surfaces are the sticky header (64px tall, not a full-height panel, so the theme skill's rule holds) and, on phones, the header and dock. Panels, cards and chips never blur, and nothing blurred is nested.
-- The backdrop is a continuously rendering WebGL canvas (`PageBackdrop.tsx`) that renders at `min(devicePixelRatio, 1.5) × 0.85` of viewport size (× 0.72 above 2.2 megapixels). It pauses on visibility change and stops the animation loop when `prefers-reduced-motion` is set and no ripples are active. The arc and grain are now part of the shader field. The one `feDisplacementMap` in the app is the liquid-glass filter (UI-P09b, `GlassFilter`), mounted once by `SiteFrame` and used only by `.bg-glass`.
-- The backdrop is `position: fixed` behind the site frame. It includes interactive ripple effects triggered by pointer events or keyboard activation.
+- The backdrop is the static UI-P13 room with one continuously rendering WebGL canvas over it (`PageBackdrop.tsx`, `backdropCanvas.ts`). The canvas is created once per document and moved between frames, renders at `min(devicePixelRatio, 1.5) × 0.85` of viewport size (× 0.72 above 2.2 megapixels), pauses on visibility change and, under `prefers-reduced-motion`, draws one frame and ignores input. Without WebGL, or when the shader does not compile, the static room is the backdrop. The one `feDisplacementMap` in the app is the liquid-glass filter (UI-P09b, `GlassFilter`), mounted once by `SiteFrame` and used only by `.bg-glass`.
+- The canvas is `position: fixed` inside the room, which is `position: absolute` behind the site frame. It includes interactive ripple effects triggered by pointer events or keyboard activation.
 
 ## 4. Shared visual primitives
 
