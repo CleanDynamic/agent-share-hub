@@ -39,7 +39,7 @@ import type { CallerClient, CallerIdentity } from "./index.ts";
 import {
   CEILING_ERRCODE,
   CHUNK_SIZE_CHARS,
-  COMPOSE_NEW_HTTPS_URL,
+  DRAFTS_HTTPS_URL,
   CONNECTOR_OUTPUT_IS_DATA,
   CONNECTOR_STATEMENT,
   DEFAULT_PAGE_SIZE,
@@ -668,6 +668,7 @@ Deno.test("begin_import opens an import for the caller and returns the handle an
   assertEquals(opened[0].payload, {
     user_id: CALLER.id,
     client: "claude",
+    model: null,
     source_hint: "claude-export",
     fingerprint: null,
     declared_turns: 48,
@@ -688,6 +689,30 @@ Deno.test("begin_import maps a client outside the six the CHECK admits to unknow
 
   const absent = await call("buildgallery_begin_import", {}, (q) => (q.op === "insert" ? { data: created } : { data: null }));
   assertEquals(afterSweep(absent.queries)[0].payload!.client, null);
+});
+
+Deno.test("UI-P43: begin_import stores the model as sent, trimmed, and null when omitted or blank", async () => {
+  const sent = await call(
+    "buildgallery_begin_import",
+    { client: "claude-code", model: "  claude-sonnet-5-5 " },
+    (q) => (q.op === "insert" ? { data: created } : { data: null }),
+  );
+  assertEquals(afterSweep(sent.queries)[0].payload!.model, "claude-sonnet-5-5");
+
+  const blank = await call(
+    "buildgallery_begin_import",
+    { model: "   " },
+    (q) => (q.op === "insert" ? { data: created } : { data: null }),
+  );
+  assertEquals(afterSweep(blank.queries)[0].payload!.model, null);
+});
+
+Deno.test("UI-P43: begin_import advertises an optional model input capped at 64 characters", async () => {
+  const tools = await listTools();
+  const tool = tools.find((t) => t.name === "buildgallery_begin_import")!;
+  const schema = tool.inputSchema as { properties: Record<string, { maxLength?: number }>; required?: string[] };
+  assertEquals(schema.properties.model.maxLength, 64);
+  assert(!(schema.required ?? []).includes("model"), "model is optional");
 });
 
 Deno.test("begin_import returns the existing live import for the same fingerprint, and says so", async () => {
@@ -844,7 +869,7 @@ Deno.test("append_chunk rejects a total over the ceiling with the table's wordin
     text(result),
     "This import would reach 431,000 characters; the limit is 400,000. Send the remainder as a " +
       "second import, or ask the creator to export the conversation as a file and drop it on " +
-      "agent-share-hub.lovable.app/compose/new, which has no such limit.",
+      "agent-share-hub.lovable.app/import, which has no such limit.",
   );
   assertEquals(bucket.uploads.length, 0);
   assertEquals(MAX_TOTAL_CHARS, 400_000);
@@ -1284,7 +1309,7 @@ Deno.test("finish_import assembles in numeric order, redacts, hashes, parses, pa
   assertEquals(out.turn_count, 20);
   assertEquals(out.secret_findings, [{ kind: "openai_key", count: 1 }]);
   assertEquals(out.total_chars, Object.values(texts).join("").length);
-  assertEquals(out.review_url, "https://agent-share-hub.lovable.app/compose/new");
+  assertEquals(out.review_url, "https://agent-share-hub.lovable.app/drafts");
   assertEquals(out.chunks_removed, true);
   assertEquals(out.warnings, []);
   assert((out.event_count as number) > 0 && (out.node_count as number) >= 0);
@@ -1333,7 +1358,7 @@ Deno.test("finish_import assembles in numeric order, redacts, hashes, parses, pa
   assertStringIncludes(reply, "Pasted chat transcript (transcript)");
   assertStringIncludes(reply, "from 20 turns");
   assertStringIncludes(reply, "openai_key ×1");
-  assertStringIncludes(reply, `Review it at ${COMPOSE_NEW_HTTPS_URL}`);
+  assertStringIncludes(reply, `Review it at ${DRAFTS_HTTPS_URL}`);
   assert(!reply.includes("question, what should I build"), "never echoes the conversation");
   assert(!reply.includes("sk-proj"), "never echoes a secret");
   for (const q of queries) {
@@ -1391,7 +1416,7 @@ Deno.test("finish_import enforces the total ceiling on the assembled text, and f
     text(result),
     "This import would reach 450,000 characters; the limit is 400,000. Send the remainder as a " +
       "second import, or ask the creator to export the conversation as a file and drop it on " +
-      "agent-share-hub.lovable.app/compose/new, which has no such limit.",
+      "agent-share-hub.lovable.app/import, which has no such limit.",
   );
   assertEquals(last.payload!.status, "failed");
   assertEquals(last.payload!.error, text(result));
@@ -1406,7 +1431,7 @@ Deno.test("finish_import marks a conversation already waiting as a duplicate, na
   assertEquals(
     text(result),
     `This conversation is already waiting for review as import ${TWIN_ID}, created 2 hours ago. ` +
-      "Nothing new was created. Open agent-share-hub.lovable.app/compose/new to review it.",
+      "Nothing new was created. Open agent-share-hub.lovable.app/drafts to review it.",
   );
   assertEquals(last.payload!.status, "duplicate");
   assertEquals(last.payload!.error, text(result));
@@ -1707,14 +1732,14 @@ Deno.test("EX-P10: begin_import accepts the caller's own draft and opens the imp
   assertEquals(insert.payload!.client, "claude-code");
 });
 
-Deno.test("EX-P10: list_drafts tells the model when to call it, what to pass on, and that the creator decides on the upload page", async () => {
+Deno.test("EX-P10: list_drafts tells the model when to call it, what to pass on, and that the creator decides on the Drafts page", async () => {
   const tools = await listTools();
   const description = tools.find((t) => t.name === "buildgallery_list_drafts")!.description as string;
   for (const phrase of [
     "already have",
     "target_build_id",
     "buildgallery_begin_import",
-    "change the destination on the upload page",
+    "change the destination on the Drafts page",
     "never insist",
   ]) {
     assertStringIncludes(description, phrase);
@@ -1942,12 +1967,12 @@ Deno.test("EX-P13: the sweep only touches the caller's own rows, only live ones,
   // relies only on RLS is one policy change away from expiring the world.
   assertEquals(sweep.filters.find((f) => f.column === "user_id")?.value, CALLER.id);
 
-  // Only the three live states. A claimed, failed or already-expired row is
-  // terminal — re-expiring it would churn updated_at for ever.
+  // Only open and assembling. A parsed import stays its creator's until they
+  // remove or claim it; a claimed, failed or already-expired row is terminal.
   assertEquals(sweep.filters.find((f) => f.column === "status"), {
     kind: "in",
     column: "status",
-    value: ["open", "assembling", "parsed"],
+    value: ["open", "assembling"],
   });
 
   // Past expires_at, measured on the injected clock so this is pinnable.

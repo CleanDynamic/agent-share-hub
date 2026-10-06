@@ -40,7 +40,7 @@ log nor Sentry ever holds a creator's conversation, only ids, counts and times.
 |---|---|---|
 | `open` | The AI started sending and never finished, or a piece went missing and it was asked to resend. | Nothing on our side. The creator asks their AI to send it again. |
 | `assembling` | `finish_import` started and never finished. Still like this after a few minutes means it crashed part-way. | The one to look at. Its "stuck" report names the step; with no report, the platform stopped the function (ask Lovable for its shutdown lines). The creator sends it again. |
-| `parsed` | Not a fault. It arrived and is waiting on https://agent-share-hub.lovable.app/compose/new. | Nothing. The creator reviews it there. |
+| `parsed` | Not a fault. It arrived and is waiting on https://agent-share-hub.lovable.app/drafts. | Nothing. The creator reviews it there. |
 | `failed` | `finish_import` gave up. The `error` column says why, in plain words. | The creator sends it again as a new import. |
 
 All but `failed` clear themselves after 7 days: the nightly job marks them `expired`.
