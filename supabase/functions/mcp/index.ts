@@ -141,8 +141,9 @@ import type { RedactFinding } from "../_shared/redact/index.ts";
 import {
   CEILING_ERRCODE,
   CHUNK_SIZE_CHARS,
-  COMPOSE_NEW_HTTPS_URL,
-  COMPOSE_NEW_URL,
+  DRAFTS_HTTPS_URL,
+  DRAFTS_URL,
+  IMPORT_URL,
   CONNECTOR_STATEMENT,
   DEFAULT_PAGE_SIZE,
   EXPIRY_SWEEP_LIMIT,
@@ -192,6 +193,9 @@ const KNOWN_CLIENTS = ["claude", "claude-code", "chatgpt", "cursor", "web", "unk
 
 /** Statuses under which a fingerprint still points at a live, reusable import. */
 const LIVE_STATUSES = ["open", "assembling", "parsed"] as const;
+
+/** What the connector's own sweep may expire. A parsed import stays its creator's. */
+const EXPIRABLE_STATUSES = ["open", "assembling"] as const;
 
 /** Postgres unique_violation: the partial fingerprint index caught a race. */
 const UNIQUE_VIOLATION = "23505";
@@ -461,7 +465,7 @@ async function expireOverdueImports(
       .from("import_sessions")
       .update({ status: "expired", updated_at: stamp })
       .eq("user_id", userId)
-      .in("status", [...LIVE_STATUSES])
+      .in("status", [...EXPIRABLE_STATUSES])
       .lt("expires_at", stamp)
       .select("id, chunk_count");
 
@@ -554,7 +558,7 @@ function errChunkTooLarge(seq: number, chars: number): string {
 function errTotalExceeded(projected: number): string {
   return `This import would reach ${fmt(projected)} characters; the limit is ${fmt(MAX_TOTAL_CHARS)}. ` +
     "Send the remainder as a second import, or ask the creator to export the conversation as a " +
-    `file and drop it on ${COMPOSE_NEW_URL}, which has no such limit.`;
+    `file and drop it on ${IMPORT_URL}, which has no such limit.`;
 }
 
 function errChunksMissing(missing: number[], declared: number): string {
@@ -567,7 +571,7 @@ function errChunksMissing(missing: number[], declared: number): string {
 
 function errDuplicate(twinId: string, twinCreatedAt: string, now: number): string {
   return `This conversation is already waiting for review as import ${twinId}, created ` +
-    `${humanTime(twinCreatedAt, now)}. Nothing new was created. Open ${COMPOSE_NEW_URL} to review it.`;
+    `${humanTime(twinCreatedAt, now)}. Nothing new was created. Open ${DRAFTS_URL} to review it.`;
 }
 
 const ERR_UNPARSEABLE =
@@ -738,7 +742,7 @@ const LIST_DRAFTS_DESCRIPTION =
   "and pass the id of the one they choose as target_build_id to " +
   "buildgallery_begin_import. Draft ids come from here, never from memory " +
   "or from the conversation text. The creator can change the destination " +
-  "on the upload page, so never insist on a draft or on a new build — offer " +
+  "on the Drafts page, so never insist on a draft or on a new build — offer " +
   "the titles and take their answer. It never lists published builds, " +
   "never lists anyone else's builds, and never returns the content of a " +
   "build. It returns one page of drafts — title, id, when last worked on, " +
@@ -763,6 +767,14 @@ const BeginImportInput = z
       .max(64)
       .optional()
       .describe('Which tool is sending, e.g. "claude", "claude-code", "chatgpt", "cursor" or "web".'),
+    model: z
+      .string()
+      .max(64)
+      .optional()
+      .describe(
+        "The exact model version you are running as, for example claude-sonnet-5-5. " +
+          "Optional; the creator can correct it on buildgallery.",
+      ),
     source_hint: z
       .string()
       .max(200)
@@ -1066,7 +1078,7 @@ const FinishImportOutput = z.object({
     })
     .nullable()
     .describe("The draft named at begin_import, or null for a new build."),
-  review_url: z.string().describe(`Where the import is waiting: ${COMPOSE_NEW_HTTPS_URL}.`),
+  review_url: z.string().describe(`Where the import is waiting: ${DRAFTS_HTTPS_URL}.`),
   chunks_removed: z
     .boolean()
     .describe("Whether the chunk objects were removed from storage after the parse."),
@@ -1075,7 +1087,7 @@ const FinishImportOutput = z.object({
 const FINISH_IMPORT_DESCRIPTION =
   `${VERBATIM_INSTRUCTION} ` +
   "Assembles the numbered chunks of an open import, redacts secrets, parses " +
-  "the result, and parks it for the creator to review on the upload page. " +
+  "the result, and parks it for the creator to review on the Drafts page. " +
   "Use it once, after the last chunk is acknowledged, with expected_chunks " +
   "set to the total number of chunks sent; the draft it joins, if any, was " +
   "named at buildgallery_begin_import. It never creates a build, never " +
@@ -1182,7 +1194,7 @@ function finishSummary(facts: FinishFacts) {
     declared_turns: facts.declared_turns,
     warnings,
     target: facts.target,
-    review_url: COMPOSE_NEW_HTTPS_URL,
+    review_url: DRAFTS_HTTPS_URL,
     chunks_removed: facts.chunks_removed,
   };
 
@@ -1212,7 +1224,7 @@ function finishSummary(facts: FinishFacts) {
   if (!facts.chunks_removed) {
     lines.push("", "The chunk objects could not be removed from storage; they expire with the import.");
   }
-  lines.push("", `Review it at ${COMPOSE_NEW_HTTPS_URL}`);
+  lines.push("", `Review it at ${DRAFTS_HTTPS_URL}`);
 
   return ok(lines.join("\n"), output);
 }
@@ -1615,7 +1627,7 @@ export function buildServer(
       outputSchema: BeginImportOutput,
       annotations: write,
     },
-    guard("buildgallery_begin_import", async ({ client, source_hint, fingerprint, declared_turns, declared_chars, target_build_id }) => {
+    guard("buildgallery_begin_import", async ({ client, model, source_hint, fingerprint, declared_turns, declared_chars, target_build_id }) => {
       // EX-P13. Expire the caller's own overdue imports FIRST, so the ceiling
       // trigger on the insert below counts a current picture rather than a
       // stale one. It is best-effort and never fails the open; see
@@ -1681,6 +1693,7 @@ export function buildServer(
           .insert({
             user_id: caller.id,
             client: normaliseClient(client),
+            model: model?.trim() || null,
             source_hint: source_hint ?? null,
             fingerprint: fingerprint ?? null,
             declared_turns: declared_turns ?? null,

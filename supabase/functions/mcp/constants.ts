@@ -54,18 +54,19 @@ export const VERBATIM_INSTRUCTION =
   "file or transcript on disk, send that rather than reproducing it from memory.";
 
 /**
- * The upload page, as the error table names it. The manual writes
- * buildgallery.ai here; until the custom domain is connected the address is
- * the Lovable one, and this constant is the only place the substitution lives.
+ * The host the manual writes as buildgallery.ai. Until the custom domain is
+ * connected it is the Lovable one; this is the only place the substitution lives.
  */
-export const COMPOSE_NEW_URL = "agent-share-hub.lovable.app/compose/new";
+const PUBLIC_HOST = "agent-share-hub.lovable.app";
 
-/**
- * The same page as a full address, for the finish_import summary, which tells
- * the caller where the import is waiting. Derived, not retyped, so the domain
- * substitution above stays the one place to change.
- */
-export const COMPOSE_NEW_HTTPS_URL = `https://${COMPOSE_NEW_URL}`;
+/** The Drafts page: where an import waits for its creator, as the tools name it. */
+export const DRAFTS_URL = `${PUBLIC_HOST}/drafts`;
+
+/** The same page as a full address, for the finish_import summary and review_url. */
+export const DRAFTS_HTTPS_URL = `https://${DRAFTS_URL}`;
+
+/** File drops live here; only errTotalExceeded sends people to it. */
+export const IMPORT_URL = `${PUBLIC_HOST}/import`;
 
 /** The private bucket the numbered chunks land in. Created by EX-P05. */
 export const IMPORTS_BUCKET = "imports";

@@ -50,6 +50,7 @@ export interface Database {
           id: string;
           user_id: string;
           client: string | null;
+          model: string | null;
           source_hint: string | null;
           fingerprint: string | null;
           content_hash: string | null;
@@ -74,6 +75,7 @@ export interface Database {
           id?: string;
           user_id: string;
           client?: string | null;
+          model?: string | null;
           source_hint?: string | null;
           fingerprint?: string | null;
           content_hash?: string | null;
@@ -98,6 +100,7 @@ export interface Database {
           id?: string;
           user_id?: string;
           client?: string | null;
+          model?: string | null;
           source_hint?: string | null;
           fingerprint?: string | null;
           content_hash?: string | null;
