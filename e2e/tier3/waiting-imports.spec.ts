@@ -2,7 +2,7 @@
 //
 // WHAT THIS GUARDS. A conversation the buildgallery connector parked on
 // import_sessions has to be findable, reviewable and binnable from
-// /compose/new, and confirming it has to land the creator on a draft holding
+// /compose/start, and confirming it has to land the creator on a draft holding
 // exactly what they kept — through the SAME review surface and the SAME writer
 // a pasted transcript uses. The unit tests beside imports.ts prove the order of
 // the data-layer calls; this proves the page wires them to what a creator sees.
@@ -264,7 +264,7 @@ const freshId = (prefix: string) =>
   `${prefix}-${String(nextId++).padStart(4, "0")}-4000-8000-000000000000`.slice(0, 36);
 
 /**
- * A signed-in creator on /compose/new, with the network stubbed and `db` as
+ * A signed-in creator on /compose/start, with the network stubbed and `db` as
  * the one source of truth for what PostgREST answers.
  */
 async function openIntake(page: Page, db: Db) {
@@ -362,7 +362,7 @@ async function openIntake(page: Page, db: Db) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -388,7 +388,7 @@ const rowFor = (page: Page, id: string) =>
   page.locator(`[data-testid="waiting-import"][data-import-id="${id}"]`);
 
 for (const viewport of WIDTHS) {
-  test.describe(`EX-P09 — waiting imports on /compose/new (${viewport.name})`, () => {
+  test.describe(`EX-P09 — waiting imports on /compose/start (${viewport.name})`, () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
     });
@@ -501,7 +501,7 @@ for (const viewport of WIDTHS) {
       await page.getByTestId("waiting-import-confirm").click();
 
       // The draft workspace, by way of the same arrival a paste gets.
-      await expect(page).toHaveURL(/\/compose\/(?!new$)[^/]+$/);
+      await expect(page).toHaveURL(/\/compose\/(?!new$|start$)[^/]+$/);
       const buildId = new URL(page.url()).pathname.split("/").pop()!;
       await expect(arrival(page)).toContainText("1 item is in your tray");
       await expect(arrival(page)).toContainText("1 prompt is in the sequence");
@@ -529,7 +529,7 @@ for (const viewport of WIDTHS) {
       expect(claimed?.build_id).toBe(buildId);
 
       // And it no longer waits: the other one does.
-      await page.goto("/compose/new");
+      await page.goto("/compose/start");
       await expect(page.getByTestId("waiting-import")).toHaveCount(1);
       await expect(rowFor(page, ROUGH_IMPORT)).toBeVisible();
     });

@@ -186,7 +186,9 @@ async function openComposer(page: Page, theme: string, writes: Write[] = []) {
     });
   });
 
-  await page.goto(`/compose/${BUILD}`);
+  // UI-P47: an ordinary draft opens the new composer now; this spec is about the
+  // legacy workspace, which a conversion (?from=convert) still opens.
+  await page.goto(`/compose/${BUILD}?from=convert`);
   await expect(page.getByTestId("cover-strip")).toBeVisible();
 }
 

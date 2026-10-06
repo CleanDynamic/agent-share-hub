@@ -61,6 +61,8 @@ export interface SiteHeaderViewProps {
   onSignIn: () => void;
   onSignOut: () => void;
   onNewBuild: () => void;
+  /** "New build" draws as secondary on /compose/*, where Publish is the page's one primary (UI-P47). */
+  newBuildSecondary?: boolean;
   /** Search submit. Defaults to nothing (the compare page). */
   onSearch?: (query: string) => boolean | void;
   searchInitial?: string;
@@ -207,6 +209,7 @@ export function SiteHeaderView({
   onSignIn,
   onSignOut,
   onNewBuild,
+  newBuildSecondary = false,
   onSearch,
   searchInitial,
 }: SiteHeaderViewProps) {
@@ -278,7 +281,7 @@ export function SiteHeaderView({
           <IconButton icon={Search} label="Search" size={38} onClick={() => setSearchOpen(true)} />
         )}
 
-        <Button size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
+        <Button variant={newBuildSecondary ? "secondary" : "primary"} size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
           {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
         </Button>
 
@@ -381,6 +384,7 @@ function SiteHeaderContainer() {
         navigate("/");
       }}
       onNewBuild={() => navigate(SITE_NAV.create)}
+      newBuildSecondary={pathname.startsWith("/compose/")}
       onSearch={search}
       searchInitial={pathname === "/gallery" ? (params.get("q") ?? "") : ""}
     />
