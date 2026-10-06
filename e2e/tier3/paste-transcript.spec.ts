@@ -442,7 +442,7 @@ async function openIntake(page: Page, db: Db, calls: ParseCall[]) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 

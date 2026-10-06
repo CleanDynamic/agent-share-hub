@@ -179,7 +179,7 @@ const SURFACES = [
   { name: "the home ground", path: "/", ready: "main, [data-visual-slot]" },
   { name: "the build page", path: "/b2/build-1", ready: "main" },
   { name: "the import page's drop surface", path: "/import", ready: '[data-visual-slot="import-frame"]' },
-  { name: "the composer", path: "/compose/00000000-0000-4000-8000-000000000001", ready: "main, [data-visual-slot]" },
+  { name: "the composer", path: "/compose/00000000-0000-4000-8000-000000000001?from=drafts", ready: "main, [data-visual-slot]" },
 ] as const;
 
 test.describe("reduced motion", () => {

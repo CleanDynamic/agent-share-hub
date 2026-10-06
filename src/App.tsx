@@ -109,7 +109,9 @@ const SignupSitePage = lazy(() => import("./pages/site/signin/SignupPage"));
 const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswordPage"));
 const VerifyEmailSitePage = lazy(() => import("./pages/site/signin/VerifyEmailPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
-const Compose = lazy(() => import("./pages/Compose"));
+// UI-P47 — one small route decides: the new composer for an ordinary draft, this
+// legacy screen for a rebuild or a `from` URL. It is its own chunk.
+const ComposeRoute = lazy(() => import("./pages/site/compose/ComposeRoute"));
 // The intake step. Its own chunk, so arriving at /compose/new does not pay for
 // the workspace before the creator has decided to open one.
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
@@ -507,8 +509,11 @@ const App = () => (
                   `--bg` it would be a flash of black before a luminous grey
                   room on Noon. `--bg` is the live theme's ground, so the
                   fallback is the room the route is about to paint. ── */}
-              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
-              <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />
+              {/* UI-P47 — /compose/start is the legacy intake (paste a transcript, a repo);
+                  /compose/new and /compose/:buildId are ComposeRoute: the new composer
+                  in the site frame, or the legacy screen for a rebuild or a `from` URL. */}
+              <Route path="/compose/start" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
+              <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeRoute /></Suspense>} />
               {/* UI-P31 — /rebuild/:slug behind the flag is a page in the site
                   frame (the family, what changed, readiness), not a door. It
                   stays out here so the legacy door renders exactly as it did,

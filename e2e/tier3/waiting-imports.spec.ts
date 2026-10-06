@@ -362,7 +362,7 @@ async function openIntake(page: Page, db: Db) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -501,7 +501,7 @@ for (const viewport of WIDTHS) {
       await page.getByTestId("waiting-import-confirm").click();
 
       // The draft workspace, by way of the same arrival a paste gets.
-      await expect(page).toHaveURL(/\/compose\/(?!new$)[^/]+$/);
+      await expect(page).toHaveURL(/\/compose\/(?!(?:new|start)$)[^/]+$/);
       const buildId = new URL(page.url()).pathname.split("/").pop()!;
       await expect(arrival(page)).toContainText("1 item is in your tray");
       await expect(arrival(page)).toContainText("1 prompt is in the sequence");
@@ -529,7 +529,7 @@ for (const viewport of WIDTHS) {
       expect(claimed?.build_id).toBe(buildId);
 
       // And it no longer waits: the other one does.
-      await page.goto("/compose/new");
+      await page.goto("/compose/start");
       await expect(page.getByTestId("waiting-import")).toHaveCount(1);
       await expect(rowFor(page, ROUGH_IMPORT)).toBeVisible();
     });

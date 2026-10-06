@@ -53,6 +53,8 @@ export interface SiteHeaderViewProps {
   unread: number;
   /** Drafts the reader has. 0 (or absent) draws no badge after "Drafts". */
   drafts?: number;
+  /** On /compose/*: Publish is the page's one primary, so New build draws as secondary. */
+  composing?: boolean;
   /** The signed-in reader, or null. */
   viewer: FrameViewer | null;
   /** The painted theme, for the theme control. */
@@ -201,6 +203,7 @@ export function SiteHeaderView({
   activityCurrent = false,
   unread,
   drafts = 0,
+  composing = false,
   viewer,
   theme,
   onToggleTheme,
@@ -278,7 +281,7 @@ export function SiteHeaderView({
           <IconButton icon={Search} label="Search" size={38} onClick={() => setSearchOpen(true)} />
         )}
 
-        <Button size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
+        <Button variant={composing ? "secondary" : "primary"} size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
           {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
         </Button>
 
@@ -372,6 +375,7 @@ function SiteHeaderContainer() {
       activityCurrent={isActivityPath(pathname)}
       unread={count}
       drafts={isLoggedIn ? (draftCount.data ?? 0) : 0}
+      composing={pathname.startsWith("/compose/")}
       viewer={viewer}
       theme={resolved}
       onToggleTheme={() => setTheme(resolved === "dusk" ? "noon" : "dusk")}

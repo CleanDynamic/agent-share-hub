@@ -257,7 +257,7 @@ async function openSheet(page: Page, theme: string, scenario: Scenario = "ready"
     });
   });
 
-  await page.goto(`/compose/${BUILD}`);
+  await page.goto(`/compose/${BUILD}?from=drafts`);
   await page.getByRole("button", { name: "Publish", exact: true }).first().click();
   await expect(page.getByTestId("publish-sheet")).toBeVisible();
 }

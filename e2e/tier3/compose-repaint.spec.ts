@@ -186,7 +186,7 @@ async function openComposer(page: Page, theme: string, writes: Write[] = []) {
     });
   });
 
-  await page.goto(`/compose/${BUILD}`);
+  await page.goto(`/compose/${BUILD}?from=drafts`);
   await expect(page.getByTestId("cover-strip")).toBeVisible();
 }
 

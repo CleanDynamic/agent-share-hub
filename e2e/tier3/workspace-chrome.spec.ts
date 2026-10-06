@@ -181,7 +181,7 @@ test.describe("the four authoring routes stay outside the frame", () => {
   // the assertion is made on the first paint, before auth resolves, where the
   // route's own container is what renders. `.fs-left` is FlatShell's own frame
   // class, the same one BG-P15's spec uses to tell the frame from a page.
-  const ROUTES = ["/compose/new", "/compose/abc123", "/rebuild/some-slug", "/convert/abc123"];
+  const ROUTES = ["/compose/start", "/compose/abc123?from=drafts", "/rebuild/some-slug", "/convert/abc123"];
 
   for (const route of ROUTES) {
     test(`${route} never renders the application frame's rails`, async ({ page }) => {

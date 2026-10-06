@@ -98,7 +98,7 @@ async function signIn(page: Page): Promise<void> {
 
 /** Open a draft's workspace and wait for the frame that means it loaded. */
 async function openCompose(page: Page, buildId: string): Promise<void> {
-  await page.goto(`/compose/${buildId}`);
+  await page.goto(`/compose/${buildId}?from=drafts`);
   await expect(page.locator('[data-visual-slot="compose-frame"]')).toBeVisible();
   await expect(page.locator('[data-visual-slot="compose-node-tree"]')).toBeVisible();
 }

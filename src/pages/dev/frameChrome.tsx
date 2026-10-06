@@ -32,6 +32,8 @@ export interface DevChromeOptions {
   /** Which primary link is current (the boards differ). */
   current?: PrimarySection | null;
   activityCurrent?: boolean;
+  /** The compose board: New build draws as secondary, because Publish is the page's one primary. */
+  composing?: boolean;
   /** The breadcrumb trail the board shows. Defaults to Home / Gallery / the sample build. */
   trail?: readonly Crumb[];
   /** Which dock tile has the lamp on the phone boards. */
@@ -57,12 +59,13 @@ const DEFAULT_TRAIL: Crumb[] = [
   { label: FIXTURE_BUILD_TITLE },
 ];
 
-export function devChrome({ theme, current = "gallery", activityCurrent = false, trail = DEFAULT_TRAIL, dockCurrent = "gallery" }: DevChromeOptions): DevChrome {
+export function devChrome({ theme, current = "gallery", activityCurrent = false, composing = false, trail = DEFAULT_TRAIL, dockCurrent = "gallery" }: DevChromeOptions): DevChrome {
   return {
     header: (
       <SiteHeaderView
         current={current}
         activityCurrent={activityCurrent}
+        composing={composing}
         unread={fixtures.viewer.unread}
         viewer={FIXTURE_FRAME_VIEWER}
         theme={theme}

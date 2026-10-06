@@ -91,6 +91,16 @@ describe("SiteHeaderView", () => {
     expect(screen.queryByRole("button", { name: "Account" })).toBeNull();
   });
 
+  it("New build is the primary by default", () => {
+    header();
+    expect(screen.getByRole("button", { name: "New build" }).getAttribute("data-variant")).toBe("primary");
+  });
+
+  it("New build draws as secondary while composing", () => {
+    header({ composing: true });
+    expect(screen.getByRole("button", { name: "New build" }).getAttribute("data-variant")).toBe("secondary");
+  });
+
   it("New build goes to the create route handler", () => {
     const p = header();
     fireEvent.click(screen.getByRole("button", { name: "New build" }));

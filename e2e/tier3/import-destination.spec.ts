@@ -578,7 +578,7 @@ async function openIntake(page: Page, db: Db) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -765,7 +765,7 @@ for (const viewport of WIDTHS) {
       const nodesAfterFirst = snapshot(db.tables.build_nodes);
       const eventsAfterFirst = snapshot(db.tables.build_events);
 
-      await page.goto("/compose/new");
+      await page.goto("/compose/start");
       await reviewInto(page, IMPORT, DRAFT);
       await page.getByTestId("waiting-import-confirm").click();
 
