@@ -55,7 +55,10 @@ const CollectionDetail = lazyPage(() => import("./pages/CollectionDetail"));
 // LearningPathDetail removed from UI
 const ApiDocs = lazyPage(() => import("./pages/ApiDocs"));
 
-const DraftsPage = lazyPage(() => import("./pages/Drafts"));
+// UI-P46 — /drafts is the new page (builds and sessions); the old one, which reads
+// content_items and content_blocks, is routed at /drafts/posts unchanged.
+const DraftsPage = lazyPage(() => import("./pages/site/drafts/DraftsPage"));
+const LegacyDraftsPage = lazyPage(() => import("./pages/Drafts"));
 const PostPreviewPage = lazyPage(() => import("./pages/PostPreview"));
 const PublishMetadata = lazyPage(() => import("./pages/PublishMetadata"));
 const ContentEditPage = lazyPage(() => import("./pages/ContentEdit"));
@@ -329,6 +332,10 @@ const App = () => (
                 <Route path="/library/:handle" element={<LibraryPage />} />
                 
                 <Route path="/drafts" element={<ProtectedRoute><DraftsPage /></ProtectedRoute>} />
+                {/* UI-P46 — the content path stays live (RULES §3). PublishMetadata,
+                    PostPreview and MyUploads send people to /drafts for content_items
+                    drafts, which the new page does not show; this is deliberate. */}
+                <Route path="/drafts/posts" element={<ProtectedRoute><LegacyDraftsPage /></ProtectedRoute>} />
                 <Route path="/upload/preview/:draftId" element={<ProtectedRoute><PostPreviewPage /></ProtectedRoute>} />
                 <Route path="/publish/:contentItemId" element={<ProtectedRoute><PublishMetadata /></ProtectedRoute>} />
                 <Route path="/feed" element={<Navigate to="/gallery" replace />} />

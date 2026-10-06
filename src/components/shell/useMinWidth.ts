@@ -25,6 +25,11 @@ export function useMinWidth(px: number): boolean {
   return useMedia(`(min-width: ${px}px)`, true);
 }
 
+/** True when the primary pointer is a mouse or trackpad: where dragging a row makes sense. */
+export function useFinePointer(): boolean {
+  return useMedia("(hover: hover) and (pointer: fine)", true);
+}
+
 /** True below the app's 768px breakpoint. */
 export function useIsPhone(): boolean {
   return useMedia("(max-width: 767px)", false);

@@ -12,7 +12,9 @@
      /b2/:slug/lineage          Home / Gallery / {build} / Lineage
      /rebuild/:slug             Home / Gallery / {build} / Rebuild
      /import                    Home / New build / Import
-     /compose/*                 Home / New build / Compose
+     /drafts                    Home / Drafts
+     /drafts/posts              Home / Drafts / Older post drafts
+     /compose/*                 Home / Drafts / {title}
      /bounties                  Home / Bounties
      /bounties/solvers          Home / Bounties / Solvers
      /profile/:handle           Home / {display name}
@@ -33,6 +35,7 @@ export interface Crumb {
 
 const HOME: Crumb = { label: "Home", href: SITE_NAV.home };
 const GALLERY: Crumb = { label: "Gallery", href: SITE_NAV.gallery };
+const DRAFTS: Crumb = { label: "Drafts", href: SITE_NAV.drafts };
 const NEW_BUILD: Crumb = { label: "New build", href: SITE_NAV.create };
 
 const here = (pathname: string, pattern: string) => matchPath({ path: pattern, end: true }, pathname);
@@ -53,7 +56,9 @@ export function trailFor(pathname: string, title: string | null): Crumb[] {
   }
 
   if (here(pathname, "/import")) return [HOME, NEW_BUILD, { label: "Import" }];
-  if (here(pathname, "/compose/*")) return [HOME, NEW_BUILD, { label: "Compose" }];
+  if (here(pathname, "/drafts")) return [HOME, { label: "Drafts" }];
+  if (here(pathname, "/drafts/posts")) return [HOME, DRAFTS, { label: "Older post drafts" }];
+  if (here(pathname, "/compose/*")) return [HOME, DRAFTS, { label: title ?? "Untitled build" }];
 
   if (here(pathname, "/bounties/solvers")) return [HOME, { label: "Bounties", href: SITE_NAV.bounties }, { label: "Solvers" }];
   if (here(pathname, "/bounties")) return [HOME, { label: "Bounties" }];
