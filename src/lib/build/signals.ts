@@ -21,6 +21,8 @@
 // how much of the shape's record is filled in, nothing more.
 
 import { supabase } from "@/integrations/supabase/client";
+import type { PlaqueBuild } from "@/components/brand/Plaque";
+import { normaliseModel } from "@/lib/models/registry";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import {
   buildLayerError,
@@ -131,6 +133,150 @@ export async function getReproductions(
 
   if (error) throw buildLayerError("getReproductions", error);
   return (data ?? []) as BuildReproduction[];
+}
+
+// -----------------------------------------------------------------------------
+// Reproductions by model (UI-P44a)
+// -----------------------------------------------------------------------------
+
+/** One model's proof for one build: how many people got it working on it. */
+export interface ModelProof {
+  /** The ModelVersion id, or null for a model the registry does not name. */
+  modelId: string | null;
+  /** The version's name, the sender's trimmed text, or "Unknown model". */
+  modelName: string;
+  /** Reproductions on this model with worked = true. */
+  worked: number;
+  /** The newest confirmed_at among the WORKED rows; null when none worked. */
+  lastConfirmedAt: string | null;
+}
+
+/** What a reproduction with no model_used is grouped under. */
+export const UNKNOWN_MODEL_NAME = "Unknown model";
+
+const PROOF_CHUNK = 100;
+/** Rows read per chunk of ids. A build with more than this is long past its proof. */
+const PROOF_ROWS_PER_CHUNK = 5000;
+
+interface ProofRow {
+  build_id: string;
+  model_used: string | null;
+  worked: boolean | null;
+  confirmed_at: string | null;
+}
+
+/**
+ * The reproductions of many builds, grouped by model, in one read per 100 ids.
+ *
+ * Grouping is by normaliseModel(model_used): "claude-sonnet-5-5" and
+ * "Sonnet 5.5" are one group. A model the registry does not name groups under
+ * its trimmed text, and a row with no model under "Unknown model".
+ *
+ * A failed reproduction (worked = false) still creates its model's entry, so a
+ * model people tried and could not get working is visible as worked: 0. It
+ * never moves lastConfirmedAt: that is when someone last confirmed it WORKING.
+ *
+ * Every id asked for is a key in the answer; a build nobody reproduced is [].
+ * Each build's list is most worked first, then most recently confirmed.
+ */
+export async function getReproductionsByModel(
+  buildIds: string[]
+): Promise<Record<string, ModelProof[]>> {
+  const ids = [...new Set(buildIds.filter((id) => typeof id === "string" && id !== ""))];
+  const out: Record<string, ModelProof[]> = {};
+  for (const id of ids) out[id] = [];
+
+  const groups = new Map<string, Map<string, ModelProof>>();
+
+  for (let start = 0; start < ids.length; start += PROOF_CHUNK) {
+    const chunk = ids.slice(start, start + PROOF_CHUNK);
+    const { data, error } = await supabase
+      .from("build_reproductions")
+      .select("build_id, model_used, worked, confirmed_at")
+      .in("build_id", chunk)
+      .limit(PROOF_ROWS_PER_CHUNK);
+
+    if (error) throw buildLayerError("getReproductionsByModel", error);
+
+    for (const row of (data ?? []) as ProofRow[]) {
+      const version = normaliseModel(row.model_used);
+      const raw = typeof row.model_used === "string" ? row.model_used.trim() : "";
+      const key = version ? `id:${version.id}` : raw ? `raw:${raw}` : "none";
+
+      let perBuild = groups.get(row.build_id);
+      if (!perBuild) groups.set(row.build_id, (perBuild = new Map()));
+
+      let proof = perBuild.get(key);
+      if (!proof) {
+        proof = {
+          modelId: version?.id ?? null,
+          modelName: version?.name ?? (raw || UNKNOWN_MODEL_NAME),
+          worked: 0,
+          lastConfirmedAt: null,
+        };
+        perBuild.set(key, proof);
+      }
+
+      if (row.worked === true) {
+        proof.worked += 1;
+        if (
+          row.confirmed_at &&
+          (proof.lastConfirmedAt === null ||
+            Date.parse(row.confirmed_at) > Date.parse(proof.lastConfirmedAt))
+        ) {
+          proof.lastConfirmedAt = row.confirmed_at;
+        }
+      }
+    }
+  }
+
+  for (const [buildId, perBuild] of groups) {
+    out[buildId] = [...perBuild.values()].sort(
+      (a, b) =>
+        b.worked - a.worked ||
+        Date.parse(b.lastConfirmedAt ?? "") - Date.parse(a.lastConfirmedAt ?? "") ||
+        a.modelName.localeCompare(b.modelName)
+    );
+  }
+  return out;
+}
+
+/** The columns the plaque reads off a build, and published_at for isStale. */
+type PlaqueSourceBuild = Pick<
+  Build,
+  "reproduction_count" | "last_confirmed_at" | "last_confirmed_model" | "published_at"
+> &
+  Partial<Pick<Build, "rebuild_count">>;
+
+/**
+ * The record Plaque reads, set for ONE model, so the existing plaque speaks
+ * for the chosen model without changing: its count is the worked
+ * reproductions on that model, its time the last one, its model that model's
+ * name. With proof = null it is the build's own overall figures.
+ *
+ * A model with no worked reproduction gives count 0 and no confirmation, which
+ * plaqueState reads as "not yet reproduced" — true of that model.
+ */
+export function plaqueBuildFor(
+  build: PlaqueSourceBuild,
+  proof: ModelProof | null
+): PlaqueBuild {
+  if (proof === null) {
+    return {
+      reproduction_count: build.reproduction_count,
+      last_confirmed_at: build.last_confirmed_at,
+      last_confirmed_model: build.last_confirmed_model,
+      published_at: build.published_at,
+      rebuild_count: build.rebuild_count ?? null,
+    };
+  }
+  return {
+    reproduction_count: proof.worked,
+    last_confirmed_at: proof.lastConfirmedAt,
+    last_confirmed_model: proof.worked > 0 ? proof.modelName : null,
+    published_at: build.published_at,
+    rebuild_count: build.rebuild_count ?? null,
+  };
 }
 
 /** The columns a self-confirmation writes back. */
