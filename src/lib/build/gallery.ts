@@ -21,13 +21,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
+import { MODEL_VERSIONS, normaliseModel, type ModelVersion } from "@/lib/models/registry";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import { normaliseQuery, searchBuildIds } from "./search";
 import {
   SHAPE_RULES,
   STALE_AFTER_DAYS,
   countRunsThisWeek,
+  getReproductionsByModel,
   type MissingItem,
+  type ModelProof,
   type RequirementKey,
 } from "./signals";
 import {
@@ -1031,4 +1034,377 @@ function cleanList(values: string[] | undefined): string[] {
 function cleanShapes(values: string[] | undefined): BuildShape[] {
   const known = new Set<string>(GALLERY_SHAPES);
   return cleanList(values).filter((value): value is BuildShape => known.has(value));
+}
+
+// =============================================================================
+// The Gallery feed (UI-P44b)
+// =============================================================================
+//
+// Model-aware proof per build. listGallery is untouched; this is its own read,
+// on the same shared select (gallerySelect) and withCardEmbeds, so a card is
+// the same card.
+
+export const FEED_PAGE_SIZE = GALLERY_PAGE_SIZE;
+
+/** Builds the model view and the counts rank in the app. Past this a view or RPC takes over. */
+const FEED_POPULATION_CAP = 500;
+/** Worked reproductions read to find the builds reproduced on one model. */
+const FEED_REPRODUCTION_ROWS_CAP = 500;
+/** Handles matched by a handle-shaped query. */
+const FEED_HANDLE_LIMIT = 20;
+const FEED_ID_CHUNK = 100;
+
+export type GalleryFeedSort = "newest" | "reproduced" | "confirmed" | "rebuilt";
+
+export interface GalleryFeedParams {
+  /** A ModelVersion id. An id the registry does not name is ignored. */
+  model?: string;
+  /** A made_for value. */
+  audience?: string;
+  sort: GalleryFeedSort;
+  q?: string;
+  /** Zero-based. With a model it pages both lists. */
+  page: number;
+}
+
+/** One feed row: the gallery's card data plus what the feed adds. */
+export interface GalleryFeedRow extends GalleryBuild {
+  models_used: string[];
+  /** profiles.username; null when the profile has none or was not found. */
+  creatorHandle: string | null;
+  /** Reproductions by model, most worked first. */
+  proof: ModelProof[];
+}
+
+export interface GalleryFeedCounts {
+  all: number;
+  /** ModelVersion id → gallery builds with a worked reproduction on it. */
+  byModel: Record<string, number>;
+}
+
+export type GalleryFeed =
+  | { kind: "all"; model: null; rows: GalleryFeedRow[]; hasMore: boolean; counts: GalleryFeedCounts }
+  | {
+      kind: "model";
+      model: ModelVersion;
+      /** Builds with a worked reproduction on the model, sorted by that model's figures. */
+      reproducedOn: GalleryFeedRow[];
+      /** Every other gallery build, in the sort's overall order. */
+      notYet: GalleryFeedRow[];
+      hasMoreReproducedOn: boolean;
+      hasMoreNotYet: boolean;
+      counts: GalleryFeedCounts;
+    };
+
+/** The builder methods the feed calls on a builds query. */
+interface FeedQuery extends PromiseLike<{ data: unknown; error: unknown; count?: number | null }> {
+  in(column: string, values: readonly unknown[]): FeedQuery;
+  or(filters: string): FeedQuery;
+  eq(column: string, value: unknown): FeedQuery;
+  ilike(column: string, pattern: string): FeedQuery;
+  overlaps(column: string, values: readonly unknown[]): FeedQuery;
+  order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): FeedQuery;
+  limit(count: number): FeedQuery;
+  range(from: number, to: number): FeedQuery;
+}
+
+interface FeedFrom {
+  select(columns: string, options?: { count: "exact" }): FeedQuery;
+}
+
+function feedTable(table: string): FeedFrom {
+  return (supabase as unknown as { from: (name: string) => FeedFrom }).from(table);
+}
+
+const FEED_LIGHT_COLUMNS = "id, published_at, rebuild_count, reproduction_count, last_confirmed_at";
+
+interface LightRow {
+  id: string;
+  published_at: string | null;
+  rebuild_count: number | null;
+  reproduction_count: number | null;
+  last_confirmed_at: string | null;
+}
+
+/** A handle-shaped query: one word of handle characters, optionally with its @. */
+const HANDLE_SHAPE = /^@?[a-z0-9_.-]{2,30}$/i;
+
+/**
+ * THE INTERIM SEARCH, until search_build_ids exists on live (audit fix 1).
+ *
+ * listGallery's query goes through the search_build_ids RPC, which returns 404
+ * on live, so the feed does not use it. This asks the table directly: title and
+ * outcome by ilike; a build whose models_used holds the named version when the
+ * query is one; and the builds of a creator whose handle matches when the
+ * query looks like a handle (one profiles lookup, at most FEED_HANDLE_LIMIT).
+ * Returns one PostgREST `or` clause, or null when there is no query. Delete
+ * this when the RPC is on live and the feed can take its ids as listGallery does.
+ */
+async function feedSearchClause(raw: string | undefined): Promise<string | null> {
+  const q = normaliseQuery(raw);
+  if (q === null) return null;
+
+  // Characters that would end or split an `or` clause or act as a wildcard.
+  const text = q.replace(/[,()"\\%*]/g, " ").replace(/\s+/g, " ").trim();
+  if (text.length < 2) return null;
+
+  const clauses = [`title.ilike.%${text}%`, `outcome.ilike.%${text}%`];
+
+  const version = normaliseModel(q);
+  if (version) clauses.push(`models_used.cs.{"${version.name}"}`);
+
+  if (HANDLE_SHAPE.test(q)) {
+    const handle = q.replace(/^@/, "");
+    const { data, error } = await feedTable("profiles")
+      .select("id")
+      .ilike("username", `%${handle}%`)
+      .limit(FEED_HANDLE_LIMIT);
+    if (error) throw buildLayerError("listGalleryFeed", error);
+    const ids = ((data ?? []) as { id: string }[]).map((row) => row.id);
+    if (ids.length > 0) clauses.push(`creator_id.in.(${ids.join(",")})`);
+  }
+
+  return clauses.join(",");
+}
+
+/** The gallery's membership rule plus the feed's audience and search. */
+function feedBase(
+  columns: string,
+  audience: string | undefined,
+  search: string | null,
+  withCount = false
+): FeedQuery {
+  let query = feedTable("builds")
+    .select(columns, withCount ? { count: "exact" } : undefined)
+    .in("status", ["published", "gallery"])
+    // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
+    .or(galleryPredicate());
+  if (audience) query = query.overlaps("made_for", [audience]);
+  if (search) query = query.or(search);
+  return query;
+}
+
+/** The sort's own database order, with id last so a page never repeats a row. */
+function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
+  const desc = { ascending: false, nullsFirst: false };
+  let q = query;
+  if (sort === "reproduced") {
+    q = q.order("reproduction_count", desc).order("last_confirmed_at", desc);
+  } else if (sort === "confirmed") {
+    q = q.order("last_confirmed_at", desc);
+  } else if (sort === "rebuilt") {
+    q = q.order("rebuild_count", desc);
+  }
+  return q.order("published_at", desc).order("id", { ascending: true });
+}
+
+const time = (iso: string | null): number => (iso ? Date.parse(iso) || 0 : 0);
+
+/** Creator id → handle, one profiles lookup. */
+async function creatorHandles(creatorIds: string[]): Promise<Map<string, string | null>> {
+  const ids = [...new Set(creatorIds)];
+  const out = new Map<string, string | null>();
+  if (ids.length === 0) return out;
+  const { data, error } = await feedTable("profiles")
+    .select("id, username")
+    .in("id", ids)
+    .limit(ids.length);
+  if (error) throw buildLayerError("listGalleryFeed", error);
+  for (const row of (data ?? []) as { id: string; username: string | null }[]) {
+    out.set(row.id, row.username ?? null);
+  }
+  return out;
+}
+
+/** The card data for these ids, in the order given. One request (ids are at most two pages). */
+async function feedRows(
+  ids: string[],
+  known: Record<string, ModelProof[]>
+): Promise<GalleryFeedRow[]> {
+  if (ids.length === 0) return [];
+
+  const query = withCardEmbeds(
+    feedTable("builds").select(`${gallerySelect(false)}, models_used`).in("id", ids)
+  ).limit(ids.length);
+  const { data, error } = await query;
+  if (error) throw buildLayerError("listGalleryFeed", error);
+
+  const byId = new Map(
+    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[]).map((row) => [row.id, row])
+  );
+  const found = ids.filter((id) => byId.has(id));
+
+  const missing = found.filter((id) => !(id in known));
+  const [handles, fetched] = await Promise.all([
+    creatorHandles(found.map((id) => byId.get(id)!.creator_id)),
+    missing.length > 0 ? getReproductionsByModel(missing) : Promise.resolve({} as Record<string, ModelProof[]>),
+  ]);
+
+  return found.map((id) => {
+    const row = byId.get(id)!;
+    return {
+      ...toGalleryBuild(row),
+      models_used: row.models_used ?? [],
+      creatorHandle: handles.get(row.creator_id) ?? null,
+      proof: known[id] ?? fetched[id] ?? [],
+    };
+  });
+}
+
+/**
+ * The Model menu's numbers: how many gallery builds are reproduced on each
+ * version, and how many there are.
+ *
+ * ONE GROUPED READ of getReproductionsByModel over the gallery's build ids,
+ * CAPPED AT 500 BUILDS (newest first). `all` is the true total; byModel counts
+ * within the 500. When the gallery passes that, a view or an RPC replaces this.
+ * Unfiltered on purpose: the menu says what exists, not what the search found.
+ */
+async function feedCounts(): Promise<GalleryFeedCounts> {
+  const { data, error, count } = await feedBase("id", undefined, null, true)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(FEED_POPULATION_CAP);
+  if (error) throw buildLayerError("listGalleryFeed", error);
+
+  const ids = ((data ?? []) as { id: string }[]).map((row) => row.id);
+  const proofs = await getReproductionsByModel(ids);
+
+  const byModel: Record<string, number> = {};
+  for (const id of ids) {
+    for (const proof of proofs[id] ?? []) {
+      if (proof.modelId && proof.worked > 0) byModel[proof.modelId] = (byModel[proof.modelId] ?? 0) + 1;
+    }
+  }
+  return { all: count ?? ids.length, byModel };
+}
+
+/** The aliases to look for in build_reproductions.model_used, as one `or`. */
+function aliasClause(version: ModelVersion): string {
+  const spellings = [version.id, version.name, ...version.aliases].map((s) => s.toLowerCase());
+  return [...new Set(spellings)].map((alias) => `model_used.ilike.%${alias}%`).join(",");
+}
+
+/**
+ * The ids of builds with a worked reproduction on this version.
+ *
+ * Asks build_reproductions for worked rows whose model_used contains any alias
+ * (newest 500), then CONFIRMS each with normaliseModel: ilike over-matches
+ * ("claude-opus-5" is inside "claude-opus-5-5"), the registry is the judge.
+ */
+async function reproducedOnIds(version: ModelVersion): Promise<string[]> {
+  const { data, error } = await feedTable("build_reproductions")
+    .select("build_id, model_used")
+    .eq("worked", true)
+    .or(aliasClause(version))
+    .order("confirmed_at", { ascending: false })
+    .limit(FEED_REPRODUCTION_ROWS_CAP);
+  if (error) throw buildLayerError("listGalleryFeed", error);
+
+  const ids = new Set<string>();
+  for (const row of (data ?? []) as { build_id: string; model_used: string | null }[]) {
+    if (normaliseModel(row.model_used)?.id === version.id) ids.add(row.build_id);
+  }
+  return [...ids];
+}
+
+/**
+ * One page of the Gallery feed.
+ *
+ * WITHOUT A MODEL: one list, ordered in the database by the sort — newest by
+ * published_at; reproduced by reproduction_count (the builds' own worked
+ * figure); confirmed by last_confirmed_at; rebuilt by rebuild_count — and paged
+ * with a range. One request for the cards, plus one profiles lookup and one
+ * proof read per page.
+ *
+ * WITH A MODEL: { reproducedOn, notYet }. reproducedOn is the builds with a
+ * worked reproduction on that version, sorted IN THE APP by that model's own
+ * figures (its worked count, its newest confirmation). notYet is the rest of
+ * the gallery in the sort's overall order. Both come from at most 500 builds
+ * (see feedCounts) and page separately off params.page.
+ */
+export async function listGalleryFeed(params: GalleryFeedParams): Promise<GalleryFeed> {
+  const page = Math.max(0, Math.floor(params.page) || 0);
+  const start = page * FEED_PAGE_SIZE;
+  const end = start + FEED_PAGE_SIZE;
+  const audience = params.audience?.trim() || undefined;
+  const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
+
+  const [search, counts] = await Promise.all([feedSearchClause(params.q), feedCounts()]);
+
+  if (version === null) {
+    const query = withCardEmbeds(
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used`, audience, search), params.sort)
+    ).range(start, end);
+    const { data, error } = await query;
+    if (error) throw buildLayerError("listGalleryFeed", error);
+
+    const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[];
+    const pageRows = all.slice(0, FEED_PAGE_SIZE);
+    const [handles, proofs] = await Promise.all([
+      creatorHandles(pageRows.map((row) => row.creator_id)),
+      getReproductionsByModel(pageRows.map((row) => row.id)),
+    ]);
+    const rows: GalleryFeedRow[] = pageRows.map((row) => ({
+      ...toGalleryBuild(row),
+      models_used: row.models_used ?? [],
+      creatorHandle: handles.get(row.creator_id) ?? null,
+      proof: proofs[row.id] ?? [],
+    }));
+    return { kind: "all", model: null, rows, hasMore: all.length > FEED_PAGE_SIZE, counts };
+  }
+
+  // reproducedOn: candidates from the reproductions, then the gallery's rule on them.
+  const candidates = await reproducedOnIds(version);
+  const light: LightRow[] = [];
+  for (let i = 0; i < candidates.length; i += FEED_ID_CHUNK) {
+    const chunk = candidates.slice(i, i + FEED_ID_CHUNK);
+    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search)
+      .in("id", chunk)
+      .limit(chunk.length);
+    if (error) throw buildLayerError("listGalleryFeed", error);
+    light.push(...((data ?? []) as unknown as LightRow[]));
+  }
+
+  const proofs = await getReproductionsByModel(light.map((row) => row.id));
+  const figure = (id: string): ModelProof | undefined => proofs[id]?.find((p) => p.modelId === version.id);
+
+  const reproduced = light
+    .filter((row) => (figure(row.id)?.worked ?? 0) > 0)
+    .sort((a, b) => {
+      const fa = figure(a.id);
+      const fb = figure(b.id);
+      const byPublished = time(b.published_at) - time(a.published_at);
+      let primary = 0;
+      if (params.sort === "reproduced") primary = (fb?.worked ?? 0) - (fa?.worked ?? 0);
+      else if (params.sort === "confirmed") primary = time(fb?.lastConfirmedAt ?? null) - time(fa?.lastConfirmedAt ?? null);
+      else if (params.sort === "rebuilt") primary = (b.rebuild_count ?? 0) - (a.rebuild_count ?? 0);
+      return primary || byPublished || a.id.localeCompare(b.id);
+    });
+  const reproducedIds = new Set(reproduced.map((row) => row.id));
+
+  // notYet: the rest of the (capped) gallery, in the sort's overall order.
+  const { data: populationData, error: populationError } = await feedOrder(
+    feedBase("id", audience, search),
+    params.sort
+  ).limit(FEED_POPULATION_CAP);
+  if (populationError) throw buildLayerError("listGalleryFeed", populationError);
+  const notYet = ((populationData ?? []) as { id: string }[])
+    .map((row) => row.id)
+    .filter((id) => !reproducedIds.has(id));
+
+  const onIds = reproduced.slice(start, end).map((row) => row.id);
+  const notIds = notYet.slice(start, end);
+  const rows = await feedRows([...onIds, ...notIds], proofs);
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const pick = (ids: string[]) => ids.map((id) => byId.get(id)).filter((r): r is GalleryFeedRow => !!r);
+
+  return {
+    kind: "model",
+    model: version,
+    reproducedOn: pick(onIds),
+    notYet: pick(notIds),
+    hasMoreReproducedOn: reproduced.length > end,
+    hasMoreNotYet: notYet.length > end,
+    counts,
+  };
 }
