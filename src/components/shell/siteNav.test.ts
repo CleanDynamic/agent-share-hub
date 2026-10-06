@@ -1,14 +1,28 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
+import { isActivityPath, PRIMARY_LINKS, SITE_NAV, sectionForPath } from "./siteNav";
 
-describe("SITE_NAV", () => {
-  it("uses only routes AppShell's allNavItems has", () => {
-    const shell = readFileSync("src/components/AppShell.tsx", "utf8");
-    for (const href of [SITE_NAV.home, SITE_NAV.gallery, SITE_NAV.bounties, SITE_NAV.library, SITE_NAV.create, SITE_NAV.activity]) {
-      expect(shell).toContain(`route: "${href}"`);
-    }
+describe("PRIMARY_LINKS", () => {
+  // The header's links, in order. A change here is a change to the navigation's
+  // budget (hicks-law), so it shows up as a diff in this snapshot.
+  it("is the header's list: Library and Drafts are signed-in only", () => {
+    expect(PRIMARY_LINKS).toEqual([
+      { key: "home", label: "Home", href: "/" },
+      { key: "gallery", label: "Gallery", href: "/gallery" },
+      { key: "bounties", label: "Bounties", href: "/bounties" },
+      { key: "library", label: "Library", href: "/library", authOnly: true },
+      { key: "drafts", label: "Drafts", href: "/drafts", authOnly: true },
+    ]);
+  });
+
+  it("agrees with SITE_NAV", () => {
+    expect(PRIMARY_LINKS.map((link) => link.href)).toEqual([
+      SITE_NAV.home,
+      SITE_NAV.gallery,
+      SITE_NAV.bounties,
+      SITE_NAV.library,
+      SITE_NAV.drafts,
+    ]);
   });
 });
 
@@ -22,8 +36,11 @@ describe("sectionForPath", () => {
     ["/bounties", "bounties"],
     ["/bounties/solvers", "bounties"],
     ["/library", "library"],
+    ["/drafts", "drafts"],
+    ["/drafts/posts", "drafts"],
+    ["/compose/new", "drafts"],
+    ["/compose/abc", "drafts"],
     ["/import", null],
-    ["/compose/new", null],
     ["/notifications", null],
     ["/profile/maya", null],
   ])("%s → %s", (path, section) => {

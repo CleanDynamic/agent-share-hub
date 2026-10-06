@@ -36,16 +36,27 @@ function header(props: Partial<SiteHeaderViewProps> = {}) {
 }
 
 describe("SiteHeaderView", () => {
-  it("lists the four primary links with the current one marked", () => {
+  it("lists the five primary links with the current one marked", () => {
     header();
     const nav = screen.getByRole("navigation", { name: "Primary" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((a) => a.textContent)).toEqual(["Home", "Gallery", "Bounties", "Library"]);
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/gallery", "/bounties", "/library"]);
+    expect(links.map((a) => a.textContent)).toEqual(["Home", "Gallery", "Bounties", "Library", "Drafts"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/gallery", "/bounties", "/library", "/drafts"]);
     expect(links.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["Gallery"]);
   });
 
-  it("has no current link on a route outside the four", () => {
+  it("draws the drafts count after the label, and nothing at 0", () => {
+    header({ drafts: 4 });
+    expect(screen.getByTestId("drafts-count").textContent).toBe("4");
+    expect(screen.getByRole("link", { name: /^Drafts/ }).textContent).toBe("Drafts4");
+  });
+
+  it("draws no drafts count at 0", () => {
+    header({ drafts: 0 });
+    expect(screen.queryByTestId("drafts-count")).toBeNull();
+  });
+
+  it("has no current link on a route outside the five", () => {
     header({ current: null, activityCurrent: true });
     expect(within(screen.getByRole("navigation", { name: "Primary" })).queryByRole("link", { current: "page" })).toBeNull();
     expect(screen.getByRole("link", { name: "Activity, 3 unread" }).getAttribute("aria-current")).toBe("page");
@@ -70,9 +81,10 @@ describe("SiteHeaderView", () => {
     expect(p.onToggleTheme).toHaveBeenCalledTimes(1);
   });
 
-  it("signed out: Sign in, no Library, no Activity", () => {
+  it("signed out: Sign in, no Library, no Drafts, no Activity", () => {
     const p = header({ viewer: null });
     expect(screen.queryByRole("link", { name: "Library" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Drafts" })).toBeNull();
     expect(screen.queryByRole("link", { name: /^Activity/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(p.onSignIn).toHaveBeenCalled();
@@ -109,6 +121,7 @@ describe("SiteHeaderView", () => {
       "Gallery",
       "Bounties",
       "Library",
+      "Drafts",
       "Search builds",
       "New build",
       "Activity, 3 unread",

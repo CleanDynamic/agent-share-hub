@@ -20,6 +20,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
@@ -28,6 +29,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { countDraftBuilds } from "@/lib/build/sessions";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { GLASS_BLUR, MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -49,6 +51,8 @@ export interface SiteHeaderViewProps {
   activityCurrent?: boolean;
   /** Unread notifications. 0 draws no badge; above nine reads "9+". */
   unread: number;
+  /** Drafts the reader has. 0 (or absent) draws no badge after "Drafts". */
+  drafts?: number;
   /** The signed-in reader, or null. */
   viewer: FrameViewer | null;
   /** The painted theme, for the theme control. */
@@ -111,6 +115,17 @@ const badge: CSSProperties = {
   padding: "0 3px",
 };
 
+const draftsBadge: CSSProperties = {
+  marginLeft: 6,
+  padding: "0 6px",
+  borderRadius: 6,
+  background: t.cell,
+  color: t.text2,
+  fontFamily: DM_MONO,
+  fontSize: 11,
+  lineHeight: "18px",
+};
+
 function Lamp({ width, place }: { width: number; place: CSSProperties }) {
   return <span aria-hidden="true" style={{ position: "absolute", width, height: 6, borderRadius: "50%", background: t.lit, boxShadow: t.navLampGlow, ...place }} />;
 }
@@ -168,6 +183,9 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <Link to={SITE_NAV.library} style={item}>Library</Link>
           </DropdownMenu.Item>
+          <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
+            <Link to={SITE_NAV.drafts} style={item}>Drafts</Link>
+          </DropdownMenu.Item>
           <DropdownMenu.Separator style={{ height: 1, margin: "4px 6px", background: t.line }} />
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <button type="button" onClick={onSignOut} style={item}>Sign out</button>
@@ -182,6 +200,7 @@ export function SiteHeaderView({
   current,
   activityCurrent = false,
   unread,
+  drafts = 0,
   viewer,
   theme,
   onToggleTheme,
@@ -242,6 +261,9 @@ export function SiteHeaderView({
                 style={{ ...linkBase, padding: linkPad, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.text2 }}
               >
                 {link.label}
+                {link.key === "drafts" && drafts > 0 && (
+                  <span data-testid="drafts-count" style={draftsBadge}>{drafts}</span>
+                )}
                 {isCurrent && <Lamp width={26} place={{ left: "50%", marginLeft: -13, bottom: -1 }} />}
               </FrameLink>
             );
@@ -325,6 +347,12 @@ function SiteHeaderContainer() {
   const { isLoggedIn, user, profile, signOut } = useAuth();
   const { resolved, setTheme } = useTheme();
   const { count } = useUnreadNotifications();
+  const draftCount = useQuery({
+    queryKey: ["build", "countDraftBuilds"],
+    queryFn: countDraftBuilds,
+    enabled: isLoggedIn,
+    staleTime: 60_000,
+  });
   const search = useGallerySearch();
   const [params] = useSearchParams();
 
@@ -343,6 +371,7 @@ function SiteHeaderContainer() {
       current={sectionForPath(pathname)}
       activityCurrent={isActivityPath(pathname)}
       unread={count}
+      drafts={isLoggedIn ? (draftCount.data ?? 0) : 0}
       viewer={viewer}
       theme={resolved}
       onToggleTheme={() => setTheme(resolved === "dusk" ? "noon" : "dusk")}

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -79,7 +80,10 @@ vi.mock("@/components/shell/ProfileDrawer", () => ({
 const { AppShell } = await import("@/components/AppShell");
 
 function renderAt(path: string) {
+  // The site header reads the drafts count (UI-P46), so the frame needs a query client.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider>
     <MemoryRouter initialEntries={[path]}>
       <Routes>
@@ -99,7 +103,8 @@ function renderAt(path: string) {
         </Route>
       </Routes>
     </MemoryRouter>
-    </ThemeProvider>,
+    </ThemeProvider>
+    </QueryClientProvider>,
   );
 }
 
