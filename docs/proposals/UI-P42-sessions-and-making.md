@@ -1,8 +1,10 @@
 # UI-P42 — Sessions that stay, a model per session, the making stats
 
-Status: **PROPOSAL, NOT APPLIED. The live evidence is NOT supplied** (§2). Nothing here has touched the live database, the connector or the app. Miles approves, then the migration and the connector diff are applied by whoever has live access.
+Status: **PROPOSAL, NOT APPLIED. Live evidence is partial: Q4, Q5 and Q6 are supplied; Q1, Q2 and Q3 are not** (§2). Nothing here has touched the live database, the connector or the app. Miles approves, then the migration and the connector diff are applied by whoever has live access.
 
 ## 0. What blocks this being a PASS
+
+**Update, after Miles ran the query pack through Lovable.** Q4, Q5 and Q6 came back and are recorded in §2 (as Lovable's summary, not raw rows). For Q1, Q2 and Q3 the reply said only that they ran read-only and changed nothing; no rows were supplied, so those three, which carry the policy, cron, function and `builds` column evidence, are **still open**. The paragraph below describes why this session could not run them itself.
 
 The live database could not be reached from this session. The sandbox's network policy answers `403` to `CONNECT zybdotagjwektucfdkri.supabase.co:443` (the project in `supabase/config.toml`, the host in `.env`). That is a policy denial, so it was not worked around. Even with the host allowed, the publishable key could not answer checks 1, 2 and 5: `pg_policies`, `cron.job`, `pg_get_functiondef` and `import_sessions` rows are not readable as `anon`. They have to be run by Miles through Lovable, as every earlier `L-Pnn-n` query was (`docs/reconciliation/HANDOVER.md`). Section 2 is therefore the **query pack**, ready to paste, with an empty result slot under each query. Everything in §3 onward is derived from the repository and a local rehearsal, and is labelled so. Until §2 is filled in, treat §3 as unverified against live.
 
@@ -40,7 +42,7 @@ where table_schema = 'public' and table_name = 'import_sessions'
 order by grantee, privilege_type;
 ```
 
-Result: **not supplied.**
+Result: **not supplied.** Lovable's reply said the query ran read-only and changed nothing, but gave no rows. Please paste them.
 
 ### Q2 — the sweep and the ceiling
 
@@ -57,7 +59,7 @@ select tgname, tgenabled from pg_trigger
 where tgrelid = 'public.import_sessions'::regclass and not tgisinternal;
 ```
 
-Result: **not supplied.** If `cron.job` is missing or empty, pg_cron is not installed live and the nightly sweep has never run (the migration only warns); say so before UI-P43.
+Result: **not supplied.** Lovable's reply said all four ran read-only, but gave no rows. If `cron.job` is missing or empty, pg_cron is not installed live and the nightly sweep has never run (the migration only warns); say so before UI-P43.
 
 ### Q3 — `builds`: columns, policies, triggers
 
@@ -85,7 +87,7 @@ select tgname, tgenabled, pg_get_triggerdef(oid) from pg_trigger
 where tgrelid = 'public.builds'::regclass and not tgisinternal order by tgname;
 ```
 
-Result: **not supplied.** UI-P44 selects only the columns that report `exists_live = true`. `comment_count` and `save_count` come only from `20261001180000_rc_build_social.sql`, whose tables return 404 live, so they are likely missing.
+Result: **not supplied.** The text sent back under this number was the Q5 summary again, so Q3 has no result. UI-P44 selects only the columns that report `exists_live = true`. `comment_count` and `save_count` come only from `20261001180000_rc_build_social.sql`, whose tables return 404 live, so they are likely missing.
 
 ### Q4 — `build_reproductions`: columns
 
@@ -96,7 +98,22 @@ where table_schema = 'public' and table_name = 'build_reproductions'
 order by ordinal_position;
 ```
 
-Result: **not supplied.** The code reads `id, build_id, user_id, confirmed_at, model_used, worked, note`. From the repository only (`20260825140100_build_reproductions_canonical_shape.sql`): that migration adds `confirmed_at` and `worked` and relaxes an older `result` column, which tells us the live table began life in the older shape, but not what is there now.
+Result (supplied by Miles via Lovable, read-only; a summary table, not raw rows): 10 columns.
+
+| # | column | type | null | default |
+|---|---|---|---|---|
+| 1 | id | uuid | NO | gen_random_uuid() |
+| 2 | build_id | uuid | NO | |
+| 3 | user_id | uuid | NO | |
+| 4 | model_used | text | YES | |
+| 5 | result | text | YES | |
+| 6 | note | text | YES | |
+| 7 | metadata | jsonb | YES | '{}'::jsonb |
+| 8 | created_at | timestamptz | NO | now() |
+| 9 | confirmed_at | timestamptz | NO | now() |
+| 10 | worked | boolean | NO | true |
+
+Reading it: every column the code reads (`id, build_id, user_id, confirmed_at, model_used, worked, note`) exists, so nothing in this proposal needs a change here. `result`, `metadata` and `created_at` are the older shape (`20260825140100` relaxed `result` to nullable and added `confirmed_at` and `worked`). There is no `updated_at` or status column. This proposal does not touch the table.
 
 ### Q5 — proposal summary keys (keys only, never values)
 
@@ -115,7 +132,14 @@ group by status
 order by status;
 ```
 
-Result: **not supplied.** These are counts of rows that carry each key, not proposal values. UI-P43 reads prompts as `user_turn_count` and AI turns as `user_turn_count + assistant_turn_count`; rows parsed before `ProposalSummary` gained the two fields would lack them, and this query shows whether any do.
+Result (supplied by Miles via Lovable, read-only; counts only):
+
+| status | rows | has_user_turn_count | has_assistant_turn_count | user_is_number | assistant_is_number |
+|---|---|---|---|---|---|
+| claimed | 3 | 3 | 3 | 3 | 3 |
+| expired | 2 | 2 | 2 | 2 | 2 |
+
+Five rows carry a proposal and all five have both keys as numbers, so the shape UI-P43 relies on holds on this sample. **Limits:** the query skips rows whose `proposal` is null; the sample is five rows, all `claimed` or `expired`, so no freshly parsed import is covered. Re-run after the first new parsed import if that matters before UI-P43. These are counts of rows that carry each key, not proposal values. UI-P43 reads prompts as `user_turn_count` and AI turns as `user_turn_count + assistant_turn_count`; rows parsed before `ProposalSummary` gained the two fields would lack them, and this query shows whether any do.
 
 ### Q6 — the dashboard query's plan (no new index unless this says so)
 
@@ -128,7 +152,9 @@ order by published_at desc nulls last
 limit 24;
 ```
 
-Result: **not supplied.** Run it before the migration, and once more after UI-P44 is deployed with the real column list. **No index is proposed.** The five new columns are only ever selected, never filtered or ordered by, so `idx_builds_status_published` (from `20260823120000`, unverified live) already serves the query. A GIN index on `models_used` would be warranted only if the dashboard filters "built with model X"; no prompt asks for that.
+Result (supplied by Miles via Lovable, read-only, as a summary of the plan): `Limit` over `Sort` (key `published_at DESC NULLS LAST`, quicksort, 25kB) over `Seq Scan on builds` with filter `status = ANY('{published,gallery}')`; 13 rows read, 12 removed by the filter, 1 returned; `Buffers: shared hit=1`; warm run `Planning Time: 0.151 ms`, `Execution Time: 0.050 ms` (the first run's 15.5 ms planning was cold catalogue warm-up). The table is one 8kB page, so a sequential scan is right. It ran as a role that bypasses row-level security, so the app's plan carries an extra policy filter, same shape. Only 1 of 13 builds is published or gallery.
+
+Run once more after UI-P44 is deployed with the real column list. **No index is proposed.** At 13 rows the planner ignores indexes anyway, and the five new columns are only ever selected, never filtered or ordered by, so `idx_builds_status_published` (from `20260823120000`, unverified live) already serves the query. A GIN index on `models_used` would be warranted only if the dashboard filters "built with model X"; no prompt asks for that.
 
 ## 3. The migration (derived from the repository; not applied)
 
@@ -402,7 +428,7 @@ Rollback is data-losing for the columns it drops; each is only run if the change
 
 ## 7. Questions for Miles before UI-P43
 
-1. **Run Q1–Q6 through Lovable (`L-P42-0`) and paste the results here.** Nothing in this file is live-verified until you do. In particular: is pg_cron installed (Q2), which of `created_via`, `reproduction_count`, `rebuild_count`, `comment_count`, `save_count` exist (Q3), what `build_reproductions` really holds (Q4), and do parsed rows carry both turn-count keys (Q5)?
+1. **Paste the rows for Q1, Q2 and Q3.** Q4, Q5 and Q6 are in. Still open: the live update policy and grants on `import_sessions` (Q1); whether pg_cron is installed, the live bodies of `expire_import_sessions()` and `enforce_import_ceilings()` (Q2); and which of `created_via`, `reproduction_count`, `rebuild_count`, `comment_count`, `save_count` exist on `builds`, with its policies and triggers (Q3). Raw rows, not a summary, please.
 2. **How does the `mcp` edge function reach live?** Migrations go by Lovable message; I found no statement for the function. Is it a Lovable message, a direct deploy, or automatic on merge? If you want the sandbox to be able to read the live project in future, `read_documentation` topic `environment.network` explains the allowed-hosts setting, though the publishable key still cannot read `pg_policies` or `cron.job`.
 3. **Retention.** Parsed sessions now never expire and carry the proposal, with conversation text, forever. Do you want a cap (say, newest N per creator) or an eventual age limit, and should removing a draft null out `proposal`?
 4. **Creator-written figures.** The builds UPDATE policy has no column guard, so a creator can write any value into `session_count`, `prompt_count`, `ai_turn_count`, `models_used` or `making`, as they already can into `reproduction_count`. The dashboard would show what they wrote. Accept that, or compute the figures server-side (a `SECURITY DEFINER` function reading `import_sessions`) in a later prompt?
