@@ -1,10 +1,10 @@
 # UI-P42 — Sessions that stay, a model per session, the making stats
 
-Status: **PROPOSAL, NOT APPLIED. Live evidence is partial: Q4, Q5 and Q6 are supplied; Q1, Q2 and Q3 are not** (§2). Nothing here has touched the live database, the connector or the app. Miles approves, then the migration and the connector diff are applied by whoever has live access.
+Status: **PROPOSAL, NOT APPLIED. Live evidence for Q1–Q6 is supplied (§2), as Lovable's read-only summaries rather than raw rows.** Nothing in the migration or connector diff changed as a result; §3 now says which answers are confirmed live. Nothing here has touched the live database, the connector or the app. Miles approves, then the migration and the connector diff are applied by whoever has live access.
 
 ## 0. What blocks this being a PASS
 
-**Update, after Miles ran the query pack through Lovable.** Q4, Q5 and Q6 came back and are recorded in §2 (as Lovable's summary, not raw rows). For Q1, Q2 and Q3 the reply said only that they ran read-only and changed nothing; no rows were supplied, so those three, which carry the policy, cron, function and `builds` column evidence, are **still open**. The paragraph below describes why this session could not run them itself.
+**Update, after Miles ran the query pack through Lovable.** All six queries are answered in §2. They are Lovable's summaries (tables and pasted function text), not raw result rows, and Q2 elides the explanatory comments inside `enforce_import_ceilings()`. The paragraph below describes why this session could not run them itself, which is why the evidence is second-hand.
 
 The live database could not be reached from this session. The sandbox's network policy answers `403` to `CONNECT zybdotagjwektucfdkri.supabase.co:443` (the project in `supabase/config.toml`, the host in `.env`). That is a policy denial, so it was not worked around. Even with the host allowed, the publishable key could not answer checks 1, 2 and 5: `pg_policies`, `cron.job`, `pg_get_functiondef` and `import_sessions` rows are not readable as `anon`. They have to be run by Miles through Lovable, as every earlier `L-Pnn-n` query was (`docs/reconciliation/HANDOVER.md`). Section 2 is therefore the **query pack**, ready to paste, with an empty result slot under each query. Everything in §3 onward is derived from the repository and a local rehearsal, and is labelled so. Until §2 is filled in, treat §3 as unverified against live.
 
@@ -42,7 +42,11 @@ where table_schema = 'public' and table_name = 'import_sessions'
 order by grantee, privilege_type;
 ```
 
-Result: **not supplied.** Lovable's reply said the query ran read-only and changed nothing, but gave no rows. Please paste them.
+Result (supplied by Miles via Lovable, read-only):
+
+- **Columns:** 22, in this order, identical in name, type, nullability and default to `20260917120000_import_sessions.sql`: `id uuid`, `user_id uuid`, `client`, `source_hint`, `fingerprint`, `content_hash`, `status` (default `'open'`), `chunk_count` (0), `expected_chunks`, `total_chars` (0), `declared_turns`, `declared_chars`, `reader_id`, `detection_reason`, `proposal jsonb`, `secret_findings jsonb`, `error`, `target_build_id`, `build_id`, `created_at`, `updated_at`, `expires_at` (`now() + '7 days'`). There is no `model` column.
+- **Policies:** four, all permissive, all `authenticated`, all owner-scoped on `auth.uid() = user_id`: DELETE (using), INSERT (with check), SELECT (using), UPDATE (using and with check), named as in the migration. No policy for `anon`.
+- **Grants:** `information_schema.role_table_grants` returned zero rows, which Lovable reports is not reliable on this project, so the ACL was read from `pg_class.relacl`: `authenticated` SELECT, INSERT, UPDATE, DELETE (table-wide); `service_role` and `postgres` all; `anon` none; the sandbox tooling roles SELECT and INSERT only.
 
 ### Q2 — the sweep and the ceiling
 
@@ -59,7 +63,34 @@ select tgname, tgenabled from pg_trigger
 where tgrelid = 'public.import_sessions'::regclass and not tgisinternal;
 ```
 
-Result: **not supplied.** Lovable's reply said all four ran read-only, but gave no rows. If `cron.job` is missing or empty, pg_cron is not installed live and the nightly sweep has never run (the migration only warns); say so before UI-P43.
+Result (supplied by Miles via Lovable, read-only):
+
+- **`cron.job`:** `jobid 2`, `expire-import-sessions`, `20 3 * * *`, `SELECT public.expire_import_sessions();`, `active = true`. pg_cron is installed and the sweep is scheduled as the repository says.
+- **`expire_import_sessions()`**, as stored (`RETURNS integer`, `LANGUAGE plpgsql`, `SET search_path TO ''`; `SECURITY INVOKER` is the default and is not printed):
+
+```sql
+CREATE OR REPLACE FUNCTION public.expire_import_sessions()
+ RETURNS integer
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+DECLARE
+  _expired INTEGER;
+BEGIN
+  UPDATE public.import_sessions
+  SET status     = 'expired',
+      updated_at = now()
+  WHERE expires_at < now()
+    AND status IN ('open', 'assembling', 'parsed');
+
+  GET DIAGNOSTICS _expired = ROW_COUNT;
+
+  RETURN _expired;
+END
+$function$
+```
+
+- **`enforce_import_ceilings()`:** the live body matches `20260921120000_import_ceilings.sql` in every statement shown (the paste omitted only its explanatory comments): 20 per UTC day counting every row created since midnight, 5 open counting `status IN ('open', 'assembling')` only, advisory lock on `(table, user)`, `ERRCODE 'BGCAP'`. Trigger `enforce_import_ceilings`, `tgenabled = O` (firing normally). The trigger's BEFORE INSERT timing was not read from `pg_trigger.tgtype`; the repository migration creates it `BEFORE INSERT`.
 
 ### Q3 — `builds`: columns, policies, triggers
 
@@ -87,7 +118,22 @@ select tgname, tgenabled, pg_get_triggerdef(oid) from pg_trigger
 where tgrelid = 'public.builds'::regclass and not tgisinternal order by tgname;
 ```
 
-Result: **not supplied.** The text sent back under this number was the Q5 summary again, so Q3 has no result. UI-P44 selects only the columns that report `exists_live = true`. `comment_count` and `save_count` come only from `20261001180000_rc_build_social.sql`, whose tables return 404 live, so they are likely missing.
+Result (supplied by Miles via Lovable, read-only):
+
+- **Columns:** 37, from `id` to `solves_node_id`. The five new names are all absent. Existence of the others:
+
+| column | exists_live |
+|---|---|
+| session_count, prompt_count, ai_turn_count, models_used, making | **false** (as required) |
+| created_via | true |
+| reproduction_count | true (`integer NOT NULL DEFAULT 0`) |
+| rebuild_count | true (`integer NOT NULL DEFAULT 0`) |
+| comment_count | **false** |
+| save_count | **false** |
+
+  So UI-P44 may select `created_via`, `reproduction_count` and `rebuild_count`, and must not select `comment_count` or `save_count`. `like_count` and `is_hidden` are not among the 37 either, so `20261001180000_rc_build_social.sql` and `20261001190000_rc_reports.sql` are not applied live.
+- **Policies** (all permissive, roles `{public}`): DELETE and UPDATE `creator_id = (SELECT auth.uid()) OR is_admin((SELECT auth.uid()))`; INSERT with check `creator_id = (SELECT auth.uid())`; SELECT `status <> 'draft' OR creator_id = ... OR is_admin(...)`. The UPDATE policy has **no `WITH CHECK` and no column list**.
+- **Triggers** (5, all `O`): `trg_builds_rebuild_count_delete`, `trg_builds_rebuild_count_status` (AFTER UPDATE OF status), `trg_builds_updated_at` (BEFORE UPDATE, every update), `trg_rc_xp_build_reconfirmed` (AFTER UPDATE OF last_confirmed_at), `trg_rc_xp_build_visible` (AFTER INSERT OR UPDATE OF status). None mentions the new columns.
 
 ### Q4 — `build_reproductions`: columns
 
@@ -160,14 +206,14 @@ Run once more after UI-P44 is deployed with the real column list. **No index is 
 
 File name when approved: `supabase/migrations/20261001280000_sessions_and_making.sql` (newest existing file is `20261001270000_ui_retire_frame.sql`). **It goes in this file only; it is not in `supabase/migrations/` yet.**
 
-Repository-derived answers to the questions the prompt asked (confirm each against §2):
+Answers to the questions the prompt asked, each now checked against §2:
 
-- **Can the owner set `model`?** Yes, by the migration files: `Import sessions are updated by their owner` is `FOR UPDATE TO authenticated USING/WITH CHECK ((select auth.uid()) = user_id)` with no column list, and `GRANT SELECT, INSERT, UPDATE, DELETE` is table-wide, so a new column is covered. If Q1 shows no update policy live, the migration recreates it in the same shape (guarded, so an existing policy is never touched). The `GRANT UPDATE (model)` is redundant under a table-wide grant and harmless; it is the narrowest fix if the live grant is column-scoped.
-- **Do kept sessions block new ones?** No, by `20260921120000_import_ceilings.sql`: `enforce_import_ceilings` counts `status IN ('open','assembling')` for the open ceiling (5). It also counts every row created today for the daily ceiling (20), which kept sessions do not change. Q2 confirms the live function.
-- **Can the creator write the new `builds` columns?** Yes: `Creators and admins update builds` is `FOR UPDATE USING (creator_id = (select auth.uid()) OR is_admin(...))`, no column guard, no `WITH CHECK`. See question 4 on what that implies.
-- **Side effect:** `trg_builds_updated_at` is a `BEFORE UPDATE` trigger on `builds`, so `refreshMakingStats` bumps `builds.updated_at`. The `AFTER UPDATE OF status` / `OF last_confirmed_at` triggers (rebuild, notifications, XP, badges) do not fire for these columns.
+- **Can the owner set `model`?** **Yes, confirmed live (Q1).** The live UPDATE policy and a table-wide `authenticated` UPDATE grant match the migration files: `Import sessions are updated by their owner` is `FOR UPDATE TO authenticated USING/WITH CHECK ((select auth.uid()) = user_id)` with no column list, and `GRANT SELECT, INSERT, UPDATE, DELETE` is table-wide, so a new column is covered. Because the live policy exists, the migration's guarded policy block is a no-op here (it is kept for the other world). With the table-wide grant, `GRANT UPDATE (model)` is redundant and harmless. No policy change is needed.
+- **Do kept sessions block new ones?** **No, confirmed live (Q2):** the live `enforce_import_ceilings()` matches `20260921120000_import_ceilings.sql`: `enforce_import_ceilings` counts `status IN ('open','assembling')` for the open ceiling (5). It also counts every row created today for the daily ceiling (20), which kept sessions do not change. 
+- **Can the creator write the new `builds` columns?** **Yes, confirmed live (Q3):** `Creators and admins update builds` is `FOR UPDATE USING (creator_id = (select auth.uid()) OR is_admin(...))`, no column guard, no `WITH CHECK`. See question 4 on what that implies.
+- **Side effect, confirmed live (Q3):** `trg_builds_updated_at` is a `BEFORE UPDATE` trigger on `builds`, so `refreshMakingStats` bumps `builds.updated_at`. The `AFTER UPDATE OF status` / `OF last_confirmed_at` triggers (live: rebuild count, XP) do not fire for these columns.
 
-**Rehearsal.** Run on a throwaway local Postgres 16 with the repository's own `import_sessions`, `import_ceilings` and `import_expiry_cron` migrations underneath and a reduced `builds`: applies twice with only "already exists, skipping" notices; the five columns exist with the right types and are NOT NULL; the sweep function no longer mentions `parsed` and `authenticated` cannot execute it; with an overdue `open`, `assembling` and `parsed` row, the sweep flips two and leaves `parsed`; a 65-character `model` and a non-object `making` are both refused. This is a stand-in, not the live schema.
+**Rehearsal.** Run on a throwaway local Postgres 16 with the repository's own `import_sessions`, `import_ceilings` and `import_expiry_cron` migrations underneath (Q1 and Q2 show the live objects match them) and a reduced `builds`: applies twice with only "already exists, skipping" notices; the five columns exist with the right types and are NOT NULL; the sweep function no longer mentions `parsed` and `authenticated` cannot execute it; with an overdue `open`, `assembling` and `parsed` row, the sweep flips two and leaves `parsed`; a 65-character `model` and a non-object `making` are both refused. This is a stand-in, not the live schema; `builds` was reduced, so the live trigger set (Q3) was not exercised.
 
 ```sql
 -- =============================================================================
@@ -422,13 +468,13 @@ Rollback is data-losing for the columns it drops; each is only run if the change
 - **Sessions already `expired`** stay expired. The new sweep does not revive anything, including parsed sessions the old sweep expired. Re-sending the same conversation creates a new session.
 - **`import_sessions.model`** is NULL for every existing session.
 - **Parsed sessions inside their seven days** stay `parsed` after the sweep changes, and are no longer swept at all.
-- **Parsed sessions already past `expires_at` but not yet swept** also stay `parsed` from now on; the first run of the new function leaves them alone.
+- **Parsed sessions already past `expires_at` but not yet swept** (the live job runs nightly at 03:20 UTC, jobid 2, active) also stay `parsed` from now on; the first run of the new function leaves them alone.
 - **`builds`**: every row gets `0`, `0`, `0`, `{}` and `{}`. Nothing is backfilled; UI-P43's `refreshMakingStats` fills a build when its creator next opens it. The adds are metadata-only (constant defaults), so no table rewrite.
 - **Side effects of keeping parsed sessions** (not changes in this file): a kept parsed session still occupies its unique `(user_id, fingerprint)` and `(user_id, content_hash)` slots, so re-sending the same conversation resolves to it (or `duplicate`) until the creator removes it, which is the intended Drafts behaviour; and its `proposal` JSONB, which holds conversation text, is now retained indefinitely.
 
 ## 7. Questions for Miles before UI-P43
 
-1. **Paste the rows for Q1, Q2 and Q3.** Q4, Q5 and Q6 are in. Still open: the live update policy and grants on `import_sessions` (Q1); whether pg_cron is installed, the live bodies of `expire_import_sessions()` and `enforce_import_ceilings()` (Q2); and which of `created_via`, `reproduction_count`, `rebuild_count`, `comment_count`, `save_count` exist on `builds`, with its policies and triggers (Q3). Raw rows, not a summary, please.
+1. **Answered:** Q1–Q6 are in §2. Nothing left to paste, unless you want the raw rows kept beside Lovable's summaries.
 2. **How does the `mcp` edge function reach live?** Migrations go by Lovable message; I found no statement for the function. Is it a Lovable message, a direct deploy, or automatic on merge? If you want the sandbox to be able to read the live project in future, `read_documentation` topic `environment.network` explains the allowed-hosts setting, though the publishable key still cannot read `pg_policies` or `cron.job`.
 3. **Retention.** Parsed sessions now never expire and carry the proposal, with conversation text, forever. Do you want a cap (say, newest N per creator) or an eventual age limit, and should removing a draft null out `proposal`?
 4. **Creator-written figures.** The builds UPDATE policy has no column guard, so a creator can write any value into `session_count`, `prompt_count`, `ai_turn_count`, `models_used` or `making`, as they already can into `reproduction_count`. The dashboard would show what they wrote. Accept that, or compute the figures server-side (a `SECURITY DEFINER` function reading `import_sessions`) in a later prompt?
