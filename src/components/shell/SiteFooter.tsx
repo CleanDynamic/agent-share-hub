@@ -9,6 +9,7 @@
 import { memo, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
@@ -22,13 +23,15 @@ import { useMinWidth } from "./useMinWidth";
 export interface SiteFooterViewProps {
   signedIn: boolean;
   onSignOut: () => void;
+  /** "Connect a tool": opens the connector guide. */
+  onConnect: () => void;
   /** Defaults to the live `ThemeSegmented` (32, 11px). The compare page passes a static one. */
   themeControl?: ReactNode;
 }
 
 const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, color: t.text2 };
 
-export function SiteFooterView({ signedIn, onSignOut, themeControl }: SiteFooterViewProps) {
+export function SiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
   const wide = useMinWidth(1328);
   /* Below 1100 the row cannot hold lockup, five links, the theme control and the
      credit on one line, so it wraps and the footer grows past its 88px. */
@@ -59,7 +62,13 @@ export function SiteFooterView({ signedIn, onSignOut, themeControl }: SiteFooter
           <FrameLink to="/about" style={link}>About</FrameLink>
           <FrameLink to="/api-docs" style={link}>API docs</FrameLink>
           <FrameLink to="/bounties/solvers" style={link}>Solvers</FrameLink>
-          <FrameLink to="/connect" style={link}>Connect a tool</FrameLink>
+          <button
+            type="button"
+            onClick={onConnect}
+            style={{ ...link, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
+          >
+            Connect a tool
+          </button>
           {signedIn ? (
             <button
               type="button"
@@ -84,9 +93,11 @@ export function SiteFooterView({ signedIn, onSignOut, themeControl }: SiteFooter
 function SiteFooterContainer() {
   const { isLoggedIn, signOut } = useAuth();
   const navigate = useNavigate();
+  const connector = useConnectorDialog();
   return (
     <SiteFooterView
       signedIn={isLoggedIn}
+      onConnect={connector.open}
       onSignOut={async () => {
         await signOut();
         navigate("/");

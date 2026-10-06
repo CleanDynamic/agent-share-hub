@@ -77,16 +77,16 @@ describe("Breadcrumb", () => {
 });
 
 describe("SiteFooterView", () => {
-  const footer = (signedIn: boolean, onSignOut = vi.fn()) =>
+  const footer = (signedIn: boolean, onSignOut = vi.fn(), onConnect = vi.fn()) =>
     render(
       <MemoryRouter>
         <ThemeProvider>
-          <SiteFooterView signedIn={signedIn} onSignOut={onSignOut} />
+          <SiteFooterView signedIn={signedIn} onSignOut={onSignOut} onConnect={onConnect} />
         </ThemeProvider>
       </MemoryRouter>,
     );
 
-  it("signed out: the five links, Sign in last", () => {
+  it("signed out: the four links, Sign in last", () => {
     footer(false);
     const links = screen.getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
     expect(links).toEqual([
@@ -94,9 +94,15 @@ describe("SiteFooterView", () => {
       ["About", "/about"],
       ["API docs", "/api-docs"],
       ["Solvers", "/bounties/solvers"],
-      ["Connect a tool", "/connect"],
       ["Sign in", "/login"],
     ]);
+  });
+
+  it("Connect a tool is a button that opens the guide", () => {
+    const onConnect = vi.fn();
+    footer(false, vi.fn(), onConnect);
+    fireEvent.click(screen.getByRole("button", { name: "Connect a tool" }));
+    expect(onConnect).toHaveBeenCalled();
   });
 
   it("signed in: Sign out is a button", () => {
