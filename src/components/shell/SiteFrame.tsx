@@ -38,6 +38,7 @@ import { FIGTREE } from "@/lib/theme/type";
 import { Breadcrumb } from "./Breadcrumb";
 import { Dock } from "./Dock";
 import { MobileHeader } from "./MobileHeader";
+import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { CrumbTitleProvider } from "./useBreadcrumb";
@@ -213,6 +214,7 @@ export interface SiteFrameProps {
 export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
   return (
     <CrumbTitleProvider>
+      <ConnectorDialogProvider>
       <SiteFrameView
         variant={variant}
         header={<SiteHeader />}
@@ -223,6 +225,7 @@ export function SiteFrame({ variant = "site", children }: SiteFrameProps) {
       >
         {children}
       </SiteFrameView>
+      </ConnectorDialogProvider>
     </CrumbTitleProvider>
   );
 }

@@ -17,6 +17,7 @@
      /bounties/solvers          Home / Bounties / Solvers
      /profile/:handle           Home / {display name}
      /notifications             Home / Activity
+     /connect                   Home / Connect a tool
      /library                   Home / Library                                   */
 
 import { matchPath } from "react-router-dom";
@@ -59,6 +60,7 @@ export function trailFor(pathname: string, title: string | null): Crumb[] {
 
   if (here(pathname, "/profile/:handle") || here(pathname, "/profile")) return [HOME, { label: title }];
   if (here(pathname, "/notifications")) return [HOME, { label: "Activity" }];
+  if (here(pathname, "/connect")) return [HOME, { label: "Connect a tool" }];
   if (here(pathname, "/library")) return [HOME, { label: "Library" }];
 
   return [{ label: "Home" }];

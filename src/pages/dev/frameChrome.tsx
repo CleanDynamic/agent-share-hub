@@ -81,6 +81,7 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false,
       <SiteFooterView
         signedIn
         onSignOut={noop}
+        onConnect={noop}
         themeControl={<ThemeSegmented size={32} fontSize={11} value={theme} onChange={noop} />}
       />
     ),
