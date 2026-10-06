@@ -21,7 +21,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
-import { MODEL_VERSIONS, normaliseModel, type ModelVersion } from "@/lib/models/registry";
+import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
+import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import { normaliseQuery, searchBuildIds } from "./search";
 import {
@@ -1102,6 +1103,8 @@ interface FeedQuery extends PromiseLike<{ data: unknown; error: unknown; count?:
   or(filters: string): FeedQuery;
   eq(column: string, value: unknown): FeedQuery;
   ilike(column: string, pattern: string): FeedQuery;
+  gte(column: string, value: string | number): FeedQuery;
+  contains(column: string, values: readonly unknown[]): FeedQuery;
   overlaps(column: string, values: readonly unknown[]): FeedQuery;
   order(column: string, options: { ascending: boolean; nullsFirst?: boolean }): FeedQuery;
   limit(count: number): FeedQuery;
@@ -1200,18 +1203,20 @@ function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
 
 const time = (iso: string | null): number => (iso ? Date.parse(iso) || 0 : 0);
 
-/** Creator id → handle, one profiles lookup. */
+/** Creator id → handle: one profiles lookup per 100 ids (a feed page is one). */
 async function creatorHandles(creatorIds: string[]): Promise<Map<string, string | null>> {
   const ids = [...new Set(creatorIds)];
   const out = new Map<string, string | null>();
-  if (ids.length === 0) return out;
-  const { data, error } = await feedTable("profiles")
-    .select("id, username")
-    .in("id", ids)
-    .limit(ids.length);
-  if (error) throw buildLayerError("listGalleryFeed", error);
-  for (const row of (data ?? []) as { id: string; username: string | null }[]) {
-    out.set(row.id, row.username ?? null);
+  for (let i = 0; i < ids.length; i += FEED_ID_CHUNK) {
+    const chunk = ids.slice(i, i + FEED_ID_CHUNK);
+    const { data, error } = await feedTable("profiles")
+      .select("id, username")
+      .in("id", chunk)
+      .limit(chunk.length);
+    if (error) throw buildLayerError("listGalleryFeed", error);
+    for (const row of (data ?? []) as { id: string; username: string | null }[]) {
+      out.set(row.id, row.username ?? null);
+    }
   }
   return out;
 }
@@ -1407,4 +1412,339 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
     hasMoreNotYet: notYet.length > end,
     counts,
   };
+}
+
+// =============================================================================
+// The Gallery dashboard (UI-P44c)
+// =============================================================================
+
+/**
+ * The builds columns the dashboard selects: one row per build, how it was made
+ * and what people did with it.
+ *
+ * ONLY COLUMNS UI-P42 FOUND ON LIVE (docs/proposals/UI-P42-sessions-and-making.md
+ * §2, Q3). A column missing live fails the whole query, so it is left out and
+ * counts as 0: `comment_count` and `save_count` are NOT live, so they are not
+ * here and engagement.comments and engagement.saves are 0 until they are.
+ * `reproduction_count` and `rebuild_count` are live. session_count,
+ * prompt_count, ai_turn_count, models_used and making are the five columns the
+ * UI-P42 migration adds (supabase/migrations/20261001280000_sessions_and_making.sql,
+ * UI-P43a); the dashboard needs them, so that migration must be applied.
+ */
+export const DASHBOARD_BUILD_COLUMNS =
+  "id, creator_id, slug, title, outcome, shape, status, made_for, completeness, " +
+  "reproduction_count, rebuild_count, last_confirmed_at, last_confirmed_model, published_at, " +
+  "session_count, prompt_count, ai_turn_count, models_used, making";
+
+/**
+ * At most this many gallery builds. THE CAP EXISTS SO SORTING CAN HAPPEN IN THE
+ * APP: engagement.total is a sum of figures from four places, so the dashboard
+ * sorts it over these rows without a view. Past this a view replaces it.
+ */
+export const DASHBOARD_ROW_LIMIT = 200;
+
+export interface DashboardSession {
+  client: string | null;
+  model: string | null;
+  prompts: number;
+  turns: number;
+}
+
+export interface DashboardEngagement {
+  runs: number;
+  rebuilds: number;
+  comments: number;
+  saves: number;
+  total: number;
+}
+
+export interface DashboardRow {
+  id: string;
+  slug: string;
+  title: string;
+  /** handle is "" when the profile has no username. */
+  creator: { id: string; handle: string };
+  outcome: string | null;
+  madeFor: string[];
+  modelsUsed: string[];
+  sessionCount: number;
+  promptCount: number;
+  aiTurnCount: number;
+  making: { sessions: DashboardSession[] };
+  // for the plaque and the gallery rule:
+  reproduction_count: number;
+  last_confirmed_at: string | null;
+  last_confirmed_model: string | null;
+  published_at: string | null;
+  status: string;
+  shape: string;
+  completeness: number;
+  engagement: DashboardEngagement;
+  /** at is "" only for a build with no published_at and nothing else on record. */
+  lastActivity: { at: string; what: string };
+  /** 14 weekly values, oldest first. */
+  series: number[];
+  proof: ModelProof[];
+}
+
+export interface GalleryDashboardParams {
+  /** A ModelVersion id; matched on the version's NAME in models_used. */
+  model?: string;
+  lab?: Lab;
+  audience?: string;
+  activeWithinDays?: 7 | 30 | 90;
+  report?: "month" | "multi";
+  q?: string;
+}
+
+interface DashboardBuildRow {
+  id: string;
+  creator_id: string;
+  slug: string;
+  title: string;
+  outcome: string | null;
+  shape: string;
+  status: string;
+  made_for: string[] | null;
+  completeness: number | null;
+  reproduction_count: number | null;
+  rebuild_count: number | null;
+  last_confirmed_at: string | null;
+  last_confirmed_model: string | null;
+  published_at: string | null;
+  session_count: number | null;
+  prompt_count: number | null;
+  ai_turn_count: number | null;
+  models_used: string[] | null;
+  making: unknown;
+}
+
+const WEEK_MS = 7 * 86_400_000;
+const SERIES_ROWS_PER_CHUNK = 5000;
+const REBUILD_ROWS_PER_CHUNK = 1000;
+export const ENGAGEMENT_WEEKS = 14;
+
+const count = (value: number | null | undefined): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
+
+/** builds.making is jsonb the maker can write: keep only what has the shape. */
+function dashboardSessions(making: unknown): DashboardSession[] {
+  const list = (making as { sessions?: unknown } | null)?.sessions;
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === "object")
+    .map((entry) => ({
+      client: typeof entry.client === "string" ? entry.client : null,
+      model: typeof entry.model === "string" ? entry.model : null,
+      prompts: count(entry.prompts as number),
+      turns: count(entry.turns as number),
+    }));
+}
+
+/** The week bucket of a timestamp, 0 = oldest of `weeks`, or -1 outside the window. */
+function weekBucket(iso: string | null, thisWeek: number, weeks: number): number {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (Number.isNaN(at)) return -1;
+  const ago = Math.floor((thisWeek - weekStartUtc(new Date(at)).getTime()) / WEEK_MS);
+  const index = weeks - 1 - ago;
+  return index >= 0 && index < weeks ? index : -1;
+}
+
+/**
+ * Per build, a count per ISO week (Monday to Sunday, UTC), oldest first, the
+ * last being the week that holds `now`: reproductions of any outcome (by
+ * confirmed_at) plus published rebuilds (by published_at).
+ *
+ * COMMENTS AND SAVES ARE LEFT OUT until their tables exist on live (UI-P42:
+ * comment_count and save_count are not there); add them here when they are.
+ * Every id asked for is a key; a quiet build is all zeros.
+ */
+export async function getEngagementSeries(
+  buildIds: string[],
+  weeks: number = ENGAGEMENT_WEEKS,
+  now: Date = new Date()
+): Promise<Record<string, number[]>> {
+  const span = Math.max(1, Math.min(Math.floor(weeks) || ENGAGEMENT_WEEKS, 52));
+  const ids = [...new Set(buildIds)];
+  const out: Record<string, number[]> = {};
+  for (const id of ids) out[id] = new Array<number>(span).fill(0);
+
+  const thisWeek = weekStartUtc(now).getTime();
+  const since = new Date(thisWeek - (span - 1) * WEEK_MS).toISOString();
+
+  for (let i = 0; i < ids.length; i += FEED_ID_CHUNK) {
+    const chunk = ids.slice(i, i + FEED_ID_CHUNK);
+
+    const reproductions = await feedTable("build_reproductions")
+      .select("build_id, confirmed_at")
+      .in("build_id", chunk)
+      .gte("confirmed_at", since)
+      .limit(SERIES_ROWS_PER_CHUNK);
+    if (reproductions.error) throw buildLayerError("getEngagementSeries", reproductions.error);
+    for (const row of (reproductions.data ?? []) as { build_id: string; confirmed_at: string | null }[]) {
+      const bucket = weekBucket(row.confirmed_at, thisWeek, span);
+      if (bucket >= 0 && out[row.build_id]) out[row.build_id][bucket] += 1;
+    }
+
+    const rebuilds = await feedTable("builds")
+      .select("parent_build_id, published_at")
+      .in("parent_build_id", chunk)
+      .in("status", ["published", "gallery"])
+      .gte("published_at", since)
+      .limit(SERIES_ROWS_PER_CHUNK);
+    if (rebuilds.error) throw buildLayerError("getEngagementSeries", rebuilds.error);
+    for (const row of (rebuilds.data ?? []) as { parent_build_id: string; published_at: string | null }[]) {
+      const bucket = weekBucket(row.published_at, thisWeek, span);
+      if (bucket >= 0 && out[row.parent_build_id]) out[row.parent_build_id][bucket] += 1;
+    }
+  }
+  return out;
+}
+
+/** The newest published rebuild of each build, with who made it. */
+async function latestRebuilds(
+  buildIds: string[]
+): Promise<Map<string, { creatorId: string; at: string }>> {
+  const out = new Map<string, { creatorId: string; at: string }>();
+  for (let i = 0; i < buildIds.length; i += FEED_ID_CHUNK) {
+    const chunk = buildIds.slice(i, i + FEED_ID_CHUNK);
+    const { data, error } = await feedTable("builds")
+      .select("parent_build_id, creator_id, published_at")
+      .in("parent_build_id", chunk)
+      .in("status", ["published", "gallery"])
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(REBUILD_ROWS_PER_CHUNK);
+    if (error) throw buildLayerError("listGalleryDashboard", error);
+    for (const row of (data ?? []) as { parent_build_id: string; creator_id: string; published_at: string | null }[]) {
+      // Newest first, so the first row seen for a parent is its latest.
+      if (row.published_at && !out.has(row.parent_build_id)) {
+        out.set(row.parent_build_id, { creatorId: row.creator_id, at: row.published_at });
+      }
+    }
+  }
+  return out;
+}
+
+/** The newest of the latest reproduction, the latest rebuild and publication. */
+function newestActivity(
+  proof: ModelProof[],
+  rebuild: { handle: string; at: string } | null,
+  publishedAt: string | null
+): { at: string; what: string } {
+  // Reproductions that worked: a failed attempt is not "reproduced on".
+  const reproduced = proof
+    .filter((entry) => entry.lastConfirmedAt)
+    .sort((a, b) => time(b.lastConfirmedAt) - time(a.lastConfirmedAt))[0];
+
+  // Listed in tie-break order: a reproduction beats a rebuild beats publication.
+  const events: { at: string; what: string }[] = [];
+  if (reproduced?.lastConfirmedAt) {
+    events.push({ at: reproduced.lastConfirmedAt, what: `Reproduced on ${reproduced.modelName}` });
+  }
+  if (rebuild) events.push({ at: rebuild.at, what: `Rebuilt by @${rebuild.handle}` });
+  if (publishedAt) events.push({ at: publishedAt, what: "Published" });
+
+  return events.reduce((best, event) => (time(event.at) > time(best.at) ? event : best), events[0] ?? { at: "", what: "Published" });
+}
+
+/**
+ * Up to DASHBOARD_ROW_LIMIT gallery builds, one row each, newest activity first.
+ *
+ * The database narrows by the cheap filters (audience, model name, lab,
+ * multi-session) BEFORE the cap, so the 200 are the 200 that match; the ones
+ * that need computed figures (activeWithinDays, report "month", q) are applied
+ * here, over the rows. q therefore searches within those rows.
+ */
+export async function listGalleryDashboard(
+  params: GalleryDashboardParams = {}
+): Promise<DashboardRow[]> {
+  const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
+  const labNames = params.lab ? MODEL_VERSIONS.filter((v) => v.lab === params.lab).map((v) => v.name) : [];
+  const audience = params.audience?.trim() || undefined;
+
+  let query = feedBase(DASHBOARD_BUILD_COLUMNS, audience, null);
+  if (version) query = query.contains("models_used", [version.name]);
+  if (params.lab) query = query.overlaps("models_used", labNames);
+  if (params.report === "multi") query = query.gte("session_count", 3);
+
+  const { data, error } = await query
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: true })
+    .limit(DASHBOARD_ROW_LIMIT);
+  if (error) throw buildLayerError("listGalleryDashboard", error);
+
+  const builds = (data ?? []) as unknown as DashboardBuildRow[];
+  const ids = builds.map((row) => row.id);
+
+  const rebuilt = ids.length
+    ? await latestRebuilds(builds.filter((row) => count(row.rebuild_count) > 0).map((row) => row.id))
+    : new Map<string, { creatorId: string; at: string }>();
+
+  const [handles, proofs, series] = await Promise.all([
+    creatorHandles([...builds.map((row) => row.creator_id), ...[...rebuilt.values()].map((r) => r.creatorId)]),
+    getReproductionsByModel(ids),
+    getEngagementSeries(ids, ENGAGEMENT_WEEKS),
+  ]);
+
+  const rows: DashboardRow[] = builds.map((row) => {
+    const proof = proofs[row.id] ?? [];
+    const rebuild = rebuilt.get(row.id);
+    const rebuildHandle = rebuild ? handles.get(rebuild.creatorId) : null;
+    const runs = count(row.reproduction_count);
+    const rebuilds = count(row.rebuild_count);
+    // comment_count and save_count are not on live (see DASHBOARD_BUILD_COLUMNS).
+    const engagement = { runs, rebuilds, comments: 0, saves: 0, total: runs + rebuilds };
+
+    return {
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      creator: { id: row.creator_id, handle: handles.get(row.creator_id) ?? "" },
+      outcome: row.outcome ?? null,
+      madeFor: row.made_for ?? [],
+      modelsUsed: row.models_used ?? [],
+      sessionCount: count(row.session_count),
+      promptCount: count(row.prompt_count),
+      aiTurnCount: count(row.ai_turn_count),
+      making: { sessions: dashboardSessions(row.making) },
+      reproduction_count: runs,
+      last_confirmed_at: row.last_confirmed_at ?? null,
+      last_confirmed_model: row.last_confirmed_model ?? null,
+      published_at: row.published_at ?? null,
+      status: row.status,
+      shape: row.shape,
+      completeness: row.completeness ?? 0,
+      engagement,
+      lastActivity: newestActivity(
+        proof,
+        rebuild && rebuildHandle ? { handle: rebuildHandle, at: rebuild.at } : null,
+        row.published_at ?? null
+      ),
+      series: series[row.id] ?? new Array<number>(ENGAGEMENT_WEEKS).fill(0),
+      proof,
+    };
+  });
+
+  // The filters the database could not apply, and a confirmation of the ones it did.
+  const windows = [params.activeWithinDays, params.report === "month" ? 30 : undefined].filter(
+    (days): days is number => typeof days === "number"
+  );
+  const within = windows.length ? Math.min(...windows) : null;
+  const cutoff = within === null ? 0 : Date.now() - within * 86_400_000;
+  const needle = normaliseQuery(params.q)?.toLowerCase() ?? null;
+
+  return rows
+    .filter((row) => !version || row.modelsUsed.some((name) => normaliseModel(name)?.id === version.id))
+    .filter((row) => !params.lab || row.modelsUsed.some((name) => normaliseModel(name)?.lab === params.lab))
+    .filter((row) => !audience || row.madeFor.includes(audience))
+    .filter((row) => params.report !== "multi" || row.sessionCount >= 3)
+    .filter((row) => within === null || time(row.lastActivity.at) >= cutoff)
+    .filter(
+      (row) =>
+        needle === null ||
+        [row.title, row.creator.handle, ...row.madeFor, ...row.modelsUsed].some((text) =>
+          text.toLowerCase().includes(needle)
+        )
+    )
+    .sort((a, b) => time(b.lastActivity.at) - time(a.lastActivity.at) || a.id.localeCompare(b.id));
 }
