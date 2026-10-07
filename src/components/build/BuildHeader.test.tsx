@@ -138,7 +138,8 @@ describe("the header block", () => {
     const outcome = Array.from(doc.querySelectorAll("p")).find((p) =>
       p.textContent?.startsWith("Sorts a morning")
     );
-    expect(styleOf(outcome)).toContain("font-size:17px");
+    // UI-P52 density pass: bodyLarge is 16px (it was 17).
+    expect(styleOf(outcome)).toContain("font-size:16px");
     expect(styleOf(outcome)).toContain("max-width:68ch");
     expect(styleOf(outcome)).toContain("color:var(--text2)");
   });

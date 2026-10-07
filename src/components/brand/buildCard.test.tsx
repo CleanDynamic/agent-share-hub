@@ -79,11 +79,13 @@ describe("BuildCard", () => {
     expect(COVER_HEIGHT).toEqual({ catalogue: 112, wall: 92, works: 86, mobile: 96 });
   });
 
-  it("sets the title in Sentient at 19 (18 or 17 on mobile), one line with an ellipsis", () => {
+  it("sets the title drawn at 19 (18 or 17 on mobile) on one line with an ellipsis", () => {
+    // UI-P52 density pass: display() renders the drawn size through the table
+    // (19 → 16, 17 → 16), and under 20px a display role is Figtree 600.
     const html = markup();
-    expect(html).toContain("font-size:19px");
+    expect(html).toContain("font-size:16px;font-weight:600");
     expect(html).toContain("white-space:nowrap;overflow:hidden;text-overflow:ellipsis");
-    expect(markup({ titleSize: 17 })).toContain("font-size:17px");
+    expect(markup({ titleSize: 17 })).toContain("font-size:16px");
   });
 
   it("pads the body 0 5px 5px at gap 6, and chips wrap at gap 4", () => {

@@ -100,7 +100,8 @@ describe("it is a quiet line, not a badge", () => {
     const line = screen.getByTestId("created-via");
     expect(line.tagName).toBe("P");
     expect(line).toHaveStyle({ color: "var(--text2)" });
-    expect(line.style.fontSize).toBe("16px");
+    // UI-P52 density pass: the body role is 15px (it was 16).
+    expect(line.style.fontSize).toBe("15px");
   });
 
   /**

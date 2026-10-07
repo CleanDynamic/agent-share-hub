@@ -4,6 +4,7 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
+  CONTROL_CLASS,
   menuItemStyle,
   menuLabelStyle,
   menuPanelStyle,
@@ -53,7 +54,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
     ref={ref}
     style={{ ...menuItemStyle(), ...style }}
     className={cn(
-      "flex cursor-default select-none items-center px-2 py-1.5 text-sm outline-none data-[state=open]:bg-[color:var(--recess)] data-[state=open]:text-[color:var(--text)]",
+      "flex cursor-default select-none items-center px-2 text-sm outline-none data-[state=open]:bg-[color:var(--recess)] data-[state=open]:text-[color:var(--text)]",
+      CONTROL_CLASS.menuItem,
       MENU_ITEM_CLASS,
       inset && "pl-8",
       className,
@@ -112,7 +114,8 @@ const DropdownMenuItem = React.forwardRef<
     disabled={disabled}
     style={{ ...menuItemStyle({ disabled }), ...style }}
     className={cn(
-      "relative flex cursor-default select-none items-center px-2 py-1.5 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center px-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      CONTROL_CLASS.menuItem,
       MENU_ITEM_CLASS,
       inset && "pl-8",
       className,
@@ -131,7 +134,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     disabled={disabled}
     style={{ ...menuItemStyle({ disabled }), ...style }}
     className={cn(
-      "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      CONTROL_CLASS.menuItem,
       MENU_ITEM_CLASS,
       className,
     )}
@@ -157,7 +161,8 @@ const DropdownMenuRadioItem = React.forwardRef<
     disabled={disabled}
     style={{ ...menuItemStyle({ disabled }), ...style }}
     className={cn(
-      "relative flex cursor-default select-none items-center py-1.5 pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center pl-8 pr-2 text-sm outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      CONTROL_CLASS.menuItem,
       MENU_ITEM_CLASS,
       className,
     )}

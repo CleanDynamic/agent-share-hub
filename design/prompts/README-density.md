@@ -16,3 +16,12 @@ The "tighter, organised like the example" pass from the design canvas, as rules.
 - **Only whole, positive pixel values are mapped.** Fractional values (`1.5px`, `0.5px`), negative values (`-8px`), percentages, `em`, unitless line-heights and `auto` stay as they are.
 - **A value not in the table** gets the table's rule applied to its old value, and the report lists it.
 - **Scope.** The pass changes `font-size`, `line-height`, `padding`, `margin`, `gap`, `height`, `min-height` and the size of square controls on existing elements. It does not change `position`, `display`, `overflow`, `z-index`, grid tracks (unless a step gives new tracks), widths of layout columns, radii, colours, tokens, copy, or the order of anything.
+
+## In code (UI-P53)
+
+- `src/lib/theme/density.ts` is this table for the app — `denseFont`, `denseSpace`, `denseHeight` (with `touch` for the phone rule) and `densePx` for a CSS value — held to the script value for value.
+- **`display(px)` and `mono(px)` take the size a board drew before UI-P52** and render it through the table, keeping that size's tracking and leading: `display(44)` is 33px at −0.035em, as the tightened boards draw it. Pass the old size; passing the tightened one tightens it twice.
+- The static roles in `type.ts` are already tightened: body 15, body large 16, label 12, data 12–13, section heads 22–36, the hero 33–58, the card title 19.
+- Sentient is never set under 20px. A heading the table takes under 20 (anything drawn at 22 or less) is Figtree 600 at the same size; the lockup wordmark is the one exception and stays Sentient down to 15.
+- `SPACE_COMPACT` (6 / 12 / 17 / 29 / 46 / 69 / 95) in `space.ts` is the spacing scale for new code and for the pages from UI-P55 on; `SPACE` is unchanged.
+- Control sizes live in `controls.ts`: `CONTROL_SIZE` (the numbers) and `CONTROL_CLASS` (the shadcn kit's utilities). Below 768px a control that was 44px or taller keeps a 44px hit area: `TOUCH_HIT_CLASS`, or `touchHit()` for an inline-styled control.

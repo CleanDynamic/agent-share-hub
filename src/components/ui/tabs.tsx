@@ -2,7 +2,7 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 
 import { cn } from "@/lib/utils";
-import { FOCUS_RING_CLASS, tabsListStyle, tabTriggerStyle, TAB_TRIGGER_CLASS } from "@/lib/theme/controls";
+import { CONTROL_CLASS, FOCUS_RING_CLASS, TAB_TRIGGER_CLASS, tabsListStyle, tabTriggerStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const TabsList = React.forwardRef<
 >(({ className, style, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn("inline-flex h-10 items-center justify-center p-1", className)}
+    className={cn("inline-flex items-center justify-center", CONTROL_CLASS.tabList, className)}
     style={{ ...tabsListStyle, ...style }}
     {...props}
   />
@@ -69,7 +69,8 @@ const TabsTrigger = React.forwardRef<
         ref={ref}
         disabled={disabled}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-feedback focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-feedback focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          CONTROL_CLASS.tabTrigger,
           TAB_TRIGGER_CLASS,
           className,
         )}

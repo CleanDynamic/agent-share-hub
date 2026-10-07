@@ -36,7 +36,7 @@ export function FrameSection() {
         </Strip>
       </Example>
       <div style={{ height: 18 }} />
-      <Row gap={24} style={{ alignItems: "flex-start" }}>
+      <Row gap={17} style={{ alignItems: "flex-start" }}>
         <Example caption="mobile header">
           <Strip width={390} plain>{chrome.mobileHeader}</Strip>
         </Example>

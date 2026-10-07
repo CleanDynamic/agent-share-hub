@@ -115,11 +115,13 @@ describe("EmptyState", () => {
     expect(html).toContain("padding:28px 20px");
   });
 
-  it("says one sentence in the display face at 20px in --text", () => {
+  it("says one sentence in the display role drawn at 20px, in --text", () => {
+    // UI-P52 density pass: display(20) renders at 17, under Sentient's 20px
+    // floor, so the line is Figtree 600 at 17.
     const html = markup(<EmptyState line="Nothing hung yet." />);
     expect(html.match(/<p /g)).toHaveLength(1);
-    expect(html).toContain("font-size:20px");
-    expect(html).toContain("font-family:&#x27;Sentient&#x27;");
+    expect(html).toContain("font-size:17px;font-weight:600");
+    expect(html).toContain("font-family:&#x27;Figtree&#x27;");
     expect(html).toContain("color:var(--text)");
     expect(html).toContain("Nothing hung yet.");
   });

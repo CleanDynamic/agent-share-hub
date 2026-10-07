@@ -3,7 +3,7 @@ import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 import { Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { radioStyle, RADIO_CLASS } from "@/lib/theme/controls";
+import { CONTROL_CLASS, RADIO_CLASS, radioStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -17,7 +17,8 @@ import { useInteractive } from "@/lib/theme/interactive";
    is a pill" would trade a real signal for a cosmetic consistency — the rule
    exists to stop CAPSULES, and a 16px circle is not one.
 
-   `h-4 w-4` and the 1px border are untouched.
+   16px and the 1px border are untouched: the density pass keeps a height under
+   20px (UI-P53, `CONTROL_CLASS.radio`).
    ──────────────────────────────────────────────────────────────────────────── */
 
 const RadioGroup = React.forwardRef<
@@ -58,7 +59,8 @@ const RadioGroupItem = React.forwardRef<
         ref={ref}
         disabled={disabled}
         className={cn(
-          "aspect-square h-4 w-4 border border-solid focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          "aspect-square border border-solid focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          CONTROL_CLASS.radio,
           RADIO_CLASS,
           className,
         )}

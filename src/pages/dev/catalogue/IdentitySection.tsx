@@ -39,8 +39,8 @@ export function IdentitySection() {
           </Example>
         ))}
       </Row>
-      <div style={{ height: 20 }} />
-      <Row gap={16}>
+      <div style={{ height: 16 }} />
+      <Row gap={12}>
         {[0, 1, 2, 3, 4, 5].map((sky) => (
           <Example key={sky} caption={`sky ${sky}`}>
             <div style={{ width: 180, height: 110, borderRadius: r.media, overflow: "hidden" }}>

@@ -28,17 +28,28 @@
 // Bodoni Moda, the display face before UI-P05, is retired.
 //
 // TWO FLOORS, ENFORCED BELOW RATHER THAN DOCUMENTED. Sentient is never emitted
-// under 17px (a card title on mobile is 17–18px), and Figtree is never emitted
-// under weight 400 at sizes below 18px. Both are hard rules in the theme: a
-// display face loses its shape at small sizes, worst on the dark room, and a
-// sub-400 weight at text size disappears into the ground. The one sanctioned
-// exception is the lockup wordmark, which the reference draws at 16px in the
-// footer; `display(16, { lockup: true })` is the only way to get it.
-// `assertFloors` runs over the static role table at import time in dev, and the
-// unit test runs it in CI, so a violation cannot reach a screen by being
-// written down.
+// under 20px, and Figtree is never emitted under weight 400 at sizes below
+// 18px. Both are hard rules in the theme: a display face loses its shape at
+// small sizes, worst on the dark room, and a sub-400 weight at text size
+// disappears into the ground. The one sanctioned exception is the lockup
+// wordmark, which the reference draws at 15px in the footer; `display(16,
+// { lockup: true })` is the only way to get it. `assertFloors` runs over the
+// static role table at import time in dev, and the unit test runs it in CI, so
+// a violation cannot reach a screen by being written down.
+//
+// THE DENSITY PASS (UI-P52, UI-P53). The kit was tightened by the table in
+// `design/prompts/README-density.md`, and this scale follows it: every static
+// role below is its old size through the table, and `display(px)` and
+// `mono(px)` take the size the boards drew BEFORE the pass and render it
+// through the table (`display(44)` is 33px), keeping that size's tracking and
+// leading — which is exactly what the tightened kit draws. So every caller
+// tightened without being edited. Sentient stays at 20px and up: a heading the
+// table takes under 20 is set in Figtree 600 at the same size, which is why
+// the floor rose from 17 to 20 here.
 
 import type { CSSProperties } from "react";
+
+import { denseFont } from "./density";
 
 /* ── Families ──────────────────────────────────────────────────────────────
    Each stack falls back within its own job, so a face that fails to load
@@ -48,7 +59,7 @@ import type { CSSProperties } from "react";
 export const FIGTREE =
   "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-/** Display, 17px and up (16px only for the lockup wordmark). Loaded by the
+/** Display, 20px and up (15px only for the lockup wordmark). Loaded by the
  *  `@font-face` rules in src/index.css, weights 500 and 700. */
 export const SENTIENT = "'Sentient', Georgia, 'Times New Roman', serif";
 
@@ -65,10 +76,15 @@ export const DM_MONO =
    `textWrap` is set by role, not by taste: headings balance so a two-line
    title does not leave one word stranded, descriptions get `pretty` so a
    paragraph does not end on a widow. Neither belongs on a label or a number,
-   which is why the short roles carry no `textWrap` at all. */
+   which is why the short roles carry no `textWrap` at all.
+
+   UI-P53: each size is its pre-pass size through the density table (16 → 15,
+   13 → 12, 22 → 19, 48 → 36…). A `clamp()`'s preferred term is scaled with its
+   bounds, so the role still renders the dense size at 1440 and at 390. */
 
 /** 12px mono, uppercase. The small label above a section or a card.
-    `mono(px, { caps: true })` is the same job at the reference's other sizes. */
+    `mono(px, { caps: true })` is the same job at the reference's other sizes.
+    12 is in the table's kept band (10–12), so the pass left it alone. */
 export const eyebrow = {
   fontFamily: DM_MONO,
   fontSize: "12px",
@@ -78,8 +94,18 @@ export const eyebrow = {
   textTransform: "uppercase",
 } as const satisfies CSSProperties;
 
-/** 16px Figtree. The default for prose and any text that wraps. */
+/** 15px Figtree (16 before UI-P53). The default for prose and any text that wraps. */
 export const body = {
+  fontFamily: FIGTREE,
+  fontSize: "15px",
+  fontWeight: 400,
+  lineHeight: 1.55,
+  letterSpacing: "0",
+  textWrap: "pretty",
+} as const satisfies CSSProperties;
+
+/** 16px Figtree (17 before UI-P53). Body copy that leads — a standfirst, a build's summary. */
+export const bodyLarge = {
   fontFamily: FIGTREE,
   fontSize: "16px",
   fontWeight: 400,
@@ -88,79 +114,61 @@ export const body = {
   textWrap: "pretty",
 } as const satisfies CSSProperties;
 
-/** 17px Figtree. Body copy that leads — a standfirst, a build's summary. */
-export const bodyLarge = {
-  fontFamily: FIGTREE,
-  fontSize: "17px",
-  fontWeight: 400,
-  lineHeight: 1.55,
-  letterSpacing: "0",
-  textWrap: "pretty",
-} as const satisfies CSSProperties;
-
 /**
- * 22px Sentient 500. A card's title.
+ * 19px Figtree 600. A card's title.
  *
- * DISPLAY, AND FIXED AT THE TOP OF ITS RANGE RATHER THAN CLAMPED (BG-P09). It
- * was `clamp(19px, 1.4vw, 22px)` in Figtree, and the note here said the display
- * face could not have the role because 19 is below its 20px floor. Both halves
- * of that were true; the resolution is to drop the clamp rather than the face.
- *
- * The card is why. BG-P09 rebuilt it as a picture above a title, and a title
- * under a picture cannot win the reader's eye by POSITION — it has to win by
- * face, size and contrast. Figtree 500 at 19 loses that contest to any
- * photograph. Sentient at 22 wins it, and 22 ≥ DISPLAY_MIN_PX, so the floor is
- * cleared by the same assertion that used to rule the face out: `assertFloors`
- * runs over this table at import time in dev and in CI, and it passes because
- * the smallest this role can now render is 22 and not 19.
- *
- * A fixed size rather than a clamp is the price, and it is the right one: the
- * lower bound was what breached the floor, and a display face that lost its shape on
- * Dusk at a narrow viewport would have been the floor's whole point.
+ * FIGTREE 600 SINCE UI-P53, AND SENTIENT BEFORE IT. BG-P09 set the role in the
+ * display face at a fixed 22px: a title under a picture has to win the reader's
+ * eye by face, size and contrast, and Sentient at 22 did, clear of the display
+ * floor. The density pass takes 22 to 19, which is under Sentient's floor of 20,
+ * so the role keeps the size and changes the face — Figtree at 600, the weight
+ * that still wins against a photograph at 19. Tracking, leading and balancing
+ * are unchanged.
  */
 export const cardTitle = {
-  fontFamily: SENTIENT,
-  fontSize: "22px",
-  fontWeight: 500,
+  fontFamily: FIGTREE,
+  fontSize: "19px",
+  fontWeight: 600,
   lineHeight: 1.25,
   letterSpacing: "-0.01em",
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 30–48px Sentient. A section heading on a reading surface. */
+/** 22–36px Sentient (30–48 before UI-P53). A section heading on a reading surface. */
 export const sectionHead = {
   fontFamily: SENTIENT,
-  fontSize: "clamp(30px, 3.6vw, 48px)",
+  fontSize: "clamp(22px, 2.7vw, 36px)",
   fontWeight: 500,
   lineHeight: 1.12,
   letterSpacing: "-0.01em",
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 44–78px Sentient. One per page, at most. */
+/** 33–58px Sentient (44–78 before UI-P53). One per page, at most. */
 export const hero = {
   fontFamily: SENTIENT,
-  fontSize: "clamp(44px, 6.4vw, 78px)",
+  fontSize: "clamp(33px, 4.8vw, 58px)",
   fontWeight: 500,
   lineHeight: 1.05,
   letterSpacing: "-0.02em",
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
-/** 13–14px mono. Model names, cost, timestamps, change summaries, counts.
-    Pair with `tabular` wherever the digits sit in a column. */
+/** 12–13px mono (13–14 before UI-P53). Model names, cost, timestamps, change
+    summaries, counts. Pair with `tabular` wherever the digits sit in a column.
+    0.83vw keeps it at 12px at 1440, where the old role rendered 13. */
 export const data = {
   fontFamily: DM_MONO,
-  fontSize: "clamp(13px, 0.9vw, 14px)",
+  fontSize: "clamp(12px, 0.83vw, 13px)",
   fontWeight: 400,
   lineHeight: 1.45,
   letterSpacing: "0",
 } as const satisfies CSSProperties;
 
-/** 13px Figtree 500. A field label or a chip — short, and never wrapping. */
+/** 12px Figtree 500 (13 before UI-P53). A field label or a chip — short, and never wrapping. */
 export const label = {
   fontFamily: FIGTREE,
-  fontSize: "13px",
+  fontSize: "12px",
   fontWeight: 500,
   lineHeight: 1.3,
   letterSpacing: "0.01em",
@@ -182,23 +190,36 @@ export const scale = {
 /* ── Sized roles ───────────────────────────────────────────────────────────
    Display and mono type are used at many sizes in the overhaul, and their
    tracking and leading depend on the size, so each is a function that returns a
-   complete role. The bands are the reference's own. */
+   complete role. The bands are the reference's own.
+
+   `px` IS THE SIZE THE BOARD DREW BEFORE UI-P52, and the role renders it through
+   the density table. The bands stay keyed to that size because the tightened kit
+   kept each heading's tracking and leading when it shrank it: a 52px heading is
+   39px now and still −0.04em at 0.95. */
 
 export interface DisplayOptions {
-  /** The lockup wordmark: −0.03em, line-height 1, no balancing, and the one
-   *  role allowed under the 17px floor (the reference's 16px footer lockup).
-   *  Sizes used: 16, 18, 19, 21, 34, 64, 70. */
+  /** The lockup wordmark: −0.03em, line-height 1, no balancing, Sentient at
+   *  every size, and the one role allowed under the 20px floor. Drawn at 16,
+   *  18, 19, 21, 34, 64 and 70 before the pass; rendered at 15, 15, 16, 18, 26,
+   *  48 and 52 (the footer's is the smallest). */
   lockup?: boolean;
-  /** A page heading on mobile at 30–36px takes −0.035em instead of −0.03em. */
+  /** A page heading on mobile drawn at 30–36px takes −0.035em instead of −0.03em. */
   mobilePageHeading?: boolean;
 }
 
-/** The smallest the lockup wordmark is ever drawn. */
-export const LOCKUP_MIN_PX = 16;
+/** The smallest the lockup wordmark is ever rendered: the footer's, 16 → 15 in UI-P52. */
+export const LOCKUP_MIN_PX = 15;
+
+/** The smallest size a board drew a heading at. `display()` refuses a smaller one. */
+export const DRAWN_HEADING_MIN_PX = 17;
+
+/** The smallest size a board drew the lockup wordmark at (the footer's). */
+export const DRAWN_LOCKUP_MIN_PX = 16;
 
 /**
- * A complete Sentient 500 role at `px`, with the reference's letter-spacing and
- * line-height for that size band:
+ * A complete display role for a heading the board drew at `px`, rendered at
+ * `denseFont(px)`, with the reference's letter-spacing and line-height for the
+ * drawn size's band:
  *
  *   52 and up   −0.04em   0.95
  *   44–51       −0.035em  1
@@ -206,24 +227,30 @@ export const LOCKUP_MIN_PX = 16;
  *   17–29       −0.02em   1.05
  *   lockup      −0.03em   1    at its own size
  *
- * Throws under the floor rather than emitting it: a size the face cannot hold
- * is an authoring mistake, and it should fail where it is written.
+ * Sentient 500 when it renders at 20px or more; Figtree 600 at the same size
+ * when the table takes it under 20 (every heading drawn at 22 or less), since
+ * Sentient is never set under its floor. The lockup is Sentient at every size.
+ *
+ * Throws for a size no board drew a heading at — under 17px, or 16 for the
+ * lockup — rather than emitting it: that is not a heading, and the mistake
+ * should fail where it is written.
  */
 export function display(px: number, options: DisplayOptions = {}): CSSProperties {
   const { lockup = false, mobilePageHeading = false } = options;
-  const floor = lockup ? LOCKUP_MIN_PX : DISPLAY_MIN_PX;
-  if (!(px >= floor)) {
+  const floor = lockup ? DRAWN_LOCKUP_MIN_PX : DRAWN_HEADING_MIN_PX;
+  if (!(px >= floor) || !Number.isFinite(px)) {
     throw new RangeError(
-      `type.display(${px}): Sentient is never set under ${floor}px${
-        lockup ? "" : " (the lockup wordmark alone may go to 16)"
+      `type.display(${px}): a heading is never drawn under ${floor}px${
+        lockup ? "" : ` (the lockup wordmark alone may go to ${DRAWN_LOCKUP_MIN_PX})`
       }.`,
     );
   }
+  const size = denseFont(px);
 
   const base = {
-    fontFamily: SENTIENT,
-    fontSize: `${px}px`,
-    fontWeight: 500,
+    fontFamily: lockup || size >= DISPLAY_MIN_PX ? SENTIENT : FIGTREE,
+    fontSize: `${size}px`,
+    fontWeight: lockup || size >= DISPLAY_MIN_PX ? 500 : 600,
   } as const;
 
   if (lockup) return { ...base, lineHeight: 1, letterSpacing: "-0.03em" };
@@ -252,16 +279,18 @@ export interface MonoOptions {
 }
 
 /**
- * A complete DM Mono role at `px`. Eyebrows (`caps`) are uppercase with .09em
- * tracking; data values carry no extra tracking; a large number — 22px and up —
- * takes −0.02em. Digits that sit in a column also need `tabular`, which this
- * role carries so a number cannot be set without it.
+ * A complete DM Mono role for type the board drew at `px`, rendered at
+ * `denseFont(px)` (10–12 are kept, 13 → 12, 22 → 19, 40 → 30). Eyebrows
+ * (`caps`) are uppercase with .09em tracking; data values carry no extra
+ * tracking; a large number — drawn at 22px and up — takes −0.02em. Digits that
+ * sit in a column also need `tabular`, which this role carries so a number
+ * cannot be set without it.
  */
 export function mono(px: number, options: MonoOptions = {}): CSSProperties {
   const { caps = false } = options;
   const base = {
     fontFamily: DM_MONO,
-    fontSize: `${px}px`,
+    fontSize: `${denseFont(px)}px`,
     lineHeight: 1.3,
     fontVariantNumeric: "tabular-nums",
   } as const;
@@ -324,8 +353,10 @@ export const tabular = {
    Both rules are stated in the theme as hard, so they are checked in code
    rather than trusted to review. */
 
-/** Sentient is never emitted below this size (the lockup wordmark aside). */
-export const DISPLAY_MIN_PX = 17;
+/** Sentient is never emitted below this size (the lockup wordmark aside).
+    20 since UI-P53, when the density pass took the old 17px floor's headings
+    under it; 17 before. */
+export const DISPLAY_MIN_PX = 20;
 
 /** Below this size, Figtree is never emitted under weight 400. */
 export const BODY_WEIGHT_FLOOR_PX = 18;

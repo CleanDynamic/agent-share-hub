@@ -16,6 +16,8 @@ import {
   buttonStyle,
   checkboxStyle,
   chipStyle,
+  CONTROL_CLASS,
+  CONTROL_SIZE,
   dialogPanelStyle,
   FOCUS_RING_CLASS,
   GLASS_BLUR,
@@ -30,9 +32,12 @@ import {
   switchTrackStyle,
   tabTriggerStyle,
   tooltipStyle,
+  TOUCH_HIT_CLASS,
+  touchHit,
   uiTransition,
   type ButtonVariant,
 } from "./controls";
+import { denseHeight } from "./density";
 import { focusRing } from "./focus";
 import { RADIUS } from "./radius";
 
@@ -330,50 +335,129 @@ describe("where the radius tokens do not produce the shape the spec describes", 
      test says whether the problem went away.
 
      THIS BLOCK IS NOT A TODO TO DELETE. If a control's box grows past the
-     threshold, update the size here and the expectation flips on its own. */
+     threshold, update the size here and the expectation flips on its own.
+
+     UI-P52 density pass: the sizes below are the kit's after UI-P53, read from
+     CONTROL_SIZE (they were 36/40/44/40/40/40/24/16 and Tailwind's h-9 to h-4).
+     The smallest rectangular control is now 30px, so that is the threshold the
+     soft-rectangle check runs from; both KNOWN cases are still true. */
   const px = (token: string) => parseInt(RADIUS[token as keyof typeof RADIUS], 10);
 
   /** A radius at or past half the smaller dimension fully rounds that axis. */
   const fullyRounds = (radius: number, smallerSide: number) => radius * 2 >= smallerSide;
 
   const CONTROLS = [
-    // [name, smaller dimension in px, the token it carries, Tailwind class]
-    ["button, sm", 36, "r-control", "h-9"],
-    ["button, default", 40, "r-control", "h-10"],
-    ["button, lg", 44, "r-control", "h-11"],
-    ["input", 40, "r-control", "h-10"],
-    ["select trigger", 40, "r-control", "h-10"],
-    ["tabs list", 40, "r-control", "h-10"],
-    ["switch track", 24, "r-control", "h-6"],
-    ["checkbox", 16, "r-chip", "h-4 w-4"],
+    // [name, smaller dimension in px, the token it carries, its size classes]
+    ["button, sm", CONTROL_SIZE.button.sm, "r-control", CONTROL_CLASS.button.sm],
+    ["button, default", CONTROL_SIZE.button.default, "r-control", CONTROL_CLASS.button.default],
+    ["button, lg", CONTROL_SIZE.button.lg, "r-control", CONTROL_CLASS.button.lg],
+    ["input", CONTROL_SIZE.field, "r-control", CONTROL_CLASS.field],
+    ["select trigger", CONTROL_SIZE.field, "r-control", CONTROL_CLASS.field],
+    ["tabs list", CONTROL_SIZE.tab, "r-control", CONTROL_CLASS.tabList],
+    ["switch track", CONTROL_SIZE.switchTrack, "r-control", CONTROL_CLASS.switchTrack],
+    ["checkbox", CONTROL_SIZE.checkbox, "r-chip", CONTROL_CLASS.checkbox],
   ] as const;
 
-  it("lands as a soft rectangle on every control 36px or larger", () => {
+  it("lands as a soft rectangle on every control 30px or larger", () => {
     for (const [name, size, token] of CONTROLS) {
-      if (size < 36) continue;
+      if (size < 30) continue;
       expect(fullyRounds(px(token), size), `${name} should not be fully rounded`).toBe(false);
     }
   });
 
   it("KNOWN: the switch track renders as a capsule despite --r-control", () => {
-    // h-6 is 24px and --r-control is 12px, so the spec's "not a pill" and the
-    // spec's token cannot both be honoured. The token is.
+    // The track is 20px (24 before the UI-P52 density pass) and --r-control is
+    // 12px, so the spec's "not a pill" and the spec's token cannot both be
+    // honoured. The token is.
     expect(px("r-control") * 2).toBe(24);
-    expect(fullyRounds(px("r-control"), 24)).toBe(true);
+    expect(CONTROL_SIZE.switchTrack).toBe(20);
+    expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(true);
   });
 
   it("KNOWN: the checkbox renders as a circle despite --r-chip", () => {
-    // h-4 w-4 is 16px and --r-chip is 8px, so a checkbox is the same shape as a
-    // radio and only the tick distinguishes them. Round means pick one and
-    // square means pick any; losing that is a real affordance defect, and the
-    // fix is a bigger box rather than a smaller radius.
+    // The box is 15px (16 before the UI-P52 density pass) and --r-chip is 8px,
+    // so a checkbox is the same shape as a radio and only the tick
+    // distinguishes them. Round means pick one and square means pick any;
+    // losing that is a real affordance defect, and the fix is a bigger box
+    // rather than a smaller radius.
     expect(px("r-chip") * 2).toBe(16);
-    expect(fullyRounds(px("r-chip"), 16)).toBe(true);
+    expect(CONTROL_SIZE.checkbox).toBe(15);
+    expect(fullyRounds(px("r-chip"), CONTROL_SIZE.checkbox)).toBe(true);
   });
 
   it("shows the same token reads correctly on the box it was sized for", () => {
     // --r-chip was sized for a chip, roughly 24px tall, where it is a third of
     // the height. The token is not the problem; the 16px box is.
     expect(fullyRounds(px("r-chip"), 24)).toBe(false);
+  });
+});
+
+describe("control sizes (UI-P53, the density pass)", () => {
+  // UI-P52 density pass: every size is the kit's old one through the table in
+  // design/prompts/README-density.md, and the classes the shadcn kit spends say
+  // the same numbers as CONTROL_SIZE.
+  it("maps each control's old height through the table", () => {
+    const pairs: Array<[number, number]> = [
+      [CONTROL_SIZE.button.sm, 36],
+      [CONTROL_SIZE.button.default, 40],
+      [CONTROL_SIZE.button.lg, 44],
+      [CONTROL_SIZE.button.icon, 40],
+      [CONTROL_SIZE.field, 40],
+      [CONTROL_SIZE.chip, 36],
+      [CONTROL_SIZE.tab, 40],
+      [CONTROL_SIZE.switchTrack, 24],
+      [CONTROL_SIZE.switchThumb, 20],
+      [CONTROL_SIZE.radio, 16],
+      [CONTROL_SIZE.menuItem, 36],
+    ];
+    for (const [size, old] of pairs) expect(size, `${old}px`).toBe(denseHeight(old));
+  });
+
+  it("takes the checkbox to 15, the one size the pass names outright", () => {
+    // 18 → 15, under the 20px line below which the table keeps a height.
+    expect(CONTROL_SIZE.checkbox).toBe(15);
+  });
+
+  it("writes the same numbers into the shadcn kit's classes", () => {
+    expect(CONTROL_CLASS.button.sm).toContain(`h-[${CONTROL_SIZE.button.sm}px]`);
+    expect(CONTROL_CLASS.button.default).toContain(`h-[${CONTROL_SIZE.button.default}px]`);
+    expect(CONTROL_CLASS.button.lg).toContain(`h-[${CONTROL_SIZE.button.lg}px]`);
+    expect(CONTROL_CLASS.button.icon).toBe(`h-[${CONTROL_SIZE.button.icon}px] w-[${CONTROL_SIZE.button.icon}px]`);
+    expect(CONTROL_CLASS.field).toContain(`h-[${CONTROL_SIZE.field}px]`);
+    expect(CONTROL_CLASS.tabList).toContain(`h-[${CONTROL_SIZE.tab}px]`);
+    expect(CONTROL_CLASS.checkbox).toBe(`h-[${CONTROL_SIZE.checkbox}px] w-[${CONTROL_SIZE.checkbox}px]`);
+    // h-5 is 20px and h-4 16px: Tailwind's own steps where the table lands on them.
+    expect(CONTROL_CLASS.switchTrack).toContain("h-5");
+    expect(CONTROL_CLASS.switchThumb).toContain("h-4 w-4");
+    expect(CONTROL_CLASS.radio).toBe("h-4 w-4");
+  });
+
+  it("keeps the switch thumb flush: 16px travelling 24 in a 40px inner track", () => {
+    const inner = 44 - 2 * 2;
+    expect(CONTROL_CLASS.switchThumb).toContain("translate-x-6");
+    expect(24 + CONTROL_SIZE.switchThumb).toBe(inner);
+  });
+
+  it("holds a menu item to its 30px minimum in the style every menu spends", () => {
+    expect(menuItemStyle().minHeight).toBe(CONTROL_SIZE.menuItem);
+    expect(CONTROL_CLASS.menuItem).toBe("py-1");
+  });
+
+  it("keeps a 44px touch target on a phone for a control that had one", () => {
+    // Below 768px a control that was 44px or taller keeps min-height 44.
+    expect(CONTROL_CLASS.button.lg).toContain(TOUCH_HIT_CLASS);
+    expect(TOUCH_HIT_CLASS).toBe("max-md:min-h-[44px]");
+    expect(touchHit(true, 44)).toEqual({ minHeight: 44 });
+    expect(touchHit(true, 48)).toEqual({ minHeight: 44 });
+    expect(touchHit(true, 40)).toEqual({});
+    expect(touchHit(false, 48)).toEqual({});
+    for (const name of ["sm", "default", "icon"] as const) {
+      expect(CONTROL_CLASS.button[name], name).not.toContain(TOUCH_HIT_CLASS);
+    }
+  });
+
+  it("leaves the focus ring alone: it is not a size", () => {
+    expect(focusRing.outlineWidth).toBe("2px");
+    expect(focusRing.outlineOffset).toBe("2px");
   });
 });

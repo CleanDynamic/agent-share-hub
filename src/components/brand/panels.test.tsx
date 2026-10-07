@@ -136,11 +136,12 @@ describe("WallLabel", () => {
 });
 
 describe("Detail", () => {
-  it("is a 10px eyebrow over a DM Mono 14px value, on one line, clipped with an ellipsis", () => {
+  it("is a 10px eyebrow over a DM Mono value drawn at 14px, on one line, clipped with an ellipsis", () => {
+    // UI-P52 density pass: mono() renders the drawn 14 at 13; the 10px eyebrow is kept.
     const html = markup(<Detail label="Made for" value="finance ops" />);
     expect(html).toContain("display:contents");
     expect(html).toContain("font-size:10px");
-    expect(html).toContain("font-size:14px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text)");
     expect(html).toContain("white-space:nowrap");
     expect(html).toContain("text-overflow:ellipsis");
@@ -153,10 +154,11 @@ describe("Detail", () => {
 });
 
 describe("Stat", () => {
-  it("is an eyebrow, then a baseline row with the value in DM Mono 22px at -0.02em", () => {
+  it("is an eyebrow, then a baseline row with the value in DM Mono drawn at 22px, at -0.02em", () => {
+    // UI-P52 density pass: mono() renders the drawn 22 at 19 and keeps its -0.02em.
     const html = markup(<Stat label="In the gallery" value="1,284" />);
     expect(html).toContain("display:flex;align-items:baseline");
-    expect(html).toContain("font-size:22px");
+    expect(html).toContain("font-size:19px");
     expect(html).toContain("letter-spacing:-0.02em");
     expect(html).toContain("color:var(--text)");
     expect(html).not.toContain("striped-bar");
@@ -233,7 +235,8 @@ describe("PageHeading", () => {
     expect(html).toContain('data-ui="page-heading"');
     expect(html).toContain("flex-direction:column;gap:8px;padding:4px 2px");
     expect(html).toContain("font-size:11px");
-    expect(html).toContain("font-size:36px");
+    // UI-P52 density pass: the title is drawn at 36 and display() renders it at 27.
+    expect(html).toContain("font-size:27px");
     expect(html).toContain("letter-spacing:-0.035em");
     expect(html).toContain("line-height:1");
     expect(html).toContain("color:var(--text)");
@@ -252,7 +255,8 @@ describe("PageHeading", () => {
   it("has no padding of its own inside a panel, and takes the page's own sizes", () => {
     const html = markup(<PageHeading eyebrow="E" title="T" size={50} variant="in-panel" />);
     expect(html).not.toContain("padding");
-    expect(html).toContain("font-size:50px");
+    // UI-P52 density pass: drawn at 50, rendered at 38, with the 44–51 band's tracking.
+    expect(html).toContain("font-size:38px");
     expect(html).toContain("letter-spacing:-0.035em");
     expect(markup(<PageHeading eyebrow="E" title="T" size={52} variant="in-panel" />)).toContain("letter-spacing:-0.04em");
   });

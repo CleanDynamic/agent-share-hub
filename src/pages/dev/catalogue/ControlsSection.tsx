@@ -133,7 +133,7 @@ export function ControlsSection() {
         </Example>
       </Row>
       {GAP_18}
-      <Row gap={14}>
+      <Row gap={10}>
         {CATEGORIES.map((category) => (
           <Example key={category} caption={category}>
             <CategoryChip category={category} label={category} />

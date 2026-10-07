@@ -134,19 +134,25 @@ describe("OrbRing", () => {
   });
 
   it("sets the level in Sentient at 20% of the size, -0.03em, line-height 1, and a DM Mono 10px caption", () => {
+    // UI-P52 density pass: the figure is drawn at 20% of the size and display()
+    // renders it through the table — 30 → 22 here, 24 → 20 at 120.
     const html = ring();
-    expect(html).toContain("font-size:30px");
+    expect(html).toContain("font-size:22px");
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("line-height:1");
     expect(html).toContain("Sentient");
     expect(html).toContain("font-size:10px");
     expect(html).toContain("level");
-    expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:24px");
+    expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:20px");
   });
 
-  it("never sets Sentient under its 17px floor, however small the ring", () => {
+  it("never sets Sentient under its floor, however small the ring", () => {
+    // UI-P52 density pass: the figure is never drawn under 17px, which display()
+    // renders at 16 — under Sentient's 20px floor, so in Figtree 600.
     expect(() => markup(<OrbRing size={36} percent={50} value={3} label="x" />)).not.toThrow();
-    expect(markup(<OrbRing size={36} percent={50} value={3} label="x" />)).toContain("font-size:17px");
+    const html = markup(<OrbRing size={36} percent={50} value={3} label="x" />);
+    expect(html).toContain("font-size:16px;font-weight:600");
+    expect(html).not.toContain("Sentient");
   });
 
   it("holds an avatar in place of the figure, clipped to the disc", () => {

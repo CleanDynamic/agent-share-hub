@@ -63,7 +63,8 @@ describe("SignInView · desktop", () => {
     const lockup = container.querySelector('[data-ui="lockup"]')!;
     expect(lockup.getAttribute("style")).toContain("gap: 26px");
     expect(lockup.querySelector('[data-ui="mark"]')!.getAttribute("width")).toBe("77");
-    expect(lockup.querySelector("span")!.getAttribute("style")).toContain("font-size: 70px");
+    // UI-P52 density pass: the wordmark is drawn at 70 and display() renders it at 52.
+    expect(lockup.querySelector("span")!.getAttribute("style")).toContain("font-size: 52px");
     const column = lockup.parentElement!;
     expect(column.getAttribute("style")).toContain("flex-direction: column");
     expect(column.getAttribute("style")).toContain("gap: 30px");

@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
+  CONTROL_CLASS,
   fieldStyle,
   menuItemStyle,
   menuLabelStyle,
@@ -72,7 +73,8 @@ const SelectTrigger = React.forwardRef<
         ref={ref}
         disabled={disabled}
         className={cn(
-          "flex h-10 w-full items-center justify-between border border-solid px-3 py-2 text-sm focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+          "flex w-full items-center justify-between border border-solid text-sm focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+          CONTROL_CLASS.field,
           className,
         )}
         style={{ ...fieldStyle(state), ...style }}
@@ -177,7 +179,8 @@ const SelectItem = React.forwardRef<
     ref={ref}
     disabled={disabled}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-sm pl-8 pr-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      CONTROL_CLASS.menuItem,
       MENU_ITEM_CLASS,
       className,
     )}

@@ -29,6 +29,13 @@
 // layout, so applying a step to an element that already has one is a rebuild,
 // not a repaint (see `neoscale-ui`). This module defines the scale; it does not
 // license changing the spacing of a surface that already ships.
+//
+// THE COMPACT SCALE (UI-P53). The density pass took the kit's spacing through
+// ×0.72 (`design/prompts/README-density.md`), and `SPACE_COMPACT` is this scale
+// through the same table: 6 / 12 / 17 / 29 / 46 / 69 / 95, the same seven names
+// at the same relationships. It is what new code uses, and what the pages use
+// from UI-P55 to UI-P58 as they move to the tightened boards. `SPACE` stays, so
+// nothing that spends it breaks; the rule below holds on both scales.
 
 /**
  * The scale, by role.
@@ -94,6 +101,30 @@ export const px = (step: number): string => `${step}px`;
 
 /** True when `value` is one of the seven steps. */
 export const isSpaceStep = (value: number): boolean => SPACE_STEPS.includes(value as never);
+
+/**
+ * The scale through the density table — what new code spends (UI-P53).
+ *
+ * Each step is its `SPACE` step ×0.72, rounded: xs 6, sm 12, md 17, lg 29,
+ * xl 46, 2xl 69, 3xl 95. The names keep their jobs — xs is still "inside one
+ * object", lg still "between distinct blocks" — only the distances are tighter.
+ */
+export const SPACE_COMPACT = {
+  xs: 6,
+  sm: 12,
+  md: 17,
+  lg: 29,
+  xl: 46,
+  "2xl": 69,
+  "3xl": 95,
+} as const satisfies { readonly [K in SpaceName]: number };
+
+/** The seven compact values, smallest first. */
+export const SPACE_COMPACT_STEPS = SPACE_NAMES.map((n) => SPACE_COMPACT[n]);
+
+/** True when `value` is one of the seven compact steps. */
+export const isCompactStep = (value: number): boolean => SPACE_COMPACT_STEPS.includes(value as never);
+
 
 /**
  * The spec's rule, as an assertion: a card's internal padding may never exceed

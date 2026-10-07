@@ -235,14 +235,16 @@ describe("RankRung and MarkTile", () => {
     expect(at("none")).not.toContain("background");
   });
 
-  it("steps radius and rank type with the size: 9 / 10 / 12 and 17 / 18 / 22", () => {
+  it("steps radius and rank type with the size: 9 / 10 / 12 and 17 / 18 / 22 drawn", () => {
     const at = (size: 28 | 32 | 40) => markup(<RankRung rank={3} tier="rare" size={size} />);
     expect(at(28)).toContain("width:28px;height:28px;border-radius:9px");
     expect(at(32)).toContain("border-radius:10px");
     expect(at(40)).toContain("border-radius:12px");
-    expect(at(28)).toContain("font-size:17px");
-    expect(at(32)).toContain("font-size:18px");
-    expect(at(40)).toContain("font-size:22px");
+    // UI-P52 density pass: the rank type is drawn at 17 / 18 / 22 and display()
+    // renders it at 16 / 15 / 19 — under 20px, in Figtree 600.
+    expect(at(28)).toContain("font-size:16px");
+    expect(at(32)).toContain("font-size:15px");
+    expect(at(40)).toContain("font-size:19px");
   });
 
   it("draws the creator mark at 46×46, radius 13, with a 20px trophy, glowing only when highest", () => {

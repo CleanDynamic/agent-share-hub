@@ -9,6 +9,7 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { denseFont } from "@/lib/theme/density";
 import { COVER_SKIES, CoverFallback, hashSeed, skyIndex } from "./CoverFallback";
 import { Lockup } from "./Lockup";
 import { Mark } from "./Mark";
@@ -67,7 +68,9 @@ describe("Lockup", () => {
     expect(q(container, "svg").getAttribute("width")).toBe(String(mark));
     const word = row.querySelector("span") as HTMLElement;
     expect(word.textContent).toBe("buildgallery");
-    expect(word.style.fontSize).toBe(`${size}px`);
+    // UI-P52 density pass: the wordmark is drawn at `size` and display() renders
+    // it through the table (21 → 18, 16 → 15) — in Sentient at every size.
+    expect(word.style.fontSize).toBe(`${denseFont(size)}px`);
     expect(word.style.letterSpacing).toBe("-0.03em");
     expect(word.style.lineHeight).toBe("1");
   });

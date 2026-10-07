@@ -2,7 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
-import { chipSelectedStyle, chipStyle, type ChipTone } from "@/lib/theme/controls";
+import { chipSelectedStyle, chipStyle, type ChipTone, CONTROL_CLASS } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ import { useInteractive } from "@/lib/theme/interactive";
    ──────────────────────────────────────────────────────────────────────────── */
 
 const badgeVariants = cva(
-  "inline-flex items-center border px-2.5 py-0.5 transition-colors focus:outline-none",
+  `inline-flex items-center border ${CONTROL_CLASS.chip} transition-colors focus:outline-none`,
   {
     variants: {
       variant: {
