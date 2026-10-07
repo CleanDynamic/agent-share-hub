@@ -257,7 +257,9 @@ async function openSheet(page: Page, theme: string, scenario: Scenario = "ready"
     });
   });
 
-  await page.goto(`/compose/${BUILD}`);
+  // UI-P47: an ordinary draft opens the new composer now; this spec is about the
+  // legacy workspace's publish confirmation, which a conversion still opens.
+  await page.goto(`/compose/${BUILD}?from=convert`);
   await page.getByRole("button", { name: "Publish", exact: true }).first().click();
   await expect(page.getByTestId("publish-sheet")).toBeVisible();
 }

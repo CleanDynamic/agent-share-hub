@@ -480,7 +480,7 @@ let nextId = 1;
 const freshId = (prefix: string) =>
   `${prefix}-${String(nextId++).padStart(4, "0")}-4000-8000-000000000000`.slice(0, 36);
 
-/** A signed-in creator on /compose/new, with the network stubbed and `db` as the truth. */
+/** A signed-in creator on /compose/start, with the network stubbed and `db` as the truth. */
 async function openIntake(page: Page, db: Db) {
   await page.addInitScript(
     ([ref, value]) => {
@@ -578,7 +578,7 @@ async function openIntake(page: Page, db: Db) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -613,7 +613,7 @@ async function reviewInto(page: Page, importId: string, draftId: string) {
 }
 
 for (const viewport of WIDTHS) {
-  test.describe(`EX-P10 — the destination choice on /compose/new (${viewport.name})`, () => {
+  test.describe(`EX-P10 — the destination choice on /compose/start (${viewport.name})`, () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
     });
@@ -765,7 +765,7 @@ for (const viewport of WIDTHS) {
       const nodesAfterFirst = snapshot(db.tables.build_nodes);
       const eventsAfterFirst = snapshot(db.tables.build_events);
 
-      await page.goto("/compose/new");
+      await page.goto("/compose/start");
       await reviewInto(page, IMPORT, DRAFT);
       await page.getByTestId("waiting-import-confirm").click();
 

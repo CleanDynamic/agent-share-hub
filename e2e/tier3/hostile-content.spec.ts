@@ -258,7 +258,7 @@ let nextId = 1;
 const freshId = (prefix: string) =>
   `${prefix}-${String(nextId++).padStart(4, "0")}-4000-8000-000000000000`.slice(0, 36);
 
-/** A signed-in creator on /compose/new, with the network stubbed and `db` as the truth. */
+/** A signed-in creator on /compose/start, with the network stubbed and `db` as the truth. */
 async function openIntake(page: Page, db: Db) {
   await page.addInitScript(
     ([ref, value]) => {
@@ -349,7 +349,7 @@ async function openIntake(page: Page, db: Db) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -438,7 +438,7 @@ for (const viewport of WIDTHS) {
       // THE CLAIM. Everything kept, into a new build.
       await expect(page.getByTestId("waiting-import-confirm")).toHaveText("Add 12 to the draft");
       await page.getByTestId("waiting-import-confirm").click();
-      await expect(page).toHaveURL(/\/compose\/(?!new$)[^/]+$/);
+      await expect(page).toHaveURL(/\/compose\/(?!new$|start$)[^/]+$/);
       const buildId = new URL(page.url()).pathname.split("/").pop()!;
       await expect(arrival(page)).toBeVisible();
 

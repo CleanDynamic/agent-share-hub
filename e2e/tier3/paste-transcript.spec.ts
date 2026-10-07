@@ -1,4 +1,4 @@
-// Tier 3 — the paste path: a transcript pasted on /compose/new becomes a draft.
+// Tier 3 — the paste path: a transcript pasted on /compose/start becomes a draft.
 //
 // WHAT THIS GUARDS. Critical path 13 in the e2e skill, "Intake: paste
 // transcript → populated draft", which had no spec until EX-P16-fix. That step
@@ -349,7 +349,7 @@ async function stubParsers(page: Page, db: Db, calls: ParseCall[]) {
   });
 }
 
-/** A signed-in creator on /compose/new, with the network stubbed and `db` as the truth. */
+/** A signed-in creator on /compose/start, with the network stubbed and `db` as the truth. */
 async function openIntake(page: Page, db: Db, calls: ParseCall[]) {
   await page.addInitScript(
     ([ref, value]) => {
@@ -442,7 +442,7 @@ async function openIntake(page: Page, db: Db, calls: ParseCall[]) {
     });
   });
 
-  await page.goto("/compose/new");
+  await page.goto("/compose/start");
   await expect(page.getByRole("heading", { name: "Start a build" })).toBeVisible();
 }
 
@@ -516,7 +516,7 @@ const arrival = (page: Page) => page.locator('[data-visual-slot="intake-arrival"
 const proposal = (page: Page) => page.locator('[data-visual-slot="intake-proposal"]');
 
 for (const viewport of WIDTHS) {
-  test.describe(`paste a transcript on /compose/new (${viewport.name})`, () => {
+  test.describe(`paste a transcript on /compose/start (${viewport.name})`, () => {
     test.beforeEach(async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
     });

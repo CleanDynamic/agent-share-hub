@@ -167,7 +167,7 @@ describe("the conversion offer", () => {
     expect(convertContentItem).toHaveBeenCalledWith(ITEM_ID);
 
     const open = screen.getByText("Open the draft") as HTMLAnchorElement;
-    expect(open.getAttribute("href")).toBe(`/compose/${BUILD_ID}`);
+    expect(open.getAttribute("href")).toBe(`/compose/${BUILD_ID}?from=convert`);
     expect((screen.getByText("Back to the post") as HTMLAnchorElement).getAttribute("href")).toBe(
       `/content/${ITEM_ID}`
     );
@@ -180,7 +180,7 @@ describe("the conversion offer", () => {
 
     await screen.findByText(/already converted this post/i);
     expect((screen.getByText("Open the draft") as HTMLAnchorElement).getAttribute("href")).toBe(
-      `/compose/${BUILD_ID}`
+      `/compose/${BUILD_ID}?from=convert`
     );
     expect(screen.queryByRole("button", { name: /Convert to a build record/ })).toBeNull();
     expect(convertContentItem).not.toHaveBeenCalled();

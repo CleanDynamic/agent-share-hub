@@ -25,6 +25,7 @@ import { CreatorRedirect } from "@/components/routing/CreatorRedirect";
 import { lazyPage } from "@/components/routing/lazyPage";
 import { FrameRoute } from "./components/shell/FrameRoute";
 import { SiteFrame } from "./components/shell/SiteFrame";
+import { ComposeRoute } from "./pages/site/compose/ComposeRoute";
 import { LinkFrameRoute, SignInSite } from "./pages/site/signin/SignInRoutes";
 
 const Upload = lazyPage(() => import("./pages/Upload"));
@@ -110,9 +111,16 @@ const ResetPasswordSitePage = lazy(() => import("./pages/site/signin/ResetPasswo
 const VerifyEmailSitePage = lazy(() => import("./pages/site/signin/VerifyEmailPage"));
 // The heaviest page in the application. Lazy so it never enters the initial bundle.
 const Compose = lazy(() => import("./pages/Compose"));
-// The intake step. Its own chunk, so arriving at /compose/new does not pay for
-// the workspace before the creator has decided to open one.
+// The intake step (paste a transcript, a repo), now at /compose/start. Its own
+// chunk, so nothing else pays for it.
 const ComposeNew = lazy(() => import("./pages/ComposeNew"));
+// UI-P47 — the legacy workspace, exactly as before, for the flows the new composer
+// does not handle (a rebuild, anything arriving with a `from` parameter).
+const legacyCompose = (
+  <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}>
+    <Compose />
+  </Suspense>
+);
 // The door into a rebuild: resolve a slug, fork it, hand the creator to their
 // own workspace. Its own chunk — it is two queries and a sentence, and nothing
 // that is not rebuilding should carry it.
@@ -507,8 +515,19 @@ const App = () => (
                   `--bg` it would be a flash of black before a luminous grey
                   room on Noon. `--bg` is the live theme's ground, so the
                   fallback is the room the route is about to paint. ── */}
-              <Route path="/compose/new" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
-              <Route path="/compose/:buildId" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><Compose /></Suspense>} />
+              {/* UI-P47 — the composer. /compose/new and /compose/:buildId are children
+                  of ONE route on purpose: the first change makes the draft and
+                  replaces the URL, and React keeps the page (and the cursor in its
+                  field) across that, which two sibling routes would not (each
+                  remounts). The parent reads the params the children match. ComposeRoute renders the new composer in the site
+                  frame, or the legacy `Compose` untouched, with its own chrome,
+                  for a rebuild or a `from` parameter. /compose/start is the old
+                  intake (paste a transcript, a repo) as it always was. */}
+              <Route path="/compose/start" element={<Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />}><ComposeNew /></Suspense>} />
+              <Route path="/compose" element={<ComposeRoute legacy={legacyCompose} />}>
+                <Route path="new" element={null} />
+                <Route path=":buildId" element={null} />
+              </Route>
               {/* UI-P31 — /rebuild/:slug behind the flag is a page in the site
                   frame (the family, what changed, readiness), not a door. It
                   stays out here so the legacy door renders exactly as it did,

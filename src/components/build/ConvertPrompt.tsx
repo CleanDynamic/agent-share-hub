@@ -329,7 +329,9 @@ export default function ConvertPrompt() {
             : "There is already a draft build from this post. Opening it is better than making a second one."}
         </Quiet>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-          <Plain to={`/compose/${draft.id}`}>Open the draft</Plain>
+          {/* ?from=convert (UI-P47): a converted post's draft is finished in the
+              legacy workspace, which draws its tray; the new composer does not yet. */}
+          <Plain to={`/compose/${draft.id}?from=convert`}>Open the draft</Plain>
           <Plain to={postUrl}>Back to the post</Plain>
         </div>
       </Frame>
