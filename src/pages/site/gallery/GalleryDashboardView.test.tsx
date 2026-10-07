@@ -44,6 +44,8 @@ function props(extra: Partial<GalleryDashboardViewProps> = {}): GalleryDashboard
     onClearFilters: vi.fn(),
     onConnect: vi.fn(),
     onOpenBuild: vi.fn(),
+    onCloseBuild: vi.fn(),
+    onOpenModel: vi.fn(),
     ...extra,
   };
 }
@@ -126,11 +128,11 @@ describe("GalleryDashboardView", () => {
   it("shows the footer's calculations only while they are on", () => {
     view();
     const footer = screen.getByTestId("dash-footer");
-    expect(footer.textContent).not.toContain("164");
+    expect(footer.textContent).not.toContain("161");
     fireEvent.click(within(footer).getByRole("button", { name: /Sum of prompts/ }));
-    expect(footer.textContent).toContain("164");
+    expect(footer.textContent).toContain("161");
     fireEvent.click(within(footer).getByRole("button", { name: /Avg sessions per build/ }));
-    expect(footer.textContent).toContain("2.9");
+    expect(footer.textContent).toContain("2.8");
     expect(within(footer).getByText("+ Add calculation").getAttribute("aria-disabled")).toBe("true");
   });
 
@@ -164,5 +166,78 @@ describe("GalleryDashboardView", () => {
   it("does not crash on loading or error", () => {
     view({ status: "loading" });
     expect(screen.getByRole("status", { name: "Loading builds" })).toBeTruthy();
+  });
+
+  it("lists model versions by prompts, with the new badge and a last-used build, and a version filters the builds", () => {
+    const p = view({ tab: "models" });
+    const table = screen.getByRole("table", { name: "Models" });
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+      "Model version",
+      "Lab",
+      "Builds",
+      "Sessions",
+      "Prompts",
+      "AI turns",
+      "Engagement",
+      "Last used",
+    ]);
+    const sonnet = screen.getAllByTestId("dash-model-row").find((row) => within(row).queryByRole("button", { name: "Sonnet 5.5" }));
+    expect(sonnet).toBeTruthy();
+    expect(within(sonnet!).getByText("new")).toBeTruthy();
+    expect(within(sonnet!).getByText("Anthropic")).toBeTruthy();
+    fireEvent.click(within(sonnet!).getByRole("button", { name: "Sonnet 5.5" }));
+    expect(p.onOpenModel).toHaveBeenCalledWith("sonnet-5-5");
+  });
+
+  it("applies the Labs filter on the Models tab", () => {
+    view({ tab: "models", lab: "OpenAI" });
+    const names = screen.getAllByTestId("dash-model-row").map((row) => within(row).getAllByRole("cell")[1].textContent);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.every((lab) => lab === "OpenAI")).toBe(true);
+  });
+
+  it("puts a model the registry does not name last, without a button", () => {
+    const [first, ...rest] = DASHBOARD_FIXTURE_ROWS;
+    const odd = { ...first, making: { sessions: [{ client: "X", model: "mystery-1", prompts: 999, turns: 1 }] } };
+    view({ tab: "models", rows: [odd, ...rest] });
+    const rows = screen.getAllByTestId("dash-model-row");
+    const last = rows[rows.length - 1];
+    expect(within(last).getAllByRole("cell")[0].textContent).toBe("mystery-1");
+    expect(within(last).queryByRole("button")).toBeNull();
+    expect(within(last).getAllByRole("cell")[1].textContent).toBe("—");
+  });
+
+  it("lists makers by engagement with a profile link", () => {
+    view({ tab: "makers" });
+    const rows = screen.getAllByTestId("dash-maker-row");
+    expect(rows).toHaveLength(10);
+    expect(within(rows[0]).getByRole("link", { name: "@dana" }).getAttribute("href")).toBe("/profile/dana");
+    expect(within(rows[1]).getByRole("link", { name: "@kofi" })).toBeTruthy();
+    expect(within(rows[2]).getByRole("link", { name: "@maria" })).toBeTruthy();
+  });
+
+  it("opens the detail sheet for openId, with the four stats and the sessions", () => {
+    const photo = DASHBOARD_FIXTURE_ROWS.find((row) => row.title === "Photo renamer by date taken")!;
+    const p = view({ openId: photo.id });
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { level: 2 }).textContent).toBe("Photo renamer by date taken");
+    expect(within(sheet).getByRole("link", { name: "@maria" })).toBeTruthy();
+    expect(sheet.textContent).toContain("made for Photographers");
+    expect(within(sheet).getAllByTestId("sheet-session")).toHaveLength(2);
+    expect(within(sheet).getByRole("link", { name: "Open the build" }).getAttribute("href")).toBe(`/b2/${photo.slug}`);
+    expect(within(sheet).getByRole("link", { name: "How does proof work?" }).getAttribute("href")).toBe("/about#proof");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Close details" }));
+    expect(p.onCloseBuild).toHaveBeenCalled();
+  });
+
+  it("changes the sheet's total with the 7 / 30 / 90 toggle", () => {
+    const photo = DASHBOARD_FIXTURE_ROWS.find((row) => row.title === "Photo renamer by date taken")!;
+    view({ openId: photo.id });
+    const total = () => screen.getByTestId("sheet-window-total").textContent;
+    expect(total()).toBe("8");
+    fireEvent.click(screen.getByRole("button", { name: "7 days" }));
+    expect(total()).toBe("2");
+    fireEvent.click(screen.getByRole("button", { name: "90 days" }));
+    expect(total()).toBe("14");
   });
 });

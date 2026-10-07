@@ -3,6 +3,7 @@
    and sort, `GalleryDashboardView` draws; the dev compare page runs the same
    functions over the fixture. */
 
+import type { MakerRow, ModelRow } from "@/lib/build/dashboardAggregates";
 import type { DashboardRow } from "@/lib/build/gallery";
 import type { DashboardActive, DashboardReport, DashboardSort } from "@/lib/build/galleryParams";
 import { MODEL_VERSIONS, normaliseModel, type Lab } from "@/lib/models/registry";
@@ -243,4 +244,55 @@ export function downloadText(filename: string, text: string, type = "text/csv;ch
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/* ── the Models and Makers tabs (UI-P51) ── */
+
+/**
+ * The Models tab's rows: the Labs filter applied (an unlisted model has no lab,
+ * so a chosen lab leaves it out), then by prompts, then builds, largest first.
+ * A model the registry does not know comes last, under its own name.
+ */
+export function sortModelRows(rows: readonly ModelRow[], lab: Lab | null): ModelRow[] {
+  return rows
+    .filter((row) => !lab || row.lab === lab)
+    .sort((a, b) => {
+      const known = Number(b.modelId !== null) - Number(a.modelId !== null);
+      return known || b.prompts - a.prompts || b.builds - a.builds || a.modelName.localeCompare(b.modelName);
+    });
+}
+
+/** The Makers tab's rows: most engagement first, then handle. */
+export function sortMakerRows(rows: readonly MakerRow[]): MakerRow[] {
+  return [...rows].sort((a, b) => b.engagement.total - a.engagement.total || a.creator.handle.localeCompare(b.creator.handle));
+}
+
+/* ── the detail sheet ── */
+
+export type EngagementWindow = 7 | 30 | 90;
+export const ENGAGEMENT_WINDOWS: readonly EngagementWindow[] = [7, 30, 90];
+
+/**
+ * The engagement in the last `days` days, from the 14 weekly values (newest
+ * last): the newest round(days / 7) weeks, so 7 is 1 week, 30 is 4 and 90 is 13.
+ */
+export function windowTotal(series: readonly number[], days: EngagementWindow): number {
+  return seriesTotal(series.slice(-Math.min(series.length, Math.round(days / 7))));
+}
+
+/** Each model's share of a build's prompts, 0 to 1, over its sessions; the model most used first. */
+export function modelShares(row: Pick<DashboardRow, "making">): { name: string; lab: Lab | null; prompts: number; share: number }[] {
+  const byName = new Map<string, { name: string; lab: Lab | null; prompts: number }>();
+  for (const session of row.making.sessions) {
+    const version = normaliseModel(session.model);
+    const raw = session.model?.trim() ?? "";
+    const name = version?.name ?? (raw || "Unknown model");
+    const entry = byName.get(name) ?? { name, lab: version?.lab ?? null, prompts: 0 };
+    entry.prompts += session.prompts;
+    byName.set(name, entry);
+  }
+  const total = [...byName.values()].reduce((sum, entry) => sum + entry.prompts, 0);
+  return [...byName.values()]
+    .sort((a, b) => b.prompts - a.prompts || a.name.localeCompare(b.name))
+    .map((entry) => ({ ...entry, share: total > 0 ? entry.prompts / total : 0 }));
 }

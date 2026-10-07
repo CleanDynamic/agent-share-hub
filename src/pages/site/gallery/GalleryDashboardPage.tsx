@@ -8,9 +8,9 @@
    counts and the "Made for" menu come from the one unfiltered read, so they do
    not shrink as the reader filters. With no filter set the two are one query.
 
-   THE ADDRESS IS THE STATE. view, tab, model, lab, for, report, active, dsort
-   and q are read with `parseGalleryParams` and every change writes them with
-   `galleryHref`; an address the dashboard cannot read in full (a feed sort, a
+   THE ADDRESS IS THE STATE. view, tab, model, lab, for, report, active, dsort,
+   build (the build open in the detail sheet) and q are read with
+   `parseGalleryParams` and every change writes them with `galleryHref`; an address the dashboard cannot read in full (a feed sort, a
    one-letter query) is replaced by the one it can. Choosing a lab clears the
    model and the other way round, so the two never contradict each other. */
 
@@ -46,6 +46,7 @@ export function GalleryDashboardPage() {
   const report = params.report ?? null;
   const active = params.active ?? null;
   const sort = params.dsort ?? "engagement";
+  const openId = params.build ?? null;
   const { query } = params;
 
   /** What the dashboard's address holds: the feed's sort and the old lens parameters are left out. */
@@ -59,9 +60,10 @@ export function GalleryDashboardPage() {
       report: report ?? undefined,
       active: active ?? undefined,
       dsort: params.dsort,
+      build: openId ?? undefined,
       query,
     }),
-    [params.tab, params.dsort, model, lab, audience, report, active, query],
+    [params.tab, params.dsort, model, lab, audience, report, active, openId, query],
   );
   const go = (next: Partial<GalleryParams>) => navigate(galleryHref({ ...dashParams, ...next }));
 
@@ -141,8 +143,10 @@ export function GalleryDashboardPage() {
         onClearFilters={() => go({ query: null, model: undefined, lab: undefined, madeFor: [], report: undefined, active: undefined })}
         drafts={user ? { count: drafts.data ?? null } : undefined}
         onConnect={connector.open}
-        /* UI-P51's detail sheet is not built yet: until it is, a build opens on its own page. */
-        onOpenBuild={(row) => navigate(`/b2/${row.slug}`)}
+        onOpenBuild={(row) => go({ build: row.id })}
+        onCloseBuild={() => navigate(galleryHref({ ...dashParams, build: undefined }), { replace: true })}
+        openId={openId}
+        onOpenModel={(id) => go({ model: id, lab: undefined, tab: undefined })}
       />
     </>
   );

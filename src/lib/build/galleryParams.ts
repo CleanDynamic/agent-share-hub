@@ -23,6 +23,9 @@
 // own sort; engagement is the resting one). They sit after sort and before q,
 // so the feed's addresses are unchanged. A dashboard view can be shared.
 //
+// UI-P51 — build (a build's id) opens the dashboard's detail sheet. It sits
+// after dsort and before q, so a build can be linked.
+//
 // ONLY WHAT DIFFERS FROM THE DEFAULT IS WRITTEN. The All lens, an empty facet
 // and an empty query are the gallery's resting state, and /gallery is how that
 // state is spelled. Anything the gallery does not recognise — a lens it has no
@@ -96,6 +99,8 @@ export interface GalleryParams {
   active?: DashboardActive;
   /** UI-P50. The dashboard's sort; present only when it is not engagement. */
   dsort?: Exclude<DashboardSort, "engagement">;
+  /** UI-P51. The build open in the dashboard's detail sheet; an id or a dev alias. */
+  build?: string;
 }
 
 /** Trimmed, empty entries dropped, first occurrence kept. */
@@ -142,6 +147,11 @@ function isDashboardSort(value: string | null | undefined): value is Exclude<Das
   return typeof value === "string" && value !== "engagement" && (DASHBOARD_SORTS as readonly string[]).includes(value);
 }
 
+/** UI-P51 — a build id (or the dev page's short alias): word characters and hyphens only. */
+function isBuildRef(value: string | null | undefined): value is string {
+  return typeof value === "string" && /^[\w-]{1,64}$/.test(value);
+}
+
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
 }
@@ -160,6 +170,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const report = search.get("report");
   const active = toActive(search.get("active"));
   const dsort = search.get("dsort");
+  const build = search.get("build");
   return {
     lens: isLens(lens) ? lens : "all",
     madeFor: cleanValues(search.getAll("for")),
@@ -174,12 +185,13 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(isReport(report) ? { report } : {}),
     ...(active ? { active } : {}),
     ...(isDashboardSort(dsort) ? { dsort } : {}),
+    ...(isBuildRef(build) ? { build } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, sort, tab, lab, report, active, dsort, q.
+ * default, keys in the order view, lens, for, with, shape, model, sort, tab, lab, report, active, dsort, build, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -197,6 +209,7 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const active = toActive(params.active);
   if (active) out.set("active", String(active));
   if (isDashboardSort(params.dsort)) out.set("dsort", params.dsort);
+  if (isBuildRef(params.build)) out.set("build", params.build);
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);

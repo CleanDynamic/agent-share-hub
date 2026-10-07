@@ -14,8 +14,9 @@
    THE ADDRESS IS THE STATE, and it is not held here: every control is a callback
    the page answers by writing the address. The view owns only what is in
    flight: the ticked rows, the footer's two toggles and the search text before
-   its debounce. This prompt builds the Builds tab; UI-P51 adds the Models and
-   Makers tabs and the detail sheet (`onOpenBuild` is where it hooks in).
+   its debounce. UI-P50 built the Builds tab; UI-P51 adds the Models and Makers
+   tabs (folds of the rows the filters leave) and the detail sheet, which is
+   open exactly when `openId` names a build (`onOpenBuild` / `onCloseBuild`).
 
    EVERY COLOUR IS A TOKEN. */
 
@@ -23,6 +24,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { Check, ChevronDown, Download, Minus, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
@@ -32,6 +34,7 @@ import { Skeleton } from "@/components/brand/Skeleton";
 import { Sparkline } from "@/components/brand/charts";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { makerRows, modelRows } from "@/lib/build/dashboardAggregates";
 import type { DashboardRow } from "@/lib/build/gallery";
 import type { DashboardActive, DashboardReport, DashboardSort, DashboardTab, GalleryViewMode } from "@/lib/build/galleryParams";
 import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
@@ -40,6 +43,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
+import { BuildDetailSheet } from "./BuildDetailSheet";
 import { menuContent, menuItem, groupHeading, SearchField } from "./GalleryFeedView";
 import {
   ACTIVE_ITEMS,
@@ -54,6 +58,8 @@ import {
   seriesTotal,
   shortDate,
   sortDashboardRows,
+  sortMakerRows,
+  sortModelRows,
   sparkValues,
   sumOfPrompts,
   type DashboardCounts,
@@ -95,10 +101,14 @@ export interface GalleryDashboardViewProps {
   /** The signed-in reader's drafts box; absent when signed out. */
   drafts?: { count: number | null };
   onConnect: () => void;
-  /** Opens a build's detail (UI-P51's sheet). */
+  /** Opens a build's detail sheet. */
   onOpenBuild: (row: DashboardRow) => void;
+  /** Closes it. */
+  onCloseBuild: () => void;
   /** The build open in the sheet, which keeps its row highlighted. */
   openId?: string | null;
+  /** The Models tab's version button: the Builds tab, filtered to that ModelVersion id. */
+  onOpenModel: (id: string) => void;
 }
 
 /* ── small pieces ── */
@@ -576,7 +586,7 @@ function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () 
   );
 }
 
-function ModelsCell({ row }: { row: DashboardRow }) {
+function ModelsCell({ row }: { row: Pick<DashboardRow, "modelsUsed"> }) {
   const names = modelNamesOf(row);
   if (names.length === 0) return <span style={mono(13, { color: t.text2 })}>—</span>;
   return (
@@ -708,6 +718,214 @@ function BuildRow({
   );
 }
 
+/* ── the Models and Makers tabs (UI-P51) ── */
+
+const MODELS_GRID: CSSProperties = {
+  ...GRID,
+  gridTemplateColumns: "minmax(200px, 1.2fr) 110px 72px 72px 72px 80px 92px minmax(200px, 1fr)",
+};
+const MAKERS_GRID: CSSProperties = {
+  ...GRID,
+  gridTemplateColumns: "minmax(180px, 1fr) 64px 72px 230px 72px 80px 92px 110px",
+};
+/* Both sets of tracks plus their gaps and the row's padding come to about 990; the table scrolls sideways below that. */
+const SIMPLE_TABLE_MIN_WIDTH = 1000;
+
+function PlainHeader({ grid, columns }: { grid: CSSProperties; columns: { label: string; right?: boolean }[] }) {
+  return (
+    <div role="row" style={{ ...grid, height: 38 }}>
+      {columns.map((column) => (
+        <div key={column.label} role="columnheader" style={{ ...headCell, ...(column.right ? rightCell : null) }}>
+          {column.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NewBadge() {
+  return (
+    <span
+      style={mono(10, {
+        padding: "1px 6px",
+        borderRadius: r.chip,
+        background: t.evidenceFill,
+        color: t.onEvidenceFill,
+        flexShrink: 0,
+      })}
+    >
+      new
+    </span>
+  );
+}
+
+const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+
+function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]; lab: Lab | null; onOpenModel: (id: string) => void }) {
+  const list = useMemo(() => sortModelRows(modelRows(rows), lab), [rows, lab]);
+  return (
+    <div style={{ padding: "0 16px 16px", overflowX: "auto" }}>
+      <div role="table" aria-label="Models" style={{ minWidth: SIMPLE_TABLE_MIN_WIDTH }}>
+        <PlainHeader
+          grid={MODELS_GRID}
+          columns={[
+            { label: "Model version" },
+            { label: "Lab" },
+            { label: "Builds", right: true },
+            { label: "Sessions", right: true },
+            { label: "Prompts", right: true },
+            { label: "AI turns", right: true },
+            { label: "Engagement", right: true },
+            { label: "Last used" },
+          ]}
+        />
+        <div role="rowgroup">
+          {list.map((row) => {
+            const isNew = row.modelId ? (MODEL_VERSIONS.find((version) => version.id === row.modelId)?.isNew ?? false) : false;
+            return (
+              <div key={row.modelId ?? `raw:${row.modelName}`} role="row" data-testid="dash-model-row" style={{ ...MODELS_GRID, minHeight: 48 }}>
+                <div role="cell" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  {row.modelId ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenModel(row.modelId as string)}
+                      style={{
+                        ...bareButton,
+                        ...mono(13, { fontWeight: 500, color: t.text }),
+                        ...ellipsis,
+                        textDecoration: "underline",
+                        textDecorationColor: t.line,
+                        textUnderlineOffset: 3,
+                      }}
+                    >
+                      {row.modelName}
+                    </button>
+                  ) : (
+                    /* A model the registry does not name has no id to filter by, so it is a name, not a button. */
+                    <span style={mono(13, { fontWeight: 500, color: t.text, ...ellipsis })}>{row.modelName}</span>
+                  )}
+                  {isNew ? <NewBadge /> : null}
+                </div>
+                <div role="cell" style={figtree(14, { color: t.text2 })}>
+                  {row.lab ?? "—"}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.builds)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.sessions)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.prompts)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.turns)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.engagement.total)}
+                </div>
+                <div role="cell" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  {row.lastUsed ? (
+                    <>
+                      <span style={mono(13, { color: t.text, flexShrink: 0 })}>{shortDate(row.lastUsed.at)}</span>
+                      <span aria-hidden="true" style={{ width: 1, height: 12, background: t.line, flexShrink: 0 }} />
+                      <span title={row.lastUsed.buildTitle} style={figtree(13, { color: t.text2, minWidth: 0, ...ellipsis })}>
+                        {row.lastUsed.buildTitle}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={mono(13, { color: t.text2 })}>—</span>
+                      <span style={figtree(13, { color: t.text2, ...ellipsis })}>Not used in any build yet</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {list.length === 0 ? (
+        <p data-testid="dash-empty" style={{ ...display(20), margin: 0, padding: "24px 8px 8px", color: t.text }}>
+          No models match these filters.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function MakersTable({ rows }: { rows: readonly DashboardRow[] }) {
+  const list = useMemo(() => sortMakerRows(makerRows(rows)), [rows]);
+  return (
+    <div style={{ padding: "0 16px 16px", overflowX: "auto" }}>
+      <div role="table" aria-label="Makers" style={{ minWidth: SIMPLE_TABLE_MIN_WIDTH }}>
+        <PlainHeader
+          grid={MAKERS_GRID}
+          columns={[
+            { label: "Maker" },
+            { label: "Builds", right: true },
+            { label: "Sessions", right: true },
+            { label: "AI models" },
+            { label: "Prompts", right: true },
+            { label: "AI turns", right: true },
+            { label: "Engagement", right: true },
+            { label: "Last published" },
+          ]}
+        />
+        <div role="rowgroup">
+          {list.map((row) => {
+            const handle = row.creator.handle;
+            return (
+              <div key={row.creator.id} role="row" data-testid="dash-maker-row" style={{ ...MAKERS_GRID, minHeight: 48 }}>
+                <div role="cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <Avatar size={26} userId={row.creator.id} name={handle || "Maker"} />
+                  {handle ? (
+                    <Link
+                      to={`/profile/${encodeURIComponent(handle)}`}
+                      style={{ ...figtree(14, { fontWeight: 500, color: t.text, ...ellipsis }), textDecoration: "none" }}
+                    >
+                      @{handle}
+                    </Link>
+                  ) : (
+                    <span style={figtree(14, { fontWeight: 500, color: t.text2 })}>a maker</span>
+                  )}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.builds)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.sessions)}
+                </div>
+                <div role="cell" style={{ minWidth: 0 }}>
+                  <ModelsCell row={{ modelsUsed: row.models }} />
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.prompts)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.turns)}
+                </div>
+                <div role="cell" style={numberCell}>
+                  {formatCount(row.engagement.total)}
+                </div>
+                <div role="cell" style={mono(13, { color: row.lastPublishedAt ? t.text : t.text2 })}>
+                  {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "—"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {list.length === 0 ? (
+        <p data-testid="dash-empty" style={{ ...display(20), margin: 0, padding: "24px 8px 8px", color: t.text }}>
+          No makers match these filters.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+
 function TableSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-label="Loading builds" style={{ padding: "0 16px" }}>
@@ -837,9 +1055,20 @@ function Main(props: GalleryDashboardViewProps) {
       </div>
 
       {tab !== "builds" ? (
-        <div role="tabpanel" data-testid="dash-soon" style={{ padding: "24px 16px 32px" }}>
-          <p style={{ ...display(20), margin: 0, color: t.text }}>The {title} tab is on its way.</p>
-          <p style={{ ...figtree(13, { color: t.text2 }), margin: "6px 0 0" }}>The Builds tab already shows every model a build used.</p>
+        <div role="tabpanel" aria-label={title}>
+          {status === "loading" ? (
+            <div style={{ paddingTop: 8 }}>
+              <TableSkeleton />
+            </div>
+          ) : status === "error" ? (
+            <div style={{ padding: "16px 24px" }}>
+              <ErrorState panel={`The ${title.toLowerCase()} table`} onRetry={props.onRetry} error={props.error} />
+            </div>
+          ) : tab === "models" ? (
+            <ModelsTable rows={rows} lab={props.lab} onOpenModel={props.onOpenModel} />
+          ) : (
+            <MakersTable rows={rows} />
+          )}
         </div>
       ) : (
         <div role="tabpanel">
@@ -934,6 +1163,8 @@ function Main(props: GalleryDashboardViewProps) {
 /* ── the view ── */
 
 export function GalleryDashboardView(props: GalleryDashboardViewProps) {
+  /* Looked up in every build, not the filtered rows: a linked build opens even when a filter hides it. */
+  const openBuild = props.openId ? (props.allRows.find((row) => row.id === props.openId) ?? null) : null;
   return (
     <div
       data-testid="gallery-dashboard"
@@ -947,6 +1178,7 @@ export function GalleryDashboardView(props: GalleryDashboardViewProps) {
     >
       <Sidebar {...props} />
       <Main {...props} />
+      <BuildDetailSheet build={openBuild} onClose={props.onCloseBuild} />
     </div>
   );
 }
