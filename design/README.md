@@ -33,6 +33,8 @@ design/
     sample-data.json    the sample content — the only place fake data lives
 ```
 
+The screens predate UI-P52: `screens/` is not committed here and nothing in the repository renders it, so any JPEG of a board shows it before the density pass, and the HTML wins (RULES §1.3).
+
 **Open any `reference/**/*.html` in a browser.** It needs nothing else: no server, no build, no network. The fonts load from `reference/fonts/`. Every element that corresponds to a component carries `data-ui="<component>"`, and where there are states, `data-variant="<state>"`. The values in those files are exact — port them, don't approximate them.
 
 Two things in the reference are **not** to be built: the browser strip across the top of each desktop board (that's the visitor's own browser, drawn for context — it's marked `data-ui="browser-frame-PRESENTATION-ONLY-do-not-build"`), and every piece of sample text, name, number and date.
@@ -49,7 +51,7 @@ python3 design/build-kit.py --check  # verifies it, writes nothing
 git add design && git commit -m "UI-P00: add design kit"
 ```
 
-It needs nothing beyond the standard library, overwrites with identical bytes when re-run, and touches nothing outside `design/`. `UI-P00` runs it for you if the kit is missing.
+It needs nothing beyond the standard library, overwrites with identical bytes when re-run, and touches nothing outside `design/`. `UI-P00` runs it for you if the kit is missing. Since UI-P52 it writes every reference board through `tighten()` from `design/scripts/tighten-reference.py` (the density pass), so that script must be in place for a restore; `--check` does not need it.
 
 **Or unzip.** If you have the repository locally, unzip `buildgallery-design-kit.zip` at the root so it lands as `design/`, and commit that instead. Same files.
 
