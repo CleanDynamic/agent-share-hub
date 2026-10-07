@@ -68,7 +68,8 @@ test.describe("/gallery in the site frame", () => {
     await switcher.getByRole("radio", { name: "Dashboard" }).click();
     await expect(page).toHaveURL(/\/gallery\?view=dashboard$/);
     await page.reload();
-    await expect(page.getByTestId("gallery-view")).toBeVisible();
+    // UI-P50: the address now reads back as the dashboard, not the feed.
+    await expect(page.getByTestId("gallery-dashboard")).toBeVisible();
     await expect(switcher.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
   });
 
