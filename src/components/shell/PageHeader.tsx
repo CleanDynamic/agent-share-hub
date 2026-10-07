@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { SPACE } from "@/lib/theme/space";
+import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 /* Roles imported by name rather than as `type`: this file uses inline
    type-import modifiers, which a value binding called `type` makes ambiguous.
@@ -39,6 +39,9 @@ import { bodyLarge, eyebrow as eyebrowRole, measure, sectionHead } from "@/lib/t
    application screen. The face is never named here: it is whatever the role
    says it is, which is what keeps the scale's 20px display floor covering
    this component as well as the module that declares it.
+
+   ITS SPACING IS THE COMPACT SCALE (UI-P55): the same steps by name, through
+   the density table — sm 12, md 17, lg 29, xs 6 (16, 24, 40 and 8 before).
    ──────────────────────────────────────────────────────────────────────────── */
 
 export interface PageHeaderProps {
@@ -60,8 +63,8 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
         flexDirection: "column",
         /* sm between the title row and the description: they are one group.
            lg below the header: the header and what it heads are not. */
-        gap: SPACE.sm,
-        marginBottom: SPACE.lg,
+        gap: SPACE_COMPACT.sm,
+        marginBottom: SPACE_COMPACT.lg,
       }}
     >
       <div
@@ -70,10 +73,10 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
           flexWrap: "wrap",
           alignItems: "flex-end",
           justifyContent: "space-between",
-          gap: SPACE.md,
+          gap: SPACE_COMPACT.md,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE_COMPACT.xs, minWidth: 0 }}>
           {eyebrow != null && (
             <span style={{ ...eyebrowRole, color: t.text2 }}>{eyebrow}</span>
           )}
@@ -86,7 +89,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: SPACE.xs,
+              gap: SPACE_COMPACT.xs,
               /* Never the element that makes the row wider than the column:
                  the actions wrap inside themselves before the row wraps. */
               minWidth: 0,

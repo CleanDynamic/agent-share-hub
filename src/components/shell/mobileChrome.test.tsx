@@ -48,12 +48,15 @@ describe("DockView", () => {
     expect(tile.textContent).toContain("9+");
   });
 
-  it("is fixed, with 62×54 tiles", () => {
+  it("is fixed, with 62×44 tiles", () => {
     dock({ current: "home", unread: 0 });
     const nav = screen.getByTestId("dock");
     expect(nav.style.position).toBe("fixed");
     const tile = screen.getByTestId("dock-tile-home");
-    expect([tile.style.width, tile.style.height]).toEqual(["62px", "54px"]);
+    // UI-P52 density pass: 54 → 44, the table's number and the touch floor;
+    // the width is not a square control's and stays.
+    expect([tile.style.width, tile.style.height]).toEqual(["62px", "44px"]);
+    expect(nav.style.padding).toBe("5px");
   });
 });
 
@@ -94,8 +97,11 @@ describe("ScrollRow", () => {
     );
     const row = document.querySelector<HTMLElement>('[data-ui="scroll-row"]')!;
     expect(row.style.overflowX).toBe("auto");
-    expect(row.style.margin).toBe("-4px -14px");
-    expect(row.style.gap).toBe("6px");
+    // UI-P52 density pass: the bleed follows the page's gutter, 14 → 10, and the
+    // drawn 6px gap renders at 4.
+    expect(row.style.margin).toBe("-4px -10px");
+    expect(row.style.padding).toBe("4px 10px");
+    expect(row.style.gap).toBe("4px");
     expect(Array.from(row.children).every((c) => (c as HTMLElement).style.flexShrink === "0")).toBe(true);
   });
 });

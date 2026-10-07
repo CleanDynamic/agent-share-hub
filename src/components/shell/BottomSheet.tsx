@@ -10,6 +10,10 @@
 // it is the dialog's accessible name — and may be visually hidden.
 //
 // NOTHING BLURS: the sheet is solid on purpose; only the header and dock blur.
+//
+// DENSER SINCE UI-P55: 9 between its parts, 7px 12px 17px around them, the title
+// 15px; the grabber, its 80px drag and the Close control's drawn 38 are as they
+// were (the IconButton renders that 38 at 31).
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -67,11 +71,11 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
             zIndex: 41,
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 9,
             maxHeight: "88dvh",
             overflowY: "auto",
             boxSizing: "border-box",
-            padding: "10px 16px calc(24px + env(safe-area-inset-bottom))",
+            padding: "7px 12px calc(17px + env(safe-area-inset-bottom))",
             borderRadius: "22px 22px 0 0",
             background: t.solid,
             borderTop: `1px solid ${t.glassBorder}`,
@@ -87,16 +91,16 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
             onPointerMove={onMove}
             onPointerUp={onUp}
             onPointerCancel={onUp}
-            style={{ alignSelf: "center", padding: "6px 24px", touchAction: "none", cursor: "grab" }}
+            style={{ alignSelf: "center", padding: "4px 17px", touchAction: "none", cursor: "grab" }}
           >
             <div style={{ width: 40, height: 5, borderRadius: 3, background: t.line }} />
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9 }}>
             <Dialog.Title
               style={
                 hideTitle
                   ? VISUALLY_HIDDEN
-                  : { margin: 0, fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }
+                  : { margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }
               }
             >
               {title}

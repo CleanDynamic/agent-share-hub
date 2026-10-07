@@ -23,16 +23,17 @@
 // drops navigation on purpose — and it is exactly the kind of thing a later
 // prompt could undo by accident.
 //
-// Fifty-two is not a magic number: it is the height ComposeTopBar has carried
-// since NS-P07, and the panel row below it is flex:1, so every pixel the bar
-// gains is a pixel the tray, the tree and the inspector lose.
+// Forty-three is not a magic number: it is the 52 ComposeTopBar carried since
+// NS-P07, through the UI-P52 density table, and the panel row below it is
+// flex:1, so every pixel the bar gains is a pixel the tray, the tree and the
+// inspector lose.
 
 import { expect, test, type Page } from "@playwright/test";
 
 const THEMES = ["noon", "dusk"] as const;
 
-/** The height ComposeTopBar has always been. BG-P16 repaints, never resizes. */
-const BAR_HEIGHT = 52;
+/** ComposeTopBar's 52 through the density table (UI-P52 density pass). Only that pass resizes it. */
+const BAR_HEIGHT = 43;
 
 /** Set the theme before first paint, the way index.html's boot script reads it. */
 async function withTheme(page: Page, theme: string) {
@@ -114,8 +115,10 @@ test.describe("the exit", () => {
     expect(paint.border).toBeGreaterThan(0);
     expect(paint.radius).toBeGreaterThan(0);
     expect(paint.filled).toBe(true);
-    // Taller than the 30–32px controls beside it: its only emphasis.
-    expect(paint.height).toBeGreaterThan(32);
+    // Taller than the controls beside it: its only emphasis. UI-P52 density
+    // pass: 36 → 30; the 30–32px controls a route puts beside it take the table
+    // with their pages.
+    expect(paint.height).toBe(30);
     expect(paint.height).toBeLessThan(BAR_HEIGHT);
   });
 

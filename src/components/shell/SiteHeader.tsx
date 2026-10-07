@@ -16,6 +16,14 @@
 //
 // LIBRARY AND ACTIVITY ARE SIGNED-IN ONLY, as they are in `allNavItems`: both
 // routes sit behind `ProtectedRoute`, so a signed-out header does not offer them.
+//
+// THE DENSITY PASS (UI-P55). The bar is 52 (64 before) and, as the board draws it,
+// its 1px edge sits outside those 52, so the column starts at 53 on every board.
+// The links are 13px with 0 10px each side, the gaps 20 / 10 / 6, and the search,
+// New build, the bell and the theme control are 31 (38 before). The lockup and
+// the brand controls take the drawn sizes and render them through the table
+// (21 → 18). The side gutters below 1328 are not drawn on any board and keep the
+// 1280 column's edges, so they stay.
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
@@ -70,11 +78,11 @@ export interface SiteHeaderViewProps {
 
 const linkBase: CSSProperties = {
   position: "relative",
-  height: 64,
+  height: 52,
   display: "flex",
   alignItems: "center",
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
 };
 
 /* THE HEADER BETWEEN THE BOARDS (UI-P39). The reference draws 1280 and nothing
@@ -118,14 +126,14 @@ const badge: CSSProperties = {
 };
 
 const draftsBadge: CSSProperties = {
-  marginLeft: 6,
-  padding: "0 6px",
+  marginLeft: 4,
+  padding: "0 4px",
   borderRadius: 6,
   background: t.cell,
   color: t.text2,
   fontFamily: DM_MONO,
   fontSize: 11,
-  lineHeight: "18px",
+  lineHeight: "15px",
 };
 
 function Lamp({ width, place }: { width: number; place: CSSProperties }) {
@@ -138,11 +146,11 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
   const item: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    height: 36,
-    padding: "0 12px",
+    height: 30,
+    padding: "0 9px",
     borderRadius: 10,
     fontFamily: FIGTREE,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 500,
     textDecoration: "none",
     outline: "none",
@@ -170,7 +178,7 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
           sideOffset={8}
           style={{
             minWidth: 190,
-            padding: 6,
+            padding: 4,
             borderRadius: 14,
             background: t.solid,
             border: `1px solid ${t.glassBorder}`,
@@ -188,7 +196,7 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <Link to={SITE_NAV.drafts} style={item}>Drafts</Link>
           </DropdownMenu.Item>
-          <DropdownMenu.Separator style={{ height: 1, margin: "4px 6px", background: t.line }} />
+          <DropdownMenu.Separator style={{ height: 1, margin: "4px 4px", background: t.line }} />
           <DropdownMenu.Item asChild className={MENU_ITEM_CLASS}>
             <button type="button" onClick={onSignOut} style={item}>Sign out</button>
           </DropdownMenu.Item>
@@ -221,8 +229,8 @@ export function SiteHeaderView({
   const newLabel = useMinWidth(NEW_LABEL_MIN);
   const [searchOpen, setSearchOpen] = useState(false);
   const signedIn = viewer !== null;
-  const gap = full ? 28 : compact ? 8 : 14;
-  const linkPad = full ? "0 14px" : compact ? "0 8px" : "0 10px";
+  const gap = full ? 20 : compact ? 6 : 10;
+  const linkPad = full ? "0 10px" : compact ? "0 6px" : "0 7px";
   const unreadLabel = unread > 9 ? "9+" : String(unread);
 
   return (
@@ -231,7 +239,9 @@ export function SiteHeaderView({
       data-ui="site-header"
       style={{
         position: "relative",
-        height: 64,
+        /* 52 and then the 1px edge, as the board draws it: 53 in all. */
+        height: 52,
+        boxSizing: "content-box",
         background: t.header,
         borderBottom: `1px solid ${t.headerBorder}`,
         backdropFilter: GLASS_BLUR,
@@ -243,7 +253,7 @@ export function SiteHeaderView({
           width: "100%",
           maxWidth: 1280,
           margin: "0 auto",
-          height: 64,
+          height: 52,
           display: "flex",
           alignItems: "center",
           gap,
@@ -281,7 +291,7 @@ export function SiteHeaderView({
           <IconButton icon={Search} label="Search" size={38} onClick={() => setSearchOpen(true)} />
         )}
 
-        <Button variant={newBuildSecondary ? "secondary" : "primary"} size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 38, padding: 0 }}>
+        <Button variant={newBuildSecondary ? "secondary" : "primary"} size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 31, padding: 0 }}>
           {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
         </Button>
 
@@ -292,8 +302,8 @@ export function SiteHeaderView({
             aria-current={activityCurrent ? "page" : undefined}
             style={{
               position: "relative",
-              width: 38,
-              height: 38,
+              width: 31,
+              height: 31,
               borderRadius: r.control,
               display: "flex",
               alignItems: "center",

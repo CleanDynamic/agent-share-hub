@@ -1,10 +1,11 @@
 // The breadcrumb (UI-P18): where this page sits, mirroring the URL.
 //
-// `<nav aria-label="Breadcrumb">`, 40px tall. Ancestors are links in Figtree 13px
-// `--text2` each followed by a "/" in DM Mono 12px `--label` (hidden from
-// assistive tech); the current page is a `<span aria-current="page">` at weight
-// 600 in `--text`, one line with an ellipsis at 480px. While a title is loading
-// the current crumb is a 120×12 `--recess` skeleton.
+// `<nav aria-label="Breadcrumb">`, 33px tall (40 before the UI-P55 density pass),
+// 6 apart. Ancestors are links in Figtree 12px `--text2` each followed by a "/"
+// in DM Mono 12px `--label` (hidden from assistive tech); the current page is a
+// `<span aria-current="page">` at weight 600 in `--text`, one line with an
+// ellipsis at 480px. While a title is loading the current crumb is a 120×12
+// `--recess` skeleton.
 //
 // `BreadcrumbView` is pure (a trail in, a nav out); `Breadcrumb` reads the route.
 
@@ -17,7 +18,7 @@ import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
 
-const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 13 };
+const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12 };
 
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
   return (
@@ -25,7 +26,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
       data-testid="breadcrumb"
       data-ui="breadcrumb"
       aria-label="Breadcrumb"
-      style={{ display: "flex", alignItems: "center", gap: 8, height: 40, minWidth: 0 }}
+      style={{ display: "flex", alignItems: "center", gap: 6, height: 33, minWidth: 0 }}
     >
       {trail.map((crumb, index) => {
         const last = index === trail.length - 1;

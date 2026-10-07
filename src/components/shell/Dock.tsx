@@ -2,7 +2,9 @@
 //
 // `<nav aria-label="Primary">`, fixed, centred, 16px above the bottom edge plus
 // the safe-area inset so it clears the home indicator. Glass (`--dock`) — one of
-// the two blurred surfaces on a phone, with the header. Tiles are 62×54 links:
+// the two blurred surfaces on a phone, with the header. Tiles are 62×44 links
+// (62×54 inside 7px before the UI-P55 density pass; 44 is the table's and the
+// touch floor's, and the dock is 5px around them):
 // Home, Gallery, New (always `--action`), Bounties, Activity. The current tile is
 // `--text` with `--on-text` and carries a lamp above it (`--lit`, with
 // `--nav-lamp-glow`); amber is light, never text. Activity shows a badge when
@@ -55,7 +57,7 @@ export function DockView({ current, unread, placement = "fixed" }: DockViewProps
         zIndex: 30,
         display: "flex",
         gap: 4,
-        padding: 7,
+        padding: 5,
         borderRadius: 22,
         background: t.dock,
         border: `1px solid ${t.dockBorder}`,
@@ -83,7 +85,7 @@ export function DockView({ current, unread, placement = "fixed" }: DockViewProps
             style={{
               position: "relative",
               width: 62,
-              height: 54,
+              height: 44,
               borderRadius: 15,
               display: "flex",
               flexDirection: "column",
