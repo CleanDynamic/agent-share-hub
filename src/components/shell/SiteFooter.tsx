@@ -5,6 +5,11 @@
 // 1280 column. The last link is "Sign in" when signed out and "Sign out" — a
 // button in the same style — when signed in; the reference draws the signed-out
 // item, so that difference is expected in the compare.
+//
+// DENSER SINCE UI-P55: the row is 20 apart and the links 16 apart in 12px type;
+// the 88px height is over the table's band and stays. The lockup and the theme
+// control take the drawn 16 and 32/11 and render them through the table. The
+// side gutters below 1328 keep the column's edges, as the header's do.
 
 import { memo, type CSSProperties, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +34,7 @@ export interface SiteFooterViewProps {
   themeControl?: ReactNode;
 }
 
-const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, color: t.text2 };
+const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, color: t.text2 };
 
 export function SiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
   const wide = useMinWidth(1328);
@@ -52,13 +57,13 @@ export function SiteFooterView({ signedIn, onSignOut, onConnect, themeControl }:
           display: "flex",
           flexWrap: narrow ? "wrap" : undefined,
           alignItems: "center",
-          gap: narrow ? "12px 20px" : 28,
-          padding: wide ? 0 : narrow ? "12px 24px" : "0 24px",
+          gap: narrow ? "9px 14px" : 20,
+          padding: wide ? 0 : narrow ? "9px 24px" : "0 24px",
           boxSizing: "border-box",
         }}
       >
         <Lockup size={16} to={SITE_NAV.home} />
-        <nav aria-label="Footer" style={{ display: "flex", flexWrap: narrow ? "wrap" : undefined, gap: narrow ? "8px 16px" : 22 }}>
+        <nav aria-label="Footer" style={{ display: "flex", flexWrap: narrow ? "wrap" : undefined, gap: narrow ? "6px 12px" : 16 }}>
           <FrameLink to="/about" style={link}>About</FrameLink>
           <FrameLink to="/api-docs" style={link}>API docs</FrameLink>
           <FrameLink to="/bounties/solvers" style={link}>Solvers</FrameLink>

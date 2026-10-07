@@ -91,8 +91,9 @@ describe("ProviderButtons", () => {
 
   it("draws each at 44 tall in 14px 500 type on --glass-2 with a --line hairline, 10px between mark and words, at the 16px mark", () => {
     const html = markup(<ProviderButtons onProvider={() => {}} loadingProvider={null} />);
-    expect(html).toContain("height:44px");
-    expect(html).toContain("font-size:14px");
+    // UI-P52 density pass: Button takes the drawn 44/14 and renders 36/13.
+    expect(html).toContain("height:36px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("font-weight:500");
     expect(html).toContain("background:var(--glass-2)");
     expect(html).toContain("border:1px solid var(--line)");
@@ -105,8 +106,10 @@ describe("ProviderButtons", () => {
     setViewport("phone");
     render(inRouter(<ProviderButtons onProvider={() => {}} loadingProvider={null} />));
     const style = screen.getByRole("button", { name: "Continue with Google" }).getAttribute("style")!;
-    expect(style).toContain("height: 48px");
-    expect(style).toContain("font-size: 15px");
+    // UI-P52 density pass: 48 → 39 by the table, held at the 44px touch floor;
+    // the type 15 → 14.
+    expect(style).toContain("height: 44px");
+    expect(style).toContain("font-size: 14px");
   });
 });
 
@@ -337,8 +340,9 @@ describe("PrimaryAction", () => {
   it("is the one primary: --action on --on-action, 46 tall in 15px type, and full width", () => {
     const html = markup(<PrimaryAction>Sign in</PrimaryAction>);
     expect(html).toContain('data-variant="primary"');
-    expect(html).toContain("height:46px");
-    expect(html).toContain("font-size:15px");
+    // UI-P52 density pass: drawn 46/15, rendered 38/14.
+    expect(html).toContain("height:38px");
+    expect(html).toContain("font-size:14px");
     expect(html).toContain("background:var(--action)");
     expect(html).toContain("color:var(--on-action)");
     expect(html).toContain("width:100%");
@@ -348,7 +352,8 @@ describe("PrimaryAction", () => {
   it("is 48 tall on a phone", () => {
     setViewport("phone");
     render(<PrimaryAction>Sign in</PrimaryAction>);
-    expect(screen.getByRole("button", { name: "Sign in" }).getAttribute("style")).toContain("height: 48px");
+    // UI-P52 density pass: a primary button that was 44 or taller stays 44 on a phone.
+    expect(screen.getByRole("button", { name: "Sign in" }).getAttribute("style")).toContain("height: 44px");
   });
 
   it("is disabled while the form is not ready, and while the request is out, saying what it is doing", () => {

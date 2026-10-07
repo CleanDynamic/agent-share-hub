@@ -36,12 +36,13 @@ const markup = (over?: Partial<BuildCardProps>) =>
   );
 
 describe("BuildCard", () => {
-  it("is one glass surface: --glass, a 1px --glass-border, radius 14, 7px padding and gap, the card shadow", () => {
+  it("is one glass surface: --glass, a 1px --glass-border, radius 14, 5px padding and gap, the card shadow", () => {
+    // UI-P52 density pass: padding and gap 7 → 5.
     const html = markup();
     expect(html).toContain("background:var(--glass)");
     expect(html).toContain("border-radius:var(--r-card)");
-    expect(html).toContain("padding:7px");
-    expect(html).toContain("gap:7px");
+    expect(html).toContain("padding:5px");
+    expect(html).toContain("gap:5px");
     expect(html).toContain("box-shadow:var(--shadow-card)");
     expect(html).toContain("border-width:1px;border-style:solid;border-color:var(--glass-border)");
     expect(html).not.toMatch(/backdrop|blur/i);
@@ -75,15 +76,18 @@ describe("BuildCard", () => {
     expect(markup({ coverHeight: COVER_HEIGHT.catalogue })).toContain("height:112px");
     const html = markup();
     expect(html).toContain("top:6px;left:6px;background:var(--media-tag);color:var(--text)");
-    expect(html).toContain("padding:2px 6px");
+    // UI-P52 density pass: the tag's padding is 2px 4px; positions and cover heights are not in the table.
+    expect(html).toContain("padding:2px 4px");
     expect(COVER_HEIGHT).toEqual({ catalogue: 112, wall: 92, works: 86, mobile: 96 });
   });
 
-  it("sets the title in Sentient at 19 (18 or 17 on mobile), one line with an ellipsis", () => {
+  it("sets the title drawn at 19 (18 or 17 on mobile) on one line with an ellipsis", () => {
+    // UI-P52 density pass: display() renders the drawn size through the table
+    // (19 → 16, 17 → 16), and under 20px a display role is Figtree 600.
     const html = markup();
-    expect(html).toContain("font-size:19px");
+    expect(html).toContain("font-size:16px;font-weight:600");
     expect(html).toContain("white-space:nowrap;overflow:hidden;text-overflow:ellipsis");
-    expect(markup({ titleSize: 17 })).toContain("font-size:17px");
+    expect(markup({ titleSize: 17 })).toContain("font-size:16px");
   });
 
   it("pads the body 0 5px 5px at gap 6, and chips wrap at gap 4", () => {

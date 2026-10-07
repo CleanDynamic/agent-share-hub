@@ -13,11 +13,17 @@
 // the design uses: desktop Home 46 → 0 / 90 / 30; mobile Home 30 → 0 / 44 / 14;
 // desktop Sign in 40 → 0 / 70 / 24; mobile Sign in 26 → 0 / 40 / 12.
 //
+// THOSE ARE THE DRAWN NUMBERS (UI-P54). The density pass renders the type through
+// the table (46 → 34) and each derived padding, gap and offset too (10 14 11 →
+// 7 10 8; 90 → 65); the mark is an SVG the kit sizes by attribute, which the pass
+// left alone, so it keeps `trunc(size·.6)` of the drawn size.
+//
 // THE LAMP IS `--tagline-lamp`, not `--lit`: amber on a chip that is light on
 // Dusk would be swallowed, so the tagline has its own.
 
 import type { CSSProperties } from "react";
 
+import { denseSpace } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
 import { display } from "@/lib/theme/type";
 
@@ -28,9 +34,9 @@ export type TaglineOffsets = readonly [number, number, number];
 
 export interface TaglineProps {
   lines: TaglineLines;
-  /** The type size in px: 46, 40, 30 or 26 in the design. */
+  /** The type size in px as the design drew it: 46, 40, 30 or 26. */
   size: number;
-  /** Each chip's left margin in px. */
+  /** Each chip's left margin in px, as drawn; rendered through the density table. */
   offsets: TaglineOffsets;
   /** The heading level. A page has one, so this is `h1` unless something else is. */
   as?: "h1" | "h2";
@@ -53,8 +59,9 @@ const HIDDEN: CSSProperties = {
 };
 
 export function Tagline({ lines, size, offsets, as: Heading = "h1" }: TaglineProps) {
-  const padding = `${Math.trunc(size * 0.22)}px ${Math.trunc(size * 0.32)}px ${Math.trunc(size * 0.26)}px`;
-  const gap = Math.trunc(size * 0.25);
+  const pad = (share: number) => `${denseSpace(Math.trunc(size * share))}px`;
+  const padding = `${pad(0.22)} ${pad(0.32)} ${pad(0.26)}`;
+  const gap = denseSpace(Math.trunc(size * 0.25));
   const mark = Math.trunc(size * 0.6);
 
   return (
@@ -82,7 +89,7 @@ export function Tagline({ lines, size, offsets, as: Heading = "h1" }: TaglinePro
             letterSpacing: "-0.03em",
             lineHeight: 1,
             textWrap: "nowrap",
-            marginLeft: offsets[i],
+            marginLeft: denseSpace(offsets[i]),
             background: t.taglineChip,
             color: t.onTaglineChip,
             padding,

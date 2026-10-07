@@ -170,7 +170,8 @@ describe("a row names its part", () => {
     const heading = doc.querySelector("h3");
 
     expect(heading?.textContent).toBe("The classify prompt");
-    expect(styleOf(heading)).toContain("font-size:16px");
+    // UI-P52 density pass: the body role is 15px (it was 16).
+    expect(styleOf(heading)).toContain("font-size:15px");
     expect(styleOf(heading)).toContain("font-weight:600");
     // The build's own title is the only display-face heading on this page.
     expect(styleOf(heading)).not.toContain("Sentient");

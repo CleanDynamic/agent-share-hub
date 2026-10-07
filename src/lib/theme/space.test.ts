@@ -1,7 +1,18 @@
 // BG-P04 — the spacing scale, and the one rule that comes with it.
 
 import { describe, expect, it } from "vitest";
-import { SPACE, SPACE_NAMES, SPACE_STEPS, assertPadding, isSpaceStep, px } from "./space";
+import { denseSpace } from "./density";
+import {
+  SPACE,
+  SPACE_COMPACT,
+  SPACE_COMPACT_STEPS,
+  SPACE_NAMES,
+  SPACE_STEPS,
+  assertPadding,
+  isCompactStep,
+  isSpaceStep,
+  px,
+} from "./space";
 
 describe("the spacing scale", () => {
   it("is exactly the seven steps the spec lists", () => {
@@ -35,6 +46,37 @@ describe("the spacing scale", () => {
   it("renders a step as pixels when a string is wanted", () => {
     expect(px(SPACE.md)).toBe("24px");
     expect(px(SPACE["3xl"])).toBe("132px");
+  });
+});
+
+describe("the compact scale (UI-P53)", () => {
+  // UI-P52 density pass: the kit's spacing went through ×0.72, and the compact
+  // scale is SPACE through the same table. SPACE itself is unchanged above, so
+  // nothing that spends it moves.
+  it("is the seven steps the density pass gives", () => {
+    expect(SPACE_COMPACT).toEqual({ xs: 6, sm: 12, md: 17, lg: 29, xl: 46, "2xl": 69, "3xl": 95 });
+    expect(SPACE_COMPACT_STEPS).toEqual([6, 12, 17, 29, 46, 69, 95]);
+  });
+
+  it("is each SPACE step through the table, under the same name", () => {
+    for (const name of SPACE_NAMES) expect(SPACE_COMPACT[name], name).toBe(denseSpace(SPACE[name]));
+    expect(Object.keys(SPACE_COMPACT)).toEqual(SPACE_NAMES);
+  });
+
+  it("still steps upward, so the names keep their order", () => {
+    expect(SPACE_COMPACT_STEPS).toEqual([...SPACE_COMPACT_STEPS].sort((a, b) => a - b));
+    expect(new Set(SPACE_COMPACT_STEPS).size).toBe(SPACE_COMPACT_STEPS.length);
+  });
+
+  it("recognises its own steps and nothing between them", () => {
+    for (const step of SPACE_COMPACT_STEPS) expect(isCompactStep(step)).toBe(true);
+    for (const between of [4, 8, 16, 24, 40]) expect(isCompactStep(between), `${between}`).toBe(false);
+  });
+
+  it("keeps the padding rule on the compact steps too", () => {
+    expect(assertPadding(SPACE_COMPACT.md, SPACE_COMPACT.lg)).toBeNull();
+    for (const step of SPACE_COMPACT_STEPS) expect(assertPadding(step, step)).toBeNull();
+    expect(assertPadding(SPACE_COMPACT.lg, SPACE_COMPACT.md)).toContain("reads as one band");
   });
 });
 

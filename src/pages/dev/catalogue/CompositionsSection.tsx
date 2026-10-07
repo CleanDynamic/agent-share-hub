@@ -54,9 +54,9 @@ export function CompositionsSection() {
       name="Compositions"
       note="hero plate (featured, build) · part viewer · timeline · rank rungs · creator-mark tiles"
     >
-      <Row style={{ alignItems: "flex-start", gap: 40 }}>
+      <Row style={{ alignItems: "flex-start", gap: 29 }}>
         <Example caption="hero plate · featured">
-          <div style={{ width: 760, height: 280, paddingBottom: 14 }}>
+          <div style={{ width: 760, height: 280, paddingBottom: 10 }}>
             <HeroPlate
               variant="featured"
               cover={<CoverFallback seed={featured.id} sky={featured.cover_sky} radius={0} />}
@@ -88,8 +88,8 @@ export function CompositionsSection() {
           </div>
         </Example>
       </Row>
-      <div style={{ height: 24 }} />
-      <Row style={{ alignItems: "flex-start", gap: 40 }}>
+      <div style={{ height: 20 }} />
+      <Row style={{ alignItems: "flex-start", gap: 29 }}>
         <Example caption="part viewer">
           <div style={{ width: 640, height: 400 }}>
             <PartViewer<TabValue>
@@ -114,11 +114,11 @@ export function CompositionsSection() {
           </div>
         </Example>
       </Row>
-      <div style={{ height: 24 }} />
-      <Row style={{ alignItems: "flex-end", gap: 32 }}>
+      <div style={{ height: 20 }} />
+      <Row style={{ alignItems: "flex-end", gap: 23 }}>
         {([28, 32, 40] as const).map((size) => (
           <Example key={size} caption={`rank rung · ${size}`}>
-            <Row gap={10}>
+            <Row gap={7}>
               {TIERS.map((tier, i) => (
                 <RankRung key={tier} rank={i + 1} tier={tier} size={size} />
               ))}
@@ -126,7 +126,7 @@ export function CompositionsSection() {
           </Example>
         ))}
         <Example caption="creator-mark tiles · highest, rare, common, none">
-          <Row gap={14} style={{ alignItems: "flex-start" }}>
+          <Row gap={10} style={{ alignItems: "flex-start" }}>
             <MarkTile tier="highest" caption="First hang" />
             <MarkTile tier="rare" caption="Proven" />
             <MarkTile tier="common" caption="Rebuilt" />

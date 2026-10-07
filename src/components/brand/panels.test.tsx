@@ -26,7 +26,8 @@ describe("Panel", () => {
     expect(html).toContain("border-radius:var(--r-panel)");
     expect(html).toContain("box-shadow:var(--shadow-card), var(--panel-highlight)");
     expect(html).toContain("overflow:hidden");
-    expect(html).toContain("padding:16px 18px");
+    // UI-P52 density pass: the default drawn 16px 18px renders at 12px 13px.
+    expect(html).toContain("padding:12px 13px");
   });
 
   it("is liquid glass when asked: the .bg-glass class, the halo before the card shadow, and no fill or border of its own", () => {
@@ -39,7 +40,7 @@ describe("Panel", () => {
     expect(html).not.toContain("var(--glass)");
     expect(html).not.toContain("var(--panel-highlight)");
     expect(html).toContain("border-radius:var(--r-panel)");
-    expect(html).toContain("padding:16px 18px");
+    expect(html).toContain("padding:12px 13px");
   });
 
   it("is flat for the workspace: --flat, the same hairline, no shadow", () => {
@@ -52,8 +53,10 @@ describe("Panel", () => {
     expect(html).not.toContain("var(--glass)");
   });
 
-  it("takes a padding, for lists", () => {
-    expect(markup(<Panel padding="14px 16px">x</Panel>)).toContain("padding:14px 16px");
+  it("takes a padding, for lists, and renders it through the density table", () => {
+    // UI-P52 density pass: a list's drawn 14px 16px renders at 10px 12px.
+    expect(markup(<Panel padding="14px 16px">x</Panel>)).toContain("padding:10px 12px");
+    expect(markup(<Panel padding="0">x</Panel>)).toContain("padding:0");
   });
 
   it("sets no blur of its own on any surface: the blur lives in index.css, on .bg-glass::after", () => {
@@ -91,20 +94,22 @@ describe("Panel", () => {
 });
 
 describe("PanelHead", () => {
-  it("stacks a 16px title and a 12px subtitle 3px apart, and aligns the right slot to the top", () => {
+  it("stacks a title drawn at 16 and a 12px subtitle 3px apart, and aligns the right slot to the top", () => {
+    // UI-P52 density pass: the gap 12 → 9 and the right slot's 6 → 4; the title
+    // is drawn at 16 and renders at 15; 3 and 12 are kept.
     const html = markup(<PanelHead title="Glass panel" subtitle="reading surfaces" right={<button>go</button>} />);
-    expect(html).toContain("justify-content:space-between;align-items:flex-start;gap:12px");
+    expect(html).toContain("justify-content:space-between;align-items:flex-start;gap:9px");
     expect(html).toContain("flex-direction:column;gap:3px");
-    expect(html).toContain("font-size:16px");
+    expect(html).toContain("font-size:15px");
     expect(html).toContain("font-weight:600");
     expect(html).toContain("color:var(--text)");
     expect(html).toContain("font-size:12px");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("display:flex;gap:6px;align-items:center");
+    expect(html).toContain("display:flex;gap:4px;align-items:center");
   });
 
-  it("sets a smaller title where the reference is smaller", () => {
-    expect(markup(<PanelHead title="T" titleSize={13} />)).toContain("font-size:13px");
+  it("sets a smaller title where the reference is smaller, through the table", () => {
+    expect(markup(<PanelHead title="T" titleSize={13} />)).toContain("font-size:12px");
   });
 
   it("omits the subtitle and the right slot when there are none", () => {
@@ -129,18 +134,20 @@ describe("WallLabel", () => {
     expect(html).toContain("overflow:hidden");
   });
 
-  it("wraps each cell on --cell, padding 12px 14px, a column with gap 7", () => {
+  it("wraps each cell on --cell, padding 9px 10px, a column with gap 5", () => {
+    // UI-P52 density pass: 12px 14px → 9px 10px, 7 → 5.
     const html = markup(<WallLabel columns={2} cells={["a", "b"]} />);
-    expect(html.match(/background:var\(--cell\);padding:12px 14px;display:flex;flex-direction:column;gap:7px/g)).toHaveLength(2);
+    expect(html.match(/background:var\(--cell\);padding:9px 10px;display:flex;flex-direction:column;gap:5px/g)).toHaveLength(2);
   });
 });
 
 describe("Detail", () => {
-  it("is a 10px eyebrow over a DM Mono 14px value, on one line, clipped with an ellipsis", () => {
+  it("is a 10px eyebrow over a DM Mono value drawn at 14px, on one line, clipped with an ellipsis", () => {
+    // UI-P52 density pass: mono() renders the drawn 14 at 13; the 10px eyebrow is kept.
     const html = markup(<Detail label="Made for" value="finance ops" />);
     expect(html).toContain("display:contents");
     expect(html).toContain("font-size:10px");
-    expect(html).toContain("font-size:14px");
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text)");
     expect(html).toContain("white-space:nowrap");
     expect(html).toContain("text-overflow:ellipsis");
@@ -153,10 +160,11 @@ describe("Detail", () => {
 });
 
 describe("Stat", () => {
-  it("is an eyebrow, then a baseline row with the value in DM Mono 22px at -0.02em", () => {
+  it("is an eyebrow, then a baseline row with the value in DM Mono drawn at 22px, at -0.02em", () => {
+    // UI-P52 density pass: mono() renders the drawn 22 at 19 and keeps its -0.02em.
     const html = markup(<Stat label="In the gallery" value="1,284" />);
     expect(html).toContain("display:flex;align-items:baseline");
-    expect(html).toContain("font-size:22px");
+    expect(html).toContain("font-size:19px");
     expect(html).toContain("letter-spacing:-0.02em");
     expect(html).toContain("color:var(--text)");
     expect(html).not.toContain("striped-bar");
@@ -231,13 +239,15 @@ describe("PageHeading", () => {
   it("is a column of eyebrow, h1 and sub with the bare padding, on a phone", () => {
     const html = markup(<PageHeading eyebrow="Gallery" title="Builds worth running" sub="Ordered by proof." size={36} />);
     expect(html).toContain('data-ui="page-heading"');
-    expect(html).toContain("flex-direction:column;gap:8px;padding:4px 2px");
+    // UI-P52 density pass: the gap 8 → 6 and the sub 14 → 13; 4px 2px is under the table's floor.
+    expect(html).toContain("flex-direction:column;gap:6px;padding:4px 2px");
     expect(html).toContain("font-size:11px");
-    expect(html).toContain("font-size:36px");
+    // UI-P52 density pass: the title is drawn at 36 and display() renders it at 27.
+    expect(html).toContain("font-size:27px");
     expect(html).toContain("letter-spacing:-0.035em");
     expect(html).toContain("line-height:1");
     expect(html).toContain("color:var(--text)");
-    expect(html).toContain("font-size:14px;line-height:1.5;color:var(--text2)");
+    expect(html).toContain("font-size:13px;line-height:1.5;color:var(--text2)");
   });
 
   it("renders the title as the page's h1", () => {
@@ -252,7 +262,8 @@ describe("PageHeading", () => {
   it("has no padding of its own inside a panel, and takes the page's own sizes", () => {
     const html = markup(<PageHeading eyebrow="E" title="T" size={50} variant="in-panel" />);
     expect(html).not.toContain("padding");
-    expect(html).toContain("font-size:50px");
+    // UI-P52 density pass: drawn at 50, rendered at 38, with the 44–51 band's tracking.
+    expect(html).toContain("font-size:38px");
     expect(html).toContain("letter-spacing:-0.035em");
     expect(markup(<PageHeading eyebrow="E" title="T" size={52} variant="in-panel" />)).toContain("letter-spacing:-0.04em");
   });

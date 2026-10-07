@@ -3,7 +3,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
-import { buttonSlot, buttonStyle, type ButtonVariant } from "@/lib/theme/controls";
+import { buttonSlot, buttonStyle, CONTROL_CLASS, type ButtonVariant } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -41,8 +41,11 @@ import { useInteractive } from "@/lib/theme/interactive";
    component only — and no Button in this codebase carries a `shadow-*` class,
    so that costs nothing. The three files above keep their ring.
 
-   SIZES ARE NOT TOUCHED. `h-9`/`h-10`/`h-11` and every padding stay in the cva
-   where they are. Nothing in this file sets a height, a padding or a display.
+   SIZES COME FROM THE CONTROL KIT (UI-P53). The density pass took sm, default,
+   lg and icon from 36, 40, 44 and 40 to 30, 33, 36 and 33, with lg keeping 44
+   below 768px; the classes are `CONTROL_CLASS.button` in `controls.ts`, where
+   every control's size is now written once. Nothing in this file sets a
+   height, a padding or a display of its own.
    ──────────────────────────────────────────────────────────────────────────── */
 
 const buttonVariants = cva(
@@ -58,10 +61,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: CONTROL_CLASS.button.default,
+        sm: CONTROL_CLASS.button.sm,
+        lg: CONTROL_CLASS.button.lg,
+        icon: CONTROL_CLASS.button.icon,
       },
     },
     defaultVariants: {

@@ -9,6 +9,7 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
+import { denseFont, denseSpace } from "@/lib/theme/density";
 import { COVER_SKIES, CoverFallback, hashSeed, skyIndex } from "./CoverFallback";
 import { Lockup } from "./Lockup";
 import { Mark } from "./Mark";
@@ -60,14 +61,18 @@ describe("Lockup", () => {
     [34, 37, 12],
     [64, 70, 24],
     [70, 77, 26],
-  ])("at %ipx the mark is %ipx and the gap %ipx", (size, mark, gap) => {
+  ])("at %ipx the mark is %ipx and the gap %ipx, as drawn", (size, mark, gap) => {
     const { container } = render(<Lockup size={size} />);
     const row = q(container, '[data-ui="lockup"]') as HTMLElement;
-    expect(row.style.gap).toBe(`${gap}px`);
+    // UI-P52 density pass: the gap goes through the table (7 → 5, 24 → 17); the
+    // mark is an SVG the kit sizes by attribute, which the pass left alone.
+    expect(row.style.gap).toBe(`${denseSpace(gap)}px`);
     expect(q(container, "svg").getAttribute("width")).toBe(String(mark));
     const word = row.querySelector("span") as HTMLElement;
     expect(word.textContent).toBe("buildgallery");
-    expect(word.style.fontSize).toBe(`${size}px`);
+    // UI-P52 density pass: the wordmark is drawn at `size` and display() renders
+    // it through the table (21 → 18, 16 → 15) — in Sentient at every size.
+    expect(word.style.fontSize).toBe(`${denseFont(size)}px`);
     expect(word.style.letterSpacing).toBe("-0.03em");
     expect(word.style.lineHeight).toBe("1");
   });

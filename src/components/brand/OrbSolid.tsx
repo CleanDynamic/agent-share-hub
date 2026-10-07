@@ -5,6 +5,7 @@
 // — with the number in DM Mono at 17% of its diameter and the two lines of words
 // above and below it in the quiet ink.
 
+import { denseFont } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -33,7 +34,7 @@ export function OrbSolid({ size, top, value, bottom }: OrbSolidProps) {
       <div
         style={{
           fontFamily: DM_MONO,
-          fontSize: Math.trunc(size * 0.17),
+          fontSize: denseFont(Math.trunc(size * 0.17)),
           lineHeight: "normal",
           color: t.onOrbSolid,
           letterSpacing: "-0.03em",

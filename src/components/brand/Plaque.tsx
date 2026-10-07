@@ -124,8 +124,10 @@ const NEVER_REPRODUCED = "not yet reproduced";
  */
 export const NEVER_CONFIRMED = "not confirmed by anyone yet";
 
-/** Type per size: the tag is DM Mono, the freshness line and the bare text Figtree. */
-const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 13, proof: 11 };
+/** Type per size: the tag is DM Mono, the freshness line and the bare text Figtree.
+    UI-P54, the density pass: the header's tag is 12 (13 before); 10 and 11 are
+    in the table's kept band, and so are the lamp dots below. */
+const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12, proof: 11 };
 const TEXT_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12, proof: 12 };
 
 /** The lamp dot, per size. Card and row use the default 10×7. */
@@ -175,7 +177,7 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
     display: "flex",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: 7,
+    gap: 5,
     minWidth: 0,
   };
 
@@ -229,7 +231,7 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
           lineHeight: "normal",
           background: inverse ? t.inverseEvidenceFill : t.evidenceFill,
           color: inverse ? t.onInverseEvidenceFill : t.onEvidenceFill,
-          padding: "2px 6px",
+          padding: "2px 4px",
           borderRadius: r.chip,
           whiteSpace: "nowrap",
           flexShrink: 0,

@@ -22,8 +22,10 @@ export function FrameSection() {
 
   return (
     <Section name="Frame" note="site header (desktop) · breadcrumb · footer · mobile header · dock">
+      {/* UI-P55: the strip is the header's 52 (64 before), as the tightened
+          catalogue draws it; the header's 1px edge falls under it there too. */}
       <Example caption="site header · Gallery current">
-        <Strip width={1360} height={64}>
+        <Strip width={1360} height={52}>
           {chrome.header}
         </Strip>
       </Example>
@@ -36,7 +38,7 @@ export function FrameSection() {
         </Strip>
       </Example>
       <div style={{ height: 18 }} />
-      <Row gap={24} style={{ alignItems: "flex-start" }}>
+      <Row gap={17} style={{ alignItems: "flex-start" }}>
         <Example caption="mobile header">
           <Strip width={390} plain>{chrome.mobileHeader}</Strip>
         </Example>

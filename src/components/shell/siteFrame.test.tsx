@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { boardHeight, SiteFrameView } from "./SiteFrame";
+import { BOARD_FOOTER_GAP, BOARD_FRAME_HEIGHT, BOARD_GRID_HEIGHT } from "./siteFrameFit";
 
 const frame = (props: Parameters<typeof SiteFrameView>[0]) =>
   render(
@@ -50,5 +51,30 @@ describe("SiteFrameView", () => {
     unmount();
     frame({ variant: "bare", viewport: "mobile", children: <p>page</p> });
     expect(screen.getByTestId("site-frame").querySelector('[data-ui="page-backdrop"]')?.getAttribute("data-tone")).toBe("signin");
+  });
+});
+
+describe("the frame's numbers (UI-P55, the density pass)", () => {
+  const slot = (name: string) => screen.getByTestId("site-frame").querySelector<HTMLElement>(`[data-slot="${name}"]`)!;
+  const main = () => screen.getByTestId("site-frame").querySelector<HTMLElement>("main#main")!;
+
+  it("holds the desktop header at 52, the breadcrumb at 33 and the column 6 under the header", () => {
+    frame({ viewport: "desktop", children: <p>page</p> });
+    expect(slot("header").style.minHeight).toBe("52px");
+    expect(slot("breadcrumb").style.minHeight).toBe("33px");
+    expect(main().style.padding).toBe("6px 24px 33px");
+  });
+
+  it("puts the footer where the board does in board fit: the board's 1066, less the frame's boxes", () => {
+    expect(BOARD_FOOTER_GAP).toBe(66);
+    expect(53 + 6 + 33 + BOARD_GRID_HEIGHT + BOARD_FOOTER_GAP + 88).toBe(BOARD_FRAME_HEIGHT);
+    frame({ viewport: "desktop", fit: "board", children: <p>page</p> });
+    expect(main().style.padding).toBe("6px 24px 66px");
+  });
+
+  it("holds the phone header at 48 and the column 9 apart", () => {
+    frame({ viewport: "mobile", children: <p>page</p> });
+    expect(slot("mobile-header").style.minHeight).toBe("48px");
+    expect(main().style.gap).toBe("9px");
   });
 });

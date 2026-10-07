@@ -74,13 +74,14 @@ import { SENTIENT, FIGTREE, eyebrow, label as labelType } from "@/lib/theme/type
 /**
  * The bar's height, in pixels.
  *
- * FIFTY-TWO, WHICH IS THE NUMBER ComposeTopBar HAS CARRIED SINCE NS-P07 AND
- * MUST KEEP. The compose workspace is a flex column whose panel row is `flex:1`,
- * so every pixel this bar gains is a pixel the tray, the tree and the inspector
- * lose. BG-P16 repaints the bar and must not resize it — `WorkspaceBar.test.tsx`
- * asserts the number and the e2e spec measures the rendered box.
+ * FORTY-THREE SINCE THE UI-P55 DENSITY PASS, which took ComposeTopBar's 52 (the
+ * number it carried from NS-P07) through the table. The compose workspace is a
+ * flex column whose panel row is `flex:1`, so the 9 pixels the bar gave up went
+ * to the tray, the tree and the inspector. Nothing else may resize it —
+ * `WorkspaceBar.test.tsx` asserts the number and the e2e spec measures the
+ * rendered box.
  */
-export const WORKSPACE_BAR_HEIGHT = 52;
+export const WORKSPACE_BAR_HEIGHT = 43;
 
 /** Which room of the workspace this is. Named in the bar's mono eyebrow. */
 export type WorkspaceMode = "compose" | "rebuild" | "convert";
@@ -258,13 +259,15 @@ export function exitControlStyle(state: ControlState = {}): CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    gap: 7,
+    gap: 5,
     flexShrink: 0,
-    /* Taller than every other control in the bar (30–32px), which is the whole
-       of its emphasis: one element differing from its neighbours, not a second
-       primary action competing with Publish. */
-    height: 36,
-    padding: "0 13px 0 10px",
+    /* Taller than every other control in the bar, which is the whole of its
+       emphasis: one element differing from its neighbours, not a second primary
+       action competing with Publish. 30 since the UI-P55 density pass (36
+       before); the controls a route puts beside it (30–32px today) take the
+       table with their pages. */
+    height: 30,
+    padding: "0 9px 0 7px",
     borderRadius: r.control,
     /* Flat. --recess on --bg, no blur — the ground rule at the top. */
     backgroundColor: hot ? t.line : t.recess,
@@ -314,18 +317,18 @@ function ExitControl({ exit }: { exit: WorkspaceExit }) {
           {/* The wordmark, in the display face, from the SENTIENT stack rather
               than a hand-written family — naming the face in source is what
               `type.test.ts` forbids, because that guard is what keeps the
-              17px display floor enforceable across the whole product.
+              display floor enforceable across the whole product.
 
-              SEVENTEEN IS THAT FLOOR EXACTLY, and the smallest the display face
-              may ever be set: below it the display face loses its shape, worst on
-              Dusk. The rails set the wordmark at 22; a control inside a 52px
-              bar takes the floor instead. WorkspaceBar.test.tsx asserts it,
-              because the scale's own sweep only sees sizes written into CSS
-              template literals and this one is a style object. */}
+              17 SINCE THE UI-P55 DENSITY PASS (20 before). The display face is
+              never set under 20 except as the wordmark, which the lockup takes
+              down to 15 (`LOCKUP_MIN_PX`); this is that word, so it keeps the
+              face. WorkspaceBar.test.tsx asserts the floor, because the scale's
+              own sweep only sees sizes written into CSS template literals and
+              this one is a style object. */}
           <span
             style={{
               fontFamily: SENTIENT,
-              fontSize: 20,
+              fontSize: 17,
               fontWeight: 500,
               lineHeight: 1,
               letterSpacing: "-0.01em",
@@ -369,15 +372,16 @@ function EditableContext({
            the bar is still WORKSPACE_BAR_HEIGHT — measured by the tier-3 spec at
            every width, which is what stops a type change from resizing the
            chrome the tray, tree and inspector share their pixels with. */
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 600,
         fontFamily: "inherit",
         flex: 1,
         /* Shrinks to nothing rather than holding 80px open: at a crowded width
            a narrower title field costs less than a clipped control. */
         minWidth: 0,
-        height: 32,
-        padding: "0 10px",
+        /* 15, 26 and 0 7px since the UI-P55 density pass (18, 32, 0 10px). */
+        height: 26,
+        padding: "0 7px",
         outline: state.focusVisible ? undefined : "none",
       }}
     />
@@ -393,7 +397,7 @@ function ReadOnlyContext({ text }: { text: string | null }) {
       title={text}
       style={{
         ...labelType,
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: 600,
         color: t.text,
         flex: 1,
@@ -438,8 +442,8 @@ export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) 
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: "0 14px",
+        gap: 7,
+        padding: "0 10px",
         /* NOTHING IN THE BAR IS EVER UNREACHABLE, WHICH IS NOT THE SAME AS
            EVERYTHING FITTING. Measured at 1440/1280/1100/1024/900/768, the bar's
            contents fit down to about 1000px and then run over: the theme toggle
@@ -451,7 +455,7 @@ export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) 
            laptop width.
 
            `overflow-x: auto` with `overflow-y: hidden` keeps the row exactly
-           WORKSPACE_BAR_HEIGHT tall (measured: 52px at every width above) and
+           WORKSPACE_BAR_HEIGHT tall (measured at every width above) and
            makes the overrun scrollable instead of lost. It is a floor, not a
            fix: the real answer is a denser theme control or a bar that sheds
            labels below the single-column breakpoint, and both are a design
@@ -464,7 +468,7 @@ export function WorkspaceBar({ mode, exit, context, right }: WorkspaceBarProps) 
 
       <span
         aria-hidden
-        style={{ width: 1, height: 20, backgroundColor: t.line, flexShrink: 0 }}
+        style={{ width: 1, height: 16, backgroundColor: t.line, flexShrink: 0 }}
       />
 
       {/* Mode identity. Mono, because an eyebrow is data about the surface

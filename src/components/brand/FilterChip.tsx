@@ -1,6 +1,7 @@
 // The filter chip (UI-P07): the mobile sideways rows of "All · Proven · …".
 //
-// 36px tall, radius 10 (the media step), Figtree 13/500. Off is a glass fill with
+// 30px tall (36 before the UI-P54 density pass), radius 10 (the media step),
+// Figtree 12/500 (13), 0 9px of padding and a gap of 5. Off is a glass fill with
 // a hairline; on is the inverse — `--text` fill, `--on-text` label — so a chosen
 // filter is carried by fill and not by colour. An optional count rides inside,
 // in DM Mono 10px at 70%. It is a toggle, so it is a button with `aria-pressed`; as a tab (`tab`) it is
@@ -48,17 +49,17 @@ export function FilterChip({
       {...handlers}
       style={{
         flexShrink: 0,
-        height: 36,
-        padding: "0 12px",
+        height: 30,
+        padding: "0 9px",
         borderRadius: r.media,
         background: on ? t.text : t.glass2,
         color: on ? t.onText : t.text,
         border: `1px solid ${on ? t.text : t.line}`,
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 500,
         display: "inline-flex",
-        gap: 7,
+        gap: 5,
         alignItems: "center",
         cursor: "pointer",
         whiteSpace: "nowrap",

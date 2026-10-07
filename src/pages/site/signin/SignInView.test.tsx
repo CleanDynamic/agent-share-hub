@@ -61,14 +61,17 @@ describe("SignInView · desktop", () => {
   it("stacks the lockup at 70, the tagline at 40 and the orbs in a 30px column", () => {
     const { container } = render(tree());
     const lockup = container.querySelector('[data-ui="lockup"]')!;
-    expect(lockup.getAttribute("style")).toContain("gap: 26px");
+    // UI-P52 density pass: the lockup's gap 26 → 19 and the tagline's offsets
+    // 70 → 50 and 24 → 17; the mark keeps its 77.
+    expect(lockup.getAttribute("style")).toContain("gap: 19px");
     expect(lockup.querySelector('[data-ui="mark"]')!.getAttribute("width")).toBe("77");
-    expect(lockup.querySelector("span")!.getAttribute("style")).toContain("font-size: 70px");
+    // UI-P52 density pass: the wordmark is drawn at 70 and display() renders it at 52.
+    expect(lockup.querySelector("span")!.getAttribute("style")).toContain("font-size: 52px");
     const column = lockup.parentElement!;
     expect(column.getAttribute("style")).toContain("flex-direction: column");
     expect(column.getAttribute("style")).toContain("gap: 30px");
-    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 70px"]')).not.toBeNull();
-    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 24px"]')).not.toBeNull();
+    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 50px"]')).not.toBeNull();
+    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 17px"]')).not.toBeNull();
   });
 
   it("gives the sentence as real text under one heading", () => {
@@ -186,7 +189,8 @@ describe("SignInView · the card's top row", () => {
 
   it("draws the switch at 32 tall in 12px type", () => {
     const html = markup();
-    expect(html).toContain("height:24px");
+    // UI-P52 density pass: drawn 32, so 24px items, which render at 20.
+    expect(html).toContain("height:20px");
     expect(html).toContain("font-size:12px");
   });
 
@@ -229,13 +233,15 @@ describe("SignInView · phone", () => {
   it("draws the lockup at 34 and the tagline at 26, in an 18px column padded 10px 0 4px", () => {
     const { container } = render(tree());
     const lockup = container.querySelector('[data-ui="lockup"]')!;
-    expect(lockup.getAttribute("style")).toContain("gap: 12px");
+    // UI-P52 density pass: the lockup's gap 12 → 9 and the tagline's offsets
+    // 40 → 29 and 12 → 9; the mark keeps its 37.
+    expect(lockup.getAttribute("style")).toContain("gap: 9px");
     expect(lockup.querySelector('[data-ui="mark"]')!.getAttribute("width")).toBe("37");
     const column = lockup.parentElement!;
     expect(column.getAttribute("style")).toContain("gap: 18px");
     expect(column.getAttribute("style")).toContain("padding: 10px 0px 4px");
-    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 40px"]')).not.toBeNull();
-    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 12px"]')).not.toBeNull();
+    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 29px"]')).not.toBeNull();
+    expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 9px"]')).not.toBeNull();
   });
 
   it("puts the form in a glass panel, a 10px column with padding 16", () => {
@@ -243,7 +249,8 @@ describe("SignInView · phone", () => {
     const panel = container.querySelector('[data-ui="panel"]')!;
     expect(panel.getAttribute("data-surface")).toBe("glass");
     expect(panel.classList.contains("bg-glass")).toBe(true);
-    expect(panel.getAttribute("style")).toContain("padding: 16px");
+    // UI-P52 density pass: Panel takes the drawn 16 and renders 12.
+    expect(panel.getAttribute("style")).toContain("padding: 12px");
     const card = within(panel as HTMLElement).getByTestId("signin-card");
     expect(card.getAttribute("style")).toContain("flex-direction: column");
     expect(card.getAttribute("style")).toContain("gap: 10px");
@@ -254,8 +261,10 @@ describe("SignInView · phone", () => {
     const card = screen.getByTestId("signin-card");
     expect(card.firstElementChild!.getAttribute("data-ui")).toBe("segmented");
     expect(within(card).getByRole("link", { name: "Join free" }).getAttribute("href")).toBe("/signup?redirect=%2Fgallery");
-    expect(container.querySelector('[data-ui="segmented"] a')!.getAttribute("style")).toContain("height: 30px");
-    expect(container.querySelector('[data-ui="segmented"] a')!.getAttribute("style")).toContain("font-size: 13px");
+    // UI-P52 density pass: drawn 38/13, so 30px items, which render 25/12. The
+    // switch was under 44, so the touch floor does not hold it.
+    expect(container.querySelector('[data-ui="segmented"] a')!.getAttribute("style")).toContain("height: 25px");
+    expect(container.querySelector('[data-ui="segmented"] a')!.getAttribute("style")).toContain("font-size: 12px");
     expect(screen.queryByRole("link", { name: "Back" })).toBeNull();
   });
 
@@ -274,7 +283,8 @@ describe("SignInView · phone", () => {
     const { container } = render(tree());
     const group = screen.getByRole("radiogroup", { name: "Theme" });
     expect(group.parentElement!.getAttribute("style")).toContain("justify-content: center");
-    expect(group.querySelector("button")!.getAttribute("style")).toContain("height: 28px");
+    // UI-P52 density pass: drawn 36, so 28px items, which render at 23.
+    expect(group.querySelector("button")!.getAttribute("style")).toContain("height: 23px");
     expect(container.querySelector('[data-ui="panel"]')!.contains(group)).toBe(false);
   });
 });

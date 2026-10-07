@@ -7,11 +7,15 @@
 // tokens. The initials are Figtree 600 at `trunc(size × .38)`px in near-white.
 // The circle is one of the places `--r-full` is for.
 //
-// The reference draws the 22px avatar's initials at 8px, under the 10px floor
-// the rest of the system keeps; the size rule is the prompt's and is followed.
+// `size` is the reference's drawn size (22, 28, 34, 78…), and since UI-P54 the
+// circle renders it through the density table (22 → 18, 34 → 28; 78 is over the
+// table's band and stays), with the initials at their drawn size through the
+// table too. The 22px avatar's 8px initials become 10, the floor the rest of
+// the system keeps.
 
 import type { CSSProperties } from "react";
 
+import { denseFont, denseHeight } from "@/lib/theme/density";
 import { r } from "@/lib/theme/radius";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -54,9 +58,10 @@ export function avatarHue(userId: string, hue?: number): string {
 }
 
 export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
+  const box = denseHeight(size);
   const circle: CSSProperties = {
-    width: size,
-    height: size,
+    width: box,
+    height: box,
     borderRadius: r.full,
     flexShrink: 0,
     ...style,
@@ -68,8 +73,8 @@ export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
         data-ui="avatar"
         src={src}
         alt={name}
-        width={size}
-        height={size}
+        width={box}
+        height={box}
         style={{ ...circle, display: "block", objectFit: "cover" }}
       />
     );
@@ -85,7 +90,7 @@ export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
         background: avatarHue(userId, hue),
         color: AVATAR_INK,
         fontFamily: FIGTREE,
-        fontSize: Math.trunc(size * 0.38),
+        fontSize: denseFont(Math.trunc(size * 0.38)),
         fontWeight: 600,
         display: "inline-flex",
         alignItems: "center",

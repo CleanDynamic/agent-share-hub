@@ -125,7 +125,7 @@ export default function KitPages() {
         {UNFRAMED.has(page) ? (
           <View viewport={viewport} fit="board" state={state} />
         ) : (
-          <SiteFrameView viewport={viewport} {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
+          <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>
             <View viewport={viewport} fit="board" state={state} />
           </SiteFrameView>
         )}

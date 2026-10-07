@@ -13,22 +13,28 @@
 // are the sanctioned exception; `shimmer` in `index.css` is the only one this
 // prompt adds.
 //
-// WHAT IS DELIBERATELY ABSENT. No `height`, `padding`, `display`, `flex`,
-// `gap`, `margin`, `position`, `width` or `overflow` appears anywhere in this
-// file. Those are structural, they belong to the Tailwind classes already on
-// each control, and changing them is what breaks the three-panel layout
+// WHAT IS DELIBERATELY ABSENT. No `display`, `flex`, `margin`, `position`,
+// `width` or `overflow` appears anywhere in this file. Those are structural,
+// and changing them is what breaks the three-panel layout
 // (`neoscale-code-review` automatic-fail 2). If a control feels cramped at the
 // new type size the answer is to report it, not to widen it here.
+//
+// SIZES ARE THE ONE STRUCTURAL THING HERE, SINCE UI-P53. Until the density pass
+// this file held no height and no padding either; they sat in the Tailwind
+// classes on each control. The pass is one decision about every control at
+// once, so the sizes moved here, as the old ones through the table in
+// `design/prompts/README-density.md` — see "Sizes" at the end of the file.
 //
 // THE ONE EXCEPTION, NAMED. `secondary` and `outline` buttons gain a 1px
 // `--line` border they did not have. Borders are visual and explicitly in scope
 // for this prompt, and Tailwind's preflight puts every element in
-// `box-sizing: border-box`, so the fixed heights (`h-9`/`h-10`/`h-11`) do not
-// move. An auto-width button grows by 2px. That is the whole cost.
+// `box-sizing: border-box`, so the fixed heights do not move. An auto-width
+// button grows by 2px. That is the whole cost.
 
 import type { CSSProperties } from "react";
 
 import { categoryFill } from "./category";
+import { TOUCH_MIN } from "./density";
 import { animation, feedback, hoverLift, prefersReducedMotion, SHIMMER_MS } from "./motion";
 import { elevation, SCRIM } from "./elevation";
 import { focusRing } from "./focus";
@@ -425,10 +431,11 @@ export const TAB_TRIGGER_CLASS =
  * which, at this control's size, still renders as a capsule. Read on before
  * "fixing" either half of that.
  *
- * THE ARITHMETIC. The track is `h-6`, 24px tall. `--r-control` is 12px. A
- * border-radius of exactly half an element's height IS a capsule, so the token
- * the spec prescribes for "not a pill" produces a pill here. The two
- * instructions are in direct conflict at this size and cannot both be honoured.
+ * THE ARITHMETIC. The track is 20px tall (24 before UI-P53's density pass).
+ * `--r-control` is 12px. A border-radius of half an element's height or more IS
+ * a capsule, so the token the spec prescribes for "not a pill" produces a pill
+ * here. The two instructions are in direct conflict at this size and cannot
+ * both be honoured.
  *
  * WHY THE TOKEN WINS ANYWAY. The alternatives are worse. Changing the height is
  * a structural change to an existing control, which is the one thing this
@@ -436,10 +443,10 @@ export const TAB_TRIGGER_CLASS =
  * scale whose whole value is that it has six. Between rendering one control
  * rounder than intended and breaking either of those rules, the render loses.
  *
- * WHERE THE TOKENS LAND AS INTENDED. Every control 36px or taller — every
+ * WHERE THE TOKENS LAND AS INTENDED. Every control 30px or taller — every
  * button size, the input, the select, the tabs list — puts `--r-control` at
- * 27-33% of its height, which is the soft rectangle the scale was designed to
- * produce. Only the two smallest controls in the kit, this track and the
+ * 33-40% of its height, which is still the soft rectangle the scale was designed
+ * to produce. Only the two smallest controls in the kit, this track and the
  * checkbox, are small enough for the token to reach half their dimension.
  *
  * The real fix is a size change and belongs to whichever prompt owns control
@@ -452,11 +459,13 @@ export function switchTrackStyle(state: ControlState = {}): CSSProperties {
   /* NO `borderWidth` HERE, DELIBERATELY. The track keeps the `border-2` it has
      always had, because that 2px is load-bearing geometry, not decoration:
      w-11 is 44px, two 2px borders leave a 40px inner track, and the thumb is
-     20px travelling exactly 20px to sit flush at each end. Narrowing the border
-     to 1px would widen the inner track to 42px and leave the thumb 2px short of
-     the right edge — a visible misalignment produced by a purely visual change,
-     which is the kind of thing this restyle must not do. Only the border's
-     COLOUR is ours; its width belongs to the layout. */
+     16px travelling exactly 24px to sit flush at each end (UI-P53: it was 20px
+     travelling 20 in a 24px track; the 44px width is not a square's and kept
+     its size). Narrowing the border to 1px would widen the inner track to 42px
+     and leave the thumb 2px short of the right edge — a visible misalignment
+     produced by a purely visual change, which is the kind of thing this
+     restyle must not do. Only the border's COLOUR is ours; its width belongs to
+     the layout. */
   return {
     borderRadius: r.control,
     transition: uiTransition(),
@@ -510,21 +519,21 @@ export const SWITCH_THUMB_CLASS =
   "bg-[color:var(--text2)] data-[state=checked]:bg-[color:var(--on-action)]";
 
 /**
- * The checkbox at `--r-chip`, as specified — and, at 16px square, fully round.
+ * The checkbox at `--r-chip`, as specified — and, at 15px square, fully round.
  *
- * SAME CONFLICT AS THE SWITCH TRACK, and a worse consequence. The box is `h-4
- * w-4`, 16px, and `--r-chip` is 8px: a radius of half the side is a circle. So
- * a checkbox in this kit is the same SHAPE as a radio, and only the tick
- * distinguishes it from the dot.
+ * SAME CONFLICT AS THE SWITCH TRACK, and a worse consequence. The box is 15px
+ * (16 before UI-P53) and `--r-chip` is 8px: a radius of half the side or more
+ * is a circle. So a checkbox in this kit is the same SHAPE as a radio, and only
+ * the tick distinguishes it from the dot.
  *
  * That matters more here than on the switch, because the square-versus-round
  * distinction is load-bearing: round means pick one, square means pick any, and
  * it is one of the oldest conventions in the interface. Losing it is a genuine
  * affordance defect and is reported as one rather than papered over.
  *
- * It is not fixed here for the same two reasons as the switch: a 16px box is
- * structural and not this restyle's to change, and a smaller radius would be a
- * seventh step in a six-step scale. On a chip — 24px tall, which is what
+ * It is not fixed here for the same two reasons as the switch: the box's size
+ * is the density pass's to set, which made it smaller rather than larger, and a
+ * smaller radius would be a seventh step in a six-step scale. On a chip — 24px tall, which is what
  * `--r-chip` was sized for — the same token is 33% of the height and reads as
  * the soft corner it was meant to be. The fix is to make the box bigger, not to
  * make the radius smaller, and that belongs to the prompt that owns sizing.
@@ -629,6 +638,7 @@ export const menuPanelStyle: CSSProperties = {
  */
 export function menuItemStyle(state: ControlState = {}): CSSProperties {
   return {
+    minHeight: CONTROL_SIZE.menuItem,
     borderRadius: r.chip,
     transition: uiTransition(),
     cursor: state.disabled ? "not-allowed" : "pointer",
@@ -812,4 +822,91 @@ export function themeToggleSegmentStyle(state: ControlState & { selected?: boole
     ...(live && hovered && !selected ? { color: t.text } : {}),
     ...ring(live && focusVisible),
   };
+}
+
+/* ── Sizes ────────────────────────────────────────────────────────────────────
+   UI-P53, the density pass. Every size is the one the kit drew before UI-P52
+   through the table in `design/prompts/README-density.md` — heights from 20 to
+   64 ×0.82, padding ×0.72 — and the old value is written beside the new one.
+   The checkbox is the one size the pass names outright: 18 → 15, under the
+   20px line the table keeps heights below.
+
+   `CONTROL_SIZE` is the number, for a control that sets its size inline.
+   `CONTROL_CLASS` is the same number as Tailwind's generated utilities, for the
+   shadcn kit in `src/components/ui/`, whose sizes have always been classes and
+   are written out whole here because the build only generates a utility it can
+   read. `controls.test.ts` holds the two to each other.
+
+   THE PHONE KEEPS ITS TOUCH TARGETS. Below 768px a control that was 44px or
+   taller keeps a 44px hit area, `min-height: 44px`: `TOUCH_HIT_CLASS` carries
+   its own breakpoint for a control built from classes, and `touchHit()` is the
+   rule for one styled inline, which reads the breakpoint itself.
+
+   The focus ring is not a size and does not move: 2px wide, 2px off (`focus.ts`).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+export const CONTROL_SIZE = {
+  /** The shadcn button: sm 36 → 30, default 40 → 33, lg 44 → 36 (44 on a phone), icon 40 → 33 square. */
+  button: { sm: 30, default: 33, lg: 36, icon: 33 },
+  /** An input or a select trigger: 40 → 33. */
+  field: 33,
+  /** A selectable chip — the filter chip: 36 → 30. */
+  chip: 30,
+  /** A tabs list: 40 → 33. */
+  tab: 33,
+  /** The switch track: 24 → 20 tall. Its 44px width is not a square's, so it is kept. */
+  switchTrack: 20,
+  /** The switch thumb: 20 → 16 square. */
+  switchThumb: 16,
+  /** A checkbox: 18 → 15. */
+  checkbox: 15,
+  /** A radio: 16, under 20, so the table keeps it. */
+  radio: 16,
+  /** A menu item: 36 → 30. */
+  menuItem: 30,
+} as const;
+
+/** Below 768px, a control that was at least 44px tall keeps a 44px hit area. */
+export const TOUCH_HIT_CLASS = "max-md:min-h-[44px]";
+
+/** The shadcn kit's size utilities: `CONTROL_SIZE` and the table's padding, as classes. */
+export const CONTROL_CLASS = {
+  button: {
+    /** h-10 px-4 py-2 */
+    default: "h-[33px] px-3 py-1.5",
+    /** h-9 px-3 */
+    sm: "h-[30px] rounded-md px-[9px]",
+    /** h-11 px-8, and 44px on a phone */
+    lg: "h-[36px] rounded-md px-[23px] max-md:min-h-[44px]",
+    /** h-10 w-10 */
+    icon: "h-[33px] w-[33px]",
+  },
+  /** h-10 px-3 py-2 — the input and the select trigger */
+  field: "h-[33px] px-[9px] py-1.5",
+  /** px-3 py-2; its min-h-[80px] is over 64, so the table keeps it */
+  textarea: "px-[9px] py-1.5",
+  /** px-2.5 py-0.5 — the badge */
+  chip: "px-[7px] py-0.5",
+  /** h-10 p-1 */
+  tabList: "h-[33px] p-1",
+  /** px-3 py-1.5 */
+  tabTrigger: "px-[9px] py-1",
+  /** h-6 w-11 */
+  switchTrack: "h-5 w-11",
+  /** h-5 w-5, travelling 20px; now 16px travelling 24 to sit flush in the 40px inner track */
+  switchThumb: "h-4 w-4 data-[state=checked]:translate-x-6",
+  /** h-4 w-4 */
+  checkbox: "h-[15px] w-[15px]",
+  /** h-4 w-4, kept */
+  radio: "h-4 w-4",
+  /** py-1.5; `menuItemStyle` holds the 30px minimum */
+  menuItem: "py-1",
+} as const;
+
+/**
+ * The touch-target rule for an inline-styled control: below 768px (`phone`) a
+ * control the kit drew at 44px or taller (`drawn`) keeps a 44px hit area.
+ */
+export function touchHit(phone: boolean, drawn: number): CSSProperties {
+  return phone && drawn >= TOUCH_MIN ? { minHeight: TOUCH_MIN } : {};
 }

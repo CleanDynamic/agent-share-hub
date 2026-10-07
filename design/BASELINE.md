@@ -115,3 +115,74 @@ Entry chunk size impact (WebGL code inline, no new dependencies):
 - Card covers are signed one storage request per card (`signedMediaUrl` in `src/components/gallery/cardMedia.ts`). Supabase's batch `createSignedUrls` does not take an image transform, so batching them needs a server-side signer. That is a backend change and is out of scope for this pass.
 - The 60fps scroll check with paint flashing is a manual DevTools check and was not run in this sandbox.
 - UI-P13b backdrop performance baseline to be measured when app is running with the animated WebGL backdrop.
+
+# The density pass on the kit (UI-P52)
+
+UI-P52 tightened all 42 boards in `design/reference/` (desktop, mobile, components and brand; Noon and Dusk) with `design/scripts/tighten-reference.py`, using the table in `design/prompts/README-density.md`. Type, padding, margin, gap and control heights are smaller; widths, radii, colours, positions and the drawn browser strip are not, and on mobile no control that was 44px tall got shorter. `design/build-kit.py` writes the boards through the same script, so the tightened kit is what `--check` verifies and what a restore writes.
+
+**Every board now fails `npm run audit:design`, and will until UI-P53 to UI-P58 land.** The order is deliberate: the reference moved first, so each later prompt is an ordinary "match the reference" change. Nothing in `src/` changed in UI-P52, so the app still draws every page at the old density and every comparison sees the gap. On a page board the app's larger text and boxes push everything below them out of line with the reference. In the component catalogue every section is now shorter in the reference than in the app, and the harness fails a size mismatch whatever its pixel ratio. UI-P53 (the theme layer), UI-P54 (the brand primitives) and UI-P55 (the site frame) close the shared part; the pages close in UI-P56 to UI-P58.
+
+Measured on the UI-P52 branch with `DESIGN_MAX_DIFF=0`, so every board reports its exact share of differing pixels (the threshold is 4%). "Boards as drawn" is the same app against the reference before the pass.
+
+| Board | Boards as drawn | After UI-P52 |
+|---|---|---|
+| `desktop/noon/home` | 4.16% | 12.82% |
+| `desktop/noon/gallery` | 6.29% | 21.19% |
+| `desktop/noon/build` | 4.08% | 10.91% |
+| `desktop/noon/rebuild` | 4.86% | 9.58% |
+| `desktop/noon/import` | not built (skipped) | not built (skipped) |
+| `desktop/noon/bounties` | not built (skipped) | not built (skipped) |
+| `desktop/noon/profile` | 4.00% | 12.09% |
+| `desktop/noon/activity` | 3.31% | 7.16% |
+| `desktop/noon/signin` | 3.82% | 9.43% |
+| `desktop/dusk/home` | 3.20% | 8.66% |
+| `desktop/dusk/gallery` | 4.42% | 12.42% |
+| `desktop/dusk/build` | 3.10% | 7.23% |
+| `desktop/dusk/rebuild` | 3.46% | 6.49% |
+| `desktop/dusk/import` | not built (skipped) | not built (skipped) |
+| `desktop/dusk/bounties` | not built (skipped) | not built (skipped) |
+| `desktop/dusk/profile` | 3.37% | 8.83% |
+| `desktop/dusk/activity` | 2.41% | 4.94% |
+| `desktop/dusk/signin` | 10.35% | 16.85% |
+| `mobile/noon/home` | 5.55% | 16.60% |
+| `mobile/noon/gallery` | 7.77% | 36.47% |
+| `mobile/noon/build` | 4.62% | 13.38% |
+| `mobile/noon/rebuild` | 8.99% | 17.35% |
+| `mobile/noon/import` | not built (skipped) | not built (skipped) |
+| `mobile/noon/bounties` | not built (skipped) | not built (skipped) |
+| `mobile/noon/solve` | not built (skipped) | not built (skipped) |
+| `mobile/noon/profile` | 4.80% | 24.96% |
+| `mobile/noon/activity` | 4.35% | 11.18% |
+| `mobile/noon/signin` | 3.96% | 18.49% |
+| `mobile/dusk/home` | 6.10% | 15.02% |
+| `mobile/dusk/gallery` | 5.76% | 21.49% |
+| `mobile/dusk/build` | 5.07% | 11.70% |
+| `mobile/dusk/rebuild` | 7.69% | 14.96% |
+| `mobile/dusk/import` | not built (skipped) | not built (skipped) |
+| `mobile/dusk/bounties` | not built (skipped) | not built (skipped) |
+| `mobile/dusk/solve` | not built (skipped) | not built (skipped) |
+| `mobile/dusk/profile` | 5.71% | 17.00% |
+| `mobile/dusk/activity` | 3.23% | 10.84% |
+| `mobile/dusk/signin` | 3.65% | 18.29% |
+| `components/noon/catalogue` · identity | 0.00% | 22.57%, height 326 vs app 366 |
+| `components/noon/catalogue` · controls | 0.12% | 8.27%, height 494 vs app 562 |
+| `components/noon/catalogue` · proof | 0.57% | 3.86%, height 179 vs app 215 |
+| `components/noon/catalogue` · panels | 3.06%, height 392 vs app 529 | 4.15%, height 347 vs app 529 |
+| `components/noon/catalogue` · orbs | 0.00% | 5.74%, height 267 vs app 301 |
+| `components/noon/catalogue` · tagline | 0.00% | 17.06%, height 252 vs app 340 |
+| `components/noon/catalogue` · build-cards | 3.63%, height 700 vs app 713 | 20.81%, height 636 vs app 713 |
+| `components/noon/catalogue` · charts | 0.87% | 3.16%, height 367 vs app 403 |
+| `components/noon/catalogue` · frame | 1.07% | 7.77%, height 480 vs app 539 |
+| `components/dusk/catalogue` · identity | 0.00% | 19.37%, height 326 vs app 366 |
+| `components/dusk/catalogue` · controls | 0.14% | 21.33%, height 494 vs app 562 |
+| `components/dusk/catalogue` · proof | 0.60% | 22.00%, height 179 vs app 215 |
+| `components/dusk/catalogue` · panels | 33.15%, height 392 vs app 529 | 49.66%, height 347 vs app 529 |
+| `components/dusk/catalogue` · orbs | 0.00% | 20.90%, height 267 vs app 301 |
+| `components/dusk/catalogue` · tagline | 0.00% | 46.59%, height 252 vs app 340 |
+| `components/dusk/catalogue` · build-cards | 4.00%, height 700 vs app 713 | 18.90%, height 636 vs app 713 |
+| `components/dusk/catalogue` · charts | 1.00% | 14.32%, height 367 vs app 403 |
+| `components/dusk/catalogue` · frame | 0.99% | 18.88%, height 480 vs app 539 |
+
+Import, bounties and solve have no compare page yet (`data-design-ready="false"`), so they are skipped, not compared. After the pass all 28 compared page boards are above 4%. Two failures predate it and are not caused by it: 17 of those 28 were already above 4%, and the catalogue already failed on two section heights (Panels 392px in the reference against 529px in the app, Build cards 700px against 713px, both themes).
+
+`python3 design/build-kit.py --check` passes again. Before UI-P52 it reported six kit files as changed since UI-P00 — `HANDOFF.md`, `README.md` and `RULES.md` (edited by UI-P01, UI-P09b, UI-P13b, UI-P20, UI-P36 and UI-P41c) and the three files in `tokens/` (UI-P09b) — so a restore would have reverted them. The script now carries them as they are.

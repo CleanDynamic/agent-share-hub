@@ -1,6 +1,6 @@
 // The theme states two type rules as hard, so they are tested rather than
-// trusted: Sentient never below 17px, and Figtree never below weight 400 at
-// sizes under 18px. Both describe a specific rendering failure — the display
+// trusted: Sentient never below 20px (17 until the UI-P52 density pass), and
+// Figtree never below weight 400 at sizes under 18px. Both describe a specific rendering failure — the display
 // face loses its shape at small sizes, worst on Dusk, and a sub-400 weight at
 // text size disappears into the ground.
 //
@@ -65,7 +65,9 @@ function ruleEnd(text: string, open: number): number {
   return text.length;
 }
 
-describe("the display floor: Sentient never below 17px", () => {
+// UI-P52 density pass: the floor is 20 (it was 17), because the pass takes the
+// smallest headings under 20 and those are now set in Figtree 600.
+describe("the display floor: Sentient never below 20px", () => {
   it("holds across the shipped scale", () => {
     expect(assertFloors()).toEqual([]);
   });
@@ -91,7 +93,8 @@ describe("the display floor: Sentient never below 17px", () => {
       fontWeight: 400,
     });
     expect(found).toHaveLength(1);
-    expect(found[0]).toMatch(/below the 17px display floor/);
+    // UI-P52 density pass: the floor in the message is 20, not 17.
+    expect(found[0]).toMatch(/below the 20px display floor/);
   });
 
   it("catches a clamp whose lower bound breaches the floor", () => {
@@ -178,26 +181,28 @@ describe("the scale", () => {
     expect(type.eyebrow.letterSpacing).toBe("0.08em");
     expect(type.eyebrow.textTransform).toBe("uppercase");
 
-    expect(type.body.fontSize).toBe("16px");
+    // UI-P52 density pass: every size below is its old size through the table
+    // (design/prompts/README-density.md) — body 16 → 15, bodyLarge 17 → 16,
+    // section heads 30 → 22, the hero 44 → 33, data 13 → 12, labels 13 → 12.
+    // The eyebrow's 12 is in the kept band.
+    expect(type.body.fontSize).toBe("15px");
     expect(type.body.fontWeight).toBe(400);
     expect(type.body.lineHeight).toBe(1.55);
-    expect(type.bodyLarge.fontSize).toBe("17px");
+    expect(type.bodyLarge.fontSize).toBe("16px");
 
-    // BG-P09 — THE FLOOR ASSERTION FOR THE DISPLAY CARD TITLE. It used to be 19,
-    // in Figtree, with a comment on the role saying the display face could not
-    // have it because 19 is under the floor. The card's rebuild inverted that:
-    // the title now sits UNDER the picture and has to win the eye by face and
-    // size, so the role is the display face at a fixed 22. 22 ≥ 17, so the
-    // floor passes — which is what makes the change legal rather than a waiver.
-    // UI-P05 moved the face to Sentient and left the size alone.
-    expect(minPx(type.cardTitle.fontSize)).toBe(22);
-    expect(minPx(type.cardTitle.fontSize)).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
-    expect(type.cardTitle.fontWeight).toBe(500);
+    // THE CARD TITLE. BG-P09 made it the display face at a fixed 22 (22 ≥ the
+    // floor of the day, 17), so a title under a picture wins the eye by face and
+    // size; UI-P05 moved that face to Sentient. UI-P52 density pass: the table
+    // takes 22 to 19, under Sentient's floor of 20, so the role keeps the size
+    // and is set in Figtree 600 instead — still clear of the weight floor.
+    expect(minPx(type.cardTitle.fontSize)).toBe(19);
+    expect(type.cardTitle.fontFamily).toBe(FIGTREE);
+    expect(type.cardTitle.fontWeight).toBe(600);
     expect(floorViolations("cardTitle", type.cardTitle)).toEqual([]);
-    expect(minPx(type.sectionHead.fontSize)).toBe(30);
-    expect(minPx(type.hero.fontSize)).toBe(44);
-    expect(minPx(type.data.fontSize)).toBe(13);
-    expect(type.label.fontSize).toBe("13px");
+    expect(minPx(type.sectionHead.fontSize)).toBe(22);
+    expect(minPx(type.hero.fontSize)).toBe(33);
+    expect(minPx(type.data.fontSize)).toBe(12);
+    expect(type.label.fontSize).toBe("12px");
   });
 
   it("balances headings and prettifies descriptions", () => {
@@ -384,12 +389,24 @@ describe("type.display(px)", () => {
     return [style.letterSpacing, style.lineHeight];
   };
 
-  it("is Sentient 500 at the size asked for, complete", () => {
+  it("is Sentient 500 at the drawn size through the density table, complete", () => {
+    // UI-P52 density pass: `px` is the size the board drew before the pass, and
+    // the role renders it through the table — 44 → 33 (it rendered 44).
     const style = display(44);
     expect(style.fontFamily).toBe(SENTIENT);
-    expect(style.fontSize).toBe("44px");
+    expect(style.fontSize).toBe("33px");
     expect(style.fontWeight).toBe(500);
     expect(style.textWrap).toBe("balance");
+  });
+
+  it("sets a heading the table takes under 20px in Figtree 600 at the same size", () => {
+    // UI-P52 density pass: Sentient stays at 20px and up. Every heading drawn at
+    // 22 or less renders under 20, so it keeps its size and changes its face.
+    expect(display(24)).toMatchObject({ fontFamily: SENTIENT, fontSize: "20px", fontWeight: 500 });
+    for (const [px, size] of [[22, 19], [21, 18], [20, 17], [19, 16], [18, 15], [17, 16]]) {
+      expect(display(px), `display(${px})`).toMatchObject({ fontFamily: FIGTREE, fontSize: `${size}px`, fontWeight: 600 });
+      expect(floorViolations(`display(${px})`, display(px))).toEqual([]);
+    }
   });
 
   it("is reachable as type.display and type.mono", () => {
@@ -418,20 +435,30 @@ describe("type.display(px)", () => {
   });
 
   it("sets the lockup wordmark at -0.03em / 1 at each size the reference draws it", () => {
-    for (const px of [16, 18, 19, 21, 34, 64, 70]) {
+    // UI-P52 density pass: drawn at 16, 18, 19, 21, 34, 64 and 70, rendered at
+    // 15, 15, 16, 18, 26, 48 and 52 — and Sentient at every one of them.
+    const drawn = [16, 18, 19, 21, 34, 64, 70];
+    const rendered = [15, 15, 16, 18, 26, 48, 52];
+    drawn.forEach((px, i) => {
       const style = display(px, { lockup: true });
-      expect(style.fontSize).toBe(`${px}px`);
+      expect(style.fontSize).toBe(`${rendered[i]}px`);
+      expect(style.fontFamily).toBe(SENTIENT);
       expect([style.letterSpacing, style.lineHeight]).toEqual(["-0.03em", 1]);
       expect(style).not.toHaveProperty("textWrap");
-    }
+    });
   });
 
-  it("holds the floor: nothing under 17px, but the 16px lockup", () => {
-    expect(() => display(16)).toThrow(/never set under 17px/);
+  it("holds the floor: nothing drawn under 17px, but the 16px lockup", () => {
+    // UI-P52 density pass: `px` is the drawn size, so the floors that guard it
+    // are the drawn ones they always were and the same inputs throw. What
+    // renders is smaller: the 16px lockup is 15 now, and Sentient's own floor
+    // (20) is held by setting smaller headings in Figtree, tested above.
+    expect(() => display(16)).toThrow(/never drawn under 17px/);
     expect(() => display(12)).toThrow(RangeError);
     expect(() => display(Number.NaN)).toThrow(RangeError);
-    expect(() => display(LOCKUP_MIN_PX, { lockup: true })).not.toThrow();
-    expect(() => display(15, { lockup: true })).toThrow(/never set under 16px/);
+    expect(() => display(16, { lockup: true })).not.toThrow();
+    expect(display(16, { lockup: true }).fontSize).toBe(`${LOCKUP_MIN_PX}px`);
+    expect(() => display(15, { lockup: true })).toThrow(/never drawn under 16px/);
     // What it emits clears the same check the static roles are held to.
     for (const px of [17, 18, 22, 30, 44, 52, 70]) {
       expect(floorViolations(`display(${px})`, display(px))).toEqual([]);
@@ -445,6 +472,14 @@ describe("type.mono(px, { caps })", () => {
     expect(style.fontFamily).toBe(DM_MONO);
     expect(style.fontSize).toBe("12px");
     expect(style.fontVariantNumeric).toBe("tabular-nums");
+  });
+
+  it("renders the drawn size through the density table", () => {
+    // UI-P52 density pass: 10–12 are kept, 13 → 12, 22 → 19, 40 → 30, and the
+    // reference's few 9px labels become 10 (no text under 10px).
+    for (const [px, size] of [[9, 10], [10, 10], [12, 12], [13, 12], [14, 13], [22, 19], [30, 22], [40, 30]]) {
+      expect(mono(px).fontSize, `mono(${px})`).toBe(`${size}px`);
+    }
   });
 
   it("sets an eyebrow uppercase at .09em", () => {

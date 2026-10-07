@@ -13,7 +13,11 @@ import { feedback } from "@/lib/theme/motion";
  * secondary action (e.g. "Mark all as read") rendered at the right of the
  * tabs row.
  *
- * Fixed vertical rhythm — see plan.md for the exact diagram.
+ * Fixed vertical rhythm — see plan.md for the exact diagram. Every size in it
+ * went through the density table in UI-P55 (the top row 56 → 46, the buttons
+ * 32 → 26, the tabs row 44 → 36, type 13 → 12 and 18 → 15, the gaps ×0.72);
+ * on a phone the tabs row keeps 44, because its tabs are that tall and are
+ * touch targets.
  */
 
 export type ShellHeaderTab = {
@@ -61,6 +65,7 @@ export function ShellHeader({
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
   const hideBack = breakpoint === "mobile";
+  const phone = breakpoint === "mobile";
   const handleBack = onBack ?? (() => navigate(-1));
 
   const hasTitle = !!title;
@@ -74,9 +79,9 @@ export function ShellHeader({
   };
 
   return (
-    <div style={{ padding: "0 20px", paddingTop: 12 }}>
+    <div style={{ padding: "0 14px", paddingTop: 9 }}>
       {/* ROW 1 — top bar */}
-      <div style={{ ...row, height: 56, justifyContent: "space-between", gap: 12 }}>
+      <div style={{ ...row, height: 46, justifyContent: "space-between", gap: 9 }}>
         <div style={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
           {!hideBack && (
             <button
@@ -87,14 +92,14 @@ export function ShellHeader({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 4,
-                height: 32,
-                padding: "8px 12px",
+                height: 26,
+                padding: "6px 9px",
                 borderRadius: 8,
                 background: "var(--recess)",
                 border: "none",
                 color: "var(--text2)",
                 fontFamily: FONT,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 500,
                 cursor: "pointer",
                 transition: feedback("color", "background-color"),
@@ -130,9 +135,9 @@ export function ShellHeader({
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
-                height: 32,
-                padding: "8px 16px",
+                gap: 4,
+                height: 26,
+                padding: "6px 12px",
                 borderRadius: 8,
                 background: ORANGE_GRADIENT,
                 border: "none",
@@ -147,7 +152,7 @@ export function ShellHeader({
                    gradient flattened and made the label worth re-measuring. */
                 color: "var(--on-action)",
                 fontFamily: FONT,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: primaryAction.disabled ? "not-allowed" : "pointer",
                 opacity: primaryAction.disabled ? 0.5 : 1,
@@ -171,12 +176,12 @@ export function ShellHeader({
       {hasTitle && (
         <div
           style={{
-            height: 32,
-            marginTop: 8,
+            height: 26,
+            marginTop: 6,
             display: "flex",
             alignItems: "center",
             fontFamily: FONT,
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: 600,
             color: "var(--text)",
             whiteSpace: "nowrap",
@@ -192,15 +197,15 @@ export function ShellHeader({
       {(hasTabs || secondaryAction) && (
         <div
           style={{
-            height: 44,
-            marginTop: 16,
+            height: phone ? 44 : 36,
+            marginTop: 12,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             borderBottom: "1px solid var(--line)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 24, height: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 17, height: "100%" }}>
             {hasTabs &&
               tabs!.map((t) => {
                 const isActive = t.id === activeTab;
@@ -213,13 +218,13 @@ export function ShellHeader({
                       position: "relative",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 4,
                       height: "100%",
-                      padding: "10px 0",
+                      padding: "7px 0",
                       background: "transparent",
                       border: "none",
                       fontFamily: FONT,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: 500,
                       /* BG-P30. The resting tab was painted `--recess`, which
                          is a SURFACE token: 1.16:1 on Noon's ground and
@@ -240,7 +245,7 @@ export function ShellHeader({
                         style={{
                           fontSize: 10,
                           fontWeight: 600,
-                          padding: "1px 6px",
+                          padding: "1px 4px",
                           borderRadius: 999,
                           background: "var(--recess)",
                           color: "var(--text)",
@@ -281,7 +286,7 @@ export function ShellHeader({
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: secondaryAction.disabled ? "default" : "pointer",
-                padding: "4px 6px",
+                padding: "4px 4px",
               }}
             >
               {secondaryAction.label}
@@ -291,7 +296,7 @@ export function ShellHeader({
       )}
 
       {/* ROW 4 — search / controls */}
-      {hasSearch && <div style={{ marginTop: 12 }}>{searchSlot}</div>}
+      {hasSearch && <div style={{ marginTop: 9 }}>{searchSlot}</div>}
 
       {/* Constant content offset */}
       <div style={{ height: 16 }} />

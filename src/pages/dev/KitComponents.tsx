@@ -42,11 +42,11 @@ export default function KitComponents() {
         fontFamily: FIGTREE,
       }}
     >
-      <header style={{ padding: "36px 40px 10px" }}>
+      <header style={{ padding: "26px 29px 7px" }}>
         <div style={{ ...mono(12), lineHeight: "normal", letterSpacing: ".1em", color: t.label, textTransform: "uppercase" }}>
           buildgallery · component catalogue · {theme === "noon" ? "Noon" : "Dusk"}
         </div>
-        <h1 style={{ ...display(56), margin: "8px 0 0", lineHeight: "normal", letterSpacing: "-0.035em", color: t.text }}>
+        <h1 style={{ ...display(56), margin: "6px 0 0", lineHeight: "normal", letterSpacing: "-0.035em", color: t.text }}>
           Every primitive, every state
         </h1>
       </header>

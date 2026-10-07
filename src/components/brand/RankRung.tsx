@@ -20,6 +20,7 @@
 import type { CSSProperties } from "react";
 import { Trophy, type LucideIcon } from "lucide-react";
 
+import { denseHeight } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE } from "@/lib/theme/type";
 
@@ -54,16 +55,21 @@ export interface RankRungProps {
   size?: RankRungSize;
 }
 
+/* UI-P54, the density pass: a rung is a square, so its side goes through the
+   table (28 → 23, 32 → 26, 40 → 33) and so does the mark tile's (46 → 38); the
+   radii are not in the table, and the rank type is drawn at the sizes above and
+   rendered by `display()`. */
 export function RankRung({ rank, tier, size = 28 }: RankRungProps) {
   const { radius, font } = RUNG[size];
+  const side = denseHeight(size);
   return (
     <span
       data-ui="rank-rung"
       data-tier={tier}
       style={{
         ...CENTRED,
-        width: size,
-        height: size,
+        width: side,
+        height: side,
         borderRadius: radius,
         ...LADDER[tier],
         ...display(font),
@@ -88,14 +94,14 @@ export function MarkTile({ tier, caption, icon: Icon = Trophy }: MarkTileProps) 
     <div
       data-ui="mark-tile"
       data-tier={tier}
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 64 }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 64 }}
     >
       <span
         aria-hidden="true"
         style={{
           ...CENTRED,
-          width: 46,
-          height: 46,
+          width: 38,
+          height: 38,
           borderRadius: 13,
           ...LADDER[tier],
           boxShadow: tier === "highest" ? t.rankGlow : undefined,

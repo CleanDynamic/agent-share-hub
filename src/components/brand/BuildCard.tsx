@@ -1,7 +1,7 @@
 // The build card (UI-P14): the one card the whole product hangs on its walls.
 //
 // ONE SURFACE. A picture lamp over a single glass card — `--glass`, a 1px
-// `--glass-border`, radius 14, 7px of padding, the card shadow — with a cover
+// `--glass-border`, radius 14, 5px of padding, the card shadow — with a cover
 // inside it, and under the cover the record: title, credit, plaque, part chips,
 // open ask. It used to be two layers (a frame and a lighter box inset in it, with
 // the frame blurred); the step between them is gone, and so is the blur. Panels,
@@ -13,8 +13,11 @@
 //   lamp → cover (with the shape tag) → title → credit and Δ → plaque →
 //   part chips → open ask
 //
-// The title sits under the picture and still wins, by face (Sentient 19) and by
-// ink (`--text`), where everything under it is 10–11px of `--text2` or mono.
+// The title sits under the picture and still wins, by weight (the display role,
+// drawn at 19 and rendered at 16 in Figtree 600 since the UI-P52 density pass) and
+// by ink (`--text`), where everything under it is 10–11px of `--text2` or mono.
+// The density pass took the card's padding and gaps from 7 to 5 and the body's
+// from 6 to 4; the cover heights are over the table's band and stay.
 // There is no way to render the plaque without the title above it: the title is
 // a required prop, and the plaque comes from `build`, which is required too.
 //
@@ -110,8 +113,8 @@ const CARD_BASE: CSSProperties = {
   position: "relative",
   display: "flex",
   flexDirection: "column",
-  gap: 7,
-  padding: 7,
+  gap: 5,
+  padding: 5,
   background: t.glass,
   borderRadius: r.card,
   boxShadow: t.shadowCard,
@@ -182,7 +185,7 @@ export function BuildCard({
                   fontFamily: DM_MONO,
                   fontSize: 10,
                   lineHeight: "normal",
-                  padding: "2px 6px",
+                  padding: "2px 4px",
                   borderRadius: r.chip,
                 }}
               >
@@ -192,7 +195,7 @@ export function BuildCard({
           </div>
         )}
 
-        <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
           <h3
             id={titleId}
             data-card-part="title"
@@ -218,6 +221,9 @@ export function BuildCard({
                   style={{
                     fontFamily: DM_MONO,
                     fontSize: 10,
+                    /* The kit's own leading: inherited, the page's 1.55 made this
+                       line 2.5px taller than the catalogue's. */
+                    lineHeight: "normal",
                     color: t.text2,
                     whiteSpace: "nowrap",
                     overflow: "hidden",

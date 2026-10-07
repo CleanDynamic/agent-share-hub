@@ -1,9 +1,12 @@
 // The mobile header (UI-P19): the sticky glass bar of the site frame below 768px.
 //
-// 58px, `--header` with the one blur value, the lockup on the left and on the
-// right a Search button (opens a full-width search sheet) and the account control
-// — the avatar (opens the account sheet) or a Sign in button. It replaces
-// `MobileTopBar` on site-frame routes; `MobileTopBar` stays for `FlatShell`.
+// 48px and its 1px edge (58 before the UI-P55 density pass), `--header` with the
+// one blur value, the lockup on the left and on the right a Search button (opens
+// a full-width search sheet) and the account control — the avatar (opens the
+// account sheet) or a Sign in button. It replaces `MobileTopBar` on site-frame
+// routes; `MobileTopBar` stays for `FlatShell`. The avatar's button keeps its
+// 44px touch target and the account sheet's rows keep 44; the type and the gaps
+// tighten, and the brand controls render their drawn sizes through the table.
 //
 // `MobileHeaderView` is pure (callbacks in, a bar out); `MobileHeader` owns the
 // two sheets, the route and the account. The account sheet is Profile, Library, Drafts,
@@ -46,9 +49,12 @@ function AvatarButton({ viewer, onClick }: { viewer: FrameViewer; onClick: () =>
       onClick={onClick}
       {...handlers}
       style={{
+        /* The 44px touch target, hung outside the drawn avatar so the row lays
+           out as the board's: (44 − 28) / 2 = 8 each side since UI-P55 (5 around
+           the 34 before). */
         width: 44,
         height: 44,
-        margin: "-5px",
+        margin: "-8px",
         padding: 0,
         border: 0,
         background: "transparent",
@@ -74,12 +80,13 @@ export function MobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
         position: "sticky",
         top: 0,
         zIndex: 20,
-        height: 58,
+        /* 48 and then the 1px edge, as the board draws it: 49 in all. */
+        height: 48,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 14px",
-        boxSizing: "border-box",
+        padding: "0 10px",
+        boxSizing: "content-box",
         background: t.header,
         borderBottom: `1px solid ${t.headerBorder}`,
         backdropFilter: GLASS_BLUR,
@@ -87,7 +94,7 @@ export function MobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
       }}
     >
       <Lockup size={19} to={SITE_NAV.home} />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <IconButton icon={Search} label="Search" size={38} onClick={onSearchOpen} />
         {viewer ? (
           <AvatarButton viewer={viewer} onClick={onAccountOpen} />
@@ -104,10 +111,11 @@ export function MobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
 const row: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  minHeight: 48,
+  /* 48 → 39 by the table, held at the 44px touch floor. */
+  minHeight: 44,
   padding: "0 4px",
   fontFamily: FIGTREE,
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 500,
   color: t.text,
   textDecoration: "none",

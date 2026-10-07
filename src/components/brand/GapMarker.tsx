@@ -77,8 +77,9 @@ const ROW_WORD: Record<GapState, string> = {
 /** The edge's weight. The theme's own number, and the same in all three. */
 const EDGE_WIDTH = 1.5;
 
-/** A tag's padding, matching CategoryChip's so a row of them is one row. */
-const PAD = "2px 8px";
+/** A tag's padding, matching CategoryChip's so a row of them is one row.
+    2px 6px since the UI-P54 density pass (2px 8px before). */
+const PAD = "2px 6px";
 
 /**
  * The state, from the two facts that decide it.
@@ -250,7 +251,7 @@ export function GapMarker({
         data-testid={testId}
         data-gap-placement="row"
         data-gap-state={state}
-        style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}
       >
         {chip}
         {/* THE STATE WORD IS A TAG ON ITS OWN MEASURED GROUND, not a bare hue.
@@ -296,8 +297,8 @@ export function GapMarker({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        padding: "12px 14px",
+        gap: 7,
+        padding: "9px 10px",
         ...gapEdge("panel", state),
         /* NO TINTED GROUND. The dashed edge is the whole treatment the theme
            names, and a red wash behind an invitation reads as an error box —
@@ -305,7 +306,7 @@ export function GapMarker({
         background: "transparent",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <span
           data-gap-eyebrow=""
           style={{ ...eyebrowText, color: state === "solved" ? t.evidence : t.catBreakage }}
@@ -333,7 +334,7 @@ export function GapMarker({
       {/* The facts that are only sometimes true. None is invented: an unpriced
           ask shows no reward and one with no deadline shows no date. */}
       {reward || deadline ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           {reward ? (
             <span
               data-testid="gap-reward"
@@ -362,7 +363,7 @@ export function GapMarker({
       ) : null}
 
       {primaryAction || secondaryActions || solutions ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           {primaryAction ? (
             <Button
               type="button"

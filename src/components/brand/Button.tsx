@@ -14,12 +14,20 @@
 // at every size, the radius is the control step (12), the gap is 7, and the icon
 // is 15px at stroke 1.8.
 //
+// THOSE ARE THE DRAWN NUMBERS, AND THE BUTTON RENDERS THEM DENSER (UI-P54). The
+// density pass maps every one through the table (`design/prompts/README-density.md`):
+// 36/13 renders 30/12, the padding is 0 10px and the gap 5. Callers keep passing
+// the drawn size. On a phone a button drawn 44px or taller stays 44, the touch
+// target; the icon keeps its 15px, as the kit's icons did.
+//
 // This is the new button. The shadcn `ui/button.tsx` and every call site of it
 // are untouched: they move when their page is rebuilt.
 
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { denseFont, denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -32,9 +40,9 @@ export type ButtonFontSize = 11 | 12 | 13 | 14 | 15;
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   variant?: ButtonVariant;
-  /** Height in px. */
+  /** Height in px, as the reference drew it; rendered through the density table. */
   size?: ButtonSize;
-  /** Label size in px. */
+  /** Label size in px, as the reference drew it; rendered through the density table. */
   fontSize?: ButtonFontSize;
   /** A lucide icon, drawn before the label at 15px and stroke 1.8. */
   icon?: LucideIcon;
@@ -87,6 +95,7 @@ export function Button({
     { onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel },
     { disabled },
   );
+  const phone = useIsPhone();
 
   /* Hover is a step on the fill, never an opacity change: a primary button is
      solid, and letting the page show through it is the opposite of the job. */
@@ -107,17 +116,17 @@ export function Button({
       {...rest}
       {...handlers}
       style={{
-        height: size,
-        padding: "0 14px",
+        height: denseHeight(size, { touch: phone }),
+        padding: "0 10px",
         borderRadius: r.control,
         ...PAINT[variant],
         fontFamily: FIGTREE,
-        fontSize,
+        fontSize: denseFont(fontSize),
         display: fullWidth ? "flex" : "inline-flex",
         width: fullWidth ? "100%" : undefined,
         alignItems: "center",
         justifyContent: "center",
-        gap: 7,
+        gap: 5,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : undefined,
         whiteSpace: "nowrap",

@@ -162,18 +162,20 @@ describe("PictureLamp", () => {
 });
 
 describe("Plaque — healthy", () => {
-  it("is a wrapping, centred flex row at gap 7, tag then freshness", () => {
+  it("is a wrapping, centred flex row at gap 5, tag then freshness", () => {
+    // UI-P52 density pass: gap 7 → 5.
     const html = plaqueHtml(BY_STATE.healthy);
-    expect(html).toContain("display:flex;align-items:center;flex-wrap:wrap;gap:7px");
+    expect(html).toContain("display:flex;align-items:center;flex-wrap:wrap;gap:5px");
     expect(html).toContain('data-plaque-state="healthy"');
     expect(html).toContain('data-variant="fresh"');
   });
 
-  it("puts '41 reproduced' on --evidence-fill in --on-evidence-fill, DM Mono, 2px 6px, radius 8, no wrap", () => {
+  it("puts '41 reproduced' on --evidence-fill in --on-evidence-fill, DM Mono, 2px 4px, radius 8, no wrap", () => {
+    // UI-P52 density pass: the tag's padding is 2px 4px (2px 6px before).
     const html = plaqueHtml(BY_STATE.healthy);
     expect(html).toContain("background:var(--evidence-fill)");
     expect(html).toContain("color:var(--on-evidence-fill)");
-    expect(html).toContain("padding:2px 6px");
+    expect(html).toContain("padding:2px 4px");
     expect(html).toContain("border-radius:var(--r-chip)");
     expect(html).toContain("white-space:nowrap");
     expect(html).toContain("DM Mono");
@@ -260,7 +262,8 @@ describe("Plaque — the three sizes", () => {
   it.each([
     ["card", "10px", "10px"],
     ["row", "11px", "11px"],
-    ["header", "13px", "12px"],
+    // UI-P52 density pass: the header's tag is 12px (13 before); 10–12 are kept.
+    ["header", "12px", "12px"],
   ] as const)("%s sets the tag at %s and the claim at %s", (size, tag, text) => {
     const html = plaqueHtml(BY_STATE.healthy, size);
     expect(html).toContain(`font-size:${tag}`);

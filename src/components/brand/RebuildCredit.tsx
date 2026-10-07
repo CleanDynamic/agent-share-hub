@@ -181,7 +181,7 @@ export function RebuildCredit({
     <div
       data-visual-slot="rebuild-credit"
       data-source-resolved={gone ? "false" : to ? "true" : "pending"}
-      style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}
+      style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}
     >
       <p
         data-testid="rebuild-credit-line"
@@ -300,7 +300,7 @@ export function ChangeSummary({ lines }: { lines: readonly ChangeLine[] }) {
               ...dataText,
               display: "flex",
               alignItems: "flex-start",
-              gap: 6,
+              gap: 4,
               minWidth: 0,
               color: t.text2,
             }}
@@ -327,7 +327,7 @@ export function ChangeSummary({ lines }: { lines: readonly ChangeLine[] }) {
             ...chipType,
             fontFamily: "inherit",
             alignSelf: "flex-start",
-            padding: "3px 8px",
+            padding: "3px 6px",
             borderRadius: r.chip,
             background: "transparent",
             borderWidth: 1,

@@ -1,10 +1,11 @@
 // The error state (UI-P37): a panel that did not load, said once, with a way
 // to ask again.
 //
-// A column, 10 apart: one sentence in Figtree 14px `--text` ("That didn't
+// A column, 7 apart: one sentence in Figtree 13px `--text` ("That didn't
 // load."), the panel's own name under it in DM Mono 11px `--label` so a page
-// with two failures says which two, and a secondary 34/12 "Try again" that calls
-// the query's `refetch`. The sentence is the same in every panel on purpose: a
+// with two failures says which two, and a secondary "Try again" drawn 34/12
+// (rendered 28/12; 44 on a phone) that calls the query's `refetch`. (10 and
+// 14px before the UI-P52 density pass.) The sentence is the same in every panel on purpose: a
 // failure is recognised, not read.
 //
 // NEVER THE EXCEPTION. No message, no stack, no id — a visitor cannot act on
@@ -77,9 +78,9 @@ export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, s
       {...rest}
       role="status"
       aria-live="polite"
-      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, ...style }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, ...style }}
     >
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: "normal", color: t.text }}>{line}</p>
+      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text }}>{line}</p>
       <span style={{ ...mono(11), lineHeight: "normal", color: t.label }}>{panel}</span>
       <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} onClick={onRetry}>
         Try again

@@ -115,10 +115,13 @@ export function PartViewer<V extends string = string>({
         boxSizing: "border-box",
       }}
     >
-      <div style={{ display: "flex", height: phone ? 44 : 46, flexShrink: 0 }}>
+      {/* UI-P54, the density pass: the strip 46 → 38 (44 → 36 on a phone; it is
+          not a control, so it has no touch floor), and every gap, padding and
+          type size below through the table. */}
+      <div style={{ display: "flex", height: phone ? 36 : 38, flexShrink: 0 }}>
         <div
           style={{
-            /* The reference's width is the content box: the block is 96 + 16 (78 + 14 on a phone) across. */
+            /* The reference's width is the content box: the block is 96 + 12 (78 + 10 on a phone) across. */
             width: phone ? 78 : 96,
             boxSizing: "content-box",
             flexShrink: 0,
@@ -126,8 +129,8 @@ export function PartViewer<V extends string = string>({
             borderRadius: phone ? "0 0 12px 0" : "0 0 14px 0",
             display: "flex",
             alignItems: "center",
-            gap: 7,
-            paddingLeft: phone ? 14 : 16,
+            gap: 5,
+            paddingLeft: phone ? 10 : 12,
             fontFamily: DM_MONO,
             fontSize: phone ? 10 : 11,
             letterSpacing: ".08em",
@@ -140,17 +143,17 @@ export function PartViewer<V extends string = string>({
           style={{
             flexGrow: 1,
             minWidth: 0,
-            margin: "7px 0 0 7px",
+            margin: "5px 0 0 5px",
             background: t.tab,
             border: `1px solid ${t.headerBorder}`,
             borderBottom: 0,
             borderRadius: "12px 0 0 0",
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            paddingLeft: phone ? 10 : 12,
+            gap: 6,
+            paddingLeft: phone ? 7 : 9,
             fontFamily: FIGTREE,
-            fontSize: phone ? 13 : 12,
+            fontSize: 12,
             fontWeight: 600,
             color: t.text,
           }}
@@ -165,7 +168,7 @@ export function PartViewer<V extends string = string>({
 
       {phone ? null : (
         /* A viewer narrower than its tabs (UI-P39, 768–1279) scrolls them sideways, as a phone's row does, rather than cutting the last off. */
-        <div className="bg-scroll-row" style={{ padding: "10px 14px 4px", marginBottom: -4, overflowX: "auto", scrollbarWidth: "none" }}>
+        <div className="bg-scroll-row" style={{ padding: "7px 10px 4px", marginBottom: -4, overflowX: "auto", scrollbarWidth: "none" }}>
           <UnderlineTabs tabs={tabs} value={tab} onChange={onTabChange} fontSize={12} label={tabsLabel} />
         </div>
       )}
@@ -175,17 +178,17 @@ export function PartViewer<V extends string = string>({
         role={phone ? undefined : "tabpanel"}
         aria-labelledby={phone ? undefined : current?.id}
         style={{
-          padding: phone ? "14px 16px" : "12px 16px",
+          padding: phone ? "10px 12px" : "9px 12px",
           display: "flex",
           flexDirection: "column",
-          gap: 10,
+          gap: 7,
           flexGrow: 1,
           minHeight: 0,
         }}
       >
         {tools ? (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9 }}>
               <Segmented
                 items={MODES}
                 value={mode}
@@ -201,7 +204,7 @@ export function PartViewer<V extends string = string>({
             <div style={{ fontFamily: FIGTREE, fontSize: phone ? 12 : 11, color: t.text2 }}>{blurb}</div>
           </>
         ) : null}
-        <div style={{ fontFamily: FIGTREE, fontSize: phone ? 15 : 14, lineHeight: 1.65, color: t.text }}>{children}</div>
+        <div style={{ fontFamily: FIGTREE, fontSize: phone ? 14 : 13, lineHeight: 1.65, color: t.text }}>{children}</div>
       </div>
     </section>
   );

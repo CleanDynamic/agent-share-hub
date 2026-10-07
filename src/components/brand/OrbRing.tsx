@@ -13,8 +13,9 @@
 
 import type { ReactNode } from "react";
 
+import { denseHeight, denseSpace } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, DISPLAY_MIN_PX, display } from "@/lib/theme/type";
+import { DM_MONO, DRAWN_HEADING_MIN_PX, display } from "@/lib/theme/type";
 
 export interface OrbRingProps {
   /** Diameter in px: 150, 120, 118 or 112 for the orb; smaller for an avatar's ring. */
@@ -37,7 +38,7 @@ const clamp = (n: number) => (Number.isFinite(n) ? Math.min(100, Math.max(0, n))
 
 export function OrbRing({ size, percent, value, caption, label, thickness = 9, children }: OrbRingProps) {
   const p = clamp(percent);
-  const figure = Math.max(DISPLAY_MIN_PX, Math.trunc(size * 0.2));
+  const figure = Math.max(DRAWN_HEADING_MIN_PX, Math.trunc(size * 0.2));
 
   return (
     <div
@@ -45,11 +46,11 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
       role="img"
       aria-label={label}
       style={{
-        width: size,
-        height: size,
+        width: denseHeight(size),
+        height: denseHeight(size),
         borderRadius: "50%",
         background: `conic-gradient(${t.lit} 0 ${p}%, ${t.ringTrack} ${p}% 100%)`,
-        padding: thickness,
+        padding: denseSpace(thickness),
         boxShadow: t.ringGlow,
         boxSizing: "border-box",
         flexShrink: 0,
@@ -67,7 +68,7 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
           alignItems: "center",
           justifyContent: "center",
           gap: 2,
-          paddingBottom: children ? undefined : Math.trunc(size * 0.12),
+          paddingBottom: children ? undefined : denseSpace(Math.trunc(size * 0.12)),
           boxSizing: "border-box",
           overflow: children ? "hidden" : undefined,
         }}

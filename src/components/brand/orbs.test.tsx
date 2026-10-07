@@ -7,6 +7,8 @@ import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { denseFont } from "@/lib/theme/density";
+
 import LevelRing from "@/components/profile-game/LevelRing";
 
 import { OrbGlass } from "./OrbGlass";
@@ -26,9 +28,10 @@ describe("OrbGlass", () => {
     );
   });
 
-  it("centres a column with gap 5 and keeps 16% of the size clear at the foot", () => {
-    expect(markup(<OrbGlass size={162} label="L" />)).toContain("gap:5px;padding-bottom:25px");
-    expect(markup(<OrbGlass size={118} label="L" />)).toContain("gap:5px;padding-bottom:18px");
+  it("centres a column with gap 5 and keeps 16% of the size clear at the foot, through the table", () => {
+    // UI-P52 density pass: 16% of 162 is 25, which renders at 18; of 118, 18 → 13.
+    expect(markup(<OrbGlass size={162} label="L" />)).toContain("gap:5px;padding-bottom:18px");
+    expect(markup(<OrbGlass size={118} label="L" />)).toContain("gap:5px;padding-bottom:13px");
     expect(markup(<OrbGlass size={162} label="L" />)).toContain("flex-direction:column;align-items:center;justify-content:center");
   });
 
@@ -44,9 +47,10 @@ describe("OrbGlass", () => {
     expect(html).not.toMatch(/animation|<animate|transition/);
   });
 
-  it("sets the label in Figtree 13px 500 and the sub-label in DM Mono 10px at 80%", () => {
+  it("sets the label in Figtree 12px 500 and the sub-label in DM Mono 10px at 80%", () => {
+    // UI-P52 density pass: the label 13 → 12; 10 is kept.
     const html = markup(<OrbGlass size={162} label="Reproduced today" sub="48 runs" />);
-    expect(html).toContain("font-weight:500;font-size:13px");
+    expect(html).toContain("font-weight:500;font-size:12px");
     expect(html).toContain("color:var(--on-orb-glass);text-align:center");
     expect(html).toContain("font-size:10px");
     expect(html).toContain("opacity:0.8");
@@ -82,9 +86,10 @@ describe("OrbSolid", () => {
     [140, 23],
     [128, 21],
     [118, 20],
-  ])("a %ipx orb sets its number at %ipx", (size, px) => {
+  ])("a %ipx orb sets its number at %ipx, as drawn, through the table", (size, px) => {
+    // UI-P52 density pass: 27 → 23, 25 → 21, 23 → 20, 21 → 18, 20 → 17.
     const html = markup(<OrbSolid size={size} top="t" value="1" bottom="b" />);
-    expect(html).toContain(`font-size:${px}px`);
+    expect(html).toContain(`font-size:${denseFont(px)}px`);
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("color:var(--on-orb-solid)");
   });
@@ -109,7 +114,8 @@ describe("OrbRing", () => {
   it("is a conic arc of --lit over --ring-track, 9px thick, with the ring glow", () => {
     const html = ring();
     expect(html).toContain("conic-gradient(var(--lit) 0 77%, var(--ring-track) 77% 100%)");
-    expect(html).toContain("padding:9px");
+    // UI-P52 density pass: the arc's 9px is padding, so it goes 9 → 6; the 150px orb is over the band.
+    expect(html).toContain("padding:6px");
     expect(html).toContain("box-shadow:var(--ring-glow)");
     expect(html).toContain("width:150px;height:150px;border-radius:50%");
   });
@@ -129,24 +135,31 @@ describe("OrbRing", () => {
     const html = ring();
     expect(html).toContain("background:var(--orb-glass)");
     expect(html).toContain("box-shadow:inset 0 0 0 1px var(--orb-glass-edge)");
-    expect(html).toContain("gap:2px;padding-bottom:18px");
+    // UI-P52 density pass: 12% of 150 is 18, which renders at 13.
+    expect(html).toContain("gap:2px;padding-bottom:13px");
     expect(html).not.toContain("<svg");
   });
 
   it("sets the level in Sentient at 20% of the size, -0.03em, line-height 1, and a DM Mono 10px caption", () => {
+    // UI-P52 density pass: the figure is drawn at 20% of the size and display()
+    // renders it through the table — 30 → 22 here, 24 → 20 at 120.
     const html = ring();
-    expect(html).toContain("font-size:30px");
+    expect(html).toContain("font-size:22px");
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("line-height:1");
     expect(html).toContain("Sentient");
     expect(html).toContain("font-size:10px");
     expect(html).toContain("level");
-    expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:24px");
+    expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:20px");
   });
 
-  it("never sets Sentient under its 17px floor, however small the ring", () => {
+  it("never sets Sentient under its floor, however small the ring", () => {
+    // UI-P52 density pass: the figure is never drawn under 17px, which display()
+    // renders at 16 — under Sentient's 20px floor, so in Figtree 600.
     expect(() => markup(<OrbRing size={36} percent={50} value={3} label="x" />)).not.toThrow();
-    expect(markup(<OrbRing size={36} percent={50} value={3} label="x" />)).toContain("font-size:17px");
+    const html = markup(<OrbRing size={36} percent={50} value={3} label="x" />);
+    expect(html).toContain("font-size:16px;font-weight:600");
+    expect(html).not.toContain("Sentient");
   });
 
   it("holds an avatar in place of the figure, clipped to the disc", () => {
@@ -197,10 +210,11 @@ describe("LevelRing, repainted onto the ring orb", () => {
     expect(screen.queryByText("level")).toBeNull();
   });
 
-  it("thins the arc with the size and stops at the orb's 9px", () => {
+  it("thins the arc with the size and stops at the orb's 9px, drawn", () => {
     const thick = markup(<LevelRing level={1} progressPct={10} size={150} />);
     const thin = markup(<LevelRing level={1} progressPct={10} size={36} />);
-    expect(thick).toContain("padding:9px");
+    // UI-P52 density pass: the drawn 9px renders at 6; the 3px is under the table's floor.
+    expect(thick).toContain("padding:6px");
     expect(thin).toContain("padding:3px");
   });
 });

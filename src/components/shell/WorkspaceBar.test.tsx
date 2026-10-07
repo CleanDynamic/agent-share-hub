@@ -21,7 +21,7 @@ import {
   type WorkspaceMode,
 } from "./WorkspaceBar";
 import { focusRing } from "@/lib/theme/focus";
-import { DISPLAY_MIN_PX } from "@/lib/theme/type";
+import { LOCKUP_MIN_PX } from "@/lib/theme/type";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider, THEME_STORAGE_KEY } from "@/contexts/ThemeContext";
 
@@ -110,8 +110,10 @@ describe("WorkspaceBar — the exit", () => {
     expect(resting.color).toBe("var(--text)");
     expect(resting.textDecoration).toBe("none");
 
-    // Taller than the 30–32px controls beside it — its only emphasis.
-    expect(resting.height).toBe(36);
+    // Taller than the controls beside it — its only emphasis. UI-P52 density
+    // pass: 36 → 30; the 30–32px controls a route puts beside it take the
+    // table with their pages.
+    expect(resting.height).toBe(30);
 
     renderBar();
     expect(exit().getAttribute("style")).toContain("var(--r-control)");
@@ -210,20 +212,24 @@ describe("WorkspaceBar — the right side", () => {
 });
 
 describe("WorkspaceBar — the ground rule", () => {
-  it("sets the wordmark at the display floor and never under it", () => {
+  it("sets the wordmark at the wordmark's floor and never under it", () => {
     renderBar();
     const style = exit().querySelector("span")?.getAttribute("style") ?? "";
     const size = Number(/font-size:\s*(\d+)px/.exec(style)?.[1]);
     // type.test.ts sweeps CSS template literals for this; a style object is
     // invisible to it, so the one new Sentient site checks its own floor.
-    expect(size).toBeGreaterThanOrEqual(DISPLAY_MIN_PX);
+    // UI-P52 density pass: the word is 17 (20 before), under the display floor,
+    // which only the wordmark may go under — down to the lockup's 15.
+    expect(size).toBe(17);
+    expect(size).toBeGreaterThanOrEqual(LOCKUP_MIN_PX);
   });
 
-  it("is 52px, which is the height ComposeTopBar has always been", () => {
-    expect(WORKSPACE_BAR_HEIGHT).toBe(52);
+  it("is 43px, ComposeTopBar's 52 through the density table", () => {
+    // UI-P52 density pass: 52 → 43.
+    expect(WORKSPACE_BAR_HEIGHT).toBe(43);
     renderBar();
     expect(screen.getByTestId("workspace-bar").getAttribute("style")).toContain(
-      "height: 52px",
+      "height: 43px",
     );
   });
 

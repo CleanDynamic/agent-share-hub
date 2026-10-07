@@ -34,9 +34,12 @@ export function MissingWindow({ part }: MissingWindowProps) {
         left: "50%",
         top: "50%",
         width: 110,
-        height: 58,
+        /* 48 since the UI-P54 density pass (58 before). The kit keeps the old
+           −29px margin because the pass never maps a negative value, which
+           leaves its window 5px low; this keeps the window centred, −height/2. */
+        height: 48,
         marginLeft: -55,
-        marginTop: -29,
+        marginTop: -24,
         boxSizing: "border-box",
         borderRadius: 10,
         border: `1.5px dashed ${WINDOW_INK}`,

@@ -11,13 +11,16 @@
 // viewer and the live route renders it with live chrome. `SiteFrame` is the
 // container that supplies the live chrome and renders the view.
 //
-// THE COLUMN. Desktop (≥768): a sticky header slot (64, z-index 20), then
-// `<main id="main">` — 1280 wide, centred, `8px 0 46px` from 1328 up and
-// `8px 24px 46px` below it — holding the breadcrumb slot and the page, then the
-// footer slot. The 46px is the gap between the last panel and the footer on
-// every board. Phone (<768): the sticky phone header (58), `<main>` with
-// `14px 14px 110px` (110 clears the 68px dock, its 16px lift and some air, plus
-// the safe-area inset) and a 12px column gap, and the fixed dock slot.
+// THE COLUMN. Desktop (≥768): a sticky header slot (52, z-index 20), then
+// `<main id="main">` — 1280 wide, centred, `6px 0 33px` from 1328 up and
+// `6px 24px 33px` below it — holding the breadcrumb slot (33) and the page, then
+// the footer slot. In `board` fit the 33 under the page is the board's own
+// leftover instead (`BOARD_FOOTER_GAP`), so the footer ends where the board's
+// does. Phone (<768): the sticky phone header (48), `<main>` with
+// `10px 10px 79px` (79 clears the 56px dock, its 16px lift and some air, plus the
+// safe-area inset) and a 9px column gap, and the fixed dock slot. Those are the
+// UI-P55 density pass's numbers; before it they were 64, 8/46, 40, 58, 14/110
+// and 12.
 //
 // THE GLASS FILTER (UI-P09b). `<GlassFilter />` follows the backdrop in every variant, so the backdrop stays the
 // root's first child. It is the one SVG filter `.bg-glass` panels refract through, mounted once per frame and
@@ -41,6 +44,7 @@ import { MobileHeader } from "./MobileHeader";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
+import { BOARD_FOOTER_GAP, type PageFit } from "./siteFrameFit";
 import { CrumbTitleProvider } from "./useBreadcrumb";
 import { useIsPhone, useMinWidth } from "./useMinWidth";
 
@@ -68,6 +72,8 @@ export interface SiteFrameViewProps {
   dock?: ReactNode;
   /** The page. */
   children?: ReactNode;
+  /** `board` on the dev compare page: the footer is placed where the board draws it (UI-P55). */
+  fit?: PageFit;
 }
 
 const SKIP_BASE: CSSProperties = {
@@ -75,28 +81,27 @@ const SKIP_BASE: CSSProperties = {
   left: 12,
   top: 8,
   zIndex: 40,
-  minHeight: 44,
   boxSizing: "border-box",
   display: "inline-flex",
   alignItems: "center",
-  padding: "0 14px",
+  padding: "0 10px",
   borderRadius: 12,
   background: t.solid,
   color: t.text,
   border: `1px solid ${t.line}`,
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 600,
   textDecoration: "none",
 };
 
-/** "Skip to content": first focusable element, off-screen until focused, targets `#main`. */
-function SkipLink() {
+/** "Skip to content": first focusable element, off-screen until focused, targets `#main`. 36 tall, and 44 on a phone. */
+function SkipLink({ phone }: { phone: boolean }) {
   return (
     <a
       href="#main"
       data-testid="skip-link"
-      style={{ ...SKIP_BASE, transform: "translateY(-200%)" }}
+      style={{ ...SKIP_BASE, minHeight: phone ? 44 : 36, transform: "translateY(-200%)" }}
       onFocus={(event) => {
         event.currentTarget.style.transform = "none";
       }}
@@ -118,6 +123,7 @@ export function SiteFrameView({
   mobileHeader,
   dock,
   children,
+  fit = "content",
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
   const wide = useMinWidth(SITE_COLUMN_FULL);
@@ -135,7 +141,7 @@ export function SiteFrameView({
       <div data-testid="site-frame" data-variant="bare" style={root}>
         <PageBackdrop viewport={phone ? "mobile" : "desktop"} tone="signin" />
         <GlassFilter />
-        <SkipLink />
+        <SkipLink phone={phone} />
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}
         </main>
@@ -148,10 +154,10 @@ export function SiteFrameView({
       <div data-testid="site-frame" data-variant="site" data-viewport="mobile" style={root}>
         <PageBackdrop viewport="mobile" />
         <GlassFilter />
-        <SkipLink />
+        <SkipLink phone={phone} />
         <div
           data-slot="mobile-header"
-          style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 58 }}
+          style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48 }}
         >
           {mobileHeader}
         </div>
@@ -162,8 +168,8 @@ export function SiteFrameView({
             zIndex: 1,
             display: "flex",
             flexDirection: "column",
-            gap: 12,
-            padding: "14px 14px calc(110px + env(safe-area-inset-bottom))",
+            gap: 9,
+            padding: "10px 10px calc(79px + env(safe-area-inset-bottom))",
             boxSizing: "border-box",
           }}
         >
@@ -178,8 +184,8 @@ export function SiteFrameView({
     <div data-testid="site-frame" data-variant="site" data-viewport="desktop" style={root}>
       <PageBackdrop viewport="desktop" />
       <GlassFilter />
-      <SkipLink />
-      <div data-slot="header" style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 64 }}>
+      <SkipLink phone={phone} />
+      <div data-slot="header" style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 52 }}>
         {header}
       </div>
       <main
@@ -189,11 +195,11 @@ export function SiteFrameView({
           zIndex: 1,
           maxWidth: SITE_COLUMN,
           margin: "0 auto",
-          padding: wide ? "8px 0 46px" : "8px 24px 46px",
+          padding: `6px ${wide ? 0 : "24px"} ${fit === "board" ? BOARD_FOOTER_GAP : 33}px`,
           boxSizing: "border-box",
         }}
       >
-        <div data-slot="breadcrumb" style={{ minHeight: 40 }}>
+        <div data-slot="breadcrumb" style={{ minHeight: 33 }}>
           {breadcrumb}
         </div>
         {children}

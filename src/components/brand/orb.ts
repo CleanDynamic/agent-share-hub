@@ -12,7 +12,10 @@
 // named constants. Nothing theme-dependent is ever a constant: the ground, the
 // edge and every ink come from the tokens.
 
+
 import type { CSSProperties } from "react";
+
+import { denseHeight } from "@/lib/theme/density";
 
 /** The soft light along the glass orb's upper edge. Identical in both themes. */
 const INNER_LIGHT = "rgba(255,255,255,.18)";
@@ -29,11 +32,12 @@ export const ORB_GLASS_SHADOW: string = [
   ORB_DROP,
 ].join(", ");
 
-/** A circle of `size` px on a flex column, centred. */
+/** A circle of `size` px (as drawn; through the density table, which keeps every orb over 64) on a flex column, centred. */
 export function orbBase(size: number): CSSProperties {
+  const box = denseHeight(size);
   return {
-    width: size,
-    height: size,
+    width: box,
+    height: box,
     borderRadius: "50%",
     display: "flex",
     flexDirection: "column",

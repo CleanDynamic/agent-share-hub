@@ -9,6 +9,7 @@
 // ONE REAL NUMBER, NEVER DECORATION. If the orb has nothing true to say it is
 // not drawn; it is not a placeholder for a count that has not arrived.
 
+import { denseSpace } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -32,7 +33,7 @@ export function OrbGlass({ size, label, sub }: OrbGlassProps) {
         background: t.orbGlass,
         boxShadow: ORB_GLASS_SHADOW,
         gap: 5,
-        paddingBottom: Math.trunc(size * 0.16),
+        paddingBottom: denseSpace(Math.trunc(size * 0.16)),
       }}
     >
       <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -51,7 +52,7 @@ export function OrbGlass({ size, label, sub }: OrbGlassProps) {
         style={{
           fontFamily: FIGTREE,
           fontWeight: 500,
-          fontSize: 13,
+          fontSize: 12,
           lineHeight: "normal",
           color: t.onOrbGlass,
           textAlign: "center",

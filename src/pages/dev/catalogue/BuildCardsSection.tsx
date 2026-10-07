@@ -60,7 +60,10 @@ export function BuildCardsSection() {
       name="Build cards"
       note="fixed order: cover (shape tag) → title → credit + Δ → plaque → part chips → open ask"
     >
-      <Row style={{ alignItems: "flex-start" }}>
+      {/* UI-P54: the reference sets its two rows of cards an 18px spacer apart
+          (a height under 20, which the density pass keeps) and their columns 17
+          apart, so the wrap takes the two separately. */}
+      <Row style={{ alignItems: "flex-start", rowGap: 18 }}>
         {SAMPLES.map(({ caption, build, rebuilt, gap }) => (
           <Example key={caption} caption={caption} style={{ width: CARD_WIDTH }}>
             <Card build={fixtures.builds[build - 1]} rebuilt={rebuilt} gap={gap} />

@@ -10,6 +10,10 @@
 // textarea, a select or an editable region keeps its "/" — and only without a
 // modifier held. The field is a label, so a click anywhere on the box focuses
 // the input.
+//
+// DENSER SINCE UI-P55: the bar's field is 31 tall (38 before), 0 9px inside, a 6px
+// gap, its text 12px. The sheet's field keeps 44 and 16px: a touch target, and
+// an input on a phone is never under 16.
 
 import { Search } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -51,7 +55,7 @@ export function useGallerySearch(): (query: string) => boolean {
 }
 
 export interface HeaderSearchProps {
-  /** `bar` is the desktop header's 280×38 field with the "/" hint; `sheet` is the phone's full-width 44px field at 16px. */
+  /** `bar` is the desktop header's 280×31 field with the "/" hint; `sheet` is the phone's full-width 44px field at 16px. */
   variant?: "bar" | "sheet";
   /** Called with the raw text on submit. Return true when it was used (the sheet closes on it). */
   onSubmit: (query: string) => boolean | void;
@@ -110,15 +114,19 @@ export function HeaderSearch({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: 6,
           width: sheet ? "100%" : (width ?? "100%"),
-          height: sheet ? 44 : 38,
+          height: sheet ? 44 : 31,
           boxSizing: "border-box",
-          padding: "0 12px",
+          padding: "0 9px",
           borderRadius: r.control,
           background: t.field,
           border: `1px solid ${focused ? t.action : t.line}`,
           color: t.text2,
+          /* The input's size is set here, on its box: above 768px index.css makes
+             every input inherit its font size, so the input's own 12px never
+             applied and the field drew the page's 16. */
+          fontSize: sheet ? 16 : 12,
           ...ring(focusVisible),
         }}
       >
@@ -156,7 +164,7 @@ export function HeaderSearch({
             flexGrow: 1,
             minWidth: 0,
             fontFamily: FIGTREE,
-            fontSize: sheet ? 16 : 13,
+            fontSize: sheet ? 16 : 12,
             color: t.text,
           }}
         />

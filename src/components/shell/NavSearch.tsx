@@ -5,7 +5,8 @@ import { SEARCH_MAX, normaliseQuery } from "@/lib/build/search";
 import { fieldStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { SPACE } from "@/lib/theme/space";
+import { denseHeight } from "@/lib/theme/density";
+import { SPACE, SPACE_COMPACT } from "@/lib/theme/space";
 import { body } from "@/lib/theme/type";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -35,6 +36,9 @@ import { body } from "@/lib/theme/type";
    single focus ring — never a pill (buildgallery-theme › Radius; Focus ring).
    The font is set on the form because index.css makes every input inherit its
    font size above 768px.
+
+   DENSER SINCE UI-P55: SPACE.lg as a height is 40, which the table takes to 33,
+   and the inline padding is the compact sm, 12.
 
    THE PLACEHOLDER IS --text2 (RC-P09c), through the one mechanism the kit has
    for it: ::placeholder is a pseudo-element no inline style can reach, so it
@@ -140,8 +144,8 @@ export function NavSearch({
           ...fieldStyle(state),
           borderRadius: r.control,
           width: "100%",
-          height: SPACE.lg,
-          paddingInline: SPACE.sm,
+          height: denseHeight(SPACE.lg),
+          paddingInline: SPACE_COMPACT.sm,
           boxSizing: "border-box",
         }}
       />
