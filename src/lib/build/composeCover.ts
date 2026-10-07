@@ -9,13 +9,62 @@
 // EVERY NODE IS PLACED. Omitting `position` puts a node in the tray, and tray
 // nodes do not count towards publishing. `nextTopPosition` reads the tree and
 // returns one past the highest top-level position, because the unique index on
-// (build_id, parent_id, position) refuses a collision.
+// (build_id, parent_id, position) refuses a collision. `placeTopNode` is that
+// rule as a write, for every node the composer adds (the cover here, UI-P48's
+// prompts and details).
 
 import { addPostMedia, getPostMedia, removePostMedia, setPostMedia } from "./cover";
 import { EVIDENCE_NODE_TYPES, nodeMediaId } from "./cover";
 import { deleteMedia, mediaKindFor, uploadMedia } from "./media";
 import { deleteNode, getNodeTree, upsertNode } from "./nodes";
-import type { BuildMedia, BuildNode, NodeTree } from "./types";
+import type { BuildMedia, BuildNode, BuildNodeInsert, NodeTree } from "./types";
+
+/** Postgres's unique_violation, as buildLayerError carries it on `cause`. */
+function isUniqueViolation(error: unknown): boolean {
+  const cause = error && typeof error === "object" ? (error as { cause?: unknown }).cause : undefined;
+  return Boolean(cause) && typeof cause === "object" && (cause as { code?: unknown }).code === "23505";
+}
+
+/**
+ * Insert a node at the top level, after everything there (UI-P47 "Placing
+ * nodes"). `tree` is the tree as the caller knows it. If another writer placed
+ * a node at that position in the meantime, the unique index refuses the
+ * insert; the tree is then read again and the insert tried once more.
+ */
+export async function placeTopNode(
+  buildId: string,
+  tree: readonly Pick<NodeTree, "parent_id" | "position">[],
+  node: Omit<BuildNodeInsert, "build_id" | "parent_id" | "position">,
+): Promise<BuildNode> {
+  const at = (from: readonly Pick<NodeTree, "parent_id" | "position">[]) =>
+    upsertNode({ ...node, build_id: buildId, parent_id: null, position: nextTopPosition(from) });
+  try {
+    return await at(tree);
+  } catch (cause) {
+    if (!isUniqueViolation(cause)) throw cause;
+    return at(await getNodeTree(buildId));
+  }
+}
+
+/**
+ * Every column of a node, for an upsert that changes it: PostgREST's upsert is
+ * INSERT … ON CONFLICT, so the NOT NULL columns must all be present.
+ */
+export function nodeRow(node: BuildNode): BuildNodeInsert {
+  return {
+    id: node.id,
+    build_id: node.build_id,
+    parent_id: node.parent_id,
+    position: node.position,
+    type: node.type,
+    title: node.title,
+    note: node.note,
+    payload: node.payload,
+    source_ref: node.source_ref,
+    event_id: node.event_id,
+    is_gap: node.is_gap,
+  };
+}
 
 /** The node type a cover of this kind is recorded as. */
 export function coverNodeType(kind: string | null | undefined): "recording" | "screenshot" {
@@ -75,10 +124,7 @@ export interface CoverWrite {
 
 async function placeCoverNode(buildId: string, media: BuildMedia): Promise<BuildNode> {
   const tree = await getNodeTree(buildId);
-  return upsertNode({
-    build_id: buildId,
-    parent_id: null,
-    position: nextTopPosition(tree),
+  return placeTopNode(buildId, tree, {
     type: coverNodeType(media.kind),
     payload: { media_id: media.id, caption: null },
   });

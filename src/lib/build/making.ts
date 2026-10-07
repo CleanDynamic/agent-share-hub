@@ -12,7 +12,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
-import type { BuildPatch } from "./types";
+import { buildLayerError, type BuildPatch } from "./types";
 
 /** The label a client adds to Made with. `web` and `unknown` name no tool. */
 const TOOL_LABELS: Record<string, string> = {
@@ -21,6 +21,11 @@ const TOOL_LABELS: Record<string, string> = {
   chatgpt: "ChatGPT",
   cursor: "Cursor",
 };
+
+/** The tool a client adds to Made with, or null for one that names none (web, unknown). */
+export function toolLabel(client: string | null | undefined): string | null {
+  return client ? (TOOL_LABELS[client] ?? null) : null;
+}
 
 export interface MakingSession {
   client: string | null;
@@ -65,6 +70,10 @@ function excludedModels(making: unknown): string[] {
 function has(list: string[], value: string): boolean {
   const wanted = value.toLowerCase();
   return list.some((entry) => entry.toLowerCase() === wanted);
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 /**
@@ -130,6 +139,78 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
       buildId,
     });
   }
+}
+
+// -----------------------------------------------------------------------------
+// Made with, as the composer changes it (UI-P48)
+// -----------------------------------------------------------------------------
+
+/** What Made with holds, and the models the maker left out of it. */
+export interface MadeWithState {
+  madeWith: string[];
+  excluded: string[];
+}
+
+/** Whether a Made with change is a session's model or an entry typed by hand. */
+export type MadeWithKind = "model" | "entry";
+
+async function readMadeWith(operation: string, buildId: string): Promise<{ state: MadeWithState; making: unknown }> {
+  const { data, error } = await buildsMaking().select("made_with, making").eq("id", buildId).maybeSingle();
+  if (error) throw buildLayerError(operation, error);
+  if (!data) throw buildLayerError(operation, new Error("That build is no longer available."));
+  return { state: { madeWith: asStrings(data.made_with), excluded: excludedModels(data.making) }, making: data.making };
+}
+
+/** builds.made_with and builds.making.excluded_models, as the composer's Made with line reads them. */
+export async function getMadeWith(buildId: string): Promise<MadeWithState> {
+  return (await readMadeWith("getMadeWith", buildId)).state;
+}
+
+/**
+ * Tick or untick one name. Pure.
+ *
+ * A MODEL unticked goes into `excluded_models` and out of `made_with`; ticked,
+ * the reverse, so the next refresh adds it again. An ENTRY typed by hand has no
+ * exclusion to remember: unticked it leaves `made_with`, ticked it comes back.
+ * Matching ignores case, as refreshMakingStats does, and order is kept.
+ */
+export function nextMadeWith(state: MadeWithState, name: string, on: boolean, kind: MadeWithKind): MadeWithState {
+  const value = name.trim();
+  if (!value) return state;
+  const without = (list: string[]) => list.filter((entry) => entry.toLowerCase() !== value.toLowerCase());
+  const withIt = (list: string[]) => (has(list, value) ? list : [...list, value]);
+  return {
+    madeWith: on ? withIt(state.madeWith) : without(state.madeWith),
+    excluded: kind === "entry" ? state.excluded : on ? without(state.excluded) : withIt(state.excluded),
+  };
+}
+
+/**
+ * Leave a session's model out of Made with, or put it back, then refresh the
+ * stats, which leave an excluded model out of `models_used` (UI-P43d).
+ * Resolves with Made with as it stands afterwards, tool labels the refresh
+ * added included.
+ */
+export async function setMadeWithModel(buildId: string, model: string, on: boolean): Promise<MadeWithState> {
+  const { state, making } = await readMadeWith("setMadeWithModel", buildId);
+  const next = nextMadeWith(state, model, on, "model");
+  await updateBuild(buildId, {
+    made_with: next.madeWith,
+    making: { ...asObject(making), excluded_models: next.excluded },
+  } as unknown as BuildPatch);
+  // The choice is written; the stats only summarise it, and the next refresh repairs them.
+  await refreshMakingStats(buildId).catch(() => console.warn("[setMadeWithModel] making stats not refreshed", { buildId }));
+  return getMadeWith(buildId);
+}
+
+/** Add a tool or model typed by hand to Made with, or take one out. `made_with` only. */
+export async function setMadeWithEntry(buildId: string, entry: string, on: boolean): Promise<MadeWithState> {
+  const { state } = await readMadeWith("setMadeWithEntry", buildId);
+  const next = nextMadeWith(state, entry, on, "entry");
+  const unchanged = next.madeWith.length === state.madeWith.length && next.madeWith.every((name, i) => name === state.madeWith[i]);
+  if (unchanged) return state;
+  await updateBuild(buildId, { made_with: next.madeWith });
+  return next;
 }
 
 /** A code for the log, and only a code. */

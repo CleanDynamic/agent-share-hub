@@ -1,10 +1,11 @@
-/* UI-P47 — /compose/new and /compose/:buildId in the site frame: the container.
+/* UI-P47 / UI-P48 — /compose/new and /compose/:buildId in the site frame: the
+   container.
 
    NO DRAFT IS CREATED BY OPENING THE PAGE. On /compose/new nothing is written
-   until the first change (a title, a description, a picture; UI-P48 adds a
-   prompt or a session), which creates the build with what has been typed and
-   replaces the URL with /compose/{id}. What is typed between the request and
-   the record loading is held and written through `patchBuild` once it has.
+   until the first change (a title, a description, a picture, a prompt's first
+   words, a session, a detail), which creates the build with what has been typed
+   and replaces the URL with /compose/{id}. What is typed between the request
+   and the record loading is held and written through `patchBuild` once it has.
 
    EVERY HEADER WRITE GOES THROUGH `useComposeBuild`: `patchBuild` debounces at
    800ms and keeps `completeness` current, and `publish()` carries unsaved edits
@@ -13,7 +14,12 @@
 
    THE COVER IS THE BUILD'S EVIDENCE TOO, and its writes live in
    `src/lib/build/composeCover.ts` (the post's media set, then a placed node).
-   This file makes no Supabase call. */
+
+   UI-P48's parts are run by four hooks beside this file: `useComposeNodes`
+   (one queue for every node the composer writes, and the overlay that keeps
+   them on screen), `useComposePrompts`, `useComposeDetails` and
+   `useComposeSessions` (Your sessions and Made with). Publish writes whatever
+   they still hold first. This file makes no Supabase call. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,7 +30,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { useMediaSrc } from "@/components/build/MediaFigure";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { useComposeBuild, composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { createBuild, galleryShortfall, getGalleryFacets, inGallery, MEDIA_MAX_BYTES, mediaKindFor, acceptedMediaTypes } from "@/lib/build";
+import { computeCompleteness, createBuild, galleryShortfall, getGalleryFacets, inGallery, MEDIA_MAX_BYTES, mediaKindFor, acceptedMediaTypes } from "@/lib/build";
 import type { BuildMedia, BuildPatch } from "@/lib/build";
 import {
   addComposerCover,
@@ -34,9 +40,25 @@ import {
   replaceComposerCover,
 } from "@/lib/build/composeCover";
 import { refreshMakingStats } from "@/lib/build/making";
+import { modelLabel } from "@/lib/models/registry";
+import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
-import { ComposeView, type ComposeStatus } from "./ComposeView";
-import { isUntitled, missingForPublish, parseAudience, PUBLISH_WORDS, publishToast, saveState, UNTITLED } from "./composeModel";
+import { ComposeView, type ComposeSession, type ComposeStatus } from "./ComposeView";
+import {
+  isUntitled,
+  madeWithChips,
+  missingForPublish,
+  parseAudience,
+  PUBLISH_WORDS,
+  publishToast,
+  saveState,
+  sessionMetaLine,
+  UNTITLED,
+} from "./composeModel";
+import { useComposeDetails } from "./useComposeDetails";
+import { useComposeNodes } from "./useComposeNodes";
+import { useComposePrompts } from "./useComposePrompts";
+import { useComposeSessions } from "./useComposeSessions";
 
 const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", buildId] as const;
 
@@ -200,13 +222,58 @@ export function ComposePage() {
     }
   };
 
+  /* ── UI-P48: prompts, sessions, made with, more details ── */
+
+  const nodes = useComposeNodes(buildId, compose.tree);
+  const sessions = useComposeSessions({
+    buildId,
+    owner: compose.isOwner,
+    ensureBuild,
+    recordMadeWith: build?.made_with ?? [],
+  });
+  const prompts = useComposePrompts({
+    buildId,
+    nodes,
+    ensureBuild,
+    sessions: sessions.sessions,
+    sessionPrompts: sessions.promptsOf,
+  });
+  const details = useComposeDetails({ build, hydrate: !createdHere, nodes, ensureBuild, edit });
+
+  const now = Date.now();
+  const sessionViews: ComposeSession[] = sessions.sessions.map((session, index) => {
+    const { prompts: read, error } = sessions.promptsState(session.id);
+    return {
+      id: session.id,
+      number: index + 1,
+      label: sessionSource(session),
+      modelKnown: session.modelName !== null,
+      date: sessionDate(session.createdAt, now),
+      prompts: read
+        ? read.map((prompt) => ({ ordinal: prompt.ordinal, text: prompt.text, added: prompts.isAdded(session.id, prompt.sourceRef.index) }))
+        : null,
+      promptsError: error,
+    };
+  });
+  const otherSessions =
+    sessions.others?.map((session) => ({
+      id: session.id,
+      firstPrompt: session.firstPrompt ?? "Untitled session",
+      meta: sessionMetaLine(session, now),
+    })) ?? null;
+  const madeWith = madeWithChips(sessions.sessions, sessions.madeWith);
+
   /* ── publish ── */
 
   const missing = useMemo(() => missingForPublish({ title, completeness: compose.completeness }), [title, compose.completeness]);
 
   const onPublish = async () => {
-    if (missing.length > 0) {
-      toast(publishToast(missing));
+    // What is still waiting to be written goes first, and is counted.
+    await Promise.all([prompts.flush(), details.flush()]);
+    const counted = compose.build ? computeCompleteness(compose.build, nodes.current(), compose.nodeTypes) : null;
+    const needed = missingForPublish({ title, completeness: counted ?? compose.completeness });
+    if (needed.length > 0) {
+      toast(publishToast(needed));
       return;
     }
     try {
@@ -283,6 +350,32 @@ export function ComposePage() {
         accept={ACCEPT}
         onFiles={(files) => void onFiles(files)}
         onRemoveCover={() => void onRemoveCover()}
+        prompts={prompts.rows}
+        focusPrompt={prompts.focus}
+        onPromptText={prompts.setText}
+        onMovePrompt={prompts.move}
+        onRemovePrompt={prompts.remove}
+        onWritePrompt={prompts.write}
+        onDropPrompt={prompts.drop}
+        sessionsStatus={sessions.status}
+        onRetrySessions={sessions.retry}
+        sessions={sessionViews}
+        onSessionsOpen={sessions.setOpenIds}
+        onRetrySessionPrompts={sessions.retryPrompts}
+        onAddSessionPrompt={prompts.add}
+        onSetSessionModel={(sessionId, model) =>
+          void sessions.setModel(sessionId, model).then((saved) => {
+            if (saved) prompts.relabel(sessionId, modelLabel(model));
+          })
+        }
+        otherSessions={otherSessions}
+        onAttachSession={sessions.attach}
+        madeWith={madeWith}
+        onToggleMadeWith={sessions.toggleMadeWith}
+        onAddMadeWith={sessions.addMadeWith}
+        details={details.details}
+        onDetail={details.setDetail}
+        onGapSwitch={details.setGapOn}
       />
     </>
   );

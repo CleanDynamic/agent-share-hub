@@ -20,7 +20,7 @@ vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
 }));
 
-import { refreshMakingStats } from "./making";
+import { nextMadeWith, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel } from "./making";
 
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
 
@@ -152,5 +152,63 @@ describe("refreshMakingStats", () => {
     updateBuild.mockRejectedValue(new Error("write failed with a value in it"));
     await expect(refreshMakingStats(BUILD_ID)).resolves.toBeUndefined();
     expect(console.warn).toHaveBeenLastCalledWith(expect.any(String), { code: "unknown", buildId: BUILD_ID });
+  });
+});
+
+describe("Made with, changed in the composer (UI-P48)", () => {
+  it("unticking a model removes it from made_with and remembers it in excluded_models", () => {
+    expect(nextMadeWith({ madeWith: ["Claude Code", "Sonnet 5.5"], excluded: [] }, "Sonnet 5.5", false, "model")).toEqual({
+      madeWith: ["Claude Code"],
+      excluded: ["Sonnet 5.5"],
+    });
+  });
+
+  it("ticking it again puts it back and forgets the exclusion, ignoring case", () => {
+    expect(nextMadeWith({ madeWith: ["Claude Code"], excluded: ["sonnet 5.5"] }, "Sonnet 5.5", true, "model")).toEqual({
+      madeWith: ["Claude Code", "Sonnet 5.5"],
+      excluded: [],
+    });
+  });
+
+  it("an entry typed by hand only comes and goes; nothing is excluded", () => {
+    const state = { madeWith: ["Midjourney"], excluded: ["Opus 5.5"] };
+    expect(nextMadeWith(state, "Midjourney", false, "entry")).toEqual({ madeWith: [], excluded: ["Opus 5.5"] });
+    expect(nextMadeWith({ madeWith: [], excluded: [] }, "Figma", true, "entry")).toEqual({ madeWith: ["Figma"], excluded: [] });
+  });
+
+  it("setMadeWithModel writes made_with without the model and excluded_models with it, then refreshes the stats", async () => {
+    const sessions = [{ client: "claude-code", model: "Sonnet 5.5", prompts: 4, turns: 8 }];
+    const row = (madeWith: string[], excluded: string[]) => ({ data: { made_with: madeWith, making: { sessions, excluded_models: excluded } }, error: null });
+    maybeSingle
+      .mockResolvedValueOnce(row(["Claude Code", "Sonnet 5.5"], [])) // the change's own read
+      .mockResolvedValueOnce(row(["Claude Code"], ["Sonnet 5.5"])) // the refresh's read, after the change
+      .mockResolvedValueOnce(row(["Claude Code"], ["Sonnet 5.5"])); // the read back
+    listBuildSessions.mockResolvedValue([session()]);
+    const done = await setMadeWithModel(BUILD_ID, "Sonnet 5.5", false);
+
+    const write = patch();
+    expect(updateBuild.mock.calls[0][0]).toBe(BUILD_ID);
+    expect(write.made_with).toEqual(["Claude Code"]);
+    expect(write.making).toEqual({ sessions, excluded_models: ["Sonnet 5.5"] });
+    // The refresh ran after it, and kept the model out of both lists.
+    expect(listBuildSessions).toHaveBeenCalledWith(BUILD_ID);
+    const refreshed = updateBuild.mock.calls[1][1] as Record<string, unknown>;
+    expect(refreshed.made_with).toEqual(["Claude Code"]);
+    expect(refreshed.models_used).toEqual([]);
+    expect(done).toEqual({ madeWith: ["Claude Code"], excluded: ["Sonnet 5.5"] });
+  });
+
+  it("setMadeWithEntry adds a tool typed by hand to made_with only", async () => {
+    build(["Claude Code"]);
+    const done = await setMadeWithEntry(BUILD_ID, "Midjourney", true);
+    expect(patch()).toEqual({ made_with: ["Claude Code", "Midjourney"] });
+    expect(done).toEqual({ madeWith: ["Claude Code", "Midjourney"], excluded: [] });
+    expect(listBuildSessions).not.toHaveBeenCalled();
+  });
+
+  it("names the tool a client adds, and none for web or unknown", () => {
+    expect(toolLabel("claude-code")).toBe("Claude Code");
+    expect(toolLabel("web")).toBeNull();
+    expect(toolLabel(null)).toBeNull();
   });
 });

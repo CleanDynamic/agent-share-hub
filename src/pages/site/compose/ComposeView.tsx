@@ -1,19 +1,22 @@
-/* UI-P47 — the composer, part 1: the frame, Media, Text and Publish.
+/* UI-P47 / UI-P48 — the composer: the frame, Media, Text, Prompts, Your
+   sessions, Made with, More details and Publish.
 
    PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
    `Link`. `ComposePage` supplies the build and the writes; the dev compare page
    supplies a fixture. The viewport is read here (768px) so both behave alike.
 
-   ONE SIMPLE PAGE FOR ORDINARY DRAFTS: media, text and (UI-P48) prompts. Every
-   panel is flat — a place you work in is not a thing on display — so nothing on
-   this page has `--glass` or a blur. Publish is the page's one primary; the
-   header's "New build" draws as secondary here (SiteHeader reads the route).
+   ONE SIMPLE PAGE FOR ORDINARY DRAFTS. Every panel is flat — a place you work
+   in is not a thing on display — so nothing on this page has `--glass` or a
+   blur. Publish is the page's one primary; the header's "New build" draws as
+   secondary here (SiteHeader reads the route).
 
    THE DROP ZONE IS A MOUSE'S SHORTCUT. On a phone there is no dropping, so the
    dashed box itself is the button that opens the file picker.
 
-   UI-P48 fills the left column below Text (Prompts, Made with, More details) and
-   the right column (Your sessions). Until then the right track is kept, empty. */
+   TWO TRACKS ON DESKTOP: Media, Text, Prompts, Made with and More details on
+   the left; Your sessions on the right (340), sticky under the header. In one
+   column (a phone, and 768 to 1023) Your sessions follows Prompts, is not
+   sticky, and More details stays last. */
 
 import { Image as ImageIcon } from "lucide-react";
 import { useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
@@ -23,14 +26,24 @@ import { Button } from "@/components/brand/Button";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { useIsPhone, useWidthTier } from "@/components/shell/useMinWidth";
+import { useFinePointer, useIsPhone, useWidthTier } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
-import { DESCRIPTION_MAX, isUntitled, SAVE_WORDS, UNTITLED, type SaveState } from "./composeModel";
+import { Field, TextButton } from "./composeControls";
+import { fieldBase, useRing } from "./composeFields";
+import { DESCRIPTION_MAX, isUntitled, SAVE_WORDS, UNTITLED, type MadeWithChip, type SaveState } from "./composeModel";
+import { MadeWithLine } from "./MadeWithLine";
+import { MoreDetails, type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
+import { PromptsPanel, type ComposePromptRow, type PromptFocus } from "./PromptsPanel";
+import { SessionsPanel, type ComposeOtherSession, type ComposeSession } from "./SessionsPanel";
+
+export type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
+export type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
+export type { ComposeOtherSession, ComposeSession, ComposeSessionPrompt } from "./SessionsPanel";
 
 /* ── the view's props ── */
 
@@ -86,50 +99,43 @@ export interface ComposeViewProps {
   /** One or more files: dropped, or chosen. The page adds or replaces. */
   onFiles: (files: File[]) => void;
   onRemoveCover: () => void;
+
+  /* ── UI-P48: Prompts ── */
+  prompts: readonly ComposePromptRow[];
+  /** The prompt field to focus: the one "write one" just made. */
+  focusPrompt: PromptFocus | null;
+  onPromptText: (key: string, text: string) => void;
+  onMovePrompt: (key: string, direction: -1 | 1) => void;
+  onRemovePrompt: (key: string) => void;
+  onWritePrompt: () => void;
+  /** A session prompt dropped on Prompts: its `text/plain`, "{importId}:{ordinal}". */
+  onDropPrompt: (data: string) => void;
+
+  /* ── UI-P48: Your sessions ── */
+  sessionsStatus: "loading" | "error" | "ready";
+  onRetrySessions: () => void;
+  sessions: readonly ComposeSession[];
+  /** Which sections are open: the page loads their prompts. */
+  onSessionsOpen: (ids: readonly string[]) => void;
+  onRetrySessionPrompts: (sessionId: string) => void;
+  onAddSessionPrompt: (sessionId: string, ordinal: number) => void;
+  onSetSessionModel: (sessionId: string, model: string) => void;
+  /** The sessions in no build, for "+ Add a session"; null while they load. */
+  otherSessions: readonly ComposeOtherSession[] | null;
+  onAttachSession: (sessionId: string) => void;
+
+  /* ── UI-P48: Made with ── */
+  madeWith: readonly MadeWithChip[];
+  onToggleMadeWith: (chip: MadeWithChip, on: boolean) => void;
+  onAddMadeWith: (name: string) => void;
+
+  /* ── UI-P48: More details ── */
+  details: ComposeDetails;
+  onDetail: (key: ComposeDetailKey, value: string) => void;
+  onGapSwitch: (on: boolean) => void;
 }
 
 /* ── shared pieces ── */
-
-const text2Button: CSSProperties = {
-  fontFamily: FIGTREE,
-  fontSize: 14,
-  color: t.text2,
-  background: "transparent",
-  border: 0,
-  padding: 0,
-  cursor: "pointer",
-};
-
-function TextButton({
-  onClick,
-  underline = false,
-  disabled,
-  children,
-}: {
-  onClick: (event: React.MouseEvent) => void;
-  underline?: boolean;
-  disabled?: boolean;
-  children: ReactNode;
-}) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      {...handlers}
-      style={{
-        ...text2Button,
-        textDecoration: underline ? "underline" : "none",
-        borderRadius: 6,
-        ...(disabled ? { cursor: "default", opacity: 0.6 } : null),
-        ...ring(state.focusVisible),
-      }}
-    >
-      {children}
-    </button>
-  );
-}
 
 /** A link drawn as a button of the same size and type, for Preview. */
 function LinkButton({ to, size, fontSize, variant, children }: { to: string | null; size: 42 | 48; fontSize: 14; variant: "secondary" | "ghost"; children: ReactNode }) {
@@ -163,38 +169,6 @@ function LinkButton({ to, size, fontSize, variant, children }: { to: string | nu
       {children}
     </Link>
   );
-}
-
-const fieldBase: CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  background: t.field,
-  color: t.text,
-  border: `1px solid ${t.line}`,
-  borderRadius: r.control,
-  fontFamily: FIGTREE,
-  outline: "none",
-};
-
-function Field({ id, label, hint, right, children }: { id: string; label: string; hint?: string; right?: ReactNode; children: ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <label htmlFor={id} style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}>
-          {label}
-        </label>
-        {hint ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{hint}</span> : null}
-        {right ? <span style={{ marginLeft: "auto" }}>{right}</span> : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** A field that draws the focus ring as `ring()` does, on focus-visible only. */
-function useRing<T extends HTMLElement>() {
-  const { state, handlers } = useInteractive<T>();
-  return { handlers, style: ring(state.focusVisible) };
 }
 
 /* ── Media ── */
@@ -463,6 +437,7 @@ function NotFound() {
 export function ComposeView(props: ComposeViewProps) {
   const phone = useIsPhone();
   const tier = useWidthTier();
+  const fine = useFinePointer();
   const { status } = props;
 
   if (status === "loading") return <Skeletons phone={phone} />;
@@ -513,11 +488,53 @@ export function ComposeView(props: ComposeViewProps) {
   );
 
   const stacked = tier === "stacked";
+  const oneColumn = phone || stacked;
+
+  const promptsPanel = (
+    <PromptsPanel
+      phone={phone}
+      fine={fine}
+      prompts={props.prompts}
+      focus={props.focusPrompt}
+      onText={props.onPromptText}
+      onMove={props.onMovePrompt}
+      onRemove={props.onRemovePrompt}
+      onWrite={props.onWritePrompt}
+      onDrop={props.onDropPrompt}
+    />
+  );
+  const sessionsPanel = (
+    <SessionsPanel
+      phone={phone}
+      fine={fine}
+      sticky={!oneColumn}
+      status={props.sessionsStatus}
+      onRetry={props.onRetrySessions}
+      sessions={props.sessions}
+      onOpenChange={props.onSessionsOpen}
+      onRetryPrompts={props.onRetrySessionPrompts}
+      onAdd={props.onAddSessionPrompt}
+      onSetModel={props.onSetSessionModel}
+      others={props.otherSessions}
+      onAttach={props.onAttachSession}
+    />
+  );
+  const madeWithLine = (
+    <MadeWithLine
+      phone={phone}
+      chips={props.madeWith}
+      hasSessions={props.sessions.length > 0}
+      onToggle={props.onToggleMadeWith}
+      onAdd={props.onAddMadeWith}
+    />
+  );
+  const moreDetails = <MoreDetails phone={phone} details={props.details} onDetail={props.onDetail} onGapSwitch={props.onGapSwitch} />;
+
   const body = (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: phone || stacked ? "minmax(0, 1fr)" : "minmax(0, 1fr) 340px",
+        gridTemplateColumns: oneColumn ? "minmax(0, 1fr)" : "minmax(0, 1fr) 340px",
         gap: phone ? 12 : 24,
         alignItems: "start",
       }}
@@ -542,9 +559,12 @@ export function ComposeView(props: ComposeViewProps) {
           onAudience={props.onAudience}
           audienceOptions={props.audienceOptions}
         />
+        {promptsPanel}
+        {oneColumn ? sessionsPanel : null}
+        {madeWithLine}
+        {moreDetails}
       </div>
-      {/* UI-P48: Your sessions. The track is kept; nothing is in it yet. */}
-      {phone || stacked ? null : <div aria-hidden="true" />}
+      {oneColumn ? null : sessionsPanel}
     </div>
   );
 
