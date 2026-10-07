@@ -106,13 +106,13 @@ function Featured({ cover, title, outcome, build, rank, eyebrow = FEATURED_EYEBR
             minWidth: 0,
             background: t.inverse,
             color: t.onInverse,
-            padding: "18px 20px",
+            padding: "13px 14px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9 }}>
             <span
               style={{
                 fontFamily: DM_MONO,
@@ -125,7 +125,7 @@ function Featured({ cover, title, outcome, build, rank, eyebrow = FEATURED_EYEBR
             </span>
             <Mark size={18} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <h2 style={{ ...display(32), margin: 0, color: "inherit" }}>{title}</h2>
             <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.45, color: t.onInverse2 }}>{outcome}</div>
             <Plaque build={build} size="card" tone="inverse" now={now} />
@@ -170,7 +170,7 @@ function PhonePlate({ title, outcome, credit, delta, style }: BuildHeroPlateProp
         left: 10,
         right: 10,
         bottom: 10,
-        padding: 16,
+        padding: 12,
         borderRadius: 14,
         background: t.plate,
         border: `1px solid ${t.headerBorder}`,
@@ -181,9 +181,9 @@ function PhonePlate({ title, outcome, credit, delta, style }: BuildHeroPlateProp
     >
       <h1 style={{ ...display(32, { mobilePageHeading: true }), margin: 0, color: t.text }}>{title}</h1>
       {outcome ? (
-        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.45, color: t.text2, marginTop: 8 }}>{outcome}</div>
+        <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.45, color: t.text2, marginTop: 6 }}>{outcome}</div>
       ) : null}
-      <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, marginTop: 8 }}>{credit}</div>
+      <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, marginTop: 6 }}>{credit}</div>
       {delta ? (
         <div style={{ fontFamily: DM_MONO, fontSize: 11, lineHeight: "normal", color: t.text2, marginTop: 2 }}>{delta}</div>
       ) : null}
@@ -204,7 +204,14 @@ function BuildPlate(props: BuildHeroPlateProps) {
           left: 16,
           right: 16,
           bottom: 16,
-          padding: "18px 20px 18px 120px",
+          /* UI-P54, the density pass: 18px 20px → 13px 14px. The left padding
+             is the room the mark square needs, so it is derived from the square
+             rather than shrunk with the rest: the square sits 14px into the
+             plate and is 88 wide (over the table's band, so kept), and the gap
+             after it goes 18 → 13 — 115. The tightened board shrinks this
+             padding to 86 as well and its square covers the title's first
+             letters; that is the one place this plate departs from it. */
+          padding: "13px 14px 13px 115px",
           borderRadius: r.panel,
           background: t.plate,
           border: `1px solid ${t.headerBorder}`,
@@ -217,10 +224,10 @@ function BuildPlate(props: BuildHeroPlateProps) {
         <div
           style={{
             fontFamily: FIGTREE,
-            fontSize: 13,
+            fontSize: 12,
             lineHeight: 1.45,
             color: t.text2,
-            marginTop: 8,
+            marginTop: 6,
             maxWidth: 560,
           }}
         >
@@ -229,9 +236,9 @@ function BuildPlate(props: BuildHeroPlateProps) {
         <div
           style={{
             display: "flex",
-            gap: 14,
+            gap: 10,
             alignItems: "center",
-            marginTop: 10,
+            marginTop: 7,
             fontFamily: FIGTREE,
             fontSize: 12,
             color: t.text2,

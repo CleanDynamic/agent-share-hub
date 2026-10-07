@@ -4,7 +4,9 @@
 // the title is 30 to 36px at −0.035em), and on desktop the same three parts sit
 // inside the page's header panel (`in-panel`: no padding of its own, because the
 // panel has it, at that page's own sizes). The title is an `h1` in the display
-// face, line-height 1; the line under it is Figtree 14 at 1.5 in `--text2`.
+// face, line-height 1; the line under it is Figtree 13 at 1.5 in `--text2`, 6px
+// down (14 and 8 before the UI-P54 density pass). `size` is the drawn size, which
+// `display()` renders through the table: a 36px phone title is 27.
 
 import type { ReactNode } from "react";
 
@@ -29,7 +31,7 @@ export function PageHeading({ eyebrow, title, sub, size, variant = "bare" }: Pag
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 6,
         padding: variant === "bare" ? "4px 2px" : undefined,
       }}
     >
@@ -38,7 +40,7 @@ export function PageHeading({ eyebrow, title, sub, size, variant = "bare" }: Pag
         {title}
       </h1>
       {sub ? (
-        <div style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, color: t.text2 }}>{sub}</div>
+        <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, color: t.text2 }}>{sub}</div>
       ) : null}
     </div>
   );

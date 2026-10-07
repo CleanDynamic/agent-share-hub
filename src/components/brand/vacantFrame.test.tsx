@@ -30,12 +30,13 @@ const markup = (over?: Partial<VacantFrameProps>) =>
   );
 
 describe("VacantFrame", () => {
-  it("is a 1.5px dashed --cat-breakage card, radius 14, padding 7, gap 8, on --glass with the card shadow", () => {
+  it("is a 1.5px dashed --cat-breakage card, radius 14, padding 5, gap 6, on --glass with the card shadow", () => {
+    // UI-P52 density pass: padding 7 → 5, gap 8 → 6.
     const html = markup();
     expect(html).toContain("border-width:1.5px;border-style:dashed;border-color:var(--cat-breakage)");
     expect(html).toContain("border-radius:var(--r-card)");
-    expect(html).toContain("padding:7px");
-    expect(html).toContain("gap:8px");
+    expect(html).toContain("padding:5px");
+    expect(html).toContain("gap:6px");
     expect(html).toContain("background:var(--glass)");
     expect(html).toContain("box-shadow:var(--shadow-card)");
   });
@@ -61,11 +62,14 @@ describe("VacantFrame", () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it("sets the title in Sentient 18 on one line and the reward in 18px mono --text", () => {
+  it("sets the title drawn at 18 on one line and the reward in 15px mono --text", () => {
+    // UI-P52 density pass: display(18) renders at 15 (Figtree 600, under
+    // Sentient's floor) and the reward 18 → 15, both at normal leading as the
+    // board sets them.
     const html = markup();
-    expect(html).toContain("font-size:18px");
+    expect(html).toContain("font-size:15px;font-weight:600");
     expect(html).toContain("white-space:nowrap;overflow:hidden;text-overflow:ellipsis");
-    expect(html).toMatch(/data-testid="vacant-reward" style="[^"]*font-size:18px;color:var\(--text\)/);
+    expect(html).toMatch(/data-testid="vacant-reward" style="[^"]*font-size:15px;line-height:normal;color:var\(--text\)/);
     expect(html).toContain(">£400<");
   });
 
@@ -117,10 +121,12 @@ describe("vacantMeta", () => {
 describe("MissingWindow", () => {
   const html = renderToStaticMarkup(<MissingWindow part="Duplicate detector" />);
 
-  it("is 110×58 at radius 10, centred on its cover", () => {
+  it("is 110×48 at radius 10, centred on its cover", () => {
+    // UI-P52 density pass: the height 58 → 48, and the top margin follows it to
+    // stay centred (the kit keeps −29, which leaves its window 5px low).
     expect(html).toContain("left:50%");
     expect(html).toContain("top:50%");
-    expect(html).toContain("width:110px;height:58px;margin-left:-55px;margin-top:-29px");
+    expect(html).toContain("width:110px;height:48px;margin-left:-55px;margin-top:-24px");
     expect(html).toContain("border-radius:10px");
   });
 

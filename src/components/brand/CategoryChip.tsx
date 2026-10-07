@@ -4,7 +4,8 @@
 // the build header, the node card, the run view, the convert plan, the compose
 // tree and the intake proposal — and no two agreed on the shape. This is the one
 // rendering, and the design kit's: a 1px `--line` border, DM Mono 10px, padding
-// 2px 6px, radius 8, no wrap, and NO FILL. The category is carried by the text
+// 2px 4px (2px 6px before the UI-P54 density pass), radius 8, no wrap, and NO
+// FILL. The category is carried by the text
 // colour alone, `--cat-<category>`, which every hue clears as text on glass
 // (>= 5.72:1 on Noon, >= 5.78:1 on Dusk, `contrast.test.ts`).
 //
@@ -34,7 +35,7 @@ const BASE: CSSProperties = {
   fontFamily: DM_MONO,
   fontSize: 10,
   lineHeight: "normal",
-  padding: "2px 6px",
+  padding: "2px 4px",
   borderRadius: r.chip,
   whiteSpace: "nowrap",
 };

@@ -2,12 +2,14 @@
 //
 // A square control that carries one icon and no words, so the words are
 // required: `label` becomes the `aria-label`, and there is no way to render the
-// button without one. 30, 34 or 38px square, radius 12, a glass fill and a
-// `--line` hairline, the icon in `--text2` at 16px and stroke 1.6.
+// button without one. 30, 34 or 38px square as the reference drew it, rendered
+// through the density table at 25, 28 or 31 (UI-P54); radius 12, a glass fill
+// and a `--line` hairline, the icon in `--text2` at 16px and stroke 1.6.
 
 import type { ButtonHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -43,6 +45,7 @@ export function IconButton({
     { onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel },
     { disabled },
   );
+  const box = denseHeight(size);
 
   return (
     <button
@@ -53,8 +56,8 @@ export function IconButton({
       {...rest}
       {...handlers}
       style={{
-        width: size,
-        height: size,
+        width: box,
+        height: box,
         borderRadius: r.control,
         background: t.glass2,
         border: `1px solid ${state.hovered ? t.text2 : t.line}`,

@@ -36,12 +36,13 @@ const markup = (over?: Partial<BuildCardProps>) =>
   );
 
 describe("BuildCard", () => {
-  it("is one glass surface: --glass, a 1px --glass-border, radius 14, 7px padding and gap, the card shadow", () => {
+  it("is one glass surface: --glass, a 1px --glass-border, radius 14, 5px padding and gap, the card shadow", () => {
+    // UI-P52 density pass: padding and gap 7 → 5.
     const html = markup();
     expect(html).toContain("background:var(--glass)");
     expect(html).toContain("border-radius:var(--r-card)");
-    expect(html).toContain("padding:7px");
-    expect(html).toContain("gap:7px");
+    expect(html).toContain("padding:5px");
+    expect(html).toContain("gap:5px");
     expect(html).toContain("box-shadow:var(--shadow-card)");
     expect(html).toContain("border-width:1px;border-style:solid;border-color:var(--glass-border)");
     expect(html).not.toMatch(/backdrop|blur/i);
@@ -75,7 +76,8 @@ describe("BuildCard", () => {
     expect(markup({ coverHeight: COVER_HEIGHT.catalogue })).toContain("height:112px");
     const html = markup();
     expect(html).toContain("top:6px;left:6px;background:var(--media-tag);color:var(--text)");
-    expect(html).toContain("padding:2px 6px");
+    // UI-P52 density pass: the tag's padding is 2px 4px; positions and cover heights are not in the table.
+    expect(html).toContain("padding:2px 4px");
     expect(COVER_HEIGHT).toEqual({ catalogue: 112, wall: 92, works: 86, mobile: 96 });
   });
 

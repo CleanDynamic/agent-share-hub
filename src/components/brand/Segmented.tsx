@@ -9,7 +9,10 @@
 // Sizes are the track's outer height: items are `size − 8` tall inside 4px of
 // padding. The type is Figtree at 11, 12 or 13px, and each reference instance
 // states its own — 30/11 for panel filters, 32/11 in the footer, 36/12 for the
-// gallery lenses, 36/13 on mobile.
+// gallery lenses, 36/13 on mobile. Those are the drawn numbers: since UI-P54 an
+// item renders `size − 8` through the density table (28 → 23), with 0 9px of
+// padding and its type through the table too; the track's 4px and 2px are
+// under the table's floor and stay.
 //
 // TWO ADDITIONS FOR THE ENTRANCE (UI-P36), both opt-in and neither changes a
 // control that does not ask:
@@ -25,6 +28,7 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
+import { denseFont, denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
@@ -93,12 +97,12 @@ function Segment({
   const { state, handlers } = useInteractive<HTMLElement>();
 
   const style: CSSProperties = {
-    height,
-    padding: "0 12px",
+    height: denseHeight(height),
+    padding: "0 9px",
     border: 0,
     borderRadius: r.chip,
     fontFamily: FIGTREE,
-    fontSize,
+    fontSize: denseFont(fontSize),
     cursor: readOnly ? "default" : "pointer",
     whiteSpace: "nowrap",
     background: current ? t.text : "transparent",

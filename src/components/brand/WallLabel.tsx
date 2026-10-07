@@ -3,8 +3,8 @@
 //
 // The cells sit on a `--hairline` background with a 1px gap, so the rules between
 // them are the background showing through and no cell draws a border; the grid
-// is clipped to radius 12. Each cell is a `--cell` ground, padding 12px 14px, a
-// column with gap 7. What goes in a cell is a `Detail` or a `Stat`, both of which
+// is clipped to radius 12. Each cell is a `--cell` ground, padding 9px 10px, a
+// column with gap 5 (12px 14px and 7 before the UI-P54 density pass). What goes in a cell is a `Detail` or a `Stat`, both of which
 // open with a 10px `Eyebrow`.
 
 import type { ReactNode } from "react";
@@ -36,10 +36,10 @@ export function WallLabel({ columns, cells }: WallLabelProps) {
           key={index}
           style={{
             background: t.cell,
-            padding: "12px 14px",
+            padding: "9px 10px",
             display: "flex",
             flexDirection: "column",
-            gap: 7,
+            gap: 5,
             minWidth: 0,
           }}
         >

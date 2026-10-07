@@ -56,11 +56,13 @@ export interface VacantFrameProps {
   selected?: boolean;
 }
 
+/* UI-P54, the density pass: the frame's gaps and padding through the table
+   (8 → 6, 7 → 5, 6 → 4), the reward 18 → 15; the 104px cover is over its band. */
 const FRAME: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 8,
-  padding: 7,
+  gap: 6,
+  padding: 5,
   borderRadius: r.card,
   boxShadow: t.shadowCard,
   boxSizing: "border-box",
@@ -119,12 +121,15 @@ export function VacantFrame({
         {cover}
         <MissingWindow part={part} />
       </div>
-      <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+      <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 6, alignItems: "baseline" }}>
           <h3
             id={titleId}
             style={{
               ...display(18),
+              /* The catalogue sets this title and the reward beside it at the
+                 font's own leading; inherited, the row was 2px taller. */
+              lineHeight: "normal",
               textWrap: "nowrap",
               margin: 0,
               color: t.text,
@@ -137,12 +142,12 @@ export function VacantFrame({
             {title}
           </h3>
           {reward ? (
-            <span data-testid="vacant-reward" style={{ fontFamily: DM_MONO, fontSize: 18, color: t.text, flexShrink: 0 }}>
+            <span data-testid="vacant-reward" style={{ fontFamily: DM_MONO, fontSize: 15, lineHeight: "normal", color: t.text, flexShrink: 0 }}>
               {reward}
             </span>
           ) : null}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
           {category && categoryLabel ? <CategoryChip category={category} label={categoryLabel} /> : null}
           <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.text2 }}>
             {vacantMeta({ closesIn, solutions, meToo })}

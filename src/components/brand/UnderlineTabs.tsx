@@ -1,15 +1,18 @@
 // Underline tabs (UI-P07): a row of tabs with a rule under it, and a second,
 // heavier rule in `--action` under the current one.
 //
-// The current tab is Figtree 600 in `--text` with 10px under it and a 2px
-// action border; the others are `--text2` with 12px under them, so every tab is
-// the same height and nothing jumps when the choice changes. `role="tablist"`,
+// The current tab is Figtree 600 in `--text` with 7px under it and a 2px
+// action border; the others are `--text2` with 9px under them, so every tab is
+// the same height and nothing jumps when the choice changes. (UI-P54, the
+// density pass: 10 and 12 before, the tabs 24 apart rather than 17, and the
+// type size the reference drew — 12, 13 or 14 — rendered through the table.) `role="tablist"`,
 // `role="tab"` and `aria-selected`, which is what the part viewer and the build
 // page's sections both need. Arrow keys move between tabs; the panels are the
 // caller's, so each tab's `id` and `aria-controls` are the caller's to pass.
 
 import { useRef, type KeyboardEvent } from "react";
 
+import { denseFont } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
 import { t } from "@/lib/theme/tokens";
@@ -72,9 +75,9 @@ function Tab({
         borderBottom: current ? `2px solid ${t.action}` : undefined,
         margin: 0,
         padding: 0,
-        paddingBottom: current ? 10 : 12,
+        paddingBottom: current ? 7 : 9,
         fontFamily: FIGTREE,
-        fontSize,
+        fontSize: denseFont(fontSize),
         lineHeight: "normal",
         fontWeight: current ? 600 : undefined,
         color: current ? t.text : t.text2,
@@ -119,7 +122,7 @@ export function UnderlineTabs<V extends string = string>({
       aria-label={label}
       style={{
         display: "flex",
-        gap: 24,
+        gap: 17,
         alignItems: "flex-end",
         borderBottom: `1px solid ${t.line}`,
       }}

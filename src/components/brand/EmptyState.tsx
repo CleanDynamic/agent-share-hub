@@ -1,15 +1,18 @@
 // The empty state (UI-P37): a panel with nothing to show, said once.
 //
-// A centred column, 12 apart, padded 28px 20px: ONE sentence in the display
-// face at 20px in `--text`, and at most one secondary button under it. No
+// A centred column, 9 apart, padded 20px 14px: ONE sentence in the display
+// role at 17px in `--text`, and at most one secondary button under it. (12,
+// 28px 20px and 20px before the UI-P52 density pass; `display(20)` renders the
+// line at 17, which under Sentient's 20px floor is Figtree 600.) No
 // illustration and no icon — an empty panel is not a failure and not an event,
 // so it gets a sentence and a way on, never decoration. The sentence is the
 // panel's own words ("Nothing hung yet.", "No solutions yet."), written as the
 // state of the thing rather than as a scolding of the reader, and the way on is
 // the one place this panel can lead (the gallery, sign in, the open bounties).
 //
-// The button is 36/13, the secondary variant, because the primary belongs to
-// the page's one decision; on a phone it is 44 tall, the touch floor.
+// The button is drawn 36/13 (rendered 30/12), the secondary variant, because the
+// primary belongs to the page's one decision; on a phone it is 44 tall, the
+// touch floor, which the density pass keeps.
 //
 // A SIGNED-OUT VISITOR gets this too, in place of a panel that is for signed-in
 // readers only: the sentence says what signing in would give them, and the
@@ -48,8 +51,8 @@ export function EmptyState({ line, action, style, ...rest }: EmptyStateProps) {
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        gap: 12,
-        padding: "28px 20px",
+        gap: 9,
+        padding: "20px 14px",
         ...style,
       }}
     >

@@ -19,11 +19,14 @@
 // halo and the card shadow, which sit outside the border box. The border is dropped rather than made transparent
 // so the pseudo-element's hairline is the panel's edge.
 //
-// The padding is the caller's to set: 16px 18px by default, 14px 16px for lists.
+// The padding is the caller's to set: 16px 18px by default, 14px 16px for lists. Those are the drawn
+// values: since UI-P54 the panel renders whatever padding it is given through the density table, so the
+// default is 12px 13px and a list's 10px 12px, and every caller tightened without being edited.
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
+import { densePx, denseFont, denseSpace } from "@/lib/theme/density";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -32,7 +35,7 @@ export type PanelSurface = "glass" | "flat" | "plain";
 
 export interface PanelProps {
   surface?: PanelSurface;
-  /** CSS padding. 16px 18px by default; lists use 14px 16px. */
+  /** CSS padding as the reference drew it, rendered through the density table. 16px 18px by default; lists use 14px 16px. */
   padding?: string;
   as?: ElementType;
   style?: CSSProperties;
@@ -73,7 +76,7 @@ export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "sec
         background: glass ? "none" : surface === "flat" ? t.flat : t.glass,
         border: glass ? "none" : `1px solid ${t.glassBorder}`,
         borderRadius: r.panel,
-        padding,
+        padding: densePx(padding, denseSpace),
         boxShadow: glass
           ? `${t.glassHalo}, ${t.shadowCard}`
           : surface === "flat"
@@ -96,7 +99,7 @@ export interface PanelHeadProps {
   subtitle?: ReactNode;
   /** Controls at the right edge, aligned to the top. */
   right?: ReactNode;
-  /** 16 by default; 13 to 15 where the reference is smaller. */
+  /** 16 by default; 13 to 15 where the reference is smaller. Drawn sizes, rendered through the density table. */
   titleSize?: 13 | 14 | 15 | 16;
   /** Render the title as a heading of this level. A plain block when absent. */
   headingLevel?: 1 | 2 | 3 | 4;
@@ -107,14 +110,14 @@ export function PanelHead({ title, subtitle, right, titleSize = 16, headingLevel
   return (
     <div
       data-ui="panel-head"
-      style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9 }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
         <Title
           style={{
             margin: 0,
             fontFamily: FIGTREE,
-            fontSize: titleSize,
+            fontSize: denseFont(titleSize),
             fontWeight: 600,
             lineHeight: "normal",
             color: t.text,
@@ -126,7 +129,7 @@ export function PanelHead({ title, subtitle, right, titleSize = 16, headingLevel
           <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>{subtitle}</div>
         ) : null}
       </div>
-      {right ? <div style={{ display: "flex", gap: 6, alignItems: "center" }}>{right}</div> : null}
+      {right ? <div style={{ display: "flex", gap: 4, alignItems: "center" }}>{right}</div> : null}
     </div>
   );
 }

@@ -13,6 +13,7 @@
 
 import type { ReactNode } from "react";
 
+import { denseHeight, denseSpace } from "@/lib/theme/density";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, DRAWN_HEADING_MIN_PX, display } from "@/lib/theme/type";
 
@@ -45,11 +46,11 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
       role="img"
       aria-label={label}
       style={{
-        width: size,
-        height: size,
+        width: denseHeight(size),
+        height: denseHeight(size),
         borderRadius: "50%",
         background: `conic-gradient(${t.lit} 0 ${p}%, ${t.ringTrack} ${p}% 100%)`,
-        padding: thickness,
+        padding: denseSpace(thickness),
         boxShadow: t.ringGlow,
         boxSizing: "border-box",
         flexShrink: 0,
@@ -67,7 +68,7 @@ export function OrbRing({ size, percent, value, caption, label, thickness = 9, c
           alignItems: "center",
           justifyContent: "center",
           gap: 2,
-          paddingBottom: children ? undefined : Math.trunc(size * 0.12),
+          paddingBottom: children ? undefined : denseSpace(Math.trunc(size * 0.12)),
           boxSizing: "border-box",
           overflow: children ? "hidden" : undefined,
         }}

@@ -73,10 +73,12 @@ export function Timeline({ events, label = "Events", size = "desktop" }: Timelin
             style={{
               display: "grid",
               gridTemplateColumns: phone ? "16px 48px minmax(0, 1fr)" : "16px 44px minmax(0, 1fr)",
-              gap: 10,
+              /* UI-P54, the density pass: 10 and 14 before; the tracks, the
+                 dots and the rail's position are not in the table. */
+              gap: 7,
               alignItems: "start",
               position: "relative",
-              paddingBottom: 14,
+              paddingBottom: 10,
             }}
           >
             <span
@@ -105,7 +107,7 @@ export function Timeline({ events, label = "Events", size = "desktop" }: Timelin
               >
                 {event.kind}
               </div>
-              <div style={{ fontFamily: FIGTREE, fontSize: phone ? 14 : 12, color: t.text, marginTop: 2 }}>{event.text}</div>
+              <div style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 12, color: t.text, marginTop: 2 }}>{event.text}</div>
             </div>
           </li>
         ))}

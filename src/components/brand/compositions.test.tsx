@@ -34,21 +34,25 @@ describe("Tagline", () => {
   });
 
   it("derives padding, gap and the mark from the size, truncated (46 and 30, the reference's two)", () => {
+    // UI-P52 density pass: each derived padding and gap goes through the table
+    // (10 14 11 → 7 10 8, 11 → 8); the mark is an SVG the kit sizes by attribute,
+    // which the pass left alone.
     const at46 = markup(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
-    expect(at46).toContain("padding:10px 14px 11px");
-    expect(at46).toContain("gap:11px");
+    expect(at46).toContain("padding:7px 10px 8px");
+    expect(at46).toContain("gap:8px");
     expect(at46).toContain('width="27"');
     const at30 = markup(<Tagline lines={LINES} size={30} offsets={[0, 44, 14]} />);
-    expect(at30).toContain("padding:6px 9px 7px");
-    expect(at30).toContain("gap:7px");
+    expect(at30).toContain("padding:4px 6px 5px");
+    expect(at30).toContain("gap:5px");
     expect(at30).toContain('width="18"');
   });
 
   it("steps the chips by their offsets and shapes their corners 1 / 2 / 3", () => {
     const html = markup(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
     expect(html).toContain("margin-left:0;");
-    expect(html).toContain("margin-left:90px");
-    expect(html).toContain("margin-left:30px");
+    // UI-P52 density pass: the offsets go through the table, 90 → 65 and 30 → 22.
+    expect(html).toContain("margin-left:65px");
+    expect(html).toContain("margin-left:22px");
     expect(html).toContain("border-radius:14px 14px 0 14px");
     expect(html).toContain("border-radius:0 14px 14px 14px");
     expect(html).toContain("border-radius:14px");
@@ -79,13 +83,15 @@ describe("Tagline", () => {
     }
   });
 
-  it("derives the sign-in phone tagline's chip from 26: padding 5px 8px 6px, gap 6px, a 15px mark", () => {
+  it("derives the sign-in phone tagline's chip from 26: padding 5px 6px 4px, gap 4px, a 15px mark", () => {
+    // UI-P52 density pass: 5 8 6 → 5 6 4 (5 is under the table's floor), 6 → 4,
+    // and the offsets 40 → 29, 12 → 9.
     const html = markup(<Tagline lines={LINES} size={26} offsets={[0, 40, 12]} />);
-    expect(html).toContain("padding:5px 8px 6px");
-    expect(html).toContain("gap:6px");
+    expect(html).toContain("padding:5px 6px 4px");
+    expect(html).toContain("gap:4px");
     expect(html).toContain('width="15"');
-    expect(html).toContain("margin-left:40px");
-    expect(html).toContain("margin-left:12px");
+    expect(html).toContain("margin-left:29px");
+    expect(html).toContain("margin-left:9px");
   });
 });
 
@@ -135,7 +141,8 @@ describe("HeroPlate · featured", () => {
     expect(html).toContain("flex-grow:1.2");
     expect(html).toContain("background:var(--inverse)");
     expect(html).toContain("color:var(--on-inverse)");
-    expect(html).toContain("padding:18px 20px");
+    // UI-P52 density pass: 18px 20px → 13px 14px.
+    expect(html).toContain("padding:13px 14px");
     expect(html).toContain("border:1px solid var(--glass-border)");
     expect(html).toContain("box-shadow:var(--shadow-card)");
     expect(html).toContain("MOST REPRODUCED THIS MONTH");
@@ -176,7 +183,10 @@ describe("HeroPlate · build", () => {
   it("is placed 16px from left, right and bottom, on --plate, with the one blur", () => {
     const html = markup(plate);
     expect(html).toContain("left:16px;right:16px;bottom:16px");
-    expect(html).toContain("padding:18px 20px 18px 120px");
+    // UI-P52 density pass: 18px 20px → 13px 14px; the left padding is the mark
+    // square's room (14 in + 88 + a 13px gap), so it is 115 rather than the 86
+    // the tightened board draws over the square.
+    expect(html).toContain("padding:13px 14px 13px 115px");
     expect(html).toContain("border-radius:var(--r-panel)");
     expect(html).toContain("background:var(--plate)");
     expect(html).toContain("border:1px solid var(--header-border)");

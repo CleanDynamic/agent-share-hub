@@ -106,13 +106,14 @@ describe("LoadingRegion", () => {
 });
 
 describe("EmptyState", () => {
-  it("is a centred column, 12 apart, padded 28px 20px", () => {
+  it("is a centred column, 9 apart, padded 20px 14px", () => {
+    // UI-P52 density pass: 12 → 9 and 28px 20px → 20px 14px.
     const html = markup(<EmptyState line="Nothing hung yet." />);
     expect(html).toContain("flex-direction:column");
     expect(html).toContain("align-items:center");
     expect(html).toContain("text-align:center");
-    expect(html).toContain("gap:12px");
-    expect(html).toContain("padding:28px 20px");
+    expect(html).toContain("gap:9px");
+    expect(html).toContain("padding:20px 14px");
   });
 
   it("says one sentence in the display role drawn at 20px, in --text", () => {
@@ -136,12 +137,13 @@ describe("EmptyState", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("offers at most one action: a secondary 36/13 button that does what it says", () => {
+  it("offers at most one action: a secondary button drawn 36/13 that does what it says", () => {
+    // UI-P52 density pass: the button renders the drawn 36/13 at 30/12.
     const onClick = vi.fn();
     const html = markup(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick }} />);
     expect(html).toContain('data-variant="secondary"');
-    expect(html).toContain("height:36px");
-    expect(html).toContain("font-size:13px");
+    expect(html).toContain("height:30px");
+    expect(html).toContain("font-size:12px");
 
     render(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick }} />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
@@ -157,26 +159,29 @@ describe("EmptyState", () => {
 });
 
 describe("ErrorState", () => {
-  it("says That didn't load. in Figtree 14px --text, and names the panel in DM Mono 11px --label", () => {
+  it("says That didn't load. in Figtree 13px --text, and names the panel in DM Mono 11px --label", () => {
+    // UI-P52 density pass: the line 14 → 13; the 11px name is kept.
     const html = markup(<ErrorState panel="The visitors’ book" onRetry={() => {}} />);
     expect(DEFAULT_ERROR_LINE).toBe("That didn't load.");
     expect(html).toContain("That didn&#x27;t load.");
-    expect(html).toMatch(/<p style="[^"]*font-size:14px[^"]*color:var\(--text\)/);
+    expect(html).toMatch(/<p style="[^"]*font-size:13px[^"]*color:var\(--text\)/);
     expect(html).toMatch(/<span style="[^"]*font-size:11px[^"]*color:var\(--label\)[^"]*">The visitors’ book<\/span>/);
     expect(html).toContain("&#x27;DM Mono&#x27;");
   });
 
-  it("is a column, 10 apart", () => {
+  it("is a column, 7 apart", () => {
+    // UI-P52 density pass: 10 → 7.
     const html = markup(<ErrorState panel="The wall" onRetry={() => {}} />);
     expect(html).toContain("flex-direction:column");
-    expect(html).toContain("gap:10px");
+    expect(html).toContain("gap:7px");
   });
 
-  it("has one secondary 34/12 Try again that calls the retry", () => {
+  it("has one secondary Try again drawn 34/12 that calls the retry", () => {
+    // UI-P52 density pass: the button renders the drawn 34 at 28; 12px type is kept.
     const onRetry = vi.fn();
     const html = markup(<ErrorState panel="The wall" onRetry={onRetry} />);
     expect(html).toContain('data-variant="secondary"');
-    expect(html).toContain("height:34px");
+    expect(html).toContain("height:28px");
     expect(html).toContain("font-size:12px");
 
     render(<ErrorState panel="The wall" onRetry={onRetry} />);

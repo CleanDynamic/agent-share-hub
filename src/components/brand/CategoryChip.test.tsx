@@ -36,11 +36,12 @@ describe("the nine, and the fallback", () => {
     expect(html).toContain("color:var(--cat-breakage)");
   });
 
-  it("is the kit's chip: a 1px --line border, DM Mono 10px, 2px 6px, no wrap", () => {
+  it("is the kit's chip: a 1px --line border, DM Mono 10px, 2px 4px, no wrap", () => {
+    // UI-P52 density pass: the padding is 2px 4px (2px 6px before); 10px type is kept.
     const html = markup(<CategoryChip category="data" label="data" />);
     expect(html).toContain("border:1px solid var(--line)");
     expect(html).toContain("font-size:10px");
-    expect(html).toContain("padding:2px 6px");
+    expect(html).toContain("padding:2px 4px");
     expect(html).toContain("white-space:nowrap");
     expect(html).toContain("DM Mono");
   });

@@ -201,9 +201,10 @@ describe("Timeline", () => {
     expect(html).toContain("left:5px;top:6px;bottom:16px;width:1px;background:var(--line)");
   });
 
-  it("lays each item on a 16 / 44 / 1fr grid, 14px below", () => {
+  it("lays each item on a 16 / 44 / 1fr grid, 10px below", () => {
+    // UI-P52 density pass: 14 → 10 below each item; the tracks are not in the table.
     expect(html).toContain("grid-template-columns:16px 44px minmax(0, 1fr)");
-    expect(html).toContain("padding-bottom:14px");
+    expect(html).toContain("padding-bottom:10px");
     expect((html.match(/<li/g) ?? []).length).toBe(5);
   });
 
@@ -237,7 +238,8 @@ describe("RankRung and MarkTile", () => {
 
   it("steps radius and rank type with the size: 9 / 10 / 12 and 17 / 18 / 22 drawn", () => {
     const at = (size: 28 | 32 | 40) => markup(<RankRung rank={3} tier="rare" size={size} />);
-    expect(at(28)).toContain("width:28px;height:28px;border-radius:9px");
+    // UI-P52 density pass: a rung is a square, so its side goes 28 / 32 / 40 → 23 / 26 / 33.
+    expect(at(28)).toContain("width:23px;height:23px;border-radius:9px");
     expect(at(32)).toContain("border-radius:10px");
     expect(at(40)).toContain("border-radius:12px");
     // UI-P52 density pass: the rank type is drawn at 17 / 18 / 22 and display()
@@ -247,9 +249,10 @@ describe("RankRung and MarkTile", () => {
     expect(at(40)).toContain("font-size:19px");
   });
 
-  it("draws the creator mark at 46×46, radius 13, with a 20px trophy, glowing only when highest", () => {
+  it("draws the creator mark at 38×38, radius 13, with a 20px trophy, glowing only when highest", () => {
+    // UI-P52 density pass: the square 46 → 38; the radius and the icon are not in the table.
     const highest = markup(<MarkTile tier="highest" caption="First hang" />);
-    expect(highest).toContain("width:46px;height:46px;border-radius:13px");
+    expect(highest).toContain("width:38px;height:38px;border-radius:13px");
     expect(highest).toContain('width="20"');
     expect(highest).toContain("box-shadow:var(--rank-glow)");
     expect(highest).toContain("First hang");

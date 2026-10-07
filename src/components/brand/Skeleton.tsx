@@ -81,7 +81,8 @@ export function LoadingRegion({ what, announce = false, children, ...rest }: Loa
 /* ── the build card ───────────────────────────────────────────────────────────
    Every wall in the product hangs the same card, so its placeholder is one
    component: the card's own chrome (glass, hairline, radius 14, the card shadow,
-   7px of padding) with bones where its content goes — the cover, then the title,
+   5px of padding since the UI-P54 density pass, as the card has) with bones
+   where its content goes — the cover, then the title,
    the credit, the plaque and the chips. The chrome is the real card's, so what
    arrives is the card's content and nothing else.
 
@@ -110,8 +111,8 @@ export function CardSkeleton({ cover, body = 124 }: CardSkeletonProps) {
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 7,
-          padding: 7,
+          gap: 5,
+          padding: 5,
           background: t.glass,
           borderRadius: r.card,
           border: `1px solid ${t.glassBorder}`,
@@ -120,8 +121,8 @@ export function CardSkeleton({ cover, body = 124 }: CardSkeletonProps) {
         }}
       >
         <Skeleton height={cover} radius={r.media} />
-        <div style={{ height: body, padding: "0 5px 5px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 6 }}>
-          <Skeleton width="72%" height={20} />
+        <div style={{ height: body, padding: "0 5px 5px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 4 }}>
+          <Skeleton width="72%" height={16} />
           <Skeleton width="48%" height={12} />
           <Skeleton width="84%" height={16} />
           <div style={{ display: "flex", gap: 4 }}>
