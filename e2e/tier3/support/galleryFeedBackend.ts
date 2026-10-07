@@ -20,6 +20,10 @@ export interface FeedBuild {
   proof?: Record<string, number>;
   days?: number;
   reproductionCount?: number;
+  /** UI-P50: the dashboard's figures (session_count, prompt_count, ai_turn_count). */
+  sessions?: number;
+  prompts?: number;
+  turns?: number;
 }
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(100 + n).padStart(12, "0")}`;
@@ -39,6 +43,10 @@ export function feedRow(b: FeedBuild): Row {
     made_for: ["Photographers"],
     made_with: [],
     models_used: b.models ?? ["claude-sonnet-5-5"],
+    session_count: b.sessions ?? 1,
+    prompt_count: b.prompts ?? 0,
+    ai_turn_count: b.turns ?? 0,
+    making: { sessions: [] },
     live_url: null,
     repo_url: null,
     hero_node_id: null,

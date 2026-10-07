@@ -116,3 +116,35 @@ describe("UI-P49 — the feed's parameters", () => {
     expect(galleryHref({ model: "gpt-9", sort: "trending" as never })).toBe("/gallery");
   });
 });
+
+describe("the dashboard's parameters (UI-P50)", () => {
+  it("reads tab, lab, report, active and dsort, and drops what it does not know", () => {
+    expect(parse("view=dashboard&tab=makers&lab=Google&report=multi&active=30&dsort=prompts")).toEqual({
+      lens: "all",
+      madeFor: [],
+      madeWith: [],
+      query: null,
+      view: "dashboard",
+      tab: "makers",
+      lab: "Google",
+      report: "multi",
+      active: 30,
+      dsort: "prompts",
+    });
+    const junk = parse("tab=builds&lab=Meta&report=week&active=14&dsort=engagement");
+    expect(junk).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+  });
+
+  it("writes them after sort and before q, and leaves the resting values out", () => {
+    expect(
+      galleryHref({ view: "dashboard", model: "opus-5-5", tab: "models", lab: "Google", report: "month", active: 7, dsort: "name", query: "cv" }),
+    ).toBe("/gallery?view=dashboard&model=opus-5-5&tab=models&lab=Google&report=month&active=7&dsort=name&q=cv");
+    expect(galleryHref({ view: "dashboard", dsort: "engagement" as never })).toBe("/gallery?view=dashboard");
+  });
+
+  it("round-trips", () => {
+    const href = "/gallery?view=dashboard&lab=OpenAI&report=multi&active=90&dsort=turns";
+    const once = parse(href.split("?")[1]);
+    expect(galleryHref(once)).toBe(href);
+  });
+});

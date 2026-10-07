@@ -48,6 +48,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   gallery: lazy(() => import("./GalleryDemo")),
   /* UI-P49 — the Gallery feed (no board is compared). */
   "gallery-feed": lazy(() => import("./GalleryFeedDemo")),
+  /* UI-P50 — the Gallery dashboard (no board is compared). */
+  "gallery-dashboard": lazy(() => import("./GalleryDashboardDemo")),
   /* UI-P29 — the Build page's first screen. */
   build: lazy(() => import("./BuildDemo")),
   /* UI-P31 — Rebuild, and the lineage page built from the same pieces (no board). */
@@ -84,6 +86,7 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
+  "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
   drafts: [{ label: "Home", href: "/" }, { label: "Drafts" }],

@@ -80,8 +80,8 @@ test("Dashboard sets view=dashboard (desktop); on a phone the switch is hidden",
     await switcher.getByRole("radio", { name: "Dashboard" }).click();
     await expect(page).toHaveURL(/\/gallery\?view=dashboard$/);
     await expect(switcher.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
-    // Until UI-P50, the dashboard view is still the feed.
-    await expect(page.getByTestId("gallery-feed")).toBeVisible();
+    // UI-P50: the dashboard's table replaces the feed.
+    await expect(page.getByRole("table", { name: "Builds" })).toBeVisible();
   }
 
   // The page never asks for the stats or the lens counts it no longer shows (both are HEAD counts on builds).

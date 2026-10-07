@@ -15,6 +15,7 @@ const listGalleryFeed = vi.fn();
 const getGalleryFacets = vi.fn();
 const countGalleryLenses = vi.fn();
 const getGalleryStats = vi.fn();
+const listGalleryDashboard = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: null }) }) } },
@@ -33,8 +34,15 @@ vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   listGalleryFeed: (params: unknown) => listGalleryFeed(params),
   countGalleryLenses: () => countGalleryLenses(),
   getGalleryStats: () => getGalleryStats(),
+  listGalleryDashboard: (params: unknown) => listGalleryDashboard(params),
 }));
+vi.mock("@/lib/build/sessions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/build/sessions")>()),
+  countDraftBuilds: async () => 0,
+}));
+vi.mock("@/components/connect/ConnectorDialog", () => ({ useConnectorDialog: () => ({ open: vi.fn() }) }));
 
+import { DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
 import type { GalleryFeed, GalleryFeedRow } from "@/lib/build/gallery";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 
@@ -123,6 +131,7 @@ const address = () => screen.getByTestId("address").textContent;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  listGalleryDashboard.mockResolvedValue(DASHBOARD_FIXTURE_ROWS);
   listGalleryFeed.mockResolvedValue(allPage(["a", "b", "c"]));
   getGalleryFacets.mockResolvedValue({
     roles: [
@@ -186,13 +195,34 @@ describe("GalleryPage — the feed", () => {
     expect(within(not).getByRole("button", { name: "Show more" })).toBeInTheDocument();
   });
 
-  it("the switch writes view=dashboard, and still shows the feed until the dashboard lands", async () => {
+  it("the switch writes view=dashboard and shows the dashboard's table; Feed brings the feed back", async () => {
     renderAt("/gallery");
-    const dashboard = await screen.findByRole("radio", { name: "Dashboard" });
-    fireEvent.click(dashboard);
+    fireEvent.click(await screen.findByRole("radio", { name: "Dashboard" }));
     await waitFor(() => expect(address()).toBe("/gallery?view=dashboard"));
+    expect(await screen.findByRole("table", { name: "Builds" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByTestId("gallery-feed")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Feed" }));
+    await waitFor(() => expect(address()).toBe("/gallery"));
     expect(await screen.findByTestId("gallery-feed")).toBeInTheDocument();
+  });
+
+  it("on a phone, view=dashboard shows the feed and keeps the address", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("max-width: 767px"),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    try {
+      renderAt("/gallery?view=dashboard");
+      expect(await screen.findByTestId("gallery-feed")).toBeInTheDocument();
+      expect(screen.queryByRole("table", { name: "Builds" })).not.toBeInTheDocument();
+      expect(listGalleryDashboard).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("writes the search 300ms after typing stops, and Clear all keeps the sort", async () => {
@@ -231,5 +261,39 @@ describe("GalleryPage — the feed", () => {
     expect(screen.queryByText("boom")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /try again|retry/i }));
     await waitFor(() => expect(listGalleryFeed).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("GalleryPage — the dashboard", () => {
+  it("asks the data layer with the address's filters and keeps the sidebar counts unfiltered", async () => {
+    renderAt("/gallery?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
+    await screen.findByRole("table", { name: "Builds" });
+    expect(listGalleryDashboard).toHaveBeenCalledWith(undefined);
+    expect(listGalleryDashboard).toHaveBeenCalledWith({ lab: "Google", activeWithinDays: 30, report: "multi", q: "inbox" });
+    expect(screen.getByTestId("dash-pill")).toHaveTextContent("Google models");
+    expect(screen.getByTestId("dash-lab-Google")).toHaveTextContent("3");
+    expect(address()).toBe("/gallery?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
+  });
+
+  it("writes each control to the address, and a lab clears the model", async () => {
+    renderAt("/gallery?view=dashboard&model=opus-5-5");
+    await screen.findByRole("table", { name: "Builds" });
+    expect(screen.getByTestId("dash-pill")).toHaveTextContent("Made with Opus 5.5");
+
+    fireEvent.click(screen.getByTestId("dash-lab-OpenAI"));
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&lab=OpenAI"));
+    fireEvent.click(screen.getByTestId("dash-report-multi"));
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&lab=OpenAI&report=multi"));
+    fireEvent.click(screen.getByTestId("dash-lab-OpenAI"));
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&report=multi"));
+    fireEvent.click(screen.getByTestId("dash-nav-makers"));
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard&tab=makers&report=multi"));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Makers");
+  });
+
+  it("drops what the dashboard cannot read from the address", async () => {
+    renderAt("/gallery?view=dashboard&sort=rebuilt&dsort=nonsense");
+    await screen.findByRole("table", { name: "Builds" });
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard"));
   });
 });

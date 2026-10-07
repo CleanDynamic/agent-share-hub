@@ -3,9 +3,10 @@
    Loads the Gallery feed through `src/lib/` functions only, maps it to
    `GalleryFeedView`'s props and renders it. No Supabase call in this file.
 
-   TWO VIEWS OF THE SAME BUILDS, picked by `view`: the feed (this prompt) and
-   the dashboard (UI-P50). Until UI-P50 lands, and always below 768px (decision
-   9), `view=dashboard` renders the feed too; the switch still writes it.
+   TWO VIEWS OF THE SAME BUILDS, picked by `view`: the feed (this file) and the
+   dashboard (UI-P50, `GalleryDashboardPage`). Below 768px (decision 9)
+   `view=dashboard` renders the feed too; the address keeps saying dashboard
+   until the reader changes it, so a resized window comes back to it.
 
    THE ADDRESS IS THE STATE. view, for, model, sort and q are read from the URL
    with `parseGalleryParams` and every change writes it with `galleryHref`; an
@@ -40,6 +41,9 @@ import { isPermissionError } from "@/lib/errors/permission";
 import { MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
 import { searchMakers } from "@/lib/profile/searchMakers";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
+
+import { GalleryDashboardPage } from "./GalleryDashboardPage";
 import { MakersRow } from "./GalleryExtras";
 import { GalleryFeedView, type FeedListView, type FeedSectionView } from "./GalleryFeedView";
 import { feedRowView } from "./galleryModel";
@@ -69,7 +73,7 @@ interface Paging {
   second: number;
 }
 
-export function GalleryPage() {
+function GalleryFeedPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -260,6 +264,13 @@ export function GalleryPage() {
       />
     </>
   );
+}
+
+export function GalleryPage() {
+  const [searchParams] = useSearchParams();
+  const phone = useIsPhone();
+  const dashboard = searchParams.get("view") === "dashboard" && !phone;
+  return dashboard ? <GalleryDashboardPage /> : <GalleryFeedPage />;
 }
 
 export default GalleryPage;
