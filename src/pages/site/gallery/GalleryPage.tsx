@@ -1,90 +1,72 @@
-/* UI-P28 — `/gallery` in the site frame: the container.
+/* UI-P49 — `/gallery` in the site frame: the container.
 
-   Loads the Gallery's data through `src/lib/` functions only, maps it to
-   `GalleryView`'s props and renders it. No Supabase call in this file.
+   Loads the Gallery feed through `src/lib/` functions only, maps it to
+   `GalleryFeedView`'s props and renders it. No Supabase call in this file.
 
-   THE ADDRESS IS THE STATE, EXACTLY AS BEFORE. Lens, Made for, Made with, the
-   query — and, new, Shape — are read from the URL with `parseGalleryParams` and
-   every change writes it with `galleryHref`; an address the gallery cannot read
-   in full is replaced by the one it can. Nothing about what the reader is
-   looking at lives only here.
+   TWO VIEWS OF THE SAME BUILDS, picked by `view`: the feed (this prompt) and
+   the dashboard (UI-P50). Until UI-P50 lands, and always below 768px (decision
+   9), `view=dashboard` renders the feed too; the switch still writes it.
 
-   THE WALL PAGES THE WAY THE LISTING DOES (24 an offset), but appends: "Show
-   more" fetches the next 24 and adds them below, instead of replacing the page.
-   A new view starts again at the first page, because the filters are in the key.
+   THE ADDRESS IS THE STATE. view, for, model, sort and q are read from the URL
+   with `parseGalleryParams` and every change writes it with `galleryHref`; an
+   address the feed cannot read in full is replaced by the one it can. The old
+   lens, with and shape parameters are read and ignored — the canonical address
+   leaves them out, because the page no longer shows anything they decide.
 
-   EACH PANEL LOADS ON ITS OWN. A slow stats row never holds the wall back, and
-   a facet request that fails costs the facet column, never the wall. */
+   EACH LIST PAGES ON ITS OWN. A page of the feed is one `listGalleryFeed` call,
+   which answers both lists when a model is chosen; the page keeps a count of
+   pages per list and reads pages 0…max of them, so "Show more" under one list
+   fetches the next page and takes only that list's rows from it. The pages are
+   cached per filter set, so a new view starts again at the first page.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+   NO STATS, NO LENS COUNTS: the page asks for neither getGalleryStats nor
+   countGalleryLenses. */
+
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
-import { CoverFallback } from "@/components/brand/CoverFallback";
-import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { coverMedia, mediaAlt, cardMedia, stillFor, useSignedMedia } from "@/components/gallery/cardMedia";
+import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { useAuth } from "@/contexts/AuthContext";
-import { engagementFor, useEngagement } from "@/hooks/useEngagement";
-import { getOpenBountyPool } from "@/lib/bounty/bounties";
+import { galleryHref, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import {
-  GALLERY_PAGE_SIZE,
-  galleryHref,
-  getGalleryFacets,
-  listGallery,
-  parseGalleryParams,
-  type GalleryBuild,
-  type GalleryPage as GalleryPageData,
-  type GalleryParams,
-} from "@/lib/build";
-import {
-  countGalleryLenses,
-  getFeaturedBuild,
-  getGalleryShapeFacets,
-  getGalleryStats,
+  listGalleryFeed,
+  type GalleryFeed,
+  type GalleryFeedRow,
+  type GalleryFeedSort,
 } from "@/lib/build/gallery";
-import { countRunsLastWeek } from "@/lib/build/signals";
 import { isPermissionError } from "@/lib/errors/permission";
+import { MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
 import { searchMakers } from "@/lib/profile/searchMakers";
-import { useReveal } from "@/lib/theme/useReveal";
 
-import { MakersRow, Shortfall } from "./GalleryExtras";
-import { GalleryView } from "./GalleryView";
-import {
-  topOptions,
-  type FacetGroupView,
-  type FeaturedView,
-  type GalleryStatsView,
-  type WallCard,
-} from "./galleryModel";
+import { MakersRow } from "./GalleryExtras";
+import { GalleryFeedView, type FeedListView, type FeedSectionView } from "./GalleryFeedView";
+import { feedRowView } from "./galleryModel";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
-/** The headline counts are estimates; a minute is as fresh as they mean to be. */
-const COUNTS_STALE_MS = 60 * 1000;
 
-/** How many options each facet group offers before the rest. */
-const TOP_ROLES = 4;
-const TOP_TOOLS = 4;
-const TOP_SHAPES = 6;
+/** The rows of one list across its loaded pages, first occurrence kept. */
+function collect(pages: readonly GalleryFeed[], pick: (page: GalleryFeed) => GalleryFeedRow[]): GalleryFeedRow[] {
+  const seen = new Set<string>();
+  const out: GalleryFeedRow[] = [];
+  for (const page of pages) {
+    for (const row of pick(page)) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
+      out.push(row);
+    }
+  }
+  return out;
+}
 
-/** Between one card and the next in the entrance stagger, and how many steps it takes. */
-const REVEAL_STEP = 50;
-const REVEAL_MAX_STEPS = 8;
-
-const EMPTY_BUILDS: GalleryBuild[] = [];
-
-const toggled = (current: readonly string[], value: string) =>
-  current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value];
-
-/** A wall cell, revealed once as it first nears the viewport (the existing stagger). */
-function Reveal({ index, animate, children }: { index: number; animate: boolean; children: ReactNode }) {
-  const { ref, style, shown } = useReveal({ enabled: animate, delayMs: Math.min(index, REVEAL_MAX_STEPS) * REVEAL_STEP });
-  return (
-    <div ref={ref} data-visual-slot="gallery-grid-cell" data-revealed={shown ? "" : undefined} style={{ ...style, minWidth: 0 }}>
-      {children}
-    </div>
-  );
+interface Paging {
+  key: string;
+  /** Pages shown of the one list, or of reproducedOn. */
+  first: number;
+  /** Pages shown of notYet. */
+  second: number;
 }
 
 export function GalleryPage() {
@@ -94,73 +76,138 @@ export function GalleryPage() {
   const [searchParams] = useSearchParams();
 
   const params = useMemo(() => parseGalleryParams(searchParams), [searchParams]);
-  const { lens, madeFor, madeWith, query } = params;
-  const shapes = params.shapes ?? [];
+  /* Read once, on arrival: the address rewrite below drops the parameter straight away. */
+  const [focusSearch] = useState(() => searchParams.get("focus") === "search");
+  const view = params.view ?? "feed";
+  const modelId = params.model ?? null;
+  const audience = params.madeFor[0] ?? null;
+  const sort: GalleryFeedSort = params.sort ?? "newest";
+  const { query } = params;
+  const chosen = modelId ? (MODEL_VERSIONS.find((version) => version.id === modelId) ?? null) : null;
 
-  /** Every filter change writes the address; the query keys follow it. */
-  const go = (next: Partial<GalleryParams>) => navigate(galleryHref({ ...params, ...next }));
+  /** What the feed's address holds: the old lens and facet parameters are left out. */
+  const feedParams = useMemo<Partial<GalleryParams>>(
+    () => ({
+      view,
+      model: modelId ?? undefined,
+      madeFor: audience ? [audience] : [],
+      sort,
+      query,
+    }),
+    [view, modelId, audience, sort, query],
+  );
 
-  /* An address the gallery cannot read in full (an unknown lens, a one-letter
-     query, focus=search) is replaced by the one it can, so the address always
-     says exactly what the page is showing. */
+  /** Every change writes the address; the query keys follow it. */
+  const go = (next: Partial<GalleryParams>) => navigate(galleryHref({ ...feedParams, ...next }));
+
+  /* An address the feed cannot read in full (an unknown model, a lens, a
+     one-letter query, focus=search) is replaced by the one it can, so the
+     address always says exactly what the page is showing. */
   const written = searchParams.toString();
   useEffect(() => {
-    const canonical = galleryHref(params);
+    const canonical = galleryHref(feedParams);
     const current = written ? `${pathname}?${written}` : pathname;
     if (current !== canonical) navigate(canonical, { replace: true });
-  }, [written, pathname, params, navigate]);
+  }, [written, pathname, feedParams, navigate]);
 
-  /* ── the wall ── */
+  /* ── the feed, a page at a time ── */
 
-  const wallQuery = useInfiniteQuery<GalleryPageData, Error, { pages: GalleryPageData[] }, unknown[], number>({
-    queryKey: ["gallery", "wall", { lens, madeFor, madeWith, shapes, query }],
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      listGallery({ lens, madeFor, madeWith, shapes, query: query ?? undefined, offset: pageParam, limit: GALLERY_PAGE_SIZE }),
-    getNextPageParam: (last, all) => {
-      const loaded = all.length * GALLERY_PAGE_SIZE;
-      const more = last.total === null ? last.builds.length === GALLERY_PAGE_SIZE : loaded < last.total;
-      return more ? loaded : undefined;
-    },
-    // The previous wall stays up while the next view loads, so a filter change does not blank the page.
-    placeholderData: keepPreviousData,
+  const filters = { model: modelId, audience, sort, q: query };
+  const viewKey = JSON.stringify(filters);
+  const [paging, setPaging] = useState<Paging>({ key: viewKey, first: 1, second: 1 });
+  const shown: Paging = paging.key === viewKey ? paging : { key: viewKey, first: 1, second: 1 };
+  const pageCount = Math.max(shown.first, shown.second);
+
+  const pageQueries = useQueries({
+    queries: Array.from({ length: pageCount }, (_, page) => ({
+      queryKey: ["build", "listGalleryFeed", filters, page],
+      queryFn: () =>
+        listGalleryFeed({
+          model: modelId ?? undefined,
+          audience: audience ?? undefined,
+          sort,
+          q: query ?? undefined,
+          page,
+        }),
+      // The previous list stays up while the next view loads, so a filter change does not blank the page.
+      placeholderData: keepPreviousData,
+    })),
   });
 
-  const builds = useMemo(() => {
-    const seen = new Set<string>();
-    const out: GalleryBuild[] = [];
-    for (const page of wallQuery.data?.pages ?? []) {
-      for (const build of page.builds) {
-        if (seen.has(build.id)) continue;
-        seen.add(build.id);
-        out.push(build);
-      }
-    }
-    return out.length > 0 ? out : EMPTY_BUILDS;
-  }, [wallQuery.data]);
+  const firstQuery = pageQueries[0];
+  const firstPage = firstQuery?.data;
+  /* Pages of the first page's own kind: while a model change loads, the kept
+     page is the other kind, and the two never mix. */
+  const loaded = pageQueries
+    .map((entry) => entry.data)
+    .filter((page): page is GalleryFeed => page !== undefined && page.kind === firstPage?.kind);
 
-  const pages = wallQuery.data?.pages ?? [];
-  const total = pages.length > 0 ? pages[pages.length - 1].total : null;
+  const section = (
+    pages: number,
+    pick: (page: GalleryFeed) => GalleryFeedRow[],
+    more: (page: GalleryFeed) => boolean,
+    total: number | null,
+    onMore: () => void,
+    model: ModelVersion | null,
+  ): FeedSectionView => {
+    const own = loaded.slice(0, pages);
+    const last = own[own.length - 1];
+    const waiting = own.length < pages;
+    return {
+      rows: collect(own, pick).map((build) => feedRowView(build, model)),
+      total,
+      hasMore: waiting || (last ? more(last) : false),
+      loadingMore: waiting,
+      onMore,
+    };
+  };
 
-  const narrowed = lens !== "all" || madeFor.length > 0 || madeWith.length > 0 || shapes.length > 0 || query !== null;
+  let list: FeedListView;
+  if (firstPage?.kind === "model") {
+    const model = firstPage.model;
+    list = {
+      kind: "model",
+      reproducedOn: section(
+        shown.first,
+        (page) => (page.kind === "model" ? page.reproducedOn : []),
+        (page) => page.kind === "model" && page.hasMoreReproducedOn,
+        firstPage.totalReproducedOn,
+        () => setPaging({ ...shown, first: shown.first + 1 }),
+        model,
+      ),
+      notYet: section(
+        shown.second,
+        (page) => (page.kind === "model" ? page.notYet : []),
+        (page) => page.kind === "model" && page.hasMoreNotYet,
+        firstPage.totalNotYet,
+        () => setPaging({ ...shown, second: shown.second + 1 }),
+        model,
+      ),
+    };
+  } else {
+    list = {
+      kind: "all",
+      list: section(
+        shown.first,
+        (page) => (page.kind === "all" ? page.rows : []),
+        (page) => page.kind === "all" && page.hasMore,
+        firstPage?.kind === "all" ? firstPage.total : null,
+        () => setPaging({ ...shown, first: shown.first + 1 }),
+        null,
+      ),
+    };
+  }
 
-  /* ── the panels ── */
+  /* ── the menus ── */
 
   const facets = useQuery({ queryKey: ["gallery-facets"], queryFn: getGalleryFacets, staleTime: FACETS_STALE_MS });
-  const shapeFacets = useQuery({
-    queryKey: ["gallery", "getGalleryShapeFacets"],
-    queryFn: getGalleryShapeFacets,
-    staleTime: FACETS_STALE_MS,
-  });
-  const lensCounts = useQuery({ queryKey: ["gallery", "countGalleryLenses"], queryFn: countGalleryLenses, staleTime: COUNTS_STALE_MS });
-  const statsQuery = useQuery({ queryKey: ["gallery", "getGalleryStats"], queryFn: getGalleryStats, staleTime: COUNTS_STALE_MS });
-  const poolQuery = useQuery({ queryKey: ["bounty", "getOpenBountyPool"], queryFn: getOpenBountyPool, staleTime: COUNTS_STALE_MS });
-  const lastWeek = useQuery({ queryKey: ["build", "countRunsLastWeek"], queryFn: () => countRunsLastWeek(), staleTime: COUNTS_STALE_MS });
-  const featuredQuery = useQuery({
-    queryKey: ["gallery", "getFeaturedBuild"],
-    queryFn: () => getFeaturedBuild(),
-    staleTime: COUNTS_STALE_MS,
-  });
+  const audiences = useMemo(
+    () =>
+      [...(facets.data?.roles ?? [])]
+        .sort((a, b) => b.count - a.count)
+        .map((role) => ({ value: role.value, label: role.label ?? role.value, count: role.count })),
+    [facets.data],
+  );
 
   /* Up to three makers whose names match the query: the one extra request, and only with a query. */
   const makers = useQuery({
@@ -170,178 +217,46 @@ export function GalleryPage() {
     staleTime: FACETS_STALE_MS,
   });
 
-  const stats: GalleryStatsView | null =
-    statsQuery.data && poolQuery.data
-      ? {
-          inGallery: statsQuery.data.inGallery,
-          reproducedThisWeek: statsQuery.data.reproducedThisWeek,
-          weeklyGoal: statsQuery.data.weeklyGoal,
-          reproducedLastWeek: lastWeek.data ?? null,
-          freshPct: statsQuery.data.freshPct,
-          poolGbp: poolQuery.data.poolGbp,
-          open: poolQuery.data.open,
-          withSolutions: poolQuery.data.withSolutions,
-        }
-      : null;
+  /* ── covers: one signing pass for every row on the page (useSignedMedia keys on the paths, not the array) ── */
 
-  /* The featured build leads the first page of the whole gallery. Under a lens, a facet or a search it would
-     be a build the reader just filtered out, so it steps aside. */
-  const featuredBuild = !narrowed ? (featuredQuery.data ?? null) : null;
+  const allRows = list.kind === "all" ? list.list.rows : [...list.reproducedOn.rows, ...list.notYet.rows];
+  const srcByPath = useSignedMedia(allRows.flatMap((row) => cardMedia(row.build)));
 
-  /* ── covers: one signing pass for everything on the wall and the featured plate ── */
-
-  const mediaRows = useMemo(
-    () => [...builds, ...(featuredBuild ? [featuredBuild.build] : [])].flatMap(cardMedia),
-    [builds, featuredBuild],
-  );
-  const srcByPath = useSignedMedia(mediaRows);
-
-  const engagement = useEngagement(builds.map((build) => build.id));
-
-  /* ── mapped for the view ── */
-
-  /* A facet read that failed costs its groups and nothing else: each says so in its own place. */
-  const factsFailure = facets.isError && !facets.data ? { onRetry: () => void facets.refetch(), error: facets.error } : undefined;
-  const shapesFailure =
-    shapeFacets.isError && !shapeFacets.data ? { onRetry: () => void shapeFacets.refetch(), error: shapeFacets.error } : undefined;
-
-  /* The figures need both their reads: if either fails, they say so and one retry asks again for whichever failed. */
-  const statsFailed = !stats && ((statsQuery.isError && !statsQuery.data) || (poolQuery.isError && !poolQuery.data));
-  const statsError = statsFailed
-    ? {
-        onRetry: () => {
-          if (statsQuery.isError) void statsQuery.refetch();
-          if (poolQuery.isError) void poolQuery.refetch();
-        },
-        error: statsQuery.error ?? poolQuery.error,
-      }
-    : undefined;
-
-  const groups: FacetGroupView[] = [
-    {
-      key: "made-for",
-      label: "Made for",
-      loading: facets.isLoading,
-      failure: factsFailure,
-      rows: topOptions(facets.data?.roles ?? [], TOP_ROLES, madeFor).map((option) => ({
-        value: option.value,
-        // The registry's name where one matched, the creator's own spelling where it did not.
-        label: option.label ?? option.value,
-        count: option.count,
-        selected: madeFor.includes(option.value),
-        onToggle: () => go({ madeFor: toggled(madeFor, option.value) }),
-      })),
-    },
-    {
-      key: "made-with",
-      label: "Made with",
-      loading: facets.isLoading,
-      failure: factsFailure,
-      rows: topOptions(facets.data?.tools ?? [], TOP_TOOLS, madeWith).map((option) => ({
-        value: option.value,
-        label: option.label ?? option.value,
-        count: option.count,
-        selected: madeWith.includes(option.value),
-        onToggle: () => go({ madeWith: toggled(madeWith, option.value) }),
-      })),
-    },
-    {
-      key: "shape",
-      label: "Shape",
-      loading: shapeFacets.isLoading,
-      failure: shapesFailure,
-      rows: topOptions(shapeFacets.data ?? [], TOP_SHAPES, shapes).map((option) => ({
-        value: option.value,
-        label: option.value,
-        count: option.count,
-        selected: shapes.includes(option.value),
-        onToggle: () => go({ shapes: toggled(shapes, option.value) }),
-      })),
-    },
-  ];
-
-  const firstPaint = useRef(true);
-  useEffect(() => {
-    firstPaint.current = false;
-  }, []);
-
-  const shown = featuredBuild ? builds.filter((build) => build.id !== featuredBuild.build.id) : builds;
-  const cards: WallCard[] = shown.map((build, index) => ({
-    key: build.id,
-    render: (variant) => (
-      <Reveal index={index} animate={firstPaint.current}>
-        <GalleryCard
-          build={build}
-          srcByPath={srcByPath}
-          engagement={engagementFor(engagement, build.id)}
-          coverHeight={variant === "phone" ? 96 : undefined}
-          titleSize={variant === "phone" ? 18 : undefined}
-        />
-        <Shortfall build={build} viewerId={user?.id ?? null} />
-      </Reveal>
-    ),
-  }));
-
-  const featured: FeaturedView | null = featuredBuild
-    ? (() => {
-        const media = coverMedia(featuredBuild.build);
-        const src = stillFor(srcByPath, media);
-        return {
-          to: `/b2/${featuredBuild.build.slug}`,
-          title: (featuredBuild.build.title ?? "").trim() || "Untitled build",
-          outcome: featuredBuild.outcome ?? "",
-          build: featuredBuild.build,
-          cover: src ? (
-            <img
-              src={src}
-              alt={mediaAlt(featuredBuild.build, media)}
-              decoding="async"
-              style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <CoverFallback seed={featuredBuild.build.id} radius={0} />
-          ),
-        };
-      })()
-    : null;
-
-  const error = wallQuery.error;
-  const status = error && builds.length === 0 ? "error" : wallQuery.isPending ? "loading" : "ready";
+  const error = firstQuery?.error ?? null;
+  const status = error && !firstPage ? "error" : !firstPage ? "loading" : "ready";
 
   return (
     <>
       <SeoHead
         title="Gallery — buildgallery"
-        description="Things people built with AI, ordered by how many others got them working."
+        description="Things people built with AI, and the exact model versions other people got them working on."
         path="/gallery"
       />
-      <GalleryView
+      <GalleryFeedView
         fit="content"
-        lens={lens}
-        onLensChange={(next) => go({ lens: next })}
-        lensCounts={lensCounts.data ?? null}
-        stats={stats}
-        statsError={statsError}
-        facets={groups}
+        view={view}
+        onViewChange={(next) => go({ view: next })}
         query={query}
         onSearch={(next) => go({ query: next })}
-        appliedCount={madeFor.length + madeWith.length + shapes.length}
-        narrowed={narrowed}
-        onClearAll={() => navigate(galleryHref())}
-        total={total}
-        featured={featured}
-        aboveWall={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
-        wall={{
-          status,
-          errorKind: error && isPermissionError(error) ? "permission" : "error",
-          cards,
-          hasMore: wallQuery.hasNextPage,
-          loadingMore: wallQuery.isFetchingNextPage,
-          onMore: () => void wallQuery.fetchNextPage(),
-          onRetry: () => void wallQuery.refetch(),
-          error,
-        }}
+        model={chosen}
+        onModelChange={(id) => go({ model: id ?? undefined })}
+        audience={audience}
+        onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
+        audiences={audiences}
+        sort={sort}
+        onSortChange={(next) => go({ sort: next })}
+        counts={firstPage?.counts ?? null}
+        status={status}
+        errorKind={error && isPermissionError(error) ? "permission" : "error"}
+        error={error ?? undefined}
+        onRetry={() => void firstQuery?.refetch()}
+        list={list}
+        srcByPath={srcByPath}
+        viewerId={user?.id ?? null}
+        aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
+        onClearAll={() => go({ query: null, model: undefined, madeFor: [] })}
         onNavigate={navigate}
+        autoFocusSearch={focusSearch}
       />
     </>
   );

@@ -35,6 +35,16 @@
 //                   works 86, a single column 120–150) renders `BuildCard`
 //                   directly with the pieces this file builds.
 //
+// UI-P49 — THE ROW. `layout="row"` is the Gallery feed's card: one build per
+// row, full width, a 2:1 cover, the title at 24, the outcome under it (the one
+// addition to the order, from the concept, not yet confirmed), "by @handle ·
+// made with …", the plaque, the chips and the open ask. It is drawn by `RowCard`
+// below rather than `BuildCard`, because its credit carries a link to the
+// maker's profile and a link cannot sit inside the card's own link: the title
+// is the link, and its box is stretched over the card. The handle is
+// `makerHandle`, which only the feed has (UI-P44b's creatorHandle); `plaqueBuild`
+// lets the plaque and the lamp speak for one model (plaqueBuildFor).
+//
 // THE FEED KEEPS ITS THREAD. A feed card whose creator arranged a post still
 // unfolds in place: `CardThread` takes the cover's place inside the same card,
 // with no fixed height. Every other card has the cover.
@@ -42,16 +52,24 @@
 // Styled with inline style objects, like every other surface on the new path:
 // Tailwind's generated utilities win over hand-written classes at build time.
 
-import { useMemo } from "react";
+import { useId, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardTitleSize } from "@/components/brand/BuildCard";
+import { CategoryChip } from "@/components/brand/CategoryChip";
 import { CoverFallback } from "@/components/brand/CoverFallback";
+import { gapEdge } from "@/components/brand/GapMarker";
+import { PictureLamp } from "@/components/brand/PictureLamp";
+import { Plaque, plaqueState, type PlaqueBuild } from "@/components/brand/Plaque";
 import { BranchIcon } from "@/components/build/BranchIcon";
-import { chipType } from "@/lib/theme/controls";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { modelLabel } from "@/lib/models/registry";
+import { chipType, hoverIsFine } from "@/lib/theme/controls";
+import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 // Roles by name, not the `type` object: this file uses inline `type X`
 // import modifiers, which a value binding called `type` makes ambiguous.
-import { tabular } from "@/lib/theme/type";
+import { display, DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
 import {
   aspectOf,
   partCategories,
@@ -86,8 +104,21 @@ export interface GalleryCardProps {
    * Unfold state is internal to the card and is not a prop: a list that owned it
    * would have to be told about a thread, and BG-P18's list has no business
    * knowing what is inside a card.
+   *
+   *   row   UI-P49: the Gallery feed's card, one build per row (see RowCard).
    */
-  layout?: CardLayout;
+  layout?: CardLayout | "row";
+  /** UI-P49: the maker's handle, without its @ (the feed's creatorHandle). Row layout only. */
+  makerHandle?: string | null;
+  /** UI-P49: the build's models_used, as stored. Row layout only. */
+  modelsUsed?: readonly string[];
+  /**
+   * UI-P49: the record the plaque and the lamp read, when it is not the build's
+   * own figures — `plaqueBuildFor(build, proof)` for a chosen model. Row layout only.
+   */
+  plaqueBuild?: PlaqueBuild;
+  /** Frozen "now", for a fixture or a test. Row layout only. */
+  now?: number;
   /**
    * RC-P16 — the engagement row: this card's counts and whether the reader
    * likes and has saved it, from the one useEngagement call its list makes.
@@ -113,7 +144,44 @@ export function GalleryCard({
   engagement,
   coverHeight = COVER_PX,
   titleSize,
+  makerHandle,
+  modelsUsed,
+  plaqueBuild,
+  now,
 }: GalleryCardProps) {
+  if (layout === "row") {
+    return (
+      <RowCard
+        build={build}
+        srcByPath={srcByPath}
+        makerHandle={makerHandle ?? null}
+        modelsUsed={modelsUsed ?? []}
+        plaqueBuild={plaqueBuild ?? build}
+        now={now}
+      />
+    );
+  }
+  return (
+    <WallCard
+      build={build}
+      srcByPath={srcByPath}
+      layout={layout}
+      engagement={engagement}
+      coverHeight={coverHeight}
+      titleSize={titleSize}
+    />
+  );
+}
+
+function WallCard({
+  build,
+  srcByPath,
+  layout,
+  engagement,
+  coverHeight,
+  titleSize,
+}: Required<Pick<GalleryCardProps, "build" | "srcByPath" | "coverHeight">> &
+  Pick<GalleryCardProps, "engagement" | "titleSize"> & { layout: CardLayout }) {
   const shape = (build.shape ?? "other") as BuildShape;
   const bounty = openBounty(build);
 
@@ -199,6 +267,205 @@ function Cover({ build, srcByPath }: { build: GalleryBuild; srcByPath: MediaSrcM
       decoding="async"
       style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
     />
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   The row (UI-P49)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** "Sonnet 5.5 + Opus 5.5": each stored model by its registry name, in order, without repeats. */
+function madeWithLine(models: readonly string[]): string {
+  const names: string[] = [];
+  for (const raw of models) {
+    const name = modelLabel(raw);
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names.join(" + ");
+}
+
+/**
+ * The feed's card. The existing card surface (a fill, a 1px border, the card
+ * shadow, no blur: RULES §7b) at padding 12/12/18, radius 14, gap 14, under its
+ * picture lamp. The title's link is stretched over the whole card, so the card
+ * is still one target, while the maker's profile link rides above it.
+ */
+function RowCard({
+  build,
+  srcByPath,
+  makerHandle,
+  modelsUsed,
+  plaqueBuild,
+  now,
+}: {
+  build: GalleryBuild;
+  srcByPath: MediaSrcMap;
+  makerHandle: string | null;
+  modelsUsed: readonly string[];
+  plaqueBuild: PlaqueBuild;
+  now?: number;
+}) {
+  const titleId = `row-title-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const [hover, setHover] = useState(false);
+  const lit = hover && hoverIsFine();
+  /* The title is 24 in the desktop column and 22 in a phone's. */
+  const phone = useIsPhone();
+
+  const bounty = openBounty(build);
+  const title = (build.title ?? "").trim() || "Untitled build";
+  const outcome = (build.outcome ?? "").trim();
+  const handle = (makerHandle ?? "").trim();
+  const models = madeWithLine(modelsUsed);
+  const rebuiltFrom = (build.source_title_at_fork ?? "").trim();
+  const sourceHandle = (build.source_handle_at_fork ?? "").trim();
+  const chips = partCategories(build.nodes);
+
+  return (
+    <div data-ui="build-card" data-card-layout="row" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <PictureLamp state={plaqueState(plaqueBuild, now)} />
+      <article
+        aria-labelledby={titleId}
+        data-visual-slot="gallery-card"
+        data-build-shape={build.shape ?? "other"}
+        data-card-layout="row"
+        data-gap={bounty ? "" : undefined}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          width: "100%",
+          padding: "12px 12px 18px",
+          boxSizing: "border-box",
+          background: t.glass,
+          borderRadius: r.card,
+          boxShadow: t.shadowCard,
+          color: t.text,
+          ...(bounty
+            ? gapEdge("card")
+            : { borderWidth: 1, borderStyle: "solid", borderColor: lit ? t.text2 : t.glassBorder }),
+          transition: feedback("border-color"),
+        }}
+      >
+        <div
+          data-card-part="cover"
+          style={{ position: "relative", aspectRatio: "2 / 1", borderRadius: r.media, overflow: "hidden" }}
+        >
+          <Cover build={build} srcByPath={srcByPath} />
+          {build.shape ? (
+            <span
+              data-ui="shape-tag"
+              style={{
+                position: "absolute",
+                top: 8,
+                left: 8,
+                background: t.mediaTag,
+                color: t.text,
+                fontFamily: DM_MONO,
+                fontSize: 11,
+                lineHeight: "normal",
+                padding: "2px 6px",
+                borderRadius: r.chip,
+              }}
+            >
+              {build.shape}
+            </span>
+          ) : null}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0, padding: "0 4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+            <h3 id={titleId} data-card-part="title" style={{ ...display(phone ? 22 : 24), textWrap: "balance", margin: 0, color: t.text }}>
+              <Link to={`/b2/${build.slug}`} style={{ color: "inherit", textDecoration: "none" }}>
+                {/* The stretched box: the whole card is this link's target. */}
+                <span aria-hidden="true" style={{ position: "absolute", inset: 0, borderRadius: r.card }} />
+                {title}
+              </Link>
+            </h3>
+            {outcome ? (
+              <p
+                data-card-part="description"
+                style={{
+                  margin: 0,
+                  fontFamily: FIGTREE,
+                  fontSize: 16,
+                  lineHeight: 1.45,
+                  color: t.text2,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {outcome}
+              </p>
+            ) : null}
+          </div>
+
+          {handle || models || rebuiltFrom ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              {handle || models ? (
+                <div
+                  data-card-part="credit"
+                  data-testid="row-credit"
+                  style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.45, color: t.text2 }}
+                >
+                  {handle ? (
+                    <>
+                      by{" "}
+                      <Link
+                        to={`/profile/${encodeURIComponent(handle)}`}
+                        style={{ position: "relative", zIndex: 1, color: t.text2, textDecoration: "underline", textUnderlineOffset: 2 }}
+                      >
+                        @{handle}
+                      </Link>
+                    </>
+                  ) : null}
+                  {models ? (
+                    <>
+                      {handle ? " · made with " : "Made with "}
+                      <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text }}>{models}</span>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+              {rebuiltFrom ? <CardCredit rebuiltFrom={rebuiltFrom} by={sourceHandle ? `@${sourceHandle}` : null} /> : null}
+            </div>
+          ) : null}
+
+          <Plaque build={plaqueBuild} size="card" trailing={<Rebuilds count={build.rebuild_count ?? 0} />} now={now} />
+
+          {chips.length > 0 ? (
+            <div data-card-part="chips" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {chips.map((category) => (
+                <CategoryChip key={category} category={category} label={category} />
+              ))}
+            </div>
+          ) : null}
+
+          {bounty ? (
+            <p
+              data-visual-slot="gap-marker"
+              data-testid="gallery-card-bounty"
+              data-gap-placement="card"
+              data-card-part="reward"
+              style={{
+                margin: 0,
+                fontFamily: DM_MONO,
+                fontSize: 11,
+                lineHeight: "normal",
+                color: t.catBreakage,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {bounty}
+            </p>
+          ) : null}
+        </div>
+      </article>
+    </div>
   );
 }
 

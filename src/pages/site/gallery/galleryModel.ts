@@ -8,7 +8,9 @@ import type { ReactNode } from "react";
 
 import type { PanelFailure } from "@/components/brand/ErrorState";
 import type { PlaqueBuild } from "@/components/brand/Plaque";
-import type { GalleryLens } from "@/lib/build/gallery";
+import type { GalleryFeedRow, GalleryFeedSort, GalleryLens } from "@/lib/build/gallery";
+import { plaqueBuildFor, type ModelProof } from "@/lib/build/signals";
+import type { ModelVersion } from "@/lib/models/registry";
 
 /* ── numbers ── */
 
@@ -139,4 +141,65 @@ export interface GalleryWallState {
   onRetry: () => void;
   /** The real error behind `status: "error"`; logged once by the panel, never shown. */
   error?: unknown;
+}
+
+/* ── UI-P49: the feed ── */
+
+/** The sort menu, in order: the label, and whether it reads " on {model}" when a model is chosen. */
+export const FEED_SORT_ITEMS: readonly { value: GalleryFeedSort; label: string; perModel: boolean }[] = [
+  { value: "newest", label: "Newest", perModel: false },
+  { value: "reproduced", label: "Most reproduced", perModel: true },
+  { value: "confirmed", label: "Recently confirmed", perModel: true },
+  { value: "rebuilt", label: "Most rebuilt", perModel: false },
+];
+
+/** The words the count line ends on. */
+export const SORT_WORDS: Record<GalleryFeedSort, string> = {
+  newest: "newest first",
+  reproduced: "most reproduced first",
+  confirmed: "most recently confirmed first",
+  rebuilt: "most rebuilt first",
+};
+
+/** The sort trigger's value: the label without its " on …". */
+export const sortLabel = (sort: GalleryFeedSort): string =>
+  FEED_SORT_ITEMS.find((item) => item.value === sort)?.label ?? "Newest";
+
+/** A sort menu item: "Most reproduced on Sonnet 5.5" when a model is chosen. */
+export function sortItemLabel(item: (typeof FEED_SORT_ITEMS)[number], modelName: string | null): string {
+  return item.perModel && modelName ? `${item.label} on ${modelName}` : item.label;
+}
+
+const builds = (n: number) => `${formatCount(n)} ${n === 1 ? "build" : "builds"}`;
+
+/**
+ * The line under the heading: "128 builds, newest first", or with a model
+ * "41 of 128 builds reproduced on Sonnet 5.5, most reproduced first". Null
+ * while the numbers are not known.
+ */
+export function feedCountLine(
+  sort: GalleryFeedSort,
+  total: number | null,
+  model: { name: string; reproduced: number } | null,
+): string | null {
+  if (total === null) return null;
+  if (!model) return `${builds(total)}, ${SORT_WORDS[sort]}`;
+  return `${formatCount(model.reproduced)} of ${builds(total)} reproduced on ${model.name}, ${SORT_WORDS[sort]}`;
+}
+
+/** The proof a build has on one model, or a zero one: "not yet reproduced" on it. */
+export function proofOn(build: Pick<GalleryFeedRow, "proof">, model: ModelVersion): ModelProof {
+  return (
+    build.proof.find((proof) => proof.modelId === model.id) ?? {
+      modelId: model.id,
+      modelName: model.name,
+      worked: 0,
+      lastConfirmedAt: null,
+    }
+  );
+}
+
+/** A feed row and the record its plaque reads: the build's own figures, or the chosen model's. */
+export function feedRowView(build: GalleryFeedRow, model: ModelVersion | null): { build: GalleryFeedRow; plaque: PlaqueBuild } {
+  return { build, plaque: plaqueBuildFor(build, model ? proofOn(build, model) : null) };
 }

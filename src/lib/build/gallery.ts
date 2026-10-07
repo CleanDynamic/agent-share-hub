@@ -1084,7 +1084,15 @@ export interface GalleryFeedCounts {
 }
 
 export type GalleryFeed =
-  | { kind: "all"; model: null; rows: GalleryFeedRow[]; hasMore: boolean; counts: GalleryFeedCounts }
+  | {
+      kind: "all";
+      model: null;
+      rows: GalleryFeedRow[];
+      hasMore: boolean;
+      counts: GalleryFeedCounts;
+      /** UI-P49: builds matching the audience and the search (an exact count on the page's own read); null if unknown. */
+      total: number | null;
+    }
   | {
       kind: "model";
       model: ModelVersion;
@@ -1095,6 +1103,9 @@ export type GalleryFeed =
       hasMoreReproducedOn: boolean;
       hasMoreNotYet: boolean;
       counts: GalleryFeedCounts;
+      /** UI-P49: how many builds each list holds under the audience and the search (within the 500 cap). */
+      totalReproducedOn: number;
+      totalNotYet: number;
     };
 
 /** The builder methods the feed calls on a builds query. */
@@ -1338,9 +1349,9 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   if (version === null) {
     const query = withCardEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used`, audience, search), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used`, audience, search, true), params.sort)
     ).range(start, end);
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
 
     const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[];
@@ -1355,7 +1366,14 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
       creatorHandle: handles.get(row.creator_id) ?? null,
       proof: proofs[row.id] ?? [],
     }));
-    return { kind: "all", model: null, rows, hasMore: all.length > FEED_PAGE_SIZE, counts };
+    return {
+      kind: "all",
+      model: null,
+      rows,
+      hasMore: all.length > FEED_PAGE_SIZE,
+      counts,
+      total: typeof count === "number" ? count : null,
+    };
   }
 
   // reproducedOn: candidates from the reproductions, then the gallery's rule on them.
@@ -1411,6 +1429,8 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
     hasMoreReproducedOn: reproduced.length > end,
     hasMoreNotYet: notYet.length > end,
     counts,
+    totalReproducedOn: reproduced.length,
+    totalNotYet: notYet.length,
   };
 }
 

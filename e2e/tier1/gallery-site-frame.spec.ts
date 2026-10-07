@@ -2,10 +2,14 @@
 //
 // IT NEEDS NO AUTH AND NO DATA, like home-site-frame.spec.ts: whatever the
 // gallery query returns (rows, nothing, or a refused read), the page owes the
-// visitor the frame, one h1, the four lenses, the three facet groups on desktop
-// or the Filters sheet on a phone, and a page that does not move sideways at any
-// width the frame supports. The address is the gallery's state, so the spec also
-// walks it: a lens is written to the URL and read back.
+// visitor the frame, one h1, the feed's controls (the Feed | Dashboard switch
+// and three menus on desktop, three chips opening sheets on a phone), and a page
+// that does not move sideways at any width the frame supports. The address is
+// the gallery's state, so the spec also walks it: a view is written to the URL
+// and read back.
+//
+// UI-P49 changed the page on purpose: the lens row, the stats and the facet
+// column are gone, so their assertions are replaced by the feed's.
 //
 // RUNS WITH THE DEV OVERRIDE. `?frame=site` forces the new frame for the browser
 // session (src/lib/shell/flags.ts); the `site_frame` row stays off. The page
@@ -46,48 +50,47 @@ test.describe("/gallery in the site frame", () => {
     await expect(page.locator("main#main").getByTestId("gallery-view")).toBeVisible();
   });
 
-  test("has one h1 and the four lenses", async ({ page }) => {
+  test("has one h1, Gallery, and the feed's controls", async ({ page }) => {
     await open(page);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-    await expect(page.getByRole("heading", { level: 1, name: "Builds worth running" })).toBeVisible();
-    for (const lens of ["All", "Proven", "Rebuilt", "Unsolved"]) {
-      await expect(page.getByRole("button", { name: new RegExp(`^${lens}`) }).first()).toBeVisible();
-    }
+    await expect(page.getByRole("heading", { level: 1, name: "Gallery" })).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: "Search the gallery" })).toBeVisible();
+    for (const menu of ["model", "for", "sort"]) await expect(page.getByTestId(`feed-menu-${menu}`)).toBeVisible();
   });
 
-  test("writes the lens to the address and reads it back", async ({ page }) => {
+  test("writes the view to the address and reads it back; a phone has no switch", async ({ page }) => {
     await open(page);
-    await page.getByRole("button", { name: /^Proven/ }).first().click();
-    await expect(page).toHaveURL(/\/gallery\?lens=proven$/);
-    await expect(page.getByRole("button", { name: /^Proven/ }).first()).toHaveAttribute("aria-pressed", "true");
-
+    const switcher = page.getByRole("radiogroup", { name: "Gallery view" });
+    if (isPhone(page)) {
+      await expect(switcher).toHaveCount(0);
+      return;
+    }
+    await switcher.getByRole("radio", { name: "Dashboard" }).click();
+    await expect(page).toHaveURL(/\/gallery\?view=dashboard$/);
     await page.reload();
     await expect(page.getByTestId("gallery-view")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Proven/ }).first()).toHaveAttribute("aria-pressed", "true");
+    await expect(switcher.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
   });
 
-  test("offers the facets: three groups on desktop, a Filters sheet on a phone", async ({ page }) => {
+  test("offers the sort: a dropdown on desktop, a sheet on a phone", async ({ page }) => {
     await open(page);
+    await page.getByTestId("feed-menu-sort").click();
     if (isPhone(page)) {
-      await page.getByRole("button", { name: /^Filters/ }).click();
-      const sheet = page.getByRole("dialog", { name: "Filters" });
+      const sheet = page.getByRole("dialog", { name: "Sort" });
       await expect(sheet).toBeVisible();
-      for (const label of ["Made for", "Made with", "Shape"]) await expect(sheet.getByText(label, { exact: true })).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(sheet).toHaveCount(0);
+      await sheet.getByRole("menuitemradio", { name: /^Most rebuilt/ }).click();
     } else {
-      for (const group of ["made-for", "made-with", "shape"]) {
-        await expect(page.getByTestId(`gallery-facets-${group}`)).toBeVisible();
-      }
+      await page.getByRole("menuitemradio", { name: /^Most rebuilt/ }).click();
     }
+    await expect(page).toHaveURL(/\/gallery\?sort=rebuilt$/);
   });
 
   test("tidies an address it cannot read, and keeps one it can", async ({ page }) => {
-    await open(page, undefined, "noon", "/gallery?frame=site&lens=trending&shape=toaster");
+    await open(page, undefined, "noon", "/gallery?frame=site&lens=trending&shape=toaster&model=gpt-9");
     await expect(page).toHaveURL(/\/gallery$/);
-    await page.goto("/gallery?shape=agent");
+    await page.goto("/gallery?model=sonnet-5-5&sort=confirmed");
     await expect(page.getByTestId("gallery-view")).toBeVisible();
-    await expect(page).toHaveURL(/\/gallery\?shape=agent$/);
+    await expect(page).toHaveURL(/\/gallery\?model=sonnet-5-5&sort=confirmed$/);
   });
 });
 

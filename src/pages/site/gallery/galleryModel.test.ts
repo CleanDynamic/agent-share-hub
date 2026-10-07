@@ -67,3 +67,22 @@ describe("topOptions", () => {
     expect(options.map((option) => option.value)).toEqual(before);
   });
 });
+
+describe("UI-P49 — the feed's count line and sort labels", () => {
+  it("says how many and in what order, with and without a model", async () => {
+    const { feedCountLine, sortItemLabel, sortLabel, FEED_SORT_ITEMS } = await import("./galleryModel");
+    expect(feedCountLine("newest", 128, null)).toBe("128 builds, newest first");
+    expect(feedCountLine("reproduced", 1, null)).toBe("1 build, most reproduced first");
+    expect(feedCountLine("confirmed", 128, { name: "Sonnet 5.5", reproduced: 41 })).toBe(
+      "41 of 128 builds reproduced on Sonnet 5.5, most recently confirmed first",
+    );
+    expect(feedCountLine("rebuilt", null, null)).toBeNull();
+    expect(FEED_SORT_ITEMS.map((item) => sortItemLabel(item, "Sonnet 5.5"))).toEqual([
+      "Newest",
+      "Most reproduced on Sonnet 5.5",
+      "Recently confirmed on Sonnet 5.5",
+      "Most rebuilt",
+    ]);
+    expect(sortLabel("reproduced")).toBe("Most reproduced");
+  });
+});

@@ -130,6 +130,14 @@ describe("listGalleryFeed without a model", () => {
     expect(callsOf(cards, "range")[0].args).toEqual([2 * FEED_PAGE_SIZE, 3 * FEED_PAGE_SIZE]);
   });
 
+  it("UI-P49: counts the matching builds on the page's own read", async () => {
+    respond = (r) => (isCards(r) ? { data: [card("b0")], count: 31 } : { data: [] });
+    const feed = await listGalleryFeed({ sort: "newest", page: 0 });
+    if (feed.kind !== "all") throw new Error("expected the one-list shape");
+    expect(callsOf(requests.filter(isCards)[0], "select")[0].args[1]).toEqual({ count: "exact" });
+    expect(feed.total).toBe(31);
+  });
+
   it("narrows by audience", async () => {
     await listGalleryFeed({ sort: "newest", page: 0, audience: "lawyers" });
     expect(callsOf(requests.filter(isCards)[0], "overlaps")[0].args).toEqual(["made_for", ["lawyers"]]);
@@ -213,6 +221,9 @@ describe("listGalleryFeed with a model", () => {
     expect(feed.notYet.map((r) => r.id)).toEqual(["c", "d"]);
     expect(feed.hasMoreReproducedOn).toBe(false);
     expect(feed.hasMoreNotYet).toBe(false);
+    // UI-P49: each list says how many it holds, for its heading.
+    expect(feed.totalReproducedOn).toBe(2);
+    expect(feed.totalNotYet).toBe(2);
     expect(feed.reproducedOn[0].proof[0]).toMatchObject({ modelId: "opus-5-5", worked: 2 });
   });
 

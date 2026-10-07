@@ -46,6 +46,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   home: lazy(() => import("./HomeDemo")),
   /* UI-P28 — Gallery. */
   gallery: lazy(() => import("./GalleryDemo")),
+  /* UI-P49 — the Gallery feed (no board is compared). */
+  "gallery-feed": lazy(() => import("./GalleryFeedDemo")),
   /* UI-P29 — the Build page's first screen. */
   build: lazy(() => import("./BuildDemo")),
   /* UI-P31 — Rebuild, and the lineage page built from the same pieces (no board). */
