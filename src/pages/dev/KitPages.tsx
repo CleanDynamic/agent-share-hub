@@ -86,6 +86,9 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
+  /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
+  gallery: [{ label: "Home", href: "/" }, { label: "Gallery" }],
+  "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],

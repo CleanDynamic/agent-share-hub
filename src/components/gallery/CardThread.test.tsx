@@ -449,7 +449,8 @@ describe("a video in the thread", () => {
     const { container } = renderThread({ rows: [recording], srcByPath: posterSigned });
     const mark = container.querySelector('[data-card-mark="play"]') as HTMLElement;
     expect(mark).not.toBeNull();
-    expect(mark.style.width).toBe("48px");
+    // UI-P52 density pass: the 48px mark renders 39.
+    expect(mark.style.width).toBe("39px");
     expect(mark.style.borderRadius).toBe("var(--r-control)");
   });
 

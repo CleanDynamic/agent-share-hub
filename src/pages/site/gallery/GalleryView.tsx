@@ -15,7 +15,15 @@
 
    EVERY COLOUR IS A TOKEN, and `line-height: normal` is written wherever the
    reference sets none — the app's body leading is looser and these boxes are
-   measured in pixels. */
+   measured in pixels.
+
+   DENSER SINCE UI-P56. Every size this file sets itself is the tightened board's
+   (`design/prompts/README-density.md`): the wall 10 apart, facet rows 19 tall
+   and 4 apart, the header's gaps 14 / 6 / 7 and its intro at 12px. The brand
+   pieces it renders (Panel, Button, Segmented, display()) still take the drawn
+   size and map it themselves. One value keeps its old number on purpose: the
+   stacked featured plate's 104px left padding, which clears the 78px rank square
+   — the table keeps the square's place and size, so its clearance stays too. */
 
 import { Fragment, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Check, Search, SlidersHorizontal } from "lucide-react";
@@ -121,7 +129,7 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
 /** The desktop wall's columns at each width tier (UI-P39): 4 from 1280, 3 to 1024, 2 below. */
 const WALL_COLUMNS: Record<WidthTier, 2 | 3 | 4> = { full: 4, split: 3, stacked: 2 };
 
-/** The wall's grid: desktop columns of cards 14 apart, two rows of 250 on the board and rows that grow with their cards elsewhere; the phone's two. */
+/** The wall's grid: desktop columns of cards 10 apart, two rows of 250 on the board and rows that grow with their cards elsewhere; the phone's two. */
 function wallGrid(columns: 2 | 3 | 4, board: boolean, phone = false): CSSProperties {
   return !phone
     ? {
@@ -129,9 +137,9 @@ function wallGrid(columns: 2 | 3 | 4, board: boolean, phone = false): CSSPropert
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gridTemplateRows: board ? `${ROW}px ${ROW}px` : undefined,
         gridAutoRows: board ? undefined : `minmax(${ROW}px, auto)`,
-        gap: 14,
+        gap: 10,
       }
-    : { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "6px 10px" };
+    : { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "4px 7px" };
 }
 
 /* ── the header ── */
@@ -168,7 +176,7 @@ function StatsFailed({ failure, phone }: { failure: PanelFailure; phone: boolean
       style={{
         minHeight: phone ? 169 : 84,
         boxSizing: "border-box",
-        padding: "12px 14px",
+        padding: "9px 10px",
         borderRadius: r.control,
         border: `1px solid ${t.line}`,
         display: "flex",
@@ -251,8 +259,8 @@ function StatsLabel({ stats, columns, failure }: { stats: GalleryStatsView | nul
 
 function QueryLine({ query, onSearch }: { query: string; onSearch: (query: string | null) => void }) {
   return (
-    <div data-testid="gallery-query" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
+    <div data-testid="gallery-query" style={{ display: "flex", alignItems: "center", gap: 7 }}>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
         Results for “{query}”
       </span>
       <Button variant="secondary" size={28} fontSize={11} onClick={() => onSearch(null)}>
@@ -275,7 +283,7 @@ function FacetButton({ row, height, fontSize, countSize }: { row: FacetGroupView
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
+        gap: 6,
         height,
         width: "100%",
         padding: 0,
@@ -323,10 +331,10 @@ function MiniBar({ percent }: { percent: number }) {
   );
 }
 
-/** A facet row before it has arrived: the row's own height (23 on the desktop column, 44 in the phone's sheet) with a name, a bar and a count. */
+/** A facet row before it has arrived: the row's own height (19 on the desktop column, 44 in the phone's sheet) with a name, a bar and a count. */
 function FacetRowSkeleton({ phone }: { phone: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, height: phone ? 44 : 23 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, height: phone ? 44 : 19 }}>
       <Skeleton width="auto" height={phone ? 14 : 12} style={{ flex: "0 1 110px", minWidth: 0 }} />
       <span style={{ flexGrow: 1 }} />
       {phone ? null : <Skeleton width={44} height={4} radius={2} />}
@@ -353,7 +361,7 @@ function FacetGroupBody({ group, phone }: { group: FacetGroupView; phone: boolea
       <LoadingRegion
         what={`${group.label.toLowerCase()} filters`}
         data-testid={`gallery-facets-${group.key}-loading`}
-        style={{ display: "flex", flexDirection: "column", gap: phone ? 0 : 6 }}
+        style={{ display: "flex", flexDirection: "column", gap: phone ? 0 : 4 }}
       >
         {Array.from({ length: FACET_SKELETON_ROWS[group.key] }, (_, i) => (
           <FacetRowSkeleton key={i} phone={phone} />
@@ -367,7 +375,7 @@ function FacetGroupBody({ group, phone }: { group: FacetGroupView; phone: boolea
     <>
       {group.rows.map((row) =>
         phone ? (
-          <FacetButton key={row.value} row={row} height={44} fontSize={14} countSize={11} />
+          <FacetButton key={row.value} row={row} height={44} fontSize={13} countSize={11} />
         ) : (
           <DesktopFacetRow key={row.value} row={row} percent={Math.round((row.count / max) * 100)} />
         ),
@@ -388,7 +396,7 @@ function FacetColumn({ groups }: { groups: readonly FacetGroupView[] }) {
           <div
             key={group.key}
             data-testid={`gallery-facets-${group.key}`}
-            style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 0", borderBottom: `1px solid ${t.hairline}` }}
+            style={{ display: "flex", flexDirection: "column", gap: 4, padding: "7px 0", borderBottom: `1px solid ${t.hairline}` }}
           >
             <Eyebrow size={10}>{group.label}</Eyebrow>
             <FacetGroupBody group={group} phone={false} />
@@ -399,7 +407,7 @@ function FacetColumn({ groups }: { groups: readonly FacetGroupView[] }) {
   );
 }
 
-/** One desktop facet row: name, mini bar, count — all one toggle button, 23px tall. */
+/** One desktop facet row: name, mini bar, count — all one toggle button, 19px tall. */
 function DesktopFacetRow({ row, percent }: { row: FacetGroupView["rows"][number]; percent: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
@@ -411,8 +419,8 @@ function DesktopFacetRow({ row, percent }: { row: FacetGroupView["rows"][number]
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        height: 23,
+        gap: 6,
+        height: 19,
         width: "100%",
         padding: 0,
         border: 0,
@@ -450,7 +458,7 @@ function DesktopFacetRow({ row, percent }: { row: FacetGroupView["rows"][number]
 function MoreButton({ wall, phone }: { wall: GalleryWallState; phone: boolean }) {
   if (!wall.hasMore) return null;
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginTop: 14, gridColumn: "1 / -1" }}>
+    <div style={{ display: "flex", justifyContent: "center", marginTop: 10, gridColumn: "1 / -1" }}>
       <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} disabled={wall.loadingMore} onClick={wall.onMore}>
         {wall.loadingMore ? "Loading…" : "Show more"}
       </Button>
@@ -577,7 +585,7 @@ function FeaturedPhone({ featured, now }: { featured: FeaturedView; now?: number
               left: 10,
               background: t.mediaTag,
               color: t.text,
-              ...mono(10, { padding: "3px 8px", borderRadius: r.chip }),
+              ...mono(10, { padding: "3px 6px", borderRadius: r.chip }),
             }}
           >
             {FEATURED_TAG}
@@ -587,16 +595,17 @@ function FeaturedPhone({ featured, now }: { featured: FeaturedView; now?: number
           style={{
             background: t.inverse,
             color: t.onInverse,
-            padding: "18px 18px 18px 104px",
+            /* 13 all round, as the board; the left keeps 104 to clear the rank square (14 + 78 + 12), which the table neither moves nor shrinks. */
+            padding: "13px 13px 13px 104px",
             display: "flex",
             flexDirection: "column",
-            gap: 8,
+            gap: 6,
             minHeight: 120,
             boxSizing: "border-box",
           }}
         >
           <div style={{ ...display(26), textWrap: "wrap", color: "inherit" }}>{featured.title}</div>
-          <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.45, color: t.onInverse2 }}>{featured.outcome}</div>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.45, color: t.onInverse2 }}>{featured.outcome}</div>
           <Plaque build={featured.build} size="card" tone="inverse" now={now} />
         </div>
         <div
@@ -643,29 +652,29 @@ function DesktopGallery(props: GalleryViewProps) {
     <div
       data-testid="gallery-view"
       data-viewport="desktop"
-      style={{ display: "flex", flexDirection: "column", gap: 12, ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: 9, ...boardHeight(fit) }}
     >
       <div style={{ flexShrink: 0 }}>
         <Panel surface="glass" padding="18px 20px">
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
               <Eyebrow>Gallery</Eyebrow>
               <h1 style={{ ...display(50), margin: 0, color: t.text }}>Builds worth running</h1>
-              <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, maxWidth: 560, lineHeight: 1.5 }}>{INTRO_DESKTOP}</div>
+              <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, maxWidth: 560, lineHeight: 1.5 }}>{INTRO_DESKTOP}</div>
               {query ? <QueryLine query={query} onSearch={onSearch} /> : null}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, alignItems: "flex-end" }}>
               <LensControl lens={lens} counts={lensCounts} onChange={onLensChange} />
               <span style={mono(11, { color: t.label })}>{ORDER_NOTE}</span>
             </div>
           </div>
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 10 }}>
             <StatsLabel stats={stats} columns={4} failure={statsError} />
           </div>
         </Panel>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: showFacets && !stacked ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <div style={{ display: "grid", gridTemplateColumns: showFacets && !stacked ? "230px minmax(0, 1fr)" : "minmax(0, 1fr)", gap: 9, flexGrow: 1, minHeight: 0 }}>
         {showFacets ? (
           <div style={{ minHeight: 0 }}>
             <FacetColumn groups={facets} />
@@ -717,9 +726,9 @@ function SearchField({ query, onSearch }: { query: string | null; onSearch: (que
         minWidth: 0,
         display: "flex",
         alignItems: "center",
-        gap: 8,
+        gap: 6,
         height: 44,
-        padding: "0 12px",
+        padding: "0 9px",
         borderRadius: r.control,
         background: t.field,
         border: `1px solid ${t.line}`,
@@ -764,7 +773,7 @@ function PhoneGallery(props: GalleryViewProps) {
   const showFacets = drawn(facets).length > 0;
 
   return (
-    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       <PageHeading eyebrow="Gallery" title="Builds worth running" sub={INTRO_PHONE} size={36} />
 
       <ScrollRow gap={6} label="Lens">
@@ -779,7 +788,7 @@ function PhoneGallery(props: GalleryViewProps) {
         ))}
       </ScrollRow>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 6 }}>
         <SearchField query={query} onSearch={onSearch} />
         {showFacets ? (
           <Button variant="secondary" size={44} fontSize={13} icon={SlidersHorizontal} onClick={() => setSheet(true)}>

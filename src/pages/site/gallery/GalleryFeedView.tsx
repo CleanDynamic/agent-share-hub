@@ -6,7 +6,7 @@
    (/dev/kit/pages/gallery-feed) supplies the fixture. The viewport is read here
    (the 768px breakpoint) so both agree.
 
-   DESKTOP: one column, max-width 680, centred, gap 16 — the heading row (the
+   DESKTOP: one column, max-width 680, centred, gap 12 — the heading row (the
    title and the count line, the Feed | Dashboard switch), the controls (search,
    Model, Made for, Sort), the active filters, then the list: one, or with a
    model two sections, `reproducedOn` then `notYet`, each paging on its own.
@@ -17,7 +17,14 @@
    callback the page answers by writing the address. The view owns only what is
    in flight: the search text before its 300ms debounce, and which sheet is open.
 
-   EVERY COLOUR IS A TOKEN. The cards are `GalleryCard layout="row"`. */
+   EVERY COLOUR IS A TOKEN. The cards are `GalleryCard layout="row"`.
+
+   DENSER SINCE UI-P56. No board draws the feed, so every size this file sets
+   itself is its old value through the density table
+   (`design/prompts/README-density.md`): the column 12 apart, the controls 6, the
+   field 33 tall (44 on a phone, the touch target), menu rows 31 at 13px (44 at
+   15px in a phone's sheet). The brand pieces it renders (Button, Segmented,
+   display()) take the drawn size and map it themselves. */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, ChevronDown, Search, X } from "lucide-react";
@@ -223,7 +230,7 @@ function NewBadge() {
   return (
     <span
       data-testid="model-new"
-      style={mono(11, { padding: "0 6px", borderRadius: 6, background: t.lit, color: t.onLit, flexShrink: 0 })}
+      style={mono(11, { padding: "0 4px", borderRadius: 6, background: t.lit, color: t.onLit, flexShrink: 0 })}
     >
       new
     </span>
@@ -259,7 +266,7 @@ export const groupHeading: CSSProperties = mono(11, {
   color: t.label,
   textTransform: "uppercase",
   letterSpacing: ".08em",
-  padding: "10px 10px 4px",
+  padding: "7px 7px 4px",
 });
 
 /* ── desktop: the dropdowns ── */
@@ -268,7 +275,7 @@ export const menuContent: CSSProperties = {
   width: 260,
   maxHeight: "min(70vh, 520px)",
   overflowY: "auto",
-  padding: 6,
+  padding: 4,
   boxSizing: "border-box",
   borderRadius: r.panel,
   background: t.solid,
@@ -281,12 +288,12 @@ export const menuContent: CSSProperties = {
 export const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 8,
-  height: 38,
-  padding: "0 10px",
+  gap: 6,
+  height: 31,
+  padding: "0 7px",
   borderRadius: 10,
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   cursor: "pointer",
   outline: "none",
 };
@@ -354,12 +361,13 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
                 }}
                 style={{
                   ...menuItem,
-                  height: 48,
+                  /* 48 drawn: the table's 39, held at 44 on a phone, the touch target. */
+                  height: 44,
                   width: "100%",
                   border: 0,
                   background: "transparent",
                   textAlign: "left",
-                  fontSize: 16,
+                  fontSize: 15,
                 }}
               >
                 <OptionBody option={option} />
@@ -385,7 +393,7 @@ export function SearchField({
   onSearch: (query: string | null) => void;
   phone: boolean;
   autoFocus?: boolean;
-  /** UI-P50: the dashboard's field is a fixed 260 × 38 instead of filling its row. */
+  /** UI-P50: the dashboard's field is a fixed size (220 × 30 since UI-P56) instead of filling its row. */
   size?: { width: number; height: number };
 }) {
   const [text, setText] = useState(query ?? "");
@@ -424,14 +432,18 @@ export function SearchField({
         minWidth: 0,
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        height: size?.height ?? (phone ? 44 : 40),
-        padding: "0 12px",
+        gap: 6,
+        /* 40 drawn, 33 through the table; a phone keeps its 44, the touch target. */
+        height: size?.height ?? (phone ? 44 : 33),
+        padding: "0 9px",
         boxSizing: "border-box",
         borderRadius: r.control,
         background: t.field,
         border: `1px solid ${t.line}`,
         color: t.text2,
+        /* Set on the field, not only the input: above 768px index.css makes an input inherit its size. */
+        fontFamily: FIGTREE,
+        fontSize: phone ? 16 : 13,
       }}
     >
       <Search size={15} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
@@ -460,7 +472,7 @@ export function SearchField({
           height: "100%",
           fontFamily: FIGTREE,
           /* 16 on a phone, the iOS minimum: anything smaller zooms the page on focus. */
-          fontSize: phone ? 16 : 14,
+          fontSize: phone ? 16 : 13,
           color: t.text,
         }}
       />
@@ -482,7 +494,7 @@ function ActiveFilters(props: GalleryFeedViewProps) {
   if (chips.length === 0) return null;
 
   return (
-    <div data-testid="feed-active-filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    <div data-testid="feed-active-filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
       {chips.map((chip) => (
         <Button key={chip.key} variant="secondary" size={30} fontSize={12} aria-label={`Remove ${chip.label}`} onClick={chip.onRemove}>
           {chip.label}
@@ -501,7 +513,7 @@ function ActiveFilters(props: GalleryFeedViewProps) {
 function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView; srcByPath: MediaSrcMap; viewerId: string | null; now?: number }) {
   return (
     <>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
         {section.rows.map(({ build, plaque }) => (
           <li key={build.id} style={{ minWidth: 0 }}>
             <GalleryCard
@@ -530,7 +542,7 @@ function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView;
 
 function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <h2 id={id} style={mono(12, { margin: "16px 0 0", color: t.label, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 400 })}>
+    <h2 id={id} style={mono(12, { margin: "12px 0 0", color: t.label, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 400 })}>
       {children}
     </h2>
   );
@@ -538,22 +550,23 @@ function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
 
 function ListSkeleton() {
   return (
-    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {Array.from({ length: 3 }, (_, i) => (
+        /* 18 is the picture lamp's height, which the table keeps, so the bones line up with the card that replaces them. */
         <div key={i} style={{ paddingTop: 18 }}>
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 14,
-              padding: "12px 12px 18px",
+              gap: 10,
+              padding: "9px 9px 13px",
               borderRadius: r.card,
               background: t.glass,
               border: `1px solid ${t.glassBorder}`,
             }}
           >
             <Skeleton height="auto" radius={r.media} style={{ aspectRatio: "2 / 1" }} />
-            <Skeleton width="60%" height={26} />
+            <Skeleton width="60%" height={21} />
             <Skeleton width="90%" height={16} />
             <Skeleton width="45%" height={14} />
           </div>
@@ -565,11 +578,11 @@ function ListSkeleton() {
 
 function EmptyFeed({ query, onClearAll, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
   return (
-    <div data-testid="gallery-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 14, padding: "24px 0" }}>
+    <div data-testid="gallery-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "17px 0" }}>
       <p style={{ ...display(22), margin: 0, color: t.text }}>
         {query ? `Nobody has hung a build for “${query}” yet.` : "No builds match these filters yet."}
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         <Button variant="secondary" size={42} fontSize={14} onClick={() => onNavigate("/bounties")}>
           Ask for it on Bounties
         </Button>
@@ -587,7 +600,7 @@ function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
   if (status === "loading") return <ListSkeleton />;
   if (status === "error") {
     return (
-      <div data-testid="gallery-notice" style={{ padding: "16px 0" }}>
+      <div data-testid="gallery-notice" style={{ padding: "12px 0" }}>
         <ErrorState
           line={errorKind === "permission" ? "You don't have access to this." : undefined}
           panel="The gallery"
@@ -605,21 +618,21 @@ function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
   const rowProps = { srcByPath, viewerId, now };
 
   return (
-    <div data-testid="gallery-feed" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div data-testid="gallery-feed" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {aboveList}
       {list.kind === "all" ? (
-        <section aria-label="Builds" data-testid="feed-section-all" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <section aria-label="Builds" data-testid="feed-section-all" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Rows section={list.list} {...rowProps} />
         </section>
       ) : (
         <>
-          <section aria-labelledby="feed-reproduced-on" data-testid="feed-section-reproduced" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <section aria-labelledby="feed-reproduced-on" data-testid="feed-section-reproduced" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <SectionHeading id="feed-reproduced-on">
               Reproduced on {model?.name ?? ""} · {formatCount(list.reproducedOn.total ?? list.reproducedOn.rows.length)}
             </SectionHeading>
             <Rows section={list.reproducedOn} {...rowProps} />
           </section>
-          <section aria-labelledby="feed-not-yet" data-testid="feed-section-not-yet" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <section aria-labelledby="feed-not-yet" data-testid="feed-section-not-yet" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <SectionHeading id="feed-not-yet">
               Not yet reproduced on {model?.name ?? ""} · {formatCount(list.notYet.total ?? list.notYet.rows.length)}
             </SectionHeading>
@@ -646,10 +659,10 @@ function countLineOf(props: GalleryFeedViewProps): string | null {
 function Heading({ props, phone }: { props: GalleryFeedViewProps; phone: boolean }) {
   const line = countLineOf(props);
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
         <h1 style={{ ...display(phone ? 36 : 44, { mobilePageHeading: phone }), margin: 0, color: t.text }}>Gallery</h1>
-        <p data-testid="feed-count" style={{ margin: 0, minHeight: 22, fontFamily: FIGTREE, fontSize: 15, lineHeight: 1.45, color: t.text2 }}>
+        <p data-testid="feed-count" style={{ margin: 0, minHeight: 18, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.45, color: t.text2 }}>
           {line ?? " "}
         </p>
       </div>
@@ -677,9 +690,9 @@ function DesktopFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   return (
     <div data-testid="gallery-view" data-viewport="desktop" style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 680, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 680, minWidth: 0 }}>
         <Heading props={props} phone={false} />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           <SearchField query={props.query} onSearch={props.onSearch} phone={false} autoFocus={props.autoFocusSearch} />
           {menus.map((menu) => (
             <DesktopMenu key={menu.key} menu={menu} />
@@ -696,7 +709,7 @@ function PhoneFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   const [open, setOpen] = useState<FeedMenu["key"] | null>(null);
   return (
-    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
       <Heading props={props} phone />
       <SearchField query={props.query} onSearch={props.onSearch} phone autoFocus={props.autoFocusSearch} />
       <ScrollRow gap={6} label="Filter the gallery">
