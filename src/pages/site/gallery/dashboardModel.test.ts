@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
+import { makerRows, modelRows } from "@/lib/build/dashboardAggregates";
 import { LABS } from "@/lib/models/registry";
 
 import {
@@ -13,11 +14,15 @@ import {
   engagementTitle,
   filterDashboardRows,
   modelNamesOf,
+  modelShares,
   pillText,
   shortDate,
   sortDashboardRows,
+  sortMakerRows,
+  sortModelRows,
   sparkValues,
   sumOfPrompts,
+  windowTotal,
 } from "./dashboardModel";
 
 const rows = DASHBOARD_FIXTURE_ROWS;
@@ -131,7 +136,7 @@ describe("the sidebar's counts", () => {
 
   it("counts the two reporting toggles", () => {
     expect(counts.activeThisMonth).toBe(6);
-    expect(counts.multiSession).toBe(5);
+    expect(counts.multiSession).toBe(4);
   });
 
   it("counts audiences, most builds first", () => {
@@ -162,8 +167,8 @@ describe("cells and the footer", () => {
   });
 
   it("sums prompts and averages sessions to one decimal", () => {
-    expect(sumOfPrompts(rows)).toBe(164);
-    expect(averageSessions(rows)).toBe("2.9");
+    expect(sumOfPrompts(rows)).toBe(161);
+    expect(averageSessions(rows)).toBe("2.8");
     expect(averageSessions([])).toBe("0.0");
   });
 
@@ -171,5 +176,55 @@ describe("cells and the footer", () => {
     expect(pillText("opus-5-5", null)).toBe("Made with Opus 5.5");
     expect(pillText(null, "Google")).toBe("Google models");
     expect(pillText(null, null)).toBe("All models");
+  });
+});
+
+describe("the Models and Makers tabs", () => {
+  it("orders models by prompts, then builds, and leaves an unlisted model for last", () => {
+    const list = sortModelRows(modelRows(rows), null);
+    for (let i = 1; i < list.length; i += 1) {
+      expect(list[i - 1].prompts >= list[i].prompts).toBe(true);
+    }
+    const odd = rows.map((row, index) =>
+      index === 0 ? { ...row, making: { sessions: [{ client: "X", model: "mystery-1", prompts: 999, turns: 1 }] } } : row,
+    );
+    const last = sortModelRows(modelRows(odd), null).at(-1);
+    expect(last).toMatchObject({ modelId: null, modelName: "mystery-1", lab: null });
+  });
+
+  it("applies the lab filter and drops models without one", () => {
+    const list = sortModelRows(modelRows(rows), "Google");
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((row) => row.lab === "Google")).toBe(true);
+  });
+
+  it("orders makers by engagement, largest first", () => {
+    const list = sortMakerRows(makerRows(rows));
+    expect(list.map((row) => row.creator.handle).slice(0, 3)).toEqual(["dana", "kofi", "maria"]);
+  });
+});
+
+describe("the detail sheet's figures", () => {
+  const photo = rows.find((row) => row.title === "Photo renamer by date taken")!;
+
+  it("totals the newest weeks of the series: 1, 4 and 13 for 7, 30 and 90 days", () => {
+    expect(windowTotal(photo.series, 7)).toBe(2);
+    expect(windowTotal(photo.series, 30)).toBe(8);
+    expect(windowTotal(photo.series, 90)).toBe(14);
+  });
+
+  it("shares a build's prompts between its models", () => {
+    const shares = modelShares(photo);
+    expect(shares.map((entry) => [entry.name, entry.prompts])).toEqual([
+      ["Sonnet 5.5", 9],
+      ["Opus 5.5", 5],
+    ]);
+    expect(shares[0].share).toBeCloseTo(9 / 14);
+    expect(modelShares({ making: { sessions: [] } })).toEqual([]);
+  });
+
+  it("carries the sheet's fixture figures", () => {
+    expect(photo.engagement).toEqual({ runs: 14, rebuilds: 3, comments: 6, saves: 21, total: 44 });
+    expect(photo.reproduction_count).toBe(11);
   });
 });

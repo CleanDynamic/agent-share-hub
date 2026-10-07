@@ -9,7 +9,6 @@
    the same. */
 
 import type { DashboardRow } from "@/lib/build/gallery";
-import { normaliseModel } from "@/lib/models/registry";
 
 export const DASHBOARD_FIXTURE_NOW = Date.parse("2026-10-07T12:00:00Z");
 
@@ -28,6 +27,16 @@ interface Seed {
   /** [date, what] */
   last: [string, string];
   series: number[];
+  /** UI-P51: the figures the sheet shows for a build whose detail is spelled out. */
+  detail?: {
+    sessions: { client: string; model: string; prompts: number; turns: number }[];
+    comments: number;
+    saves: number;
+    /** Reproductions (the plaque), which are not the same as runs. */
+    reproduced: number;
+    /** [days before DASHBOARD_FIXTURE_NOW, model name] */
+    confirmed: [number, string];
+  };
 }
 
 const SEEDS: Seed[] = [
@@ -65,13 +74,23 @@ const SEEDS: Seed[] = [
     handle: "maria",
     models: ["Sonnet 5.5", "Opus 5.5"],
     madeFor: ["Photographers"],
-    sessions: 3,
-    prompts: 17,
-    turns: 58,
-    runs: 11,
+    sessions: 2,
+    prompts: 14,
+    turns: 50,
+    runs: 14,
     rebuilds: 3,
     last: ["2026-10-02", "Rebuilt by @sam"],
     series: [0, 0, 1, 0, 1, 1, 0, 2, 1, 0, 2, 1, 3, 2],
+    detail: {
+      sessions: [
+        { client: "Claude Code", model: "Sonnet 5.5", prompts: 9, turns: 38 },
+        { client: "Claude", model: "Opus 5.5", prompts: 5, turns: 12 },
+      ],
+      comments: 6,
+      saves: 21,
+      reproduced: 11,
+      confirmed: [3, "Sonnet 5.5"],
+    },
   },
   {
     n: 4,
@@ -176,8 +195,19 @@ const SEEDS: Seed[] = [
 const id = (n: number) => `00000000-0000-4000-8000-${String(200 + n).padStart(12, "0")}`;
 const creator = (n: number) => `00000000-0000-4000-8000-${String(800 + n).padStart(12, "0")}`;
 
+/** The short names the dev page's address uses: /dev/kit/pages/gallery-dashboard?build=photo. */
+export const DASHBOARD_FIXTURE_ALIASES: Record<string, string> = { photo: id(3) };
+
+const DAY = 86_400_000;
+
 function row(seed: Seed): DashboardRow {
-  const total = seed.runs + seed.rebuilds;
+  const detail = seed.detail;
+  const comments = detail?.comments ?? 0;
+  const saves = detail?.saves ?? 0;
+  const total = seed.runs + seed.rebuilds + comments + saves;
+  const confirmedAt = detail
+    ? new Date(DASHBOARD_FIXTURE_NOW - detail.confirmed[0] * DAY).toISOString()
+    : `${seed.last[0]}T09:00:00Z`;
   const perSession = (value: number, index: number) =>
     index === seed.sessions - 1 ? value - Math.floor(value / seed.sessions) * (seed.sessions - 1) : Math.floor(value / seed.sessions);
   return {
@@ -192,21 +222,23 @@ function row(seed: Seed): DashboardRow {
     promptCount: seed.prompts,
     aiTurnCount: seed.turns,
     making: {
-      sessions: Array.from({ length: seed.sessions }, (_, index) => ({
-        client: "Claude",
-        model: seed.models[index % seed.models.length],
-        prompts: perSession(seed.prompts, index),
-        turns: perSession(seed.turns, index),
-      })),
+      sessions:
+        detail?.sessions ??
+        Array.from({ length: seed.sessions }, (_, index) => ({
+          client: "Claude",
+          model: seed.models[index % seed.models.length],
+          prompts: perSession(seed.prompts, index),
+          turns: perSession(seed.turns, index),
+        })),
     },
-    reproduction_count: seed.runs,
-    last_confirmed_at: `${seed.last[0]}T09:00:00Z`,
-    last_confirmed_model: normaliseModel(seed.models[0])?.id ?? null,
+    reproduction_count: detail?.reproduced ?? seed.runs,
+    last_confirmed_at: confirmedAt,
+    last_confirmed_model: detail?.confirmed[1] ?? seed.models[0],
     published_at: `${seed.last[0]}T09:00:00Z`,
     status: "gallery",
     shape: "app",
     completeness: 95,
-    engagement: { runs: seed.runs, rebuilds: seed.rebuilds, comments: 0, saves: 0, total },
+    engagement: { runs: seed.runs, rebuilds: seed.rebuilds, comments, saves, total },
     lastActivity: { at: `${seed.last[0]}T09:00:00Z`, what: seed.last[1] },
     series: seed.series,
     proof: [],

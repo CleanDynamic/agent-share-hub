@@ -5,11 +5,14 @@
    work: the demo holds the state the live page keeps in its address and runs the
    fixture through the same filter, sort and CSV functions, so the sidebar, the
    toolbar, the footer and Export can all be checked here in both themes. The
-   dashboard is desktop only: the mobile viewport shows the feed's demo. */
+   dashboard is desktop only: the mobile viewport shows the feed's demo.
+
+   UI-P51: ?build=photo opens the detail sheet on "Photo renamer by date taken". */
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
-import { DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
+import { DASHBOARD_FIXTURE_ALIASES, DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
 import type { DashboardActive, DashboardReport, DashboardSort, DashboardTab } from "@/lib/build/galleryParams";
 import type { Lab } from "@/lib/models/registry";
 import { LABS } from "@/lib/models/registry";
@@ -31,6 +34,10 @@ export default function GalleryDashboardDemo(props: DesignPageProps) {
   const [active, setActive] = useState<DashboardActive | null>(null);
   const [sort, setSort] = useState<DashboardSort>("engagement");
   const [query, setQuery] = useState<string | null>(null);
+  /* ?build=photo (or a fixture id) opens the sheet at once, so it can be checked in both themes. */
+  const [searchParams] = useSearchParams();
+  const requested = searchParams.get("build");
+  const [openId, setOpenId] = useState<string | null>(requested ? (DASHBOARD_FIXTURE_ALIASES[requested] ?? requested) : null);
 
   const counts = useMemo(() => dashboardCounts(DASHBOARD_FIXTURE_ROWS, LABS, DASHBOARD_FIXTURE_NOW), []);
   const rows = useMemo(
@@ -82,7 +89,14 @@ export default function GalleryDashboardDemo(props: DesignPageProps) {
       }}
       drafts={{ count: 3 }}
       onConnect={noop}
-      onOpenBuild={noop}
+      onOpenBuild={(row) => setOpenId(row.id)}
+      onCloseBuild={() => setOpenId(null)}
+      openId={openId}
+      onOpenModel={(id) => {
+        setModel(id);
+        setLab(null);
+        setTab("builds");
+      }}
     />
   );
 }

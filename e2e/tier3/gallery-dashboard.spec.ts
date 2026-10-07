@@ -1,4 +1,4 @@
-// UI-P50 — the Gallery dashboard, in a real browser.
+// UI-P50, UI-P51 — the Gallery dashboard, in a real browser.
 //
 // THE BACKEND IS FAKED (support/galleryFeedBackend.ts). It answers every builds
 // read with all four builds; the page applies the lab, session and window
@@ -16,10 +16,29 @@ const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1440) < 768;
 
 /** By engagement: CV, Inbox, Photo, Receipt. By prompts: Inbox, Receipt, Photo, CV. */
 const BUILDS: FeedBuild[] = [
-  { n: 1, title: "Photo renamer by date taken", handle: "maria", models: ["claude-sonnet-5-5", "claude-opus-5-5"], proof: { "claude-sonnet-5-5": 5 }, reproductionCount: 11, sessions: 2, prompts: 10, turns: 30 },
-  { n: 2, title: "CV tailored to a job ad", handle: "dana", models: ["gpt-6-astra"], proof: { "gpt-6-astra": 15 }, reproductionCount: 74, sessions: 1, prompts: 4, turns: 10 },
-  { n: 3, title: "Inbox triage for a small shop", handle: "priya", models: ["claude-sonnet-5-5", "gemini-3.8-flash"], proof: { "claude-sonnet-5-5": 9 }, reproductionCount: 52, sessions: 4, prompts: 20, turns: 80 },
-  { n: 4, title: "Receipt photos to an expenses sheet", handle: "sam", models: ["gemini-4-argon"], reproductionCount: 5, sessions: 3, prompts: 12, turns: 40 },
+  {
+    n: 1,
+    title: "Photo renamer by date taken",
+    handle: "maria",
+    models: ["claude-sonnet-5-5", "claude-opus-5-5"],
+    reproductionCount: 11,
+    sessions: 2,
+    prompts: 10,
+    turns: 30,
+    making: [
+      { client: "Claude Code", model: "claude-sonnet-5-5", prompts: 6, turns: 20 },
+      { client: "Claude", model: "claude-opus-5-5", prompts: 4, turns: 10 },
+    ],
+    // Today, 16 days ago (inside 30 days, outside 7) and 40 days ago (inside 90 only): 2, 6 and 9.
+    extraReproductions: [
+      { daysAgo: 0, count: 2 },
+      { daysAgo: 16, count: 4 },
+      { daysAgo: 40, count: 3 },
+    ],
+  },
+  { n: 2, title: "CV tailored to a job ad", handle: "dana", models: ["gpt-6-astra"], proof: { "gpt-6-astra": 15 }, reproductionCount: 74, sessions: 1, prompts: 4, turns: 10, making: [{ client: "Claude", model: "gpt-6-astra", prompts: 4, turns: 10 }] },
+  { n: 3, title: "Inbox triage for a small shop", handle: "priya", models: ["claude-sonnet-5-5", "gemini-3.8-flash"], proof: { "claude-sonnet-5-5": 9 }, reproductionCount: 52, sessions: 4, prompts: 20, turns: 80, making: [{ client: "Claude", model: "claude-sonnet-5-5", prompts: 12, turns: 50 }, { client: "Gemini", model: "gemini-3.8-flash", prompts: 8, turns: 30 }] },
+  { n: 4, title: "Receipt photos to an expenses sheet", handle: "sam", models: ["gemini-4-argon"], reproductionCount: 5, sessions: 3, prompts: 12, turns: 40, making: [{ client: "Gemini", model: "gemini-4-argon", prompts: 12, turns: 40 }] },
 ];
 
 const titles = (page: Page) => page.getByTestId("dash-row").getByRole("button", { name: /^(?!Open details)/ }).allTextContents();
@@ -115,6 +134,77 @@ test("Export downloads gallery-builds.csv with the header row and the rows in vi
   expect(lines[0]).toBe("Title,Maker,Models,Sessions,Prompts,AI turns,Engagement,Last activity");
   expect(lines).toHaveLength(3);
   expect(lines[1]).toMatch(/^Inbox triage for a small shop,priya,Sonnet 5\.5; Gemini 3\.8 Flash,4,20,80,52,/);
+});
+
+test("the Models tab lists the versions by prompts, and clicking one filters Builds", async ({ page }) => {
+  test.skip(isPhone(page), "the dashboard is desktop only");
+  await page.goto("/gallery?view=dashboard&tab=models");
+  const table = page.getByRole("table", { name: "Models" });
+  await expect(table).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Models");
+  await expect.poll(() => page.getByTestId("dash-model-row").evaluateAll((rows) => rows.map((row) => row.querySelectorAll('[role="cell"]')[0].textContent))).toEqual([
+    "Sonnet 5.5new",
+    "Gemini 4 Argon",
+    "Gemini 3.8 Flash",
+    "GPT-6 Astra",
+    "Opus 5.5new",
+  ]);
+
+  await table.getByRole("button", { name: "Opus 5.5" }).click();
+  await expect(page).toHaveURL(/\/gallery\?view=dashboard&model=opus-5-5$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Builds");
+  await expect(page.getByTestId("dash-pill")).toHaveText("Made with Opus 5.5");
+  await expect.poll(() => titles(page)).toEqual(["Photo renamer by date taken"]);
+});
+
+test("the Makers tab orders makers by engagement", async ({ page }) => {
+  test.skip(isPhone(page), "the dashboard is desktop only");
+  await page.goto("/gallery?view=dashboard&tab=makers");
+  await expect(page.getByRole("table", { name: "Makers" })).toBeVisible();
+  await expect.poll(() => page.getByTestId("dash-maker-row").getByRole("link").allTextContents()).toEqual(["@dana", "@priya", "@maria", "@sam"]);
+});
+
+test("clicking a row's title opens the sheet, and Escape closes it and returns focus", async ({ page }) => {
+  test.skip(isPhone(page), "the dashboard is desktop only");
+  await page.goto("/gallery?view=dashboard");
+  const title = page.getByRole("button", { name: "Photo renamer by date taken", exact: true });
+  await title.click();
+
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  await expect(page).toHaveURL(/[?&]build=00000000-0000-4000-8000-000000000101/);
+  await expect(sheet.getByRole("heading", { level: 2 })).toHaveText("Photo renamer by date taken");
+  for (const [label, value] of [["Sessions", "2"], ["AI models", "2"], ["Prompts", "10"], ["AI turns", "30"]]) {
+    await expect(sheet.getByText(label, { exact: true }).first().locator("xpath=..")).toContainText(value);
+  }
+  await expect(sheet.getByTestId("sheet-session")).toHaveCount(2);
+  await expect(sheet.getByRole("link", { name: "Open the build" })).toHaveAttribute("href", "/b2/feed-build-1");
+
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page).not.toHaveURL(/build=/);
+  await expect(title).toBeFocused();
+});
+
+test("?build= opens the sheet directly", async ({ page }) => {
+  test.skip(isPhone(page), "the dashboard is desktop only");
+  await page.goto("/gallery?view=dashboard&build=00000000-0000-4000-8000-000000000102");
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("heading", { level: 2 })).toHaveText("CV tailored to a job ad");
+  await sheet.getByRole("button", { name: "Close details" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page).toHaveURL(/\/gallery\?view=dashboard$/);
+});
+
+test("the 7 / 30 / 90 toggle changes the sheet's total", async ({ page }) => {
+  test.skip(isPhone(page), "the dashboard is desktop only");
+  await page.goto("/gallery?view=dashboard&build=00000000-0000-4000-8000-000000000101");
+  const total = page.getByTestId("sheet-window-total");
+  await expect(total).toHaveText("6");
+  await page.getByRole("button", { name: "7 days" }).click();
+  await expect(total).toHaveText("2");
+  await page.getByRole("button", { name: "90 days" }).click();
+  await expect(total).toHaveText("9");
 });
 
 test("on a phone, view=dashboard shows the feed", async ({ page }) => {

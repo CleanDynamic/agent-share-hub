@@ -24,6 +24,10 @@ export interface FeedBuild {
   sessions?: number;
   prompts?: number;
   turns?: number;
+  /** UI-P51: the sessions the sheet and the Models tab read (builds.making). */
+  making?: { client: string; model: string; prompts: number; turns: number }[];
+  /** UI-P51: reproductions confirmed `daysAgo` days ago, for the engagement window. */
+  extraReproductions?: { daysAgo: number; count: number }[];
 }
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(100 + n).padStart(12, "0")}`;
@@ -46,7 +50,7 @@ export function feedRow(b: FeedBuild): Row {
     session_count: b.sessions ?? 1,
     prompt_count: b.prompts ?? 0,
     ai_turn_count: b.turns ?? 0,
-    making: { sessions: [] },
+    making: { sessions: b.making ?? [] },
     live_url: null,
     repo_url: null,
     hero_node_id: null,
@@ -115,6 +119,12 @@ export async function fakeFeedBackend(page: Page, builds: FeedBuild[] = FEED_BUI
       Array.from({ length: worked }, () => ({ build_id: id(b.n), model_used: model, worked: true, confirmed_at: ago(b.days ?? 3) })),
     ),
   );
+  const later = builds.flatMap((b) =>
+    (b.extraReproductions ?? []).flatMap(({ daysAgo, count }) =>
+      Array.from({ length: count }, () => ({ build_id: id(b.n), model_used: "claude-sonnet-5-5", worked: true, confirmed_at: ago(daysAgo) })),
+    ),
+  );
+  reproductions.push(...later);
   const handles = builds.map((b) => ({ id: creator(b.n), username: b.handle ?? null }));
 
   await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) =>

@@ -148,3 +148,15 @@ describe("the dashboard's parameters (UI-P50)", () => {
     expect(galleryHref(once)).toBe(href);
   });
 });
+
+describe("the detail sheet's parameter (UI-P51)", () => {
+  it("reads build, writes it after dsort and before q, and drops anything that is not an id", () => {
+    const id = "00000000-0000-4000-8000-000000000203";
+    expect(parse(`view=dashboard&build=${id}`).build).toBe(id);
+    expect(galleryHref({ view: "dashboard", dsort: "name", build: id, query: "cv" })).toBe(
+      `/gallery?view=dashboard&dsort=name&build=${id}&q=cv`,
+    );
+    expect(parse("build=a%20b%3Cx").build).toBeUndefined();
+    expect(galleryHref({ build: "a b" })).toBe("/gallery");
+  });
+});
