@@ -11,7 +11,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { TOP_SOLVERS_LIMIT, listTopSolvers, type Solver } from "@/lib/bounty";
 import { isPermissionError } from "@/lib/errors/permission";
-import { SPACE } from "@/lib/theme/space";
+import { SPACE, SPACE_COMPACT } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, data as dataText, tabular } from "@/lib/theme/type";
 
@@ -86,7 +86,7 @@ export default function Solvers() {
        of its own there; on a phone the frame's own 16 is the margin. */
     <div
       data-visual-slot="solvers-frame"
-      style={phone ? { paddingTop: SPACE.sm } : { padding: SPACE.md }}
+      style={phone ? { paddingTop: SPACE_COMPACT.sm } : { padding: SPACE_COMPACT.md }}
     >
       <Helmet>
         <title>Solvers — buildgallery</title>
@@ -174,7 +174,7 @@ function BoardBody({
 /** DM Mono 16 with tabular figures: the position and the count. */
 const rankFigure = {
   fontFamily: DM_MONO,
-  fontSize: 16,
+  fontSize: 15,
   fontWeight: 500,
   lineHeight: 1.4,
   ...tabular,
@@ -207,9 +207,9 @@ function SolverRow({
       style={{
         display: "grid",
         gridTemplateColumns: phone ? PHONE_COLUMNS : ROW_COLUMNS,
-        columnGap: SPACE.sm,
+        columnGap: SPACE_COMPACT.sm,
         alignItems: "center",
-        paddingBlock: SPACE.sm,
+        paddingBlock: SPACE_COMPACT.sm,
         ...(position === 1 ? {} : { borderTop: `1px solid ${t.line}` }),
       }}
     >
@@ -233,7 +233,7 @@ function SolverRow({
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "baseline",
-                columnGap: SPACE.xs,
+                columnGap: SPACE_COMPACT.xs,
               }
             : {
                 display: "flex",
@@ -292,6 +292,7 @@ function SolverIdentity({ solver }: { solver: Solver }) {
   return (
     <span
       data-testid="solver-maker"
+      /* MakerLink's own box (44 tall, SPACE.xs apart), which this stands in for, so the rows line up. */
       style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, minHeight: 44 }}
     >
       <Avatar style={{ width: 32, height: 32 }}>
@@ -314,16 +315,17 @@ function LoadingRows({ phone }: { phone: boolean }) {
           style={{
             display: "grid",
             gridTemplateColumns: phone ? PHONE_COLUMNS : "40px minmax(0, 1fr) 96px",
-            columnGap: SPACE.sm,
-            rowGap: SPACE.xs,
+            columnGap: SPACE_COMPACT.sm,
+            rowGap: SPACE_COMPACT.xs,
             alignItems: "center",
-            paddingBlock: SPACE.sm,
+            paddingBlock: SPACE_COMPACT.sm,
             borderTop: index === 0 ? undefined : `1px solid ${t.line}`,
           }}
         >
-          <Skeleton height={20} />
+          <Skeleton height={16} />
+          {/* The person: MakerLink's 44. */}
           <Skeleton height={44} />
-          <Skeleton height={20} style={phone ? { gridColumn: 2 } : undefined} />
+          <Skeleton height={16} style={phone ? { gridColumn: 2 } : undefined} />
         </div>
       ))}
     </LoadingRegion>

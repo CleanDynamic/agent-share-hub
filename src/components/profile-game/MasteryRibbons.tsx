@@ -28,7 +28,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
     <section
       className="flex flex-col gap-3"
       style={{
-        padding: 20,
+        padding: 14,
         borderRadius: tokens.radius.panel,
         background: tokens.surface.shell,
         border: tokens.border.strong,
@@ -38,7 +38,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
       <h2
         style={{
           fontFamily: tokens.font.sans,
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: 700,
           color: tokens.text.primary,
           margin: 0,
@@ -55,7 +55,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
               key={ribbon.id}
               className="flex items-center gap-3"
               style={{
-                padding: "10px 12px",
+                padding: "7px 9px",
                 borderRadius: tokens.radius.card,
                 background: tokens.surface.card,
                 border: tokens.border.soft,
@@ -65,8 +65,8 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
               <span
                 className="flex items-center justify-center shrink-0"
                 style={{
-                  width: 32,
-                  height: 32,
+                  width: 26,
+                  height: 26,
                   borderRadius: tokens.radius.card,
                   background: `${colourAlpha(color, 0.122)}`,
                   border: `0.5px solid ${colourAlpha(color, 0.333)}`,
@@ -84,7 +84,7 @@ export default function MasteryRibbons({ ribbons, title = "Mastery" }: MasteryRi
                     className="truncate"
                     style={{
                       fontFamily: tokens.font.sans,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: 600,
                       color: ribbon.locked ? tokens.locked : tokens.text.primary,
                     }}

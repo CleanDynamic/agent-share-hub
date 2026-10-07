@@ -76,7 +76,7 @@ export function LoginForm({
           autoComplete="current-password"
           error={error}
         />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
           <AuthCheck id="remember" checked={rememberMe} onChange={onRememberMeChange}>
             Keep me signed in
           </AuthCheck>

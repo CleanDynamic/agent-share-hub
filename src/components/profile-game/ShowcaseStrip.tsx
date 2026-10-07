@@ -54,12 +54,12 @@ export default function ShowcaseStrip({ items }: ShowcaseStripProps) {
                 borderBottom: `2px solid ${accent}`,
               }}
             />
-            <div className="flex flex-col gap-2" style={{ padding: 12 }}>
+            <div className="flex flex-col gap-2" style={{ padding: 9 }}>
               <h3
                 className="truncate"
                 style={{
                   fontFamily: tokens.font.sans,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: tokens.text.primary,
                   margin: 0,

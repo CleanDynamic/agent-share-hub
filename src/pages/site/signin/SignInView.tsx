@@ -6,7 +6,7 @@
    compare page supplies the sample data; both render this. The viewport is read
    here (the app's 768px breakpoint) so the two behave the same.
 
-   DESKTOP: the content centred in the viewport, a row with a 110px gap. On the
+   DESKTOP: the content centred in the viewport, a row with a 79px gap. On the
    left the lockup, the tagline and two orbs; on the right the card — 420 wide,
    the only blurred surface on the page — and the theme control under it. The
    card's top row is a Back link and the Sign in · Join free switch. Below
@@ -15,6 +15,15 @@
 
    PHONE: no Back link and no orbs. The lockup and tagline, then the form in a
    glass panel with the switch at the top of it, then the theme control.
+
+   DENSER SINCE UI-P57: every size this file and the auth parts set themselves is
+   the tightened board's (`design/prompts/README-density.md`) — the row 79 apart
+   (110 before), the card 19 in and 9 apart, fields 36 tall. Two things keep their
+   old numbers on purpose: a phone's fields stay 44 (the board's 39 is the script
+   judging a span, not the input in it, and a field is the touch target), and the
+   remember row keeps its 19px line, the height of a native checkbox the pass
+   does not touch. The lockup, the tagline, the orbs and the buttons map their
+   own drawn sizes.
 
    THE SWITCH IS TWO LINKS, not two buttons that navigate. Sign in and Join free
    are two pages, and each side of the control is the address it goes to, with
@@ -92,7 +101,7 @@ function OrbPlaceholder({ failed }: { failed?: boolean }) {
 
 function Orbs({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
   const waiting = (reproducedToday === null || inGallery === null) && !countsFailed;
-  const row = { display: "flex", gap: 12 } as const;
+  const row = { display: "flex", gap: 9 } as const;
   const orbs = (
     <>
       {reproducedToday === null ? (
@@ -149,11 +158,11 @@ function BackLink({ onBack }: { onBack: () => void }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 6,
-        /* A 28px target in a 32px row: the row does not grow. */
+        gap: 4,
+        /* A 27px target in the switch's 30px row: the row does not grow. */
         padding: "6px 0",
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: 12,
         color: t.text2,
       }}
     >
@@ -180,32 +189,32 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
         alignItems: "center",
         alignContent: "center",
         justifyContent: "center",
-        columnGap: 110,
-        rowGap: 40,
-        padding: "32px 24px",
+        columnGap: 79,
+        rowGap: 29,
+        padding: "23px 17px",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         <Lockup size={70} />
         <Tagline lines={TAGLINE} size={40} offsets={[0, 70, 24]} />
         <Orbs reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div
           data-testid="signin-card"
           data-ui="signin-card"
           style={{
             width: 420,
             boxSizing: "border-box",
-            padding: 26,
+            padding: 19,
             borderRadius: 20,
             background: t.header,
             border: `1px solid ${t.headerBorder}`,
             boxShadow: `${t.shadowFloat}, ${t.panelHighlight}`,
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 9,
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -232,19 +241,19 @@ function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: 
         ...(fit === "board" ? { height: BOARD.phone } : { minHeight: "100dvh" }),
         boxSizing: "border-box",
         overflowX: "hidden",
-        padding: "22px 14px 30px",
+        padding: "16px 10px 22px",
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 10,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 18, padding: "10px 0 4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 13, padding: "7px 0 4px" }}>
         <Lockup size={34} />
         <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />
       </div>
 
       <Panel surface="glass" padding="16px">
-        <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div data-testid="signin-card" data-ui="signin-card" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {hasSwitch(mode) ? <AccountSwitch mode={mode} carry={carry} size={38} fontSize={13} /> : null}
           {children}
         </div>

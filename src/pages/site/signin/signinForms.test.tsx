@@ -98,7 +98,8 @@ describe("ProviderButtons", () => {
     expect(html).toContain("background:var(--glass-2)");
     expect(html).toContain("border:1px solid var(--line)");
     expect(html).toContain("border-radius:var(--r-control)");
-    expect(html).toContain("gap:10px");
+    // UI-P52 density pass: 10px between mark and words renders 7.
+    expect(html).toContain("gap:7px");
     expect(html).toContain('width="16" height="16"');
   });
 
@@ -116,7 +117,8 @@ describe("ProviderButtons", () => {
 describe("OrRule", () => {
   it("is two 1px --line rules either side of a 10px eyebrow, 12px apart with 4px 0 around it", () => {
     const html = markup(<OrRule>or with email</OrRule>);
-    expect(html).toContain("gap:12px");
+    // UI-P52 density pass: 12 → 9.
+    expect(html).toContain("gap:9px");
     expect(html).toContain("margin:4px 0");
     expect(html).toContain("height:1px");
     expect(html).toContain("background:var(--line)");
@@ -130,7 +132,8 @@ describe("OrRule", () => {
     setViewport("phone");
     const { container } = render(<OrRule>or with email</OrRule>);
     const style = container.firstElementChild!.getAttribute("style")!;
-    expect(style).toContain("gap: 10px");
+    // UI-P52 density pass: 10 → 7; the 2px is under the table's floor.
+    expect(style).toContain("gap: 7px");
     expect(style).toContain("margin: 2px 0px");
   });
 });
@@ -143,32 +146,36 @@ describe("AuthField", () => {
   it("is a label around a 10px eyebrow and the box, 7px apart", () => {
     const html = markup(field());
     expect(html).toContain("<label");
-    expect(html).toContain("flex-direction:column;gap:7px");
+    // UI-P52 density pass: 7 → 5.
+    expect(html).toContain("flex-direction:column;gap:5px");
     expect(html).toContain("Email or username");
     expect(html).toContain("font-size:10px");
   });
 
   it("draws the box 44 tall (content box) with 0 14px padding, radius 12, --field, a 1px --line border, 10px between icon and input", () => {
     const html = markup(field());
-    expect(html).toContain("height:44px");
+    // UI-P52 density pass: the box 44 → 36, its padding 0 14px → 0 10px and the gap 10 → 7.
+    expect(html).toContain("height:36px");
     expect(html).toContain("box-sizing:content-box");
-    expect(html).toContain("padding:0 14px");
+    expect(html).toContain("padding:0 10px");
     expect(html).toContain("border-radius:var(--r-control)");
     expect(html).toContain("background:var(--field)");
     expect(html).toContain("border:1px solid var(--line)");
-    expect(html).toContain("gap:10px");
+    expect(html).toContain("gap:7px");
     expect(html).toContain("color:var(--text2)");
   });
 
   it("is 48 tall on a phone", () => {
     setViewport("phone");
     const { container } = render(field());
-    expect(container.querySelector("label > span:last-child")!.getAttribute("style")).toContain("height: 48px");
+    // UI-P52 density pass: 48 → 39 by the table, held at the 44px touch floor.
+    expect(container.querySelector("label > span:last-child")!.getAttribute("style")).toContain("height: 44px");
   });
 
   it("sets the input in 14px Figtree on --text, and leaves the 16px below 768px to the stylesheet's own rule", () => {
     const html = markup(field());
-    expect(html).toContain("font-size:14px");
+    // UI-P52 density pass: 14 → 13.
+    expect(html).toContain("font-size:13px");
     expect(html).toContain("color:var(--text)");
     // The stylesheet's !important fill and border are switched off with utilities, not a new class.
     expect(html).toContain("!bg-transparent");
@@ -209,10 +216,17 @@ describe("AuthField", () => {
   });
 
   it("gives the reveal a 44px target", () => {
-    show(field({ label: "Password", showPasswordToggle: true }));
+    // UI-P52 density pass: 44 → 36 above 768px, as the tightened board; a phone keeps its 44px target.
+    const { unmount } = show(field({ label: "Password", showPasswordToggle: true }));
     const style = screen.getByRole("button", { name: "Show password" }).getAttribute("style")!;
-    expect(style).toContain("width: 44px");
-    expect(style).toContain("height: 44px");
+    expect(style).toContain("width: 36px");
+    expect(style).toContain("height: 36px");
+    unmount();
+    setViewport("phone");
+    show(field({ label: "Password", showPasswordToggle: true }));
+    const phone = screen.getByRole("button", { name: "Show password" }).getAttribute("style")!;
+    expect(phone).toContain("width: 44px");
+    expect(phone).toContain("height: 44px");
   });
 
   it("says one thing under the field it is about, in --cat-breakage, announced politely", () => {
@@ -276,7 +290,8 @@ describe("FieldMessage", () => {
     const { rerender, getByTestId } = render(<FieldMessage />);
     expect(getByTestId("field-message").style.marginTop).toBe("0px");
     rerender(<FieldMessage>Please choose an available username.</FieldMessage>);
-    expect(getByTestId("field-message").style.marginTop).toBe("6px");
+    // UI-P52 density pass: 6 → 4.
+    expect(getByTestId("field-message").style.marginTop).toBe("4px");
   });
 });
 
@@ -316,9 +331,10 @@ describe("AuthCheck", () => {
         Keep me signed in
       </AuthCheck>,
     );
-    expect(html).toContain("font-size:13px");
+    // UI-P52 density pass: the words 13 → 12 and 8 → 6 from the box, as the tightened board's row.
+    expect(html).toContain("font-size:12px");
     expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("gap:8px");
+    expect(html).toContain("gap:6px");
     expect(html).toContain("border-radius:5px");
     expect(html).toContain("background:var(--action)");
   });
@@ -467,11 +483,12 @@ describe("LoginForm", () => {
 
   it("is a column of the card's own rhythm: 12px on a desktop and 10px on a phone", () => {
     const { container, unmount } = show(<LoginForm {...login()} />);
-    expect(container.querySelector("form")!.getAttribute("style")).toContain("gap: 12px");
+    // UI-P52 density pass: 12 / 10 → 9 / 7.
+    expect(container.querySelector("form")!.getAttribute("style")).toContain("gap: 9px");
     unmount();
     setViewport("phone");
     const phone = show(<LoginForm {...login()} />);
-    expect(phone.container.querySelector("form")!.getAttribute("style")).toContain("gap: 10px");
+    expect(phone.container.querySelector("form")!.getAttribute("style")).toContain("gap: 7px");
   });
 });
 

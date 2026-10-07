@@ -42,7 +42,8 @@ describe("SignInView · desktop", () => {
     expect(html).toContain("min-height:100dvh");
     expect(html).toContain("align-items:center");
     expect(html).toContain("justify-content:center");
-    expect(html).toContain("column-gap:110px");
+    // UI-P52 density pass: 110 → 79.
+    expect(html).toContain("column-gap:79px");
     expect(html).not.toContain("height:1000px");
   });
 
@@ -69,7 +70,8 @@ describe("SignInView · desktop", () => {
     expect(lockup.querySelector("span")!.getAttribute("style")).toContain("font-size: 52px");
     const column = lockup.parentElement!;
     expect(column.getAttribute("style")).toContain("flex-direction: column");
-    expect(column.getAttribute("style")).toContain("gap: 30px");
+    // UI-P52 density pass: the column's 30 → 22.
+    expect(column.getAttribute("style")).toContain("gap: 22px");
     expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 50px"]')).not.toBeNull();
     expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 17px"]')).not.toBeNull();
   });
@@ -87,7 +89,8 @@ describe("SignInView · desktop", () => {
     expect(glass.textContent).toBe("Reproduced48 today");
     expect(solid.getAttribute("style")).toContain("width: 140px");
     expect(solid.textContent).toBe("Hung1,284builds");
-    expect(glass.parentElement!.getAttribute("style")).toContain("gap: 12px");
+    // UI-P52 density pass: 12 → 9.
+    expect(glass.parentElement!.getAttribute("style")).toContain("gap: 9px");
   });
 
   it("draws an empty disc, not a number, for a count that has not arrived", () => {
@@ -107,12 +110,13 @@ describe("SignInView · desktop", () => {
     const html = markup();
     const card = html.slice(html.indexOf('data-testid="signin-card"'));
     expect(card).toContain("width:420px");
-    expect(card).toContain("padding:26px");
+    // UI-P52 density pass: padding 26 → 19 and the gap 12 → 9; the width and radius are not in the table.
+    expect(card).toContain("padding:19px");
     expect(card).toContain("border-radius:20px");
     expect(card).toContain("background:var(--header)");
     expect(card).toContain("border:1px solid var(--header-border)");
     expect(card).toContain("box-shadow:var(--shadow-float), var(--panel-highlight)");
-    expect(card).toContain("gap:12px");
+    expect(card).toContain("gap:9px");
     // UI-P40: the card is not one of the four budgeted surfaces.
     expect(html).not.toMatch(/[;"]backdrop-filter:/);
   });
@@ -140,7 +144,8 @@ describe("SignInView · the card's top row", () => {
     const html = markup();
     const back = html.slice(html.indexOf(">Back<") - 400, html.indexOf(">Back<"));
     expect(back).toContain('href="/"');
-    expect(back).toContain("font-size:13px");
+    // UI-P52 density pass: 13 → 12.
+    expect(back).toContain("font-size:12px");
     expect(back).toContain("color:var(--text2)");
     render(tree());
     expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).toBe("/");
@@ -215,8 +220,9 @@ describe("SignInView · phone", () => {
     render(tree());
     const root = screen.getByTestId("signin-view");
     expect(root.getAttribute("data-viewport")).toBe("mobile");
-    expect(root.getAttribute("style")).toContain("padding: 22px 14px 30px");
-    expect(root.getAttribute("style")).toContain("gap: 14px");
+    // UI-P52 density pass: 22px 14px 30px → 16px 10px 22px, the gap 14 → 10.
+    expect(root.getAttribute("style")).toContain("padding: 16px 10px 22px");
+    expect(root.getAttribute("style")).toContain("gap: 10px");
     expect(root.getAttribute("style")).toContain("min-height: 100dvh");
   });
 
@@ -238,8 +244,9 @@ describe("SignInView · phone", () => {
     expect(lockup.getAttribute("style")).toContain("gap: 9px");
     expect(lockup.querySelector('[data-ui="mark"]')!.getAttribute("width")).toBe("37");
     const column = lockup.parentElement!;
-    expect(column.getAttribute("style")).toContain("gap: 18px");
-    expect(column.getAttribute("style")).toContain("padding: 10px 0px 4px");
+    // UI-P52 density pass: 18 → 13, padding 10px 0 4px → 7px 0 4px.
+    expect(column.getAttribute("style")).toContain("gap: 13px");
+    expect(column.getAttribute("style")).toContain("padding: 7px 0px 4px");
     expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 29px"]')).not.toBeNull();
     expect(column.querySelector('[data-ui="tagline"] [style*="margin-left: 9px"]')).not.toBeNull();
   });
@@ -253,7 +260,8 @@ describe("SignInView · phone", () => {
     expect(panel.getAttribute("style")).toContain("padding: 12px");
     const card = within(panel as HTMLElement).getByTestId("signin-card");
     expect(card.getAttribute("style")).toContain("flex-direction: column");
-    expect(card.getAttribute("style")).toContain("gap: 10px");
+    // UI-P52 density pass: 10 → 7.
+    expect(card.getAttribute("style")).toContain("gap: 7px");
   });
 
   it("starts the panel with the switch at 38 tall and 13px, and has no Back link", () => {

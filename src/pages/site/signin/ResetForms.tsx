@@ -21,7 +21,7 @@ import { AuthField, AuthForm, FieldMessage, PrimaryAction } from "./AuthParts";
 const LEDE = {
   margin: 0,
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 400,
   lineHeight: 1.55,
   color: t.text2,
@@ -30,9 +30,9 @@ const LEDE = {
 /** The card's title and the sentence under it. The 8px that closes the pair, with the card's own gap, is the 20 the cards had. */
 function Heading({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 6 }}>
       <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>{title}</h2>
-      <p style={{ ...LEDE, marginTop: 8 }}>{children}</p>
+      <p style={{ ...LEDE, marginTop: 6 }}>{children}</p>
     </div>
   );
 }
@@ -45,9 +45,9 @@ function BackToSignIn({ marginTop = 0 }: { marginTop?: number }) {
       style={{
         alignSelf: "center",
         marginTop,
-        padding: "6px 0",
+        padding: "4px 0",
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 500,
         color: t.action,
         textDecoration: "underline",
@@ -180,8 +180,8 @@ export function LinkChecking({ title, children }: { title: string; children: Rea
   return (
     <Centred>
       <Loader2 className="animate-spin" aria-hidden="true" style={{ width: 56, height: 56, color: t.text2 }} />
-      <h2 style={{ ...cardTitle, margin: "20px 0 0", color: t.text }}>{title}</h2>
-      <p role="status" style={{ ...LEDE, marginTop: 6 }}>
+      <h2 style={{ ...cardTitle, margin: "14px 0 0", color: t.text }}>{title}</h2>
+      <p role="status" style={{ ...LEDE, marginTop: 4 }}>
         {children}
       </p>
     </Centred>
@@ -192,7 +192,7 @@ export function ResetSent({ email }: { email: string }) {
   return (
     <Centred>
       <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>Check your inbox</h2>
-      <p style={{ ...LEDE, marginTop: 8 }}>
+      <p style={{ ...LEDE, marginTop: 6 }}>
         If an account exists with <span style={{ color: t.text }}>{email}</span>, we sent a reset link. Open it and you can set a new
         password — it works once and expires after an hour.
       </p>
@@ -205,11 +205,11 @@ export function ResetLinkError({ onRequestNew }: { onRequestNew: () => void }) {
   return (
     <Centred>
       <AlertCircle aria-hidden="true" style={{ width: 56, height: 56, color: t.catBreakage, strokeWidth: 1.5 }} />
-      <h2 style={{ ...cardTitle, margin: "20px 0 0", color: t.text }}>This reset link doesn&apos;t work</h2>
-      <p style={{ ...LEDE, marginTop: 8 }}>
+      <h2 style={{ ...cardTitle, margin: "14px 0 0", color: t.text }}>This reset link doesn&apos;t work</h2>
+      <p style={{ ...LEDE, marginTop: 6 }}>
         It may have expired or already been used. Request a new one and we&apos;ll email a fresh link — your password has not changed.
       </p>
-      <div style={{ width: "100%", marginTop: 16 }}>
+      <div style={{ width: "100%", marginTop: 12 }}>
         <PrimaryAction type="button" onClick={onRequestNew}>
           Request a new one
         </PrimaryAction>

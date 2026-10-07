@@ -3,14 +3,19 @@
    PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but `Link`. `Bounties` (the page) supplies
    live data; the dev compare page supplies the sample. Every colour is a token and every face a role from `type`.
 
-   DESKTOP: a column, 12 apart — the header panel, then `minmax(0, 1fr) 420px`: the frames in three columns and, on the
+   DESKTOP: a column, 9 apart — the header panel, then `minmax(0, 1fr) 420px`: the frames in three columns and, on the
    right, the chosen ask in a solve panel over the top solvers. PHONE: the heading, the Bounties · Solvers switch, the
    frames one to a row, then the top solvers.
 
    EVERY PANEL HAS ITS FOUR STATES (UI-P37). The frames: bones the frame's size, "No open asks right now." and a way to
    the gallery, or "That didn't load." with a retry. The top solvers: bones, "Nobody has solved a bounty yet.", or the
    same failure line. Me too is optimistic: it shows its new state at once and, if the write fails, rolls back with a
-   line in the solve panel. */
+   line in the solve panel.
+
+   DENSER SINCE UI-P57: every size this file sets itself is its old value through the density table
+   (`design/prompts/README-density.md`): the page 9 apart, the frames 4px 10px, the ask 10 in, solver rows 31 (39 on a
+   phone, where a row is not a control). The "All solvers" link keeps a 44px target on a phone. The brand pieces map
+   their own drawn sizes. */
 
 import type { ReactNode } from "react";
 import { ArrowRight, Heart } from "lucide-react";
@@ -141,8 +146,8 @@ function FrameSkeleton({ phone }: { phone: boolean }) {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 8,
-          padding: 7,
+          gap: 6,
+          padding: 5,
           background: t.glass,
           borderRadius: r.card,
           border: `1.5px dashed ${t.line}`,
@@ -152,7 +157,7 @@ function FrameSkeleton({ phone }: { phone: boolean }) {
         }}
       >
         <Skeleton height={104} radius={r.media} />
-        <div style={{ padding: "0 5px", display: "flex", flexDirection: "column", gap: 7 }}>
+        <div style={{ padding: "0 5px", display: "flex", flexDirection: "column", gap: 5 }}>
           <Skeleton width="70%" height={18} />
           <Skeleton width="55%" height={12} />
         </div>
@@ -172,7 +177,7 @@ function FramesBody({
   const grid = {
     display: "grid",
     gridTemplateColumns: phone ? "minmax(0, 1fr)" : `repeat(${columns}, minmax(0, 1fr))`,
-    gap: phone ? "4px 0" : "6px 14px",
+    gap: phone ? "4px 0" : "4px 10px",
     alignContent: "start",
   } as const;
 
@@ -228,7 +233,7 @@ function FramesBody({
         ))}
       </div>
       {frames.hasMore ? (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 14 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
           <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} disabled={frames.loadingMore} onClick={frames.onMore}>
             {frames.loadingMore ? "Loading…" : "Show more"}
           </Button>
@@ -257,20 +262,20 @@ function SolvePanel({
     <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
       <PanelHead title="The ask" subtitle="One part, left open on purpose" headingLevel={2} />
       {loading ? (
-        <LoadingRegion what="the ask" data-testid="bounties-solve-loading" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        <LoadingRegion what="the ask" data-testid="bounties-solve-loading" style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
           <Skeleton height={177} radius={r.card} />
           <Skeleton height={76} radius={r.control} />
         </LoadingRegion>
       ) : failed || !frame ? null : (
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 7 }}>
           <div
             style={{
               border: `1.5px dashed ${t.catBreakage}`,
               borderRadius: r.card,
-              padding: 14,
+              padding: 10,
               display: "flex",
               flexDirection: "column",
-              gap: 10,
+              gap: 7,
             }}
           >
             <span style={{ ...mono(10, { caps: true }), color: t.catBreakage }}>Open</span>
@@ -280,7 +285,7 @@ function SolvePanel({
             {frame.problem ? (
               <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.text2 }}>{frame.problem}</div>
             ) : null}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <Button size={36} fontSize={13} icon={ArrowRight} onClick={() => onNavigate(frame.to)}>
                 Submit a solution
               </Button>
@@ -328,11 +333,11 @@ const TIER: readonly RankTier[] = ["highest", "rare", "common"];
 function SolversBody({ solvers, phone }: { solvers: BountiesViewProps["solvers"]; phone: boolean }) {
   if (solvers.status === "loading") {
     return (
-      <LoadingRegion what="the top solvers" data-testid="bounties-solvers-loading" style={{ marginTop: 12 }}>
+      <LoadingRegion what="the top solvers" data-testid="bounties-solvers-loading" style={{ marginTop: 9 }}>
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            style={{ display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 48 : 38, borderBottom: i < 2 ? `1px solid ${t.hairline}` : undefined }}
+            style={{ display: "flex", alignItems: "center", gap: 7, minHeight: phone ? 39 : 31, borderBottom: i < 2 ? `1px solid ${t.hairline}` : undefined }}
           >
             <Skeleton width={phone ? 32 : 28} height={phone ? 32 : 28} radius={r.chip} />
             <Skeleton width={phone ? 32 : 24} height={phone ? 32 : 24} radius="50%" />
@@ -345,21 +350,21 @@ function SolversBody({ solvers, phone }: { solvers: BountiesViewProps["solvers"]
     );
   }
   if (solvers.status === "error") {
-    return <ErrorState panel="Top solvers" onRetry={solvers.onRetry} error={solvers.error} style={{ paddingTop: 12 }} data-testid="bounties-solvers-error" />;
+    return <ErrorState panel="Top solvers" onRetry={solvers.onRetry} error={solvers.error} style={{ paddingTop: 9 }} data-testid="bounties-solvers-error" />;
   }
   if (solvers.data.length === 0) {
     return <EmptyState line="Nobody has solved a bounty yet." data-testid="bounties-solvers-empty" />;
   }
   return (
-    <ol data-testid="bounties-solvers" aria-label="Top solvers, most solved first" style={{ listStyle: "none", margin: "12px 0 0", padding: 0 }}>
+    <ol data-testid="bounties-solvers" aria-label="Top solvers, most solved first" style={{ listStyle: "none", margin: "9px 0 0", padding: 0 }}>
       {solvers.data.slice(0, 3).map((solver, i) => (
         <li
           key={solver.id}
-          style={{ display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 48 : 38, borderBottom: i < 2 ? `1px solid ${t.hairline}` : undefined }}
+          style={{ display: "flex", alignItems: "center", gap: 7, minHeight: phone ? 39 : 31, borderBottom: i < 2 ? `1px solid ${t.hairline}` : undefined }}
         >
           <RankRung rank={i + 1} tier={TIER[i]} size={phone ? 32 : 28} />
           <Avatar size={phone ? 32 : 24} userId={solver.id} name={solver.handle} src={solver.avatarUrl} />
-          <span style={{ flex: 1, fontFamily: FIGTREE, fontSize: phone ? 14 : 12, color: t.text, minWidth: 0 }}>@{solver.handle}</span>
+          <span style={{ flex: 1, fontFamily: FIGTREE, fontSize: phone ? 13 : 12, color: t.text, minWidth: 0 }}>@{solver.handle}</span>
           <span style={{ fontFamily: DM_MONO, fontSize: phone ? 12 : 11, color: t.text2 }}>{solver.solved} solved</span>
         </li>
       ))}
@@ -377,8 +382,9 @@ function SolversPanel({ solvers, phone }: { solvers: BountiesViewProps["solvers"
         style={{
           display: "inline-flex",
           alignItems: "center",
-          minHeight: phone ? 44 : 32,
-          marginTop: 6,
+          /* A link: 44 on a phone (the touch target), 32 → 26 above it. */
+          minHeight: phone ? 44 : 26,
+          marginTop: 4,
           fontFamily: FIGTREE,
           fontSize: 12,
           color: t.text,
@@ -402,15 +408,15 @@ function DesktopBounties(props: BountiesViewProps) {
   const stacked = useWidthTier() === "stacked";
 
   return (
-    <div data-testid="bounties-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+    <div data-testid="bounties-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
       <Panel surface="glass" padding="16px 20px">
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
             <Eyebrow>Bounties</Eyebrow>
             <h1 style={{ ...display(44), margin: 0, color: t.text }}>Open asks on real builds</h1>
-            <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{SENTENCE_DESKTOP}</div>
+            <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{SENTENCE_DESKTOP}</div>
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
             <SwitchRow sort={sort} onSortChange={onSortChange} phone={false} />
           </div>
         </div>
@@ -419,14 +425,14 @@ function DesktopBounties(props: BountiesViewProps) {
         style={{
           display: "grid",
           gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
-          gap: 12,
+          gap: 9,
           ...boardHeight(fit, 0),
         }}
       >
         <div style={{ minWidth: 0 }}>
           <FramesBody frames={frames} selectedId={chosen?.id ?? null} onSelect={onSelect} phone={false} columns={stacked ? 2 : 3} onNavigate={onNavigate} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
           {frames.status === "error" || (frames.status === "ready" && !chosen) ? null : (
             <SolvePanel frame={chosen} meToo={meToo} loading={frames.status === "loading"} failed={false} onNavigate={onNavigate} />
           )}
@@ -440,9 +446,9 @@ function DesktopBounties(props: BountiesViewProps) {
 function PhoneBounties(props: BountiesViewProps) {
   const { frames, solvers, sort, onSortChange, selectedId, onSelect, onNavigate } = props;
   return (
-    <div data-testid="bounties-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+    <div data-testid="bounties-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
       <PageHeading eyebrow="Bounties" title="Open asks on real builds" sub={SENTENCE_PHONE} size={34} />
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <SwitchRow sort={sort} onSortChange={onSortChange} phone />
       </div>
       <FramesBody frames={frames} selectedId={selectedId} onSelect={onSelect} phone onNavigate={onNavigate} />

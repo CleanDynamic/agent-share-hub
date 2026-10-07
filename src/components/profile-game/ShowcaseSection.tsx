@@ -31,7 +31,7 @@ export default function ShowcaseSection({
     <section
       className="flex flex-col gap-3"
       style={{
-        padding: 20,
+        padding: 14,
         borderRadius: tokens.radius.panel,
         background: isShell ? tokens.surface.shell : tokens.surface.card,
         border: tokens.border.strong,
@@ -43,7 +43,7 @@ export default function ShowcaseSection({
           className="inline-flex items-center gap-2"
           style={{
             fontFamily: tokens.font.sans,
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 700,
             color: tokens.text.primary,
             margin: 0,
@@ -57,8 +57,8 @@ export default function ShowcaseSection({
             <span
               className="inline-flex items-center gap-1.5"
               style={{
-                height: 24,
-                padding: "0 10px",
+                height: 20,
+                padding: "0 7px",
                 borderRadius: tokens.radius.pill,
                 background: `${colourAlpha(tokens.brand.orange, 0.122)}`,
                 border: `0.5px solid ${colourAlpha(tokens.brand.orange, 0.4)}`,
@@ -77,8 +77,8 @@ export default function ShowcaseSection({
               type="button"
               onClick={onViewAll}
               style={{
-                height: 24,
-                padding: "0 10px",
+                height: 20,
+                padding: "0 7px",
                 borderRadius: tokens.radius.pill,
                 background: "transparent",
                 border: tokens.border.soft,
