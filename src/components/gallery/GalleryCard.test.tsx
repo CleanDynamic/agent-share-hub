@@ -255,3 +255,41 @@ describe("the skeleton", () => {
     expect(container.firstElementChild).toHaveAttribute("aria-hidden");
   });
 });
+
+describe("UI-P49 — the row layout", () => {
+  const renderRow = (subject: GalleryBuild, extra: Partial<Parameters<typeof GalleryCard>[0]> = {}) =>
+    render(
+      <MemoryRouter>
+        <GalleryCard build={subject} srcByPath={NO_MEDIA} layout="row" makerHandle="maria" modelsUsed={["claude-sonnet-5-5", "claude-opus-5-5", "claude-sonnet-5-5"]} {...extra} />
+      </MemoryRouter>,
+    );
+
+  it("keeps the order: cover, title, description, credit, plaque, chips, open ask", () => {
+    const { container } = renderRow(
+      build({ nodes: [node({ type: "prompt" })] as never, bounties: [{ id: "x", reward_gbp: 25, status: "open" }] }),
+    );
+    const parts = [...container.querySelectorAll("[data-card-part]")].map((el) => el.getAttribute("data-card-part"));
+    expect(parts).toEqual(["cover", "title", "description", "credit", "plaque", "chips", "reward"]);
+  });
+
+  it("credits the maker with a link to the profile and names the models once each", () => {
+    renderRow(build());
+    expect(screen.getByRole("link", { name: "@maria" })).toHaveAttribute("href", "/profile/maria");
+    expect(screen.getByTestId("row-credit")).toHaveTextContent("by @maria · made with Sonnet 5.5 + Opus 5.5");
+    expect(screen.getByRole("link", { name: "Invoice triage agent" })).toHaveAttribute("href", "/b2/a-build");
+    expect(screen.getByText("Triages invoices.")).toBeInTheDocument();
+  });
+
+  it("lets the plaque and the lamp speak for the record it is handed", () => {
+    const { container } = renderRow(build(), {
+      plaqueBuild: { reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-08-01T00:00:00Z" },
+    });
+    expect(screen.getByText("not yet reproduced")).toBeInTheDocument();
+    expect(container.querySelector('[data-ui="picture-lamp"]')).toHaveAttribute("data-variant", "off");
+  });
+
+  it("keeps the rebuild credit on a rebuild", () => {
+    renderRow(build({ source_title_at_fork: "Standup summariser", source_handle_at_fork: "kofi" }));
+    expect(screen.getByTestId("rebuild-credit-line")).toHaveTextContent("Rebuilt from Standup summariser by @kofi");
+  });
+});

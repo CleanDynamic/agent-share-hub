@@ -1,56 +1,49 @@
-// UI-P28 — the Gallery's container: the address is the state, the wall pages by
-// appending, and each panel loads on its own.
+// UI-P49 — the Gallery's container, as the feed: the address is the state, each
+// list pages on its own, and the page never asks for the stats or the lens
+// counts it no longer shows.
 //
-// The data layer is stubbed and its calls are counted, as the legacy page's test
-// does: what is claimed is which requests a filter, a lens and "Show more" make.
+// The data layer is stubbed and its calls are counted: what is claimed is which
+// requests a filter and "Show more" make, and what the address says after.
 
 import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const listGallery = vi.fn();
+const listGalleryFeed = vi.fn();
 const getGalleryFacets = vi.fn();
-const getGalleryShapeFacets = vi.fn();
 const countGalleryLenses = vi.fn();
 const getGalleryStats = vi.fn();
-const getFeaturedBuild = vi.fn();
-const getOpenBountyPool = vi.fn();
-const countRunsLastWeek = vi.fn();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: () => ({ createSignedUrl: vi.fn().mockResolvedValue({ data: null, error: null }) }) } },
 }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null, isLoggedIn: false, loading: false }) }));
-vi.mock("@/hooks/useEngagement", () => ({ useEngagement: () => ({}), engagementFor: () => undefined }));
 vi.mock("@/lib/profile/searchMakers", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/profile/searchMakers")>()),
   searchMakers: async () => [],
 }));
-vi.mock("@/lib/bounty/bounties", () => ({ getOpenBountyPool: () => getOpenBountyPool() }));
-vi.mock("@/lib/build/signals", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/build/signals")>()),
-  countRunsLastWeek: () => countRunsLastWeek(),
-}));
 vi.mock("@/lib/build", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build")>()),
-  listGallery: (options: unknown) => listGallery(options),
   getGalleryFacets: () => getGalleryFacets(),
 }));
 vi.mock("@/lib/build/gallery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build/gallery")>()),
-  getGalleryShapeFacets: () => getGalleryShapeFacets(),
+  listGalleryFeed: (params: unknown) => listGalleryFeed(params),
   countGalleryLenses: () => countGalleryLenses(),
   getGalleryStats: () => getGalleryStats(),
-  getFeaturedBuild: () => getFeaturedBuild(),
 }));
 
-import { GALLERY_PAGE_SIZE, type GalleryBuild } from "@/lib/build";
+import type { GalleryFeed, GalleryFeedRow } from "@/lib/build/gallery";
+import { MODEL_VERSIONS } from "@/lib/models/registry";
 
 import { GalleryPage } from "./GalleryPage";
 
-function build(id: string, over: Partial<GalleryBuild> = {}): GalleryBuild {
+const SONNET = MODEL_VERSIONS.find((version) => version.id === "sonnet-5-5")!;
+const COUNTS = { all: 12, byModel: { "sonnet-5-5": 4 } };
+
+function row(id: string, over: Partial<GalleryFeedRow> = {}): GalleryFeedRow {
   return {
     id,
     creator_id: "c1",
@@ -68,7 +61,7 @@ function build(id: string, over: Partial<GalleryBuild> = {}): GalleryBuild {
     completeness: 90,
     reproduction_count: 3,
     last_confirmed_at: new Date().toISOString(),
-    last_confirmed_model: null,
+    last_confirmed_model: "GPT-6 Astra",
     published_at: new Date().toISOString(),
     parent_build_id: null,
     rebuild_count: 0,
@@ -77,11 +70,35 @@ function build(id: string, over: Partial<GalleryBuild> = {}): GalleryBuild {
     source_handle_at_fork: null,
     nodes: [],
     media: [],
+    models_used: ["claude-sonnet-5-5"],
+    creatorHandle: "maria",
+    proof: [{ modelId: "gpt-6-astra", modelName: "GPT-6 Astra", worked: 3, lastConfirmedAt: new Date().toISOString() }],
     ...over,
   };
 }
 
-const page = (ids: string[], total: number) => ({ builds: ids.map((id) => build(id)), total });
+const allPage = (ids: string[], hasMore = false, total = ids.length): GalleryFeed => ({
+  kind: "all",
+  model: null,
+  rows: ids.map((id) => row(id)),
+  hasMore,
+  counts: COUNTS,
+  total,
+});
+
+const modelPage = (on: string[], not: string[], more: { on?: boolean; not?: boolean } = {}): GalleryFeed => ({
+  kind: "model",
+  model: SONNET,
+  reproducedOn: on.map((id) =>
+    row(id, { proof: [{ modelId: "sonnet-5-5", modelName: "Sonnet 5.5", worked: 5, lastConfirmedAt: new Date().toISOString() }] }),
+  ),
+  notYet: not.map((id) => row(id)),
+  hasMoreReproducedOn: more.on ?? false,
+  hasMoreNotYet: more.not ?? false,
+  counts: COUNTS,
+  totalReproducedOn: 4,
+  totalNotYet: 8,
+});
 
 function Probe() {
   const { pathname, search } = useLocation();
@@ -106,153 +123,113 @@ const address = () => screen.getByTestId("address").textContent;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  listGallery.mockResolvedValue(page(["a", "b", "c"], 3));
+  listGalleryFeed.mockResolvedValue(allPage(["a", "b", "c"]));
   getGalleryFacets.mockResolvedValue({
     roles: [
       { value: "lawyers", count: 12, label: null, logo_url: null },
       { value: "designers", count: 4, label: null, logo_url: null },
     ],
-    tools: [{ value: "Claude", count: 9, label: "Claude", logo_url: null }],
+    tools: [],
   });
-  getGalleryShapeFacets.mockResolvedValue([
-    { value: "agent", count: 30 },
-    { value: "study", count: 5 },
-  ]);
-  countGalleryLenses.mockResolvedValue({ all: 3, proven: 2, rebuilt: 1, unsolved: 0 });
-  getGalleryStats.mockResolvedValue({ inGallery: 3, reproducedThisWeek: 9, weeklyGoal: null, freshPct: 66 });
-  getOpenBountyPool.mockResolvedValue({ poolGbp: 450, open: 3, solutions: 1, withSolutions: 1 });
-  countRunsLastWeek.mockResolvedValue(18);
-  getFeaturedBuild.mockResolvedValue({ build: build("f", { title: "The featured one" }), reproductions30d: 40, outcome: "Does a thing." });
 });
 
-describe("GalleryPage", () => {
-  it("loads the wall, the facets and the counts, each with one request, and puts the featured build first", async () => {
+describe("GalleryPage — the feed", () => {
+  it("loads one page of the feed, never the stats or the lens counts, and says how many and in what order", async () => {
     renderAt("/gallery");
+    expect(await screen.findByRole("heading", { level: 1, name: "Gallery" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("feed-count")).toHaveTextContent("3 builds, newest first"));
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Build a", "Build b", "Build c"]);
+    expect(listGalleryFeed).toHaveBeenCalledTimes(1);
+    expect(listGalleryFeed).toHaveBeenCalledWith({ model: undefined, audience: undefined, sort: "newest", q: undefined, page: 0 });
+    expect(countGalleryLenses).not.toHaveBeenCalled();
+    expect(getGalleryStats).not.toHaveBeenCalled();
+    // The credit: the maker's profile, and the models by name.
+    expect(screen.getAllByRole("link", { name: "@maria" })[0]).toHaveAttribute("href", "/profile/maria");
+    expect(screen.getAllByTestId("row-credit")[0]).toHaveTextContent("by @maria · made with Sonnet 5.5");
+  });
 
-    await screen.findByTestId("gallery-wall");
-    expect(within(screen.getByTestId("gallery-wall")).getAllByRole("heading", { level: 3 })).toHaveLength(3);
-    expect(screen.getByTestId("gallery-featured").getAttribute("href")).toBe("/b2/build-f");
-    expect(listGallery).toHaveBeenCalledTimes(1);
-    expect(listGallery).toHaveBeenCalledWith(
-      expect.objectContaining({ lens: "all", madeFor: [], madeWith: [], shapes: [], offset: 0, limit: GALLERY_PAGE_SIZE }),
+  it("reads view, model, for, sort and q from the address and drops the old lens and facets", async () => {
+    listGalleryFeed.mockResolvedValue(modelPage(["a"], ["b"]));
+    renderAt("/gallery?lens=proven&with=Claude&shape=agent&for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox");
+    await waitFor(() => expect(address()).toBe("/gallery?for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox"));
+    expect(listGalleryFeed).toHaveBeenLastCalledWith({ model: "sonnet-5-5", audience: "lawyers", sort: "reproduced", q: "inbox", page: 0 });
+  });
+
+  it("with a model, splits the list into reproduced-on and not-yet, and the plaques speak for that model", async () => {
+    listGalleryFeed.mockResolvedValue(modelPage(["on1"], ["not1"]));
+    renderAt("/gallery?model=sonnet-5-5");
+
+    const on = await screen.findByTestId("feed-section-reproduced");
+    const not = screen.getByTestId("feed-section-not-yet");
+    expect(within(on).getByRole("heading", { level: 2 })).toHaveTextContent("Reproduced on Sonnet 5.5 · 4");
+    expect(within(not).getByRole("heading", { level: 2 })).toHaveTextContent("Not yet reproduced on Sonnet 5.5 · 8");
+    expect(within(on).getByText("5 reproduced")).toBeInTheDocument();
+    expect(within(on).getAllByText(/, on Sonnet 5\.5/).length).toBeGreaterThan(0);
+    expect(within(not).getByText("not yet reproduced")).toBeInTheDocument();
+    expect(screen.getByTestId("feed-count")).toHaveTextContent("4 of 12 builds reproduced on Sonnet 5.5, newest first");
+    expect(screen.getByRole("button", { name: "Remove Proof on Sonnet 5.5" })).toBeInTheDocument();
+  });
+
+  it("pages each list on its own: Show more under one asks for the next page and takes only its rows", async () => {
+    listGalleryFeed.mockImplementation(async ({ page }: { page: number }) =>
+      page === 0 ? modelPage(["on1"], ["not1"], { on: true, not: true }) : modelPage(["on2"], ["not2"]),
     );
-    await waitFor(() => expect(screen.getByText("£450")).toBeTruthy());
-    for (const fn of [getGalleryFacets, getGalleryShapeFacets, countGalleryLenses, getGalleryStats, getOpenBountyPool, countRunsLastWeek, getFeaturedBuild]) {
-      expect(fn).toHaveBeenCalledTimes(1);
+    renderAt("/gallery?model=sonnet-5-5");
+
+    const on = await screen.findByTestId("feed-section-reproduced");
+    fireEvent.click(within(on).getByRole("button", { name: "Show more" }));
+    await waitFor(() => expect(within(on).getAllByRole("heading", { level: 3 })).toHaveLength(2));
+    expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }));
+
+    const not = screen.getByTestId("feed-section-not-yet");
+    expect(within(not).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Build not1"]);
+    expect(within(not).getByRole("button", { name: "Show more" })).toBeInTheDocument();
+  });
+
+  it("the switch writes view=dashboard, and still shows the feed until the dashboard lands", async () => {
+    renderAt("/gallery");
+    const dashboard = await screen.findByRole("radio", { name: "Dashboard" });
+    fireEvent.click(dashboard);
+    await waitFor(() => expect(address()).toBe("/gallery?view=dashboard"));
+    expect(screen.getByRole("radio", { name: "Dashboard" })).toHaveAttribute("aria-checked", "true");
+    expect(await screen.findByTestId("gallery-feed")).toBeInTheDocument();
+  });
+
+  it("writes the search 300ms after typing stops, and Clear all keeps the sort", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderAt("/gallery?sort=rebuilt&for=lawyers");
+      const field = await screen.findByRole("searchbox", { name: "Search the gallery" });
+      fireEvent.change(field, { target: { value: "inbox" } });
+      expect(address()).toBe("/gallery?for=lawyers&sort=rebuilt");
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+      await waitFor(() => expect(address()).toBe("/gallery?for=lawyers&sort=rebuilt&q=inbox"));
+
+      fireEvent.click(await screen.findByRole("button", { name: "Clear all" }));
+      await waitFor(() => expect(address()).toBe("/gallery?sort=rebuilt"));
+      expect(screen.getByRole("searchbox", { name: "Search the gallery" })).toHaveValue("");
+    } finally {
+      vi.useRealTimers();
     }
   });
 
-  it("shows the lenses with their counts and writes the address when one is chosen", async () => {
-    renderAt("/gallery");
-    fireEvent.click(await screen.findByRole("button", { name: "Proven 2" }));
-    await waitFor(() => expect(address()).toBe("/gallery?lens=proven"));
-    await waitFor(() => expect(listGallery).toHaveBeenLastCalledWith(expect.objectContaining({ lens: "proven" })));
-  });
-
-  it("toggles a facet through the address, keeping the rest — and a shape the same way", async () => {
-    renderAt("/gallery?lens=rebuilt");
-
-    const forGroup = await screen.findByTestId("gallery-facets-made-for");
-    fireEvent.click(await within(forGroup).findByRole("button", { name: /lawyers/ }));
-    await waitFor(() => expect(address()).toBe("/gallery?lens=rebuilt&for=lawyers"));
-
-    const shapeGroup = screen.getByTestId("gallery-facets-shape");
-    fireEvent.click(await within(shapeGroup).findByRole("button", { name: /study/ }));
-    await waitFor(() => expect(address()).toBe("/gallery?lens=rebuilt&for=lawyers&shape=study"));
-    await waitFor(() =>
-      expect(listGallery).toHaveBeenLastCalledWith(expect.objectContaining({ madeFor: ["lawyers"], shapes: ["study"] })),
-    );
-
-    // On again → off again.
-    fireEvent.click(within(screen.getByTestId("gallery-facets-shape")).getByRole("button", { name: /study/ }));
-    await waitFor(() => expect(address()).toBe("/gallery?lens=rebuilt&for=lawyers"));
-  });
-
-  it("marks an applied facet as pressed, and steps the featured build aside while anything narrows the gallery", async () => {
-    renderAt("/gallery?for=lawyers");
-    const forGroup = await screen.findByTestId("gallery-facets-made-for");
-    expect((await within(forGroup).findByRole("button", { name: /lawyers/ })).getAttribute("aria-pressed")).toBe("true");
-    await screen.findByTestId("gallery-wall");
-    expect(screen.queryByTestId("gallery-featured")).toBeNull();
-  });
-
-  it("keeps an applied facet on offer even when it is outside the top of its group", async () => {
-    getGalleryFacets.mockResolvedValue({
-      roles: [1, 2, 3, 4, 5].map((n) => ({ value: `role-${n}`, count: 100 - n, label: null, logo_url: null })),
-      tools: [],
-    });
-    renderAt("/gallery?for=role-5");
-    const forGroup = await screen.findByTestId("gallery-facets-made-for");
-    expect(await within(forGroup).findAllByRole("button")).toHaveLength(5);
-    expect(within(forGroup).getByRole("button", { name: /role-5/ }).getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("tidies an address it cannot read in full", async () => {
-    renderAt("/gallery?lens=trending&focus=search&shape=toaster");
+  it("says nobody has hung a build for the search yet, with the way to ask for it", async () => {
+    listGalleryFeed.mockResolvedValue(allPage([]));
+    renderAt("/gallery?q=zzzz");
+    expect(await screen.findByText("Nobody has hung a build for “zzzz” yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ask for it on Bounties" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     await waitFor(() => expect(address()).toBe("/gallery"));
   });
 
-  it("appends the next 24 on Show more, and a new view starts again from the first page", async () => {
-    const first = Array.from({ length: GALLERY_PAGE_SIZE }, (_, i) => `p1-${i}`);
-    const second = ["p2-0", "p2-1"];
-    listGallery.mockImplementation(async ({ offset }: { offset: number }) =>
-      offset === 0 ? page(first, GALLERY_PAGE_SIZE + 2) : page(second, GALLERY_PAGE_SIZE + 2),
-    );
-    getFeaturedBuild.mockResolvedValue(null);
-
+  it("says That didn't load. when the read fails, and a retry asks again", async () => {
+    listGalleryFeed.mockRejectedValue(new Error("boom"));
     renderAt("/gallery");
-    await screen.findByTestId("gallery-wall");
-    expect(within(screen.getByTestId("gallery-wall")).getAllByRole("heading", { level: 3 })).toHaveLength(GALLERY_PAGE_SIZE);
-
-    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
-    await waitFor(() =>
-      expect(within(screen.getByTestId("gallery-wall")).getAllByRole("heading", { level: 3 })).toHaveLength(GALLERY_PAGE_SIZE + 2),
-    );
-    expect(listGallery).toHaveBeenLastCalledWith(expect.objectContaining({ offset: GALLERY_PAGE_SIZE }));
-    expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: /^Proven/ }));
-    await waitFor(() => expect(listGallery).toHaveBeenLastCalledWith(expect.objectContaining({ lens: "proven", offset: 0 })));
-  });
-
-  it("does not show the featured build twice", async () => {
-    listGallery.mockResolvedValue(page(["a", "f", "c"], 3));
-    renderAt("/gallery");
-    await screen.findByTestId("gallery-featured");
-    expect(within(screen.getByTestId("gallery-wall")).getAllByRole("heading", { level: 3 })).toHaveLength(2);
-  });
-
-  it("says nothing here yet for a lens with no builds, and its button goes back to the whole gallery", async () => {
-    listGallery.mockResolvedValue({ builds: [], total: 0 });
-    renderAt("/gallery?lens=unsolved");
-    expect(await screen.findByText("Nothing here yet.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "See all builds" }));
-    await waitFor(() => expect(address()).toBe("/gallery"));
-  });
-
-  it("says That didn't load. when the read fails, never the exception, and a retry asks again", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    listGallery.mockRejectedValueOnce(new Error("boom: relation builds does not exist")).mockResolvedValue(page(["a"], 1));
-    renderAt("/gallery");
-    const notice = await screen.findByTestId("gallery-notice");
-    expect(notice.textContent).toContain("That didn't load.");
-    expect(notice.textContent).not.toContain("boom");
-    // The real error went to the console, once.
-    expect(log.mock.calls.filter((call) => call.some((arg) => arg instanceof Error && arg.message.startsWith("boom")))).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    await screen.findByTestId("gallery-wall");
-    expect(listGallery).toHaveBeenCalledTimes(2);
-    log.mockRestore();
-  });
-
-  it("a failed stats read costs the stats, never the wall", async () => {
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    getGalleryStats.mockRejectedValue(new Error("nope"));
-    renderAt("/gallery");
-    await screen.findByTestId("gallery-wall");
-    const failed = await screen.findByTestId("gallery-stats-error");
-    expect(failed.textContent).toContain("Gallery figures");
-    expect(screen.queryByText("—")).toBeNull();
-    log.mockRestore();
+    expect(await screen.findByText("That didn't load.")).toBeInTheDocument();
+    expect(screen.queryByText("boom")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /try again|retry/i }));
+    await waitFor(() => expect(listGalleryFeed).toHaveBeenCalledTimes(2));
   });
 });

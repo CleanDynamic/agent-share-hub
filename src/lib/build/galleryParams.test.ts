@@ -98,3 +98,21 @@ describe("shapes (UI-P28)", () => {
   });
 });
 
+
+describe("UI-P49 — the feed's parameters", () => {
+  it("reads view, model and sort, and writes them back in their places", () => {
+    const params = parse("q=inbox&sort=reproduced&model=sonnet-5-5&for=lawyers&view=dashboard");
+    expect(params).toMatchObject({ view: "dashboard", model: "sonnet-5-5", sort: "reproduced", madeFor: ["lawyers"], query: "inbox" });
+    expect(galleryHref(params)).toBe("/gallery?view=dashboard&for=lawyers&model=sonnet-5-5&sort=reproduced&q=inbox");
+  });
+
+  it("leaves the defaults out: the feed, any model, newest", () => {
+    expect(parse("view=feed&sort=newest")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(galleryHref({ view: "feed", sort: "newest" })).toBe("/gallery");
+  });
+
+  it("drops a model the registry does not name and a sort it does not know", () => {
+    expect(parse("model=gpt-9&sort=trending")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(galleryHref({ model: "gpt-9", sort: "trending" as never })).toBe("/gallery");
+  });
+});
