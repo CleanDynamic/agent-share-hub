@@ -255,7 +255,7 @@ function OptionBody({ option }: { option: MenuOption }) {
   );
 }
 
-const groupHeading: CSSProperties = mono(11, {
+export const groupHeading: CSSProperties = mono(11, {
   color: t.label,
   textTransform: "uppercase",
   letterSpacing: ".08em",
@@ -264,7 +264,7 @@ const groupHeading: CSSProperties = mono(11, {
 
 /* ── desktop: the dropdowns ── */
 
-const menuContent: CSSProperties = {
+export const menuContent: CSSProperties = {
   width: 260,
   maxHeight: "min(70vh, 520px)",
   overflowY: "auto",
@@ -278,7 +278,7 @@ const menuContent: CSSProperties = {
   zIndex: 50,
 };
 
-const menuItem: CSSProperties = {
+export const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 8,
@@ -374,16 +374,19 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
 
 /* ── the search ── */
 
-function SearchField({
+export function SearchField({
   query,
   onSearch,
   phone,
   autoFocus = false,
+  size,
 }: {
   query: string | null;
   onSearch: (query: string | null) => void;
   phone: boolean;
   autoFocus?: boolean;
+  /** UI-P50: the dashboard's field is a fixed 260 × 38 instead of filling its row. */
+  size?: { width: number; height: number };
 }) {
   const [text, setText] = useState(query ?? "");
   /** The last value this field sent, so the address echoing it back does not rewrite what is being typed. */
@@ -416,12 +419,13 @@ function SearchField({
         send(text);
       }}
       style={{
-        flex: phone ? "1 1 auto" : "1 1 200px",
+        flex: size ? "0 0 auto" : phone ? "1 1 auto" : "1 1 200px",
+        width: size?.width,
         minWidth: 0,
         display: "flex",
         alignItems: "center",
         gap: 8,
-        height: phone ? 44 : 40,
+        height: size?.height ?? (phone ? 44 : 40),
         padding: "0 12px",
         boxSizing: "border-box",
         borderRadius: r.control,

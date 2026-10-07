@@ -18,13 +18,18 @@
 // the feed's three others. lens, with and shape are still read and written here
 // so existing links keep parsing; the feed page itself ignores them.
 //
+// UI-P50 — THE DASHBOARD ADDS tab (models | makers; builds is the resting tab),
+// lab, report (month | multi), active (7 | 30 | 90) and dsort (the dashboard's
+// own sort; engagement is the resting one). They sit after sort and before q,
+// so the feed's addresses are unchanged. A dashboard view can be shared.
+//
 // ONLY WHAT DIFFERS FROM THE DEFAULT IS WRITTEN. The All lens, an empty facet
 // and an empty query are the gallery's resting state, and /gallery is how that
 // state is spelled. Anything the gallery does not recognise — a lens it has no
 // name for, an unknown parameter, a query shorter than SEARCH_MIN — is dropped
 // on the way through, so parse followed by write is also a tidy.
 
-import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
 
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
 import { normaliseQuery } from "./search";
@@ -34,6 +39,29 @@ export type GalleryViewMode = "feed" | "dashboard";
 
 /** The feed's sorts, default first. */
 export const GALLERY_FEED_SORTS: readonly GalleryFeedSort[] = ["newest", "reproduced", "confirmed", "rebuilt"];
+
+/** UI-P50 — the dashboard's tabs, builds first (the resting tab, never written). */
+export type DashboardTab = "builds" | "models" | "makers";
+export const DASHBOARD_TABS: readonly DashboardTab[] = ["builds", "models", "makers"];
+
+/** UI-P50 — the dashboard's sorts, engagement first (the resting sort, never written). */
+export type DashboardSort = "engagement" | "prompts" | "sessions" | "turns" | "models" | "activity" | "name";
+export const DASHBOARD_SORTS: readonly DashboardSort[] = [
+  "engagement",
+  "prompts",
+  "sessions",
+  "turns",
+  "models",
+  "activity",
+  "name",
+];
+
+/** UI-P50 — "Active within" windows, in days. */
+export type DashboardActive = 7 | 30 | 90;
+export const DASHBOARD_ACTIVE: readonly DashboardActive[] = [7, 30, 90];
+
+/** UI-P50 — the two reporting toggles. */
+export type DashboardReport = "month" | "multi";
 
 /** Where the gallery lives. */
 const GALLERY_PATH = "/gallery";
@@ -58,6 +86,16 @@ export interface GalleryParams {
   model?: string;
   /** UI-P49. Present only when it is not newest. */
   sort?: GalleryFeedSort;
+  /** UI-P50. The dashboard's tab; present only when it is not Builds. */
+  tab?: Exclude<DashboardTab, "builds">;
+  /** UI-P50. A lab from the registry; chosen, it clears model. */
+  lab?: Lab;
+  /** UI-P50. "Active this month" or "Built over 3+ sessions". */
+  report?: DashboardReport;
+  /** UI-P50. Last activity within this many days. */
+  active?: DashboardActive;
+  /** UI-P50. The dashboard's sort; present only when it is not engagement. */
+  dsort?: Exclude<DashboardSort, "engagement">;
 }
 
 /** Trimmed, empty entries dropped, first occurrence kept. */
@@ -83,6 +121,27 @@ function isSort(value: string | null | undefined): value is GalleryFeedSort {
   return typeof value === "string" && (GALLERY_FEED_SORTS as readonly string[]).includes(value);
 }
 
+function isTab(value: string | null | undefined): value is Exclude<DashboardTab, "builds"> {
+  return value === "models" || value === "makers";
+}
+
+function isLab(value: string | null | undefined): value is Lab {
+  return typeof value === "string" && (LABS as readonly string[]).includes(value);
+}
+
+function isReport(value: string | null | undefined): value is DashboardReport {
+  return value === "month" || value === "multi";
+}
+
+function toActive(value: string | number | null | undefined): DashboardActive | null {
+  const days = Number(value);
+  return (DASHBOARD_ACTIVE as readonly number[]).includes(days) ? (days as DashboardActive) : null;
+}
+
+function isDashboardSort(value: string | null | undefined): value is Exclude<DashboardSort, "engagement"> {
+  return typeof value === "string" && value !== "engagement" && (DASHBOARD_SORTS as readonly string[]).includes(value);
+}
+
 function isLens(value: string | null): value is GalleryLens {
   return value !== null && (GALLERY_LENSES as readonly string[]).includes(value);
 }
@@ -96,6 +155,11 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const shapes = cleanShapes(search.getAll("shape"));
   const model = search.get("model");
   const sort = search.get("sort");
+  const tab = search.get("tab");
+  const lab = search.get("lab");
+  const report = search.get("report");
+  const active = toActive(search.get("active"));
+  const dsort = search.get("dsort");
   return {
     lens: isLens(lens) ? lens : "all",
     madeFor: cleanValues(search.getAll("for")),
@@ -105,12 +169,17 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     ...(search.get("view") === "dashboard" ? { view: "dashboard" as const } : {}),
     ...(isModel(model) ? { model } : {}),
     ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
+    ...(isTab(tab) ? { tab } : {}),
+    ...(isLab(lab) ? { lab } : {}),
+    ...(isReport(report) ? { report } : {}),
+    ...(active ? { active } : {}),
+    ...(isDashboardSort(dsort) ? { dsort } : {}),
   };
 }
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, sort, q.
+ * default, keys in the order view, lens, for, with, shape, model, sort, tab, lab, report, active, dsort, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -122,6 +191,12 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   for (const value of cleanShapes(params.shapes)) out.append("shape", value);
   if (isModel(params.model)) out.set("model", params.model);
   if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
+  if (isTab(params.tab)) out.set("tab", params.tab);
+  if (isLab(params.lab)) out.set("lab", params.lab);
+  if (isReport(params.report)) out.set("report", params.report);
+  const active = toActive(params.active);
+  if (active) out.set("active", String(active));
+  if (isDashboardSort(params.dsort)) out.set("dsort", params.dsort);
 
   const query = normaliseQuery(params.query ?? null);
   if (query !== null) out.set("q", query);
