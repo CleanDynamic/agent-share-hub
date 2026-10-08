@@ -1,5 +1,5 @@
-/* UI-P48 — Your sessions: the sessions this build was made from, and only
-   their prompts.
+/* UI-P48 — Your sessions: the sessions this build was made from and their
+   prompts, then every session that is in no build yet.
 
    PURE. Sessions in, intentions out: `ComposePage` loads them, and loads a
    session's prompts once its section is open (`onOpenChange` says which are).
@@ -15,8 +15,14 @@
    the + is the way. Once added, the prompt reads in `--text2` with "added" in
    place of the +, and it no longer drags.
 
-   UNDER THE SECTIONS, "+ Add a session" offers the sessions in no build yet (a
-   dropdown on desktop, a bottom sheet on the phone, as on Drafts), and the old
+   UNDER THE SECTIONS, EVERY SESSION IN NO BUILD YET is listed, newest first,
+   under "Not in a build yet", so whatever a connector stored is in this panel
+   without a second step (it replaces the "+ Add a session" menu, which held the
+   same sessions one level down). Six rows, then "Show N more" in place. A row's
+   + adds the session to this build (attachSession); it then comes back as a
+   numbered section like the rest. While that is on its way the + is disabled,
+   so a second press cannot claim it twice. A published build takes no new
+   sessions (a claim only adds to drafts), so there the rows have no +. The old
    paste screen stays one link away. */
 
 import * as Popover from "@radix-ui/react-popover";
@@ -30,18 +36,17 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { BottomSheet } from "@/components/shell/BottomSheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LABS, MODEL_VERSIONS } from "@/lib/models/registry";
-import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE, mono } from "@/lib/theme/type";
 
+import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
-import { addPromptLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
+import { addPromptLabel, addSessionLabel, MADE_WITH_ENTRY_MAX, promptDragData } from "./composeModel";
 import { PROMPT_DRAG_TYPE } from "./PromptsPanel";
 
 /** The desktop header is 64px tall; the panel sticks 24px under it. */
@@ -76,6 +81,8 @@ export interface ComposeOtherSession {
   firstPrompt: string;
   /** "Sonnet 5.5 · Today". */
   meta: string;
+  /** On its way into this build: the + is disabled until the lists are read again. */
+  adding: boolean;
 }
 
 export interface SessionsPanelProps {
@@ -92,10 +99,18 @@ export interface SessionsPanelProps {
   onRetryPrompts: (sessionId: string) => void;
   onAdd: (sessionId: string, ordinal: number) => void;
   onSetModel: (sessionId: string, model: string) => void;
-  /** The sessions in no build; null while they load. */
+  /** The sessions in no build, newest first; null until they have been read. */
   others: readonly ComposeOtherSession[] | null;
+  /** Reading them failed and there is nothing to show. */
+  othersError: boolean;
+  onRetryOthers: () => void;
+  /** False on a published build, which takes no new sessions: the rows are listed without a +. */
+  canAttach: boolean;
   onAttach: (sessionId: string) => void;
 }
+
+/** Rows "Not in a build yet" shows before "Show N more" ⟦hicks-law: six, then More in place⟧. */
+const WAITING_VISIBLE = 6;
 
 const floating: CSSProperties = {
   boxSizing: "border-box",
@@ -106,18 +121,6 @@ const floating: CSSProperties = {
   boxShadow: t.shadowFloat,
   color: t.text,
   zIndex: 50,
-};
-
-const menuItem: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  minHeight: 36,
-  padding: "4px 9px",
-  borderRadius: 10,
-  fontFamily: FIGTREE,
-  fontSize: 13,
-  cursor: "pointer",
-  outline: "none",
 };
 
 const textLink: CSSProperties = {
@@ -396,85 +399,112 @@ function SessionSection({
   );
 }
 
-/* ── + Add a session ── */
+/* ── Not in a build yet ── */
 
-function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone" | "others" | "onAttach">) {
-  const [sheet, setSheet] = useState(false);
-  const line: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-  const meta: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, color: t.text2 };
-  const empty = others !== null && others.length === 0;
-  const waiting = others === null;
-
-  const trigger = (
-    <Button variant="secondary" size={phone ? 44 : 38} fontSize={14} icon={Plus} fullWidth={phone} onClick={phone ? () => setSheet(true) : undefined}>
-      Add a session
-    </Button>
+function WaitingRow({
+  session,
+  phone,
+  fine,
+  canAttach,
+  onAttach,
+}: {
+  session: ComposeOtherSession;
+  phone: boolean;
+  fine: boolean;
+} & Pick<SessionsPanelProps, "canAttach" | "onAttach">) {
+  const [hover, setHover] = useState(false);
+  return (
+    <li
+      data-testid="waiting-session"
+      data-adding={session.adding ? "true" : undefined}
+      onMouseEnter={() => fine && setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        listStyle: "none",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "6px 4px 6px 6px",
+        borderRadius: 10,
+        background: hover ? t.rowHighlight : "transparent",
+      }}
+    >
+      <span style={{ display: "flex", flexDirection: "column", gap: 1, flexGrow: 1, minWidth: 0 }}>
+        <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.45, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {session.firstPrompt}
+        </span>
+        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{session.meta}</span>
+      </span>
+      {canAttach ? (
+        <IconButton
+          icon={Plus}
+          size={phone ? 38 : 30}
+          style={phone ? { width: 44, height: 44 } : undefined}
+          label={addSessionLabel(session.firstPrompt)}
+          disabled={session.adding}
+          onClick={() => onAttach(session.id)}
+        />
+      ) : null}
+    </li>
   );
+}
 
-  if (phone) {
-    return (
-      <>
-        {trigger}
-        <BottomSheet open={sheet} onOpenChange={setSheet} title="Add a session">
-          {waiting || empty ? (
-            <p style={{ margin: 0, padding: "6px 4px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
-              {waiting ? "Loading your sessions…" : "No other sessions."}
-            </p>
-          ) : (
-            others.map((session) => (
-              <button
-                key={session.id}
-                type="button"
-                onClick={() => {
-                  setSheet(false);
-                  onAttach(session.id);
-                }}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: 2,
-                  minHeight: 46,
-                  width: "100%",
-                  padding: "6px 4px",
-                  border: 0,
-                  background: "transparent",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                  minWidth: 0,
-                }}
-              >
-                <span style={{ ...line, fontSize: 14, maxWidth: "100%" }}>{session.firstPrompt}</span>
-                <span style={meta}>{session.meta}</span>
-              </button>
-            ))
-          )}
-        </BottomSheet>
-      </>
-    );
-  }
+function WaitingSessions({
+  phone,
+  fine,
+  others,
+  othersError,
+  onRetryOthers,
+  canAttach,
+  onAttach,
+}: Pick<SessionsPanelProps, "phone" | "fine" | "others" | "othersError" | "onRetryOthers" | "canAttach" | "onAttach">) {
+  const [all, setAll] = useState(false);
+  const headingId = useId();
+  const failed = othersError && others === null;
+  if (!failed && (others === null || others.length === 0)) return null;
+
+  const rows = others ?? [];
+  const more = rows.length - WAITING_VISIBLE;
+  const shown = all ? rows : rows.slice(0, WAITING_VISIBLE);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} style={{ ...floating, padding: 4, width: 320, maxHeight: 360, overflowY: "auto" }}>
-        {waiting || empty ? (
-          <DropdownMenuItem disabled className={MENU_ITEM_CLASS} style={{ ...menuItem, cursor: "default" }}>
-            {waiting ? "Loading your sessions…" : "No other sessions."}
-          </DropdownMenuItem>
-        ) : (
-          others.map((session) => (
-            <DropdownMenuItem key={session.id} className={MENU_ITEM_CLASS} style={menuItem} onSelect={() => onAttach(session.id)}>
-              <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, width: "100%" }}>
-                <span style={line}>{session.firstPrompt}</span>
-                <span style={meta}>{session.meta}</span>
-              </span>
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <section
+      data-testid="compose-waiting-sessions"
+      aria-labelledby={headingId}
+      style={{ marginTop: 10, paddingTop: 9, borderTop: `1px solid ${t.hairline}` }}
+    >
+      <h3 id={headingId} style={{ ...mono(11, { caps: true }), margin: 0, padding: "0 6px 4px", color: t.label }}>
+        Not in a build yet
+      </h3>
+      {failed ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 6px 2px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+          <span>These sessions didn&apos;t load.</span>
+          <TextButton underline target={phone} onClick={onRetryOthers} style={{ fontSize: 12 }}>
+            Try again
+          </TextButton>
+        </div>
+      ) : (
+        <>
+          {canAttach ? null : (
+            <p style={{ margin: 0, padding: "0 6px 4px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+              This build is published, so it takes no new sessions.
+            </p>
+          )}
+          <ul style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            {shown.map((session) => (
+              <WaitingRow key={session.id} session={session} phone={phone} fine={fine} canAttach={canAttach} onAttach={onAttach} />
+            ))}
+          </ul>
+          {more > 0 ? (
+            <div style={{ padding: "4px 6px 0" }}>
+              <TextButton underline target={phone} aria-expanded={all} onClick={() => setAll((open) => !open)} style={{ fontSize: 12 }}>
+                {all ? "Show fewer" : `Show ${more} more`}
+              </TextButton>
+            </div>
+          ) : null}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -492,6 +522,9 @@ export function SessionsPanel({
   onAdd,
   onSetModel,
   others,
+  othersError,
+  onRetryOthers,
+  canAttach,
   onAttach,
 }: SessionsPanelProps) {
   const drag = fine && !phone;
@@ -533,7 +566,7 @@ export function SessionsPanel({
           title={
             <>
               Your sessions
-              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{sessions.length}</span>
+              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{sessions.length + (others?.length ?? 0)}</span>
             </>
           }
           subtitle={drag ? "Drag a prompt into Prompts, or press +." : "Press + to add a prompt to Prompts."}
@@ -568,8 +601,17 @@ export function SessionsPanel({
           )}
         </div>
 
+        <WaitingSessions
+          phone={phone}
+          fine={drag}
+          others={others}
+          othersError={othersError}
+          onRetryOthers={onRetryOthers}
+          canAttach={canAttach}
+          onAttach={onAttach}
+        />
+
         <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "stretch" : "flex-start", gap: phone ? 4 : 7, marginTop: 10 }}>
-          <AddSession phone={phone} others={others} onAttach={onAttach} />
           <Link
             to="/compose/start"
             {...paste.handlers}

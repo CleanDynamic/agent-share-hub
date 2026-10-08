@@ -42,8 +42,13 @@ export interface ComposeSessions {
   sessions: SessionSummary[];
   status: "loading" | "error" | "ready";
   retry: () => void;
-  /** The sessions in no build; null while they load. */
+  /** The sessions in no build, newest first; null until they have been read. */
   others: SessionSummary[] | null;
+  /** Reading them failed and there is nothing to show. */
+  othersError: boolean;
+  retryOthers: () => void;
+  /** On its way into this build, until both lists have been read again. */
+  isAttaching: (sessionId: string) => boolean;
   setOpenIds: (ids: readonly string[]) => void;
   /** A session's prompts once read, and whether reading them failed. */
   promptsState: (sessionId: string) => { prompts: SessionPrompt[] | undefined; error: boolean };
@@ -185,13 +190,31 @@ export function useComposeSessions({
 
   /* ── sessions ── */
 
-  const refreshLists = () => {
-    void queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] });
-    void queryClient.invalidateQueries({ queryKey: ["build", "listSessions"] });
-    void queryClient.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] });
+  const refreshLists = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
+      queryClient.invalidateQueries({ queryKey: ["build", "listSessions"] }),
+      queryClient.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] }),
+    ]);
+
+  /**
+   * Sessions on their way into this build. A row stays in this set until both
+   * lists have been read again, so its + cannot be pressed a second time in the
+   * moment between the claim and the row leaving "Not in a build yet".
+   */
+  const [attaching, setAttaching] = useState<ReadonlySet<string>>(new Set());
+  const attachingRef = useRef(attaching);
+  const markAttaching = (sessionId: string, on: boolean) => {
+    const next = new Set(attachingRef.current);
+    if (on) next.add(sessionId);
+    else next.delete(sessionId);
+    attachingRef.current = next;
+    setAttaching(next);
   };
 
   const attach = (sessionId: string) => {
+    if (attachingRef.current.has(sessionId)) return;
+    markAttaching(sessionId, true);
     const session = (others.data ?? []).find((candidate) => candidate.id === sessionId) ?? null;
     enqueue(async () => {
       const id = await latest.current.ensureBuild();
@@ -204,7 +227,11 @@ export function useComposeSessions({
         console.error("[Compose] attachSession failed", cause);
         toast.error("Couldn't add that session. Try again.");
       })
-      .finally(refreshLists);
+      .finally(() =>
+        refreshLists()
+          .catch(() => undefined)
+          .then(() => markAttaching(sessionId, false)),
+      );
   };
 
   const setModel = (sessionId: string, model: string) =>
@@ -227,7 +254,10 @@ export function useComposeSessions({
     sessions: buildSessions.data ?? NO_SESSIONS,
     status,
     retry: () => void buildSessions.refetch(),
-    others: others.data ?? (others.isError ? [] : null),
+    others: others.data ?? null,
+    othersError: others.isError && others.data === undefined,
+    retryOthers: () => void others.refetch(),
+    isAttaching: (sessionId) => attaching.has(sessionId),
     setOpenIds,
     promptsState,
     promptsOf,

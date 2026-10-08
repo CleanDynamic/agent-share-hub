@@ -199,6 +199,11 @@ export function sessionMetaLine(session: Pick<SessionSummary, "modelName" | "cli
   return [sessionSource(session), sessionDate(session.createdAt, now)].filter(Boolean).join(" · ");
 }
 
+/** "Add to this build: {first 60 characters}", the + on a session not in a build yet. */
+export function addSessionLabel(firstPrompt: string): string {
+  return `Add to this build: ${firstPrompt.replace(/\s+/g, " ").trim().slice(0, ADD_PROMPT_LABEL_MAX).trimEnd()}`;
+}
+
 /** "Session added. Sonnet 5.5 is now under Made with.", naming what the refresh really added. */
 export function sessionAddedToast(session: Pick<SessionSummary, "modelName" | "client">, excluded: readonly string[]): string {
   const model = session.modelName && !excluded.some((name) => name.toLowerCase() === session.modelName?.toLowerCase()) ? session.modelName : null;

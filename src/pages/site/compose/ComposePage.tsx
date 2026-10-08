@@ -255,11 +255,14 @@ export function ComposePage() {
       promptsError: error,
     };
   });
+  // The two lists are read again side by side after a claim, so for a moment a
+  // session can be in this build's list and still in the stale waiting one.
   const otherSessions =
-    sessions.others?.map((session) => ({
+    sessions.others?.filter((session) => !sessions.sessions.some((own) => own.id === session.id)).map((session) => ({
       id: session.id,
       firstPrompt: session.firstPrompt ?? "Untitled session",
       meta: sessionMetaLine(session, now),
+      adding: sessions.isAttaching(session.id),
     })) ?? null;
   const madeWith = madeWithChips(sessions.sessions, sessions.madeWith);
 
@@ -369,6 +372,9 @@ export function ComposePage() {
           })
         }
         otherSessions={otherSessions}
+        otherSessionsError={sessions.othersError}
+        onRetryOtherSessions={sessions.retryOthers}
+        canAttachSessions={!live}
         onAttachSession={sessions.attach}
         madeWith={madeWith}
         onToggleMadeWith={sessions.toggleMadeWith}

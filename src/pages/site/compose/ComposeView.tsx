@@ -130,8 +130,13 @@ export interface ComposeViewProps {
   onRetrySessionPrompts: (sessionId: string) => void;
   onAddSessionPrompt: (sessionId: string, ordinal: number) => void;
   onSetSessionModel: (sessionId: string, model: string) => void;
-  /** The sessions in no build, for "+ Add a session"; null while they load. */
+  /** The sessions in no build, listed under "Not in a build yet"; null until they have been read. */
   otherSessions: readonly ComposeOtherSession[] | null;
+  /** Reading them failed and there is nothing to show. */
+  otherSessionsError: boolean;
+  onRetryOtherSessions: () => void;
+  /** False once the build is published: a claim only adds to drafts. */
+  canAttachSessions: boolean;
   onAttachSession: (sessionId: string) => void;
 
   /* ── UI-P48: Made with ── */
@@ -526,6 +531,9 @@ export function ComposeView(props: ComposeViewProps) {
       onAdd={props.onAddSessionPrompt}
       onSetModel={props.onSetSessionModel}
       others={props.otherSessions}
+      othersError={props.otherSessionsError}
+      onRetryOthers={props.onRetryOtherSessions}
+      canAttach={props.canAttachSessions}
       onAttach={props.onAttachSession}
     />
   );
