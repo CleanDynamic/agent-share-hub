@@ -16,7 +16,17 @@
    TWO TRACKS ON DESKTOP: Media, Text, Prompts, Made with and More details on
    the left; Your sessions on the right (340), sticky under the header. In one
    column (a phone, and 768 to 1023) Your sessions follows Prompts, is not
-   sticky, and More details stays last. */
+   sticky, and More details stays last.
+
+   DENSER SINCE UI-P58. No board draws the composer, so every size its files
+   set is the old value through the density table
+   (`design/prompts/README-density.md`), the workspace rule unchanged (flat
+   panels, no glass). Two floors hold on a phone: a control that was 44 or
+   taller stays 44 (the title field, the chips, the switches, the phone-only
+   hit areas), and a field's text stays 16px (iOS zoom). Coupled values are
+   not split: a hit area's padding and its negative margin, and the switch's
+   track and knob, keep their sizes. The brand pieces (Button, IconButton,
+   Panel, display()) take the drawn size and map it themselves. */
 
 import { Image as ImageIcon } from "lucide-react";
 import { useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
@@ -142,7 +152,7 @@ function LinkButton({ to, size, fontSize, variant, children }: { to: string | nu
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   const common: CSSProperties = {
     height: size,
-    padding: "0 14px",
+    padding: "0 10px",
     borderRadius: r.control,
     boxSizing: "border-box",
     fontFamily: FIGTREE,
@@ -229,9 +239,9 @@ function MediaPanel({
         }}
       />
 
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 12 }}>
         {cover ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
             <div style={{ aspectRatio: "16 / 9", borderRadius: r.media, overflow: "hidden", background: t.recess }}>
               {cover.url === null ? null : cover.kind === "video" ? (
                 <video src={cover.url} controls muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -242,7 +252,7 @@ function MediaPanel({
             {busy ? (
               <Adding pct={pct} />
             ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ flexGrow: 1, fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>Cover</span>
                 <TextButton onClick={pick}>Replace</TextButton>
                 <TextButton onClick={onRemoveCover}>Remove</TextButton>
@@ -260,7 +270,7 @@ function MediaPanel({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: 24,
+              padding: 17,
             }}
           >
             <div style={{ width: "100%", maxWidth: 360 }}>
@@ -283,15 +293,15 @@ function MediaPanel({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 6,
-              padding: 16,
+              gap: 4,
+              padding: 12,
               textAlign: "center",
               cursor: phone ? "pointer" : "default",
               ...(phone ? zoneRing : null),
             }}
           >
             <ImageIcon size={28} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" />
-            <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>
               {phone ? "Add a screenshot or a short video" : "Drop a screenshot or a short video"}
             </span>
             <TextButton
@@ -306,7 +316,7 @@ function MediaPanel({
           </div>
         )}
         {mediaError ? (
-          <p role="alert" style={{ margin: "10px 0 0", fontFamily: FIGTREE, fontSize: 14, color: t.catBreakage }}>
+          <p role="alert" style={{ margin: "7px 0 0", fontFamily: FIGTREE, fontSize: 13, color: t.catBreakage }}>
             {mediaError}
           </p>
         ) : null}
@@ -318,7 +328,7 @@ function MediaPanel({
 /** "Adding… 40%": the vocabulary never says "upload". */
 function Adding({ pct }: { pct: number }) {
   return (
-    <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div role="status" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div style={{ height: 4, borderRadius: 2, background: t.barBase, overflow: "hidden" }}>
         <div style={{ width: `${pct}%`, height: "100%", background: t.evidence }} />
       </div>
@@ -345,7 +355,7 @@ function TextPanel({
   return (
     <Panel surface="flat" padding={phone ? "16px" : "24px"}>
       <PanelHead title="Text" subtitle="Shown on your build's card." headingLevel={2} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
         <Field id="compose-title" label="Title">
           <input
             id="compose-title"
@@ -355,7 +365,7 @@ function TextPanel({
             autoComplete="off"
             onChange={(event) => onTitle(event.target.value)}
             {...titleRing.handlers}
-            style={{ ...fieldBase, height: 44, padding: "0 14px", fontSize: 17, fontWeight: 600, ...titleRing.style }}
+            style={{ ...fieldBase, height: phone ? 44 : 36, padding: "0 10px", fontSize: 16, fontWeight: 600, ...titleRing.style }}
           />
         </Field>
 
@@ -372,7 +382,7 @@ function TextPanel({
             placeholder="What does it do, and who is it for? One or two sentences."
             onChange={(event) => onDescription(event.target.value)}
             {...descRing.handlers}
-            style={{ ...fieldBase, padding: "12px 14px", fontSize: 16, lineHeight: 1.5, resize: "vertical", display: "block", ...descRing.style }}
+            style={{ ...fieldBase, padding: "9px 10px", fontSize: phone ? 16 : 15, lineHeight: 1.5, resize: "vertical", display: "block", ...descRing.style }}
           />
         </Field>
 
@@ -385,7 +395,7 @@ function TextPanel({
             autoComplete="off"
             onChange={(event) => onAudience(event.target.value)}
             {...forRing.handlers}
-            style={{ ...fieldBase, height: 40, padding: "0 14px", fontSize: phone ? 16 : 15, ...forRing.style }}
+            style={{ ...fieldBase, height: 33, padding: "0 10px", fontSize: phone ? 16 : 14, ...forRing.style }}
           />
           <datalist id="compose-audience-options">
             {audienceOptions.map((option) => (
@@ -403,15 +413,15 @@ function TextPanel({
 function Skeletons({ phone }: { phone: boolean }) {
   return (
     <LoadingRegion what="the composer" announce>
-      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 12 : 16 }}>
-        <Skeleton width={phone ? "70%" : 360} height={phone ? 30 : 40} radius={r.chip} />
+      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 9 : 12 }}>
+        <Skeleton width={phone ? "70%" : 360} height={phone ? 25 : 33} radius={r.chip} />
         <Panel surface="flat" padding={phone ? "16px" : "24px"}>
           <Skeleton width={120} height={16} />
-          <Skeleton height={phone ? 180 : 320} radius={r.media} style={{ marginTop: 16, aspectRatio: "16 / 9" }} />
+          <Skeleton height={phone ? 180 : 320} radius={r.media} style={{ marginTop: 12, aspectRatio: "16 / 9" }} />
         </Panel>
         <Panel surface="flat" padding={phone ? "16px" : "24px"}>
           <Skeleton width={120} height={16} />
-          <Skeleton height={44} radius={r.control} style={{ marginTop: 16 }} />
+          <Skeleton height={phone ? 44 : 36} radius={r.control} style={{ marginTop: 12 }} />
         </Panel>
       </div>
     </LoadingRegion>
@@ -422,10 +432,10 @@ function NotFound() {
   return (
     <Panel surface="flat" padding="24px" style={{ maxWidth: 520 }}>
       <h1 style={{ ...display(30), margin: 0, color: t.text }}>No build at this address</h1>
-      <p style={{ margin: "10px 0 14px", fontFamily: FIGTREE, fontSize: 15, color: t.text2 }}>
+      <p style={{ margin: "7px 0 10px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
         Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
       </p>
-      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: 14, color: t.text2, textDecoration: "underline" }}>
+      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline" }}>
         Start a new build
       </Link>
     </Panel>
@@ -456,13 +466,13 @@ export function ComposeView(props: ComposeViewProps) {
 
   const statusLine = (
     <>
-    <p data-testid="compose-status" style={{ margin: "6px 0 0", fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
+    <p data-testid="compose-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
       {published ? "Published" : "Draft"}
       {save !== "idle" ? <> · {SAVE_WORDS[save]}{save === "error" ? <TextButton onClick={props.onRetrySave}>Try again</TextButton> : null}</> : null}
       {needs && !published ? ` · still needs ${missing.join(", ")}` : null}
     </p>
     {props.intakeHref ? (
-      <Link to={props.intakeHref} style={{ display: "inline-block", marginTop: 8, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+      <Link to={props.intakeHref} style={{ display: "inline-block", marginTop: 6, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
         Paste a transcript or a repo instead
       </Link>
     ) : null}
@@ -535,11 +545,11 @@ export function ComposeView(props: ComposeViewProps) {
       style={{
         display: "grid",
         gridTemplateColumns: oneColumn ? "minmax(0, 1fr)" : "minmax(0, 1fr) 340px",
-        gap: phone ? 12 : 24,
+        gap: phone ? 9 : 17,
         alignItems: "start",
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 12 : 16, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 9 : 12, minWidth: 0 }}>
         <MediaPanel
           phone={phone}
           cover={props.cover}
@@ -573,16 +583,16 @@ export function ComposeView(props: ComposeViewProps) {
       role="status"
       data-testid="compose-published"
       style={{
-        padding: "12px 16px",
+        padding: "9px 12px",
         borderRadius: 12,
         background: t.evidenceFill,
         color: t.onEvidenceFill,
         fontFamily: FIGTREE,
-        fontSize: 14,
+        fontSize: 13,
         display: "flex",
         flexWrap: "wrap",
         alignItems: "baseline",
-        gap: 6,
+        gap: 4,
       }}
     >
       <span>
@@ -599,7 +609,7 @@ export function ComposeView(props: ComposeViewProps) {
 
   if (phone) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         <div>
           {heading}
           {statusLine}
@@ -614,8 +624,8 @@ export function ComposeView(props: ComposeViewProps) {
             bottom: "calc(92px + env(safe-area-inset-bottom))",
             zIndex: 5,
             display: "flex",
-            gap: 8,
-            padding: 10,
+            gap: 6,
+            padding: 7,
             borderRadius: 16,
             background: t.solid,
             border: `1px solid ${t.line}`,
@@ -637,13 +647,13 @@ export function ComposeView(props: ComposeViewProps) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           {heading}
           {statusLine}
         </div>
-        <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
           <LinkButton to={props.slug ? `/b2/${props.slug}` : null} size={42} fontSize={14} variant="secondary">
             Preview
           </LinkButton>

@@ -177,7 +177,7 @@ function StepList({
                 letterSpacing: ".09em",
                 textTransform: "uppercase",
                 color: t.label,
-                padding: "12px 0 4px",
+                padding: "9px 0 4px",
               }}
             >
               {run.title ?? "Unphased"}
@@ -209,11 +209,12 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
         style={{
           display: "grid",
           gridTemplateColumns: phone ? "48px 78px minmax(0, 1fr)" : "44px 74px minmax(0, 1fr)",
-          gap: 8,
+          gap: 6,
           alignItems: "center",
           width: "100%",
-          minHeight: phone ? 44 : 34,
-          padding: "0 10px",
+          /* A step is a control: 44 on a phone (the touch floor), 34 → 28 above it. */
+          minHeight: phone ? 44 : 28,
+          padding: "0 7px",
           borderRadius: r.control,
           border: 0,
           background: current ? t.rowHighlight : "transparent",
@@ -229,7 +230,7 @@ function StepRow({ event, current, phone, onGo }: { event: ReplayEventView; curr
         <span
           style={{
             fontFamily: FIGTREE,
-            fontSize: phone ? 14 : 13,
+            fontSize: phone ? 13 : 12,
             lineHeight: 1.4,
             color: t.text,
             whiteSpace: "nowrap",
@@ -313,8 +314,8 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
   };
 
   return (
-    <section data-testid="build-replay" aria-label="Watch it get built" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "34px minmax(0, 1fr) auto", gap: 12, alignItems: "center", paddingTop: markers.length > 0 ? 10 : 0 }}>
+    <section data-testid="build-replay" aria-label="Watch it get built" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "34px minmax(0, 1fr) auto", gap: 9, alignItems: "center", paddingTop: markers.length > 0 ? 7 : 0 }}>
         <IconButton
           icon={playing ? Pause : Play}
           label={playing ? "Pause the build" : "Play the build"}
@@ -370,11 +371,11 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
       ) : null}
 
       <div data-testid="build-replay-current" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
           <span style={kindStyle(current.kind)}>{current.kind}</span>
           <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{current.at}</span>
         </div>
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.65, color: t.text, whiteSpace: "pre-wrap" }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.65, color: t.text, whiteSpace: "pre-wrap" }}>
           {current.text}
         </p>
       </div>
@@ -394,13 +395,13 @@ export function ReplayBody({ replay, phone = false }: { replay: ReplayView; phon
         </div>
       ) : null}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <Eyebrow size={10}>What existed at step {current.ordinal}</Eyebrow>
         {made ? (
           <div
             data-testid="build-replay-produced"
             data-produced-by-ordinal={made.ordinal}
-            style={{ border: `1px solid ${t.line}`, borderRadius: r.control, padding: "12px 14px", minWidth: 0 }}
+            style={{ border: `1px solid ${t.line}`, borderRadius: r.control, padding: "9px 10px", minWidth: 0 }}
           >
             {made.node}
           </div>

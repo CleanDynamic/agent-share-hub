@@ -85,14 +85,14 @@ function ListTable({ field, rows }: { field: FieldDef; rows: unknown[] }) {
   // A list of bare scalars ("tags": ["a","b"]) has no member fields at all.
   if (members.length === 0) {
     return (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
         {rows.map((row, index) => (
           <span
             key={index}
             style={{
               ...chipType,
               color: t.text2,
-              padding: "2px 8px",
+              padding: "2px 6px",
               borderRadius: r.chip,
               border: `1px solid ${t.line}`,
             }}
@@ -122,7 +122,7 @@ function ListTable({ field, rows }: { field: FieldDef; rows: unknown[] }) {
                   ...eyebrow,
                   color: t.text2,
                   textAlign: "left",
-                  padding: "4px 10px 4px 0",
+                  padding: "4px 7px 4px 0",
                   borderBottom: `1px solid ${t.line}`,
                   whiteSpace: "nowrap",
                 }}
@@ -148,7 +148,7 @@ function ListTable({ field, rows }: { field: FieldDef; rows: unknown[] }) {
                       ...tabular,
                       color: t.text,
                       verticalAlign: "top",
-                      padding: "6px 10px 6px 0",
+                      padding: "4px 7px 4px 0",
                       borderBottom: `1px solid ${t.line}`,
                     }}
                   >
@@ -178,7 +178,7 @@ function renderScalar(field: FieldDef, value: unknown): ReactNode {
         <span
           style={{
             ...chipType,
-            padding: "1px 8px",
+            padding: "1px 6px",
             borderRadius: r.chip,
             border: `1px solid ${t.line}`,
             color: t.text2,
@@ -228,7 +228,7 @@ export function GenericPayload({ payload, fields }: GenericPayloadProps) {
   if (present.length === 0) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       {present.map((field) => {
         const value = record[field.key];
         return (

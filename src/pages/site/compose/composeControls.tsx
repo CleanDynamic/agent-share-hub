@@ -12,7 +12,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 const text2Button: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   color: t.text2,
   background: "transparent",
   border: 0,
@@ -70,12 +70,12 @@ export function TextButton({
 
 export function Field({ id, label, hint, right, children }: { id: string; label: string; hint?: string; right?: ReactNode; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <label htmlFor={id} style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 500, color: t.text }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <label htmlFor={id} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text }}>
           {label}
         </label>
-        {hint ? <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{hint}</span> : null}
+        {hint ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{hint}</span> : null}
         {right ? <span style={{ marginLeft: "auto" }}>{right}</span> : null}
       </div>
       {children}

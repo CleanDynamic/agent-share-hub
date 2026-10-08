@@ -24,7 +24,7 @@ import type { WhereNextRowView } from "./buildModel";
 /** The column under the first screen: full width, 12 apart, 12 below the first screen. */
 export function LowerSections({ children }: { children: ReactNode }) {
   return (
-    <div data-testid="build-lower" style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+    <div data-testid="build-lower" style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 9 }}>
       {children}
     </div>
   );
@@ -53,11 +53,11 @@ export function WhereNextPanels({ rows, phone }: { rows: readonly WhereNextRowVi
               aria-label={row.heading}
               style={{
                 listStyle: "none",
-                margin: "12px 0 0",
+                margin: "9px 0 0",
                 padding: 0,
                 display: "grid",
                 gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
-                gap: phone ? 10 : 12,
+                gap: phone ? 7 : 9,
                 alignItems: "start",
               }}
             >

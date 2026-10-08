@@ -96,7 +96,7 @@ function TreatmentPill({ treatment }: { treatment: NodeTreatment }) {
         ...dataType,
         flexShrink: 0,
         fontSize: 10,
-        padding: "1px 6px",
+        padding: "1px 4px",
         /* --r-chip. Nothing is a pill: the capsule rule was removed with the
            rest of the shape language, and 100px on a badge is off-brand now. */
         borderRadius: r.chip,
@@ -142,7 +142,7 @@ function BountyPill({ bounty }: { bounty: Bounty }) {
         ...dataType,
         flexShrink: 0,
         fontSize: 10,
-        padding: "1px 6px",
+        padding: "1px 4px",
         // --r-chip. Nothing is a pill, whatever this one is called.
         borderRadius: r.chip,
         background: t.evidenceFill,
@@ -207,8 +207,8 @@ export function TypePill({ nodeType, typeKey }: { nodeType?: NodeType; typeKey: 
 }
 
 const iconButton: CSSProperties = {
-  width: 20,
-  height: 20,
+  width: 16,
+  height: 16,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -318,8 +318,8 @@ export function TreeNode({
   const rowStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    padding: "6px 10px 6px 8px",
+    gap: 6,
+    padding: "4px 7px 4px 6px",
     /* A row is a row: --r-control. The ground is --bg, so the tree reads as the
        working surface it is rather than as a stack of cards. */
     borderRadius: r.control,
@@ -390,7 +390,7 @@ export function TreeNode({
             minWidth: 0,
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: 6,
             background: "transparent",
             border: "none",
             padding: 0,
@@ -403,7 +403,7 @@ export function TreeNode({
           <span
             style={{
               ...body,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 400,
               color: node.title ? t.text : t.text2,
               overflow: "hidden",
@@ -424,7 +424,7 @@ export function TreeNode({
             <button
               type="button"
               aria-label={`Actions for ${node.title || node.type}`}
-              style={{ ...iconButton, color: t.text2, fontSize: 14, lineHeight: 1 }}
+              style={{ ...iconButton, color: t.text2, fontSize: 13, lineHeight: 1 }}
             >
               ⋯
             </button>
@@ -436,7 +436,7 @@ export function TreeNode({
           >
             <DropdownMenuItem
               onSelect={() => drag.moveToTray(node.id)}
-              style={{ ...body, fontSize: 13, color: t.text, cursor: "pointer" }}
+              style={{ ...body, fontSize: 12, color: t.text, cursor: "pointer" }}
             >
               Move to tray
             </DropdownMenuItem>
@@ -447,7 +447,7 @@ export function TreeNode({
                 if (descendants > 0) setConfirmOpen(true);
                 else deleteNode();
               }}
-              style={{ ...body, fontSize: 13, color: t.catBreakage, cursor: "pointer" }}
+              style={{ ...body, fontSize: 12, color: t.catBreakage, cursor: "pointer" }}
             >
               Delete
             </DropdownMenuItem>

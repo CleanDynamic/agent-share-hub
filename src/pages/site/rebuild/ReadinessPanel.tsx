@@ -15,8 +15,10 @@
    and on a phone, where the board draws Publish alone, it is the way on.
 
    Desktop: a row (OrbRing 120; Rebuild readiness, display 22, Figtree 12),
-   the credit box 14 below, the actions 14 below. Phone: OrbRing 112, display 20,
-   Figtree 13, the credit's sentence at 14, a full-width 48/15 primary.
+   the credit box 10 below, the actions 10 below. Phone: OrbRing 112, display 20,
+   Figtree 12, the credit's sentence at 13, a full-width 48/15 primary (the
+   Button maps it: 44 tall on a phone). Sizes are after UI-P58's density table;
+   `display()` and the brand primitives take the drawn size.
 
    PURE. */
 
@@ -64,14 +66,14 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
   return (
     <div
       data-testid="rebuild-credit-box"
-      style={{ marginTop: 14, padding: "12px 14px", borderRadius: r.control, background: t.inset, border: `1px solid ${t.line}` }}
+      style={{ marginTop: 10, padding: "9px 10px", borderRadius: r.control, background: t.inset, border: `1px solid ${t.line}` }}
     >
       <Eyebrow size={10}>The credit it will carry</Eyebrow>
       <p
         data-testid="rebuild-credit-line"
         data-rebuild-credit=""
         title={line}
-        style={{ margin: "6px 0 0", fontFamily: FIGTREE, fontSize: phone ? 14 : 13, lineHeight: "normal", color: t.text }}
+        style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text }}
       >
         Rebuilt from <i>{credit.title}</i>
         {credit.handle ? ` by @${credit.handle}` : null}
@@ -147,13 +149,13 @@ export function ReadinessPanel({
   return (
     <Panel padding={phone ? "16px" : "16px 18px"} style={fill ? { height: "100%" } : undefined}>
       <div data-testid="readiness-panel" data-ready={readiness.ready ? "" : undefined}>
-        <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
           {orb}
-          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 6 : 8, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 4 : 6, minWidth: 0 }}>
             <Eyebrow>{phone ? "Readiness" : "Rebuild readiness"}</Eyebrow>
             <div style={{ ...display(phone ? 20 : 22), lineHeight: 1.1, letterSpacing: "-0.02em", color: t.text }}>{readiness.headline}</div>
             {readiness.next ? (
-              <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text2 }}>
+              <div id={nextId} style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
                 {workspaceTo ? <NextLink to={workspaceTo}>{readiness.next}</NextLink> : readiness.next}
               </div>
             ) : null}
@@ -161,9 +163,9 @@ export function ReadinessPanel({
         </div>
         <CreditBox credit={credit} phone={phone} />
         {phone ? (
-          <div style={{ marginTop: 14 }}>{publish}</div>
+          <div style={{ marginTop: 10 }}>{publish}</div>
         ) : (
-          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
             {publish}
             <Button data-testid="rebuild-keep-draft" variant="ghost" size={36} fontSize={13} onClick={onKeepDraft}>
               Keep as draft
@@ -176,7 +178,7 @@ export function ReadinessPanel({
             panel="Publish rebuild"
             onRetry={failure.onRetry}
             error={failure.error}
-            style={{ marginTop: 12 }}
+            style={{ marginTop: 9 }}
             data-testid="rebuild-publish-error"
           />
         ) : null}

@@ -32,8 +32,8 @@ export const PROMPT_DRAG_TYPE = "application/x-buildgallery-prompt";
 /** How long after an arrow is pressed its row still takes the focus back once the move lands. */
 const REFOCUS_MS = 5000;
 
-/** The prompt field's line, in px: 15px at line-height 1.5. */
-const LINE = 22.5;
+/** The prompt field's line, in px: 14px at line-height 1.5 (15px until UI-P58's density table). */
+const LINE = 21;
 const MAX_LINES = 6;
 
 export interface ComposePromptRow {
@@ -162,8 +162,8 @@ function PromptRow({
         listStyle: "none",
         display: "flex",
         alignItems: "flex-start",
-        gap: 12,
-        padding: 12,
+        gap: 9,
+        padding: 9,
         borderRadius: r.control,
         background: t.field,
         border: `1px solid ${t.hairline}`,
@@ -174,8 +174,8 @@ function PromptRow({
       <span
         aria-hidden="true"
         style={{
-          width: 24,
-          height: 24,
+          width: 20,
+          height: 20,
           borderRadius: r.full,
           background: t.cell,
           color: t.text,
@@ -190,7 +190,7 @@ function PromptRow({
         {n}
       </span>
       {/* The field's size is set here: index.css makes every field's font-size `inherit !important` from 768px. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0, fontSize: phone ? 16 : 15 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0, fontSize: phone ? 16 : 14 }}>
         <textarea
           ref={field}
           rows={1}
@@ -208,7 +208,7 @@ function PromptRow({
             borderRadius: 4,
             color: t.text,
             fontFamily: FIGTREE,
-            fontSize: phone ? 16 : 15,
+            fontSize: phone ? 16 : 14,
             lineHeight: 1.5,
             resize: "none",
             outline: "none",
@@ -269,15 +269,15 @@ export function PromptsPanel({ phone, fine, prompts, focus, onText, onMove, onRe
           title={
             <>
               Prompts
-              <span style={{ marginLeft: 8, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{prompts.length}</span>
+              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{prompts.length}</span>
             </>
           }
           subtitle="The prompts someone needs to get the same result, in order."
           headingLevel={2}
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
           {prompts.length > 0 ? (
-            <ol style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <ol style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
               {prompts.map((row, index) => (
                 <PromptRow
                   key={row.key}
@@ -298,7 +298,7 @@ export function PromptsPanel({ phone, fine, prompts, focus, onText, onMove, onRe
           <div
             data-testid="compose-prompt-drop"
             style={{
-              minHeight: 52,
+              minHeight: 43,
               borderRadius: r.control,
               border: `1.5px dashed ${t.line}`,
               boxSizing: "border-box",
@@ -307,10 +307,10 @@ export function PromptsPanel({ phone, fine, prompts, focus, onText, onMove, onRe
               alignItems: "center",
               justifyContent: "center",
               gap: 4,
-              padding: "8px 12px",
+              padding: "6px 9px",
               textAlign: "center",
               fontFamily: FIGTREE,
-              fontSize: 14,
+              fontSize: 13,
               color: t.text2,
             }}
           >

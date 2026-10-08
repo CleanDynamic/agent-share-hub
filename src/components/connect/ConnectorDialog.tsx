@@ -96,8 +96,8 @@ export function ConnectorDialog({ open, onOpenChange }: ConnectorDialogProps) {
             fontFamily: FIGTREE,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "24px 24px 0" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9, padding: "17px 17px 0" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <Eyebrow>Connector</Eyebrow>
               <Dialog.Title style={{ ...display(28), margin: 0, color: t.text }}>
                 Send your sessions to buildgallery

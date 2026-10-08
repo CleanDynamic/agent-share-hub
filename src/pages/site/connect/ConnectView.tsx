@@ -14,12 +14,12 @@ export type ConnectViewProps = Omit<ConnectorGuideProps, "doneLabel" | "gutter">
 export function ConnectView(props: ConnectViewProps) {
   const phone = useIsPhone();
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 720, minWidth: 0 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 720, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <h1 style={{ ...(phone ? display(32, { mobilePageHeading: true }) : display(44)), margin: 0, color: t.text }}>
           Connect a tool
         </h1>
-        <p style={{ fontFamily: FIGTREE, fontSize: 15, lineHeight: 1.5, margin: 0, color: t.text2 }}>
+        <p style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, margin: 0, color: t.text2 }}>
           Send the chats you build in to buildgallery, then turn them into builds.
         </p>
       </div>

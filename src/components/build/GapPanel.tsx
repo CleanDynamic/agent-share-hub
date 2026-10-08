@@ -198,13 +198,13 @@ export function GapPanel({
               ...buttonStyle(marked ? "outline" : "ghost"),
               ...chipType,
               fontFamily: "inherit",
-              padding: "7px 12px",
+              padding: "5px 9px",
               cursor: meToo.isPending ? "wait" : "pointer",
             }}
           >
             {marked ? ME_TOO_MARKED : ME_TOO_LABEL}
             {count > 0 ? (
-              <span style={{ marginLeft: 6, ...tabular }}>{count}</span>
+              <span style={{ marginLeft: 4, ...tabular }}>{count}</span>
             ) : null}
           </button>
         }

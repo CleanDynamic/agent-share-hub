@@ -81,7 +81,7 @@ function CopyButton({ text }: { text: string }) {
         ...action.style,
         ...labelType,
         marginLeft: "auto",
-        padding: "2px 9px",
+        padding: "2px 6px",
         ...(copied
           ? { background: t.evidenceFill, color: t.evidence, borderColor: t.evidence }
           : {}),
@@ -105,10 +105,10 @@ export function NodeCard({
 
   const surface: CSSProperties = {
     ...cardGlass,
-    padding: "14px 16px",
+    padding: "10px 12px",
     display: "flex",
     flexDirection: "column",
-    gap: 10,
+    gap: 7,
     /* A gap keeps the ordinary node shape and redraws its left edge (BG-P11).
        DASHED rather than the 3px SOLID this file used to draw: solid says
        "this is what it is" and dashed says "this is where something goes",
@@ -130,7 +130,7 @@ export function NodeCard({
       data-node-type={node.type}
       style={surface}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         {/* A GAP KEEPS ITS OWN CATEGORY CHIP. A gap on an agent config is still
             configuration — that is what routes it to people who write agent
             configs — so the chip is the part's own hue and the breakage red is

@@ -122,8 +122,10 @@ describe("depth is alignment and a guide, never nested boxes", () => {
       styleOf(list).includes("border-left"),
     );
     // 18px, the chevron's own width, so the guide lands under the control that
-    // opened the level rather than at an arbitrary inset.
-    expect(styleOf(guide)).toContain("margin:10px 0 0 18px");
+    // opened the level rather than at an arbitrary inset. UI-P52 density pass:
+    // the 10px above the level is 7 through the table; the 18px indent is a
+    // width (the chevron's) and stays.
+    expect(styleOf(guide)).toContain("margin:7px 0 0 18px");
   });
 
   it("collapses and expands a level without losing the guide", () => {

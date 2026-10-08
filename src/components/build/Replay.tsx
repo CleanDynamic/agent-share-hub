@@ -185,7 +185,7 @@ export function producedAt(
  */
 const controlStyle: CSSProperties = {
   ...labelType,
-  padding: "5px 11px",
+  padding: "5px 8px",
   borderRadius: r.chip,
   border: `1px solid ${t.line}`,
   background: "transparent",
@@ -201,7 +201,7 @@ function KindPill({ kind }: { kind: string | null }) {
         ...eyebrow,
         color: fill.color,
         background: fill.background,
-        padding: "2px 7px",
+        padding: "2px 5px",
         borderRadius: r.chip,
       }}
     >
@@ -236,10 +236,10 @@ function EventRow({
       data-visibility={event.visibility}
       style={{
         ...cardGlass,
-        padding: "12px 14px",
+        padding: "9px 10px",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 6,
         /* The current row, marked by an edge and a wash of the action hue.
            The edge occupies its 3px at rest in transparent, so stepping
            through the list moves a colour and never a box. */
@@ -247,7 +247,7 @@ function EventRow({
         background: current ? hexToRgba(t.action, 0.05) : cardGlass.background,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <button
           type="button"
           onClick={() => onSelect(index)}
@@ -273,7 +273,7 @@ function EventRow({
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
-            style={{ ...controlStyle, marginLeft: "auto", padding: "2px 9px" }}
+            style={{ ...controlStyle, marginLeft: "auto", padding: "2px 6px" }}
           >
             {open ? "fold" : "reveal"}
           </button>
@@ -447,7 +447,7 @@ export function Replay({
     return (
       <p
         data-visual-slot="build-replay-empty"
-        style={{ ...bodyType, ...measure, color: t.text2, margin: 0, padding: "48px 0" }}
+        style={{ ...bodyType, ...measure, color: t.text2, margin: 0, padding: "35px 0" }}
       >
         No sequence was recorded for this build.
       </p>
@@ -460,7 +460,7 @@ export function Replay({
   return (
     <section
       data-visual-slot="build-replay"
-      style={{ display: "flex", flexDirection: "column", gap: 24 }}
+      style={{ display: "flex", flexDirection: "column", gap: 17 }}
     >
       <div
         /* THE SCRUBBER SITS IN A RECESS (BG-P21). It was a blurred panel, and
@@ -474,15 +474,15 @@ export function Replay({
           background: t.recess,
           border: `1px solid ${t.line}`,
           borderRadius: r.panel,
-          padding: "14px 16px 16px",
+          padding: "10px 12px 12px",
           display: "flex",
           flexDirection: "column",
-          gap: 10,
+          gap: 7,
         }}
       >
         <div style={{ overflowX: "auto" }}>
           {/* The phase headings, each spanning the ticks it owns. */}
-          <div style={{ display: "flex", gap: 2, minWidth: 320, marginBottom: 6 }}>
+          <div style={{ display: "flex", gap: 2, minWidth: 320, marginBottom: 4 }}>
             {runs.map((run) => (
               <div
                 key={run.key}
@@ -607,7 +607,7 @@ export function Replay({
                   style={{
                     flex: "1 1 0",
                     minWidth: 6,
-                    height: active ? 26 : 18,
+                    height: active ? 21 : 18,
                     alignSelf: "flex-end",
                     padding: 0,
                     border: "none",
@@ -627,7 +627,7 @@ export function Replay({
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={() => setPlaying((value) => !value)}
@@ -701,7 +701,7 @@ export function Replay({
         ) : null}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <span style={{ ...eyebrow, color: t.text2 }}>
           What existed at step {current.ordinal}
         </span>
@@ -722,9 +722,9 @@ export function Replay({
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         {runs.map((run) => (
-          <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {/* THE PHASE HEADING IN THE LIST IS MONO TOO, matching the one over
                 the scrubber: the same phase named twice must not be named in
                 two faces. A hairline above it does the grouping, so the list
@@ -734,7 +734,7 @@ export function Replay({
                 ...eyebrow,
                 margin: 0,
                 color: t.text,
-                paddingTop: 6,
+                paddingTop: 4,
                 borderTop: `1px solid ${t.line}`,
               }}
             >
@@ -747,7 +747,7 @@ export function Replay({
                 padding: 0,
                 display: "flex",
                 flexDirection: "column",
-                gap: 8,
+                gap: 6,
               }}
             >
               {events.slice(run.from, run.to + 1).map((event, offset) => {

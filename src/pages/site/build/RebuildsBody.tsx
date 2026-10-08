@@ -38,10 +38,11 @@ function FamilyLink({ to, phone }: { to: string; phone: boolean }) {
         alignSelf: "flex-start",
         display: "inline-flex",
         alignItems: "center",
-        gap: 7,
-        minHeight: 44,
+        gap: 5,
+        /* A 44px target on a phone; 36 above it, through the table. */
+        minHeight: phone ? 44 : 36,
         fontFamily: FIGTREE,
-        fontSize: phone ? 14 : 13,
+        fontSize: phone ? 13 : 12,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -61,7 +62,7 @@ export function RebuildsBody({ rebuilds, phone = false }: { rebuilds: RebuildsBo
   const gap = phone ? 10 : 12;
 
   return (
-    <section data-testid="build-rebuilds" aria-label="Rebuilds" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <section data-testid="build-rebuilds" aria-label="Rebuilds" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
       {loading ? (
         <LoadingRegion what="the rebuilds" data-testid="build-rebuilds-loading" style={{ display: "grid", gridTemplateColumns: columns, gap, alignItems: "start" }}>
           {Array.from({ length: phone ? 2 : 3 }, (_, index) => (

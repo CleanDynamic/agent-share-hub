@@ -116,8 +116,8 @@ function TrayItem({
   const style: CSSProperties = {
     display: "flex",
     flexDirection: "column",
-    gap: 6,
-    padding: "10px 10px 10px 8px",
+    gap: 4,
+    padding: "7px 7px 7px 6px",
     /* An item is a row, so `--r-control`. Flat on the ground with one hairline;
        selection is a `--action` left edge over a low-alpha `--action` ground,
        the same two moves the tree's selected row makes, so the two panels agree
@@ -153,7 +153,7 @@ function TrayItem({
         <span
           style={{
             ...body,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: 400,
             lineHeight: 1.5,
             color: summary ? t.text : t.text2,
@@ -214,8 +214,8 @@ export function TrayPanel({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 12,
-        padding: 18,
+        gap: 9,
+        padding: 13,
         minHeight: "100%",
         /* The drop answer is a ground, not a glow: --recess is the token for a
            surface the page is cut into, which is what a target should look like
@@ -248,7 +248,7 @@ export function TrayPanel({
           style={{
             ...body,
             margin: 0,
-            padding: "8px 10px",
+            padding: "6px 7px",
             borderRadius: r.chip,
             /* --evidence-fill is the measured ground for "this happened". The
                ink on it is --text, which the theme measures at 11.89 on
@@ -273,7 +273,7 @@ export function TrayPanel({
           style={{
             ...body,
             margin: 0,
-            padding: "8px 10px",
+            padding: "6px 7px",
             borderRadius: r.chip,
             border: `1px solid ${t.line}`,
             background: t.recess,
@@ -287,7 +287,7 @@ export function TrayPanel({
       ) : null}
 
       {hasItems ? (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
           {tray.map((node) => (
             <TrayItem
               key={node.id}
@@ -301,7 +301,7 @@ export function TrayPanel({
       ) : isOver ? (
         // Nothing at rest, but a drag still gets an answer: this hint is a reply
         // to a gesture the creator is already making, not an idle invitation.
-        <p style={{ ...body, fontSize: 13, lineHeight: 1.6, margin: 0, color: t.text2 }}>
+        <p style={{ ...body, fontSize: 12, lineHeight: 1.6, margin: 0, color: t.text2 }}>
           Drop it here to unplace it.
         </p>
       ) : null}

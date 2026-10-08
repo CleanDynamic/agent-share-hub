@@ -63,7 +63,7 @@ function GapZone({
     <div
       ref={setNodeRef}
       aria-hidden="true"
-      style={{ height: 10, display: "flex", alignItems: "center", padding: "0 8px" }}
+      style={{ height: 10, display: "flex", alignItems: "center", padding: "0 6px" }}
     >
       {/* --action is where it lands; --cat-breakage is why it cannot. The bar
           scales from the centre rather than animating its height, so an
@@ -116,7 +116,7 @@ function Level({ nodes, parentId, depth, ...shared }: LevelProps) {
       style={{
         listStyle: "none",
         margin: nested ? `0 0 0 ${INDENT}px` : 0,
-        padding: nested ? "0 0 0 12px" : 0,
+        padding: nested ? "0 0 0 9px" : 0,
         /* The hairline connector down the left of every nested level: --line is
            the token for exactly this, and depth is the only thing it says.
            Longhands, because a shorthand carrying a `var()` is dropped by
@@ -169,7 +169,7 @@ function EmptyTree({ drag }: { drag: NodeDrag }) {
     <div
       ref={setNodeRef}
       style={{
-        padding: "28px 18px",
+        padding: "20px 13px",
         borderRadius: r.control,
         borderWidth: 1,
         borderStyle: "dashed",
@@ -179,7 +179,7 @@ function EmptyTree({ drag }: { drag: NodeDrag }) {
         transition: rowTransition(),
       }}
     >
-      <p style={{ ...bodyText, fontSize: 13, margin: 0, color: t.text2 }}>
+      <p style={{ ...bodyText, fontSize: 12, margin: 0, color: t.text2 }}>
         Nothing is placed yet. Drag something across from the tray, or add a node.
       </p>
     </div>
@@ -194,8 +194,8 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
       style={{
         display: "flex",
         alignItems: "flex-start",
-        gap: 10,
-        padding: "8px 10px",
+        gap: 7,
+        padding: "6px 7px",
         borderRadius: r.chip,
         background: tokenAlpha("cat-breakage", 0.1),
         borderWidth: 1,
@@ -203,7 +203,7 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
         borderColor: t.catBreakage,
       }}
     >
-      <span style={{ ...bodyText, fontSize: 13, margin: 0, flex: 1, color: t.catBreakage }}>
+      <span style={{ ...bodyText, fontSize: 12, margin: 0, flex: 1, color: t.catBreakage }}>
         {reason}
       </span>
       <button
@@ -216,7 +216,7 @@ function RejectionBanner({ reason, onDismiss }: { reason: string; onDismiss: () 
           padding: 0,
           color: t.catBreakage,
           fontFamily: "inherit",
-          fontSize: 13,
+          fontSize: 12,
           cursor: "pointer",
         }}
       >
@@ -287,9 +287,9 @@ export function NodeTree({
   return (
     <div
       data-visual-slot="compose-node-tree"
-      style={{ display: "flex", flexDirection: "column", gap: 10, padding: 18 }}
+      style={{ display: "flex", flexDirection: "column", gap: 7, padding: 13 }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
         {/* The panel's own eyebrow: mono, like every other label naming a
             surface rather than sitting on one. It stays --text2 because the
             thread editor above is what this screen leads with — the tree is the

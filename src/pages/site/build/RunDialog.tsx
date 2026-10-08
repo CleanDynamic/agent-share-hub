@@ -56,9 +56,9 @@ const input: CSSProperties = {
   ...fieldStyle(),
   fontFamily: FIGTREE,
   /* 16px: anything smaller makes mobile Safari zoom the page on focus. */
-  fontSize: 16,
+  fontSize: 15,
   width: "100%",
-  padding: "10px 12px",
+  padding: "7px 9px",
   color: t.text,
   boxSizing: "border-box",
 };
@@ -103,7 +103,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
             maxHeight: "88dvh",
             overflowY: "auto",
             boxSizing: "border-box",
-            padding: "18px 20px 20px",
+            padding: "13px 14px 14px",
             borderRadius: r.panel,
             background: t.solid,
             border: `1px solid ${t.glassBorder}`,
@@ -112,8 +112,8 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
             fontFamily: FIGTREE,
           }}
         >
-          <form onSubmit={onForm} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <form onSubmit={onForm} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9 }}>
               <Dialog.Title style={{ ...display(22), margin: 0, color: t.text }}>
                 {creator ? "You ran your own build" : "You ran this build"}
               </Dialog.Title>
@@ -121,13 +121,13 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
                 <IconButton icon={X} label="Close" size={38} />
               </Dialog.Close>
             </div>
-            <Dialog.Description style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: t.text2 }}>
+            <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>
               {creator
                 ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
                 : "What you say here is what the next reader sees. Both answers are worth having."}
             </Dialog.Description>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label htmlFor={`${ids}-model`} style={label}>
                 Which model did you run it on?
               </label>
@@ -153,7 +153,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
             </div>
 
             {creator ? null : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label htmlFor={`${ids}-note`} style={label}>
                   Anything worth adding? (optional)
                 </label>
@@ -168,7 +168,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
               </div>
             )}
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
               {creator ? (
                 <span />
               ) : (

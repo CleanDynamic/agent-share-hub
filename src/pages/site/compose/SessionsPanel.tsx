@@ -99,7 +99,7 @@ export interface SessionsPanelProps {
 
 const floating: CSSProperties = {
   boxSizing: "border-box",
-  padding: 12,
+  padding: 9,
   borderRadius: r.panel,
   background: t.solid,
   border: `1px solid ${t.line}`,
@@ -111,18 +111,18 @@ const floating: CSSProperties = {
 const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  minHeight: 44,
-  padding: "6px 12px",
+  minHeight: 36,
+  padding: "4px 9px",
   borderRadius: 10,
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   cursor: "pointer",
   outline: "none",
 };
 
 const textLink: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   color: t.text2,
   textDecoration: "underline",
   background: "transparent",
@@ -156,7 +156,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
     setOther("");
   };
 
-  const control: CSSProperties = { ...fieldBase, height: phone ? 44 : 40, padding: "0 10px", fontSize: phone ? 16 : 15 };
+  const control: CSSProperties = { ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 };
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -167,7 +167,7 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
           ...textLink,
           position: "relative",
           zIndex: 1,
-          fontSize: 13,
+          fontSize: 12,
           whiteSpace: "nowrap",
           flexShrink: 0,
           ...(phone ? { padding: "12px 4px", margin: "-12px -4px", minHeight: 44 } : null),
@@ -178,8 +178,8 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content align="start" sideOffset={6} collisionPadding={16} style={{ ...floating, width: 280, maxWidth: "calc(100vw - 32px)" }}>
-          <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label htmlFor={`${id}-model`} style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600 }}>
+          <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <label htmlFor={`${id}-model`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>
               Which model was session {session.number}?
             </label>
             <select id={`${id}-model`} value={choice} onChange={(event) => setChoice(event.target.value)} style={control}>
@@ -260,8 +260,8 @@ function PromptItem({
         listStyle: "none",
         display: "flex",
         alignItems: "center",
-        gap: 8,
-        padding: "8px 6px 8px 8px",
+        gap: 6,
+        padding: "6px 4px 6px 6px",
         borderRadius: 10,
         background: hover ? t.rowHighlight : "transparent",
         cursor: draggable ? "grab" : "default",
@@ -272,7 +272,7 @@ function PromptItem({
           flexGrow: 1,
           minWidth: 0,
           fontFamily: FIGTREE,
-          fontSize: 14,
+          fontSize: 13,
           lineHeight: 1.45,
           color: prompt.added ? t.text2 : t.text,
           display: "-webkit-box",
@@ -323,7 +323,7 @@ function SessionSection({
 
   return (
     <section data-testid="compose-session" style={{ borderTop: first ? "none" : `1px solid ${t.hairline}`, padding: "4px 0" }}>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, minHeight: 44 }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 36 }}>
         <button
           type="button"
           aria-expanded={open}
@@ -345,17 +345,17 @@ function SessionSection({
         >
           <span style={VISUALLY_HIDDEN}>{`Session ${session.number}: ${session.label}, ${session.date}`}</span>
         </button>
-        <span aria-hidden="true" style={{ ...quiet, paddingLeft: 8, fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
+        <span aria-hidden="true" style={{ ...quiet, paddingLeft: 6, fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
           {session.number}
         </span>
         <span
           aria-hidden="true"
-          style={{ ...quiet, minWidth: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          style={{ ...quiet, minWidth: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
         >
           {session.label}
         </span>
         {session.modelKnown ? null : <AddModel session={session} phone={phone} onSetModel={onSetModel} />}
-        <span aria-hidden="true" style={{ ...quiet, fontFamily: FIGTREE, fontSize: 14, color: t.text2, whiteSpace: "nowrap" }}>
+        <span aria-hidden="true" style={{ ...quiet, fontFamily: FIGTREE, fontSize: 13, color: t.text2, whiteSpace: "nowrap" }}>
           · {session.date}
         </span>
         <ChevronDown
@@ -363,28 +363,28 @@ function SessionSection({
           size={16}
           strokeWidth={1.6}
           color="var(--text2)"
-          style={{ ...quiet, marginLeft: "auto", marginRight: 8, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: move() }}
+          style={{ ...quiet, marginLeft: "auto", marginRight: 6, flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: move() }}
         />
       </div>
 
       {open ? (
         <div id={listId} style={{ paddingTop: 2 }}>
           {session.promptsError ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 10px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 6px 7px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
               <span>These prompts didn&apos;t load.</span>
-              <button type="button" onClick={() => onRetryPrompts(session.id)} style={{ ...textLink, fontSize: 13 }}>
+              <button type="button" onClick={() => onRetryPrompts(session.id)} style={{ ...textLink, fontSize: 12 }}>
                 Try again
               </button>
             </div>
           ) : session.prompts === null ? (
-            <LoadingRegion what={`session ${session.number}'s prompts`} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "2px 0 6px" }}>
-              <Skeleton height={40} radius={10} />
-              <Skeleton height={40} radius={10} />
+            <LoadingRegion what={`session ${session.number}'s prompts`} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "2px 0 4px" }}>
+              <Skeleton height={33} radius={10} />
+              <Skeleton height={33} radius={10} />
             </LoadingRegion>
           ) : session.prompts.length === 0 ? (
-            <p style={{ margin: 0, padding: "6px 8px 10px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>No prompts in this session.</p>
+            <p style={{ margin: 0, padding: "4px 6px 7px", fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>No prompts in this session.</p>
           ) : (
-            <ul style={{ margin: 0, padding: "0 0 6px", display: "flex", flexDirection: "column", gap: 2 }}>
+            <ul style={{ margin: 0, padding: "0 0 4px", display: "flex", flexDirection: "column", gap: 2 }}>
               {session.prompts.map((prompt) => (
                 <PromptItem key={prompt.ordinal} sessionId={session.id} prompt={prompt} phone={phone} fine={fine} onAdd={onAdd} />
               ))}
@@ -400,7 +400,7 @@ function SessionSection({
 
 function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone" | "others" | "onAttach">) {
   const [sheet, setSheet] = useState(false);
-  const line: CSSProperties = { fontFamily: FIGTREE, fontSize: 14, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  const line: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   const meta: CSSProperties = { fontFamily: DM_MONO, fontSize: 11, color: t.text2 };
   const empty = others !== null && others.length === 0;
   const waiting = others === null;
@@ -417,7 +417,7 @@ function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone
         {trigger}
         <BottomSheet open={sheet} onOpenChange={setSheet} title="Add a session">
           {waiting || empty ? (
-            <p style={{ margin: 0, padding: "8px 4px", fontFamily: FIGTREE, fontSize: 15, color: t.text2 }}>
+            <p style={{ margin: 0, padding: "6px 4px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
               {waiting ? "Loading your sessions…" : "No other sessions."}
             </p>
           ) : (
@@ -434,9 +434,9 @@ function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone
                   flexDirection: "column",
                   alignItems: "flex-start",
                   gap: 2,
-                  minHeight: 56,
+                  minHeight: 46,
                   width: "100%",
-                  padding: "8px 4px",
+                  padding: "6px 4px",
                   border: 0,
                   background: "transparent",
                   textAlign: "left",
@@ -445,7 +445,7 @@ function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone
                   minWidth: 0,
                 }}
               >
-                <span style={{ ...line, fontSize: 15, maxWidth: "100%" }}>{session.firstPrompt}</span>
+                <span style={{ ...line, fontSize: 14, maxWidth: "100%" }}>{session.firstPrompt}</span>
                 <span style={meta}>{session.meta}</span>
               </button>
             ))
@@ -458,7 +458,7 @@ function AddSession({ phone, others, onAttach }: Pick<SessionsPanelProps, "phone
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} style={{ ...floating, padding: 6, width: 320, maxHeight: 360, overflowY: "auto" }}>
+      <DropdownMenuContent align="start" sideOffset={6} style={{ ...floating, padding: 4, width: 320, maxHeight: 360, overflowY: "auto" }}>
         {waiting || empty ? (
           <DropdownMenuItem disabled className={MENU_ITEM_CLASS} style={{ ...menuItem, cursor: "default" }}>
             {waiting ? "Loading your sessions…" : "No other sessions."}
@@ -533,23 +533,23 @@ export function SessionsPanel({
           title={
             <>
               Your sessions
-              <span style={{ marginLeft: 8, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{sessions.length}</span>
+              <span style={{ marginLeft: 6, fontFamily: DM_MONO, fontSize: 12, fontWeight: 400, color: t.text2 }}>{sessions.length}</span>
             </>
           }
           subtitle={drag ? "Drag a prompt into Prompts, or press +." : "Press + to add a prompt to Prompts."}
           headingLevel={2}
         />
 
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 9 }}>
           {status === "loading" ? (
-            <LoadingRegion what="your sessions" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <Skeleton height={44} radius={10} />
-              <Skeleton height={44} radius={10} />
+            <LoadingRegion what="your sessions" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <Skeleton height={phone ? 44 : 36} radius={10} />
+              <Skeleton height={phone ? 44 : 36} radius={10} />
             </LoadingRegion>
           ) : status === "error" ? (
             <ErrorState line="Your sessions didn't load." panel="Your sessions" onRetry={onRetry} />
           ) : sessions.length === 0 ? (
-            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>No sessions in this build yet.</p>
+            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>No sessions in this build yet.</p>
           ) : (
             sessions.map((session, index) => (
               <SessionSection
@@ -568,14 +568,14 @@ export function SessionsPanel({
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "stretch" : "flex-start", gap: phone ? 4 : 10, marginTop: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: phone ? "stretch" : "flex-start", gap: phone ? 4 : 7, marginTop: 10 }}>
           <AddSession phone={phone} others={others} onAttach={onAttach} />
           <Link
             to="/compose/start"
             {...paste.handlers}
             style={{
               ...textLink,
-              fontSize: 13,
+              fontSize: 12,
               alignSelf: "flex-start",
               ...(phone ? { display: "inline-flex", alignItems: "center", minHeight: 44 } : null),
               ...ring(paste.state.focusVisible),

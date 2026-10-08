@@ -56,7 +56,7 @@ const PREVIEW_WIDTH = MEDIA_WIDTH.variant;
 const buttonStyle: CSSProperties = {
   ...labelText,
   fontSize: 11,
-  padding: "3px 9px",
+  padding: "3px 6px",
   borderRadius: r.chip,
   background: "transparent",
   border: `1px solid ${HAIRLINE}`,
@@ -182,8 +182,8 @@ export function MediaRefField({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 8,
-          padding: compact ? 6 : 8,
+          gap: 6,
+          padding: compact ? 4 : 6,
           borderRadius: r.control,
           background: over ? tokenAlpha("action", 0.08) : t.recess,
           border: `1px dashed ${over ? TEAL : HAIRLINE}`,
@@ -225,7 +225,7 @@ export function MediaRefField({
               ...labelText,
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: 4,
               fontSize: 11,
               color: TEXT_MUTED,
             }}
@@ -234,7 +234,7 @@ export function MediaRefField({
             Uploads happen in the workspace.
           </span>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
@@ -242,7 +242,7 @@ export function MediaRefField({
                 ...buttonStyle,
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 4,
                 color: TEAL,
                 borderColor: hexToRgba(TEAL, 0.3),
               }}
@@ -287,7 +287,7 @@ export function MediaRefField({
 function Progress({ fraction }: { fraction: number }) {
   const percent = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <div
         role="progressbar"
         aria-label="Uploading"
@@ -402,7 +402,7 @@ function Preview({
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
       <div
         style={{
           width: size,

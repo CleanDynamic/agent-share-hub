@@ -1,19 +1,25 @@
 /* UI-P31 — the family of a build, as a tree or as an indented list.
 
-   TREE (design/reference/desktop/{noon,dusk}/rebuild.html): a canvas 18px under
+   TREE (design/reference/desktop/{noon,dusk}/rebuild.html): a canvas 13px under
    the head, 460 tall on the board and taller when the generations need it,
    scrolling sideways inside the panel when the family is wider than it. Each
-   generation is a row at y = 18 + 150·g; each node is 140 wide — padding 6,
+   generation is a row at y = 18 + 150·g; each node is 140 wide — padding 4,
    radius 12, `--glass` on a `--glass-border` hairline (the viewer's draft: 1.5px
-   dashed `--action`), `--shadow-card` — with its lamp above it, a 50px cover,
+   dashed `--action`), `--shadow-card` — with its lamp above it, a 41px cover,
    its title, and a row of who made it and how many reproduced it. One SVG
    behind the nodes draws every connector, parent's bottom centre to child's top
    centre, in `--line` at 1.5. Each node links to its build.
 
-   LIST (design/reference/mobile/…/rebuild.html): the same family indented 22px
-   a generation, an elbow into each child, a 40px cover, the title, the maker and
+   LIST (design/reference/mobile/…/rebuild.html): the same family indented 16px
+   a generation, an elbow into each child, a 33px cover, the title, the maker and
    the count, and the lamp at the end of the row. The default above twelve
-   builds, and the only reading on a phone.
+   builds, and the only reading on a phone, where a row keeps the 44px touch
+   target (the board's is 43).
+
+   UI-P58 (density): the sizes above are the tightened ones. Positions are not
+   part of the pass: the generations still stand 150 apart, the connectors
+   still leave 110 under a node's top, and the elbow keeps its offset, as the
+   board draws them.
 
    THE LAMP IS DATA (RULES §5): lit, dimmed to 45% when stale, absent when nobody
    has reproduced the build; the viewer's draft has no lamp yet, only a dashed
@@ -155,7 +161,7 @@ function TreeNode({
         left: x,
         top: y,
         width: NODE_WIDTH,
-        padding: 6,
+        padding: 4,
         borderRadius: r.control,
         background: t.glass,
         ...edge(node, selected, 1),
@@ -169,7 +175,7 @@ function TreeNode({
           <LampDot width={24} height={7} dim={node.lamp === "stale"} />
         </span>
       ) : null}
-      <span style={{ display: "block", height: 50, borderRadius: r.chip, overflow: "hidden" }}>
+      <span style={{ display: "block", height: 41, borderRadius: r.chip, overflow: "hidden" }}>
         <CoverFallback seed={node.seed} sky={node.sky} radius={0} />
       </span>
       <span style={{ ...nodeTitle, display: "block", marginTop: 5 }}>{node.title}</span>
@@ -177,7 +183,7 @@ function TreeNode({
         style={{
           display: "flex",
           justifyContent: "space-between",
-          gap: 6,
+          gap: 4,
           marginTop: 2,
           fontFamily: DM_MONO,
           fontSize: 10,
@@ -210,7 +216,7 @@ export function FamilyTree({
       data-testid="family-tree"
       role="group"
       aria-label="The family, as a tree"
-      style={{ position: "relative", height, marginTop: 18, overflowX: "auto", overflowY: "hidden" }}
+      style={{ position: "relative", height, marginTop: 13, overflowX: "auto", overflowY: "hidden" }}
     >
       <div style={{ position: "relative", width: layout.width, height, margin: "0 auto" }}>
         <svg width={layout.width} height={height} viewBox={`0 0 ${layout.width} ${height}`} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
@@ -240,7 +246,7 @@ export function FamilyList({
   onSelect?: (id: string) => void;
 }) {
   return (
-    <ol data-testid="family-list" aria-label="The family, oldest first" style={{ listStyle: "none", margin: phone ? "8px 0 0" : "12px 0 0", padding: 0 }}>
+    <ol data-testid="family-list" aria-label="The family, oldest first" style={{ listStyle: "none", margin: phone ? "6px 0 0" : "9px 0 0", padding: 0 }}>
       {familyRows(root).map(({ node, depth }) => {
         const selected = node.id === selectedId;
         return (
@@ -253,7 +259,7 @@ export function FamilyList({
                   left: 22 * depth - 12,
                   top: 0,
                   width: 10,
-                  height: 26,
+                  height: 21,
                   borderLeft: `1.5px solid ${t.line}`,
                   borderBottom: `1.5px solid ${t.line}`,
                   borderRadius: `0 0 0 ${r.chip}`,
@@ -268,10 +274,11 @@ export function FamilyList({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                minHeight: 52,
+                gap: 7,
+                /* A phone keeps the 44px touch target; the board's row is 43. */
+                minHeight: phone ? 44 : 43,
                 width: "100%",
-                paddingLeft: 22 * depth,
+                paddingLeft: 16 * depth,
                 paddingRight: 0,
                 border: 0,
                 borderRadius: r.control,
@@ -281,8 +288,8 @@ export function FamilyList({
             >
               <span
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: 33,
+                  height: 33,
                   borderRadius: 9,
                   overflow: "hidden",
                   flexShrink: 0,
@@ -336,9 +343,9 @@ export interface FamilyPanelProps {
 /** The family before it has arrived: the canvas's own box on desktop, a few rows of the list on a phone. */
 function FamilySkeleton({ phone }: { phone: boolean }) {
   return (
-    <LoadingRegion what="the family" data-testid="family-loading" style={{ marginTop: phone ? 8 : 18 }}>
+    <LoadingRegion what="the family" data-testid="family-loading" style={{ marginTop: phone ? 6 : 13 }}>
       {phone ? (
-        Array.from({ length: 6 }, (_, i) => <Skeleton key={i} height={52} radius={r.control} />)
+        Array.from({ length: 6 }, (_, i) => <Skeleton key={i} height={44} radius={r.control} />)
       ) : (
         <Skeleton height={CANVAS_HEIGHT} radius={r.control} />
       )}
@@ -358,7 +365,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
       <Panel padding="14px 16px">
         <div data-testid="family-panel">
           <PanelHead headingLevel={2} title={title} subtitle="Lamps show which still work" />
-          {failure ? <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="family-error" /> : loading ? <FamilySkeleton phone /> : root && lone ? <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
+          {failure ? <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 9 }} data-testid="family-error" /> : loading ? <FamilySkeleton phone /> : root && lone ? <EmptyState line="This build has no rebuilds yet." data-testid="family-empty" /> : root ? <FamilyList root={root} phone selectedId={selectedId} onSelect={onSelect} /> : null}
         </div>
       </Panel>
     );
@@ -378,7 +385,7 @@ export function FamilyPanel({ root, fit = "content", phone = false, selectedId =
           }
         />
         {failure ? (
-          <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="family-error" />
+          <ErrorState panel="The family" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 9 }} data-testid="family-error" />
         ) : loading ? (
           <FamilySkeleton phone={false} />
         ) : root && lone ? (

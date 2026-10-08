@@ -46,7 +46,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 const stepGrid = (phone: boolean): CSSProperties => ({
   display: "grid",
   gridTemplateColumns: phone ? "30px minmax(0, 1fr)" : "28px minmax(0, 1fr)",
-  gap: 8,
+  gap: 6,
   alignItems: "start",
 });
 
@@ -90,12 +90,12 @@ function Well({ text, phone }: { text: string; phone: boolean }) {
   const shown = long && !open ? lines.slice(0, WELL_LINES).join("\n") : text;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
       <pre
         data-testid="build-run-well"
         style={{
           margin: 0,
-          padding: "12px 14px",
+          padding: "9px 10px",
           borderRadius: r.control,
           background: t.recess,
           fontFamily: DM_MONO,
@@ -141,11 +141,11 @@ function TextButton({
         alignSelf: "flex-start",
         /* A 44px target around a 13px line: the padding is the target, the negative margins keep the line in place. */
         margin: "-14px 0",
-        padding: "14px 0",
+        padding: "10px 0",
         border: 0,
         background: "transparent",
         fontFamily: FIGTREE,
-        fontSize: phone ? 14 : 13,
+        fontSize: phone ? 13 : 12,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -179,12 +179,12 @@ function Step({
       <span aria-hidden="true" style={numberStyle}>
         {pad2(number)}
       </span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 30 }}>
-          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 15 : 14, fontWeight: 600, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: 25 }}>
+          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text, minWidth: 0, flexGrow: 1 }}>
             <span style={VISUALLY_HIDDEN}>{`Step ${number}: `}</span>
             {step.title}
-            <span style={{ fontFamily: DM_MONO, fontSize: 10, fontWeight: 400, color: t.text2, marginLeft: 8, whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: DM_MONO, fontSize: 10, fontWeight: 400, color: t.text2, marginLeft: 6, whiteSpace: "nowrap" }}>
               {step.kind}
             </span>
           </h3>
@@ -233,7 +233,7 @@ export function RunBody({
 
   const head =
     words || steps.length > 0 ? (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap" }}>
         {words ? (
           <Segmented<"sequence" | "words">
             items={WAYS}
@@ -247,7 +247,7 @@ export function RunBody({
           <span />
         )}
         {way === "sequence" && steps.length > 0 ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>
               {steps.length === 1 ? "1 step" : `${steps.length.toLocaleString("en-GB")} steps`}
             </span>
@@ -267,7 +267,7 @@ export function RunBody({
 
   if (way === "words" && words) {
     return (
-      <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {head}
         <LayerSteps layer={words} phone={phone} onOpenPart={onOpenPart} />
         {region}
@@ -277,7 +277,7 @@ export function RunBody({
 
   if (steps.length === 0 && prerequisites.length === 0) {
     return (
-      <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {head}
         <p style={{ margin: 0, color: t.text2 }}>Nothing in this build is runnable yet: none of its parts is one a reader copies and runs.</p>
       </section>
@@ -285,17 +285,17 @@ export function RunBody({
   }
 
   return (
-    <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <section data-testid="build-run" aria-label="Run it yourself" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {head}
 
       {prerequisites.length > 0 ? (
-        <div data-testid="build-run-before" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div data-testid="build-run-before" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <Eyebrow size={10} as="h3" style={{ margin: 0 }}>
             Before you start
           </Eyebrow>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
             {prerequisites.map((item) => (
-              <li key={item.id} data-node-id={item.id} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <li key={item.id} data-node-id={item.id} style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
                 <span
                   aria-hidden="true"
                   style={{ width: 10, height: 10, flexShrink: 0, borderRadius: r.full, border: `1.5px solid ${t.line}`, transform: "translateY(1px)" }}
@@ -311,7 +311,7 @@ export function RunBody({
       ) : null}
 
       {steps.length > 0 ? (
-        <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+        <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {steps.map((step, index) => (
             <Step
               key={step.id}
@@ -341,13 +341,13 @@ export function LayerSteps({
   onOpenPart?: (id: string) => void;
 }) {
   return (
-    <div data-testid="build-layer" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div data-testid="build-layer" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {/* Whose words these are. First, every time, and not dismissable. */}
       <p
         data-testid="layer-attribution"
         style={{
           margin: 0,
-          paddingBottom: 10,
+          paddingBottom: 7,
           borderBottom: `1px solid ${t.hairline}`,
           fontFamily: DM_MONO,
           fontSize: 11,
@@ -360,15 +360,15 @@ export function LayerSteps({
       {layer.steps.length === 0 ? (
         <p style={{ margin: 0, color: t.text2 }}>This layer has no steps in it.</p>
       ) : (
-        <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+        <ol aria-label="Steps" style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           {layer.steps.map((step) => (
             <li key={step.n} data-testid="build-layer-step" style={stepGrid(phone)}>
               <span aria-hidden="true" style={numberStyle}>
                 {pad2(step.n)}
               </span>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                 {step.title ? (
-                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 15 : 14, fontWeight: 600, lineHeight: 1.4, color: t.text }}>
+                  <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: phone ? 14 : 13, fontWeight: 600, lineHeight: 1.4, color: t.text }}>
                     <span style={VISUALLY_HIDDEN}>{`Step ${step.n}: `}</span>
                     {step.title}
                   </h3>

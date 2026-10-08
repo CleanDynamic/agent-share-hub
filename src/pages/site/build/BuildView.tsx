@@ -104,15 +104,15 @@ function heroRow(tier: WidthTier): CSSProperties {
     display: "grid",
     gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
     gridAutoRows: tier === "stacked" ? `minmax(${HERO_ROW}px, auto)` : undefined,
-    gap: 12,
+    gap: 9,
     flexShrink: 0,
   };
 }
 
 function bottomRow(tier: WidthTier): CSSProperties {
   return tier === "full"
-    ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 12, flexGrow: 1, minHeight: 0 }
-    : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 12, flexGrow: 1 };
+    ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 9, flexGrow: 1, minHeight: 0 }
+    : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 9, flexGrow: 1 };
 }
 
 /** The timeline's cell: its own track at 1280 and up, the row's full width below. */
@@ -196,7 +196,7 @@ function CreditText({ credit }: { credit: BuildCreditView }) {
 
 const tileStyle = (phone: boolean): CSSProperties => ({
   width: phone ? undefined : 72,
-  height: phone ? 62 : 58,
+  height: phone ? 51 : 48,
   borderRadius: 13,
   background: t.dockTile,
   border: `1px solid ${t.glassBorder}`,
@@ -264,8 +264,8 @@ function ActionDock({ actions, phone, announce }: { actions: BuildActionsView; p
   };
 
   const frame: CSSProperties = phone
-    ? { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }
-    : { position: "absolute", top: 12, right: 12, display: "flex", gap: 6 };
+    ? { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 4 }
+    : { position: "absolute", top: 12, right: 12, display: "flex", gap: 4 };
 
   return (
     <div
@@ -274,7 +274,7 @@ function ActionDock({ actions, phone, announce }: { actions: BuildActionsView; p
       aria-label="Take this build"
       style={{
         ...frame,
-        padding: 6,
+        padding: 4,
         borderRadius: 18,
         background: t.dock,
         border: `1px solid ${t.dockBorder}`,
@@ -331,7 +331,7 @@ function Hero({
             fontFamily: DM_MONO,
             fontSize: 10,
             lineHeight: "normal",
-            padding: "3px 8px",
+            padding: "3px 6px",
             borderRadius: r.chip,
           }}
         >
@@ -381,7 +381,7 @@ function CompletenessBlock({ completeness }: { completeness: CompletenessView })
           { at: galleryAt, colour: t.text },
         ];
   return (
-    <div data-testid="build-completeness" style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div data-testid="build-completeness" style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <Eyebrow>Completeness</Eyebrow>
         <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text }}>{score} / 100</span>
@@ -411,7 +411,7 @@ function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeErro
       panel="Reproduction"
       onRetry={failure.onRetry}
       error={failure.error}
-      style={{ marginTop: 12 }}
+      style={{ marginTop: 9 }}
       data-testid="build-run-error"
     />
   );
@@ -426,19 +426,19 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
     return (
       <Panel surface="glass" padding="16px">
         <div data-testid="build-proof">
-          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {orb}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
               <Eyebrow>Reproduction</Eyebrow>
               <Plaque build={proof.build} size="proof" wording="short" now={now} />
             </div>
           </div>
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 10 }}>
             <ProofButton action={proof.action} phone />
           </div>
           {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
-          <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "center", marginTop: 8 }}>{NOTE}</div>
-          <div style={{ marginTop: 14 }}>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "center", marginTop: 6 }}>{NOTE}</div>
+          <div style={{ marginTop: 10 }}>
             <WallLabel columns={2} cells={cells} />
           </div>
           {proof.completeness ? <CompletenessBlock completeness={proof.completeness} /> : null}
@@ -450,9 +450,9 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
   return (
     <Panel surface="glass" padding="16px 18px" style={{ height: "100%" }}>
       <div data-testid="build-proof">
-        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           {orb}
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
             <Eyebrow>Reproduction</Eyebrow>
             <Plaque build={proof.build} size="proof" now={now} />
             <ProofButton action={proof.action} phone={false} />
@@ -460,7 +460,7 @@ function ProofPanel({ proof, phone, now }: { proof: BuildProofView; phone: boole
           </div>
         </div>
         {proof.writeError ? <RunFailed failure={proof.writeError} /> : null}
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 10 }}>
           <WallLabel columns={3} cells={cells} />
         </div>
         {proof.completeness ? <CompletenessBlock completeness={proof.completeness} /> : null}
@@ -497,14 +497,15 @@ function PartRow({
       style={{
         display: "grid",
         gridTemplateColumns: phone ? "30px minmax(0, 1fr) auto" : "28px minmax(0, 1fr) auto",
-        gap: 8,
+        gap: 6,
         alignItems: "center",
         /* The reference sizes the row's content box, so a gap's dashed edge adds
            to it rather than eating into it. The row stretches across the list as
            a flex item, so no width is needed. */
         boxSizing: "content-box",
-        ...(phone ? { minHeight: 46 } : { height: 40 }),
-        padding: "0 10px",
+        /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; 40 → 33 above it. */
+        ...(phone ? { minHeight: 44 } : { height: 33 }),
+        padding: "0 7px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */
         borderWidth: part.gap ? 1.5 : 0,
@@ -518,7 +519,7 @@ function PartRow({
       }}
     >
       <span style={{ ...display(20), color: t.label }}>{String(part.number).padStart(2, "0")}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: phone ? 8 : 7, minWidth: 0 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: phone ? 6 : 5, minWidth: 0 }}>
         <span
           aria-hidden="true"
           style={{
@@ -532,7 +533,7 @@ function PartRow({
         <span
           style={{
             fontFamily: FIGTREE,
-            fontSize: phone ? 14 : 13,
+            fontSize: phone ? 13 : 12,
             color: t.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -569,7 +570,7 @@ function AnatomyDialog({ open, onOpenChange, children }: { open: boolean; onOpen
             maxHeight: "88dvh",
             overflowY: "auto",
             boxSizing: "border-box",
-            padding: "16px 18px 20px",
+            padding: "12px 13px 14px",
             borderRadius: r.panel,
             background: t.solid,
             border: `1px solid ${t.glassBorder}`,
@@ -578,8 +579,8 @@ function AnatomyDialog({ open, onOpenChange, children }: { open: boolean; onOpen
             fontFamily: FIGTREE,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>Anatomy</Dialog.Title>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, marginBottom: 10 }}>
+            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>Anatomy</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={34} />
             </Dialog.Close>
@@ -617,7 +618,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
         {parts.length === 0 ? (
           <EmptyState line="This build has no parts yet." data-testid="build-anatomy-empty" />
         ) : (
-          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
             {shown.map((part) => (
               <PartRow key={part.id} part={part} selected={part.id === selectedId} phone={phone} onSelect={onSelect} />
             ))}
@@ -634,11 +635,11 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
               /* A 45px target around a 13px line: the padding is the target, the
                  negative margins keep the line where the reference draws it. */
               margin: "-5px 0 -15px",
-              padding: "15px 0 15px 10px",
+              padding: "11px 0 11px 7px",
               border: 0,
               background: "transparent",
               fontFamily: FIGTREE,
-              fontSize: 13,
+              fontSize: 12,
               color: t.action,
               cursor: "pointer",
               textAlign: "left",
@@ -710,11 +711,11 @@ function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineVie
           subtitle={timelineSubtitle(duration, events.length)}
           right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 34} onClick={onPlay} disabled={events.length === 0} />}
         />
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 9 }}>
           {events.length > 0 ? (
             <Timeline events={events} size={phone ? "phone" : "desktop"} label="Kept steps" />
           ) : (
-            <EmptyState line="No events were kept for this build." data-testid="build-timeline-empty" style={{ padding: "16px 0" }} />
+            <EmptyState line="No events were kept for this build." data-testid="build-timeline-empty" style={{ padding: "12px 0" }} />
           )}
         </div>
       </div>
@@ -737,7 +738,7 @@ function DesktopBuild(props: BuildViewProps) {
     <div
       data-testid="build-view"
       data-viewport="desktop"
-      style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}
     >
       <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
@@ -774,7 +775,7 @@ function PhoneBuild(props: BuildViewProps) {
   const reveal = () => viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "nearest" });
 
   return (
-    <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+    <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
       <Hero hero={hero} actions={actions} phone announce={announce} />
       <ActionDock actions={actions} phone announce={announce} />
       <ProofPanel proof={proof} phone now={now} />
@@ -831,17 +832,18 @@ function ProofSkeleton({ phone }: { phone: boolean }) {
   const orb = phone ? 118 : 128;
   return (
     <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? { minHeight: 440 } : { height: "100%" }}>
-      <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
         <Skeleton width={orb} height={orb} radius="50%" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, flexGrow: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
           <Skeleton width={90} height={11} />
-          <Skeleton height={phone ? 38 : 52} radius={r.chip} />
-          {phone ? null : <Skeleton height={38} radius={r.control} />}
+          <Skeleton height={phone ? 37 : 51} radius={r.chip} />
+          {phone ? null : <Skeleton height={31} radius={r.control} />}
           {phone ? null : <Skeleton width="80%" height={11} />}
         </div>
       </div>
-      {phone ? <Skeleton height={48} radius={r.control} style={{ marginTop: 14 }} /> : null}
-      <Skeleton height={phone ? 176 : 117} radius={r.control} style={{ marginTop: 14 }} />
+      {/* The phone's action: drawn 48, rendered 44 (the touch floor). */}
+      {phone ? <Skeleton height={44} radius={r.control} style={{ marginTop: 10 }} /> : null}
+      <Skeleton height={phone ? 161 : 107} radius={r.control} style={{ marginTop: 10 }} />
     </Panel>
   );
 }
@@ -854,21 +856,21 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
     Array.from({ length: count }, (_, i) => <Skeleton key={i} height={height} radius={r.control} style={i ? { marginTop: gap } : undefined} />);
   if (phone) {
     return (
-      <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
         <Skeleton height={382} radius={18} />
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
-        <Skeleton height={36} radius={r.media} />
+        <Skeleton height={30} radius={r.media} />
         <Panel surface="glass" padding="14px 10px">
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 8 }}>{rows(46, MOCK_ROWS, 2)}</div>
+          <div style={{ marginTop: 6 }}>{rows(46, MOCK_ROWS, 2)}</div>
           {/* "Show n more parts" */}
-          <Skeleton width={120} height={13} style={{ margin: "14px 0 0 10px" }} />
+          <Skeleton width={120} height={13} style={{ margin: "10px 0 0 7px" }} />
         </Panel>
         <Skeleton height={317} radius={r.panel} />
         <Panel surface="glass" padding="14px 16px">
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 12 }}>{rows(43, 4, 0)}</div>
+          <div style={{ marginTop: 9 }}>{rows(43, 4, 0)}</div>
         </Panel>
       </LoadingRegion>
     );
@@ -879,7 +881,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       what="the build"
       announce
       data-testid="build-loading"
-      style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}
     >
       <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
@@ -892,12 +894,12 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       <div style={bottomRow(tier)}>
         <Panel surface="glass" padding="14px 12px" style={{ height: "100%" }}>
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 8 }}>{rows(40, MOCK_ROWS, 2)}</div>
+          <div style={{ marginTop: 6 }}>{rows(40, MOCK_ROWS, 2)}</div>
         </Panel>
         <Skeleton height="100%" radius={r.panel} />
         <Panel surface="glass" padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 12 }}>{rows(41, 5, 0)}</div>
+          <div style={{ marginTop: 9 }}>{rows(41, 5, 0)}</div>
         </Panel>
       </div>
     </LoadingRegion>
@@ -918,9 +920,9 @@ export function BuildViewFailed({ onRetry, error }: { onRetry: () => void; error
 export function BuildViewNotice({ line, detail, action }: { line: string; detail?: string; action: ReactNode }) {
   return (
     <Panel padding="24px 24px">
-      <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+      <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
         <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
-        {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
+        {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>
     </Panel>

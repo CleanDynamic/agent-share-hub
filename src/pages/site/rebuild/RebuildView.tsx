@@ -6,7 +6,7 @@
    The viewport is read here (the 768px breakpoint) so both agree.
 
    DESKTOP: a grid `minmax(0, 1fr) 470px` filling the page — the family, full
-   height, on the left; on the right a column 12 apart, what changed (filling)
+   height, on the left; on the right a column 9 apart (UI-P58), what changed (filling)
    over readiness (290). The board draws no heading, so the page's h1 is for
    assistive technology alone.
 
@@ -87,7 +87,7 @@ export function RebuildView(props: RebuildViewProps) {
 
   if (phone) {
     return (
-      <div data-testid="rebuild-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+      <div data-testid="rebuild-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
         <PageHeading eyebrow="Rebuild · draft" title={draftTitle} sub={rebuildingLine(source)} size={32} />
         {readinessPanel}
         <ChangesPanel groups={changes} phone loading={changes === null} />
@@ -97,13 +97,13 @@ export function RebuildView(props: RebuildViewProps) {
   }
 
   return (
-    <div data-testid="rebuild-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
+    <div data-testid="rebuild-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
       <h1 style={VISUALLY_HIDDEN}>{`${draftTitle}: ${rebuildingLine(source)}`}</h1>
       <div
         style={{
           display: "grid",
           gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-          gap: 12,
+          gap: 9,
           flexGrow: 1,
           minHeight: 0,
         }}
@@ -111,7 +111,7 @@ export function RebuildView(props: RebuildViewProps) {
         <div style={{ minHeight: 0 }}>
           <FamilyPanel root={family} fit={fit} fill={!stacked} />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
           {stacked ? <div style={{ minHeight: READINESS_HEIGHT }}>{readinessPanel}</div> : null}
           <div style={{ flexGrow: 1, minHeight: 0 }}>
             <ChangesPanel groups={changes} fill={!stacked} loading={changes === null} />
@@ -131,18 +131,18 @@ export function RebuildView(props: RebuildViewProps) {
 function ReadinessSkeleton({ phone }: { phone: boolean }) {
   return (
     <Panel padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
-      <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
         <Skeleton width={phone ? 112 : 120} height={phone ? 112 : 120} radius="50%" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
           <Skeleton width={110} height={11} />
-          <Skeleton width="80%" height={phone ? 22 : 24} />
+          <Skeleton width="80%" height={phone ? 18 : 20} />
           <Skeleton width="60%" height={14} />
         </div>
       </div>
-      <Skeleton height={phone ? 91 : 66} radius={r.control} style={{ marginTop: 14 }} />
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-        <Skeleton width={phone ? "100%" : 140} height={phone ? 48 : 36} radius={r.control} />
-        {phone ? null : <Skeleton width={110} height={36} radius={r.control} />}
+      <Skeleton height={phone ? 69 : 68} radius={r.control} style={{ marginTop: 10 }} />
+      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+        <Skeleton width={phone ? "100%" : 140} height={phone ? 44 : 30} radius={r.control} />
+        {phone ? null : <Skeleton width={110} height={30} radius={r.control} />}
       </div>
     </Panel>
   );
@@ -156,8 +156,8 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
   const what = label.replace(/^Loading /, "");
   if (phone) {
     return (
-      <LoadingRegion what={what} announce data-testid="rebuild-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Skeleton height={96} radius={r.control} />
+      <LoadingRegion what={what} announce data-testid="rebuild-loading" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        <Skeleton height={78} radius={r.control} />
         <ReadinessSkeleton phone />
         <ChangesPanel groups={null} phone loading />
         <FamilyPanel root={null} phone loading />
@@ -172,12 +172,12 @@ export function RebuildViewSkeleton({ fit = "content", label = "Loading the rebu
       style={{
         display: "grid",
         gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-        gap: 12,
+        gap: 9,
         ...boardHeight(tierFit),
       }}
     >
       <FamilyPanel root={null} fit={tierFit} fill={!stacked} loading />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0 }}>
         <div style={{ flexGrow: 1, minHeight: 0 }}>
           <ChangesPanel groups={null} fill loading />
         </div>
@@ -203,9 +203,9 @@ export function RebuildViewFailed({ panel, onRetry, error }: { panel: string; on
 export function RebuildViewNotice({ line, detail, action }: { line: string; detail?: string; action: ReactNode }) {
   return (
     <Panel padding="24px 24px">
-      <div data-testid="rebuild-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+      <div data-testid="rebuild-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
         <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
-        {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
+        {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
       </div>
     </Panel>

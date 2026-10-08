@@ -8,6 +8,10 @@
 //
 // The head ("Connector", the h2, Close) is the dialog's, not the guide's: on
 // /connect the page's own h1 does that job.
+//
+// DENSER SINCE UI-P58. No board draws the guide, so every size it sets is its
+// old value through the density table (design/prompts/README-density.md); the
+// brand pieces (Button, Segmented, FilterChip) take the drawn size and map it.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
@@ -43,7 +47,7 @@ export interface ConnectorGuideProps {
   onDone: () => void;
   /** What the last step's primary says: "Done" in the dialog, "Go to Drafts" on the page. */
   doneLabel: string;
-  /** Side padding in px. 24 by default (16 on a phone); 0 inside a sheet that pads itself. */
+  /** Side padding in px. 17 by default (12 on a phone; 24 and 16 before UI-P58's density table); 0 inside a sheet that pads itself. */
   gutter?: number;
 }
 
@@ -183,7 +187,7 @@ function StepButton({
       style={{
         flex: 1,
         minWidth: 0,
-        padding: "8px 0 10px",
+        padding: "6px 0 7px",
         background: "transparent",
         border: 0,
         borderTop: `3px solid ${current ? t.action : done ? t.evidence : t.line}`,
@@ -198,12 +202,12 @@ function StepButton({
       }}
     >
       <span style={{ fontFamily: DM_MONO, fontSize: 11 }}>{String(index + 1).padStart(2, "0")}</span>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>{STEP_LABELS[index]}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 600 }}>{STEP_LABELS[index]}</span>
     </button>
   );
 }
 
-const text15: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, lineHeight: 1.5, margin: 0 };
+const text14: CSSProperties = { fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, margin: 0 };
 
 const box: CSSProperties = {
   borderRadius: r.control,
@@ -216,9 +220,9 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
   const copy = TOOL_COPY[tool];
   const link = GUIDE_LINKS[tool];
   return (
-    <div style={{ ...box, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ ...box, padding: 12, display: "flex", flexDirection: "column", gap: 7 }}>
       {copy.before.map((line) => (
-        <p key={line} style={{ ...text15, color: t.text }}>
+        <p key={line} style={{ ...text14, color: t.text }}>
           {line}
         </p>
       ))}
@@ -226,8 +230,8 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          padding: "6px 6px 6px 12px",
+          gap: 6,
+          padding: "4px 4px 4px 9px",
           borderRadius: r.media,
           background: t.inverse,
           color: t.onInverse,
@@ -249,7 +253,7 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
         <CopyButton value={copy.code} label={copy.codeLabel} phone={phone} onInverse />
       </div>
       {copy.after.map((line) => (
-        <p key={line} style={{ ...text15, fontSize: 14, color: t.text2 }}>
+        <p key={line} style={{ ...text14, fontSize: 13, color: t.text2 }}>
           {line}
         </p>
       ))}
@@ -261,7 +265,7 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
           style={{
             alignSelf: "flex-start",
             fontFamily: FIGTREE,
-            fontSize: 13,
+            fontSize: 12,
             color: t.text2,
             textDecoration: "underline",
           }}
@@ -277,7 +281,7 @@ function ToolBox({ tool, phone }: { tool: ConnectorTool; phone: boolean }) {
 function StepOne({ tool, onTool, phone }: { tool: ConnectorTool; onTool: (tool: ConnectorTool) => void; phone: boolean }) {
   return (
     <>
-      <p style={{ ...text15, color: t.text2 }}>
+      <p style={{ ...text14, color: t.text2 }}>
         Add the connector once. After that, any chat where you built something can send itself to Sessions on your
         Drafts page.
       </p>
@@ -307,25 +311,25 @@ function StepOne({ tool, onTool, phone }: { tool: ConnectorTool; onTool: (tool: 
 function StepTwo({ phone }: { phone: boolean }) {
   return (
     <>
-      <p style={{ ...text15, color: t.text2 }}>
+      <p style={{ ...text14, color: t.text2 }}>
         In the chat where you built it, type one of these. Your AI tool does the rest.
       </p>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: phone ? 8 : 10 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: phone ? 6 : 7 }}>
         {PHRASES.map(({ say, line }) => (
           <li
             key={say}
             style={{
               ...box,
-              padding: "12px 14px",
+              padding: "9px 10px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: 12,
+              gap: 9,
             }}
           >
             <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>“{say}”</span>
-              <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{line}</span>
+              <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>“{say}”</span>
+              <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{line}</span>
             </div>
             <CopyButton value={say} label={`Copy “${say}”`} phone={phone} />
           </li>
@@ -333,11 +337,11 @@ function StepTwo({ phone }: { phone: boolean }) {
       </ul>
       <div
         style={{
-          padding: "12px 14px",
+          padding: "9px 10px",
           borderRadius: r.control,
           border: `1px dashed ${t.line}`,
           fontFamily: FIGTREE,
-          fontSize: 13,
+          fontSize: 12,
           lineHeight: 1.5,
           color: t.text2,
         }}
@@ -357,30 +361,30 @@ function StepThree() {
     <>
       <div
         aria-hidden="true"
-        style={{ ...box, padding: 16, display: "flex", alignItems: "center", gap: 12, overflow: "hidden" }}
+        style={{ ...box, padding: 12, display: "flex", alignItems: "center", gap: 9, overflow: "hidden" }}
       >
         <div
           style={{
             minWidth: 0,
-            padding: "10px 12px",
+            padding: "7px 9px",
             border: `1px solid ${t.line}`,
             background: t.field,
             borderRadius: r.media,
           }}
         >
-          <div style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text }}>Build me a script that renames photos…</div>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text }}>Build me a script that renames photos…</div>
           <div style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>Sonnet 5.5 · Today</div>
         </div>
         <ArrowRight size={20} strokeWidth={1.6} style={{ flexShrink: 0, color: t.text2 }} />
         <div
           style={{
             minWidth: 0,
-            padding: "10px 12px",
+            padding: "7px 9px",
             border: `1.5px dashed ${t.evidence}`,
             borderRadius: r.media,
           }}
         >
-          <div style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text }}>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 600, color: t.text }}>
             Photo renamer by date taken
           </div>
           <div style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>2 sessions</div>
@@ -388,12 +392,12 @@ function StepThree() {
       </div>
       <ol
         style={{
-          ...text15,
+          ...text14,
           color: t.text,
           paddingLeft: "1.25em",
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 6,
         }}
       >
         <li>
@@ -420,12 +424,12 @@ function StepThree() {
 
 export function ConnectorGuide({ step, onStep, tool, onTool, onDone, doneLabel, gutter }: ConnectorGuideProps) {
   const phone = useIsPhone();
-  const side = gutter ?? (phone ? 16 : 24);
+  const side = gutter ?? (phone ? 12 : 17);
   const last = step === 3;
 
   return (
     <div data-ui="connector-guide" style={{ display: "flex", flexDirection: "column", color: t.text, fontFamily: FIGTREE }}>
-      <nav aria-label="Steps" style={{ display: "flex", gap: 8, padding: `16px ${side}px 0` }}>
+      <nav aria-label="Steps" style={{ display: "flex", gap: 6, padding: `12px ${side}px 0` }}>
         {STEP_LABELS.map((_, index) => (
           <StepButton
             key={index}
@@ -437,7 +441,7 @@ export function ConnectorGuide({ step, onStep, tool, onTool, onDone, doneLabel, 
         ))}
       </nav>
 
-      <div style={{ padding: `8px ${side}px 20px`, display: "flex", flexDirection: "column", gap: phone ? 12 : 14 }}>
+      <div style={{ padding: `6px ${side}px 14px`, display: "flex", flexDirection: "column", gap: phone ? 9 : 10 }}>
         {step === 1 ? <StepOne tool={tool} onTool={onTool} phone={phone} /> : null}
         {step === 2 ? <StepTwo phone={phone} /> : null}
         {step === 3 ? <StepThree /> : null}
@@ -445,11 +449,11 @@ export function ConnectorGuide({ step, onStep, tool, onTool, onDone, doneLabel, 
 
       <div
         style={{
-          padding: phone ? `14px ${side}px 0` : `14px ${side}px`,
+          padding: phone ? `10px ${side}px 0` : `10px ${side}px`,
           borderTop: `1px solid ${t.hairline}`,
           display: "flex",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 9,
         }}
       >
         <Button
