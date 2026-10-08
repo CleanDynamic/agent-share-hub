@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { buttonSlot, buttonStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { FIGTREE } from "@/lib/theme/type";
@@ -39,6 +40,7 @@ export function AuthButton({
   type = "submit",
 }: AuthButtonProps) {
   const isDisabled = disabled || isLoading;
+  const phone = useIsPhone();
   const { state, handlers } = useInteractive<HTMLButtonElement>(
     {},
     { disabled: isDisabled },
@@ -53,15 +55,16 @@ export function AuthButton({
       {...handlers}
       style={{
         ...buttonStyle("default", state),
-        height: "48px",
+        /* UI-P59 (density): 48 drawn is 39 through the table; a phone keeps 44, the touch target. */
+        height: phone ? "44px" : "39px",
         width: "100%",
-        marginTop: "8px",
+        marginTop: "6px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: "8px",
+        gap: "6px",
         fontFamily: FIGTREE,
-        fontSize: "14px",
+        fontSize: "13px",
         fontWeight: 600,
         opacity: isDisabled ? 0.5 : 1,
       }}

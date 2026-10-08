@@ -45,22 +45,22 @@ export function AuthEmailErrorCard({
         <AlertCircle
           style={{
             width: "56px",
-            height: "56px",
+            height: "46px",
             color: t.catBreakage,
             strokeWidth: 1.5,
           }}
         />
       </div>
 
-      <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
+      <h2 style={{ ...cardTitle, marginTop: "14px", color: t.text }}>
         This link doesn&apos;t work
       </h2>
 
       <p
         style={{
-          marginTop: "8px",
+          marginTop: "6px",
           fontFamily: FIGTREE,
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: 400,
           lineHeight: 1.55,
           color: t.text2,
@@ -70,7 +70,7 @@ export function AuthEmailErrorCard({
         email another one straight away — your account is still there.
       </p>
 
-      <div style={{ width: "100%", marginTop: "16px" }}>
+      <div style={{ width: "100%", marginTop: "12px" }}>
         <AuthButton type="button" onClick={onResend}>
           Send a new link
         </AuthButton>
@@ -79,12 +79,12 @@ export function AuthEmailErrorCard({
       <button
         onClick={onBackToSignIn}
         style={{
-          marginTop: "6px",
+          marginTop: "4px",
           background: "none",
           border: "none",
-          padding: "6px 0",
+          padding: "4px 0",
           fontFamily: FIGTREE,
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: 500,
           color: t.action,
           cursor: "pointer",

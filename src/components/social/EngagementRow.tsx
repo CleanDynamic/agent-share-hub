@@ -17,10 +17,11 @@
 // THE NUMBERS. Icons are lucide at 18px and stroke 1.5, the weight that sits
 // beside 400-weight text ⟦better-ui › Match icon stroke to text weight⟧.
 // Counts are DM Mono 12, tabular, for Like and Comment only. 4 between an icon
-// and its count and 16 between pairs ⟦law-of-proximity: "Icon + label"⟧: each
-// button pads its content by 8 on either side, so two neighbouring pairs are
-// 8 + 8 apart. Each button is at least 44×44 by its own padding
-// ⟦responsive-design › Input Method Adaptation: Touch⟧; the first one is pulled
+// and its count and 12 between pairs ⟦law-of-proximity: "Icon + label"⟧: each
+// button pads its content by 6 on either side, so two neighbouring pairs are
+// 6 + 6 apart. Each button is at least 36×36 by its own padding, and 44×44 on a
+// phone ⟦responsive-design › Input Method Adaptation: Touch⟧ (UI-P59: 16, 8 and
+// 44 everywhere before the density table); the first one is pulled
 // back by its own padding so its icon lines up with the text above it.
 //
 // MOTION. Colour and opacity only, 150ms, and none under reduced motion
@@ -51,6 +52,7 @@ import { LIBRARY_SAVED_KEY, requestAddToCollection } from "@/components/library/
 import { copyToClipboard } from "@/lib/deepLink";
 import { isPermissionError } from "@/lib/errors/permission";
 import { SocialError, likeBuild, saveBuild, unlikeBuild, unsaveBuild, type EngagementCounts } from "@/lib/social";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { feedback, scrollBehavior } from "@/lib/theme/motion";
@@ -65,14 +67,14 @@ export const SHARE_ORIGIN = "https://buildgallery.ai";
 export const ENGAGEMENT_ICON_SIZE = 18;
 export const ENGAGEMENT_ICON_STROKE = 1.5;
 
-/** The smallest a press target may be, in either direction. */
-const HIT = 44;
+/** The smallest a press target may be, in either direction: 44 drawn, 36 through the density table, 44 on a phone (the touch target). */
+const hitOf = (phone: boolean) => (phone ? 44 : 36);
 
-/** Padding either side of a button's content: half of the 16 between pairs. */
-const PAD_INLINE = 8;
+/** Padding either side of a button's content: half of the 12 between pairs. */
+const PAD_INLINE = 6;
 
-/** Top and bottom padding that makes an 18px icon a 44px target. */
-const PAD_BLOCK = (HIT - ENGAGEMENT_ICON_SIZE) / 2;
+/** Top and bottom padding that makes an 18px icon a full target. */
+const padBlockOf = (phone: boolean) => (hitOf(phone) - ENGAGEMENT_ICON_SIZE) / 2;
 
 /** Between an icon and its count. */
 const ICON_TO_COUNT = 4;
@@ -108,6 +110,7 @@ type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
 export function EngagementRow({ build, counts, liked, saved, variant }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
+  const phone = useIsPhone();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -228,10 +231,11 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
         // The first icon lines up with the text above it; its hit area reaches
         // into the padding instead.
         marginInlineStart: -PAD_INLINE,
-        ...(variant === "card" ? { marginTop: 8 } : null),
+        ...(variant === "card" ? { marginTop: 6 } : null),
       }}
     >
       <Action
+        phone={phone}
         label={shownLiked ? "Unlike" : "Like"}
         pressed={shownLiked}
         count={shownLikes}
@@ -239,12 +243,14 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
         icon={Heart}
       />
       <Action
+        phone={phone}
         label="Comment"
         count={counts?.comments ?? null}
         onPress={comment}
         icon={MessageCircle}
       />
       <Action
+        phone={phone}
         label={shownSaved ? "Unsave" : "Save"}
         pressed={shownSaved}
         onPress={toggleSave}
@@ -252,6 +258,7 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
       />
       {variant === "page" ? (
         <Action
+          phone={phone}
           label="Share"
           onPress={share}
           icon={Share2}
@@ -284,10 +291,11 @@ interface ActionProps {
   pressed?: boolean;
   /** Like and Comment only; null while the counts are on their way. */
   count?: number | null;
+  phone: boolean;
 }
 
 /** One tertiary action: the icon, and its count where it has one. */
-function Action({ label, icon: Icon, onPress, pressed, count }: ActionProps) {
+function Action({ label, icon: Icon, onPress, pressed, count, phone }: ActionProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const countId = useId();
   const active = pressed === true;
@@ -298,9 +306,9 @@ function Action({ label, icon: Icon, onPress, pressed, count }: ActionProps) {
     alignItems: "center",
     justifyContent: "center",
     gap: ICON_TO_COUNT,
-    minWidth: HIT,
-    minHeight: HIT,
-    padding: `${PAD_BLOCK}px ${PAD_INLINE}px`,
+    minWidth: hitOf(phone),
+    minHeight: hitOf(phone),
+    padding: `${padBlockOf(phone)}px ${PAD_INLINE}px`,
     margin: 0,
     background: "transparent",
     border: "none",

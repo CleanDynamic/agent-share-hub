@@ -11,7 +11,7 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { TOP_SOLVERS_LIMIT, listTopSolvers, type Solver } from "@/lib/bounty";
 import { isPermissionError } from "@/lib/errors/permission";
-import { SPACE, SPACE_COMPACT } from "@/lib/theme/space";
+import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, data as dataText, tabular } from "@/lib/theme/type";
 
@@ -221,7 +221,7 @@ function SolverRow({
       </span>
 
       <div style={{ minWidth: 0 }}>
-        <SolverIdentity solver={solver} />
+        <SolverIdentity solver={solver} phone={phone} />
       </div>
 
       <div
@@ -273,7 +273,7 @@ function SolverRow({
  * profile has no handle has no address, so they keep their place in the
  * ranking with the same avatar and name and no link.
  */
-function SolverIdentity({ solver }: { solver: Solver }) {
+function SolverIdentity({ solver, phone }: { solver: Solver; phone: boolean }) {
   if (solver.username) {
     return (
       <MakerLink
@@ -292,10 +292,10 @@ function SolverIdentity({ solver }: { solver: Solver }) {
   return (
     <span
       data-testid="solver-maker"
-      /* MakerLink's own box (44 tall, SPACE.xs apart), which this stands in for, so the rows line up. */
-      style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, minHeight: 44 }}
+      /* MakerLink's own box (36 tall, 44 on a phone, SPACE_COMPACT.xs apart, a 26px avatar), which this stands in for, so the rows line up. */
+      style={{ display: "inline-flex", alignItems: "center", gap: SPACE_COMPACT.xs, minHeight: phone ? 44 : 36 }}
     >
-      <Avatar style={{ width: 32, height: 32 }}>
+      <Avatar style={{ width: 26, height: 26 }}>
         <AvatarFallback style={{ background: t.recess, color: t.text2, ...dataText }}>
           {name.slice(0, 1).toUpperCase()}
         </AvatarFallback>

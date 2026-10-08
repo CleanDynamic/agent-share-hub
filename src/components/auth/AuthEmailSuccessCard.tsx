@@ -41,22 +41,22 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
         <CheckCircle2
           style={{
             width: "56px",
-            height: "56px",
+            height: "46px",
             color: t.evidence,
             strokeWidth: 1.5,
           }}
         />
       </div>
 
-      <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
+      <h2 style={{ ...cardTitle, marginTop: "14px", color: t.text }}>
         You&apos;re in
       </h2>
 
       <p
         style={{
-          marginTop: "8px",
+          marginTop: "6px",
           fontFamily: FIGTREE,
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: 400,
           lineHeight: 1.55,
           color: t.text2,
@@ -66,7 +66,7 @@ export function AuthEmailSuccessCard({ onContinue }: AuthEmailSuccessCardProps) 
         buildgallery picks up where you left off.
       </p>
 
-      <div style={{ width: "100%", marginTop: "16px" }}>
+      <div style={{ width: "100%", marginTop: "12px" }}>
         <AuthButton type="button" onClick={onContinue}>
           Continue to buildgallery
         </AuthButton>

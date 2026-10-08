@@ -224,7 +224,7 @@ export default function GamificationToasts() {
           zIndex: 1200,
           display: "flex",
           flexDirection: "column",
-          gap: 10,
+          gap: 7,
           alignItems: "flex-end",
           pointerEvents: "none",
         }}

@@ -19,7 +19,7 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
       aria-live="polite"
       className="inline-flex items-center gap-3"
       style={{
-        padding: "10px 14px",
+        padding: "7px 10px",
         minWidth: 240,
         borderRadius: tokens.radiusPanel,
         background: tokens.shell,
@@ -31,8 +31,8 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
       <span
         className="inline-flex items-center justify-center"
         style={{
-          width: 30,
-          height: 30,
+          width: 25,
+          height: 25,
           borderRadius: 9,
           background: tokens.orangeGradient,
           flexShrink: 0,
@@ -46,7 +46,7 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         <span
           style={{
             fontFamily: tokens.fontMono,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 700,
             color: xpColor,
             letterSpacing: "-0.01em",
@@ -74,8 +74,8 @@ export default function XpToast({ xp, reason, onDismiss }: XpToastProps) {
         aria-label="Dismiss"
         className="ml-1 inline-flex items-center justify-center"
         style={{
-          width: 22,
-          height: 22,
+          width: 18,
+          height: 18,
           borderRadius: 6,
           background: "transparent",
           border: "none",

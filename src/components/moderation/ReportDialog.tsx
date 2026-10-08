@@ -27,7 +27,8 @@ import {
 } from "@/lib/moderation";
 import { fieldStyle } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { SPACE } from "@/lib/theme/space";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body, label as labelType } from "@/lib/theme/type";
 
@@ -43,6 +44,9 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
+  /* UI-P59 (density): controls drawn 44 tall are 36 through the table, and keep 44 on a phone, the touch target. */
+  const phone = useIsPhone();
+  const touch = phone ? 44 : 36;
   const noteId = useId();
   const field = useInteractive<HTMLTextAreaElement>();
 
@@ -73,12 +77,12 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
   return (
     <Dialog open={target !== null} onOpenChange={(open) => (!open && !sending ? onClose() : undefined)}>
       <DialogContent data-testid="report-dialog" style={{ maxWidth: 480 }}>
-        <DialogTitle style={{ ...body, fontSize: 18, fontWeight: 600 }}>{title}</DialogTitle>
+        <DialogTitle style={{ ...body, fontSize: 15, fontWeight: 600 }}>{title}</DialogTitle>
         {sent ? (
           <>
             <DialogDescription style={{ ...body, color: t.text }}>Thanks. An admin will look at it.</DialogDescription>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button type="button" variant="outline" onClick={onClose} style={{ background: "transparent", minHeight: 44 }}>
+              <Button type="button" variant="outline" onClick={onClose} style={{ background: "transparent", minHeight: touch }}>
                 Close
               </Button>
             </div>
@@ -101,7 +105,7 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
               {REPORT_REASONS.map((option) => (
                 <label
                   key={option.value}
-                  style={{ ...body, color: t.text, display: "flex", alignItems: "center", gap: SPACE.xs, minHeight: 44, cursor: "pointer" }}
+                  style={{ ...body, color: t.text, display: "flex", alignItems: "center", gap: SPACE.xs, minHeight: touch, cursor: "pointer" }}
                 >
                   <RadioGroupItem value={option.value} aria-label={option.label} />
                   {option.label}
@@ -119,7 +123,7 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
                 rows={3}
                 onChange={(event) => setNote(event.target.value)}
                 {...field.handlers}
-                style={{ ...fieldStyle(field.state), ...body, width: "100%", padding: "10px 12px", resize: "vertical" }}
+                style={{ ...fieldStyle(field.state), ...body, width: "100%", padding: "7px 9px", resize: "vertical" }}
               />
             </div>
             {refusal ? (
@@ -128,10 +132,10 @@ export function ReportDialog({ target, onClose }: ReportDialogProps) {
               </p>
             ) : null}
             <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: SPACE.xs }}>
-              <Button type="button" variant="ghost" onClick={onClose} disabled={sending} style={{ minHeight: 44 }}>
+              <Button type="button" variant="ghost" onClick={onClose} disabled={sending} style={{ minHeight: touch }}>
                 Cancel
               </Button>
-              <Button type="submit" variant="default" disabled={!reason || sending} style={{ minHeight: 44 }}>
+              <Button type="submit" variant="default" disabled={!reason || sending} style={{ minHeight: touch }}>
                 Send report
               </Button>
             </div>

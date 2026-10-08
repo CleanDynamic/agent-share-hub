@@ -54,7 +54,7 @@ export default function PostXpFootnote({
       <div
         className="flex items-center gap-3"
         style={{
-          padding: "12px 14px",
+          padding: "9px 10px",
           minWidth: 268,
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
@@ -65,8 +65,8 @@ export default function PostXpFootnote({
         <span
           className="flex shrink-0 items-center justify-center"
           style={{
-            width: 36,
-            height: 36,
+            width: 30,
+            height: 30,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
             boxShadow: "0 3px 14px color-mix(in srgb, var(--action) 45%, transparent)",
@@ -80,7 +80,7 @@ export default function PostXpFootnote({
             <span
               style={{
                 fontFamily: tokens.fontMono,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 700,
                 color: xpColor,
                 letterSpacing: "-0.01em",
@@ -88,8 +88,8 @@ export default function PostXpFootnote({
             >
               +{xp} XP
             </span>
-            <span style={{ color: tokens.textFaint, fontSize: 13 }}>·</span>
-            <span style={{ fontSize: 13, fontWeight: 500, color: tokens.text }}>
+            <span style={{ color: tokens.textFaint, fontSize: 12 }}>·</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: tokens.text }}>
               {label}
             </span>
           </div>

@@ -24,7 +24,7 @@ export default function BadgeEarnedToast({
       role="status"
       aria-live="polite"
       style={{
-        padding: "14px 16px",
+        padding: "10px 12px",
         minWidth: 300,
         maxWidth: 360,
         borderRadius: tokens.radiusPanel,
@@ -39,8 +39,8 @@ export default function BadgeEarnedToast({
         <span
           className="inline-flex shrink-0 items-center justify-center"
           style={{
-            width: 38,
-            height: 38,
+            width: 31,
+            height: 31,
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
             boxShadow: "0 3px 14px color-mix(in srgb, var(--action) 45%, transparent)",
@@ -64,7 +64,7 @@ export default function BadgeEarnedToast({
           <div
             style={{
               marginTop: 2,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               color: tokens.text,
               lineHeight: 1.25,
@@ -89,8 +89,8 @@ export default function BadgeEarnedToast({
               type="button"
               onClick={onView}
               style={{
-                marginTop: 10,
-                padding: "6px 12px",
+                marginTop: 7,
+                padding: "4px 9px",
                 borderRadius: tokens.radiusPill,
                 background: tokens.orangeGradient,
                 border: "none",
@@ -110,8 +110,8 @@ export default function BadgeEarnedToast({
           onClick={onDismiss}
           aria-label="Dismiss"
           style={{
-            width: 22,
-            height: 22,
+            width: 18,
+            height: 18,
             borderRadius: 6,
             background: "transparent",
             border: "none",

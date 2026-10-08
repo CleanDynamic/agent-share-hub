@@ -632,10 +632,12 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
             onClick={() => setExpanded(true)}
             style={{
               display: "block",
-              /* A 45px target around a 13px line: the padding is the target, the
-                 negative margins keep the line where the reference draws it. */
-              margin: "-5px 0 -15px",
-              padding: "11px 0 11px 7px",
+              /* A 44px target around a 12px line: the padding is the target, the
+                 negative margins keep the line where the reference draws it (7
+                 under the list and 7 in since the density pass). The padding is
+                 the touch target and does not take the table (UI-P59). */
+              margin: "-8px 0 -15px",
+              padding: "15px 0 15px 7px",
               border: 0,
               background: "transparent",
               fontFamily: FIGTREE,
