@@ -856,6 +856,7 @@ export type Database = {
       }
       builds: {
         Row: {
+          ai_turn_count: number
           completeness: number | null
           cost_monthly: number | null
           cost_setup: number | null
@@ -873,16 +874,20 @@ export type Database = {
           live_url: string | null
           made_for: string[] | null
           made_with: string[] | null
+          making: Json
+          models_used: string[]
           monetisation_type: string | null
           outcome: string | null
           parent_build_id: string | null
           price_gbp: number | null
+          prompt_count: number
           published_at: string | null
           rebuild_count: number
           rebuild_note: string | null
           repo_url: string | null
           reproduction_count: number
           root_build_id: string | null
+          session_count: number
           shape: string
           slug: string
           solves_node_id: string | null
@@ -895,6 +900,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_turn_count?: number
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -912,16 +918,20 @@ export type Database = {
           live_url?: string | null
           made_for?: string[] | null
           made_with?: string[] | null
+          making?: Json
+          models_used?: string[]
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
           price_gbp?: number | null
+          prompt_count?: number
           published_at?: string | null
           rebuild_count?: number
           rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
+          session_count?: number
           shape?: string
           slug: string
           solves_node_id?: string | null
@@ -934,6 +944,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_turn_count?: number
           completeness?: number | null
           cost_monthly?: number | null
           cost_setup?: number | null
@@ -951,16 +962,20 @@ export type Database = {
           live_url?: string | null
           made_for?: string[] | null
           made_with?: string[] | null
+          making?: Json
+          models_used?: string[]
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
           price_gbp?: number | null
+          prompt_count?: number
           published_at?: string | null
           rebuild_count?: number
           rebuild_note?: string | null
           repo_url?: string | null
           reproduction_count?: number
           root_build_id?: string | null
+          session_count?: number
           shape?: string
           slug?: string
           solves_node_id?: string | null
@@ -3220,6 +3235,7 @@ export type Database = {
           expires_at: string
           fingerprint: string | null
           id: string
+          model: string | null
           proposal: Json | null
           reader_id: string | null
           secret_findings: Json | null
@@ -3244,6 +3260,7 @@ export type Database = {
           expires_at?: string
           fingerprint?: string | null
           id?: string
+          model?: string | null
           proposal?: Json | null
           reader_id?: string | null
           secret_findings?: Json | null
@@ -3268,6 +3285,7 @@ export type Database = {
           expires_at?: string
           fingerprint?: string | null
           id?: string
+          model?: string | null
           proposal?: Json | null
           reader_id?: string | null
           secret_findings?: Json | null
