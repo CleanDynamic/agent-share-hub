@@ -4,6 +4,7 @@ import type { BuildNode, NodeTree } from "@/lib/build/types";
 
 import {
   addPromptLabel,
+  addSessionLabel,
   addedToast,
   applyNodeWrites,
   madeWithChips,
@@ -110,6 +111,12 @@ describe("the prompts' words", () => {
     expect(addPromptLabel(text)).toBe("Add to prompts: Build me a script that renames photos by the date they were");
     expect(addPromptLabel("Short.")).toBe("Add to prompts: Short.");
     expect(addedToast(3)).toBe("Added as prompt 3.");
+  });
+
+  it("labels a waiting session's + with its first prompt, 60 characters on one line", () => {
+    const text = "Build me a script that renames photos by the date they were taken.\nKeep the original name in brackets.";
+    expect(addSessionLabel(text)).toBe("Add to this build: Build me a script that renames photos by the date they were");
+    expect(addSessionLabel("  Short.  ")).toBe("Add to this build: Short.");
   });
 
   it("carries an import and an ordinal through a drag, and nothing else", () => {

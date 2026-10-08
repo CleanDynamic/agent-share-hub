@@ -1,11 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { composeViewProps } from "@/dev/fixtures/compose";
 
-import { ComposeView, type ComposeViewProps } from "./ComposeView";
+import { ComposeView, type ComposeOtherSession, type ComposeViewProps } from "./ComposeView";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -121,6 +121,82 @@ describe("ComposeView", () => {
     expect(screen.getAllByRole("button", { name: /^Add model to session/ }).map((button) => button.getAttribute("aria-label"))).toEqual([
       "Add model to session 2",
     ]);
+  });
+
+  describe("sessions not in a build yet", () => {
+    const waiting = (n: number, over: Partial<ComposeOtherSession> = {}): ComposeOtherSession[] =>
+      Array.from({ length: n }, (_, at) => ({
+        id: `waiting-${at + 1}`,
+        firstPrompt: `Waiting prompt ${at + 1}`,
+        meta: "Claude · Yesterday",
+        adding: false,
+        ...over,
+      }));
+
+    it("lists them under this build's sessions, counts them, and adds one with its +", () => {
+      const base = view({ otherSessions: waiting(2), onAttachSession: vi.fn() });
+      const panel = screen.getByTestId("compose-sessions");
+      expect(within(panel).getByRole("heading", { level: 2 }).textContent).toBe("Your sessions4");
+      const group = within(panel).getByRole("region", { name: "Not in a build yet" });
+      expect(within(group).getAllByTestId("waiting-session").map((row) => row.textContent)).toEqual([
+        "Waiting prompt 1Claude · Yesterday",
+        "Waiting prompt 2Claude · Yesterday",
+      ]);
+
+      fireEvent.click(within(group).getByRole("button", { name: "Add to this build: Waiting prompt 2" }));
+      expect(base.onAttachSession).toHaveBeenCalledWith("waiting-2");
+      expect(screen.queryByRole("button", { name: /Add a session/ })).toBeNull();
+    });
+
+    it("lists them when this build has no sessions yet", () => {
+      view({ sessions: [], otherSessions: waiting(1) });
+      expect(screen.getByTestId("compose-sessions").textContent).toContain("No sessions in this build yet.");
+      expect(screen.getByRole("button", { name: "Add to this build: Waiting prompt 1" })).toBeTruthy();
+    });
+
+    it("disables the + of a session already on its way in", () => {
+      const base = view({ otherSessions: [...waiting(1, { adding: true })], onAttachSession: vi.fn() });
+      const add = screen.getByRole("button", { name: "Add to this build: Waiting prompt 1" }) as HTMLButtonElement;
+      expect(add.disabled).toBe(true);
+      fireEvent.click(add);
+      expect(base.onAttachSession).not.toHaveBeenCalled();
+    });
+
+    it("shows six, then the rest in place", () => {
+      view({ otherSessions: waiting(9) });
+      expect(screen.getAllByTestId("waiting-session")).toHaveLength(6);
+      const more = screen.getByRole("button", { name: "Show 3 more" });
+      expect(more.getAttribute("aria-expanded")).toBe("false");
+      fireEvent.click(more);
+      expect(screen.getAllByTestId("waiting-session").map((row) => row.textContent?.replace("Claude · Yesterday", ""))).toEqual(
+        Array.from({ length: 9 }, (_, at) => `Waiting prompt ${at + 1}`),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
+      expect(screen.getAllByTestId("waiting-session")).toHaveLength(6);
+    });
+
+    it("says when they did not load and offers a retry; shows nothing while they load or when there are none", () => {
+      const base = view({ otherSessions: null, otherSessionsError: true, onRetryOtherSessions: vi.fn() });
+      const group = screen.getByRole("region", { name: "Not in a build yet" });
+      expect(group.textContent).toContain("These sessions didn't load.");
+      fireEvent.click(within(group).getByRole("button", { name: "Try again" }));
+      expect(base.onRetryOtherSessions).toHaveBeenCalledTimes(1);
+
+      cleanup();
+      view({ otherSessions: null });
+      expect(screen.queryByTestId("compose-waiting-sessions")).toBeNull();
+      cleanup();
+      view({ otherSessions: [] });
+      expect(screen.queryByTestId("compose-waiting-sessions")).toBeNull();
+      expect(screen.getByRole("heading", { level: 2, name: /^Your sessions/ }).textContent).toBe("Your sessions2");
+    });
+
+    it("lists them without a + on a published build, and says why", () => {
+      view({ otherSessions: waiting(2), canAttachSessions: false });
+      expect(screen.getAllByTestId("waiting-session")).toHaveLength(2);
+      expect(screen.queryByRole("button", { name: /^Add to this build/ })).toBeNull();
+      expect(screen.getByTestId("compose-waiting-sessions").textContent).toContain("This build is published, so it takes no new sessions.");
+    });
   });
 
   it("changes Made with with toggles that say whether they are on", () => {

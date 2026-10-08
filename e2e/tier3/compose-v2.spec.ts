@@ -455,17 +455,15 @@ test("moving a prompt down swaps it with the next prompt through reorder, and le
   expect(backend.nodes().find((row) => row.id === COVER)?.position).toBe(1);
 });
 
-test("+ Add a session claims it for this build and refreshes the stats", async ({ page }, testInfo) => {
+test("a session in no build is listed in Your sessions, and its + claims it for this build and refreshes the stats", async ({ page }) => {
   const backend = await fakeBackend(page, { seed: { build: DRAFT, sessions: [sessionRow(SESSION_2)] } });
   await page.goto(`/compose/${BUILD_ID}`);
 
   await expect(page.getByTestId("compose-sessions")).toContainText("No sessions in this build yet.");
-  await page.getByRole("button", { name: "Add a session" }).click();
-  if (testInfo.project.name === "mobile") {
-    await page.getByRole("dialog", { name: "Add a session" }).getByRole("button", { name: /My iPhone photos are HEIC/ }).click();
-  } else {
-    await page.getByRole("menuitem", { name: /My iPhone photos are HEIC/ }).click();
-  }
+  const waiting = page.getByRole("region", { name: "Not in a build yet" });
+  await expect(waiting.getByTestId("waiting-session")).toHaveText([/^My iPhone photos are HEIC/]);
+  await expect(page.getByRole("button", { name: "Add a session" })).toHaveCount(0);
+  await waiting.getByRole("button", { name: /^Add to this build: My iPhone photos are HEIC/ }).click();
 
   await expect(page.getByText("Session added. Opus 5.5 is now under Made with.")).toBeVisible();
   const claim = writesTo(backend, "import_sessions", "PATCH").find((write) => write.body?.status === "claimed");
@@ -474,6 +472,7 @@ test("+ Add a session claims it for this build and refreshes the stats", async (
   expect(stats?.body).toMatchObject({ session_count: 1, prompt_count: 2, ai_turn_count: 4, models_used: ["Opus 5.5"], made_with: ["Claude", "Opus 5.5"] });
 
   await expect(page.getByTestId("compose-sessions").getByRole("button", { name: /^Session 1: Opus 5\.5/ })).toBeVisible();
+  await expect(page.getByTestId("compose-waiting-sessions")).toHaveCount(0);
   await expect(page.getByTestId("made-with-chip")).toHaveText(["Claude · Opus 5.5"]);
 });
 

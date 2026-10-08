@@ -87,6 +87,9 @@ export function composeViewProps(state: DesignState = "populated"): ComposeViewP
     onAddSessionPrompt: noop,
     onSetSessionModel: noop,
     otherSessions: [],
+    otherSessionsError: false,
+    onRetryOtherSessions: noop,
+    canAttachSessions: true,
     onAttachSession: noop,
 
     madeWith: empty
