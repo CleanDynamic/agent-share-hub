@@ -106,7 +106,7 @@ export function ForkControl({ state }: { state: ForkState }) {
   return (
     <div
       data-visual-slot="build-fork-control"
-      style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+      style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
     >
       {/* VISUAL SLOT — the primary button surface is supplied externally.
           Everything painted here is a default and is spread before any
@@ -125,7 +125,7 @@ export function ForkControl({ state }: { state: ForkState }) {
           style={{
             ...action.style,
             ...labelType,
-            padding: "6px 12px",
+            padding: "4px 9px",
             whiteSpace: "nowrap",
             /* "progress" rather than the treatment's "not-allowed": the action
                was accepted and is running, which is not the same as refused. */

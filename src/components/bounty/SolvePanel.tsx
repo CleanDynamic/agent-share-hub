@@ -38,6 +38,11 @@
 //
 // Styled with inline style objects, like every other surface on this route:
 // Tailwind's generated utilities win over hand-written classes at build time.
+//
+// DENSER SINCE UI-P57: every size this file sets itself is its old value
+// through the density table (design/prompts/README-density.md) — controls
+// 6px 10px, sections 7 to 12 apart, type a step down. A phone's inputs still
+// render at 16px: index.css holds every input there.
 
 import { useCallback, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
@@ -162,7 +167,7 @@ const controlBase: CSSProperties = {
   ...labelText,
   fontFamily: "inherit",
   fontSize: 12,
-  padding: "8px 14px",
+  padding: "6px 10px",
   borderRadius: r.control,
   cursor: "pointer",
   whiteSpace: "nowrap",
@@ -175,7 +180,7 @@ const textareaStyle: CSSProperties = {
   ...bodyText,
   fontFamily: "inherit",
   width: "100%",
-  padding: "8px 10px",
+  padding: "6px 7px",
   borderRadius: r.control,
   background: RECESS,
   border: `1px solid ${HAIRLINE}`,
@@ -401,7 +406,7 @@ export function SolvePanel({
           fontFamily: "inherit",
           display: "flex",
           flexDirection: "column",
-          gap: 16,
+          gap: 12,
           maxWidth: 720,
           maxHeight: "86vh",
           overflowY: "auto",
@@ -409,7 +414,7 @@ export function SolvePanel({
           borderRadius: "12px 12px 0 0",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <SheetTitle style={{ ...titleText, margin: 0 }}>{HEADING}</SheetTitle>
           <SheetDescription style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
             {LEAD}
@@ -427,14 +432,14 @@ export function SolvePanel({
             answers below stay readable.
           </p>
         ) : !isLoggedIn ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
             <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>{SIGNED_OUT}</p>
             <button type="button" onClick={signIn} style={controlBase}>
               Sign in
             </button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* THE RETURNING SOLVER. Offered first when it applies, because
                 somebody holding a finished rebuild has no decision left to
                 make — the two options below are for the visit before this one. */}
@@ -443,10 +448,10 @@ export function SolvePanel({
                 data-testid="ready-rebuild"
                 style={{
                   ...cardGlass,
-                  padding: "12px 14px",
+                  padding: "9px 10px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 8,
+                  gap: 6,
                   borderLeft: `2px solid ${tokenAlpha("evidence", 0.5)}`,
                 }}
               >
@@ -472,7 +477,7 @@ export function SolvePanel({
                   />
                 </label>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                   {/* VISUAL SLOT — the primary button surface is supplied
                       externally. Geometry and behaviour only here. */}
                   <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
@@ -497,7 +502,7 @@ export function SolvePanel({
 
             {/* THE TWO OPTIONS, RANKED. A button and a link, not two buttons:
                 the difference in weight is the recommendation. */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <span data-visual-slot="btn-primary" style={{ display: "inline-flex", alignSelf: "flex-start" }}>
                   <button
@@ -553,7 +558,7 @@ export function SolvePanel({
             {/* The NS-P52 form, unchanged in every respect except that it is
                 now asked for rather than assumed. */}
             {directOpen ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* CONTROLLED: the payload lives in this component and nothing is
                 written to build_nodes. See SchemaForm's props. */}
             <SchemaForm
@@ -582,7 +587,7 @@ export function SolvePanel({
               </span>
             </label>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
               {/* VISUAL SLOT — the primary button surface is supplied
                   externally. Geometry and behaviour only here. */}
               <span data-visual-slot="btn-primary" style={{ display: "inline-flex" }}>
@@ -623,7 +628,7 @@ export function SolvePanel({
 
         <div style={{ height: 1, background: HAIRLINE }} />
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           <h3 style={{ ...labelText, margin: 0, textTransform: "uppercase", color: TEXT_MUTED }}>
             Solutions
           </h3>
@@ -676,7 +681,7 @@ function SolutionBuildLine({ build }: { build: SolutionBuild }) {
     <div
       data-testid="solution-build-link"
       data-build-id={build.id}
-      style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", minWidth: 0 }}
+      style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap", minWidth: 0 }}
     >
       <Link
         to={`/b2/${build.slug}`}
@@ -707,7 +712,7 @@ function SolutionBuildLine({ build }: { build: SolutionBuild }) {
             ? {
                 color: EVIDENCE.color,
                 background: EVIDENCE.background,
-                padding: "1px 6px",
+                padding: "1px 4px",
                 borderRadius: r.chip,
               }
             : { color: TEXT_MUTED }),
@@ -774,14 +779,14 @@ function SolutionRow({
       data-solution-id={solution.id}
       style={{
         ...cardGlass,
-        padding: "12px 14px",
+        padding: "9px 10px",
         display: "flex",
         flexDirection: "column",
-        gap: 10,
+        gap: 7,
         ...(accepted ? { borderLeft: `3px solid ${TEAL}` } : {}),
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
         <span style={{ ...labelText, fontSize: 12, color: TEXT_PRIMARY }}>{who}</span>
         {accepted ? (
           <span
@@ -789,7 +794,7 @@ function SolutionRow({
               ...dataText,
               fontSize: 11,
               color: EVIDENCE.color,
-              padding: "1px 6px",
+              padding: "1px 4px",
               borderRadius: r.chip,
               background: EVIDENCE.background,
             }}
@@ -806,7 +811,7 @@ function SolutionRow({
           style={{
             ...controlBase,
             marginLeft: "auto",
-            padding: "2px 9px",
+            padding: "2px 6px",
             ...dataText,
             ...tabular,
             fontSize: 12,
@@ -835,7 +840,7 @@ function SolutionRow({
             display: "flex",
             flexDirection: "column",
             gap: 4,
-            padding: "8px 10px",
+            padding: "6px 7px",
             borderRadius: r.control,
             border: `1px solid ${tokenAlpha("cat-evidence", 0.34)}`,
             background: EVIDENCE.background,
@@ -873,14 +878,14 @@ function SolutionRow({
 
       {canAccept && !accepted ? (
         confirming ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_SECONDARY }}>
               {(solution.solutionBuild ? ACCEPT_REBUILD_CONFIRM : ACCEPT_CONFIRM).replace(
                 "@solver",
                 who,
               )}
             </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button
                 type="button"
                 data-testid="solution-accept-confirm"

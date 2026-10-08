@@ -18,7 +18,7 @@ import { getBounty, type Bounty } from "@/lib/bounty";
 import { getBuild, getMediaForBuild, getNodeType } from "@/lib/build";
 import type { Build, BuildNode } from "@/lib/build/types";
 import { partsInOrder } from "@/pages/site/build/buildModel";
-import { SPACE } from "@/lib/theme/space";
+import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -28,11 +28,11 @@ function SolveSkeleton() {
     <div style={{ padding: SPACE.md }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <Panel padding="18px 20px">
-          <LoadingRegion what="the ask" announce data-testid="solve-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <Skeleton width="60%" height={28} />
+          <LoadingRegion what="the ask" announce data-testid="solve-loading" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            <Skeleton width="60%" height={23} />
             <Skeleton height={96} radius={14} />
             <Skeleton height={140} radius={12} />
-            <Skeleton width={160} height={44} radius={12} />
+            <Skeleton width={160} height={36} radius={12} />
           </LoadingRegion>
         </Panel>
       </div>

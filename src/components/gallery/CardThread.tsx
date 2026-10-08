@@ -54,20 +54,21 @@ import { BASE, STANDARD, prefersReducedMotion } from "@/lib/theme/motion";
 /* ────────────────────────────────────────────────────────────────────────────
    The measurements. Every one of them is a number this file needs twice — once
    to draw with and once to reserve height with — so none of them is written
-   inline at a call site.
+   inline at a call site. Each is its old value through the density table since
+   UI-P56 (`design/prompts/README-density.md`), the old one beside it.
    ──────────────────────────────────────────────────────────────────────────── */
 
-/** The box's own padding. The rail lives in the left one. */
-export const THREAD_PAD = 16;
+/** The box's own padding (16 before UI-P56). The rail lives in the left one. */
+export const THREAD_PAD = 12;
 
-/** Between an entry's words and its picture. */
-export const TEXT_TO_MEDIA = 12;
+/** Between an entry's words and its picture (12 before UI-P56). */
+export const TEXT_TO_MEDIA = 9;
 
-/** Between one entry and the next, above and below the hairline. */
-export const ENTRY_GAP = 16;
+/** Between one entry and the next, above and below the hairline (16 before UI-P56). */
+export const ENTRY_GAP = 12;
 
-/** The unfold control's row. A 40px target, which is the kit's list-row height. */
-export const CONTROL_HEIGHT = 40;
+/** The unfold control's row: the kit's list-row height, 40 before the UI-P56 density pass and 33 after. */
+export const CONTROL_HEIGHT = 33;
 
 /** The rail: 2px of --line, centred in the box's left padding. */
 export const RAIL_WIDTH = 2;
@@ -349,8 +350,8 @@ function EntryText({ text }: { text: string | null }) {
       style={{
         ...bodyText,
         // No top margin of its own in either position: entry 0 sits on the box's
-        // own 16px top padding, and a later entry sits on the 16px its hairline
-        // already provided. 12px below, above the picture.
+        // own top padding (THREAD_PAD), and a later entry sits on the ENTRY_GAP
+        // its hairline already provided. TEXT_TO_MEDIA below, above the picture.
         margin: 0,
         padding: `0 ${THREAD_PAD}px ${TEXT_TO_MEDIA}px`,
         color: t.text,
@@ -445,7 +446,7 @@ function ShapeTag({ shape }: { shape: string }) {
         position: "absolute",
         top: 8,
         left: 8,
-        padding: "2px 7px",
+        padding: "2px 5px",
         borderRadius: r.chip,
         background: t.glass2,
         color: t.text,
@@ -475,7 +476,7 @@ function CountChip({ total }: { total: number }) {
         position: "absolute",
         top: THREAD_PAD + 8,
         right: THREAD_PAD + 8,
-        padding: "2px 7px",
+        padding: "2px 5px",
         borderRadius: r.chip,
         background: t.glass2,
         color: t.text,
@@ -505,8 +506,9 @@ function PlayAffordance() {
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: 48,
-        height: 48,
+        /* 48 square before the UI-P56 density pass. */
+        width: 39,
+        height: 39,
         borderRadius: r.control,
         display: "flex",
         alignItems: "center",
@@ -547,7 +549,7 @@ function DurationChip({ seconds }: { seconds: number | null }) {
         position: "absolute",
         bottom: 8,
         right: 8,
-        padding: "1px 6px",
+        padding: "1px 4px",
         borderRadius: r.chip,
         background: t.glass2,
         color: t.text,
@@ -574,7 +576,7 @@ export function durationLabel(seconds: number | null | undefined): string | null
  *
  * Positioned against the block that begins at the first picture's top and ends
  * at the last entry's bottom, so its extent is those two facts rather than a
- * measured length. Centred in the 16px padding — (16 − 2) / 2 = 7 — which is the
+ * measured length. Centred in the 12px padding — (12 − 2) / 2 = 5 — which is the
  * one column of the box nothing else occupies.
  */
 function Rail() {
@@ -695,7 +697,7 @@ function UnfoldControl({
         ...dataText,
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 4,
         width: "100%",
         height: CONTROL_HEIGHT,
         marginTop: ENTRY_GAP,

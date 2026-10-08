@@ -28,8 +28,8 @@ export default function FounderMark({
     <span
       className="inline-flex items-center gap-2 self-start"
       style={{
-        height: 30,
-        padding: "0 14px",
+        height: 25,
+        padding: "0 10px",
         borderRadius: tokens.radius.pill,
         background: tokens.brand.orangeGradient,
         border: tokens.border.soft,

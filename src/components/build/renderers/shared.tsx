@@ -297,7 +297,7 @@ export function MediaImage({
         style={{
           ...dataType,
           color: t.text2,
-          padding: "18px 14px",
+          padding: "13px 10px",
           textAlign: "center",
           border: `1px dashed ${t.line}`,
           borderRadius: r.media,
@@ -413,7 +413,7 @@ export function Chip({
       title={title}
       style={{
         ...chipType,
-        padding: "2px 9px",
+        padding: "2px 6px",
         borderRadius: r.chip,
         whiteSpace: "nowrap",
         color: colour,
@@ -428,7 +428,7 @@ export function Chip({
 
 export function ChipRow({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
       {children}
     </div>
   );
@@ -444,7 +444,7 @@ export function StatRow({
 }) {
   if (stats.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 17 }}>
       {stats.map((stat) => (
         <div key={stat.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ ...eyebrow, color: t.text2 }}>{stat.label}</span>
@@ -455,7 +455,7 @@ export function StatRow({
             style={{
               ...dataType,
               ...tabular,
-              fontSize: 20,
+              fontSize: 17,
               fontWeight: 500,
               lineHeight: 1.2,
               color: colour,
@@ -477,7 +477,7 @@ export function KeyValueGrid({ pairs }: { pairs: { label: string; value: ReactNo
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-        gap: "10px 20px",
+        gap: "7px 14px",
       }}
     >
       {pairs.map((pair) => (
@@ -496,9 +496,9 @@ export function KeyValueGrid({ pairs }: { pairs: { label: string; value: ReactNo
 export function Bullets({ items, colour = t.evidence }: { items: ReactNode[]; colour?: string }) {
   if (items.length === 0) return null;
   return (
-    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
       {items.map((item, index) => (
-        <li key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <li key={index} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
           <span
             aria-hidden="true"
             style={{
@@ -506,7 +506,7 @@ export function Bullets({ items, colour = t.evidence }: { items: ReactNode[]; co
               height: 4,
               borderRadius: r.full,
               background: colour,
-              marginTop: 8,
+              marginTop: 6,
               flexShrink: 0,
             }}
           />
@@ -534,8 +534,8 @@ export function Callout({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        padding: "12px 14px",
+        gap: 7,
+        padding: "9px 10px",
         borderRadius: r.control,
         background: hexToRgba(colour, 0.06),
         border: `1px solid ${hexToRgba(colour, 0.28)}`,
@@ -565,7 +565,7 @@ export function AccentSection({
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        paddingLeft: 12,
+        paddingLeft: 9,
         borderLeft: `3px solid ${colour}`,
       }}
     >
@@ -606,7 +606,7 @@ export const monoBlockStyle: CSSProperties = {
   background: t.recess,
   border: `1px solid ${t.line}`,
   borderRadius: r.control,
-  padding: "12px 14px",
+  padding: "9px 10px",
   margin: 0,
   fontFamily: MONO_STACK,
   fontSize: 12,
@@ -641,7 +641,7 @@ export function MonoBlock({
   const shown = collapsible && !open ? lines.slice(0, collapseTo).join("\n") : text;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <pre style={{ ...monoBlockStyle, ...style }}>
         {children && (!collapsible || open) ? children : shown}
         {collapsible && !open ? (
@@ -713,7 +713,7 @@ export const cellStyle: CSSProperties = {
   ...tabular,
   color: t.text,
   verticalAlign: "top",
-  padding: "7px 12px 7px 0",
+  padding: "5px 9px 5px 0",
   borderBottom: `1px solid ${t.line}`,
 };
 
@@ -721,7 +721,7 @@ export const headCellStyle: CSSProperties = {
   ...eyebrow,
   color: t.text2,
   textAlign: "left",
-  padding: "0 12px 6px 0",
+  padding: "0 9px 4px 0",
   borderBottom: `1px solid ${t.line}`,
   whiteSpace: "nowrap",
 };

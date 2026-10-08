@@ -20,7 +20,7 @@ export default function LineageXpToast({
       aria-live="polite"
       className="inline-flex items-center gap-3"
       style={{
-        padding: '12px 14px',
+        padding: '9px 10px',
         borderRadius: tokens.radiusCard,
         background: tokens.card,
         border: tokens.borderSoft,
@@ -31,8 +31,8 @@ export default function LineageXpToast({
       <span
         className="inline-flex items-center justify-center"
         style={{
-          width: 34,
-          height: 34,
+          width: 28,
+          height: 28,
           borderRadius: 9,
           background: 'color-mix(in srgb, var(--action) 16%, transparent)',
           border: '0.5px solid color-mix(in srgb, var(--action) 40%, transparent)',
@@ -43,7 +43,7 @@ export default function LineageXpToast({
       </span>
 
       <div className="flex flex-col gap-0.5">
-        <span style={{ fontFamily: fontMono, fontSize: 15, fontWeight: 700, color: xpColor }}>
+        <span style={{ fontFamily: fontMono, fontSize: 14, fontWeight: 700, color: xpColor }}>
           +{xp} XP
         </span>
         <span style={{ fontSize: 12.5, color: tokens.textMuted }}>{message}</span>
@@ -55,8 +55,8 @@ export default function LineageXpToast({
         aria-label="Dismiss"
         className="ml-2 inline-flex items-center justify-center"
         style={{
-          width: 24,
-          height: 24,
+          width: 20,
+          height: 20,
           borderRadius: 7,
           background: 'transparent',
           border: 'none',

@@ -17,14 +17,14 @@ import { DM_MONO } from "@/lib/theme/type";
 
 export function ResultFrame({ date, children }: { date: string | null; children: ReactNode }) {
   return (
-    <div data-testid="build-result" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div data-testid="build-result" style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <CategoryChip category="evidence" label="evidence" />
         {date ? <span style={{ fontFamily: DM_MONO, fontSize: 10, color: t.label }}>{date}</span> : null}
       </div>
       <div
         data-testid="build-result-frame"
-        style={{ borderRadius: r.media, border: `1px solid ${t.line}`, padding: "12px 14px", overflow: "hidden", minWidth: 0 }}
+        style={{ borderRadius: r.media, border: `1px solid ${t.line}`, padding: "9px 10px", overflow: "hidden", minWidth: 0 }}
       >
         {children}
       </div>

@@ -4,15 +4,20 @@
 // scrolls here and focuses the box (RC-P16); a part's marker in the Anatomy
 // does the same with that part attached; /b2/<slug>#comments lands here.
 //
-// WHAT A COMMENT IS DRAWN AS. The avatar (the existing component, 32px), the
+// WHAT A COMMENT IS DRAWN AS. The avatar (the existing component, 26px), the
 // name linking to the maker's profile, when it was written in DM Mono 12, an
 // "on part …" chip when it is about one part, the words as plain text with
 // their line breaks kept — never as HTML — and then its text actions. Top-level
-// comments are oldest first, 24 apart; a reply sits under its comment, 24 in,
+// comments are oldest first, 17 apart; a reply sits under its comment, 17 in,
 // behind a 1px --line on its leading side, and cannot itself be answered
 // ⟦law-of-continuity⟧. No comment is boxed ⟦law-of-common-region › When
 // Containment Is Counterproductive⟧: a conversation is a column of voices, not
 // a stack of cards.
+//
+// DENSER SINCE UI-P59 (the density sweep): every size here is its old value
+// through design/prompts/README-density.md, the spacing on SPACE_COMPACT (32px
+// avatar → 26, 24 apart → 17). Controls drawn 44 tall are 36, and keep 44 on a
+// phone, the touch target.
 //
 // AT MOST THREE ACTIONS ON A COMMENT ⟦hicks-law › Budgets⟧: somebody else's
 // comment offers Reply; your own offers Reply, Edit and, 16 further along,
@@ -67,7 +72,8 @@ import { buttonStyle, chipStyle, fieldStyle, ring, skeletonStyle } from "@/lib/t
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
-import { SPACE } from "@/lib/theme/space";
+import { useIsPhone } from "@/components/shell/useMinWidth";
+import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, body, data as dataText, eyebrow, label as labelType, measure } from "@/lib/theme/type";
 
@@ -75,7 +81,9 @@ import { DM_MONO, body, data as dataText, eyebrow, label as labelType, measure }
 const NEAR_MARGIN = "400px 0px";
 
 /** The secondary treatment: transparent, a --line border (STATES.md row 2). */
-const SECONDARY: CSSProperties = { background: "transparent", borderRadius: r.control, minHeight: 44 };
+/* UI-P59 (density): a control drawn 44 tall is 36 through the table, and keeps 44 on a phone, the touch target. */
+const target = (phone: boolean) => (phone ? 44 : 36);
+const secondary = (phone: boolean): CSSProperties => ({ background: "transparent", borderRadius: r.control, minHeight: target(phone) });
 
 export interface CommentsProps {
   build: { id: string; slug: string };
@@ -89,6 +97,7 @@ export interface CommentsProps {
 
 export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsProps) {
   const { user, isLoggedIn } = useAuth();
+  const phone = useIsPhone();
   const viewerId = user?.id ?? null;
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -231,7 +240,7 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
           ref={signInRef}
           to={signInHref}
           data-testid="comments-sign-in"
-          style={{ ...buttonStyle("link"), ...body, alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: 44 }}
+          style={{ ...buttonStyle("link"), ...body, alignSelf: "flex-start", display: "inline-flex", alignItems: "center", minHeight: target(phone) }}
         >
           Sign in to comment
         </Link>
@@ -260,7 +269,7 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
           data-testid="comments-show-more"
           disabled={pages.isFetchingNextPage}
           onClick={() => void pages.fetchNextPage()}
-          style={{ ...SECONDARY, alignSelf: "flex-start" }}
+          style={{ ...secondary(phone), alignSelf: "flex-start" }}
         >
           Show more comments
         </Button>
@@ -270,17 +279,17 @@ export function Comments({ build, parts, attachRequest, onOpenPart }: CommentsPr
 
       <Dialog open={confirming !== null} onOpenChange={(open) => (!open && !deleting ? setConfirming(null) : undefined)}>
         <DialogContent style={{ maxWidth: 440 }}>
-          <DialogTitle style={{ ...body, fontWeight: 600, fontSize: 18 }}>Delete this comment?</DialogTitle>
+          <DialogTitle style={{ ...body, fontWeight: 600, fontSize: 15 }}>Delete this comment?</DialogTitle>
           <DialogDescription style={{ ...body, color: t.text2 }}>
             {confirming && "replies" in confirming && confirming.replies.length > 0
               ? "Its replies go with it. This cannot be undone."
               : "This cannot be undone."}
           </DialogDescription>
           <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: SPACE.xs }}>
-            <Button type="button" variant="ghost" onClick={() => setConfirming(null)} disabled={deleting} style={{ minHeight: 44 }}>
+            <Button type="button" variant="ghost" onClick={() => setConfirming(null)} disabled={deleting} style={{ minHeight: target(phone) }}>
               Cancel
             </Button>
-            <Button type="button" variant="default" onClick={() => void confirmDelete()} disabled={deleting} style={{ minHeight: 44 }}>
+            <Button type="button" variant="default" onClick={() => void confirmDelete()} disabled={deleting} style={{ minHeight: target(phone) }}>
               Delete comment
             </Button>
           </div>
@@ -309,6 +318,7 @@ function Composer({
 }) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const phone = useIsPhone();
   const empty = text.trim().length === 0;
 
   const submit = async (event: FormEvent) => {
@@ -333,10 +343,10 @@ function Composer({
     >
       {attached ? (
         <span style={{ display: "inline-flex", alignItems: "center", alignSelf: "flex-start", gap: 0 }}>
-          <span data-testid="comments-attached-part" style={{ ...chipStyle("outline"), padding: "2px 8px" }}>
+          <span data-testid="comments-attached-part" style={{ ...chipStyle("outline"), padding: "2px 6px" }}>
             {partText(attached.label)}
           </span>
-          <IconAction label="Remove the part" onPress={onDetach}>
+          <IconAction label="Remove the part" onPress={onDetach} phone={phone}>
             <X size={14} strokeWidth={1.5} aria-hidden />
           </IconAction>
         </span>
@@ -349,7 +359,7 @@ function Composer({
           onChange={setText}
           placeholder="Add a comment"
         />
-        <Button type="submit" variant="outline" disabled={empty || sending} style={SECONDARY}>
+        <Button type="submit" variant="outline" disabled={empty || sending} style={secondary(phone)}>
           Post
         </Button>
       </div>
@@ -372,6 +382,7 @@ function TextBox({
   placeholder?: string;
 }) {
   const { state, handlers } = useInteractive<HTMLTextAreaElement>();
+  const phone = useIsPhone();
   return (
     <textarea
       ref={boxRef}
@@ -388,8 +399,8 @@ function TextBox({
         flex: 1,
         minWidth: 0,
         width: "100%",
-        minHeight: 44,
-        padding: "10px 12px",
+        minHeight: target(phone),
+        padding: "7px 9px",
         resize: "vertical",
       }}
     />
@@ -419,6 +430,7 @@ interface ListProps {
 
 function CommentList(props: ListProps) {
   const { loading, error, onRetry, threads } = props;
+  const phone = useIsPhone();
 
   if (error) {
     // STATES.md row 21: one sentence and one way back.
@@ -427,7 +439,7 @@ function CommentList(props: ListProps) {
         <p style={{ ...body, color: t.text, margin: 0 }}>
           {isPermissionError(error) ? "You don't have access to this." : "Something went wrong."}
         </p>
-        <Button type="button" variant="outline" onClick={onRetry} style={SECONDARY}>
+        <Button type="button" variant="outline" onClick={onRetry} style={secondary(phone)}>
           Try again
         </Button>
       </div>
@@ -440,7 +452,7 @@ function CommentList(props: ListProps) {
       <div data-testid="comments-loading" aria-hidden style={{ display: "flex", flexDirection: "column", gap: SPACE.md }}>
         {[0, 1].map((index) => (
           <div key={index} style={{ display: "flex", gap: SPACE.xs }}>
-            <div style={{ ...skeletonStyle(), width: 32, height: 32, borderRadius: r.full, flexShrink: 0 }} />
+            <div style={{ ...skeletonStyle(), width: 26, height: 26, borderRadius: r.full, flexShrink: 0 }} />
             <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, flex: 1 }}>
               <div style={{ ...skeletonStyle(), height: 16, width: "40%" }} />
               <div style={{ ...skeletonStyle(), height: 16, width: "80%" }} />
@@ -549,6 +561,7 @@ function CommentItem({
   onDelete: () => void;
 } & Pick<ListProps, "parts" | "viewerId" | "canWrite" | "onOpenPart" | "onEdit" | "onReport" | "onRefused">) {
   const [editing, setEditing] = useState(false);
+  const phone = useIsPhone();
   const own = viewerId !== null && viewerId === comment.authorId;
   // RC-P17b: a signed-in reader may report somebody else's comment, unless an
   // admin has already hidden it.
@@ -564,7 +577,7 @@ function CommentItem({
       aria-label={`Comment by ${name}`}
       style={{ display: "flex", gap: SPACE.xs, alignItems: "flex-start" }}
     >
-      <Avatar style={{ width: 32, height: 32, flexShrink: 0 }}>
+      <Avatar style={{ width: 26, height: 26, flexShrink: 0 }}>
         {comment.author?.avatarUrl ? <AvatarImage src={comment.author.avatarUrl} alt="" /> : null}
         <AvatarFallback style={{ background: t.recess, color: t.text2, ...dataText }}>
           {name.replace(/^@/, "").slice(0, 1).toUpperCase()}
@@ -598,14 +611,14 @@ function CommentItem({
               alignSelf: "flex-start",
               display: "inline-flex",
               alignItems: "center",
-              minHeight: 44,
+              minHeight: target(phone),
               padding: 0,
               background: "transparent",
               border: "none",
               cursor: "pointer",
             }}
           >
-            <span style={{ ...chipStyle("outline"), padding: "2px 8px" }}>{partText(part)}</span>
+            <span style={{ ...chipStyle("outline"), padding: "2px 6px" }}>{partText(part)}</span>
           </button>
         ) : null}
 
@@ -636,14 +649,14 @@ function CommentItem({
             data-testid="comment-actions"
             style={{ display: "flex", alignItems: "center", flexWrap: "wrap", marginInlineStart: -SPACE.xs }}
           >
-            {onReplyPress && comment.parentId === null ? <TextAction label="Reply" onPress={onReplyPress} /> : null}
+            {onReplyPress && comment.parentId === null ? <TextAction label="Reply" onPress={onReplyPress} phone={phone} /> : null}
             {/* RC-P17b: somebody else's comment can be reported, after Reply. */}
-            {canReport ? <TextAction label="Report" onPress={() => onReport(comment)} /> : null}
-            {own ? <TextAction label="Edit" onPress={() => setEditing(true)} /> : null}
+            {canReport ? <TextAction label="Report" onPress={() => onReport(comment)} phone={phone} /> : null}
+            {own ? <TextAction label="Edit" onPress={() => setEditing(true)} phone={phone} /> : null}
             {own ? (
               // Destructive, last, and 16 further along (STATES.md row 16).
               <span style={{ marginInlineStart: SPACE.sm }}>
-                <TextAction label="Delete" onPress={onDelete} />
+                <TextAction label="Delete" onPress={onDelete} phone={phone} />
               </span>
             ) : null}
           </div>
@@ -671,6 +684,7 @@ function InlineBox({
 }) {
   const [text, setText] = useState(initial);
   const [sending, setSending] = useState(false);
+  const phone = useIsPhone();
   const boxRef = useRef<HTMLTextAreaElement | null>(null);
   const empty = text.trim().length === 0;
 
@@ -695,10 +709,10 @@ function InlineBox({
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
       <TextBox boxRef={boxRef} label={label} value={text} onChange={setText} />
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
-        <Button type="submit" variant="outline" disabled={empty || sending} style={SECONDARY}>
+        <Button type="submit" variant="outline" disabled={empty || sending} style={secondary(phone)}>
           {submitLabel}
         </Button>
-        <Button type="button" variant="ghost" onClick={onCancel} style={{ minHeight: 44 }}>
+        <Button type="button" variant="ghost" onClick={onCancel} style={{ minHeight: target(phone) }}>
           Cancel
         </Button>
       </div>
@@ -706,8 +720,8 @@ function InlineBox({
   );
 }
 
-/** A tertiary text action on a comment: --text2, no fill, 44 tall. */
-function TextAction({ label, onPress }: { label: string; onPress: () => void }) {
+/** A tertiary text action on a comment: --text2, no fill, 36 tall (44 on a phone). */
+function TextAction({ label, onPress, phone }: { label: string; onPress: () => void; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -717,7 +731,7 @@ function TextAction({ label, onPress }: { label: string; onPress: () => void }) 
       style={{
         ...buttonStyle("ghost", state),
         ...labelType,
-        minHeight: 44,
+        minHeight: target(phone),
         padding: `0 ${SPACE.xs}px`,
       }}
     >
@@ -726,8 +740,8 @@ function TextAction({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-/** A tertiary icon-only action, 44 by 44. */
-function IconAction({ label, onPress, children }: { label: string; onPress: () => void; children: ReactNode }) {
+/** A tertiary icon-only action, 36 by 36 (44 by 44 on a phone). */
+function IconAction({ label, onPress, phone, children }: { label: string; onPress: () => void; phone: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -737,8 +751,8 @@ function IconAction({ label, onPress, children }: { label: string; onPress: () =
       {...handlers}
       style={{
         ...buttonStyle("ghost", state),
-        minWidth: 44,
-        minHeight: 44,
+        minWidth: target(phone),
+        minHeight: target(phone),
         padding: 0,
         display: "inline-flex",
         alignItems: "center",

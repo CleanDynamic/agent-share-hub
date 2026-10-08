@@ -148,8 +148,8 @@ const removeStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 20,
-  height: 20,
+  width: 16,
+  height: 16,
   flexShrink: 0,
   alignSelf: "flex-start",
   marginTop: 2,
@@ -193,8 +193,8 @@ function ListRow({
         ...workspaceCard,
         display: "flex",
         alignItems: "flex-start",
-        gap: 6,
-        padding: "8px 8px 8px 2px",
+        gap: 4,
+        padding: "6px 6px 6px 2px",
         // Vertical only, by dropping the x component rather than by pulling in
         // @dnd-kit/modifiers: a list reorders up and down, and a new package on
         // this route is not worth one axis.
@@ -364,7 +364,7 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
       // nothing focusable.
       labelAsText
     >
-      <div ref={widthRef} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div ref={widthRef} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {rows.length > 0 && (
           <DndContext
             sensors={sensors}
@@ -379,7 +379,7 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
                   padding: 0,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 6,
+                  gap: 4,
                 }}
               >
                 {rows.map((row, index) => (
@@ -407,9 +407,9 @@ export function ListField({ field, value, onChange, id, touched, compact }: Fiel
             ...labelText,
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 4,
             alignSelf: "flex-start",
-            padding: "5px 10px",
+            padding: "5px 7px",
             borderRadius: r.control,
             background: "transparent",
             border: `1px dashed ${HAIRLINE}`,

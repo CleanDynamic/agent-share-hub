@@ -98,9 +98,9 @@ const sectionLabel: React.CSSProperties = {
  */
 function EmptyState() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 18 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 13 }}>
       <span style={sectionLabel}>Inspector</span>
-      <p style={{ ...bodyText, fontSize: 13, margin: 0, color: t.text2 }}>
+      <p style={{ ...bodyText, fontSize: 12, margin: 0, color: t.text2 }}>
         Select a node to edit its fields. What appears here is whatever that
         node's type says it holds.
       </p>
@@ -208,8 +208,8 @@ function GapControl({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 10,
-        padding: "10px 12px",
+        gap: 7,
+        padding: "7px 9px",
         borderRadius: r.control,
         /* DASHED WHEN ON, like every other unsolved mark in the system — the
            card's border, the part list's left edge, the tree row. A gap is an
@@ -226,7 +226,7 @@ function GapControl({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 9,
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
@@ -296,7 +296,7 @@ function GapControl({
             onChange={(event) => onProblemChange(event.target.value)}
             onFocus={(event) => focusControl(event.currentTarget)}
             onBlur={(event) => blurControl(event.currentTarget)}
-            style={{ ...controlStyle, minHeight: 64, resize: "vertical", display: "block" }}
+            style={{ ...controlStyle, minHeight: 52, resize: "vertical", display: "block" }}
           />
         </div>
       ) : null}
@@ -352,11 +352,11 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
     <div
       data-testid="inspector"
       data-node-id={node.id}
-      style={{ display: "flex", flexDirection: "column", gap: 16, padding: 18 }}
+      style={{ display: "flex", flexDirection: "column", gap: 12, padding: 13 }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
         <TypePill nodeType={nodeType} typeKey={node.type} />
-        <span style={{ ...titleText, fontSize: 19, color: t.text }}>{label}</span>
+        <span style={{ ...titleText, fontSize: 16, color: t.text }}>{label}</span>
       </div>
 
       <SuggestedFields fields={fields} payload={asPayload(node.payload)} />
@@ -394,7 +394,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
           }}
           onFocus={(event) => focusControl(event.currentTarget)}
           onBlur={(event) => blurControl(event.currentTarget)}
-          style={{ ...controlStyle, minHeight: 64, resize: "vertical", display: "block" }}
+          style={{ ...controlStyle, minHeight: 52, resize: "vertical", display: "block" }}
         />
       </div>
 
@@ -427,8 +427,8 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 12,
-          paddingTop: 12,
+          gap: 9,
+          paddingTop: 9,
           borderTop: `1px solid ${t.line}`,
         }}
       >
@@ -452,8 +452,8 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
             ...labelText,
             display: "flex",
             alignItems: "center",
-            gap: 6,
-            padding: "5px 10px",
+            gap: 4,
+            padding: "5px 7px",
             borderRadius: r.control,
             background: "transparent",
             border: `1px solid ${t.line}`,

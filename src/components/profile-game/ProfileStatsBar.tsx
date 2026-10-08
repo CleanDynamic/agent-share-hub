@@ -45,7 +45,7 @@ export default function ProfileStatsBar({ stats, style }: ProfileStatsBarProps) 
           <div
             key={stat.id}
             className="flex flex-col gap-1.5"
-            style={{ padding: "14px 16px", background: tokens.surface.card }}
+            style={{ padding: "10px 12px", background: tokens.surface.card }}
           >
             <span className="inline-flex items-center gap-1.5">
               {Icon && <Icon size={13} color={accent} strokeWidth={2.25} aria-hidden />}
@@ -66,7 +66,7 @@ export default function ProfileStatsBar({ stats, style }: ProfileStatsBarProps) 
               <span
                 style={{
                   fontFamily: tokens.font.mono,
-                  fontSize: 20,
+                  fontSize: 17,
                   fontWeight: 700,
                   lineHeight: 1,
                   color: accent,

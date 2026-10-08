@@ -8,7 +8,10 @@
    UI-P41 deletes that page and this is the one that remains.)
 
    MAKERS. Up to three makers whose names match the search, above the wall: a
-   scent, not a second list. */
+   scent, not a second list.
+
+   Both take the density table since UI-P56: the shortfall in 12px mono, the
+   makers row 6 apart and 10 above the wall. */
 
 import { MakerLink } from "@/components/profile/MakerLink";
 import {
@@ -57,7 +60,7 @@ export function Shortfall({ build, viewerId }: { build: GalleryBuild; viewerId: 
   return (
     <p
       data-testid="gallery-shortfall"
-      style={{ fontFamily: DM_MONO, fontSize: 13, lineHeight: 1.45, margin: 0, padding: "8px 8px 0", color: t.text2 }}
+      style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.45, margin: 0, padding: "6px 6px 0", color: t.text2 }}
     >
       Only you can see this — to earn its place in the gallery, {sentence(outstanding)}.
     </p>
@@ -72,12 +75,12 @@ export function MakersRow({ makers }: { makers: MakerHit[] }) {
     <section
       aria-labelledby="gallery-makers-heading"
       data-testid="gallery-makers"
-      style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}
+      style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}
     >
       <h2 id="gallery-makers-heading" style={{ ...eyebrow, margin: 0, color: t.text2 }}>
         Makers
       </h2>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", columnGap: 24, rowGap: 8 }}>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", columnGap: 17, rowGap: 6 }}>
         {linkable.map((maker) => (
           <li key={maker.id} style={{ minWidth: 0 }}>
             <MakerLink maker={maker} testId="gallery-maker" />

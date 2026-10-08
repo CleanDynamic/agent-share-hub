@@ -7,8 +7,9 @@
    `−` in `--cat-breakage` for a removal, each with its kind in words for a
    screen reader. The list is computed, not edited, and the panel says so.
 
-   Desktop: a grid `18px 130px minmax(0, 1fr)`, 30 tall, DM Mono 12, under DM
-   Mono 10 group headers. Phone: `16px 118px minmax(0, 1fr)`, at least 36 tall.
+   Desktop: a grid `18px 130px minmax(0, 1fr)`, 25 tall, DM Mono 12, under DM
+   Mono 10 group headers. Phone: `16px 118px minmax(0, 1fr)`, at least 30 tall
+   (UI-P58: the density table; the rows are not controls).
 
    PURE. */
 
@@ -46,7 +47,7 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
               textTransform: "uppercase",
               lineHeight: "normal",
               color: t.label,
-              padding: "12px 0 4px",
+              padding: "9px 0 4px",
             }}
           >
             {group.label}
@@ -61,9 +62,9 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                 style={{
                   display: "grid",
                   gridTemplateColumns: phone ? "16px 118px minmax(0, 1fr)" : "18px 130px minmax(0, 1fr)",
-                  gap: 8,
+                  gap: 6,
                   alignItems: "center",
-                  ...(phone ? { minHeight: 36 } : { height: 30 }),
+                  ...(phone ? { minHeight: 30 } : { height: 25 }),
                   borderBottom: `1px solid ${t.hairline}`,
                   fontFamily: DM_MONO,
                   fontSize: 12,
@@ -121,17 +122,17 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         />
         {about}
         {failure ? (
-          <ErrorState panel="What changed" onRetry={failure.onRetry} error={failure.error} style={{ marginTop: 12 }} data-testid="changes-error" />
+          <ErrorState panel="What changed" onRetry={failure.onRetry} error={failure.error} style={{ marginTop: 9 }} data-testid="changes-error" />
         ) : loading ? (
-          <LoadingRegion what="what changed" data-testid="changes-loading" style={{ marginTop: 12 }}>
+          <LoadingRegion what="what changed" data-testid="changes-loading" style={{ marginTop: 9 }}>
             {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} height={phone ? 40 : 30} radius={0} style={{ marginBottom: 1 }} />
+              <Skeleton key={i} height={phone ? 33 : 25} radius={0} style={{ marginBottom: 1 }} />
             ))}
           </LoadingRegion>
         ) : groups && groups.length > 0 ? (
           <ChangeList groups={groups} phone={phone} />
         ) : placeholder ? (
-          <div style={{ marginTop: 12, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
+          <div style={{ marginTop: 9, fontFamily: FIGTREE, fontSize: 12, lineHeight: 1.5, color: t.text2 }}>{placeholder}</div>
         ) : groups ? (
           <EmptyState line="Nothing has changed yet." data-testid="changes-empty" />
         ) : null}

@@ -18,7 +18,13 @@
 
    THE DRAG DATA is the session id as `text/plain`, effect `copy`. A drop target
    only answers a drag that carries text, so dragging a file or a link over it
-   does nothing. */
+   does nothing.
+
+   DENSER SINCE UI-P58. No board draws Drafts, so every size this file sets is
+   its old value through the density table (`design/prompts/README-density.md`):
+   draft rows 52 (46 on a phone), session rows 43 (46), menu rows 31 at 13px,
+   the phone's sheet rows held at 44, the touch target. The brand pieces
+   (Button, IconButton, Panel, display()) take the drawn size and map it. */
 
 import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
@@ -91,7 +97,7 @@ export interface DraftsViewProps {
 
 const underlined: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: 12,
   color: t.text2,
   textDecoration: "underline",
   background: "transparent",
@@ -111,9 +117,9 @@ function TextButton({ onClick, style, children }: { onClick: () => void; style?:
 
 function ListHead({ title, count, right }: { title: string; count: number; right?: ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, padding: "12px 12px 8px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</h2>
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 9, padding: "9px 9px 6px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>{title}</h2>
         <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>{count}</span>
       </div>
       {right}
@@ -172,10 +178,10 @@ function StartRow({ phone, onDropSession }: { phone: boolean; onDropSession: (id
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        minHeight: 56,
-        padding: "0 14px",
-        marginBottom: 6,
+        gap: 9,
+        minHeight: 46,
+        padding: "0 10px",
+        marginBottom: 4,
         borderRadius: r.control,
         border: `1.5px dashed ${over ? t.evidence : t.line}`,
         background: over ? t.rowHighlight : "transparent",
@@ -186,8 +192,8 @@ function StartRow({ phone, onDropSession }: { phone: boolean; onDropSession: (id
       }}
     >
       <Plus size={16} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600 }}>Start a new build</span>
-      <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 13, color: t.text2, textAlign: "right" }}>
+      <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600 }}>Start a new build</span>
+      <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "right" }}>
         {over ? "Drop to start a build from it" : phone ? null : "or drop a session here"}
       </span>
     </Link>
@@ -219,9 +225,9 @@ function DraftRow({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 12,
-          minHeight: phone ? 56 : 64,
-          padding: "10px 14px",
+          gap: 9,
+          minHeight: phone ? 46 : 52,
+          padding: "7px 10px",
           borderRadius: r.control,
           border: over ? `1.5px dashed ${t.evidence}` : "1.5px solid transparent",
           background: over || state.hovered ? t.rowHighlight : "transparent",
@@ -235,7 +241,7 @@ function DraftRow({
             data-testid="draft-title"
             style={{
               fontFamily: FIGTREE,
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: 600,
               color: untitled ? t.text2 : t.text,
               whiteSpace: "nowrap",
@@ -260,7 +266,7 @@ function DraftRow({
 const menuContent: CSSProperties = {
   minWidth: 220,
   maxWidth: 340,
-  padding: 6,
+  padding: 4,
   borderRadius: r.panel,
   background: t.solid,
   border: `1px solid ${t.line}`,
@@ -272,11 +278,11 @@ const menuContent: CSSProperties = {
 const menuItem: CSSProperties = {
   display: "flex",
   alignItems: "center",
-  minHeight: 38,
-  padding: "0 12px",
+  minHeight: 31,
+  padding: "0 9px",
   borderRadius: 10,
   fontFamily: FIGTREE,
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: 500,
   cursor: "pointer",
   textDecoration: "none",
@@ -303,14 +309,15 @@ function AddMenu({
   const sheetRow: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    minHeight: 48,
+    /* 48 before UI-P58: the table's 39, held at 44 on a phone (this sheet is phone-only), the touch target. */
+    minHeight: 44,
     padding: "0 4px",
     width: "100%",
     border: 0,
     background: "transparent",
     textAlign: "left",
     fontFamily: FIGTREE,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 500,
     color: t.text,
     textDecoration: "none",
@@ -320,7 +327,7 @@ function AddMenu({
   if (phone) {
     return (
       <>
-        <span style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <span style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <IconButton icon={Plus} label={label} size={38} onClick={() => setSheet(true)} />
         </span>
         <BottomSheet open={sheet} onOpenChange={setSheet} title="Add to a build">
@@ -365,7 +372,7 @@ function AddMenu({
           if (item.kind === "remove") {
             return (
               <span key={item.key}>
-                <DropdownMenuSeparator style={{ height: 1, margin: "4px 6px", background: t.line }} />
+                <DropdownMenuSeparator style={{ height: 1, margin: "4px 4px", background: t.line }} />
                 <DropdownMenuItem className={MENU_ITEM_CLASS} style={{ ...menuItem, color: t.catBreakage }} onSelect={() => onPick(item)}>
                   {item.label}
                 </DropdownMenuItem>
@@ -432,9 +439,9 @@ function SessionRow({
         listStyle: "none",
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        minHeight: phone ? 56 : 52,
-        padding: phone ? "6px 6px 6px 14px" : "6px 6px 6px 10px",
+        gap: 7,
+        minHeight: phone ? 46 : 43,
+        padding: phone ? "4px 4px 4px 10px" : "4px 4px 4px 7px",
         borderRadius: r.control,
         background: hover ? t.rowHighlight : "transparent",
         cursor: draggable ? "grab" : "default",
@@ -447,7 +454,7 @@ function SessionRow({
         <span
           style={{
             fontFamily: FIGTREE,
-            fontSize: 14,
+            fontSize: 13,
             color: attached ? t.text2 : t.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -477,25 +484,25 @@ function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummar
             transform: "translate(-50%, -50%)",
             width: "min(420px, calc(100vw - 32px))",
             boxSizing: "border-box",
-            padding: 24,
+            padding: 17,
             borderRadius: r.panel,
             background: t.solid,
             border: `1px solid ${t.line}`,
             boxShadow: t.shadowFloat,
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            gap: 12,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <AlertDialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, color: t.text }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <AlertDialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>
               Remove this session?
             </AlertDialog.Title>
-            <AlertDialog.Description style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+            <AlertDialog.Description style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
               It disappears from Drafts. This can&apos;t be undone.
             </AlertDialog.Description>
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 7 }}>
             <AlertDialog.Cancel asChild>
               <Button variant="secondary" size={38} fontSize={13}>Cancel</Button>
             </AlertDialog.Cancel>
@@ -560,10 +567,10 @@ export function DraftsView({
   };
 
   const heading = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
       <h1 style={{ ...display(phone ? 32 : 44, { mobilePageHeading: phone }), margin: 0, color: t.text }}>Drafts</h1>
       {phone ? null : (
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, color: t.text2 }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
           Pick up a build, or start one from a session.
         </p>
       )}
@@ -575,13 +582,13 @@ export function DraftsView({
       <ListHead title="Continue editing" count={failed || loading ? 0 : drafts.length} />
       <StartRow phone={phone} onDropSession={onAddToNew} />
       {loading ? (
-        <RowSkeletons count={3} height={phone ? 56 : 64} what="your drafts" />
+        <RowSkeletons count={3} height={phone ? 46 : 52} what="your drafts" />
       ) : failed ? (
-        <div style={{ padding: "8px 12px 12px" }}>
+        <div style={{ padding: "6px 9px 9px" }}>
           <ErrorState panel="Continue editing" onRetry={onRetry} />
         </div>
       ) : drafts.length === 0 ? (
-        <p style={{ ...display(22), margin: 0, padding: "20px 12px 24px", color: t.text }}>Nothing in progress.</p>
+        <p style={{ ...display(22), margin: 0, padding: "14px 9px 17px", color: t.text }}>Nothing in progress.</p>
       ) : (
         <ul style={rows}>
           {drafts.map((draft) => (
@@ -600,15 +607,15 @@ export function DraftsView({
         right={phone ? undefined : <TextButton onClick={onConnect}>How they get here</TextButton>}
       />
       {loading ? (
-        <RowSkeletons count={4} height={phone ? 56 : 52} what="your sessions" />
+        <RowSkeletons count={4} height={phone ? 46 : 43} what="your sessions" />
       ) : failed ? (
-        <div style={{ padding: "8px 12px 12px" }}>
+        <div style={{ padding: "6px 9px 9px" }}>
           <ErrorState panel="Sessions" onRetry={onRetry} />
         </div>
       ) : (
         <>
           {sessions.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "20px 12px 24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, padding: "14px 9px 17px" }}>
               <p style={{ ...display(22), margin: 0, color: t.text }}>No new sessions.</p>
               <TextButton onClick={onConnect}>Connect a tool</TextButton>
             </div>
@@ -633,7 +640,7 @@ export function DraftsView({
           )}
           {attached.length > 0 ? (
             <>
-              <TextButton onClick={onToggleAttached} style={{ margin: "6px 12px 8px", display: "block" }}>
+              <TextButton onClick={onToggleAttached} style={{ margin: "4px 9px 6px", display: "block" }}>
                 {showAttached ? "Hide sessions already in a build" : `Show ${attached.length} already in a build`}
               </TextButton>
               {showAttached ? (
@@ -665,7 +672,7 @@ export function DraftsView({
   const older = (
     <Link
       to="/drafts/posts"
-      style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline" }}
+      style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textDecoration: "underline" }}
     >
       Older post drafts
     </Link>
@@ -673,7 +680,7 @@ export function DraftsView({
 
   if (phone) {
     return (
-      <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {heading}
         {continuePanel}
         {sessionsPanel}
@@ -688,7 +695,7 @@ export function DraftsView({
 
   return (
     <div data-testid="drafts-view" style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
         {heading}
         <Button variant="secondary" size={42} fontSize={14} onClick={onConnect}>
           Connect a tool
@@ -696,17 +703,17 @@ export function DraftsView({
       </div>
       <div
         style={{
-          marginTop: 24,
+          marginTop: 17,
           display: "grid",
           gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)",
-          gap: 24,
+          gap: 17,
           alignItems: "start",
         }}
       >
         {continuePanel}
         {sessionsPanel}
       </div>
-      <div style={{ marginTop: 24, display: "flex" }}>{older}</div>
+      <div style={{ marginTop: 17, display: "flex" }}>{older}</div>
       <RemoveDialog session={removing} onCancel={() => setRemoving(null)} onConfirm={(id) => { setRemoving(null); onRemove(id); }} />
     </div>
   );

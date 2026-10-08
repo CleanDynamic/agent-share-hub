@@ -28,8 +28,8 @@ export default function CreatorMarkChip({ mark, style }: CreatorMarkChipProps) {
     <span
       className="inline-flex items-center gap-1.5"
       style={{
-        height: 24,
-        padding: "0 10px",
+        height: 20,
+        padding: "0 7px",
         borderRadius: tokens.radius.pill,
         background: tokens.surface.card,
         border: tokens.border.soft,

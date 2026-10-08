@@ -114,8 +114,8 @@ function RefusalPanel({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 12,
-        padding: "16px 18px",
+        gap: 9,
+        padding: "12px 13px",
         backgroundColor: t.recess,
         borderWidth: 1,
         borderStyle: "solid",
@@ -140,7 +140,7 @@ function RefusalPanel({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 14,
+          gap: 10,
           flexWrap: "wrap",
           paddingTop: 4,
           borderTopWidth: 1,
@@ -156,7 +156,7 @@ function RefusalPanel({
             style={{
               ...labelText,
               fontFamily: "inherit",
-              marginTop: 12,
+              marginTop: 9,
               background: "transparent",
               borderWidth: 0,
               borderStyle: "none",
@@ -175,7 +175,7 @@ function RefusalPanel({
             data-testid="import-error-extractor"
             style={{
               ...labelText,
-              marginTop: 12,
+              marginTop: 9,
               color: t.action,
               textDecoration: "underline",
               textUnderlineOffset: 3,
@@ -192,7 +192,7 @@ function RefusalPanel({
           style={{
             ...labelText,
             fontFamily: "inherit",
-            marginTop: 12,
+            marginTop: 9,
             background: "transparent",
             borderWidth: 0,
             borderStyle: "none",

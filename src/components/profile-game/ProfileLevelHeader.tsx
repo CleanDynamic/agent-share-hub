@@ -47,7 +47,7 @@ export default function ProfileLevelHeader({
     <header
       className="flex items-center gap-4"
       style={{
-        padding: 20,
+        padding: 14,
         borderRadius: tokens.radius.panel,
         background: tokens.surface.shell,
         border: tokens.border.strong,
@@ -62,7 +62,7 @@ export default function ProfileLevelHeader({
             className="truncate"
             style={{
               fontFamily: tokens.font.sans,
-              fontSize: 22,
+              fontSize: 19,
               fontWeight: 700,
               color: tokens.text.primary,
               margin: 0,
@@ -74,7 +74,7 @@ export default function ProfileLevelHeader({
             <BadgeCheck size={18} color={tokens.accent.teal} strokeWidth={2.25} aria-label="Verified" />
           )}
           {user.handle && (
-            <span style={{ fontFamily: tokens.font.sans, fontSize: 14, color: tokens.text.muted }}>
+            <span style={{ fontFamily: tokens.font.sans, fontSize: 13, color: tokens.text.muted }}>
               {user.handle}
             </span>
           )}
@@ -100,8 +100,8 @@ function TrackRibbon({ track, tier, color }: { track: TrackName; tier?: number; 
     <span
       className="inline-flex items-center gap-2 self-start"
       style={{
-        height: 26,
-        padding: "0 14px",
+        height: 21,
+        padding: "0 10px",
         borderRadius: tokens.radius.pill,
         background: `linear-gradient(135deg, ${colourAlpha(color, 0.2)} 0%, ${colourAlpha(color, 0.078)} 100%)`,
         border: `0.5px solid ${colourAlpha(color, 0.4)}`,

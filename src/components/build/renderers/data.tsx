@@ -95,7 +95,7 @@ export function DataRenderer(props: NodeProps) {
     <div data-visual-slot="renderer-data" style={{ minWidth: 0 }}>
       <Stack gap={14}>
         {stats.length > 0 || qualifiers.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 20 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 14 }}>
             <StatRow stats={stats} />
             {qualifiers.length > 0 ? (
               <ChipRow>

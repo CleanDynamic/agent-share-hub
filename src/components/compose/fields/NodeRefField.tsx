@@ -135,10 +135,10 @@ function matches(option: NodeRefOption, query: string): boolean {
 const rowButton: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 8,
+  gap: 6,
   width: "100%",
   textAlign: "left",
-  padding: "5px 8px",
+  padding: "5px 6px",
   borderRadius: r.chip,
   background: "transparent",
   border: "1px solid transparent",
@@ -153,8 +153,8 @@ const clearButton: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 24,
-  height: 24,
+  width: 20,
+  height: 20,
   flexShrink: 0,
   padding: 0,
   borderRadius: 6,
@@ -210,8 +210,8 @@ export function NodeRefField(props: FieldWidgetProps) {
       isEmpty={stored === ""}
       compact={compact}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
             id={id}
             type="button"
@@ -228,7 +228,7 @@ export function NodeRefField(props: FieldWidgetProps) {
               ...control,
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 6,
               minWidth: 0,
               textAlign: "left",
               cursor: "pointer",
@@ -282,7 +282,7 @@ export function NodeRefField(props: FieldWidgetProps) {
               display: "flex",
               flexDirection: "column",
               gap: 4,
-              padding: 6,
+              padding: 4,
               borderRadius: r.control,
               background: t.recess,
               border: `1px solid ${HAIRLINE}`,
@@ -304,7 +304,7 @@ export function NodeRefField(props: FieldWidgetProps) {
             />
 
             {visible.length === 0 ? (
-              <p style={{ ...helpStyle, padding: "4px 8px" }}>
+              <p style={{ ...helpStyle, padding: "4px 6px" }}>
                 {options.length === 0
                   ? "This build has no other nodes yet."
                   : "No node matches that."}
@@ -340,7 +340,7 @@ export function NodeRefField(props: FieldWidgetProps) {
                             fontSize: 10,
                             textTransform: "uppercase",
                             color: TEXT_MUTED,
-                            padding: "6px 8px 2px",
+                            padding: "4px 6px 2px",
                           }}
                         >
                           Tray

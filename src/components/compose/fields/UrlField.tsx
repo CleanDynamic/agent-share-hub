@@ -68,7 +68,7 @@ export function UrlField({
 
   return (
     <FieldShell field={field} id={id} touched={touched} isEmpty={text === ""} compact={compact}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <input
           id={id}
           type="text"
@@ -107,8 +107,8 @@ export function UrlField({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 24,
-              height: 24,
+              width: 20,
+              height: 20,
               flexShrink: 0,
               borderRadius: r.chip,
               color: TEXT_MUTED,

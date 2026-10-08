@@ -60,7 +60,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
 
 import { r } from "@/lib/theme/radius";
-import { SPACE } from "@/lib/theme/space";
+import { SPACE_COMPACT } from "@/lib/theme/space";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import {
   body as bodyText,
@@ -222,7 +222,7 @@ function CopyDocumentButton({
   }, [kit, settle]);
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
       {/* BG-P24 — THE KIT'S SECONDARY BUTTON.
           Copying the Extractor is the page's own first step, but the page's
           one PRIMARY is the drop target below: this is how you get the file,
@@ -327,10 +327,10 @@ function Step({
         borderStyle: "solid",
         borderColor: t.line,
         borderRadius: r.panel,
-        padding: 16,
+        padding: 12,
         display: "flex",
         alignItems: "flex-start",
-        gap: 14,
+        gap: 10,
       }}
     >
       <span
@@ -339,8 +339,8 @@ function Step({
         style={{
           ...dataText,
           flex: "0 0 auto",
-          width: 26,
-          height: 26,
+          width: 21,
+          height: 21,
           borderRadius: r.full,
           display: "inline-flex",
           alignItems: "center",
@@ -355,9 +355,9 @@ function Step({
         {ordinal}
       </span>
 
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-        {/* The display face, at the card-title size — 22px, which clears the
-            17px floor Sentient may never render below. */}
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+        {/* The card-title role: Figtree 600 at 19px since UI-P52, under the
+            20px below which Sentient is never set. */}
         <h2 style={{ ...cardTitle, color: t.text, margin: 0 }}>{title}</h2>
         {children}
       </div>
@@ -422,7 +422,7 @@ function DropTarget({
         style={{
           fontFamily: "inherit",
           width: "100%",
-          padding: "18px 14px",
+          padding: "13px 10px",
           borderRadius: r.control,
           /* Longhands: a `border` shorthand carrying a `var()` is dropped whole
              by jsdom, taking the dashes with it. */
@@ -436,7 +436,7 @@ function DropTarget({
               : t.bg,
           display: "flex",
           flexDirection: "column",
-          gap: 6,
+          gap: 4,
           textAlign: "center",
           cursor: "pointer",
           transition: feedback("background-color", "border-color"),
@@ -488,7 +488,8 @@ export default function ImportPage() {
        height. `fontFamily` went because `.fs-root` sets the Figtree stack
        already. The inner container's `maxWidth: 720` + `margin: "0 auto"` went
        as the doubled measure — the wide frame already caps and centres — and
-       its padding is one `SPACE.md` on this div, because `.fs-page-body` has
+       its padding is one `SPACE_COMPACT.md` on this div (`SPACE.md` until
+       UI-P58's density pass), because `.fs-page-body` has
        no horizontal inset of its own and the frame's own 24px collapses to 0
        at phone width.
 
@@ -511,7 +512,7 @@ export default function ImportPage() {
     <div
       data-visual-slot="import-frame"
       style={{
-        padding: SPACE.md,
+        padding: SPACE_COMPACT.md,
         backgroundColor: t.bg,
         color: t.text,
         isolation: "isolate",
@@ -538,7 +539,7 @@ export default function ImportPage() {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 20,
+          gap: 14,
         }}
       >
         {/* BG-P15 deleted the "← buildgallery" back link — the left rail
@@ -591,7 +592,7 @@ export default function ImportPage() {
               padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 9,
             }}
           >
             <Step ordinal={1} title="Copy the Extractor">
@@ -603,7 +604,7 @@ export default function ImportPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 14,
+                  gap: 10,
                   flexWrap: "wrap",
                 }}
               >
@@ -669,10 +670,10 @@ export default function ImportPage() {
               borderStyle: "solid",
               borderColor: t.line,
               borderRadius: r.panel,
-              padding: 16,
+              padding: 12,
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 9,
             }}
           >
             <button
@@ -695,7 +696,7 @@ export default function ImportPage() {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 6,
               }}
             >
               <span aria-hidden style={{ ...dataText, color: t.text2 }}>
@@ -705,7 +706,7 @@ export default function ImportPage() {
             </button>
 
             {compilerOpen ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
                   Paste the Compiler plus every Build File into one chat; it merges
                   them into one.
@@ -714,7 +715,7 @@ export default function ImportPage() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 14,
+                    gap: 10,
                     flexWrap: "wrap",
                   }}
                 >

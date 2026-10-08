@@ -91,8 +91,8 @@ export function EditProfileSheet({
           <SheetTitle>Edit profile</SheetTitle>
         </SheetHeader>
 
-        <div className="space-y-4 mt-6">
-          <div className="space-y-2">
+        <div className="space-y-3 mt-[17px]">
+          <div className="space-y-1.5">
             <Label htmlFor="ep-name">Display name</Label>
             <Input
               id="ep-name"
@@ -102,7 +102,7 @@ export function EditProfileSheet({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="ep-bio">Bio</Label>
             <Textarea
               id="ep-bio"
@@ -117,7 +117,7 @@ export function EditProfileSheet({
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="ep-cover">Cover image URL</Label>
             <Input
               id="ep-cover"
@@ -128,7 +128,7 @@ export function EditProfileSheet({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="ep-location">Location</Label>
             <Input
               id="ep-location"
@@ -138,7 +138,7 @@ export function EditProfileSheet({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="ep-website">Website</Label>
             <Input
               id="ep-website"
@@ -150,7 +150,7 @@ export function EditProfileSheet({
           </div>
         </div>
 
-        <SheetFooter className="mt-6">
+        <SheetFooter className="mt-[17px]">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}

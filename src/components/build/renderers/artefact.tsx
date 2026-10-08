@@ -54,8 +54,8 @@ function LaunchLink({ url, label }: { url: string; label: string }) {
     ...labelType,
     display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    padding: "7px 12px",
+    gap: 4,
+    padding: "5px 9px",
     borderRadius: r.control,
     textDecoration: "none",
     color: t.evidence,
@@ -218,7 +218,7 @@ export function GeneratedMediaRenderer(props: NodeProps) {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-              gap: 10,
+              gap: 7,
             }}
           >
             {variants.map((variant, index) => {
@@ -234,8 +234,8 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                     margin: 0,
                     display: "flex",
                     flexDirection: "column",
-                    gap: 6,
-                    padding: 6,
+                    gap: 4,
+                    padding: 4,
                     borderRadius: r.media,
                     border: `1px solid ${chosen ? t.evidence : t.line}`,
                     background: chosen ? hexToRgba(t.evidence, 0.06) : "transparent",
@@ -254,7 +254,7 @@ export function GeneratedMediaRenderer(props: NodeProps) {
                       display: "flex",
                       alignItems: "baseline",
                       justifyContent: "space-between",
-                      gap: 6,
+                      gap: 4,
                     }}
                   >
                     <span

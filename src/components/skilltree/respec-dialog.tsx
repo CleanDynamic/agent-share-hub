@@ -29,7 +29,7 @@ export default function RespecDialog({
         justifyContent: "center",
         background: "var(--recess)",
         fontFamily: sans,
-        padding: 16,
+        padding: 12,
       }}
       onClick={onCancel}
     >
@@ -38,7 +38,7 @@ export default function RespecDialog({
         style={{
           width: "100%",
           maxWidth: 400,
-          padding: 24,
+          padding: 17,
           borderRadius: tokens.radiusPanel,
           background: tokens.shell,
           border: tokens.border,
@@ -47,29 +47,29 @@ export default function RespecDialog({
       >
         <div
           style={{
-            width: 46,
-            height: 46,
+            width: 38,
+            height: 38,
             borderRadius: tokens.radiusCard,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             background: `color-mix(in srgb, ${meta.color} 16%, transparent)`,
             border: `0.5px solid color-mix(in srgb, ${meta.color} 40%, transparent)`,
-            marginBottom: 16,
+            marginBottom: 12,
           }}
         >
           <RefreshCw size={22} color={meta.color} strokeWidth={2} />
         </div>
 
-        <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
           Switch path?
         </h3>
         <p
           style={{
-            fontSize: 13,
+            fontSize: 12,
             lineHeight: 1.6,
             color: tokens.textDim,
-            marginTop: 10,
+            marginTop: 7,
           }}
         >
           Your <strong style={{ color: meta.color }}>{meta.name}</strong>{" "}
@@ -82,9 +82,9 @@ export default function RespecDialog({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
-              marginTop: 16,
-              padding: "10px 12px",
+              gap: 6,
+              marginTop: 12,
+              padding: "7px 9px",
               borderRadius: tokens.radiusCard,
               background: `color-mix(in srgb, ${tokens.amber} 12%, transparent)`,
               border: `0.5px solid color-mix(in srgb, ${tokens.amber} 35%, transparent)`,
@@ -99,19 +99,19 @@ export default function RespecDialog({
 
         <div
           className="flex"
-          style={{ gap: 10, marginTop: 22 }}
+          style={{ gap: 7, marginTop: 16 }}
         >
           <button
             type="button"
             onClick={onCancel}
             style={{
               flex: 1,
-              padding: "10px 0",
+              padding: "7px 0",
               borderRadius: tokens.radiusPill,
               border: tokens.border,
               background: "var(--glass-2)",
               color: tokens.text,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 600,
               fontFamily: sans,
               cursor: "pointer",
@@ -125,14 +125,14 @@ export default function RespecDialog({
             onClick={onConfirm}
             style={{
               flex: 1,
-              padding: "10px 0",
+              padding: "7px 0",
               borderRadius: tokens.radiusPill,
               border: "none",
               background: canRespec
                 ? tokens.brandGradient
                 : "var(--recess)",
               color: canRespec ? "var(--on-action)" : tokens.textFaint,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 600,
               fontFamily: sans,
               cursor: canRespec ? "pointer" : "not-allowed",

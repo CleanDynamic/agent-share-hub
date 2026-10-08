@@ -61,7 +61,7 @@ export interface LineageViewProps {
 export const PICK_PROMPT = "Pick a build in the family to see what changed.";
 export const ROOT_NOTE = "This is where the family starts: it was not rebuilt from anything, so there is nothing to compare it with.";
 
-function OpenLink({ to, title }: { to: string; title: string }) {
+function OpenLink({ to, title, phone }: { to: string; title: string; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
   return (
     <Link
@@ -71,9 +71,9 @@ function OpenLink({ to, title }: { to: string; title: string }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        minHeight: 44,
+        minHeight: phone ? 44 : 36,
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: 12,
         color: t.action,
         textDecoration: "underline",
         textUnderlineOffset: 3,
@@ -107,8 +107,8 @@ function SelectionPanel({
   }
 
   const about = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap", marginTop: 4 }}>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
         {selection.parentTitle ? (
           <>
             <i>{selection.title}</i> against <i>{selection.parentTitle}</i>
@@ -117,7 +117,7 @@ function SelectionPanel({
           <i>{selection.title}</i>
         )}
       </span>
-      <OpenLink to={selection.to} title={selection.title} />
+      <OpenLink to={selection.to} title={selection.title} phone={phone} />
     </div>
   );
 
@@ -149,7 +149,7 @@ export function LineageView({ fit: givenFit = "content", title, family, selected
 
   if (phone) {
     return (
-      <div data-testid="lineage-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+      <div data-testid="lineage-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
         <PageHeading eyebrow="Lineage" title={title} sub="Every published rebuild in this family. Pick one to see what it changed." size={32} />
         <FamilyPanel root={family} phone selectedId={selectedId} onSelect={onSelect} loading={familyLoading} failure={familyFailure} />
         <SelectionPanel selection={selection} phone fill={false} alone={alone} />
@@ -158,13 +158,13 @@ export function LineageView({ fit: givenFit = "content", title, family, selected
   }
 
   return (
-    <div data-testid="lineage-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
+    <div data-testid="lineage-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
       <h1 style={VISUALLY_HIDDEN}>{`The family of ${title}`}</h1>
       <div
         style={{
           display: "grid",
           gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(470)}`,
-          gap: 12,
+          gap: 9,
           flexGrow: 1,
           minHeight: 0,
         }}

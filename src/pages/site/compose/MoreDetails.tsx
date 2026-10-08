@@ -54,7 +54,7 @@ function TextArea({ id, value, placeholder, phone, onChange }: { id: string; val
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
       {...focus.handlers}
-      style={{ ...fieldBase, display: "block", padding: "10px 14px", fontSize: phone ? 16 : 15, lineHeight: 1.5, resize: "vertical", ...focus.style }}
+      style={{ ...fieldBase, display: "block", padding: "7px 10px", fontSize: phone ? 16 : 14, lineHeight: 1.5, resize: "vertical", ...focus.style }}
     />
   );
 }
@@ -87,7 +87,7 @@ function NumberField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           {...focus.handlers}
-          style={{ ...fieldBase, height: phone ? 44 : 40, padding: "0 12px", fontSize: phone ? 16 : 15, ...focus.style }}
+          style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 9px", fontSize: phone ? 16 : 14, ...focus.style }}
         />
       </Field>
     </div>
@@ -107,8 +107,8 @@ function Switch({ on, label, onChange, phone }: { on: boolean; label: string; on
         alignSelf: "flex-start",
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        minHeight: 44,
+        gap: 7,
+        minHeight: phone ? 44 : 36,
         padding: "0 4px",
         margin: "0 -4px",
         border: 0,
@@ -116,7 +116,7 @@ function Switch({ on, label, onChange, phone }: { on: boolean; label: string; on
         background: "transparent",
         color: t.text,
         fontFamily: FIGTREE,
-        fontSize: phone ? 15 : 14,
+        fontSize: phone ? 14 : 13,
         textAlign: "left",
         cursor: "pointer",
         ...ring(state.focusVisible),
@@ -149,10 +149,10 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
   const [open, setOpen] = useState(false);
   const id = useId();
   const gapRing = useRing<HTMLInputElement>();
-  const row: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 12 };
+  const row: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 9 };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
       <Button
         variant="ghost"
         size={phone ? 44 : 38}
@@ -172,9 +172,9 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
       {open ? (
         <div id={`${id}-panel`}>
           <Panel surface="flat" padding={phone ? "16px" : "24px"}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <fieldset style={{ margin: 0, padding: 0, border: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-                <legend style={{ padding: 0, marginBottom: 10, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>Where it broke</legend>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <fieldset style={{ margin: 0, padding: 0, border: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+                <legend style={{ padding: 0, marginBottom: 7, fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>Where it broke</legend>
                 <div style={row}>
                   <div style={{ flex: "1 1 240px", minWidth: 0 }}>
                     <Field id={`${id}-broke`} label="What broke">
@@ -214,7 +214,7 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                 <Switch on={details.gapOn} label="Leave one part open for someone else to solve" phone={phone} onChange={onGapSwitch} />
                 {details.gapOn ? (
                   <>
@@ -226,10 +226,10 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
                         autoComplete="off"
                         onChange={(event) => onDetail("gapProblem", event.target.value)}
                         {...gapRing.handlers}
-                        style={{ ...fieldBase, height: phone ? 44 : 40, padding: "0 14px", fontSize: phone ? 16 : 15, ...gapRing.style }}
+                        style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 10px", fontSize: phone ? 16 : 14, ...gapRing.style }}
                       />
                     </Field>
-                    <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+                    <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
                       Readers will see it as one part left open. You can add a reward on Bounties after publishing.
                     </p>
                   </>

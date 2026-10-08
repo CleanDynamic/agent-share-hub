@@ -36,7 +36,7 @@ export default function VisitorCompareFooter({
     <footer
       className="flex flex-col gap-3"
       style={{
-        padding: 18,
+        padding: 13,
         borderRadius: tokens.radius.panel,
         background: tokens.surface.shell,
         border: tokens.border.strong,
@@ -73,7 +73,7 @@ export default function VisitorCompareFooter({
               <span
                 style={{
                   fontFamily: tokens.font.sans,
-                  fontSize: 13,
+                  fontSize: 12,
                   color: tokens.text.secondary,
                   width: 110,
                 }}

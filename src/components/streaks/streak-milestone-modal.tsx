@@ -1,4 +1,5 @@
 import { Flame, Share2, X } from "lucide-react"
+import { useIsPhone } from "@/components/shell/useMinWidth"
 import { BORDER, COLORS, FONT, ORANGE_GRADIENT, RADIUS } from "./tokens"
 
 export interface StreakMilestoneModalProps {
@@ -26,11 +27,13 @@ export default function StreakMilestoneModal({
   onClose,
   onShare,
 }: StreakMilestoneModalProps) {
+  /* UI-P59 (density): the buttons, drawn 44, are 36 through the table and keep 44 on a phone, the touch target. */
+  const phone = useIsPhone()
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3"
       style={{ background: "var(--recess)" }}
       role="dialog"
       aria-modal="true"
@@ -44,7 +47,7 @@ export default function StreakMilestoneModal({
           background: COLORS.shell,
           border: BORDER.hairlineStrong,
           borderRadius: RADIUS.panel,
-          padding: 28,
+          padding: 20,
           fontFamily: FONT.sans,
           textAlign: "center",
           boxShadow: "var(--elev-overlay)",
@@ -59,8 +62,8 @@ export default function StreakMilestoneModal({
           style={{
             top: 14,
             right: 14,
-            width: 28,
-            height: 28,
+            width: 23,
+            height: 23,
             borderRadius: RADIUS.pill,
             background: "transparent",
             border: "none",
@@ -80,7 +83,7 @@ export default function StreakMilestoneModal({
             background: "color-mix(in srgb, var(--lit) 14%, transparent)",
             border: "1px solid var(--lit)",
             color: COLORS.streakAmber,
-            marginBottom: 18,
+            marginBottom: 13,
           }}
         >
           <Flame size={38} strokeWidth={1.75} fill="currentColor" fillOpacity={0.2} />
@@ -89,7 +92,7 @@ export default function StreakMilestoneModal({
         <div
           style={{
             fontFamily: FONT.mono,
-            fontSize: 44,
+            fontSize: 33,
             fontWeight: 700,
             lineHeight: 1,
             color: COLORS.streakAmber,
@@ -98,14 +101,14 @@ export default function StreakMilestoneModal({
         >
           {milestone}
         </div>
-        <p style={{ margin: "6px 0 0", fontSize: 13, color: COLORS.textMuted }}>
+        <p style={{ margin: "4px 0 0", fontSize: 12, color: COLORS.textMuted }}>
           day streak
         </p>
 
         <h2
           style={{
-            margin: "16px 0 6px",
-            fontSize: 20,
+            margin: "12px 0 4px",
+            fontSize: 17,
             fontWeight: 700,
             color: COLORS.text,
             letterSpacing: "-0.01em",
@@ -124,18 +127,18 @@ export default function StreakMilestoneModal({
           {milestone} days of showing up. Momentum like this is rare — keep going.
         </p>
 
-        <div className="flex flex-col gap-2.5" style={{ marginTop: 22 }}>
+        <div className="flex flex-col gap-[7px]" style={{ marginTop: 16 }}>
           <button
             type="button"
             onClick={onClose}
             className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
             style={{
-              height: 44,
+              height: phone ? 44 : 36,
               borderRadius: RADIUS.pill,
               background: ORANGE_GRADIENT,
               border: "none",
               color: "var(--text)",
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -147,14 +150,14 @@ export default function StreakMilestoneModal({
             <button
               type="button"
               onClick={onShare}
-              className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-80"
+              className="inline-flex items-center justify-center gap-1.5 transition-opacity hover:opacity-80"
               style={{
-                height: 44,
+                height: phone ? 44 : 36,
                 borderRadius: RADIUS.pill,
                 background: COLORS.input,
                 border: BORDER.hairline,
                 color: COLORS.text,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
               }}

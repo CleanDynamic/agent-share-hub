@@ -36,7 +36,7 @@
 //                   directly with the pieces this file builds.
 //
 // UI-P49 — THE ROW. `layout="row"` is the Gallery feed's card: one build per
-// row, full width, a 2:1 cover, the title at 24, the outcome under it (the one
+// row, full width, a 2:1 cover, the title drawn at 24, the outcome under it (the one
 // addition to the order, from the concept, not yet confirmed), "by @handle ·
 // made with …", the plaque, the chips and the open ask. It is drawn by `RowCard`
 // below rather than `BuildCard`, because its credit carries a link to the
@@ -86,8 +86,8 @@ import { EngagementRow, type RowEngagement } from "@/components/social/Engagemen
 /** The cover's height on the gallery wall. */
 const COVER_PX = COVER_HEIGHT.wall;
 
-/** The body under the cover, in skeleton lines: title, credit, plaque, chips. */
-const TITLE_LINE = 20;
+/** The body under the cover, in skeleton lines: title, credit, plaque, chips. 20 before the UI-P56 density pass. */
+const TITLE_LINE = 16;
 
 export interface GalleryCardProps {
   build: GalleryBuild;
@@ -286,9 +286,11 @@ function madeWithLine(models: readonly string[]): string {
 
 /**
  * The feed's card. The existing card surface (a fill, a 1px border, the card
- * shadow, no blur: RULES §7b) at padding 12/12/18, radius 14, gap 14, under its
- * picture lamp. The title's link is stretched over the whole card, so the card
- * is still one target, while the maker's profile link rides above it.
+ * shadow, no blur: RULES §7b) at padding 9/9/13, radius 14, gap 10, under its
+ * picture lamp (12/12/18 and 14 before the UI-P56 density pass; type and spacing
+ * through the table, the 2:1 cover and the order unchanged). The title's link is
+ * stretched over the whole card, so the card is still one target, while the
+ * maker's profile link rides above it.
  */
 function RowCard({
   build,
@@ -308,7 +310,7 @@ function RowCard({
   const titleId = `row-title-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [hover, setHover] = useState(false);
   const lit = hover && hoverIsFine();
-  /* The title is 24 in the desktop column and 22 in a phone's. */
+  /* The title is drawn at 24 in the desktop column and 22 in a phone's; display() renders them 20 and 19. */
   const phone = useIsPhone();
 
   const bounty = openBounty(build);
@@ -335,9 +337,9 @@ function RowCard({
           position: "relative",
           display: "flex",
           flexDirection: "column",
-          gap: 14,
+          gap: 10,
           width: "100%",
-          padding: "12px 12px 18px",
+          padding: "9px 9px 13px",
           boxSizing: "border-box",
           background: t.glass,
           borderRadius: r.card,
@@ -366,7 +368,7 @@ function RowCard({
                 fontFamily: DM_MONO,
                 fontSize: 11,
                 lineHeight: "normal",
-                padding: "2px 6px",
+                padding: "2px 4px",
                 borderRadius: r.chip,
               }}
             >
@@ -375,8 +377,8 @@ function RowCard({
           ) : null}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0, padding: "0 4px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0, padding: "0 4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
             <h3 id={titleId} data-card-part="title" style={{ ...display(phone ? 22 : 24), textWrap: "balance", margin: 0, color: t.text }}>
               <Link to={`/b2/${build.slug}`} style={{ color: "inherit", textDecoration: "none" }}>
                 {/* The stretched box: the whole card is this link's target. */}
@@ -390,7 +392,7 @@ function RowCard({
                 style={{
                   margin: 0,
                   fontFamily: FIGTREE,
-                  fontSize: 16,
+                  fontSize: 15,
                   lineHeight: 1.45,
                   color: t.text2,
                   display: "-webkit-box",
@@ -410,7 +412,7 @@ function RowCard({
                 <div
                   data-card-part="credit"
                   data-testid="row-credit"
-                  style={{ fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.45, color: t.text2 }}
+                  style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.45, color: t.text2 }}
                 >
                   {handle ? (
                     <>
@@ -426,7 +428,7 @@ function RowCard({
                   {models ? (
                     <>
                       {handle ? " · made with " : "Made with "}
-                      <span style={{ fontFamily: DM_MONO, fontSize: 13, color: t.text }}>{models}</span>
+                      <span style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text }}>{models}</span>
                     </>
                   ) : null}
                 </div>
@@ -477,8 +479,9 @@ function RowCard({
  * The card's shape before the card exists.
  *
  * THE SAME PROPORTIONS, NOT AN APPROXIMATION OF THEM: an 18px lamp spacer, the
- * card's 7px of padding and gap, the cover's height, and a body of the same
- * lines, so the swap when the data lands moves nothing. In feed layout the media
+ * card's 5px of padding and gap (7 before the UI-P56 density pass, as BuildCard),
+ * the cover's height, and a body of the same lines, so the swap when the data
+ * lands moves nothing. In feed layout the media
  * block reserves its height with `aspect-ratio` at `aspectOf(null).capped`, the
  * ratio the real card uses for a row whose dimensions it does not know yet.
  *
@@ -499,8 +502,8 @@ export function GalleryCardSkeleton({ layout = "grid" }: { layout?: CardLayout }
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: 7,
-          padding: 7,
+          gap: 5,
+          padding: 5,
           background: t.glass,
           borderRadius: r.card,
           border: `1px solid ${t.glassBorder}`,
@@ -513,13 +516,13 @@ export function GalleryCardSkeleton({ layout = "grid" }: { layout?: CardLayout }
             ...(layout === "feed" ? { aspectRatio: String(aspectOf(null).capped) } : { height: COVER_PX }),
           }}
         />
-        <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 4 }}>
           <Skeleton style={{ height: TITLE_LINE, width: "70%", borderRadius: r.chip }} />
           {/* The plaque: one row, because its two halves are one object. */}
           <Skeleton style={{ height: 18, width: "78%", borderRadius: r.chip }} />
           <div style={{ display: "flex", gap: 4 }}>
-            <Skeleton style={{ height: 20, width: 64, borderRadius: r.chip }} />
-            <Skeleton style={{ height: 20, width: 48, borderRadius: r.chip }} />
+            <Skeleton style={{ height: 16, width: 64, borderRadius: r.chip }} />
+            <Skeleton style={{ height: 16, width: 48, borderRadius: r.chip }} />
           </div>
           {/* RC-P16 — the engagement row's 44px, so the card that replaces this
               placeholder does not grow on arrival. */}

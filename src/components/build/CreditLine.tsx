@@ -7,6 +7,7 @@
 // enough that nobody else meets it on the way to the build.
 
 import { Link } from "react-router-dom";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import type { BuildMaker } from "@/lib/build";
 import { buttonStyle, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -56,13 +57,15 @@ function MakerName({ to, children }: { to: string; children: string }) {
 
 function ReportControl({ onPress }: { onPress: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  /* UI-P58: a 44px target on a phone; above it the table's 36. */
+  const phone = useIsPhone();
   return (
     <button
       type="button"
       data-testid="report-build"
       onClick={onPress}
       {...handlers}
-      style={{ ...buttonStyle("ghost", state), ...labelType, minHeight: 44, padding: `0 ${SPACE.xs}px` }}
+      style={{ ...buttonStyle("ghost", state), ...labelType, minHeight: phone ? 44 : 36, padding: `0 ${SPACE.xs}px` }}
     >
       Report
     </button>

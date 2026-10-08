@@ -151,7 +151,8 @@ describe("the solvers board", () => {
     const row = (await screen.findAllByTestId("solver-row"))[0];
     expect(row.style.display).toBe("grid");
     expect(row.style.gridTemplateColumns).toBe("40px minmax(0, 1fr) auto");
-    expect(row.style.columnGap).toBe("16px");
+    // UI-P52 density pass: SPACE.sm (16) → SPACE_COMPACT.sm (12).
+    expect(row.style.columnGap).toBe("12px");
     expect(within(row).getByTestId("solver-tally").style.gridColumn).toBe("");
   });
 

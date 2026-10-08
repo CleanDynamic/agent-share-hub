@@ -86,6 +86,11 @@ const TRAILS: Record<string, readonly Crumb[]> = {
     { label: FIXTURE_BUILD_TITLE, href: "/b2/invoice-triage-agent" },
     { label: "Lineage" },
   ],
+  /* UI-P57: the Home board draws Home alone. */
+  home: [{ label: "Home" }],
+  /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
+  gallery: [{ label: "Home", href: "/" }, { label: "Gallery" }],
+  "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
@@ -95,6 +100,8 @@ const TRAILS: Record<string, readonly Crumb[]> = {
 
 /** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock; the Activity board lights no link, the bell, and the dock's Activity tile. */
 const CHROME: Record<string, Partial<DevChromeOptions>> = {
+  /* UI-P57: the Home board lights Home in the header and on the dock, not the Gallery. */
+  home: { current: "home", dockCurrent: "home" },
   profile: { current: "home", dockCurrent: "home" },
   activity: { current: null, activityCurrent: true, dockCurrent: "activity" },
   drafts: { current: "drafts", dockCurrent: null },

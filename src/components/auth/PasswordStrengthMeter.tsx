@@ -53,7 +53,7 @@ export function PasswordStrengthMeter({ strength }: PasswordStrengthMeterProps) 
   const config = strengthConfig[strength];
 
   return (
-    <div className="flex items-center" style={{ gap: "8px", marginTop: "8px" }}>
+    <div className="flex items-center" style={{ gap: "6px", marginTop: "6px" }}>
       <div
         className="flex"
         style={{ gap: "4px", flex: 1 }}

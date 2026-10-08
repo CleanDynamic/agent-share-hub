@@ -173,7 +173,7 @@ export const cardGlass: CSSProperties = {
  * a layout property, and it is the half of the pairing the floor names.
  */
 export const bodyText: CSSProperties = {
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 400,
   lineHeight: 1.6,
   color: TEXT_PRIMARY,
@@ -187,19 +187,19 @@ export const labelText: CSSProperties = {
 };
 
 export const titleText: CSSProperties = {
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 600,
   color: TEXT_PRIMARY,
 };
 
 export const headingText: CSSProperties = {
-  fontSize: 20,
+  fontSize: 17,
   fontWeight: 600,
   color: TEXT_PRIMARY,
 };
 
 export const pageHeadingText: CSSProperties = {
-  fontSize: 22,
+  fontSize: 19,
   fontWeight: 700,
   lineHeight: 1.3,
   color: TEXT_PRIMARY,

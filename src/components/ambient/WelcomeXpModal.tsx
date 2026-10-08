@@ -45,7 +45,7 @@ export default function WelcomeXpModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3"
       style={{ fontFamily: tokens.fontSans, background: "var(--recess)" }}
       onClick={onClose}
       role="dialog"
@@ -61,7 +61,7 @@ export default function WelcomeXpModal({
           background: tokens.shell,
           border: tokens.borderStrong,
           boxShadow: "var(--elev-overlay)",
-          padding: 24,
+          padding: 17,
         }}
       >
         {onClose && (
@@ -80,7 +80,7 @@ export default function WelcomeXpModal({
           id="welcome-xp-title"
           className="text-balance"
           style={{
-            fontSize: 23,
+            fontSize: 20,
             fontWeight: 700,
             color: tokens.text,
             letterSpacing: "-0.02em",
@@ -89,17 +89,17 @@ export default function WelcomeXpModal({
         >
           Make things. Get recognized.
         </h2>
-        <p className="mt-2 text-pretty" style={{ fontSize: 13.5, color: tokens.textMuted, lineHeight: 1.5 }}>
+        <p className="mt-1.5 text-pretty" style={{ fontSize: 13.5, color: tokens.textMuted, lineHeight: 1.5 }}>
           Every contribution moves you forward. Here&apos;s how it works.
         </p>
 
-        <div className="mt-5 flex flex-col gap-2.5">
+        <div className="mt-3.5 flex flex-col gap-[7px]">
           {ROWS.map(({ icon: Icon, color, title, body }) => (
             <div
               key={title}
-              className="flex items-start gap-3"
+              className="flex items-start gap-[9px]"
               style={{
-                padding: 13,
+                padding: 9,
                 borderRadius: tokens.radiusCard,
                 background: tokens.card,
                 border: tokens.borderSoft,
@@ -108,8 +108,8 @@ export default function WelcomeXpModal({
               <span
                 className="flex shrink-0 items-center justify-center"
                 style={{
-                  width: 36,
-                  height: 36,
+                  width: 30,
+                  height: 30,
                   borderRadius: tokens.radiusCard,
                   background: `${colourAlpha(color, 0.122)}`,
                   border: `0.5px solid ${colourAlpha(color, 0.333)}`,
@@ -118,7 +118,7 @@ export default function WelcomeXpModal({
                 <Icon size={18} color={color} />
               </span>
               <div className="min-w-0">
-                <div style={{ fontSize: 14, fontWeight: 600, color: tokens.text }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: tokens.text }}>
                   {title}
                 </div>
                 <div style={{ marginTop: 1, fontSize: 12.5, color: tokens.textMuted, lineHeight: 1.45 }}>
@@ -132,9 +132,9 @@ export default function WelcomeXpModal({
         <button
           type="button"
           onClick={onStart}
-          className="mt-5 flex w-full items-center justify-center transition-opacity hover:opacity-90"
+          className="mt-3.5 flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
-            padding: "13px 16px",
+            padding: "9px 12px",
             borderRadius: tokens.radiusPill,
             background: tokens.orangeGradient,
             color: "var(--text)",
@@ -147,7 +147,7 @@ export default function WelcomeXpModal({
         </button>
 
         <p
-          className="mt-3 text-center text-pretty"
+          className="mt-[9px] text-center text-pretty"
           style={{ fontSize: 10.5, color: tokens.textFaint, lineHeight: 1.45 }}
         >
           XP earned during your first 7 days is banked and counts toward perk

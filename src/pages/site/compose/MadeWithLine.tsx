@@ -44,7 +44,7 @@ const floating: CSSProperties = {
   boxSizing: "border-box",
   width: 280,
   maxWidth: "calc(100vw - 32px)",
-  padding: 12,
+  padding: 9,
   borderRadius: r.panel,
   background: t.solid,
   border: `1px solid ${t.line}`,
@@ -59,7 +59,7 @@ function Chip({ chip }: { chip: MadeWithChip }) {
     <span
       data-testid="made-with-chip"
       data-on={chip.on ? "true" : "false"}
-      style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text, background: t.cell, borderRadius: r.chip, padding: "2px 8px", whiteSpace: "nowrap" }}
+      style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text, background: t.cell, borderRadius: r.chip, padding: "2px 6px", whiteSpace: "nowrap" }}
     >
       {out ? (
         <>
@@ -85,15 +85,15 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
-        height: phone ? 44 : 36,
-        padding: "0 12px",
+        gap: 6,
+        height: phone ? 44 : 30,
+        padding: "0 9px",
         borderRadius: r.control,
         border: `1px solid ${state.hovered ? t.text2 : t.line}`,
         background: t.field,
         color: t.text,
         fontFamily: FIGTREE,
-        fontSize: 13,
+        fontSize: 12,
         cursor: "pointer",
         boxSizing: "border-box",
         ...ring(state.focusVisible),
@@ -143,7 +143,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
         {...trigger.handlers}
         style={{
           fontFamily: FIGTREE,
-          fontSize: 14,
+          fontSize: 13,
           color: t.text2,
           textDecoration: "underline",
           background: "transparent",
@@ -159,8 +159,8 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content align="start" sideOffset={6} collisionPadding={16} style={floating}>
-          <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label htmlFor={`${id}-name`} style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600 }}>
+          <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <label htmlFor={`${id}-name`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>
               A tool or model
             </label>
             <input
@@ -171,7 +171,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
               maxLength={MADE_WITH_ENTRY_MAX}
               autoComplete="off"
               onChange={(event) => setName(event.target.value)}
-              style={{ ...fieldBase, height: phone ? 44 : 40, padding: "0 10px", fontSize: phone ? 16 : 15 }}
+              style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 }}
             />
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!name.trim()}>
@@ -206,8 +206,8 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
   };
 
   return (
-    <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 8px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+    <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 6px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
         <span>Made with</span>
         {fromSessions.map((chip) => (
           <Chip key={chip.key} chip={chip} />
@@ -224,7 +224,7 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
         ) : null}
       </div>
       {open ? (
-        <div role="group" aria-label="What it was made with" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div role="group" aria-label="What it was made with" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {toggles.map((chip) => (
             <Toggle key={chip.key} chip={chip} phone={phone} onToggle={onToggle} />
           ))}

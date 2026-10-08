@@ -68,22 +68,22 @@ export function AuthEmailVerificationCard({
         <Mail
           style={{
             width: "56px",
-            height: "56px",
+            height: "46px",
             color: t.text2,
             strokeWidth: 1.5,
           }}
         />
       </div>
 
-      <h2 style={{ ...cardTitle, marginTop: "20px", color: t.text }}>
+      <h2 style={{ ...cardTitle, marginTop: "14px", color: t.text }}>
         Check your inbox
       </h2>
 
       <p
         style={{
-          marginTop: "8px",
+          marginTop: "6px",
           fontFamily: FIGTREE,
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: 400,
           lineHeight: 1.55,
           color: t.text2,
@@ -98,8 +98,8 @@ export function AuthEmailVerificationCard({
       {/* Resend Section */}
       <div
         style={{
-          marginTop: "20px",
-          paddingTop: "16px",
+          marginTop: "14px",
+          paddingTop: "12px",
           borderTopWidth: "0.5px",
           borderTopStyle: "solid",
           borderTopColor: t.line,
@@ -121,9 +121,9 @@ export function AuthEmailVerificationCard({
         {resendState === "sent" ? (
           <p
             style={{
-              marginTop: "8px",
+              marginTop: "6px",
               fontFamily: FIGTREE,
-              fontSize: "13px",
+              fontSize: "12px",
               fontWeight: 500,
               color: t.evidence,
               textAlign: "center",
@@ -134,9 +134,9 @@ export function AuthEmailVerificationCard({
         ) : resendState === "cooldown" ? (
           <p
             style={{
-              marginTop: "8px",
+              marginTop: "6px",
               fontFamily: FIGTREE,
-              fontSize: "13px",
+              fontSize: "12px",
               fontWeight: 500,
               color: t.text2,
               textAlign: "center",
@@ -150,11 +150,11 @@ export function AuthEmailVerificationCard({
             disabled={resendState === "sending"}
             style={{
               ...linkStyle,
-              marginTop: "8px",
+              marginTop: "6px",
               /* A standalone control, so it carries its own target rather than
                  the 16px its text happens to be. */
-              padding: "6px 0",
-              fontSize: "13px",
+              padding: "4px 0",
+              fontSize: "12px",
               fontWeight: 500,
               cursor: resendState === "sending" ? "default" : "pointer",
               opacity: resendState === "sending" ? 0.5 : 1,
@@ -170,7 +170,7 @@ export function AuthEmailVerificationCard({
       {/* Change Email */}
       <p
         style={{
-          marginTop: "16px",
+          marginTop: "12px",
           fontFamily: FIGTREE,
           fontSize: "12px",
           fontWeight: 400,

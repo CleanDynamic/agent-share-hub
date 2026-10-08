@@ -352,7 +352,7 @@ export function FieldShell({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 9,
         }}
       >
         <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -551,7 +551,7 @@ export function SchemaFields({ nodeId, fields, payload, onPatch }: SchemaFieldsP
   const isOpen = expandedNodes.has(nodeId);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {required.map(renderField)}
       {!folds && optional.map(renderField)}
 
@@ -582,7 +582,7 @@ export function SchemaFields({ nodeId, fields, payload, onPatch }: SchemaFieldsP
           >
             {/* A chevron rather than a word for the state: the label stays the
                 same thing whichever way the fold is facing. */}
-            <span aria-hidden="true" style={{ fontSize: 9 }}>
+            <span aria-hidden="true" style={{ fontSize: 10 }}>
               {isOpen ? "\u25BE" : "\u25B8"}
             </span>
             More detail

@@ -106,7 +106,7 @@ function TreeNode({
 
   return (
     <li style={{ listStyle: "none", margin: 0, padding: 0 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
         {hasChildren ? (
           <button
             type="button"
@@ -114,7 +114,7 @@ function TreeNode({
             aria-expanded={open}
             aria-label={open ? `Collapse ${node.title}` : `Expand ${node.title}`}
             style={{
-              marginTop: 16,
+              marginTop: 12,
               width: 18,
               height: 18,
               display: "flex",
@@ -156,14 +156,14 @@ function TreeNode({
         <ul
           style={{
             listStyle: "none",
-            margin: `10px 0 0 ${INDENT}px`,
-            padding: "0 0 0 16px",
+            margin: `7px 0 0 ${INDENT}px`,
+            padding: "0 0 0 12px",
             // The hairline connector down the left of every nested level. One
             // line, one pixel, `--line` — the guide, not a second container.
             borderLeft: `1px solid ${t.line}`,
             display: "flex",
             flexDirection: "column",
-            gap: 10,
+            gap: 7,
           }}
         >
           {node.children.map((child) => (
@@ -213,7 +213,7 @@ export function AnatomyTree({
         padding: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 9,
       }}
     >
       {tree.map((node) => (

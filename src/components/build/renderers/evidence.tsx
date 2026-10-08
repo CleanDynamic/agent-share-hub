@@ -120,7 +120,7 @@ export function EvidenceRenderer(props: NodeProps) {
         {summary ? <Prose>{summary}</Prose> : null}
 
         {mediaRef ? (
-          <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+          <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
             <MediaFigure
               reference={mediaRef}
               resolveMedia={props.resolveMedia}
@@ -268,7 +268,7 @@ export function ComparisonTableRenderer(props: NodeProps) {
                     style={{
                       ...headCellStyle,
                       // The winner's left border needs room on the first column.
-                      paddingLeft: index === 0 ? 12 : 0,
+                      paddingLeft: index === 0 ? 9 : 0,
                     }}
                   >
                     {column.label}
@@ -289,7 +289,7 @@ export function ComparisonTableRenderer(props: NodeProps) {
                         key={column.key}
                         style={{
                           ...cellStyle,
-                          paddingLeft: columnIndex === 0 ? 12 : 0,
+                          paddingLeft: columnIndex === 0 ? 9 : 0,
                           color: won ? t.evidence : t.text,
                           fontWeight: won ? 500 : bodyType.fontWeight,
                           ...(columnIndex === 0

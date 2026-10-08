@@ -66,7 +66,7 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
           fullWidth
           disabled={loadingProvider !== null}
           onClick={() => onProvider(provider.id)}
-          style={{ gap: 10 }}
+          style={{ gap: 7 }}
         >
           {loadingProvider === provider.id ? (
             <Loader2 className="animate-spin" size={16} aria-hidden="true" />
@@ -114,7 +114,7 @@ export function FieldMessage({ id, children, tone = "error" }: { id?: string; ch
       data-testid="field-message"
       style={{
         ...MESSAGE,
-        marginTop: children ? 6 : 0,
+        marginTop: children ? 4 : 0,
         color: tone === "good" ? t.evidence : t.catBreakage,
       }}
     >
@@ -176,7 +176,7 @@ export function AuthField({
 
   return (
     <div>
-      <label style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <Eyebrow size={10} as="span">
           {label}
         </Eyebrow>
@@ -184,16 +184,16 @@ export function AuthField({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 7,
             height: sizes.field,
             boxSizing: "content-box",
-            padding: "0 14px",
+            padding: "0 10px",
             borderRadius: r.control,
             background: t.field,
             border: `1px solid ${invalid ? t.catBreakage : focused ? t.action : t.line}`,
             color: t.text2,
             fontFamily: FIGTREE,
-            fontSize: 14,
+            fontSize: 13,
             ...ring(focusVisible),
           }}
         >
@@ -233,7 +233,7 @@ export function AuthField({
               border: 0,
               outline: "none",
               fontFamily: FIGTREE,
-              fontSize: 14,
+              fontSize: 13,
               color: t.text,
             }}
           />
@@ -248,10 +248,11 @@ export function AuthField({
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                width: 44,
-                height: 44,
-                /* A 44px target around a 16px icon, pulled back so the icon sits where
-                   the field's own padding would put it and the box does not grow. */
+                /* A 44px target around a 16px icon on a phone (36 above it, as the
+                   tightened board), pulled back so the icon sits where the field's own
+                   padding would put it and the box does not grow. */
+                width: sizes.phone ? 44 : 36,
+                height: sizes.phone ? 44 : 36,
                 margin: "0 -14px 0 -8px",
                 padding: 0,
                 border: 0,
@@ -272,7 +273,7 @@ export function AuthField({
         </span>
       </label>
       {helperText ? (
-        <p style={{ ...MESSAGE, marginTop: 6, fontStyle: "italic", color: t.text2 }}>{helperText}</p>
+        <p style={{ ...MESSAGE, marginTop: 4, fontStyle: "italic", color: t.text2 }}>{helperText}</p>
       ) : null}
       <FieldMessage id={messageId} tone={confirmed ? "good" : "error"}>
         {message}
@@ -309,13 +310,14 @@ export function AuthCheck({ id, checked, onChange, children }: AuthCheckProps) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 8,
+        gap: 6,
         padding: "6px 0",
         margin: "-6px 0",
         cursor: "pointer",
         fontFamily: FIGTREE,
-        fontSize: 13,
-        /* The reference's row is 19px tall (a 13px box and its margins). */
+        fontSize: 12,
+        /* The reference's row is 19px tall (a 13px box and its margins): a native
+           checkbox the density pass does not touch, so the row keeps 19. */
         lineHeight: "19px",
         color: t.text2,
       }}

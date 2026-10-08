@@ -102,19 +102,19 @@ export const controlStyle: CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: 12,
   /* 400, not 300. Below 18px the theme never emits Figtree under weight 400,
      and this is the role that sets most of the prose in the inspector. */
   fontWeight: 400,
   lineHeight: 1.6,
-  padding: "7px 10px",
+  padding: "5px 7px",
   outline: "none",
 };
 
 export const compactControlStyle: CSSProperties = {
   ...controlStyle,
   fontSize: 12,
-  padding: "5px 8px",
+  padding: "5px 6px",
   /* A list row's sub-field is still a control, so still `--r-control`. The 6px
      it used was a seventh step in a six-step scale. */
   borderRadius: r.control,
@@ -135,7 +135,7 @@ export const fieldLabelStyle: CSSProperties = {
   color: t.text,
   display: "flex",
   alignItems: "baseline",
-  gap: 6,
+  gap: 4,
 };
 
 /** The hint under a label. `--text2`, so it reads as guidance, not as a value. */

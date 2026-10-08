@@ -5,7 +5,7 @@
    no `useAuth()`, no router hooks but `Link`. The viewport is read here (the
    768px breakpoint), so the live page and the compare page behave the same.
 
-   DESKTOP: a column, gap 12. Row 1 is the banner (220) beside the level panel
+   DESKTOP: a column, gap 9. Row 1 is the banner (220) beside the level panel
    (440). Row 2 is the stats wall label at its natural height. Row 3 fills: the
    works on the left, and on the right (360) a column of Activity and Creator
    marks that share the height. PHONE: the banner, the actions, the level panel
@@ -14,7 +14,13 @@
 
    A FIGURE'S BAR IS ONLY DRAWN WHERE IT MEASURES SOMETHING. `figures.bars` holds
    progress to a creator-mark threshold for the figures that have one; where it
-   is absent the Stat has no bar, rather than a bar that says what is not known. */
+   is absent the Stat has no bar, rather than a bar that says what is not known.
+
+   DENSER SINCE UI-P57: every size this file sets itself is the tightened board's
+   (`design/prompts/README-density.md`): rows and columns 9 apart, the level
+   block 12 / 6, the works' grid 9 (4px 7px on a phone), marks 9 under their
+   head. The banner (220), the level ring and the orbs are over 64 and keep their
+   size; the brand pieces map their own. */
 
 import type { CSSProperties, ReactNode } from "react";
 import { Flame } from "lucide-react";
@@ -112,7 +118,7 @@ function StreakRow({ view, phone }: { view: LevelView; phone: boolean }) {
   const line = streakLine(view, phone);
   if (!line) return null;
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
+    <div style={{ display: "flex", gap: 4, alignItems: "center", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
       <Flame size={15} strokeWidth={1.6} color={t.litInk} aria-hidden="true" style={{ flexShrink: 0 }} />
       {line}
     </div>
@@ -125,20 +131,20 @@ function LevelSkeleton({ phone }: { phone: boolean }) {
   return (
     <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? undefined : { height: "100%" }}>
       <LoadingRegion what="the level" data-testid="profile-level-loading">
-        <div style={{ display: "flex", gap: phone ? 14 : 16, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
           <Skeleton width={orb} height={orb} radius="50%" />
-          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 6 : 8, flexGrow: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: phone ? 4 : 6, flexGrow: 1, minWidth: 0 }}>
             <Skeleton width={phone ? 96 : 48} height={11} />
-            {phone ? null : <Skeleton height={30} radius={r.control} />}
+            {phone ? null : <Skeleton height={25} radius={r.control} />}
             <Skeleton width={phone ? "70%" : "54%"} height={phone ? 15 : 14} />
             {phone ? <Skeleton width="56%" height={15} /> : null}
             <Skeleton width="42%" height={15} />
           </div>
         </div>
         {phone ? (
-          <div style={{ display: "flex", gap: 6, margin: "14px -2px 0" }}>
+          <div style={{ display: "flex", gap: 4, margin: "10px -2px 0" }}>
             {[78, 70, 66, 74].map((width, index) => (
-              <Skeleton key={index} width={width} height={36} radius={r.media} />
+              <Skeleton key={index} width={width} height={30} radius={r.media} />
             ))}
           </div>
         ) : null}
@@ -184,16 +190,16 @@ function LevelPanel({
     const name = trackLabel(track);
     return (
       <Panel surface="glass" padding="16px">
-        <div data-testid="profile-level" style={{ display: "flex", gap: 14, alignItems: "center" }}>
+        <div data-testid="profile-level" style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {orbNode}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
             <Eyebrow>{name ? `${name} track` : "Track"}</Eyebrow>
             {xp ? <div style={{ ...mono(13), lineHeight: "normal", color: t.text }}>{xp}</div> : null}
             {remaining ? <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>{remaining}</div> : null}
             <StreakRow view={level} phone />
           </div>
         </div>
-        <div style={{ margin: "14px -2px 0" }}>
+        <div style={{ margin: "10px -2px 0" }}>
           <ScrollRow gap={6} label="Track">
             {TRACK_ITEMS.map((item) => (
               <FilterChip
@@ -213,9 +219,9 @@ function LevelPanel({
 
   return (
     <Panel surface="glass" padding="16px 18px" style={{ height: "100%" }}>
-      <div data-testid="profile-level" style={{ display: "flex", gap: 16, alignItems: "center" }}>
+      <div data-testid="profile-level" style={{ display: "flex", gap: 12, alignItems: "center" }}>
         {orbNode}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
           <Eyebrow>Track</Eyebrow>
           <Segmented<TrackId>
             items={trackItems}
@@ -259,7 +265,7 @@ function StatsWall({
         style={{
           minHeight: phone ? 169 : 84,
           boxSizing: "border-box",
-          padding: "12px 14px",
+          padding: "9px 10px",
           borderRadius: r.control,
           border: `1px solid ${t.line}`,
           display: "flex",
@@ -272,7 +278,7 @@ function StatsWall({
   }
 
   /* A figure's bone is as tall as the number's line (25px), and holds its bar's place where the figures will carry one. */
-  const loading = <Skeleton width={46} height={22} style={{ margin: "1px 0 2px" }} />;
+  const loading = <Skeleton width={46} height={18} style={{ margin: "1px 0 2px" }} />;
   const waiting = figures === null && barsExpected;
   const bars = figures?.bars;
   const cells = [
@@ -333,8 +339,8 @@ function CollectionTile({ tile, phone }: { tile: CollectionTileView; phone: bool
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 7,
-        padding: 7,
+        gap: 5,
+        padding: 5,
         background: t.glass,
         border: `1px solid ${t.glassBorder}`,
         borderRadius: r.card,
@@ -362,7 +368,7 @@ function CollectionTile({ tile, phone }: { tile: CollectionTileView; phone: bool
           </div>
         ))}
       </div>
-      <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
         <h3 style={{ ...display(17), margin: 0, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {tile.title}
         </h3>
@@ -386,7 +392,7 @@ const WORKS_COLUMNS: Record<WidthTier, number> = { full: 4, split: 3, stacked: 2
 function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; phone: boolean }) {
   const tier = useWidthTier();
   const columns = `repeat(${phone ? 2 : WORKS_COLUMNS[tier]}, minmax(0, 1fr))`;
-  const grid: CSSProperties = { display: "grid", gridTemplateColumns: columns, gap: phone ? "6px 10px" : 12, alignItems: "start" };
+  const grid: CSSProperties = { display: "grid", gridTemplateColumns: columns, gap: phone ? "4px 7px" : 9, alignItems: "start" };
   const variant = phone ? "phone" : "desktop";
 
   if (works.status === "loading") {
@@ -407,7 +413,7 @@ function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; 
         panel="Works"
         onRetry={works.onRetry}
         error={works.error}
-        style={{ paddingTop: 8 }}
+        style={{ paddingTop: 6 }}
         data-testid="profile-works-error"
       />
     );
@@ -418,7 +424,7 @@ function WorksBody({ works, isOwn, phone }: { works: WorksView; isOwn: boolean; 
   if (count === 0) return <EmptyState line={emptyLine(works.tab, isOwn)} data-testid="profile-works-empty" />;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       <div data-testid="profile-works-grid" style={grid}>
         {collections
           ? works.collections.map((tile) => <CollectionTile key={tile.key} tile={tile} phone={phone} />)
@@ -471,7 +477,7 @@ function WorksPanel({ works, isOwn, fill }: { works: WorksView; isOwn: boolean; 
 
 function PhoneWorks({ works, isOwn }: { works: WorksView; isOwn: boolean }) {
   return (
-    <div data-testid="profile-works" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div data-testid="profile-works" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       <ScrollRow gap={6} label="Works" tablist>
         {WORKS_TABS.map((tab) => (
           <FilterChip
@@ -506,8 +512,9 @@ function ActivityPanel({
   return (
     <Panel surface="glass" padding="14px 16px" style={fill ? { height: "100%" } : undefined}>
       <div data-testid="profile-activity">
-        <PanelHead title={ACTIVITY_TITLE} subtitle={ACTIVITY_SUBTITLE} titleSize={13} headingLevel={2} />
-        <div style={{ marginTop: 12, overflow: phone ? "hidden" : undefined }}>
+        {/* The phone board draws this head at 16 (15 rendered), the desktop one at 13 (12). */}
+        <PanelHead title={ACTIVITY_TITLE} subtitle={ACTIVITY_SUBTITLE} titleSize={phone ? 16 : 13} headingLevel={2} />
+        <div style={{ marginTop: 9, overflow: phone ? "hidden" : undefined }}>
           {failure ? (
             <ErrorState panel="Activity" onRetry={failure.onRetry} error={failure.error} data-testid="profile-activity-error" />
           ) : days ? (
@@ -542,26 +549,26 @@ function MarksPanel({
       <div data-testid="profile-marks">
         <PanelHead title={MARKS_TITLE} subtitle={MARKS_SUBTITLE} titleSize={13} headingLevel={2} />
         {failure ? (
-          <ErrorState panel="Creator marks" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 12 }} data-testid="profile-marks-error" />
+          <ErrorState panel="Creator marks" onRetry={failure.onRetry} error={failure.error} style={{ paddingTop: 9 }} data-testid="profile-marks-error" />
         ) : marks === null ? (
-          <LoadingRegion what="the creator marks" data-testid="profile-marks-loading" style={{ marginTop: 12 }}>
-            {/* Five tiles of 64, spread across the panel as the marks are. */}
+          <LoadingRegion what="the creator marks" data-testid="profile-marks-loading" style={{ marginTop: 9 }}>
+            {/* Five tiles of 64 by 54 (64 square before UI-P57), spread across the panel as the marks are. */}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               {Array.from({ length: 5 }, (_, index) => (
-                <Skeleton key={index} width={64} height={64} radius={r.control} />
+                <Skeleton key={index} width={64} height={54} radius={r.control} />
               ))}
             </div>
           </LoadingRegion>
         ) : tiles.length === 0 ? (
           <EmptyState line={isOwn ? "Publish a build to earn your first." : "No creator marks yet."} data-testid="profile-marks-empty" />
         ) : phone ? (
-          <div style={{ margin: "12px -2px 0" }}>
+          <div style={{ margin: "9px -2px 0" }}>
             <ScrollRow gap={8} label="Creator marks">
               {tiles}
             </ScrollRow>
           </div>
         ) : (
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>{tiles}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 9 }}>{tiles}</div>
         )}
       </div>
     </Panel>
@@ -607,14 +614,15 @@ export function ProfileView({
 
   if (phone) {
     return (
-      <div data-testid="profile-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
+      <div data-testid="profile-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
         {maker ? <ProfileBanner maker={maker} phone {...actions} /> : <BannerSkeleton phone />}
         {maker ? (
-          <div style={{ display: "grid", gridTemplateColumns: twoActions ? "1fr 1fr" : "1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: twoActions ? "1fr 1fr" : "1fr", gap: 6 }}>
             <ProfileActions {...actions} phone />
           </div>
         ) : (
-          <Skeleton height={48} radius={r.control} />
+          /* The actions' row: drawn 48, held at 44 on a phone (the touch target). */
+          <Skeleton height={44} radius={r.control} />
         )}
         <LevelPanel level={level} failure={failed.level} isOwn={isOwn} onTrack={onTrack} phone />
         <StatsWall figures={figures} barsExpected={figuresBarsExpected} failure={failed.figures} phone />
@@ -626,13 +634,13 @@ export function ProfileView({
   }
 
   return (
-    <div data-testid="profile-view" data-viewport="desktop" style={{ ...COLUMN, gap: 12, lineHeight: "normal", ...boardHeight(fit) }}>
+    <div data-testid="profile-view" data-viewport="desktop" style={{ ...COLUMN, gap: 9, lineHeight: "normal", ...boardHeight(fit) }}>
       <div
         style={{
           display: "grid",
           gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(440)}`,
           gridAutoRows: 220,
-          gap: 12,
+          gap: 9,
           flexShrink: 0,
         }}
       >
@@ -649,7 +657,7 @@ export function ProfileView({
           display: "grid",
           /* The 22-week grid is 327 wide and does not scale, so this track keeps the board's 360 until the row stacks. */
           gridTemplateColumns: stacked ? "minmax(0, 1fr)" : "minmax(0, 1fr) 360px",
-          gap: 12,
+          gap: 9,
           flexGrow: 1,
           minHeight: 0,
         }}
@@ -657,7 +665,7 @@ export function ProfileView({
         <div style={{ minHeight: 0 }}>
           <WorksPanel works={works} isOwn={isOwn} fill={!stacked} />
         </div>
-        <div style={{ ...COLUMN, gap: 12 }}>
+        <div style={{ ...COLUMN, gap: 9 }}>
           <div style={{ flexGrow: 1, minHeight: 0 }}>
             <ActivityPanel days={activity} failure={failed.activity} phone={false} fill={!stacked} />
           </div>
@@ -725,10 +733,10 @@ export function ProfileLoadFailed({ onRetry, error }: { onRetry: () => void; err
 /** A sentence and a way on, for a profile that is not there. */
 export function ProfileNotice({ line, detail, action }: { line: string; detail?: string; action?: ReactNode }) {
   return (
-    <div data-testid="profile-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "48px 0", textAlign: "center" }}>
+    <div data-testid="profile-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "35px 0", textAlign: "center" }}>
       <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
-      {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>{detail}</p> : null}
-      {action ? <div style={{ marginTop: 12 }}>{action}</div> : null}
+      {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>{detail}</p> : null}
+      {action ? <div style={{ marginTop: 9 }}>{action}</div> : null}
     </div>
   );
 }

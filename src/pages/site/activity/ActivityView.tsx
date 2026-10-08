@@ -5,7 +5,7 @@
    sample data; both render this. The viewport is read here (the app's 768px
    breakpoint) so the two behave the same.
 
-   DESKTOP: a `minmax(0, 1fr) 400px` grid, gap 12, filling the 820px board — the
+   DESKTOP: a `minmax(0, 1fr) 400px` grid, gap 9, filling the 820px board — the
    list on the left; the orbs (180), the runs chart (190) and the "Show me"
    filter (the rest) on the right. PHONE: the heading, the kind chips, and one
    panel per day; no orbs, chart or filter panel (the chips are the filter).
@@ -16,8 +16,15 @@
    lists.
 
    CONTENT-BOX WHERE THE REFERENCE IS. The boards are content-box and the app is
-   border-box, so the row's min-height and the badge's 20px are content-box here,
-   as GalleryView and BuildView do it. */
+   border-box, so the row's min-height and the badge's 16px are content-box here,
+   as GalleryView and BuildView do it.
+
+   DENSER SINCE UI-P57: every size this file sets itself is the tightened board's
+   (`design/prompts/README-density.md`) — the grid and the right column 9 apart,
+   desktop rows 52 of content in 4px 9px, phone rows 9px 7px (68 tall with the
+   hairline), the badge 16, the thumbnail 76 x 38, filter rows 26 in 12px type.
+   The orb (140) and the chart (360 x 120) are over 64 and keep their size. The
+   brand pieces (Panel, Button, Avatar, Segmented, display()) map their own. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import {
@@ -156,7 +163,7 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
 
 const whoStyle: CSSProperties = {
   fontFamily: FIGTREE,
-  fontSize: 13,
+  fontSize: 12,
   lineHeight: "normal",
   color: t.text2,
   overflowWrap: "anywhere",
@@ -172,7 +179,7 @@ function WriteFailed({ failure }: { failure: PanelFailure }) {
       panel="Activity"
       onRetry={failure.onRetry}
       error={failure.error}
-      style={{ paddingTop: 14 }}
+      style={{ paddingTop: 10 }}
       data-testid="activity-write-error"
     />
   );
@@ -183,50 +190,50 @@ function DayHeadingSkeleton() {
   return <Skeleton width={84} height={13} />;
 }
 
-/** An activity row before it has arrived: the desktop row's grid and 64px of content in its own padding. */
+/** An activity row before it has arrived: the desktop row's grid and 52px of content in its own padding. */
 function DesktopRowSkeleton() {
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: "14px 38px minmax(0, 1fr) 76px 40px",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        minHeight: 64,
-        padding: "6px 12px",
+        minHeight: 52,
+        padding: "4px 9px",
         boxSizing: "content-box",
         borderRadius: 14,
       }}
     >
       <Skeleton width={10} height={7} radius={r.full} />
-      <Skeleton width={34} height={34} radius="50%" />
+      <Skeleton width={28} height={28} radius="50%" />
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <Skeleton width="62%" height={17} />
         <Skeleton width="38%" height={11} />
       </div>
-      <Skeleton width={76} height={46} radius={9} />
+      <Skeleton width={76} height={38} radius={9} />
       <Skeleton width={26} height={10} style={{ justifySelf: "end" }} />
     </div>
   );
 }
 
-/** The phone's row before it has arrived: 77px with its hairline. */
+/** The phone's row before it has arrived: 68px with its hairline, as the row measures (77 before UI-P57). */
 function PhoneRowSkeleton() {
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: "38px minmax(0, 1fr) auto",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        padding: "12px 10px",
+        padding: "9px 7px",
         borderRadius: 14,
         borderBottom: `1px solid ${t.hairline}`,
         boxSizing: "border-box",
-        height: 77,
+        height: 68,
       }}
     >
-      <Skeleton width={36} height={36} radius="50%" />
+      <Skeleton width={30} height={30} radius="50%" />
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <Skeleton width="48%" height={13} />
         <Skeleton width="66%" height={19} />
@@ -256,8 +263,8 @@ function Who({ row, size }: { row: ActivityRow; size: 34 | 36 }) {
             position: "absolute",
             right: -4,
             bottom: -4,
-            width: 20,
-            height: 20,
+            width: 16,
+            height: 16,
             boxSizing: "content-box",
             borderRadius: 7,
             background: t.solid,
@@ -279,7 +286,7 @@ function Who({ row, size }: { row: ActivityRow; size: 34 | 36 }) {
 function Thumb({ row }: { row: ActivityRow }) {
   if (!row.cover) return <div />;
   return (
-    <div style={{ width: 76, height: 46, borderRadius: 9, overflow: "hidden" }}>
+    <div style={{ width: 76, height: 38, borderRadius: 9, overflow: "hidden" }}>
       {row.cover.src ? (
         <img
           src={row.cover.src}
@@ -345,10 +352,10 @@ function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpe
       style={{
         display: "grid",
         gridTemplateColumns: "14px 38px minmax(0, 1fr) 76px 40px",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        minHeight: 64,
-        padding: "6px 12px",
+        minHeight: 52,
+        padding: "4px 9px",
         boxSizing: "content-box",
         borderRadius: 14,
       }}
@@ -377,9 +384,9 @@ function PhoneRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen:
       style={{
         display: "grid",
         gridTemplateColumns: "38px minmax(0, 1fr) auto",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        padding: "12px 10px",
+        padding: "9px 7px",
         borderRadius: 14,
         borderBottom: `1px solid ${t.hairline}`,
       }}
@@ -392,7 +399,7 @@ function PhoneRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen:
         ) : null}
         {row.detail ? <div style={detailStyle}>{row.detail}</div> : null}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
         <When row={row} now={now} />
         {row.unread ? <LampDot /> : null}
       </div>
@@ -411,7 +418,7 @@ function DayHeading({ day }: { day: string }) {
 
 function NoneOfThese({ hasMore }: { hasMore: boolean }) {
   return (
-    <p style={{ margin: "14px 4px 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
+    <p style={{ margin: "10px 4px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
       None of these among the latest.{hasMore ? " Show more to look further back." : ""}
     </p>
   );
@@ -420,7 +427,7 @@ function NoneOfThese({ hasMore }: { hasMore: boolean }) {
 function MoreButton({ list, phone }: { list: ActivityListProps; phone: boolean }) {
   if (!list.hasMore) return null;
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginTop: phone ? 0 : 10 }}>
+    <div style={{ display: "flex", justifyContent: "center", marginTop: phone ? 0 : 7 }}>
       <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} disabled={list.loadingMore} onClick={list.onMore}>
         {list.loadingMore ? "Loading…" : "Show more"}
       </Button>
@@ -444,7 +451,7 @@ function DesktopList({
       <LoadingRegion what="your activity" data-testid="activity-loading">
         {DESKTOP_LOADING_DAYS.map((rows, day) => (
           <div key={day}>
-            <div style={{ padding: "14px 4px 6px" }}>
+            <div style={{ padding: "10px 4px 4px" }}>
               <DayHeadingSkeleton />
             </div>
             {Array.from({ length: rows }, (_, i) => (
@@ -456,7 +463,7 @@ function DesktopList({
     );
   }
   if (list.status === "error") {
-    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} style={{ paddingTop: 14 }} data-testid="activity-error" />;
+    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} style={{ paddingTop: 10 }} data-testid="activity-error" />;
   }
   if (list.groups.length === 0) return <EmptyState line="All caught up." data-testid="activity-empty" />;
 
@@ -465,7 +472,7 @@ function DesktopList({
     <div data-testid="activity-list">
       {groups.map((group) => (
         <div key={group.day} data-testid="activity-day">
-          <div style={{ padding: "14px 4px 6px" }}>
+          <div style={{ padding: "10px 4px 4px" }}>
             <DayHeading day={group.day} />
           </div>
           <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -499,7 +506,7 @@ function PhoneList({
       <Panel padding="14px 8px">
         <LoadingRegion what="your activity" data-testid="activity-loading">
           <DayHeadingSkeleton />
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 4 }}>
             {Array.from({ length: PHONE_LOADING_ROWS }, (_, i) => (
               <PhoneRowSkeleton key={i} />
             ))}
@@ -530,7 +537,7 @@ function PhoneList({
         <Panel key={group.day} padding="14px 8px">
           <div data-testid="activity-day">
             <DayHeading day={group.day} />
-            <ol style={{ listStyle: "none", margin: "6px 0 0", padding: 0 }}>
+            <ol style={{ listStyle: "none", margin: "4px 0 0", padding: 0 }}>
               {group.rows.map((row) => (
                 <li key={row.id}>
                   <PhoneRow row={row} now={now} onOpen={onOpen} />
@@ -553,7 +560,7 @@ function PhoneList({
 /* ── the right column ── */
 
 function Orbs({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; live: boolean }) {
-  const row: CSSProperties = { display: "flex", gap: 12, justifyContent: "center", alignItems: "center", height: "100%" };
+  const row: CSSProperties = { display: "flex", gap: 9, justifyContent: "center", alignItems: "center", height: "100%" };
   const people =
     peopleThisWeek !== null ? (
       <OrbSolid
@@ -591,7 +598,7 @@ function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
   return (
     <>
       <PanelHead title="Runs of your builds" subtitle={chartSubtitle(marker)} titleSize={13} headingLevel={2} />
-      <div data-testid="activity-runs" style={{ marginTop: 10 }}>
+      <div data-testid="activity-runs" style={{ marginTop: 7 }}>
         {runs.status === "loading" ? (
           <LoadingRegion what="the runs chart" data-testid="activity-runs-loading">
             <Skeleton width={360} height={120} style={{ maxWidth: "100%" }} />
@@ -630,9 +637,9 @@ function KindToggle({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 7,
         width: "100%",
-        height: 32,
+        height: 26,
         boxSizing: "content-box",
         margin: 0,
         padding: 0,
@@ -647,7 +654,7 @@ function KindToggle({
       }}
     >
       <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: KIND[kind].ink, flexShrink: 0 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", fontWeight: on ? 600 : 400, color: t.text, flexGrow: 1 }}>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", fontWeight: on ? 600 : 400, color: t.text, flexGrow: 1 }}>
         {kind}
       </span>
       {count === null ? (
@@ -673,7 +680,7 @@ function ShowMe({
   return (
     <>
       <PanelHead title="Show me" titleSize={14} headingLevel={2} />
-      <div role="group" aria-label="Show me" style={{ marginTop: 6 }}>
+      <div role="group" aria-label="Show me" style={{ marginTop: 4 }}>
         {ACTIVITY_KINDS.map((kind) => (
           <KindToggle
             key={kind}
@@ -708,7 +715,7 @@ function DesktopActivity(props: ActivityViewProps) {
         display: "grid",
         gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(400)}`,
         gridTemplateRows: board ? "minmax(0, 1fr)" : undefined,
-        gap: 12,
+        gap: 9,
         lineHeight: "normal",
         ...boardHeight(fit),
       }}
@@ -738,7 +745,7 @@ function DesktopActivity(props: ActivityViewProps) {
         </Panel>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0, alignSelf: board ? undefined : "start" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0, alignSelf: board ? undefined : "start" }}>
         <div style={{ height: 180, flexShrink: 0 }}>
           <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
             <Orbs peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
@@ -769,8 +776,8 @@ function PhoneActivity(props: ActivityViewProps) {
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
 
   return (
-    <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, lineHeight: "normal" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+    <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 9 }}>
         <PageHeading eyebrow="Activity" title={unread === null ? "Activity" : unreadHeading(unread)} size={34} />
         {unread ? (
           <Button variant="ghost" size={44} fontSize={13} icon={Check} data-testid="activity-mark-all" onClick={onMarkAllRead}>

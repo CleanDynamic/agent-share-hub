@@ -243,7 +243,7 @@ function PartContent({
     const steps = (understand?.content.steps ?? []).filter((step) => step.node_ref === node.id && step.body.trim());
     const words = steps.length > 0 ? steps.map((step) => step.body.trim()) : (node.note ?? "").trim() ? [(node.note ?? "").trim()] : [];
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {words.length > 0 ? (
           words.map((text, index) => (
             <p key={index} style={{ margin: 0, whiteSpace: "pre-wrap" }}>
@@ -260,7 +260,7 @@ function PartContent({
 
   const body = <NodeBody node={node} nodeType={nodeType} build={build} resolveNode={resolveNode} resolveMedia={resolveMedia} />;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }} data-node-id={node.id}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }} data-node-id={node.id}>
       {/* A result says what it is and when before it shows itself (UI-P30). */}
       {nodeType?.category === "evidence" ? <ResultFrame date={evidenceDate(node, events)}>{body}</ResultFrame> : body}
       {footer}
@@ -831,7 +831,7 @@ export function BuildPage() {
         <div
           role="status"
           data-testid="build-hidden-banner"
-          style={{ background: t.recess, color: t.text, borderRadius: r.panel, padding: "16px 24px", marginBottom: 12, fontFamily: FIGTREE }}
+          style={{ background: t.recess, color: t.text, borderRadius: r.panel, padding: "12px 17px", marginBottom: 9, fontFamily: FIGTREE }}
         >
           An admin has hidden this build.
         </div>

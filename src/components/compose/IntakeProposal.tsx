@@ -126,7 +126,7 @@ function InferredMark({ reason }: { reason: string | null }) {
         ...labelText,
         fontSize: 10,
         textTransform: "uppercase",
-        padding: "2px 7px",
+        padding: "2px 5px",
         borderRadius: r.chip,
         whiteSpace: "nowrap",
         cursor: "help",
@@ -167,9 +167,9 @@ function KeepToggle({
         fontSize: 11,
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
+        gap: 4,
         flexShrink: 0,
-        padding: "3px 9px",
+        padding: "3px 6px",
         borderRadius: r.chip,
         cursor: "pointer",
         backgroundColor: kept ? t.evidenceFill : t.recess,
@@ -192,8 +192,8 @@ function rowStyle(kept: boolean): CSSProperties {
     ...workspaceCard,
     display: "flex",
     alignItems: "flex-start",
-    gap: 10,
-    padding: "9px 11px",
+    gap: 7,
+    padding: "6px 8px",
     opacity: kept ? 1 : 0.42,
     transition: feedback("opacity"),
   };
@@ -225,7 +225,7 @@ function FieldRow({
   return (
     <div style={rowStyle(kept)}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
           <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>{name}</span>
           {field.inferred ? <InferredMark reason={field.inferred_reason} /> : null}
         </div>
@@ -316,7 +316,7 @@ function EventSection({
   };
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionHeading>The sequence</SectionHeading>
 
       <div style={{ ...rowStyle(keptCount > 0), alignItems: "center" }}>
@@ -368,7 +368,7 @@ function EventSection({
             padding: 0,
             display: "flex",
             flexDirection: "column",
-            gap: 6,
+            gap: 4,
           }}
         >
           {events.map((event) => (
@@ -405,7 +405,7 @@ function NodeRow({
     <li style={{ listStyle: "none" }}>
       <div style={rowStyle(kept)}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
             <TypePill typeKey={node.type} />
             {node.inferred ? <InferredMark reason={node.inferred_reason} /> : null}
             <span style={{ ...labelText, fontSize: 10, color: t.text2 }}>
@@ -459,11 +459,11 @@ function NodeSection({
   };
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <SectionHeading>Pulled out of the replies</SectionHeading>
 
       {groups.map(([type, group]) => (
-        <div key={type} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div key={type} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ ...labelText, fontSize: 11, color: t.text2 }}>
             {plural(group.length, TYPE_NOUNS[type] ?? [type, `${type} items`])}
           </span>
@@ -474,7 +474,7 @@ function NodeSection({
               padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 4,
             }}
           >
             {group.map((node) => (
@@ -531,8 +531,8 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 8,
-        padding: "12px 14px",
+        gap: 6,
+        padding: "9px 10px",
         backgroundColor: t.recess,
         borderWidth: 1,
         borderStyle: "solid",
@@ -566,7 +566,7 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
             style={{
               display: "flex",
               alignItems: "baseline",
-              gap: 8,
+              gap: 6,
               flexWrap: "wrap",
             }}
           >
@@ -663,9 +663,9 @@ export function IntakeProposal({
     <div
       {...(testId ? { "data-testid": testId } : {})}
       data-visual-slot="intake-proposal"
-      style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%" }}
+      style={{ display: "flex", flexDirection: "column", gap: 13, width: "100%" }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {/* The display face at the section size, which is what this is: the
             page's one heading once a file is in hand. It was the workspace's
             22px Figtree, which is a panel title rather than a page's name. */}
@@ -701,10 +701,10 @@ export function IntakeProposal({
           style={{
             listStyle: "none",
             margin: 0,
-            padding: "10px 12px",
+            padding: "7px 9px",
             display: "flex",
             flexDirection: "column",
-            gap: 6,
+            gap: 4,
             /* The state on a 2px edge over `--recess`, like every other
                noticing surface in this flow. A 5% accent wash behind a list is
                the thing that turns a note into an alert. */
@@ -733,7 +733,7 @@ export function IntakeProposal({
       ) : null}
 
       {summary.proposed_title || summary.proposed_outcome ? (
-        <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <SectionHeading>The build itself</SectionHeading>
           {summary.proposed_title ? (
             <FieldRow
@@ -769,7 +769,7 @@ export function IntakeProposal({
           style={{
             ...bodyText,
             margin: 0,
-            padding: "10px 12px",
+            padding: "7px 9px",
             backgroundColor: t.recess,
             borderWidth: 1,
             borderStyle: "solid",
@@ -789,7 +789,7 @@ export function IntakeProposal({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 14,
+          gap: 10,
           flexWrap: "wrap",
           paddingTop: 4,
           borderTopWidth: 1,
@@ -809,7 +809,7 @@ export function IntakeProposal({
           {...(confirmTestId ? { "data-testid": confirmTestId } : {})}
           onClick={onConfirm}
           disabled={isWriting}
-          style={{ marginTop: 14, cursor: isWriting ? "wait" : undefined }}
+          style={{ marginTop: 10, cursor: isWriting ? "wait" : undefined }}
         >
           {isWriting
             ? "Adding to the draft…"
@@ -825,7 +825,7 @@ export function IntakeProposal({
           style={{
             ...labelText,
             fontFamily: "inherit",
-            marginTop: 14,
+            marginTop: 10,
             background: "transparent",
             borderWidth: 0,
             borderStyle: "none",

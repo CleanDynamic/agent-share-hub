@@ -5,14 +5,22 @@
    data; both render this. The viewport is read here (the app's 768px breakpoint)
    so the two behave the same.
 
-   DESKTOP: a `minmax(0, 1fr) 420px` grid, gap 12, filling the 820px board — the
+   DESKTOP: a `minmax(0, 1fr) 420px` grid, gap 9, filling the 820px board — the
    hero over the visitors' book on the left; the orbs, the week's challenges, the
    streak and where next on the right. PHONE: one column in the order the mobile
    board draws it, without where next.
 
    EVERY COLOUR IS A TOKEN. The reference's amber text (`--lit`) is `--lit-ink`
    here, as RULES §7 lists. Nothing in this file draws a number from the sample
-   data: counts, rows and weeks all arrive as props. */
+   data: counts, rows and weeks all arrive as props.
+
+   DENSER SINCE UI-P57: every size this file sets itself is the tightened board's
+   (`design/prompts/README-density.md`) — the grid and columns 9 apart, book rows
+   6px 9px round a 44px-tall thumbnail, challenge rows 7 apart in 12px type,
+   where-next rows 5 apart round a 28px picture. Heights over 64 (the hero's 340,
+   the orbs' 180, the challenges' 230, the orbs themselves) are the table's to
+   keep. The brand pieces (Panel, PanelHead, Segmented, Button, IconButton,
+   Avatar, Tagline, the orbs, display()) take the drawn size and map it. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowRight, Flame, Maximize2 } from "lucide-react";
@@ -188,9 +196,9 @@ function DesktopRow({ row, highlight, now }: { row: HomeFeedRow; highlight: bool
         ...rowFrame(highlight),
         display: "grid",
         gridTemplateColumns: "92px 30px minmax(0, 1fr) 84px 32px",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        padding: "9px 12px",
+        padding: "6px 9px",
       }}
     >
       <span style={kindLabelStyle(row.kind)}>{KIND_LABEL[row.kind]}</span>
@@ -200,7 +208,7 @@ function DesktopRow({ row, highlight, now }: { row: HomeFeedRow; highlight: bool
         <span style={{ ...display(20), lineHeight: 1, color: t.text }}>{row.title}</span>
         <Plaque build={row.plaque} size="card" now={now} />
       </div>
-      <Thumb cover={row.cover} width={84} height={54} radius={10} />
+      <Thumb cover={row.cover} width={84} height={44} radius={10} />
       <span style={mono(10, { color: t.label, textAlign: "right" })}>{shortAgo(row.at, now)}</span>
     </FrameLink>
   );
@@ -217,13 +225,13 @@ function PhoneRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolea
         ...rowFrame(highlight),
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) 72px",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        padding: 12,
+        padding: 9,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {actorAvatar(row, 22)}
           <span style={kindLabelStyle(row.kind)}>{KIND_LABEL[row.kind]}</span>
           <span style={mono(10, { color: t.label })}>· {shortAgo(row.at, now)}</span>
@@ -250,20 +258,20 @@ function RowSkeleton({ phone }: { phone: boolean }) {
           ...rowFrame(false),
           display: "grid",
           gridTemplateColumns: "minmax(0, 1fr) 72px",
-          gap: 12,
+          gap: 9,
           alignItems: "center",
-          padding: 12,
+          padding: 9,
           boxSizing: "border-box",
           height: PHONE_ROW_HEIGHT,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Skeleton width={22} height={22} radius="50%" />
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Skeleton width={18} height={18} radius="50%" />
             <Skeleton width={64} height={10} />
           </div>
           <Skeleton width="55%" height={12} />
-          <Skeleton width="80%" height={20} />
+          <Skeleton width="80%" height={16} />
           <Skeleton width="60%" height={14} />
         </div>
         <Skeleton width={72} height={72} radius={10} />
@@ -276,21 +284,21 @@ function RowSkeleton({ phone }: { phone: boolean }) {
         ...rowFrame(false),
         display: "grid",
         gridTemplateColumns: "92px 30px minmax(0, 1fr) 84px 32px",
-        gap: 12,
+        gap: 9,
         alignItems: "center",
-        padding: "9px 12px",
+        padding: "6px 9px",
         boxSizing: "border-box",
         height: DESKTOP_ROW_HEIGHT,
       }}
     >
       <Skeleton width={56} height={10} />
-      <Skeleton width={28} height={28} radius="50%" />
+      <Skeleton width={23} height={23} radius="50%" />
       <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
         <Skeleton width="38%" height={12} />
-        <Skeleton width="62%" height={20} />
+        <Skeleton width="62%" height={16} />
         <Skeleton width="46%" height={14} />
       </div>
-      <Skeleton width={84} height={54} radius={10} />
+      <Skeleton width={84} height={44} radius={10} />
       <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
     </div>
   );
@@ -342,12 +350,12 @@ function BookBody({
         ))}
       </div>
       {visible.length === 0 ? (
-        <p style={{ margin: "14px 12px 0", fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text2 }}>
+        <p style={{ margin: "10px 9px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
           None of these among the latest.{feed.hasMore ? " Show more to look further back." : ""}
         </p>
       ) : null}
       {feed.hasMore ? (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 7 }}>
           <Button
             variant="secondary"
             size={phone ? 44 : 34}
@@ -401,8 +409,8 @@ function LitBadge({ litToday, phone }: { litToday: number | null; phone: boolean
       style={{
         display: "flex",
         alignItems: "center",
-        gap: phone ? 7 : 8,
-        padding: phone ? "7px 10px" : "6px 10px",
+        gap: phone ? 5 : 6,
+        padding: phone ? "5px 7px" : "4px 7px",
         borderRadius: r.control,
         background: phone ? t.glass2 : t.mediaTag,
         border: phone ? `1px solid ${t.line}` : undefined,
@@ -457,7 +465,7 @@ function OrbsRow({
   framed?: boolean;
   style?: CSSProperties;
 }) {
-  const row: CSSProperties = { display: "flex", justifyContent: "center", gap: 12, alignItems: "center", ...style };
+  const row: CSSProperties = { display: "flex", justifyContent: "center", gap: 9, alignItems: "center", ...style };
 
   if (failure) {
     const error = <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />;
@@ -518,13 +526,13 @@ function ChallengeList({ rows, phone }: { rows: readonly HomeChallengeRow[]; pho
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 7,
-            padding: phone ? "11px 0" : "10px 0",
+            gap: 5,
+            padding: phone ? "8px 0" : "7px 0",
             borderBottom: `1px solid ${t.hairline}`,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: phone ? 14 : 13, lineHeight: "normal", color: t.text }}>{row.title}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 7 }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text }}>{row.title}</span>
             <span style={mono(11, { color: t.text2, whiteSpace: "nowrap" })}>{countText(row, phone)}</span>
           </div>
           <StripedBar
@@ -547,12 +555,12 @@ function ChallengeRowSkeleton({ phone }: { phone: boolean }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 7,
-        padding: phone ? "11px 0" : "10px 0",
+        gap: 5,
+        padding: phone ? "8px 0" : "7px 0",
         borderBottom: `1px solid ${t.hairline}`,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, height: phone ? 16 : 15 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 7, height: phone ? 16 : 15 }}>
         <Skeleton width="58%" height={phone ? 13 : 12} />
         <Skeleton width={phone ? 28 : 72} height={11} />
       </div>
@@ -594,7 +602,7 @@ function ChallengesBody({
         panel="This week’s challenges"
         onRetry={challenges.onRetry}
         error={challenges.error}
-        style={{ paddingTop: 14 }}
+        style={{ paddingTop: 10 }}
         data-testid="home-challenges-error"
       />
     );
@@ -652,9 +660,9 @@ function StreakSkeleton() {
         <PanelHead title="Streak" subtitle={"\u00a0"} headingLevel={2} />
         <Skeleton width={22} height={22} radius="50%" />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 9 }}>
         {DAY_LETTERS.map((_, index) => (
-          <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <Skeleton width={20} height={12} radius={r.full} />
             <Skeleton width={8} height={11} radius={3} />
           </div>
@@ -677,13 +685,13 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
         </div>
         <ul
           data-testid="home-streak-week"
-          style={{ display: "flex", justifyContent: "space-between", margin: "12px 0 0", padding: 0, listStyle: "none" }}
+          style={{ display: "flex", justifyContent: "space-between", margin: "9px 0 0", padding: 0, listStyle: "none" }}
         >
           {week.map((state, index) => (
             <li
               key={index}
               aria-label={`${DAY_NAMES[index]}: ${state === "active" ? "lit" : state === "frozen" ? "frozen" : "not lit"}`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
             >
               <DayMark state={state} />
               <span aria-hidden="true" style={mono(10, { color: t.label })}>
@@ -708,7 +716,7 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
     <Panel surface="glass" padding="14px 16px">
       <PanelHead title="Streak" headingLevel={2} />
       {streak.status === "error" ? (
-        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} style={{ paddingTop: 14 }} data-testid="home-streak-error" />
+        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} style={{ paddingTop: 10 }} data-testid="home-streak-error" />
       ) : (
         <EmptyState
           line="Run a build today to start a streak."
@@ -722,19 +730,19 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
 
 /* ── where next ── */
 
-/** A suggestion before it has arrived: the row's padding and hairline round a 34px picture, two lines and a sparkline. */
+/** A suggestion before it has arrived: the row's padding and hairline round a 28px picture, two lines and a sparkline. */
 function WhereNextRowSkeleton() {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: "7px 0",
+        gap: 7,
+        padding: "5px 0",
         borderBottom: `1px solid ${t.hairline}`,
       }}
     >
-      <Skeleton width={34} height={34} radius={8} />
+      <Skeleton width={28} height={28} radius={8} />
       <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <Skeleton width="62%" height={13} />
         <Skeleton width="40%" height={10} />
@@ -749,13 +757,13 @@ function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["w
     <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
       <PanelHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
       {whereNext.status === "loading" ? (
-        <LoadingRegion what="suggestions" data-testid="home-where-next-loading" style={{ marginTop: 6 }}>
+        <LoadingRegion what="suggestions" data-testid="home-where-next-loading" style={{ marginTop: 4 }}>
           {[0, 1, 2].map((i) => (
             <WhereNextRowSkeleton key={i} />
           ))}
         </LoadingRegion>
       ) : whereNext.status === "error" ? (
-        <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} style={{ paddingTop: 14 }} data-testid="home-where-next-error" />
+        <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} style={{ paddingTop: 10 }} data-testid="home-where-next-error" />
       ) : whereNext.status === "signed-out" || whereNext.data.length === 0 ? (
         <EmptyState
           line="Run a build this week and suggestions appear here."
@@ -767,7 +775,7 @@ function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["w
           data-testid="home-where-next-empty"
         />
       ) : (
-        <div data-testid="home-where-next" style={{ marginTop: 6 }}>
+        <div data-testid="home-where-next" style={{ marginTop: 4 }}>
           {whereNext.data.map((row) => (
             <FrameLink
               key={row.id}
@@ -776,15 +784,15 @@ function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["w
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "7px 0",
+                gap: 7,
+                padding: "5px 0",
                 borderBottom: `1px solid ${t.hairline}`,
                 color: "inherit",
               }}
             >
-              <Thumb cover={row.cover} width={34} height={34} radius={8} />
+              <Thumb cover={row.cover} width={28} height={28} radius={8} />
               <div style={{ flexGrow: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {row.title}
                 </div>
                 <div style={mono(10, { color: t.label })}>{row.reason}</div>
@@ -814,11 +822,11 @@ function DesktopHome(props: HomeViewProps) {
         display: "grid",
         gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
         gridTemplateRows: fit === "board" && !stacked ? "minmax(0, 1fr)" : undefined,
-        gap: 12,
+        gap: 9,
         ...boardHeight(fit),
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
         <div style={{ height: 340, flexShrink: 0 }}>
           <Panel surface="glass" padding="22px 24px" style={{ height: "100%" }}>
             <HeroArt scrim={`linear-gradient(90deg, ${t.scrim} 0%, transparent 60%)`} />
@@ -828,7 +836,7 @@ function DesktopHome(props: HomeViewProps) {
                 <LitBadge litToday={litToday} phone={false} />
               </div>
               <Tagline lines={TAGLINE} size={46} offsets={[0, 90, 30]} />
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 6 }}>
                 <Button size={36} fontSize={13} icon={ArrowRight} onClick={() => onNavigate(GALLERY)}>
                   Enter the gallery
                 </Button>
@@ -850,14 +858,14 @@ function DesktopHome(props: HomeViewProps) {
                 <Segmented<HomeFilter> label="Show" size={30} fontSize={11} value={filter} onChange={setFilter} items={HOME_FILTERS} />
               }
             />
-            <div style={{ marginTop: 10 }}>
+            <div style={{ marginTop: 7 }}>
               <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone={false} onNavigate={onNavigate} />
             </div>
           </Panel>
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 0, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
         <div style={{ height: 180, flexShrink: 0 }}>
           <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
             <OrbsRow size={150} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} style={{ height: "100%" }} />
@@ -883,7 +891,7 @@ function PhoneHome(props: HomeViewProps) {
   const [filter, setFilter] = useState<HomeFilter>("all");
 
   return (
-    <div data-testid="home-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div data-testid="home-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <ScopeControl scope={scope} onChange={onScopeChange} size={36} fontSize={13} />
         <LitBadge litToday={litToday} phone />
@@ -893,7 +901,7 @@ function PhoneHome(props: HomeViewProps) {
         <HeroArt scrim={`linear-gradient(180deg, transparent 30%, ${t.scrim} 100%)`} />
         <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <Tagline lines={TAGLINE} size={30} offsets={[0, 44, 14]} />
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 6 }}>
             <Button size={42} fontSize={14} icon={ArrowRight} onClick={() => onNavigate(GALLERY)}>
               Enter the gallery
             </Button>
@@ -907,14 +915,14 @@ function PhoneHome(props: HomeViewProps) {
 
       <Panel surface="glass" padding="14px 12px">
         <PanelHead title="The visitors’ book" subtitle="Newest first" headingLevel={2} />
-        <div style={{ margin: "10px -4px 0" }}>
+        <div style={{ margin: "7px -4px 0" }}>
           <ScrollRow gap={6} label="Show">
             {HOME_FILTERS.map((item) => (
               <FilterChip key={item.value} label={item.label} on={filter === item.value} onClick={() => setFilter(item.value)} />
             ))}
           </ScrollRow>
         </div>
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 6 }}>
           <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone onNavigate={onNavigate} />
         </div>
       </Panel>

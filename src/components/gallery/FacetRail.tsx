@@ -16,7 +16,7 @@ import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { chipType, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
-import { SPACE } from "@/lib/theme/space";
+import { SPACE_COMPACT as SPACE } from "@/lib/theme/space";
 import { t } from "@/lib/theme/tokens";
 import { body, eyebrow, tabular } from "@/lib/theme/type";
 
@@ -71,8 +71,9 @@ import { body, eyebrow, tabular } from "@/lib/theme/type";
    hidden content⟧. It is the one split the budget sanctions: the second level
    holds more of the same, so a reader knows what is behind it before opening.
 
-   On the band the two groups stand side by side, 40 apart, each a mono label
-   with its chips 8 under it ⟦law-of-proximity⟧. Those gaps live on wrappers
+   On the band the two groups stand side by side, 29 apart, each a mono label
+   with its chips 6 under it ⟦law-of-proximity⟧ (40 and 8 before the UI-P56
+   density pass). Those gaps live on wrappers
    written for this band; the sheet below 1024 keeps its rows as they were.
 
    The chips are STATES.md rows 4 and 5: an outline chip at rest; chosen, the
@@ -80,8 +81,8 @@ import { body, eyebrow, tabular } from "@/lib/theme/type";
    The count rides inside in DM Mono, tabular.
    ──────────────────────────────────────────────────────────────────────────── */
 
-/** Chips are 28px tall here, as they were before the repaint. */
-const CHIP_HEIGHT = 28;
+/** Chips are 23px tall here: the 28 they were before the repaint, through the UI-P56 density table. The spacing is SPACE_COMPACT, the old steps through the same table. */
+const CHIP_HEIGHT = 23;
 
 /** Below this the band becomes a "Filters" control and a sheet. */
 export const FACET_COLLAPSE_BELOW = 1024;
@@ -233,10 +234,10 @@ function FacetOptions({ group }: { group: FacetGroup }) {
   const listId = useId();
 
   if (group.loading) {
-    return <span style={{ ...body, fontSize: 14, color: t.text2 }}>Loading…</span>;
+    return <span style={{ ...body, fontSize: 13, color: t.text2 }}>Loading…</span>;
   }
   if (group.options.length === 0) {
-    return <span style={{ ...body, fontSize: 14, color: t.text2 }}>{group.emptyText}</span>;
+    return <span style={{ ...body, fontSize: 13, color: t.text2 }}>{group.emptyText}</span>;
   }
 
   const { shown, hidden } = visibleOptions(group.options, expanded);
@@ -383,8 +384,8 @@ function FacetChip({ option, testId }: { option: FacetOption; testId: string }) 
       onClick={option.onToggle}
       style={{
         minHeight: CHIP_HEIGHT,
-        padding: "0 10px",
-        gap: 6,
+        padding: "0 7px",
+        gap: 4,
         ...(option.selected ? { background: t.recess, borderColor: t.text, color: t.text } : {}),
       }}
     >
@@ -433,8 +434,8 @@ function SelectedRow({
           onClick={facet.onRemove}
           style={{
             minHeight: CHIP_HEIGHT,
-            padding: "0 8px 0 10px",
-            gap: 6,
+            padding: "0 6px 0 7px",
+            gap: 4,
             /* Row 5, like the chosen chip it removes. */
             background: t.recess,
             borderColor: t.text,
@@ -451,7 +452,7 @@ function SelectedRow({
         variant="ghost"
         data-testid="gallery-clear-all"
         onClick={onClearAll}
-        style={{ height: CHIP_HEIGHT, padding: "0 10px", borderRadius: r.control }}
+        style={{ height: CHIP_HEIGHT, padding: "0 7px", borderRadius: r.control }}
       >
         Clear all
       </Button>
