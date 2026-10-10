@@ -8,7 +8,12 @@
 
    Every write invalidates the same three keys, because a session joining a
    draft changes the drafts list (its count), both session lists, and the
-   header's badge. */
+   header's badge.
+
+   THE WAITING SESSIONS ARE READ AGAIN while the page is open
+   (`useWaitingSessions`), because a connector adds to them from outside the
+   browser. A list already on screen therefore stays when one of those reads
+   fails; the error state is for a list that never loaded. */
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +22,7 @@ import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
 import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
+import { useWaitingSessions } from "@/hooks/useWaitingSessions";
 import { listDraftsWithSessions, type DraftListItem } from "@/lib/build/drafts";
 import { attachSession, listSessions, removeSession } from "@/lib/build/sessions";
 
@@ -36,11 +42,7 @@ export function DraftsPage() {
     queryFn: listDraftsWithSessions,
     staleTime: STALE_MS,
   });
-  const waitingQuery = useQuery({
-    queryKey: ["build", "listSessions", false],
-    queryFn: () => listSessions({ includeAttached: false }),
-    staleTime: STALE_MS,
-  });
+  const waitingQuery = useWaitingSessions();
   const allQuery = useQuery({
     queryKey: ["build", "listSessions", true],
     queryFn: () => listSessions({ includeAttached: true }),
@@ -106,7 +108,8 @@ export function DraftsPage() {
     [refresh],
   );
 
-  const status = draftsQuery.isError || waitingQuery.isError ? "error" : draftsQuery.data && waitingQuery.data ? "ready" : "loading";
+  const status =
+    draftsQuery.isLoadingError || waitingQuery.isLoadingError ? "error" : draftsQuery.data && waitingQuery.data ? "ready" : "loading";
 
   return (
     <>

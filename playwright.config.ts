@@ -90,6 +90,7 @@ export default defineConfig({
         /e2e\/tier3\/analytics-builds\.spec\.ts/,
         /e2e\/tier3\/progress-page\.spec\.ts/,
         /e2e\/tier3\/drafts-sessions\.spec\.ts/,
+        /e2e\/tier3\/sessions-listed-on-open\.spec\.ts/,
         /e2e\/tier3\/compose-v2\.spec\.ts/,
       ],
     },

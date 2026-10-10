@@ -1,9 +1,11 @@
 /* UI-P48 — Your sessions and Made with, as the page runs them.
 
    READS. The build's sessions (`listBuildSessions`, oldest first), the
-   sessions in no build (`listSessions()`, shared with Drafts), a session's
-   prompts once its section is open (`getSessionPrompts`, read once: a
-   session's conversation does not change), and Made with (`getMadeWith`).
+   sessions in no build (`useWaitingSessions`, shared with Drafts, and read
+   again on opening, on coming back to the tab and while open, because a
+   connector adds to it from outside the browser), a session's prompts once its
+   section is open (`getSessionPrompts`, read once: a session's conversation
+   does not change), and Made with (`getMadeWith`).
 
    ONE MADE WITH WRITE AT A TIME. Ticking, typing a tool, adding a session and
    naming a model all rewrite `builds.made_with` (the last two through
@@ -17,13 +19,13 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import { useWaitingSessions } from "@/hooks/useWaitingSessions";
 import type { BuildRecord } from "@/lib/build";
 import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, type MadeWithState } from "@/lib/build/making";
 import {
   attachSession,
   getSessionPrompts,
   listBuildSessions,
-  listSessions,
   setSessionModel,
   type SessionPrompt,
   type SessionSummary,
@@ -84,11 +86,7 @@ export function useComposeSessions({
     enabled,
     staleTime: STALE_MS,
   });
-  const others = useQuery({
-    queryKey: ["build", "listSessions", false],
-    queryFn: () => listSessions({ includeAttached: false }),
-    staleTime: STALE_MS,
-  });
+  const others = useWaitingSessions();
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),
