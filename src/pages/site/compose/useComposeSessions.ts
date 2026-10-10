@@ -1,11 +1,18 @@
 /* UI-P48 — Your sessions and Made with, as the page runs them.
 
-   READS. The build's sessions (`listBuildSessions`, oldest first), the
-   sessions in no build (`useWaitingSessions`, shared with Drafts, and read
-   again on opening, on coming back to the tab and while open, because a
-   connector adds to it from outside the browser), a session's prompts once its
-   section is open (`getSessionPrompts`, read once: a session's conversation
-   does not change), and Made with (`getMadeWith`).
+   READS. The creator's whole session library (`useLibrarySessions`, newest
+   first: every session on the account, in this build, in another or in none,
+   read again on opening, on coming back to the tab and while open, because a
+   connector adds to it from outside the browser); the build's own sessions
+   (`listBuildSessions`, oldest first), which Made with is drawn from; a
+   session's prompts once its section is open (`getSessionPrompts`, read once: a
+   session's conversation does not change); and Made with (`getMadeWith`).
+
+   A SESSION IS THE ACCOUNT'S, NOT THE BUILD'S. Your sessions lists the library,
+   so using a session here never takes it off the panel of another build. A
+   prompt from any of them can be added. When the session was in no build yet,
+   adding one of its prompts also puts it into this draft (`claimForBuild`), as
+   the old "Not in a build yet" + did, so its tool and model join Made with.
 
    ONE MADE WITH WRITE AT A TIME. Ticking, typing a tool, adding a session and
    naming a model all rewrite `builds.made_with` (the last two through
@@ -19,7 +26,7 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { useWaitingSessions } from "@/hooks/useWaitingSessions";
+import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import type { BuildRecord } from "@/lib/build";
 import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, type MadeWithState } from "@/lib/build/making";
 import {
@@ -31,7 +38,7 @@ import {
   type SessionSummary,
 } from "@/lib/build/sessions";
 
-import { sessionAddedToast, type MadeWithChip } from "./composeModel";
+import type { MadeWithChip } from "./composeModel";
 
 const STALE_MS = 30_000;
 const NO_SESSIONS: SessionSummary[] = [];
@@ -41,22 +48,20 @@ export const sessionPromptsKey = (sessionId: string) => ["build", "getSessionPro
 export const madeWithKey = (buildId: string | undefined) => ["build", "getMadeWith", buildId] as const;
 
 export interface ComposeSessions {
+  /** This build's own sessions, oldest first: what Made with is drawn from. */
   sessions: SessionSummary[];
+  /** Every session on the account, newest first: what Your sessions lists. */
+  library: SessionSummary[];
+  /** The library's read. */
   status: "loading" | "error" | "ready";
   retry: () => void;
-  /** The sessions in no build, newest first; null until they have been read. */
-  others: SessionSummary[] | null;
-  /** Reading them failed and there is nothing to show. */
-  othersError: boolean;
-  retryOthers: () => void;
-  /** On its way into this build, until both lists have been read again. */
-  isAttaching: (sessionId: string) => boolean;
   setOpenIds: (ids: readonly string[]) => void;
   /** A session's prompts once read, and whether reading them failed. */
   promptsState: (sessionId: string) => { prompts: SessionPrompt[] | undefined; error: boolean };
   promptsOf: (sessionId: string) => SessionPrompt[] | undefined;
   retryPrompts: (sessionId: string) => void;
-  attach: (sessionId: string) => void;
+  /** A prompt of this session was added: a session in no build yet joins this draft. */
+  claimForBuild: (sessionId: string) => void;
   /** Resolves true once the model is saved. */
   setModel: (sessionId: string, model: string) => Promise<boolean>;
   madeWith: MadeWithState;
@@ -67,12 +72,15 @@ export interface ComposeSessions {
 export function useComposeSessions({
   buildId,
   owner,
+  canClaim,
   ensureBuild,
   recordMadeWith,
 }: {
   buildId: string | undefined;
   /** The record has loaded and is the signed-in creator's. */
   owner: boolean;
+  /** A draft, or a build not made yet: it can take a new session. False once published. */
+  canClaim: boolean;
   ensureBuild: () => Promise<string>;
   /** `builds.made_with` as the record holds it: what Made with shows before its own read lands. */
   recordMadeWith: readonly string[];
@@ -86,7 +94,7 @@ export function useComposeSessions({
     enabled,
     staleTime: STALE_MS,
   });
-  const others = useWaitingSessions();
+  const library = useLibrarySessions();
   const madeWithQuery = useQuery({
     queryKey: madeWithKey(buildId),
     queryFn: () => getMadeWith(buildId as string),
@@ -191,44 +199,37 @@ export function useComposeSessions({
   const refreshLists = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }),
+      queryClient.invalidateQueries({ queryKey: librarySessionsKey }),
       queryClient.invalidateQueries({ queryKey: ["build", "listSessions"] }),
       queryClient.invalidateQueries({ queryKey: ["build", "listDraftsWithSessions"] }),
     ]);
 
-  /**
-   * Sessions on their way into this build. A row stays in this set until both
-   * lists have been read again, so its + cannot be pressed a second time in the
-   * moment between the claim and the row leaving "Not in a build yet".
-   */
-  const [attaching, setAttaching] = useState<ReadonlySet<string>>(new Set());
-  const attachingRef = useRef(attaching);
-  const markAttaching = (sessionId: string, on: boolean) => {
-    const next = new Set(attachingRef.current);
-    if (on) next.add(sessionId);
-    else next.delete(sessionId);
-    attachingRef.current = next;
-    setAttaching(next);
-  };
+  /** Sessions on their way into this draft, so a second prompt from one cannot claim it twice. */
+  const claiming = useRef(new Set<string>());
 
-  const attach = (sessionId: string) => {
-    if (attachingRef.current.has(sessionId)) return;
-    markAttaching(sessionId, true);
-    const session = (others.data ?? []).find((candidate) => candidate.id === sessionId) ?? null;
+  /**
+   * Put a session that is in no build yet into this draft, once one of its
+   * prompts is added. A session already in a build (this one or another), or
+   * marked expired, is left as it is: its prompt is added all the same, and it
+   * stays in the library. A published build takes no new sessions. The prompt
+   * is already added whatever happens here, so a failure is logged, not shown.
+   */
+  const claimForBuild = (sessionId: string) => {
+    if (!canClaim || claiming.current.has(sessionId)) return;
+    const session = (library.data ?? []).find((candidate) => candidate.id === sessionId);
+    if (!session || session.status !== "parsed" || session.buildId) return;
+    claiming.current.add(sessionId);
     enqueue(async () => {
       const id = await latest.current.ensureBuild();
       await attachSession(sessionId, { kind: "existing", buildId: id });
       const state = await getMadeWith(id).catch(() => null);
-      return { id, state, value: state };
+      return { id, state, value: undefined };
     })
-      .then((state) => toast(sessionAddedToast(session ?? { modelName: null, client: null }, state?.excluded ?? [])))
-      .catch((cause) => {
-        console.error("[Compose] attachSession failed", cause);
-        toast.error("Couldn't add that session. Try again.");
-      })
+      .catch((cause) => console.error("[Compose] session not put into this build", cause))
       .finally(() =>
         refreshLists()
           .catch(() => undefined)
-          .then(() => markAttaching(sessionId, false)),
+          .then(() => claiming.current.delete(sessionId)),
       );
   };
 
@@ -244,23 +245,24 @@ export function useComposeSessions({
         toast.error("Couldn't save that model. Try again.");
         return false;
       })
-      .finally(() => void queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] }));
+      .finally(() => {
+        void queryClient.invalidateQueries({ queryKey: ["build", "listBuildSessions"] });
+        void queryClient.invalidateQueries({ queryKey: librarySessionsKey });
+      });
 
-  const status: ComposeSessions["status"] = !enabled ? (buildId ? "loading" : "ready") : buildSessions.isError ? "error" : buildSessions.isPending ? "loading" : "ready";
+  // A re-read that fails keeps the list already on screen; the error is for one that never loaded.
+  const status: ComposeSessions["status"] = library.data !== undefined ? "ready" : library.isError ? "error" : "loading";
 
   return {
     sessions: buildSessions.data ?? NO_SESSIONS,
+    library: library.data ?? NO_SESSIONS,
     status,
-    retry: () => void buildSessions.refetch(),
-    others: others.data ?? null,
-    othersError: others.isError && others.data === undefined,
-    retryOthers: () => void others.refetch(),
-    isAttaching: (sessionId) => attaching.has(sessionId),
+    retry: () => void library.refetch(),
     setOpenIds,
     promptsState,
     promptsOf,
     retryPrompts: (sessionId) => void queryClient.refetchQueries({ queryKey: sessionPromptsKey(sessionId) }),
-    attach,
+    claimForBuild,
     setModel,
     madeWith: madeWithQuery.data ?? { madeWith: [...recordMadeWith], excluded: [] },
     toggleMadeWith,

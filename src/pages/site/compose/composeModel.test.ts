@@ -4,7 +4,6 @@ import type { BuildNode, NodeTree } from "@/lib/build/types";
 
 import {
   addPromptLabel,
-  addSessionLabel,
   addedToast,
   applyNodeWrites,
   madeWithChips,
@@ -17,7 +16,6 @@ import {
   promptSourceLine,
   publishToast,
   saveState,
-  sessionAddedToast,
   UNTITLED,
 } from "./composeModel";
 
@@ -113,29 +111,11 @@ describe("the prompts' words", () => {
     expect(addedToast(3)).toBe("Added as prompt 3.");
   });
 
-  it("labels a waiting session's + with its first prompt, 60 characters on one line", () => {
-    const text = "Build me a script that renames photos by the date they were taken.\nKeep the original name in brackets.";
-    expect(addSessionLabel(text)).toBe("Add to this build: Build me a script that renames photos by the date they were");
-    expect(addSessionLabel("  Short.  ")).toBe("Add to this build: Short.");
-  });
-
   it("carries an import and an ordinal through a drag, and nothing else", () => {
     expect(parsePromptDragData(promptDragData(IMPORT_1, 4))).toEqual({ importId: IMPORT_1, ordinal: 4 });
     expect(parsePromptDragData("https://example.com:443")).toBeNull();
     expect(parsePromptDragData("some text the maker selected")).toBeNull();
     expect(parsePromptDragData("")).toBeNull();
-  });
-});
-
-describe("the session added toast", () => {
-  it("names the model the refresh put under Made with", () => {
-    expect(sessionAddedToast({ modelName: "Sonnet 5.5", client: "claude-code" }, [])).toBe("Session added. Sonnet 5.5 is now under Made with.");
-  });
-
-  it("names the tool when the model is left out or not known, and nothing when neither is", () => {
-    expect(sessionAddedToast({ modelName: "Sonnet 5.5", client: "claude-code" }, ["sonnet 5.5"])).toBe("Session added. Claude Code is now under Made with.");
-    expect(sessionAddedToast({ modelName: null, client: "cursor" }, [])).toBe("Session added. Cursor is now under Made with.");
-    expect(sessionAddedToast({ modelName: null, client: "web" }, [])).toBe("Session added.");
   });
 });
 

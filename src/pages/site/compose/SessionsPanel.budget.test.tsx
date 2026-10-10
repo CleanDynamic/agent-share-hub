@@ -1,11 +1,11 @@
 // The composer's Your sessions panel: its choice budgets, counted in the rendered
 // panel ⟦hicks-law › Enforcing It in the Code⟧.
 //
-// Every session a connector stored is listed here, beside the build's own, so
-// the list must not swamp the panel: at most six rows under "Not in a build
-// yet", then one "Show N more" in place. Each listed session has exactly one way
-// in, its +, and there is no second route to the same sessions (the "+ Add a
-// session" menu it replaced). The panel has no filled button.
+// Every session on the account is listed here, so the list must not swamp the
+// panel: at most six sessions, then one "Show N more" in place. There is no
+// second route to the same sessions (the "+ Add a session" menu, then the "Not
+// in a build yet" rows, which this list replaced). The panel has no filled
+// button.
 
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { COMPOSE_SESSIONS } from "@/dev/fixtures/compose";
 
-import { SessionsPanel, type ComposeOtherSession, type SessionsPanelProps } from "./SessionsPanel";
+import { SessionsPanel, type ComposeSession, type SessionsPanelProps } from "./SessionsPanel";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -24,12 +24,15 @@ beforeEach(() => {
   }));
 });
 
-const waiting = (n: number): ComposeOtherSession[] =>
+const library = (n: number): ComposeSession[] =>
   Array.from({ length: n }, (_, at) => ({
-    id: `waiting-${at + 1}`,
-    firstPrompt: `Waiting prompt ${at + 1}`,
-    meta: "Claude · Yesterday",
-    adding: false,
+    id: `library-${n - at}`,
+    number: n - at,
+    label: "Claude",
+    modelKnown: true,
+    date: "Yesterday",
+    prompts: [],
+    promptsError: false,
   }));
 
 function panel(over: Partial<SessionsPanelProps> = {}) {
@@ -39,16 +42,11 @@ function panel(over: Partial<SessionsPanelProps> = {}) {
     sticky: false,
     status: "ready",
     onRetry: vi.fn(),
-    sessions: COMPOSE_SESSIONS,
+    sessions: [...COMPOSE_SESSIONS, ...library(7)],
     onOpenChange: vi.fn(),
     onRetryPrompts: vi.fn(),
     onAdd: vi.fn(),
     onSetModel: vi.fn(),
-    others: waiting(9),
-    othersError: false,
-    onRetryOthers: vi.fn(),
-    canAttach: true,
-    onAttach: vi.fn(),
     ...over,
   };
   render(
@@ -59,19 +57,19 @@ function panel(over: Partial<SessionsPanelProps> = {}) {
 }
 
 describe("Your sessions' choice budgets", () => {
-  it.each([false, true])("shows at most six sessions not in a build, then one More (phone: %s)", (phone) => {
+  it.each([false, true])("shows at most six sessions, then one More (phone: %s)", (phone) => {
     panel({ phone, fine: !phone });
-    const group = screen.getByRole("region", { name: "Not in a build yet" });
-    expect(within(group).getAllByTestId("waiting-session").length).toBeLessThanOrEqual(6);
-    expect(within(group).getAllByRole("button", { name: /^Show \d+ more$/ })).toHaveLength(1);
+    const listed = screen.getByTestId("compose-sessions");
+    expect(within(listed).getAllByTestId("compose-session").length).toBeLessThanOrEqual(6);
+    expect(within(listed).getAllByRole("button", { name: /^Show \d+ more$/ })).toHaveLength(1);
   });
 
-  it("gives each listed session exactly one control, and no second way to the same sessions", () => {
+  it("gives each session one head to open it, and no second way to the same sessions", () => {
     panel();
-    for (const row of screen.getAllByTestId("waiting-session")) {
-      const controls = [...within(row).queryAllByRole("link"), ...within(row).queryAllByRole("button")];
-      expect(controls).toHaveLength(1);
+    for (const section of screen.getAllByTestId("compose-session")) {
+      expect(within(section).getAllByRole("button", { name: /^Session \d/ })).toHaveLength(1);
     }
+    expect(screen.queryByTestId("waiting-session")).toBeNull();
     expect(screen.queryByRole("button", { name: /Add a session/ })).toBeNull();
     expect(screen.queryByRole("menu")).toBeNull();
   });

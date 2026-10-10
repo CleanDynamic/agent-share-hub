@@ -192,25 +192,6 @@ export function applyNodeWrites(tree: NodeTree[], writes: ReadonlyMap<string, Bu
   return next.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
-/* ── UI-P48: Your sessions ── */
-
-/** "Sonnet 5.5 · Today": the model (or the client), then the day. */
-export function sessionMetaLine(session: Pick<SessionSummary, "modelName" | "client" | "createdAt">, now: number): string {
-  return [sessionSource(session), sessionDate(session.createdAt, now)].filter(Boolean).join(" · ");
-}
-
-/** "Add to this build: {first 60 characters}", the + on a session not in a build yet. */
-export function addSessionLabel(firstPrompt: string): string {
-  return `Add to this build: ${firstPrompt.replace(/\s+/g, " ").trim().slice(0, ADD_PROMPT_LABEL_MAX).trimEnd()}`;
-}
-
-/** "Session added. Sonnet 5.5 is now under Made with.", naming what the refresh really added. */
-export function sessionAddedToast(session: Pick<SessionSummary, "modelName" | "client">, excluded: readonly string[]): string {
-  const model = session.modelName && !excluded.some((name) => name.toLowerCase() === session.modelName?.toLowerCase()) ? session.modelName : null;
-  const named = model ?? toolLabel(session.client);
-  return named ? `Session added. ${named} is now under Made with.` : "Session added.";
-}
-
 /* ── UI-P48: Made with ── */
 
 export interface MadeWithChip {

@@ -71,14 +71,17 @@ export function useComposePrompts({
   ensureBuild,
   sessions,
   sessionPrompts,
+  onSessionUsed,
 }: {
   buildId: string | undefined;
   nodes: ComposeNodes;
   ensureBuild: () => Promise<string>;
-  /** The build's sessions, oldest first. */
+  /** The sessions a prompt can come from (the creator's library), oldest first, as Your sessions numbers them. */
   sessions: readonly SessionSummary[];
   /** A session's prompts, once read. */
   sessionPrompts: (sessionId: string) => readonly SessionPrompt[] | undefined;
+  /** A prompt from this session was just added to the build. */
+  onSessionUsed?: (sessionId: string) => void;
 }): ComposePrompts {
   const [texts, setTexts] = useState<Record<string, string>>({});
   const textsRef = useRef(texts);
@@ -272,7 +275,9 @@ export function useComposePrompts({
         return promptNodes(nodes.current()).findIndex((candidate) => candidate.id === node.id) + 1;
       })
       .then((n) => {
-        if (n) toast(addedToast(n));
+        if (!n) return;
+        toast(addedToast(n));
+        onSessionUsed?.(sessionId);
       })
       .catch(failed("Couldn't add that prompt. Try again."))
       .finally(() => {

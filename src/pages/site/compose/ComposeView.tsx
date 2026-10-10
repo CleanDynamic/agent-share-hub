@@ -49,11 +49,11 @@ import { DESCRIPTION_MAX, isUntitled, SAVE_WORDS, UNTITLED, type MadeWithChip, t
 import { MadeWithLine } from "./MadeWithLine";
 import { MoreDetails, type ComposeDetailKey, type ComposeDetails } from "./MoreDetails";
 import { PromptsPanel, type ComposePromptRow, type PromptFocus } from "./PromptsPanel";
-import { SessionsPanel, type ComposeOtherSession, type ComposeSession } from "./SessionsPanel";
+import { SessionsPanel, type ComposeSession } from "./SessionsPanel";
 
 export type { ComposeDetailKey, ComposeDetails } from "./MoreDetails";
 export type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
-export type { ComposeOtherSession, ComposeSession, ComposeSessionPrompt } from "./SessionsPanel";
+export type { ComposeSession, ComposeSessionPrompt } from "./SessionsPanel";
 
 /* ── the view's props ── */
 
@@ -124,20 +124,13 @@ export interface ComposeViewProps {
   /* ── UI-P48: Your sessions ── */
   sessionsStatus: "loading" | "error" | "ready";
   onRetrySessions: () => void;
+  /** Every session on the account, newest first: the library, not this build's alone. */
   sessions: readonly ComposeSession[];
   /** Which sections are open: the page loads their prompts. */
   onSessionsOpen: (ids: readonly string[]) => void;
   onRetrySessionPrompts: (sessionId: string) => void;
   onAddSessionPrompt: (sessionId: string, ordinal: number) => void;
   onSetSessionModel: (sessionId: string, model: string) => void;
-  /** The sessions in no build, listed under "Not in a build yet"; null until they have been read. */
-  otherSessions: readonly ComposeOtherSession[] | null;
-  /** Reading them failed and there is nothing to show. */
-  otherSessionsError: boolean;
-  onRetryOtherSessions: () => void;
-  /** False once the build is published: a claim only adds to drafts. */
-  canAttachSessions: boolean;
-  onAttachSession: (sessionId: string) => void;
 
   /* ── UI-P48: Made with ── */
   madeWith: readonly MadeWithChip[];
@@ -530,18 +523,13 @@ export function ComposeView(props: ComposeViewProps) {
       onRetryPrompts={props.onRetrySessionPrompts}
       onAdd={props.onAddSessionPrompt}
       onSetModel={props.onSetSessionModel}
-      others={props.otherSessions}
-      othersError={props.otherSessionsError}
-      onRetryOthers={props.onRetryOtherSessions}
-      canAttach={props.canAttachSessions}
-      onAttach={props.onAttachSession}
     />
   );
   const madeWithLine = (
     <MadeWithLine
       phone={phone}
       chips={props.madeWith}
-      hasSessions={props.sessions.length > 0}
+      hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")}
       onToggle={props.onToggleMadeWith}
       onAdd={props.onAddMadeWith}
     />

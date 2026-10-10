@@ -3,9 +3,9 @@
    DEV ONLY (imported from `src/pages/dev/**` and `src/dev/**`, and by the view's
    unit test). There is no board for this page, so the values are the prompts'
    own: a titled draft with a description and an audience, and no cover; two
-   sessions (Claude Code on Sonnet 5.5 today, Claude on Opus 5.5 yesterday), of
-   whose prompts three are already added — session 1's first and third, and
-   session 2's first. */
+   sessions in the library, newest first (Claude on Opus 5.5 today, session 2;
+   Claude Code on Sonnet 5.5 yesterday, session 1), of whose prompts three are
+   already added — session 1's first and third, and session 2's first. */
 
 import type { DesignState } from "@/dev/useDesignTheme";
 import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
@@ -34,9 +34,10 @@ const ADDED: Record<string, readonly number[]> = { [SESSION_1]: [1, 3], [SESSION
 const sessionPrompts = (id: string, texts: readonly string[]) =>
   texts.map((text, index) => ({ ordinal: index + 1, text, added: ADDED[id]?.includes(index + 1) ?? false }));
 
+/** Newest first, as the library lists them; numbered oldest first. */
 export const COMPOSE_SESSIONS: readonly ComposeSession[] = [
-  { id: SESSION_1, number: 1, label: "Sonnet 5.5", modelKnown: true, date: "Today", prompts: sessionPrompts(SESSION_1, PROMPTS_1), promptsError: false },
-  { id: SESSION_2, number: 2, label: "Opus 5.5", modelKnown: true, date: "Yesterday", prompts: sessionPrompts(SESSION_2, PROMPTS_2), promptsError: false },
+  { id: SESSION_2, number: 2, label: "Opus 5.5", modelKnown: true, date: "Today", prompts: sessionPrompts(SESSION_2, PROMPTS_2), promptsError: false },
+  { id: SESSION_1, number: 1, label: "Sonnet 5.5", modelKnown: true, date: "Yesterday", prompts: sessionPrompts(SESSION_1, PROMPTS_1), promptsError: false },
 ];
 
 export function composeViewProps(state: DesignState = "populated"): ComposeViewProps {
@@ -86,11 +87,6 @@ export function composeViewProps(state: DesignState = "populated"): ComposeViewP
     onRetrySessionPrompts: noop,
     onAddSessionPrompt: noop,
     onSetSessionModel: noop,
-    otherSessions: [],
-    otherSessionsError: false,
-    onRetryOtherSessions: noop,
-    canAttachSessions: true,
-    onAttachSession: noop,
 
     madeWith: empty
       ? []

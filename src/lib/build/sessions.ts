@@ -30,6 +30,9 @@ const MODEL_MAX = 64;
 
 const DEFAULT_LIST_LIMIT = 50;
 
+/** The composer's Your sessions: a creator's whole library. A ceiling, not a page. */
+const LIBRARY_LIMIT = 100;
+
 /** More sessions than one build can plausibly be made from. A ceiling, not a page. */
 const BUILD_SESSIONS_LIMIT = 100;
 
@@ -37,6 +40,7 @@ const UNTITLED = "Untitled build";
 
 const STATUS_PARSED = "parsed";
 const STATUS_CLAIMED = "claimed";
+const STATUS_EXPIRED = "expired";
 
 export interface SessionSummary {
   id: string;
@@ -53,6 +57,8 @@ export interface SessionSummary {
   turnCount: number;
   createdAt: string;
   buildId: string | null;
+  /** parsed | claimed | expired, when the read asked for it (listLibrarySessions does). */
+  status?: string | null;
 }
 
 export interface SessionPrompt {
@@ -88,6 +94,7 @@ interface SessionRow {
   first_prompt: unknown;
   user_turns: unknown;
   assistant_turns: unknown;
+  status?: string | null;
 }
 
 interface StatusRow {
@@ -106,6 +113,7 @@ interface Query<Row> extends PromiseLike<{ data: Row[] | null; error: unknown }>
   select: (columns: string) => Query<Row>;
   eq: (column: string, value: string) => Query<Row>;
   in: (column: string, values: string[]) => Query<Row>;
+  not: (column: string, operator: string, value: null) => Query<Row>;
   order: (column: string, options: { ascending: boolean }) => Query<Row>;
   limit: (count: number) => Query<Row>;
   maybeSingle: () => PromiseLike<{ data: Row | null; error: unknown }>;
@@ -139,6 +147,7 @@ function toSummary(row: SessionRow): SessionSummary {
     turnCount: user + asCount(row.assistant_turns),
     createdAt: row.created_at,
     buildId: row.build_id ?? null,
+    ...(typeof row.status === "string" ? { status: row.status } : null),
   };
 }
 
@@ -158,6 +167,27 @@ export async function listSessions({
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw buildLayerError("listSessions", error);
+  return (data ?? []).map(toSummary);
+}
+
+/**
+ * Every session the signed-in creator can still use, newest first: the
+ * composer's Your sessions. A session is the creator's, not a build's, so this
+ * is not filtered by build: it holds the ones waiting (`parsed`), the ones
+ * already in a build, this one or another (`claimed`), and the ones marked
+ * `expired`. Its prompts are read from `proposal`, which no status change
+ * clears, so an expired session is as usable as the others. A row with no
+ * proposal never finished parsing (or failed, or was a duplicate) and has no
+ * prompts to offer, so it is left out.
+ */
+export async function listLibrarySessions({ limit = LIBRARY_LIMIT }: { limit?: number } = {}): Promise<SessionSummary[]> {
+  const { data, error } = await sessionsTable()
+    .select<SessionRow>(`${SESSION_COLUMNS}, status`)
+    .in("status", [STATUS_PARSED, STATUS_CLAIMED, STATUS_EXPIRED])
+    .not("proposal", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw buildLayerError("listLibrarySessions", error);
   return (data ?? []).map(toSummary);
 }
 

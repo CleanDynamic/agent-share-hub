@@ -14,7 +14,7 @@ interface Call {
 
 function chain(result: { data?: unknown; error?: unknown; count?: number | null }, calls: Call[]) {
   const builder: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "in", "order", "limit", "update"]) {
+  for (const method of ["select", "eq", "in", "not", "order", "limit", "update"]) {
     builder[method] = (...args: unknown[]) => {
       calls.push({ method, args });
       return builder;
@@ -60,6 +60,7 @@ import {
   countDraftBuilds,
   getSessionPrompts,
   listBuildSessions,
+  listLibrarySessions,
   listSessions,
   removeSession,
   setSessionModel,
@@ -211,6 +212,33 @@ describe("listSessions", () => {
     expect(await listSessions()).toEqual([]);
     answer({ error: { message: "boom" } });
     await expect(listSessions()).rejects.toThrow(/listSessions/);
+  });
+});
+
+describe("listLibrarySessions", () => {
+  it("asks for every usable session on the account, in any build or none, newest first", async () => {
+    answer({ data: [row({ status: "claimed", build_id: BUILD_ID }), row({ status: "expired" })] });
+    const sessions = await listLibrarySessions();
+
+    expect(callOf("from")?.args).toEqual(["import_sessions"]);
+    const columns = callOf("select")?.args[0] as string;
+    expect(columns).not.toContain("*");
+    expect(columns).toContain("status");
+    expect(callOf("in")?.args).toEqual(["status", ["parsed", "claimed", "expired"]]);
+    expect(callOf("not")?.args).toEqual(["proposal", "is", null]);
+    expect(callOf("order")?.args).toEqual(["created_at", { ascending: false }]);
+    expect(callOf("limit")?.args).toEqual([100]);
+    // Not narrowed to one build: no build_id filter at all.
+    expect(calls.filter((c) => c.method === "eq")).toEqual([]);
+    expect(sessions.map((s) => [s.status, s.buildId])).toEqual([
+      ["claimed", BUILD_ID],
+      ["expired", null],
+    ]);
+  });
+
+  it("throws on a read error rather than listing nothing", async () => {
+    answer({ error: { message: "boom" } });
+    await expect(listLibrarySessions()).rejects.toThrow();
   });
 });
 
