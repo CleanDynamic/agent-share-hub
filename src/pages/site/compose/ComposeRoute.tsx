@@ -17,6 +17,11 @@
    THE CHECK READS THE QUERY THE COMPOSER LOADS ANYWAY (`composeBuildQueryKey`),
    so choosing the screen costs no second request.
 
+   ITS IMPORTS STAY NARROW. App.tsx imports this file eagerly, so it names the
+   modules it needs (the key, `getBuild` from builds.ts) rather than
+   `useComposeBuild` or the `@/lib/build` barrel, either of which put the whole
+   build layer into every visitor's first download.
+
    SIGNED OUT goes to /login, as the old screens do. */
 
 import { lazy, Suspense, useState, type ReactNode } from "react";
@@ -25,8 +30,9 @@ import { Navigate, useLocation, useParams } from "react-router-dom";
 
 import { SiteFrame } from "@/components/shell/SiteFrame";
 import { useAuth } from "@/contexts/AuthContext";
-import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { getBuild, type BuildRecord } from "@/lib/build";
+import { composeBuildQueryKey } from "@/hooks/composeBuildQueryKey";
+import { getBuild } from "@/lib/build/builds";
+import type { BuildRecord } from "@/lib/build/types";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));

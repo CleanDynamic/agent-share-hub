@@ -34,6 +34,7 @@ import type {
   NodeTree,
   NodeType,
 } from "@/lib/build";
+import { composeBuildQueryKey } from "./composeBuildQueryKey";
 
 /** Quiet enough that a sentence of typing is one write, short enough that the
  *  indicator settles while the creator is still looking at the field. */
@@ -46,9 +47,7 @@ const NO_TRAY: BuildNode[] = [];
 const NO_EVENTS: BuildEvent[] = [];
 const NO_NODE_TYPES: NodeType[] = [];
 
-export function composeBuildQueryKey(buildId: string | undefined) {
-  return ["compose-build", buildId] as const;
-}
+export { composeBuildQueryKey };
 
 export interface ComposeBuild {
   build: Build | null;
