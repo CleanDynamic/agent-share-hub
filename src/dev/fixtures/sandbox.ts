@@ -10,6 +10,7 @@ import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
 import type { SandboxViewProps } from "@/pages/site/compose/SandboxView";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
+import type { BuildMapProps } from "@/pages/site/compose/BuildMap";
 import type { DetailsPanelProps, DetailsView } from "@/pages/site/compose/DetailsPanel";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import type { SourcesPanelProps } from "@/pages/site/compose/SourcesPanel";
@@ -121,6 +122,18 @@ const step = (over: Partial<Step> & Pick<Step, "id" | "number" | "text">): Step 
 const FOX_TEXT = "A fox standing in a snowy wood at dusk, poster layout, a wide title across the top, soft grain, muted blues and one warm orange accent on the fox.";
 const BRIEF = "Write the homepage copy for a neighbourhood bakery called Plum & Rye: warm, short sentences, opening hours, a menu of six items, and a line about the sourdough that has been going since 2014. Keep every section under sixty words and finish with one clear way to order.";
 
+/** The sessions of each build, as `sessionGroups` would give them. */
+export function sandboxGroups(which: SandboxFixture = "fox"): SessionGroup[] {
+  const fox = which === "fox";
+  return fox
+    ? [{ sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1"] }]
+    : [
+        { sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"] },
+        { sessionId: "s2", number: 2, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-03-04T10:00:00", stepNumbers: ["3"] },
+        { sessionId: null, number: 3, tool: "ChatGPT", model: null, startedAt: "typed here", stepNumbers: ["4"] },
+      ];
+}
+
 /** The List's rows for each build: the fox poster's one card, the bakery's sessions, an agent, a team and a result. */
 export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps {
   const fox = which === "fox";
@@ -142,13 +155,7 @@ export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps 
           children: [step({ id: "a5:instructions", number: "5.1", defaultTitle: "Instructions", text: "Check the menu and reply with any item that has no price." })],
         }),
       ];
-  const groups: SessionGroup[] = fox
-    ? [{ sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1"] }]
-    : [
-        { sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"] },
-        { sessionId: "s2", number: 2, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-03-04T10:00:00", stepNumbers: ["3"] },
-        { sessionId: null, number: 3, tool: "ChatGPT", model: null, startedAt: "typed here", stepNumbers: ["4"] },
-      ];
+  const groups = sandboxGroups(which);
   return {
     phone: false,
     steps,
@@ -217,4 +224,45 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
     result: { kind: "result", id: "r1", summary: fox ? "fox-poster.png" : "The finished homepage", url: fox ? "" : "https://plumandrye.example", pictures: fox ? [{ id: "m1", name: "fox-poster.png" }] : [] },
   };
   return { phone: false, view: views[kind], ...handlers };
+}
+
+export type SandboxMapFixture = SandboxFixture | "big";
+
+/** The Map for each build; `big` is 60 steps over six sessions, for the long-task measurement. */
+export function sandboxMapProps(which: SandboxMapFixture = "fox"): BuildMapProps {
+  const base = {
+    suggestions: [],
+    onSelect: noop,
+    onClear: noop,
+    onConnect: noop,
+  };
+  if (which === "big") {
+    const steps: Step[] = Array.from({ length: 60 }, (_, at) =>
+      step({ id: `b${at}`, number: String(at + 1), sessionId: `s${at % 6}`, text: "Write the next part of the page, keeping the voice of the earlier parts.", model: "opus-5-5", uses: at > 0 ? [{ kind: "output", node_id: `b${at - 1}` }] : [] }),
+    );
+    const groups: SessionGroup[] = Array.from({ length: 6 }, (_, at) => ({
+      sessionId: `s${at}`,
+      number: at + 1,
+      tool: "Claude",
+      model: "Opus 5.5",
+      startedAt: `2026-03-0${at + 1}T10:00:00`,
+      stepNumbers: steps.filter((candidate) => candidate.sessionId === `s${at}`).map((candidate) => candidate.number),
+    }));
+    return { ...base, steps, groups, files: [], tools: [], results: [{ id: "r1", title: "The finished site", fromId: "b59" }], selectedId: "b30" };
+  }
+  const list = sandboxListProps(which);
+  const fox = which === "fox";
+  return {
+    ...base,
+    steps: list.steps,
+    groups: sandboxGroups(which),
+    files: fox ? [] : [{ id: "f1", name: "menu.pdf" }],
+    tools: fox ? [] : [{ id: "t1", name: "Gmail" }],
+    results: [{ id: "r1", title: list.results[0].title, fromId: fox ? "p1" : "a5" }],
+    suggestions: fox ? [] : [{ stepId: "p4", use: { kind: "output", node_id: "p1" }, label: "Output of 1" }],
+    selectedId: fox ? "p1" : "p3",
+    onSelect: noop,
+    onClear: noop,
+    onConnect: noop,
+  };
 }

@@ -19,11 +19,12 @@
    two buttons in its head. In Map, Sources folds to a 56px rail. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, PanelLeft } from "lucide-react";
+import { ChevronDown, FileText, Layers, PanelLeftOpen, Plus, X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
+import { IconButton } from "@/components/brand/IconButton";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { Panel } from "@/components/brand/Panel";
 import { Segmented } from "@/components/brand/Segmented";
@@ -292,21 +293,87 @@ function PanelTitle({ children }: { children: ReactNode }) {
 
 const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
 
-function SourcesFrame({ rail, titled, children }: { rail: boolean; titled: boolean; children: ReactNode }) {
-  if (rail) {
-    return (
-      <Panel surface="flat" padding="16px 0" style={{ display: "flex", justifyContent: "center" }}>
-        <PanelLeft size={18} strokeWidth={1.6} color="var(--text2)" aria-label="Sources" role="img" />
-      </Panel>
-    );
-  }
+/** One 44-wide button of the Sources rail: an icon, and a count when it has one. */
+function RailButton({ icon: Icon, label, count, onClick }: { icon: typeof Plus; label: string; count?: number; onClick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      {...handlers}
+      style={{ width: 44, minHeight: 44, padding: "4px 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: 0, borderRadius: r.control, background: "transparent", color: t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+    >
+      <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
+      {typeof count === "number" ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{count}</span> : null}
+    </button>
+  );
+}
+
+/**
+ * In Map the Sources column is a 56px rail of 44-wide buttons: show sources,
+ * sessions and files with their counts, and add a source, with hairlines
+ * between the groups. Any of them puts the full panel back over the map's left
+ * side until it is closed.
+ */
+function SourcesFrame({
+  rail,
+  titled,
+  counts,
+  open,
+  onOpen,
+  onClose,
+  children,
+}: {
+  rail: boolean;
+  titled: boolean;
+  counts: SandboxCounts;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const full = (
     <section aria-label="Sources" style={{ minWidth: 0 }}>
       <Panel surface="flat" padding="16px">
-        {titled ? <PanelTitle>Sources</PanelTitle> : null}
-        <div style={{ marginTop: titled ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          {titled ? <PanelTitle>Sources</PanelTitle> : <span />}
+          {rail ? <IconButton icon={X} label="Close sources" size={30} onClick={onClose} /> : null}
+        </div>
+        <div style={{ marginTop: titled || rail ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
       </Panel>
     </section>
+  );
+  if (!rail) return full;
+  const hairline: CSSProperties = { width: 32, height: 1, background: t.hairline, margin: "4px 0" };
+  return (
+    <>
+      <div data-testid="sources-rail" role="toolbar" aria-label="Sources" aria-orientation="vertical" style={{ minWidth: 0 }}>
+        <Panel surface="flat" padding="8px 0" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <RailButton icon={PanelLeftOpen} label="Show sources" onClick={onOpen} />
+          <span aria-hidden="true" style={hairline} />
+          <RailButton icon={Layers} label="Sessions" count={counts.sessions} onClick={onOpen} />
+          <RailButton icon={FileText} label="Files" count={counts.files} onClick={onOpen} />
+          <span aria-hidden="true" style={hairline} />
+          <RailButton icon={Plus} label="Add a source" onClick={onOpen} />
+        </Panel>
+      </div>
+      {open ? (
+        <div
+          data-testid="sources-overlay"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              onClose();
+            }
+          }}
+          style={{ position: "absolute", left: 0, top: 0, width: 250, zIndex: 20, boxShadow: t.shadowFloat, borderRadius: r.panel }}
+        >
+          {full}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -375,6 +442,8 @@ export function SandboxView(props: SandboxViewProps) {
   const [cardField, setCardField] = useState<CardField | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  /** Map: the Sources rail has been opened out over the map. */
+  const [railOpen, setRailOpen] = useState(false);
   const buildRef = useRef<HTMLElement>(null);
 
   if (status === "loading") return <Skeletons phone={phone} />;
@@ -611,8 +680,10 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       </div>
       {banner}
-      <div style={{ display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
-        <SourcesFrame rail={rail} titled={!props.sources}>{sourcesBody}</SourcesFrame>
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
+        <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
+          {sourcesBody}
+        </SourcesFrame>
         {buildPanel}
         {detailsPanel}
       </div>

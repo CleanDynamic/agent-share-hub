@@ -37,8 +37,10 @@ import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView
 import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { BuildMap } from "./BuildMap";
 import { DetailsPanel } from "./DetailsPanel";
-import { resolveView, type MediaFacts } from "./detailsView";
+import { pieces, resolveView, type MediaFacts } from "./detailsView";
+import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { SourcesPanel } from "./SourcesPanel";
 import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
@@ -86,6 +88,7 @@ export function SandboxPage() {
   const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
   // Suggestions arrive with UI-P71; until then there are none.
   const suggestions: ListSuggestion[] = useMemo(() => [], []);
+  const mapSuggestions: MapSuggestion[] = useMemo(() => [], []);
 
   const listFacts = useMemo(() => {
     const names: Record<string, string> = {};
@@ -110,6 +113,18 @@ export function SandboxPage() {
     }
     return { names, intoResult, results };
   }, [tree, steps]);
+  const mapPieces = useMemo(() => pieces(tree, []), [tree]);
+  const mapResults = useMemo<MapResult[]>(
+    () =>
+      tree
+        .filter((node) => node.type === RESULT_TYPE && node.parent_id === null)
+        .map((node) => {
+          const payload = (node.payload ?? {}) as Record<string, unknown>;
+          const text = (key: string) => (typeof payload[key] === "string" && (payload[key] as string).trim() ? (payload[key] as string) : null);
+          return { id: node.id, title: text("summary") ?? text("url") ?? "Result", fromId: usesOf(node).find((use) => use.kind === "output")?.node_id ?? null };
+        }),
+    [tree],
+  );
   const dividerRows = useMemo(() => dividers(steps, groups), [steps, groups]);
 
   /* ── Sources ── */
@@ -330,6 +345,24 @@ export function SandboxPage() {
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => void addPiece("tool")}
         onAddResult={() => void addPiece("result")}
+        map={
+          <BuildMap
+            steps={steps}
+            groups={groups}
+            files={mapPieces.files}
+            tools={mapPieces.tools}
+            results={mapResults}
+            suggestions={mapSuggestions}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onClear={() => setSelectedId(null)}
+            onOpenPrompt={setOpenPromptId}
+            onConnect={(toId, use) => {
+              prompts.accept(toId, use, steps);
+              afterWrite();
+            }}
+          />
+        }
         selection={
           <DetailsPanel
             phone={phone}
