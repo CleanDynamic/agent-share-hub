@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
-import { deleteNode, type NodeTree } from "@/lib/build";
+import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 import {
   addSessionPrompt,
   addWrittenPrompt,
@@ -30,6 +30,7 @@ import {
   savePromptText,
   setPromptModel,
 } from "@/lib/build/composePrompts";
+import { addUse, dismissSuggestion, setStepTitle, type Step, type Use } from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
@@ -63,6 +64,14 @@ export interface ComposePrompts {
   relabel: (sessionId: string, model: string | null) => void;
   /** Write every pending edit now; resolves once the queue is empty. */
   flush: () => Promise<void>;
+  /** UI-P65: add a prompt the maker wrote, now, with the tool and model it names. Resolves true once it is saved. */
+  addNow: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
+  /** UI-P65: name a step ("" puts its default name back). */
+  rename: (id: string, title: string) => void;
+  /** UI-P65: take a suggested input. */
+  accept: (id: string, use: Use, steps: readonly Step[]) => void;
+  /** UI-P65: keep a suggestion from coming back; `key` is "<kind>:<node_id>". */
+  dismiss: (id: string, key: string) => void;
 }
 
 export function useComposePrompts({
@@ -307,6 +316,34 @@ export function useComposePrompts({
     }
   };
 
+  const addNow = ({ text, tool, model }: { text: string; tool: string | null; model: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model });
+        nodes.record(created.id, created);
+        return true;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that prompt. Try again.")(cause);
+        return false;
+      });
+
+  /** A write to one top-level step: read it as the queue left it, write, keep the result. */
+  const writeStep = (id: string, line: string, change: (node: BuildNode) => Promise<BuildNode>) =>
+    nodes
+      .run(async () => {
+        const node = findTop(nodes.current(), id);
+        if (node) nodes.record(node.id, await change(rowOf(node)));
+      })
+      .catch(failed(line));
+
+  const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename that. Try again.", (node) => setStepTitle(node, title));
+  const accept = (id: string, use: Use, steps: readonly Step[]) =>
+    void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps));
+  const dismiss = (id: string, key: string) =>
+    void writeStep(id, "Couldn't dismiss that. Try again.", (node) => dismissSuggestion(node, key));
+
   const rows = useMemo<ComposePromptRow[]>(() => {
     const saved = promptNodes(nodes.tree)
       .map((node) => ({ node, key: aliasOf.current.get(node.id) ?? node.id }))
@@ -318,5 +355,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss };
 }

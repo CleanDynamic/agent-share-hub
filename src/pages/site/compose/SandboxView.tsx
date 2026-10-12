@@ -82,7 +82,7 @@ export interface SandboxViewProps extends CardProps {
   mapHint: boolean;
   onUseResultPicture?: () => void;
 
-  /** Moves focus to the Build panel's add field, for the "a prompt" missing item. */
+  /** Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. */
   onAddPromptFocus?: () => void;
 
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
@@ -108,7 +108,7 @@ export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual"
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
-  { key: "prompt", name: "Prompt", line: "A message you sent", ready: false },
+  { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
   { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: false },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
@@ -129,7 +129,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession">;
+type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus">;
 
 const itemStyle = (enabled: boolean): CSSProperties => ({
   display: "flex",
@@ -166,7 +166,7 @@ function AddLabel({ name, line }: { name: string; line: string }) {
   );
 }
 
-function AddMenu({ onAddFile, addableSessions, onAddSession }: AddMenuProps) {
+function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus }: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -229,9 +229,10 @@ function AddMenu({ onAddFile, addableSessions, onAddSession }: AddMenuProps) {
                 </Menu.Sub>
               );
             }
-            const enabled = item.ready && (item.key !== "file" || Boolean(onAddFile));
+            const handler = item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : undefined;
+            const enabled = item.ready && (item.key !== "file" || Boolean(onAddFile)) && (item.key !== "prompt" || Boolean(onAddPromptFocus));
             return (
-              <Menu.Item key={item.key} disabled={!enabled} onSelect={item.key === "file" ? onAddFile : undefined} style={itemStyle(enabled)}>
+              <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
                 <AddLabel name={item.name} line={item.line} />
               </Menu.Item>
             );
@@ -494,7 +495,7 @@ export function SandboxView(props: SandboxViewProps) {
               </Button>
             </>
           ) : null}
-          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} />
+          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>

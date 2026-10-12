@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { SeoHead } from "@/components/SeoHead";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { addFile, buildSteps, FILE_TYPE, sessionGroups, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MakingSession } from "@/lib/build/making";
 import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
@@ -34,6 +34,8 @@ import { attachSession } from "@/lib/build/sessions";
 import { PUBLISH_WORDS } from "./composeModel";
 import { useComposePage } from "./ComposePage";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
+import { BuildList } from "./BuildList";
+import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { SourcesPanel } from "./SourcesPanel";
 import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
@@ -47,7 +49,7 @@ function makingSessions(making: unknown): MakingSession[] {
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
 export function SandboxPage() {
-  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions } = useComposePage();
+  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts } = useComposePage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const phone = useIsPhone();
@@ -74,6 +76,38 @@ export function SandboxPage() {
   }, [tree, made]);
 
   const mapAvailable = sessionCount >= 2 || hasAgent;
+
+  /* ── List (UI-P65) ── */
+
+  const [focusAdd, setFocusAdd] = useState(0);
+  const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
+  // Suggestions arrive with UI-P71; until then there are none.
+  const suggestions: ListSuggestion[] = useMemo(() => [], []);
+
+  const listFacts = useMemo(() => {
+    const names: Record<string, string> = {};
+    const intoResult = new Set<string>();
+    const results: ListResult[] = [];
+    const numberOf = new Map(steps.map((step) => [step.id, step.number]));
+    for (const node of tree) {
+      const payload = (node.payload ?? {}) as Record<string, unknown>;
+      const str = (key: string) => (typeof payload[key] === "string" && (payload[key] as string).trim() ? (payload[key] as string) : null);
+      if (node.type === FILE_TYPE) names[node.id] = str("title") ?? "Untitled file";
+      else if (node.type === TOOL_TYPE) names[node.id] = str("service") ?? "Tool";
+      else if (node.type === RESULT_TYPE) {
+        const from = usesOf(node).find((use) => use.kind === "output");
+        if (from) intoResult.add(from.node_id);
+        results.push({
+          id: node.id,
+          title: str("summary") ?? str("url") ?? "Result",
+          holds: payload.media_id ? "a picture" : payload.url ? "a link" : "text",
+          from: from ? (numberOf.get(from.node_id) ?? null) : null,
+        });
+      }
+    }
+    return { names, intoResult, results };
+  }, [tree, steps]);
+  const dividerRows = useMemo(() => dividers(steps, groups), [steps, groups]);
 
   /* ── Sources ── */
 
@@ -177,6 +211,27 @@ export function SandboxPage() {
       <SandboxView
         {...viewProps}
         onAddFile={pick}
+        onAddPromptFocus={onAddPromptFocus}
+        list={
+          <BuildList
+            phone={phone}
+            steps={steps}
+            dividers={dividerRows}
+            names={listFacts.names}
+            suggestions={suggestions}
+            intoResult={listFacts.intoResult}
+            results={listFacts.results}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onRename={prompts.rename}
+            onMove={prompts.move}
+            onRemove={prompts.remove}
+            onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
+            onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
+            onAddPrompt={prompts.addNow}
+            focusAdd={focusAdd}
+          />
+        }
         addableSessions={libraryRows.filter((row) => !row.adding)}
         onAddSession={(id) => void onAddSession(id)}
         sources={
