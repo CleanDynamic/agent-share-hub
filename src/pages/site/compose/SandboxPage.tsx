@@ -18,8 +18,8 @@
 
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -28,7 +28,7 @@ import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MakingSession } from "@/lib/build/making";
-import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
+import { getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 
 import { PUBLISH_WORDS } from "./composeModel";
@@ -36,6 +36,8 @@ import { useComposePage } from "./ComposePage";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
+import { DetailsPanel } from "./DetailsPanel";
+import { resolveView, type MediaFacts } from "./detailsView";
 import { SourcesPanel } from "./SourcesPanel";
 import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
@@ -119,6 +121,117 @@ export function SandboxPage() {
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions), [groups, steps, sessions.sessions]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups), [tree, groups]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
+
+  /* ── Details (UI-P66) ── */
+
+  // A session's prompts are read when it is selected, for its checklist.
+  const selectedSession = sourceSessionRows.find((row) => row.key === selectedId && !row.key.startsWith("typed-"));
+  const { setOpenIds } = sessions;
+  useEffect(() => {
+    setOpenIds(selectedSession ? [selectedSession.key] : []);
+  }, [selectedSession, setOpenIds]);
+
+  /** Media ids a selected file or result points at; their names and sizes come from build_media. */
+  const mediaIds = useMemo(() => {
+    const node = tree.find((candidate) => candidate.id === selectedId);
+    const id = (node?.payload as { media_id?: unknown } | null)?.media_id;
+    return typeof id === "string" && id ? [id] : [];
+  }, [tree, selectedId]);
+  const mediaRows = useQueries({
+    queries: mediaIds.map((id) => ({ queryKey: ["build", "getMediaById", id], queryFn: () => getMediaById(id), staleTime: 60_000 })),
+  });
+  const mediaFacts = useCallback(
+    (id: string): MediaFacts | undefined => {
+      const row = mediaRows[mediaIds.indexOf(id)]?.data;
+      return row ? { name: row.filename, bytes: row.bytes } : undefined;
+    },
+    [mediaRows, mediaIds],
+  );
+
+  const view = useMemo(
+    () =>
+      resolveView({
+        selectedId,
+        steps,
+        groups,
+        tree,
+        sources: sourceSessionRows,
+        sourceFiles: sourceFileRows,
+        promptsState: sessions.promptsState,
+        intoResult: listFacts.intoResult,
+        media: mediaFacts,
+      }),
+    [selectedId, steps, groups, tree, sourceSessionRows, sourceFileRows, sessions.promptsState, listFacts.intoResult, mediaFacts],
+  );
+
+  /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
+  const afterWrite = useCallback(() => {
+    void nodes.settled().then(() => {
+      if (build?.id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build.id) });
+    });
+  }, [nodes, build?.id, queryClient]);
+
+  const addPiece = useCallback(
+    async (kind: "tool" | "result") => {
+      const id = await prompts.addPiece(kind);
+      if (id) setSelectedId(id);
+    },
+    [prompts],
+  );
+
+  const download = useCallback(
+    async (nodeId: string) => {
+      const node = tree.find((candidate) => candidate.id === nodeId);
+      const payload = (node?.payload ?? {}) as { media_id?: unknown; url?: unknown };
+      try {
+        if (typeof payload.media_id === "string" && payload.media_id) {
+          const media = await getMediaById(payload.media_id);
+          if (!media) throw new Error("media missing");
+          window.open(await signedMediaUrl(media, { width: "original" }), "_blank", "noopener");
+        } else if (typeof payload.url === "string" && payload.url) {
+          window.open(payload.url, "_blank", "noopener");
+        }
+      } catch (cause) {
+        console.error("[Sandbox] download failed", cause);
+        toast.error("Couldn't download that. Try again.");
+      }
+    },
+    [tree],
+  );
+
+  const addPicture = useCallback(
+    async (resultId: string, file: File) => {
+      if (!mediaKindFor(file.type) || file.size > MEDIA_MAX_BYTES) {
+        toast.error(`${file.name} can't be added as a picture.`);
+        return;
+      }
+      try {
+        const id = await ensureBuild();
+        const media = await nodes.run(() => uploadMedia({ buildId: id, file }));
+        prompts.setFields(resultId, { media_id: media.id });
+      } catch (cause) {
+        console.error("[Sandbox] picture not added", cause);
+        toast.error(`Couldn't add ${file.name}. Try again.`);
+      }
+    },
+    [ensureBuild, nodes, prompts],
+  );
+
+  const setAsCover = useCallback(
+    async (mediaId: string) => {
+      try {
+        const media = await getMediaById(mediaId);
+        if (!media) throw new Error("media missing");
+        const response = await fetch(await signedMediaUrl(media, { width: "original" }));
+        const blob = await response.blob();
+        viewProps.onFiles([new File([blob], media.filename ?? "cover", { type: media.mime ?? blob.type })]);
+      } catch (cause) {
+        console.error("[Sandbox] cover not set", cause);
+        toast.error("Couldn't use that as the cover. Try again.");
+      }
+    },
+    [viewProps],
+  );
 
   const onAddSession = useCallback(
     async (importId: string) => {
@@ -212,6 +325,43 @@ export function SandboxPage() {
         {...viewProps}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
+        onAddTool={() => void addPiece("tool")}
+        onAddResult={() => void addPiece("result")}
+        selection={
+          <DetailsPanel
+            phone={phone}
+            view={view}
+            onSelect={setSelectedId}
+            onRename={prompts.rename}
+            onModel={prompts.setModel}
+            onAddUse={(id, use) => {
+              prompts.accept(id, use, steps);
+              afterWrite();
+            }}
+            onRemoveUse={(id, use) => {
+              prompts.removeUse(id, use);
+              afterWrite();
+            }}
+            onRuns={(id, runs) => {
+              prompts.setRuns(id, runs);
+              afterWrite();
+            }}
+            onRemoveInside={(id) => {
+              prompts.removeInside(id);
+              afterWrite();
+            }}
+            onToggleSessionPrompt={(session, row, on) => {
+              if (on) {
+                const real = sessions.library.find((candidate) => candidate.id === session.key);
+                if (real) prompts.add(real.id, row.ordinal);
+              } else if (row.stepId) prompts.remove(row.stepId);
+            }}
+            onDownload={(id) => void download(id)}
+            onFields={prompts.setFields}
+            onAddPicture={(id, file) => void addPicture(id, file)}
+            onUseAsCover={(mediaId) => void setAsCover(mediaId)}
+          />
+        }
         list={
           <BuildList
             phone={phone}

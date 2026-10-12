@@ -62,9 +62,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the seven Add items in order; Prompt, Session and File are live so far (UI-P64, UI-P65)", () => {
+  it("lists the seven Add items in order; Prompt, Session, File, Tool and Result are live so far (UI-P64 to UI-P66)", () => {
     expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "file"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "file", "tool", "result"]);
   });
 
   it("opens the Card from its button with the six sections' fields", () => {

@@ -28,6 +28,7 @@ import {
   removeUse,
   runsLabel,
   sessionGroups,
+  setNodeFields,
   setRuns,
   setStepTitle,
   stepTitle,
@@ -284,6 +285,17 @@ describe("titles and words", () => {
   it("counts words on whitespace", () => {
     expect(wordCount("")).toBe(0);
     expect(wordCount("  a  b\nc\td ")).toBe(4);
+  });
+});
+
+describe("fields of a tool and a result", () => {
+  it("changes a field, drops a blank optional one, and refuses a blank required one", async () => {
+    const tool = node({ type: "integration", payload: { service: "Gmail", scopes: "read" } }) as BuildNode;
+    await setNodeFields(tool, { service: " Gmail ", scopes: " " });
+    expect(payloadWritten()).toEqual({ service: "Gmail" });
+    await expect(setNodeFields(tool, { service: "" })).rejects.toThrow(/empty/);
+    await expect(setNodeFields(tool, { url: "x" })).rejects.toThrow(/not a field/);
+    await expect(setNodeFields(node({}) as BuildNode, { text: "x" })).rejects.toThrow(/no fields/);
   });
 });
 

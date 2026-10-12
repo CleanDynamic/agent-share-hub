@@ -10,6 +10,7 @@ import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
 import type { SandboxViewProps } from "@/pages/site/compose/SandboxView";
 import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { BuildListProps } from "@/pages/site/compose/BuildList";
+import type { DetailsPanelProps, DetailsView } from "@/pages/site/compose/DetailsPanel";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import type { SourcesPanelProps } from "@/pages/site/compose/SourcesPanel";
 
@@ -166,4 +167,54 @@ export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps 
     onAddPrompt: () => Promise.resolve(true),
     focusAdd: 0,
   };
+}
+
+export type SandboxDetails = "prompt" | "session" | "agent" | "file" | "tool" | "result";
+
+/** The Details panel for each kind of selection: a prompt of the bakery (V2), its session, the order checker (S4), a file, a tool, the result. */
+export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: SandboxFixture = "fox"): DetailsPanelProps {
+  const handlers = {
+    onRename: noop,
+    onModel: noop,
+    onAddUse: noop,
+    onRemoveUse: noop,
+    onRuns: noop,
+    onRemoveInside: noop,
+    onToggleSessionPrompt: noop,
+    onDownload: noop,
+    onFields: noop,
+    onAddPicture: noop,
+    onUseAsCover: noop,
+  };
+  const fox = which === "fox";
+  const views: Record<SandboxDetails, DetailsView> = {
+    prompt: fox
+      ? { kind: "prompt", id: "p1", number: "1", title: null, defaultTitle: "Prompt 1", editable: true, sessionLine: "Session 1 · Claude", detailLine: "Opus 5.5 · 3 Mar · prompt 1 of 1", typed: false, model: "Opus 5.5", text: FOX_TEXT, words: 27, uses: [], options: [], goesInto: [{ id: "result", label: "Result" }] }
+      : {
+          kind: "prompt",
+          id: "p3",
+          number: "3",
+          title: "Fix the mobile layout",
+          defaultTitle: "Prompt 3",
+          editable: true,
+          sessionLine: "Session 2 · Claude Code",
+          detailLine: "Sonnet 5.5 · 4 Mar · prompt 3 of 4",
+          typed: false,
+          model: "Sonnet 5.5",
+          text: "The menu grid overflows on a phone. Stack it to one column below 600px and keep the header sticky.",
+          words: 19,
+          uses: [
+            { use: { kind: "output", node_id: "p2" }, label: "Output of 2", sub: "Prompt 2 · Session 1" },
+            { use: { kind: "file", node_id: "f1" }, label: "menu.pdf", sub: "File · opened in session 1" },
+          ],
+          options: [{ key: "output:p1", use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }],
+          goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
+        },
+    session: { kind: "session", key: "s1", number: 1, tool: "Claude", model: "Opus 5.5", date: "3 Mar", inBuild: 2, total: 3, status: "ready", checklist: [{ ordinal: 0, label: "Write the homepage copy", stepId: "p1" }, { ordinal: 1, label: "Prompt 2", stepId: "p2" }, { ordinal: 2, label: "Add a footer with the address", stepId: null }] },
+    agent: { kind: "agent", id: "a5", number: "5", name: "Order checker", defaultName: "Agent 5", model: "Opus 5.5", runs: { how: "until", detail: "every item has a price" }, inside: "1 prompt", insideRows: [{ id: "a5:p", label: "5.2 · Prompt 5.2" }], uses: [{ use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }], options: [], goesInto: [{ id: "result", label: "Result" }] },
+    file: { kind: "file", id: "f1", name: "menu.pdf", from: "opened in session 1", size: "212 KB", canDownload: true, usedBy: [{ id: "p3", label: "3 · Fix the mobile layout" }] },
+    tool: { kind: "tool", id: "t1", service: "Gmail", scopes: "read, label, draft", usedBy: [{ id: "a5", label: "5 · Order checker" }] },
+    result: { kind: "result", id: "r1", summary: fox ? "fox-poster.png" : "The finished homepage", url: fox ? "" : "https://plumandrye.example", pictures: fox ? [{ id: "m1", name: "fox-poster.png" }] : [] },
+  };
+  return { phone: false, view: views[kind], ...handlers };
 }

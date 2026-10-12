@@ -507,3 +507,30 @@ function compact(fields: Record<string, string | undefined>): Json {
   for (const [key, value] of Object.entries(fields)) if (typeof value === "string" && value.trim()) out[key] = value.trim();
   return out;
 }
+
+// --- fields of a file, a tool and a result (UI-P66) ---------------------------
+
+const FIELDS: Record<string, { keys: readonly string[]; required: string }> = {
+  [FILE_TYPE]: { keys: ["title", "summary", "url"], required: "title" },
+  [TOOL_TYPE]: { keys: ["service", "scopes", "notes"], required: "service" },
+  [RESULT_TYPE]: { keys: ["summary", "url", "media_id"], required: "summary" },
+};
+
+/**
+ * Change the text fields of a file, a tool or a result (DATA §2). A blank value
+ * takes the field off; the one field the type requires cannot go blank.
+ */
+export async function setNodeFields(node: BuildNode, fields: Record<string, string | null>): Promise<BuildNode> {
+  const allowed = FIELDS[node.type];
+  if (!allowed) throw refuse("setNodeFields", "That has no fields to change.");
+  const payload = { ...payloadOf(node) };
+  for (const [key, value] of Object.entries(fields)) {
+    if (!allowed.keys.includes(key)) throw refuse("setNodeFields", "That is not a field of this piece.");
+    const trimmed = value?.trim() ?? "";
+    if (!trimmed) {
+      if (key === allowed.required) throw refuse("setNodeFields", "That field cannot be empty.");
+      delete payload[key];
+    } else payload[key] = trimmed;
+  }
+  return upsertNode(withPayload(node, payload));
+}
