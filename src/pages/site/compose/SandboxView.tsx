@@ -19,7 +19,7 @@
    two buttons in its head. In Map, Sources folds to a 56px rail. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, PanelLeft } from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeft } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -41,6 +41,7 @@ import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { SandboxCard, type CardField, type CardProps } from "./SandboxCard";
+import { capRows, type SourcesLibraryRow } from "./sourcesModel";
 
 export type { CardField } from "./SandboxCard";
 
@@ -85,6 +86,11 @@ export interface SandboxViewProps extends CardProps {
   /** Moves focus to the Build panel's add field, for the "a prompt" missing item. */
   onAddPromptFocus?: () => void;
 
+  /** UI-P64: Add › Session lists these, the same rows as Sources' "Not in a build". Absent, the item stays disabled. */
+  addSession?: { rows: readonly SourcesLibraryRow[]; onAttach: (sessionId: string) => void };
+  /** UI-P64: Add › File opens the file picker. Absent, the item stays disabled. */
+  onAddFile?: () => void;
+
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
   list?: ReactNode;
@@ -103,9 +109,9 @@ export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual"
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
   { key: "prompt", name: "Prompt", line: "A message you sent", ready: false },
-  { key: "session", name: "Session", line: "A chat from your sources", ready: false },
+  { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: false },
-  { key: "file", name: "File", line: "Something the AI read", ready: false },
+  { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: false },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: false },
   { key: "result", name: "Result", line: "The finished thing", ready: false },
@@ -123,7 +129,98 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-function AddMenu() {
+const addItemStyle = (enabled: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: 1,
+  minHeight: 44,
+  boxSizing: "border-box",
+  justifyContent: "center",
+  padding: "6px 10px",
+  borderRadius: r.control,
+  cursor: enabled ? "pointer" : "default",
+  opacity: enabled ? 1 : 0.5,
+  outline: "none",
+});
+
+function AddItemFace({ name, line }: { name: string; line: string }) {
+  return (
+    <>
+      <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{name}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{line}</span>
+    </>
+  );
+}
+
+/**
+ * Add › Session: the same rows as Sources' "Not in a build", as a menu. Six,
+ * then "Show {n} more" in place, so the menu stays at seven.
+ */
+function AddSessionSub({ item, addSession }: { item: (typeof ADD_ITEMS)[number]; addSession: SandboxViewProps["addSession"] }) {
+  const [all, setAll] = useState(false);
+  const enabled = item.ready && Boolean(addSession);
+  const rows = addSession?.rows ?? [];
+  const { shown, more } = capRows(rows, all);
+  return (
+    <Menu.Sub>
+      <Menu.SubTrigger
+        disabled={!enabled}
+        data-testid="add-session"
+        style={{ ...addItemStyle(enabled), flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+      >
+        <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <AddItemFace name={item.name} line={item.line} />
+        </span>
+        <ChevronRight size={14} strokeWidth={1.8} color="var(--text2)" aria-hidden="true" />
+      </Menu.SubTrigger>
+      <Menu.Portal>
+        <Menu.SubContent
+          sideOffset={6}
+          alignOffset={-6}
+          collisionPadding={16}
+          style={{
+            zIndex: 50,
+            width: 280,
+            maxWidth: "calc(100vw - 32px)",
+            padding: 6,
+            borderRadius: r.panel,
+            background: t.solid,
+            border: `1px solid ${t.line}`,
+            boxShadow: t.shadowFloat,
+            color: t.text,
+          }}
+        >
+          {rows.length === 0 ? (
+            <Menu.Item disabled style={addItemStyle(false)}>
+              <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>No sessions waiting.</span>
+            </Menu.Item>
+          ) : (
+            shown.map((row) => (
+              <Menu.Item key={row.id} onSelect={() => addSession?.onAttach(row.id)} style={addItemStyle(true)}>
+                <AddItemFace name={`Session · ${row.source}`} line={row.line} />
+              </Menu.Item>
+            ))
+          )}
+          {more > 0 || all ? (
+            <Menu.Item
+              onSelect={(event) => {
+                event.preventDefault();
+                setAll((value) => !value);
+              }}
+              style={addItemStyle(true)}
+            >
+              <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline" }}>
+                {all ? "Show fewer" : `Show ${more} more`}
+              </span>
+            </Menu.Item>
+          ) : null}
+        </Menu.SubContent>
+      </Menu.Portal>
+    </Menu.Sub>
+  );
+}
+
+function AddMenu({ addSession, onAddFile }: Pick<SandboxViewProps, "addSession" | "onAddFile">) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -169,28 +266,20 @@ function AddMenu() {
             color: t.text,
           }}
         >
-          {ADD_ITEMS.map((item) => (
-            <Menu.Item
-              key={item.key}
-              disabled={!item.ready}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-                minHeight: 44,
-                boxSizing: "border-box",
-                justifyContent: "center",
-                padding: "6px 10px",
-                borderRadius: r.control,
-                cursor: item.ready ? "pointer" : "default",
-                opacity: item.ready ? 1 : 0.5,
-                outline: "none",
-              }}
-            >
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{item.name}</span>
-              <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{item.line}</span>
-            </Menu.Item>
-          ))}
+          {ADD_ITEMS.map((item) => {
+            if (item.key === "session") return <AddSessionSub key={item.key} item={item} addSession={addSession} />;
+            const enabled = item.ready && (item.key !== "file" || Boolean(onAddFile));
+            return (
+              <Menu.Item
+                key={item.key}
+                disabled={!enabled}
+                onSelect={item.key === "file" ? () => onAddFile?.() : undefined}
+                style={addItemStyle(enabled)}
+              >
+                <AddItemFace name={item.name} line={item.line} />
+              </Menu.Item>
+            );
+          })}
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>
@@ -240,7 +329,8 @@ function PanelTitle({ children }: { children: ReactNode }) {
 
 const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
 
-function SourcesPanel({ rail, children }: { rail: boolean; children: ReactNode }) {
+/** `own`: the panel inside draws its own head (UI-P64), so the frame adds none. */
+function SourcesPanel({ rail, own, children }: { rail: boolean; own: boolean; children: ReactNode }) {
   if (rail) {
     return (
       <Panel surface="flat" padding="16px 0" style={{ display: "flex", justifyContent: "center" }}>
@@ -251,8 +341,14 @@ function SourcesPanel({ rail, children }: { rail: boolean; children: ReactNode }
   return (
     <section aria-label="Sources" style={{ minWidth: 0 }}>
       <Panel surface="flat" padding="16px">
-        <PanelTitle>Sources</PanelTitle>
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        {own ? (
+          children
+        ) : (
+          <>
+            <PanelTitle>Sources</PanelTitle>
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+          </>
+        )}
       </Panel>
     </section>
   );
@@ -449,7 +545,7 @@ export function SandboxView(props: SandboxViewProps) {
               </Button>
             </>
           ) : null}
-          <AddMenu />
+          <AddMenu addSession={props.addSession} onAddFile={props.onAddFile} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -560,7 +656,9 @@ export function SandboxView(props: SandboxViewProps) {
       </div>
       {banner}
       <div style={{ display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
-        <SourcesPanel rail={rail}>{sourcesBody}</SourcesPanel>
+        <SourcesPanel rail={rail} own={Boolean(props.sources)}>
+          {sourcesBody}
+        </SourcesPanel>
         {buildPanel}
         {detailsPanel}
       </div>

@@ -62,6 +62,8 @@ export interface ComposeSessions {
   retryPrompts: (sessionId: string) => void;
   /** A prompt of this session was added: a session in no build yet joins this draft. */
   claimForBuild: (sessionId: string) => void;
+  /** Resolves true once the session is in this build (UI-P64's +). Tells the maker when it is not. */
+  addSession: (sessionId: string) => Promise<boolean>;
   /** Resolves true once the model is saved. */
   setModel: (sessionId: string, model: string) => Promise<boolean>;
   madeWith: MadeWithState;
@@ -233,6 +235,35 @@ export function useComposeSessions({
       );
   };
 
+  /**
+   * Put a waiting session into this build from Sources' + (UI-P64). Unlike
+   * `claimForBuild`, which follows a prompt that was added and stays quiet, the
+   * maker asked for this, so a refusal is said. It queues with the other Made
+   * with writes, since attaching rewrites the build's making stats.
+   */
+  const addSession = (sessionId: string) => {
+    if (!canClaim) {
+      toast("This build is published, so it takes no new sessions.");
+      return Promise.resolve(false);
+    }
+    return enqueue(async () => {
+      const id = await latest.current.ensureBuild();
+      await attachSession(sessionId, { kind: "existing", buildId: id });
+      const state = await getMadeWith(id).catch(() => null);
+      return { id, state, value: true };
+    })
+      .catch((cause) => {
+        console.error("[Compose] session not added", cause);
+        toast.error("Couldn't add that session. Try again.");
+        return false;
+      })
+      .finally(() => {
+        const id = latest.current.buildId;
+        void refreshLists().catch(() => undefined);
+        if (id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+      });
+  };
+
   const setModel = (sessionId: string, model: string) =>
     enqueue(async () => {
       await setSessionModel(sessionId, model);
@@ -263,6 +294,7 @@ export function useComposeSessions({
     promptsOf,
     retryPrompts: (sessionId) => void queryClient.refetchQueries({ queryKey: sessionPromptsKey(sessionId) }),
     claimForBuild,
+    addSession,
     setModel,
     madeWith: madeWithQuery.data ?? { madeWith: [...recordMadeWith], excluded: [] },
     toggleMadeWith,
