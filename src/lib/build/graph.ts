@@ -345,31 +345,40 @@ export async function setStepTitle(node: BuildNode, title: string): Promise<Buil
 const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
 
 /**
- * Add an input to a step. A step never uses itself and the same use is never
- * listed twice. A use of a LATER step is allowed only when that step sits in
- * the same agent or team and its runs is "until": a checker sending work back.
+ * Why a step cannot take this input, or null when it can (DATA §3). A step
+ * never uses itself and the same use is never listed twice. A use of a LATER
+ * step is allowed only when that step sits in the same agent or team and its
+ * runs is "until": a checker sending work back. Pure, so the Map can say no
+ * to a drag before anything is written.
  */
-export async function addUse(node: BuildNode, use: Use, steps: readonly Step[]): Promise<BuildNode> {
-  if (!USE_KINDS.includes(use.kind) || !use.node_id) throw refuse("addUse", "That input is not a step, a file or a tool.");
-  if (use.node_id === node.id) throw refuse("addUse", "A step never uses itself.");
-  const current = usesOf(node);
-  if (current.some((entry) => useKey(entry) === useKey(use))) throw refuse("addUse", "That input is already listed.");
+export function inputRefusal(nodeId: string, current: readonly Use[], use: Use, steps: readonly Step[]): string | null {
+  if (!USE_KINDS.includes(use.kind) || !use.node_id) return "That input is not a step, a file or a tool.";
+  if (use.node_id === nodeId) return "A step never uses itself.";
+  if (current.some((entry) => useKey(entry) === useKey(use))) return "That input is already listed.";
 
   if (use.kind === "output") {
     const all = flattenSteps(steps);
-    const from = all.findIndex((step) => step.id === node.id);
+    const from = all.findIndex((step) => step.id === nodeId);
     const to = all.findIndex((step) => step.id === use.node_id);
-    if (from < 0) throw refuse("addUse", "That is not a step.");
-    if (to < 0) throw refuse("addUse", "That step is not in this build.");
+    if (from < 0) return "That is not a step.";
+    if (to < 0) return "That step is not in this build.";
     if (to > from) {
       const parentOf = (id: string) => steps.find((step) => step.children.some((child) => child.id === id));
-      const parent = parentOf(node.id);
+      const parent = parentOf(nodeId);
       const sameContainer = Boolean(parent) && parent === parentOf(use.node_id);
       if (!sameContainer || all[to].runs?.how !== "until") {
-        throw refuse("addUse", "Only a step that repeats until a condition is met can be used before it runs.");
+        return "Only a step that repeats until a condition is met can be used before it runs.";
       }
     }
   }
+  return null;
+}
+
+/** Add an input to a step; `inputRefusal` says when it cannot. */
+export async function addUse(node: BuildNode, use: Use, steps: readonly Step[]): Promise<BuildNode> {
+  const current = usesOf(node);
+  const why = inputRefusal(node.id, current, use, steps);
+  if (why) throw refuse("addUse", why);
 
   const payload = payloadOf(node);
   const dismissed = Array.isArray(payload.dismissed) ? payload.dismissed.filter((key) => key !== useKey(use)) : undefined;
@@ -506,4 +515,31 @@ function compact(fields: Record<string, string | undefined>): Json {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(fields)) if (typeof value === "string" && value.trim()) out[key] = value.trim();
   return out;
+}
+
+// --- fields of a file, a tool and a result (UI-P66) ---------------------------
+
+const FIELDS: Record<string, { keys: readonly string[]; required: string }> = {
+  [FILE_TYPE]: { keys: ["title", "summary", "url"], required: "title" },
+  [TOOL_TYPE]: { keys: ["service", "scopes", "notes"], required: "service" },
+  [RESULT_TYPE]: { keys: ["summary", "url", "media_id"], required: "summary" },
+};
+
+/**
+ * Change the text fields of a file, a tool or a result (DATA §2). A blank value
+ * takes the field off; the one field the type requires cannot go blank.
+ */
+export async function setNodeFields(node: BuildNode, fields: Record<string, string | null>): Promise<BuildNode> {
+  const allowed = FIELDS[node.type];
+  if (!allowed) throw refuse("setNodeFields", "That has no fields to change.");
+  const payload = { ...payloadOf(node) };
+  for (const [key, value] of Object.entries(fields)) {
+    if (!allowed.keys.includes(key)) throw refuse("setNodeFields", "That is not a field of this piece.");
+    const trimmed = value?.trim() ?? "";
+    if (!trimmed) {
+      if (key === allowed.required) throw refuse("setNodeFields", "That field cannot be empty.");
+      delete payload[key];
+    } else payload[key] = trimmed;
+  }
+  return upsertNode(withPayload(node, payload));
 }

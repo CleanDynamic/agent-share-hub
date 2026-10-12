@@ -30,7 +30,19 @@ import {
   savePromptText,
   setPromptModel,
 } from "@/lib/build/composePrompts";
-import { addUse, dismissSuggestion, setStepTitle, type Step, type Use } from "@/lib/build/graph";
+import {
+  addResult,
+  addTool,
+  addUse,
+  dismissSuggestion,
+  removeUse,
+  setNodeFields,
+  setRuns,
+  setStepTitle,
+  type Runs,
+  type Step,
+  type Use,
+} from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
@@ -41,6 +53,16 @@ import { rowOf, type ComposeNodes } from "./useComposeNodes";
 const LOCAL = "local-";
 
 const findTop = (tree: readonly NodeTree[], id: string) => tree.find((node) => node.id === id) ?? null;
+
+/** A node at any depth: an agent's prompt or a team's agent as well as a top-level one. */
+const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
+  for (const node of tree) {
+    if (node.id === id) return node;
+    const inner = node.children?.length ? findNode(node.children, id) : null;
+    if (inner) return inner;
+  }
+  return null;
+};
 
 /** Log a failed write with its cause, and say so in one line. */
 const failed = (line: string) => (cause: unknown) => {
@@ -72,6 +94,18 @@ export interface ComposePrompts {
   accept: (id: string, use: Use, steps: readonly Step[]) => void;
   /** UI-P65: keep a suggestion from coming back; `key` is "<kind>:<node_id>". */
   dismiss: (id: string, key: string) => void;
+  /** UI-P66: take an input off a step. */
+  removeUse: (id: string, use: Use) => void;
+  /** UI-P66: how an agent or a team runs; null is "Runs once". */
+  setRuns: (id: string, runs: Runs | null) => void;
+  /** UI-P66: name the model of a prompt written by hand; null clears it. */
+  setModel: (id: string, model: string | null) => void;
+  /** UI-P66: change the text fields of a file, a tool or a result. */
+  setFields: (id: string, fields: Record<string, string | null>) => void;
+  /** UI-P66: take a node out of an agent or a team. */
+  removeInside: (id: string) => void;
+  /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
+  addPiece: (kind: "tool" | "result") => Promise<string | null>;
 }
 
 export function useComposePrompts({
@@ -329,11 +363,11 @@ export function useComposePrompts({
         return false;
       });
 
-  /** A write to one top-level step: read it as the queue left it, write, keep the result. */
+  /** A write to one node: read it as the queue left it, write, keep the result. */
   const writeStep = (id: string, line: string, change: (node: BuildNode) => Promise<BuildNode>) =>
     nodes
       .run(async () => {
-        const node = findTop(nodes.current(), id);
+        const node = findNode(nodes.current(), id);
         if (node) nodes.record(node.id, await change(rowOf(node)));
       })
       .catch(failed(line));
@@ -343,6 +377,40 @@ export function useComposePrompts({
     void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps));
   const dismiss = (id: string, key: string) =>
     void writeStep(id, "Couldn't dismiss that. Try again.", (node) => dismissSuggestion(node, key));
+
+  const removeUseFrom = (id: string, use: Use) =>
+    void writeStep(id, "Couldn't remove that input. Try again.", (node) => removeUse(node, use));
+  const setRunsOf = (id: string, runs: Runs | null) =>
+    void writeStep(id, "Couldn't change how that runs. Try again.", (node) => setRuns(node, runs));
+  const setModelOf = (id: string, model: string | null) =>
+    void writeStep(id, "Couldn't change the model. Try again.", (node) => setPromptModel(node, model));
+  const setFields = (id: string, fields: Record<string, string | null>) =>
+    void writeStep(id, "Couldn't save that. Try again.", (node) => setNodeFields(node, fields));
+
+  const removeInside = (id: string) => {
+    nodes
+      .run(async () => {
+        await deleteNode(id);
+        nodes.record(id, null);
+      })
+      .catch(failed("Couldn't remove that. Try again."));
+  };
+
+  const addPiece = (kind: "tool" | "result") =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created =
+          kind === "tool"
+            ? await addTool(build, nodes.current(), { service: "Untitled tool" })
+            : await addResult(build, nodes.current(), { summary: "Untitled result" });
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed(`Couldn't add that ${kind}. Try again.`)(cause);
+        return null;
+      });
 
   const rows = useMemo<ComposePromptRow[]>(() => {
     const saved = promptNodes(nodes.tree)
@@ -355,5 +423,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece };
 }

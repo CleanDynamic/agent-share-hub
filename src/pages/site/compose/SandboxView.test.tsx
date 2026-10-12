@@ -36,6 +36,34 @@ describe("countsLine", () => {
   });
 });
 
+describe("the Sources rail in Map", () => {
+  it("folds Sources to a rail of 44-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
+    view({ lens: "map", sources: <p>the sources panel</p> });
+    const rail = screen.getByTestId("sources-rail");
+    expect(within(rail).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["Show sources", "Sessions", "Files", "Add a source"]);
+    expect(within(rail).getByRole("button", { name: "Sessions" }).textContent).toBe("3");
+    expect(within(rail).getByRole("button", { name: "Files" }).textContent).toBe("2");
+    expect(screen.queryByText("the sources panel")).toBeNull();
+
+    fireEvent.click(within(rail).getByRole("button", { name: "Show sources" }));
+    expect(screen.getByTestId("sources-overlay")).toBeTruthy();
+    expect(screen.getByText("the sources panel")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close sources" }));
+    expect(screen.queryByTestId("sources-overlay")).toBeNull();
+  });
+
+  it("closes the opened panel on Esc, and is the full panel again in List", () => {
+    view({ lens: "map", sources: <p>the sources panel</p> });
+    fireEvent.click(screen.getByRole("button", { name: "Show sources" }));
+    fireEvent.keyDown(screen.getByText("the sources panel"), { key: "Escape" });
+    expect(screen.queryByTestId("sources-overlay")).toBeNull();
+    cleanup();
+    view({ lens: "list", sources: <p>the sources panel</p> });
+    expect(screen.queryByTestId("sources-rail")).toBeNull();
+    expect(screen.getByText("the sources panel")).toBeTruthy();
+  });
+});
+
 describe("SandboxView frame", () => {
   it("draws Sources, Build and Details, and one primary button", () => {
     view();
@@ -62,9 +90,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the seven Add items in order; Prompt, Session and File are live so far (UI-P64, UI-P65)", () => {
+  it("lists the seven Add items in order; Prompt, Session, File, Tool and Result are live so far (UI-P64 to UI-P66)", () => {
     expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "file"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "file", "tool", "result"]);
   });
 
   it("opens the Card from its button with the six sections' fields", () => {

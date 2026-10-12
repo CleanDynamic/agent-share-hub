@@ -109,10 +109,13 @@ function Badge({ children, wide }: { children: ReactNode; wide?: boolean }) {
   );
 }
 
-function Chip({ children, dashed }: { children: ReactNode; dashed?: boolean }) {
+function Chip({ children, dashed, onClick }: { children: ReactNode; dashed?: boolean; onClick?: () => void }) {
+  const Tag = onClick ? "button" : "span";
   return (
-    <span
+    <Tag
+      {...(onClick ? { type: "button" as const, onClick: (event: { stopPropagation: () => void }) => { event.stopPropagation(); onClick(); } } : null)}
       style={{
+        cursor: onClick ? "pointer" : undefined,
         height: 24,
         padding: "0 8px 0 6px",
         boxSizing: "border-box",
@@ -128,7 +131,7 @@ function Chip({ children, dashed }: { children: ReactNode; dashed?: boolean }) {
       }}
     >
       {children}
-    </span>
+    </Tag>
   );
 }
 
@@ -209,7 +212,7 @@ function UsesRow({
   props,
 }: {
   step: Step;
-  props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult" | "onAccept" | "onDismiss">;
+  props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult" | "onAccept" | "onDismiss" | "onSelect">;
 }) {
   const chips = step.uses
     .map((use) => ({ use, text: inputLabel(use, props.steps, props.names) }))
@@ -221,7 +224,7 @@ function UsesRow({
     <>
       {chips.length > 0 || mine.length > 0 ? <span style={mono(12)}>Uses</span> : null}
       {chips.map(({ use, text }) => (
-        <Chip key={suggestionKey(use)}>
+        <Chip key={suggestionKey(use)} onClick={use.kind === "output" ? undefined : () => props.onSelect(use.node_id)}>
           <Dot ringOnly />
           {text}
         </Chip>
@@ -476,9 +479,21 @@ function ManualCard({ step, props }: { step: Step; props: BuildListProps }) {
   );
 }
 
-function ResultCard({ result }: { result: ListResult }) {
+function ResultCard({ result, selected, onSelect }: { result: ListResult; selected: boolean; onSelect: (id: string) => void }) {
   return (
-    <div data-testid="result-card" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, border: `1px solid ${t.line}`, background: t.solid, marginBottom: 8 }}>
+    <div
+      data-testid="result-card"
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={() => onSelect(result.id)}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onSelect(result.id);
+        }
+      }}
+      style={{ cursor: "pointer", outline: selected ? `2px solid ${t.text}` : undefined, display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, border: `1px solid ${t.line}`, background: t.solid, marginBottom: 8 }}>
       <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: 7, background: t.evidenceFill, color: t.onEvidenceFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Check size={14} strokeWidth={2} />
       </span>
@@ -639,7 +654,7 @@ export function BuildList(props: BuildListProps) {
         );
       })}
       {props.results.map((result) => (
-        <ResultCard key={result.id} result={result} />
+        <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
       <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} focusAdd={props.focusAdd} />
     </div>

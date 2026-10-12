@@ -19,11 +19,12 @@
    two buttons in its head. In Map, Sources folds to a 56px rail. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, PanelLeft } from "lucide-react";
+import { ChevronDown, FileText, Layers, PanelLeftOpen, Plus, X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
+import { IconButton } from "@/components/brand/IconButton";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { Panel } from "@/components/brand/Panel";
 import { Segmented } from "@/components/brand/Segmented";
@@ -91,6 +92,10 @@ export interface SandboxViewProps extends CardProps {
   addableSessions?: readonly { id: string; label: string; line: string }[];
   onAddSession?: (id: string) => void;
 
+  /** Add › Tool and Add › Result: make the row and select it in Details. Absent, the item stays disabled. */
+  onAddTool?: () => void;
+  onAddResult?: () => void;
+
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
   list?: ReactNode;
@@ -112,9 +117,9 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: false },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
-  { key: "tool", name: "Tool", line: "An app or connector it used", ready: false },
+  { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: false },
-  { key: "result", name: "Result", line: "The finished thing", ready: false },
+  { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
 
 const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
@@ -129,7 +134,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus">;
+type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult">;
 
 const itemStyle = (enabled: boolean): CSSProperties => ({
   display: "flex",
@@ -166,7 +171,7 @@ function AddLabel({ name, line }: { name: string; line: string }) {
   );
 }
 
-function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus }: AddMenuProps) {
+function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult }: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -229,8 +234,10 @@ function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus }:
                 </Menu.Sub>
               );
             }
-            const handler = item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : undefined;
-            const enabled = item.ready && (item.key !== "file" || Boolean(onAddFile)) && (item.key !== "prompt" || Boolean(onAddPromptFocus));
+            const handler =
+              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : undefined;
+            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result";
+            const enabled = item.ready && (!wired || Boolean(handler));
             return (
               <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
                 <AddLabel name={item.name} line={item.line} />
@@ -286,21 +293,87 @@ function PanelTitle({ children }: { children: ReactNode }) {
 
 const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
 
-function SourcesFrame({ rail, titled, children }: { rail: boolean; titled: boolean; children: ReactNode }) {
-  if (rail) {
-    return (
-      <Panel surface="flat" padding="16px 0" style={{ display: "flex", justifyContent: "center" }}>
-        <PanelLeft size={18} strokeWidth={1.6} color="var(--text2)" aria-label="Sources" role="img" />
-      </Panel>
-    );
-  }
+/** One 44-wide button of the Sources rail: an icon, and a count when it has one. */
+function RailButton({ icon: Icon, label, count, onClick }: { icon: typeof Plus; label: string; count?: number; onClick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      {...handlers}
+      style={{ width: 44, minHeight: 44, padding: "4px 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: 0, borderRadius: r.control, background: "transparent", color: t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+    >
+      <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
+      {typeof count === "number" ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{count}</span> : null}
+    </button>
+  );
+}
+
+/**
+ * In Map the Sources column is a 56px rail of 44-wide buttons: show sources,
+ * sessions and files with their counts, and add a source, with hairlines
+ * between the groups. Any of them puts the full panel back over the map's left
+ * side until it is closed.
+ */
+function SourcesFrame({
+  rail,
+  titled,
+  counts,
+  open,
+  onOpen,
+  onClose,
+  children,
+}: {
+  rail: boolean;
+  titled: boolean;
+  counts: SandboxCounts;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const full = (
     <section aria-label="Sources" style={{ minWidth: 0 }}>
       <Panel surface="flat" padding="16px">
-        {titled ? <PanelTitle>Sources</PanelTitle> : null}
-        <div style={{ marginTop: titled ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          {titled ? <PanelTitle>Sources</PanelTitle> : <span />}
+          {rail ? <IconButton icon={X} label="Close sources" size={30} onClick={onClose} /> : null}
+        </div>
+        <div style={{ marginTop: titled || rail ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
       </Panel>
     </section>
+  );
+  if (!rail) return full;
+  const hairline: CSSProperties = { width: 32, height: 1, background: t.hairline, margin: "4px 0" };
+  return (
+    <>
+      <div data-testid="sources-rail" role="toolbar" aria-label="Sources" aria-orientation="vertical" style={{ minWidth: 0 }}>
+        <Panel surface="flat" padding="8px 0" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <RailButton icon={PanelLeftOpen} label="Show sources" onClick={onOpen} />
+          <span aria-hidden="true" style={hairline} />
+          <RailButton icon={Layers} label="Sessions" count={counts.sessions} onClick={onOpen} />
+          <RailButton icon={FileText} label="Files" count={counts.files} onClick={onOpen} />
+          <span aria-hidden="true" style={hairline} />
+          <RailButton icon={Plus} label="Add a source" onClick={onOpen} />
+        </Panel>
+      </div>
+      {open ? (
+        <div
+          data-testid="sources-overlay"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              onClose();
+            }
+          }}
+          style={{ position: "absolute", left: 0, top: 0, width: 250, zIndex: 20, boxShadow: t.shadowFloat, borderRadius: r.panel }}
+        >
+          {full}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -369,6 +442,8 @@ export function SandboxView(props: SandboxViewProps) {
   const [cardField, setCardField] = useState<CardField | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  /** Map: the Sources rail has been opened out over the map. */
+  const [railOpen, setRailOpen] = useState(false);
   const buildRef = useRef<HTMLElement>(null);
 
   if (status === "loading") return <Skeletons phone={phone} />;
@@ -495,7 +570,7 @@ export function SandboxView(props: SandboxViewProps) {
               </Button>
             </>
           ) : null}
-          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} />
+          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -605,8 +680,10 @@ export function SandboxView(props: SandboxViewProps) {
         </div>
       </div>
       {banner}
-      <div style={{ display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
-        <SourcesFrame rail={rail} titled={!props.sources}>{sourcesBody}</SourcesFrame>
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
+        <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
+          {sourcesBody}
+        </SourcesFrame>
         {buildPanel}
         {detailsPanel}
       </div>
