@@ -1,0 +1,509 @@
+// The build graph (UI-P62): the steps both the composer and the build page draw,
+// and the writes that change them. design/sandbox/DATA.md is the shape.
+//
+// A STEP IS A TOP-LEVEL NODE of type prompt, agent_config, team or manual_step,
+// numbered by position from 1. Files, tools, results and the cover's evidence
+// node are not steps and are not numbered. Inside an agent, its instructions
+// are n.1 and its child prompts n.2 onward; inside a team, its agents are n.1
+// onward. There is no third level of numbers.
+//
+// NOTHING IS STORED THAT CAN BE READ. "Goes into" is derived, a suggestion is
+// never written, and a title the maker did not type is null, never filled in.
+//
+// EVERY WRITE refuses bad input through buildLayerError with a message made of
+// identifiers and fixed words only, never the text the maker wrote (CONTRACT §9).
+
+import type { Json } from "@/integrations/supabase/types";
+import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
+import { PROMPT_TYPE } from "./composePrompts";
+import { toolLabel, type MakingSession } from "./making";
+import { getNodeType } from "./nodeTypes";
+import { upsertNode } from "./nodes";
+import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
+import { modelLabel } from "@/lib/models/registry";
+
+export const AGENT_TYPE = "agent_config";
+export const TEAM_TYPE = "team";
+export const MANUAL_STEP_TYPE = "manual_step";
+export const FILE_TYPE = "document";
+export const TOOL_TYPE = "integration";
+export const RESULT_TYPE = "result";
+
+export type StepKind = "prompt" | "agent" | "team" | "manual";
+
+export type UseKind = "output" | "file" | "tool";
+
+/** What a step takes in: another step's output, a file, or a tool. */
+export interface Use {
+  kind: UseKind;
+  node_id: string;
+}
+
+export type RunsHow = "once" | "parallel" | "until" | "schedule" | "event";
+
+export interface Runs {
+  how: RunsHow;
+  count?: number;
+  detail?: string;
+}
+
+export interface Step {
+  id: string;
+  kind: StepKind;
+  /** "3", or "3.1" inside an agent or a team. */
+  number: string;
+  /** The maker's title, or null while it is the default. */
+  title: string | null;
+  defaultTitle: string;
+  text: string;
+  words: number;
+  model: string | null;
+  /** The import session a prompt came from; null for one written by hand. */
+  sessionId: string | null;
+  /** The tool a prompt written by hand, or a manual step, names. */
+  tool: string | null;
+  runs: Runs | null;
+  uses: Use[];
+  children: Step[];
+}
+
+export interface SessionGroup {
+  /** null for prompts typed here. */
+  sessionId: string | null;
+  number: number;
+  tool: string | null;
+  model: string | null;
+  /** The session's date, or "typed here" for prompts with no session. */
+  startedAt: string | null;
+  stepNumbers: string[];
+}
+
+/** Where the date would be, for prompts written by hand. */
+export const TYPED_HERE = "typed here";
+
+export const TITLE_MAX = 80;
+export const RUNS_COUNT_MIN = 2;
+export const RUNS_COUNT_MAX = 20;
+export const UNTIL_DETAIL_MAX = 80;
+export const WHEN_DETAIL_MAX = 60;
+export const MANUAL_TOOL_MAX = 40;
+export const MANUAL_TEXT_MAX = 140;
+
+const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
+
+const USE_KINDS: readonly UseKind[] = ["output", "file", "tool"];
+const RUNS_HOWS: readonly RunsHow[] = ["once", "parallel", "until", "schedule", "event"];
+
+type Payload = Record<string, Json | undefined>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+const payloadOf = (node: Pick<BuildNode, "payload">): Payload => (isRecord(node.payload) ? (node.payload as Payload) : {});
+
+const stringOf = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value : null);
+
+const refuse = (operation: string, message: string): Error => buildLayerError(operation, new Error(message));
+
+/** Words in a text, split on whitespace. */
+export function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+// --- reading ------------------------------------------------------------------
+
+/** The uses a node lists, in order. Entries that are not a known kind and an id are skipped, and a repeat is read once. */
+export function usesOf(node: Pick<BuildNode, "payload">): Use[] {
+  const raw = payloadOf(node).uses;
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: Use[] = [];
+  for (const entry of raw) {
+    if (!isRecord(entry)) continue;
+    const { kind, node_id: nodeId } = entry;
+    if (typeof nodeId !== "string" || !nodeId || !USE_KINDS.includes(kind as UseKind)) continue;
+    const key = `${kind}:${nodeId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ kind: kind as UseKind, node_id: nodeId });
+  }
+  return out;
+}
+
+/** How a step runs, or null for a value that is not a Runs. A null `runs` means "once". */
+export function parseRuns(value: unknown): Runs | null {
+  if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
+  const runs: Runs = { how: value.how as RunsHow };
+  if (runs.how === "parallel" && typeof value.count === "number" && Number.isFinite(value.count)) runs.count = value.count;
+  if (runs.how === "until" || runs.how === "schedule" || runs.how === "event") {
+    const detail = stringOf(value.detail)?.trim();
+    if (detail) runs.detail = detail;
+  }
+  return runs;
+}
+
+/** The words that say how a step runs. */
+export function runsLabel(runs: Runs | null | undefined): string {
+  const detail = runs?.detail ? ` · ${runs.detail}` : "";
+  switch (runs?.how) {
+    case "parallel":
+      return typeof runs.count === "number" ? `Runs several at once · ${runs.count}` : "Runs several at once";
+    case "until":
+      return `Repeats until a condition is met${detail}`;
+    case "schedule":
+      return `Runs on a schedule${detail}`;
+    case "event":
+      return `Runs when something happens${detail}`;
+    default:
+      return "Runs once";
+  }
+}
+
+const KIND_OF_TYPE: Record<string, StepKind> = {
+  [PROMPT_TYPE]: "prompt",
+  [AGENT_TYPE]: "agent",
+  [TEAM_TYPE]: "team",
+  [MANUAL_STEP_TYPE]: "manual",
+};
+
+const KIND_NAME: Record<StepKind, string> = {
+  prompt: "Prompt",
+  agent: "Agent",
+  team: "Team",
+  manual: "Manual step",
+};
+
+const isStepNode = (node: Pick<BuildNode, "type">): boolean => node.type in KIND_OF_TYPE;
+
+const byPosition = <T extends Pick<BuildNode, "position">>(nodes: readonly T[]): T[] =>
+  [...nodes]
+    .filter((node) => typeof node.position === "number")
+    .sort((a, b) => (a.position as number) - (b.position as number));
+
+function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
+  const payload = payloadOf(node);
+  const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : (stringOf(payload.text) ?? "");
+  const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
+  const tool = stringOf(payload.tool);
+  return {
+    id: node.id,
+    kind,
+    number,
+    title: stringOf(node.title)?.trim() || null,
+    defaultTitle: `${KIND_NAME[kind]} ${number}`,
+    text,
+    words: wordCount(text),
+    model: stringOf(payload.model),
+    sessionId: typeof import_ === "string" && import_ ? import_ : null,
+    tool: tool ? (toolLabel(tool) ?? tool) : null,
+    runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
+    uses: usesOf(node),
+    children,
+  };
+}
+
+/** An agent's instructions: its first child, drawn from the agent's own row. */
+function instructionsOf(agent: NodeTree, number: string): Step {
+  const base = stepFor(agent, number, "agent");
+  return {
+    ...base,
+    id: `${agent.id}:instructions`,
+    kind: "prompt",
+    title: null,
+    defaultTitle: "Instructions",
+    runs: null,
+    uses: [],
+    sessionId: null,
+    tool: null,
+    children: [],
+  };
+}
+
+/**
+ * The steps in order, numbered (DATA §1). `tree` is the nested placed tree.
+ * An agent's children are its instructions then its prompts; a team's are its
+ * agents, each shown without children, since its own prompts show when opened.
+ */
+export function buildSteps(tree: readonly NodeTree[]): Step[] {
+  const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
+  return top.map((node, index) => {
+    const number = String(index + 1);
+    const kind = KIND_OF_TYPE[node.type];
+    if (kind === "agent") {
+      const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
+      return stepFor(node, number, kind, [
+        instructionsOf(node, `${number}.1`),
+        ...prompts.map((child, i) => stepFor(child, `${number}.${i + 2}`, "prompt")),
+      ]);
+    }
+    if (kind === "team") {
+      const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
+      return stepFor(node, number, kind, agents.map((child, i) => stepFor(child, `${number}.${i + 1}`, "agent")));
+    }
+    return stepFor(node, number, kind);
+  });
+}
+
+/** The title the maker typed, else the default. */
+export function stepTitle(step: Pick<Step, "title" | "defaultTitle">): string {
+  return step.title ?? step.defaultTitle;
+}
+
+/**
+ * The sessions and runs of typed prompts that make up the top-level steps, in
+ * order of first step (DATA §5). A session is one group wherever its prompts
+ * sit; prompts with no session form one group per run of consecutive steps.
+ * `sessions` is builds.making.sessions; an entry without an id cannot be
+ * matched, and its prompts keep the model they name.
+ */
+export function sessionGroups(steps: readonly Step[], sessions: readonly MakingSession[]): SessionGroup[] {
+  const known = new Map<string, MakingSession>();
+  for (const session of sessions) if (session.id) known.set(session.id, session);
+
+  const groups: SessionGroup[] = [];
+  const bySession = new Map<string, SessionGroup>();
+  let typed: SessionGroup | null = null;
+
+  for (const step of steps) {
+    if (step.kind !== "prompt") {
+      typed = null;
+      continue;
+    }
+    if (step.sessionId) {
+      typed = null;
+      let group = bySession.get(step.sessionId);
+      if (!group) {
+        const session = known.get(step.sessionId);
+        const model = session?.model ?? step.model;
+        group = {
+          sessionId: step.sessionId,
+          number: groups.length + 1,
+          tool: session ? toolLabel(session.client) : null,
+          model: model ? modelLabel(model) : null,
+          startedAt: session?.started_at ?? null,
+          stepNumbers: [],
+        };
+        bySession.set(step.sessionId, group);
+        groups.push(group);
+      }
+      group.stepNumbers.push(step.number);
+      continue;
+    }
+    if (!typed) {
+      typed = {
+        sessionId: null,
+        number: groups.length + 1,
+        tool: step.tool,
+        model: step.model ? modelLabel(step.model) : null,
+        startedAt: TYPED_HERE,
+        stepNumbers: [],
+      };
+      groups.push(typed);
+    }
+    typed.stepNumbers.push(step.number);
+  }
+  return groups;
+}
+
+/** Every step, parents before their children. */
+function flattenSteps(steps: readonly Step[]): Step[] {
+  return steps.flatMap((step) => [step, ...flattenSteps(step.children)]);
+}
+
+/**
+ * Where a step's work goes (DATA §3): every step whose uses name it as an
+ * output, then the next step in the same session. Never stored.
+ */
+export function goesInto(steps: readonly Step[], id: string): Step[] {
+  const out: Step[] = flattenSteps(steps).filter(
+    (step) => step.id !== id && step.uses.some((use) => use.kind === "output" && use.node_id === id),
+  );
+  const index = steps.findIndex((step) => step.id === id);
+  const here = steps[index];
+  const next = steps[index + 1];
+  if (here?.kind === "prompt" && here.sessionId && next?.kind === "prompt" && next.sessionId === here.sessionId) {
+    if (!out.some((step) => step.id === next.id)) out.push(next);
+  }
+  return out;
+}
+
+// --- writes -------------------------------------------------------------------
+
+const withPayload = (node: BuildNode, payload: Payload): BuildNodeInsert => ({
+  ...nodeRow(node),
+  payload: payload as Json,
+});
+
+/** Name a step. Trimmed, at most 80 characters; an empty title saves as null. */
+export async function setStepTitle(node: BuildNode, title: string): Promise<BuildNode> {
+  const trimmed = title.trim();
+  if (trimmed.length > TITLE_MAX) throw refuse("setStepTitle", `A title is at most ${TITLE_MAX} characters.`);
+  return upsertNode({ ...nodeRow(node), title: trimmed || null });
+}
+
+const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
+
+/**
+ * Add an input to a step. A step never uses itself and the same use is never
+ * listed twice. A use of a LATER step is allowed only when that step sits in
+ * the same agent or team and its runs is "until": a checker sending work back.
+ */
+export async function addUse(node: BuildNode, use: Use, steps: readonly Step[]): Promise<BuildNode> {
+  if (!USE_KINDS.includes(use.kind) || !use.node_id) throw refuse("addUse", "That input is not a step, a file or a tool.");
+  if (use.node_id === node.id) throw refuse("addUse", "A step never uses itself.");
+  const current = usesOf(node);
+  if (current.some((entry) => useKey(entry) === useKey(use))) throw refuse("addUse", "That input is already listed.");
+
+  if (use.kind === "output") {
+    const all = flattenSteps(steps);
+    const from = all.findIndex((step) => step.id === node.id);
+    const to = all.findIndex((step) => step.id === use.node_id);
+    if (from < 0) throw refuse("addUse", "That is not a step.");
+    if (to < 0) throw refuse("addUse", "That step is not in this build.");
+    if (to > from) {
+      const parentOf = (id: string) => steps.find((step) => step.children.some((child) => child.id === id));
+      const parent = parentOf(node.id);
+      const sameContainer = Boolean(parent) && parent === parentOf(use.node_id);
+      if (!sameContainer || all[to].runs?.how !== "until") {
+        throw refuse("addUse", "Only a step that repeats until a condition is met can be used before it runs.");
+      }
+    }
+  }
+
+  const payload = payloadOf(node);
+  const dismissed = Array.isArray(payload.dismissed) ? payload.dismissed.filter((key) => key !== useKey(use)) : undefined;
+  const next: Payload = { ...payload, uses: [...current, use] as unknown as Json };
+  if (dismissed) next.dismissed = dismissed;
+  return upsertNode(withPayload(node, next));
+}
+
+/** Take an input off a step. Nothing is written if it was not there. */
+export async function removeUse(node: BuildNode, use: Use): Promise<BuildNode> {
+  const current = usesOf(node);
+  const kept = current.filter((entry) => useKey(entry) !== useKey(use));
+  if (kept.length === current.length) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), uses: kept as unknown as Json }));
+}
+
+/** Keep a suggestion from being offered again. `key` is "<kind>:<node_id>". */
+export async function dismissSuggestion(node: BuildNode, key: string): Promise<BuildNode> {
+  const [kind, ...rest] = key.split(":");
+  if (!USE_KINDS.includes(kind as UseKind) || !rest.join(":")) throw refuse("dismissSuggestion", "That is not a suggestion.");
+  const raw = payloadOf(node).dismissed;
+  const dismissed = Array.isArray(raw) ? raw.filter((entry): entry is string => typeof entry === "string") : [];
+  if (dismissed.includes(key)) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), dismissed: [...dismissed, key] }));
+}
+
+/**
+ * How an agent or a team runs (CONCEPT §3). "Runs once" is no `runs` at all.
+ * Several at once needs a count of 2 to 20; the others take one short line.
+ */
+export async function setRuns(node: BuildNode, runs: Runs | null): Promise<BuildNode> {
+  if (node.type !== AGENT_TYPE && node.type !== TEAM_TYPE) throw refuse("setRuns", "Only an agent or a team has a way it runs.");
+  const payload = { ...payloadOf(node) };
+  delete payload.runs;
+
+  if (runs && runs.how !== "once") {
+    if (!RUNS_HOWS.includes(runs.how)) throw refuse("setRuns", "That is not a way to run.");
+    const next: Runs = { how: runs.how };
+    if (runs.how === "parallel") {
+      const count = runs.count;
+      if (typeof count !== "number" || !Number.isInteger(count) || count < RUNS_COUNT_MIN || count > RUNS_COUNT_MAX) {
+        throw refuse("setRuns", `Several at once runs ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
+      }
+      next.count = count;
+    } else {
+      const detail = (runs.detail ?? "").trim();
+      const max = runs.how === "until" ? UNTIL_DETAIL_MAX : WHEN_DETAIL_MAX;
+      if (detail.length > max) throw refuse("setRuns", `That line is at most ${max} characters.`);
+      if (detail) next.detail = detail;
+    }
+    payload.runs = next as unknown as Json;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/** Say once that the type is not in the registry yet, then stop. */
+async function requireLiveType(operation: string, key: string): Promise<void> {
+  const type = await getNodeType(key);
+  if (!type || !type.is_active) throw refuse(operation, NODE_TYPE_MISSING);
+}
+
+const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
+
+export async function addAgent(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { name, model }: { name?: string | null; model: string },
+): Promise<BuildNode> {
+  if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
+  const title = titleOrNull(name);
+  if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
+  return placeTopNode(buildId, tree, { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } });
+}
+
+export async function addTeam(buildId: string, tree: readonly NodeTree[], { name }: { name?: string | null }): Promise<BuildNode> {
+  await requireLiveType("addTeam", TEAM_TYPE);
+  const title = titleOrNull(name);
+  if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
+  return placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+}
+
+/** A further prompt inside an agent. Refuses empty text. */
+export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[], text: string): Promise<BuildNode> {
+  if (agent.type !== AGENT_TYPE) throw refuse("addAgentPrompt", "Prompts go inside an agent.");
+  if (!text.trim()) throw refuse("addAgentPrompt", "A prompt needs its text.");
+  return placeChildNode(agent.build_id, tree, agent.id, { type: PROMPT_TYPE, title: null, payload: { text }, source_ref: null });
+}
+
+export async function addManualStep(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { tool, text }: { tool: string; text: string },
+): Promise<BuildNode> {
+  await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
+  const name = tool.trim();
+  const line = text.trim();
+  if (!name || name.length > MANUAL_TOOL_MAX) throw refuse("addManualStep", `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
+  if (!line || line.length > MANUAL_TEXT_MAX) throw refuse("addManualStep", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
+  return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload: { tool: name, text: line } });
+}
+
+/** A file the AI read. `title` is the file name. */
+export async function addFile(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { title, url, summary, media_id }: { title: string; url?: string; summary?: string; media_id?: string },
+): Promise<BuildNode> {
+  if (!title.trim()) throw refuse("addFile", "A file needs its name.");
+  return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) });
+}
+
+/** An app or connector the AI used. */
+export async function addTool(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { service, scopes, notes }: { service: string; scopes?: string; notes?: string },
+): Promise<BuildNode> {
+  if (!service.trim()) throw refuse("addTool", "A tool needs its name.");
+  return placeTopNode(buildId, tree, { type: TOOL_TYPE, title: null, payload: compact({ service: service.trim(), scopes, notes }) });
+}
+
+/** The finished thing. */
+export async function addResult(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { summary, media_id, url }: { summary: string; media_id?: string; url?: string },
+): Promise<BuildNode> {
+  if (!summary.trim()) throw refuse("addResult", "A result needs a line saying what it is.");
+  return placeTopNode(buildId, tree, { type: RESULT_TYPE, title: null, payload: compact({ summary: summary.trim(), media_id, url }) });
+}
+
+/** The payload without the fields left blank. */
+function compact(fields: Record<string, string | undefined>): Json {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(fields)) if (typeof value === "string" && value.trim()) out[key] = value.trim();
+  return out;
+}

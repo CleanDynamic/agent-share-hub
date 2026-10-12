@@ -20,7 +20,7 @@ vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
 }));
 
-import { nextMadeWith, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel } from "./making";
+import { nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel } from "./making";
 
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
 
@@ -91,6 +91,18 @@ describe("refreshMakingStats", () => {
     build();
     await refreshMakingStats(BUILD_ID);
     expect(JSON.stringify(patch())).not.toContain("SECRET CONVERSATION TEXT");
+  });
+
+  it("writes each session's id and start date, and reads an entry without them", async () => {
+    listBuildSessions.mockResolvedValue([session({ id: "imp-1", createdAt: "2026-10-05T10:00:00Z" })]);
+    build();
+    await refreshMakingStats(BUILD_ID);
+    const { sessions } = patch().making as { sessions: Record<string, unknown>[] };
+    expect(sessions[0]).toMatchObject({ id: "imp-1", started_at: "2026-10-05T10:00:00Z", client: "claude-code" });
+
+    const old: MakingSession = { client: "claude", model: "Sonnet 5.5", prompts: 1, turns: 2 };
+    expect(old.id).toBeUndefined();
+    expect(old.started_at).toBeUndefined();
   });
 
   it("leaves excluded models out of models_used and made_with, and keeps excluded_models", async () => {
