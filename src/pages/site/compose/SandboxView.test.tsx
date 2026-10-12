@@ -42,7 +42,7 @@ describe("SandboxView frame", () => {
     for (const name of ["Sources", "Build", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
     expect(screen.getByText("Select a prompt, session or file to see it here.")).toBeTruthy();
     expect(document.querySelectorAll('[data-variant="primary"]').length).toBe(1);
-    expect(screen.getByTestId("sandbox-counts").textContent).toBe("3 sessions · 12 prompts · 2 files");
+    expect(screen.getByTestId("sandbox-counts").textContent).toBe("4 sessions · 5 prompts · 1 file");
   });
 
   it("names what is missing and opens the Card at that field", () => {
@@ -62,9 +62,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the seven Add items in order, all disabled until their prompts have run", () => {
+  it("lists the seven Add items in order, Session and File ready (UI-P64), the rest disabled until their prompts have run", () => {
     expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Result"]);
-    expect(ADD_ITEMS.every((item) => !item.ready)).toBe(true);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["session", "file"]);
   });
 
   it("opens the Card from its button with the six sections' fields", () => {
