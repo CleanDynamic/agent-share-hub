@@ -10,9 +10,9 @@
 // session parked just after either page was read was missing from the next one
 // opened, and from the open one until a reload.
 //
-// THE BACKEND IS FAKED (support/fakeBackend.ts). import_sessions answers the
-// waiting list from the rows the test parks; parking one is what finish_import
-// does.
+// THE BACKEND IS FAKED (support/fakeBackend.ts). import_sessions answers
+// Drafts' waiting list and the composer's library from the rows the test
+// parks; parking one is what finish_import does.
 
 import { expect, test, type Page } from "@playwright/test";
 import { fakeBoundaries, json, uuid, type Row } from "./support/fakeBackend";
@@ -36,7 +36,7 @@ const parkedRow = (n: number): Row => ({
 interface Connector {
   /** finish_import: the conversation is parked, waiting for the creator. */
   park: () => void;
-  /** How many times the browser has read the waiting list. */
+  /** How many times the browser has read the waiting list or the library. */
   reads: () => number;
 }
 
@@ -50,6 +50,11 @@ async function fakeBackend(page: Page): Promise<Connector> {
     if (url.includes("status=in.(parsed)")) {
       reads += 1;
       return json(route, rows.filter((row) => row.status === "parsed"));
+    }
+    // The composer's library: every usable session on the account, newest first.
+    if (url.includes("status=in.(parsed,claimed,expired)")) {
+      reads += 1;
+      return json(route, [...rows].reverse());
     }
     if (url.includes("status=in.(parsed,claimed)")) return json(route, rows);
     return json(route, []);
@@ -85,7 +90,7 @@ const returnToTab = (page: Page) =>
 const markDocument = (page: Page) => page.evaluate(() => ((window as unknown as { __sameDocument: boolean }).__sameDocument = true));
 const sameDocument = (page: Page) => page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument === true);
 
-const waitingInComposer = (page: Page) => page.getByRole("region", { name: "Not in a build yet" }).getByTestId("waiting-session");
+const waitingInComposer = (page: Page) => page.getByTestId("compose-sessions").getByTestId("compose-session");
 const waitingOnDrafts = (page: Page) => page.getByTestId("session-row");
 
 test("a session parked after Drafts was read is listed as soon as a new build opens", async ({ page }, testInfo) => {
@@ -97,13 +102,13 @@ test("a session parked after Drafts was read is listed as soon as a new build op
   await openNewBuild(page, onPhone(testInfo.project.name));
 
   await expect(waitingInComposer(page)).toHaveCount(1);
-  await expect(waitingInComposer(page)).toContainText(FIRST_PROMPT);
+  await expect(waitingInComposer(page)).toContainText("Sonnet 5.5");
 });
 
 test("a session parked after a new build was opened is listed as soon as Drafts opens", async ({ page }, testInfo) => {
   const connector = await fakeBackend(page);
   await page.goto("/compose/new");
-  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions in this build yet.");
+  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions yet.");
   await expect.poll(connector.reads).toBe(1);
 
   connector.park();
@@ -146,7 +151,7 @@ test("a session parked while a new build stays on screen is listed without a rel
   await page.clock.install();
   const connector = await fakeBackend(page);
   await page.goto("/compose/new");
-  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions in this build yet.");
+  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions yet.");
   await expect.poll(connector.reads).toBe(1);
   await markDocument(page);
 
@@ -154,6 +159,6 @@ test("a session parked while a new build stays on screen is listed without a rel
   await page.clock.fastForward("00:20");
 
   await expect(waitingInComposer(page)).toHaveCount(1);
-  await expect(waitingInComposer(page)).toContainText(FIRST_PROMPT);
+  await expect(waitingInComposer(page)).toContainText("Sonnet 5.5");
   expect(await sameDocument(page)).toBe(true);
 });

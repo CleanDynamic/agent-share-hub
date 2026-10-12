@@ -249,6 +249,15 @@ async function fakeBackend(page: Page, { signedIn = true, seed = {} }: { signedI
       return json(route, sessions.filter((row) => row.build_id === inBuild && row.status === "claimed").sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))));
     }
     if (url.includes("status=in.(parsed)")) return json(route, sessions.filter((row) => row.status === "parsed"));
+    // The library, as listLibrarySessions asks: these statuses, a proposal, newest first.
+    if (url.includes("status=in.(parsed,claimed,expired)") && url.includes("proposal=not.is.null")) {
+      return json(
+        route,
+        sessions
+          .filter((row) => ["parsed", "claimed", "expired"].includes(String(row.status)) && row.has_proposal !== false)
+          .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
+      );
+    }
     return json(route, sessions);
   });
 
@@ -455,25 +464,87 @@ test("moving a prompt down swaps it with the next prompt through reorder, and le
   expect(backend.nodes().find((row) => row.id === COVER)?.position).toBe(1);
 });
 
-test("a session in no build is listed in Your sessions, and its + claims it for this build and refreshes the stats", async ({ page }) => {
+/* ── Your sessions is the account's library, not one build's ── */
+
+const OTHER_BUILD = uuid(222);
+
+test("a new build lists every session on the account, newest first, as soon as it opens", async ({ page }) => {
+  const OLD = uuid(103);
+  const NO_PROPOSAL = uuid(104);
+  await fakeBackend(page, {
+    seed: {
+      sessions: [
+        // Already used in another build, today.
+        sessionRow(SESSION_1, { status: "claimed", build_id: OTHER_BUILD }),
+        // Marked expired, yesterday.
+        sessionRow(SESSION_2, { status: "expired" }),
+        // Waiting, three days ago.
+        { ...sessionRow(SESSION_2), id: OLD, created_at: new Date(Date.now() - 3 * 86_400_000).toISOString() },
+        // Never finished parsing: nothing to offer.
+        { ...sessionRow(SESSION_2), id: NO_PROPOSAL, status: "open", has_proposal: false },
+      ],
+    },
+  });
+  await page.goto("/compose/new");
+
+  const panel = page.getByTestId("compose-sessions");
+  await expect(panel.getByRole("heading", { level: 2 })).toHaveText("Your sessions3");
+  await expect(panel.getByRole("button", { name: /^Session \d/ })).toHaveText([
+    /^Session 3: Sonnet 5\.5, Today$/,
+    /^Session 2: Opus 5\.5, Yesterday$/,
+    /^Session 1: Opus 5\.5, /,
+  ]);
+  await expect(panel).not.toContainText("No sessions");
+  // The newest is open, and its prompts are there to use.
+  await expect(panel.getByTestId("session-prompt").first()).toContainText(PROMPTS[SESSION_1][0]);
+});
+
+test("a prompt from a session used in another build is added, and the session stays listed", async ({ page }) => {
+  const backend = await fakeBackend(page, { seed: { build: DRAFT, sessions: [sessionRow(SESSION_1, { status: "claimed", build_id: OTHER_BUILD })] } });
+  await page.goto(`/compose/${BUILD_ID}`);
+
+  const sessions = page.getByTestId("compose-sessions");
+  const second = PROMPTS[SESSION_1][1];
+  await sessions.getByRole("button", { name: `Add to prompts: ${second.slice(0, 60).trimEnd()}` }).click();
+
+  await expect(page.getByText("Added as prompt 1.")).toBeVisible();
+  expect(writesTo(backend, "build_nodes", "POST")[0].body).toMatchObject({
+    build_id: BUILD_ID,
+    type: "prompt",
+    source_ref: { import_session_id: SESSION_1 },
+  });
+  await expect(page.getByTestId("compose-prompt").first()).toContainText("Session 1 · Sonnet 5.5");
+  // Nothing moves the session out of the other build.
+  expect(writesTo(backend, "import_sessions", "PATCH")).toHaveLength(0);
+  await expect(sessions.getByRole("button", { name: /^Session 1: Sonnet 5\.5/ })).toBeVisible();
+});
+
+test("a prompt from a session in no build yet puts the session into this draft, and it stays listed", async ({ page }) => {
   const backend = await fakeBackend(page, { seed: { build: DRAFT, sessions: [sessionRow(SESSION_2)] } });
   await page.goto(`/compose/${BUILD_ID}`);
 
-  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions in this build yet.");
-  const waiting = page.getByRole("region", { name: "Not in a build yet" });
-  await expect(waiting.getByTestId("waiting-session")).toHaveText([/^My iPhone photos are HEIC/]);
-  await expect(page.getByRole("button", { name: "Add a session" })).toHaveCount(0);
-  await waiting.getByRole("button", { name: /^Add to this build: My iPhone photos are HEIC/ }).click();
+  const sessions = page.getByTestId("compose-sessions");
+  const first = PROMPTS[SESSION_2][0];
+  await sessions.getByRole("button", { name: `Add to prompts: ${first.slice(0, 60).trimEnd()}` }).click();
 
-  await expect(page.getByText("Session added. Opus 5.5 is now under Made with.")).toBeVisible();
-  const claim = writesTo(backend, "import_sessions", "PATCH").find((write) => write.body?.status === "claimed");
-  expect(claim?.body).toMatchObject({ status: "claimed", build_id: BUILD_ID });
-  const stats = writesTo(backend, "builds", "PATCH").find((write) => write.body && "session_count" in write.body);
-  expect(stats?.body).toMatchObject({ session_count: 1, prompt_count: 2, ai_turn_count: 4, models_used: ["Opus 5.5"], made_with: ["Claude", "Opus 5.5"] });
-
-  await expect(page.getByTestId("compose-sessions").getByRole("button", { name: /^Session 1: Opus 5\.5/ })).toBeVisible();
-  await expect(page.getByTestId("compose-waiting-sessions")).toHaveCount(0);
+  await expect(page.getByText("Added as prompt 1.")).toBeVisible();
+  await expect.poll(() => writesTo(backend, "import_sessions", "PATCH").find((write) => write.body?.status === "claimed")?.body).toMatchObject({
+    status: "claimed",
+    build_id: BUILD_ID,
+  });
+  await expect
+    .poll(() => writesTo(backend, "builds", "PATCH").find((write) => write.body && "session_count" in write.body)?.body)
+    .toMatchObject({ session_count: 1, models_used: ["Opus 5.5"], made_with: ["Claude", "Opus 5.5"] });
   await expect(page.getByTestId("made-with-chip")).toHaveText(["Claude · Opus 5.5"]);
+  await expect(sessions.getByRole("button", { name: /^Session 1: Opus 5\.5/ })).toBeVisible();
+  await expect(sessions.getByTestId("waiting-session")).toHaveCount(0);
+});
+
+test("an account with no sessions says so", async ({ page }) => {
+  await fakeBackend(page);
+  await page.goto("/compose/new");
+  await expect(page.getByTestId("compose-sessions")).toContainText("No sessions yet.");
+  await expect(page.getByTestId("compose-sessions")).not.toContainText("in this build");
 });
 
 test("Publish goes through once there is a title, a description, a cover and one prompt", async ({ page }) => {

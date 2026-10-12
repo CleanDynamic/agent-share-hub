@@ -52,7 +52,6 @@ import {
   PUBLISH_WORDS,
   publishToast,
   saveState,
-  sessionMetaLine,
   UNTITLED,
 } from "./composeModel";
 import { useComposeDetails } from "./useComposeDetails";
@@ -228,24 +227,30 @@ export function ComposePage() {
   const sessions = useComposeSessions({
     buildId,
     owner: compose.isOwner,
+    canClaim: !build || build.status === "draft",
     ensureBuild,
     recordMadeWith: build?.made_with ?? [],
   });
+  // Your sessions lists the library newest first and numbers it oldest first,
+  // so a session keeps its number as new ones arrive, and a prompt's source
+  // line in Prompts ("Session 3 · Sonnet 5.5") names the same session.
+  const numbered = useMemo(() => [...sessions.library].reverse(), [sessions.library]);
   const prompts = useComposePrompts({
     buildId,
     nodes,
     ensureBuild,
-    sessions: sessions.sessions,
+    sessions: numbered,
     sessionPrompts: sessions.promptsOf,
+    onSessionUsed: sessions.claimForBuild,
   });
   const details = useComposeDetails({ build, hydrate: !createdHere, nodes, ensureBuild, edit });
 
   const now = Date.now();
-  const sessionViews: ComposeSession[] = sessions.sessions.map((session, index) => {
+  const sessionViews: ComposeSession[] = sessions.library.map((session, index) => {
     const { prompts: read, error } = sessions.promptsState(session.id);
     return {
       id: session.id,
-      number: index + 1,
+      number: sessions.library.length - index,
       label: sessionSource(session),
       modelKnown: session.modelName !== null,
       date: sessionDate(session.createdAt, now),
@@ -255,15 +260,6 @@ export function ComposePage() {
       promptsError: error,
     };
   });
-  // The two lists are read again side by side after a claim, so for a moment a
-  // session can be in this build's list and still in the stale waiting one.
-  const otherSessions =
-    sessions.others?.filter((session) => !sessions.sessions.some((own) => own.id === session.id)).map((session) => ({
-      id: session.id,
-      firstPrompt: session.firstPrompt ?? "Untitled session",
-      meta: sessionMetaLine(session, now),
-      adding: sessions.isAttaching(session.id),
-    })) ?? null;
   const madeWith = madeWithChips(sessions.sessions, sessions.madeWith);
 
   /* ── publish ── */
@@ -371,11 +367,6 @@ export function ComposePage() {
             if (saved) prompts.relabel(sessionId, modelLabel(model));
           })
         }
-        otherSessions={otherSessions}
-        otherSessionsError={sessions.othersError}
-        onRetryOtherSessions={sessions.retryOthers}
-        canAttachSessions={!live}
-        onAttachSession={sessions.attach}
         madeWith={madeWith}
         onToggleMadeWith={sessions.toggleMadeWith}
         onAddMadeWith={sessions.addMadeWith}
