@@ -46,6 +46,37 @@ export async function placeTopNode(
   }
 }
 
+/** One past the highest position among a parent's children, so a new child is placed and never collides. */
+export function nextChildPosition(tree: readonly NodeTree[], parentId: string): number {
+  const parent = flatten(tree).find((node) => node.id === parentId);
+  let highest = 0;
+  for (const child of parent?.children ?? []) {
+    if (typeof child.position === "number" && child.position > highest) highest = child.position;
+  }
+  return highest + 1;
+}
+
+/**
+ * Insert a node under a parent, after its other children. Same unique-index
+ * rule as placeTopNode (and reorderNodes, which parks rows for the same
+ * reason): on a collision the tree is read again and the insert tried once more.
+ */
+export async function placeChildNode(
+  buildId: string,
+  tree: readonly NodeTree[],
+  parentId: string,
+  node: Omit<BuildNodeInsert, "build_id" | "parent_id" | "position">,
+): Promise<BuildNode> {
+  const at = (from: readonly NodeTree[]) =>
+    upsertNode({ ...node, build_id: buildId, parent_id: parentId, position: nextChildPosition(from, parentId) });
+  try {
+    return await at(tree);
+  } catch (cause) {
+    if (!isUniqueViolation(cause)) throw cause;
+    return at(await getNodeTree(buildId));
+  }
+}
+
 /**
  * Every column of a node, for an upsert that changes it: PostgREST's upsert is
  * INSERT … ON CONFLICT, so the NOT NULL columns must all be present.

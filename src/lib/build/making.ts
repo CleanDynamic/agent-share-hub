@@ -28,6 +28,9 @@ export function toolLabel(client: string | null | undefined): string | null {
 }
 
 export interface MakingSession {
+  /** The import session's id and its created_at. Absent on entries written before UI-P62. */
+  id?: string;
+  started_at?: string;
   client: string | null;
   model: string | null;
   prompts: number;
@@ -117,6 +120,8 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
 
     const making: Making = {
       sessions: sessions.map((session) => ({
+        id: session.id,
+        started_at: session.createdAt,
         client: session.client,
         model: session.modelName,
         prompts: session.promptCount,
