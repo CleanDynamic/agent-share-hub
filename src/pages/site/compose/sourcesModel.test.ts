@@ -1,0 +1,55 @@
+import { describe, expect, it } from "vitest";
+
+import type { SessionGroup, Step } from "@/lib/build/graph";
+import type { SessionSummary } from "@/lib/build/sessions";
+import type { BuildNode } from "@/lib/build/types";
+
+import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
+
+const step = (over: Partial<Step>): Step => ({
+  id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
+});
+const group = (over: Partial<SessionGroup>): SessionGroup => ({ sessionId: "a", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1"], ...over });
+const summary = (over: Partial<SessionSummary>): SessionSummary => ({
+  id: "x", client: "claude", model: null, targetBuildId: null, modelName: "Opus 5.5", firstPrompt: null, promptCount: 2, turnCount: 4, createdAt: "2026-03-01T10:00:00", buildId: null, status: "parsed", ...over,
+});
+
+describe("sourceSessions", () => {
+  it("nests the prompts a session gave, with default titles marked", () => {
+    const steps = [step({ id: "n1", number: "1", sessionId: "a" }), step({ id: "n2", number: "2", sessionId: "a", title: "Copy" }), step({ id: "n3", number: "3", sessionId: "b" })];
+    const rows = sourceSessions([group({ stepNumbers: ["1", "2"] }), group({ sessionId: "b", number: 2, tool: "Claude Code" })], steps);
+    expect(rows.map((r) => [r.number, r.tool, r.detail])).toEqual([[1, "Claude", "Opus 5.5 · 3 Mar"], [2, "Claude Code", "Opus 5.5 · 3 Mar"]]);
+    expect(rows[0].prompts.map((p) => [p.number, p.title, p.isDefault])).toEqual([["1", "Prompt 1", true], ["2", "Copy", false]]);
+  });
+
+  it("draws prompts written here as one 'typed here' session", () => {
+    const rows = sourceSessions([group({ sessionId: null, tool: null, model: null, startedAt: "typed here", stepNumbers: ["1"] })], [step({})]);
+    expect(rows[0]).toMatchObject({ key: "typed-1", tool: "Unknown tool", detail: "typed here" });
+    expect(rows[0].prompts).toHaveLength(1);
+  });
+
+  it("keeps a session in the build that has no prompt yet, numbered on", () => {
+    const rows = sourceSessions([group({})], [step({ sessionId: "a" })], [summary({ id: "a" }), summary({ id: "z", client: "claude-code" })]);
+    expect(rows.map((r) => [r.key, r.number, r.prompts.length])).toEqual([["a", 1, 1], ["z", 2, 0]]);
+  });
+});
+
+describe("sourceFiles and librarySources", () => {
+  it("says where a file came from", () => {
+    const node = (id: string, payload: object) => ({ id, type: "document", parent_id: null, payload }) as unknown as BuildNode;
+    const rows = sourceFiles([node("1", { title: "menu.pdf", session_id: "a" }), node("2", { title: "logo.png" })], [group({})]);
+    expect(rows.map((r) => r.note)).toEqual(["opened in session 1", "added by you"]);
+  });
+
+  it("lists only parsed sessions that are in no build", () => {
+    const rows = librarySources([summary({ id: "1" }), summary({ id: "2", buildId: "b" }), summary({ id: "3", status: "claimed" })], new Set(["1"]), Date.now());
+    expect(rows).toEqual([{ id: "1", label: "Opus 5.5", line: "1 Mar · 2 prompts", adding: true }]);
+  });
+});
+
+describe("isSessionExport", () => {
+  it("takes json for an export and a pdf for a file", () => {
+    expect(isSessionExport({ name: "chat.json", type: "application/json" })).toBe(true);
+    expect(isSessionExport({ name: "menu.pdf", type: "application/pdf" })).toBe(false);
+  });
+});

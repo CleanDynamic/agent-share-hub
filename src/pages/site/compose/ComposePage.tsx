@@ -371,7 +371,7 @@ export function useComposePage() {
     onGapSwitch: details.setGapOn,
   };
 
-  return { viewProps, missing, build, tree: compose.tree, compose, ensureBuild, buildId };
+  return { viewProps, missing, build, tree: nodes.tree, compose, ensureBuild, buildId, nodes, sessions };
 }
 
 export function ComposePage() {

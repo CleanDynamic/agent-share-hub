@@ -8,6 +8,7 @@ import type { DesignState } from "@/dev/useDesignTheme";
 import { composeViewProps } from "@/dev/fixtures/compose";
 import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
 import type { SandboxViewProps } from "@/pages/site/compose/SandboxView";
+import type { SourcesPanelProps } from "@/pages/site/compose/SourcesPanel";
 
 const noop = () => undefined;
 
@@ -52,5 +53,49 @@ export function sandboxViewProps(which: SandboxFixture = "fox", state: DesignSta
     onLens: noop,
     mapAvailable: !fox,
     mapHint: !fox,
+  };
+}
+
+/** The Sources panel's rows for each build: the fox poster's one session, the bakery's three, two files and two waiting. */
+export function sandboxSourcesProps(which: SandboxFixture = "fox", state: DesignState = "populated"): SourcesPanelProps {
+  const fox = which === "fox";
+  const empty = state === "empty";
+  return {
+    phone: false,
+    fine: true,
+    status: state === "loading" ? "loading" : state === "error" ? "error" : "ready",
+    onRetry: noop,
+    sessions: empty
+      ? []
+      : fox
+        ? [{ key: "s1", number: 1, tool: "Claude", detail: "Opus 5.5 · 3 Mar", prompts: [{ id: "p1", number: "1", title: "Prompt 1", isDefault: true }] }]
+        : [
+            {
+              key: "s1",
+              number: 1,
+              tool: "Claude",
+              detail: "Opus 5.5 · 3 Mar",
+              prompts: [
+                { id: "p1", number: "1", title: "Write the homepage copy", isDefault: false },
+                { id: "p2", number: "2", title: "Prompt 2", isDefault: true },
+              ],
+            },
+            { key: "s2", number: 2, tool: "Claude Code", detail: "Sonnet 5.5 · 4 Mar", prompts: [{ id: "p3", number: "3", title: "Build the page", isDefault: false }] },
+            { key: "typed-3", number: 3, tool: "ChatGPT", detail: "typed here", prompts: [{ id: "p4", number: "4", title: "Prompt 4", isDefault: true }] },
+          ],
+    files: empty || fox ? [] : [
+      { id: "f1", name: "menu.pdf", note: "opened in session 1" },
+      { id: "f2", name: "logo.png", note: "added by you" },
+    ],
+    library: empty || fox ? [] : [
+      { id: "l1", label: "Claude", line: "1 Mar · 4 prompts", adding: false },
+      { id: "l2", label: "Cursor", line: "28 Feb · 2 prompts", adding: false },
+    ],
+    selectedId: fox ? "p1" : "p3",
+    onSelect: noop,
+    onAddSession: noop,
+    onDropFiles: noop,
+    onPick: noop,
+    connectHref: "/connect",
   };
 }
