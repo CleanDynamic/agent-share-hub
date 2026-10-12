@@ -32,10 +32,13 @@ import { SiteFrame } from "@/components/shell/SiteFrame";
 import { useAuth } from "@/contexts/AuthContext";
 import { composeBuildQueryKey } from "@/hooks/composeBuildQueryKey";
 import { getBuild } from "@/lib/build/builds";
+import { SANDBOX_COMPOSER_ENABLED } from "@/lib/build/flags";
 import type { BuildRecord } from "@/lib/build/types";
 
 /** Its own chunk: the composer is heavy, and nothing else should pay for it. */
 const ComposePage = lazy(() => import("./ComposePage"));
+/** UI-P63: the new composer, its own chunk, only fetched while the switch is on. */
+const SandboxPage = lazy(() => import("./SandboxPage"));
 
 const FALLBACK = <div style={{ position: "fixed", inset: 0, background: "var(--bg)" }} />;
 
@@ -76,7 +79,7 @@ export function ComposeRoute({ legacy }: { legacy: ReactNode }) {
           /compose/new with /compose/{id}, which would remount the page under the
           creator's cursor. */}
       <Suspense fallback={<div style={{ minHeight: "60vh" }} />}>
-        <ComposePage />
+        {SANDBOX_COMPOSER_ENABLED ? <SandboxPage /> : <ComposePage />}
       </Suspense>
     </SiteFrame>
   );
