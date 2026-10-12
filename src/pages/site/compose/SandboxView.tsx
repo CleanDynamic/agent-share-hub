@@ -98,6 +98,8 @@ export interface SandboxViewProps extends CardProps {
 
   /** Add › Agent or team: opens the Add dialog. Absent, the item stays disabled. */
   onAddAgent?: () => void;
+  /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
+  onAddManual?: () => void;
 
   /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
   trail?: readonly { id: string; title: string }[];
@@ -126,7 +128,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
-  { key: "manual", name: "Manual step", line: "Work done outside AI", ready: false },
+  { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
   { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
 
@@ -142,7 +144,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent">;
+type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual">;
 
 const itemStyle = (enabled: boolean): CSSProperties => ({
   display: "flex",
@@ -179,7 +181,7 @@ function AddLabel({ name, line }: { name: string; line: string }) {
   );
 }
 
-function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent }: AddMenuProps) {
+function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual }: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -243,8 +245,8 @@ function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, o
               );
             }
             const handler =
-              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : undefined;
-            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent";
+              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : item.key === "manual" ? onAddManual : undefined;
+            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent" || item.key === "manual";
             const enabled = item.ready && (!wired || Boolean(handler));
             return (
               <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
@@ -610,7 +612,7 @@ export function SandboxView(props: SandboxViewProps) {
               Back to build
             </Button>
           ) : null}
-          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} onAddAgent={props.onAddAgent} />
+          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} onAddAgent={props.onAddAgent} onAddManual={props.onAddManual} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>

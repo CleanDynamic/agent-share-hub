@@ -66,6 +66,19 @@ export interface PromptView extends InputsView {
   words: number;
 }
 
+/** Work done outside AI (UI-P70). It is never detected, and has no model and no text to copy. */
+export interface ManualView extends InputsView {
+  kind: "manual";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  tool: string;
+  text: string;
+  /** Its picture, with the file's name when it could be read. */
+  picture: { id: string; name: string } | null;
+}
+
 export interface SessionView {
   kind: "session";
   key: string;
@@ -123,7 +136,7 @@ export interface ResultView {
   pictures: readonly { id: string; name: string }[];
 }
 
-export type DetailsView = PromptView | SessionView | FileView | ToolView | AgentView | ResultView;
+export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView;
 
 export interface DetailsHandlers {
   onRename: (id: string, title: string) => void;
@@ -132,6 +145,10 @@ export interface DetailsHandlers {
   onAddUse: (id: string, use: Use) => void;
   onRemoveUse: (id: string, use: Use) => void;
   onRuns: (id: string, runs: Runs | null) => void;
+  /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
+  onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  /** UI-P70: add or replace a manual step's picture. */
+  onManualPicture?: (id: string, file: File) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
   onRemoveInside: (id: string) => void;
@@ -446,6 +463,61 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
   );
 }
 
+/* ── a manual step (UI-P70) ── */
+
+export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
+
+function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean } & DetailsHandlers) {
+  const picker = useRef<HTMLInputElement>(null);
+  const commit = (fields: { tool?: string; text?: string }) => {
+    // Both are required: a blank value goes back to what was there.
+    if (Object.values(fields).some((value) => !value?.trim())) return;
+    h.onManual?.(view.id, fields);
+  };
+  return (
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <p style={eyebrow}>Manual step {view.number}</p>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of manual step ${view.number}`} phone={phone} onRename={h.onRename} />
+        <Mono>{MANUAL_DETAILS_COPY.never}</Mono>
+      </div>
+      <FieldBlock label="Tool">
+        <CommitField key={`${view.id}:tool`} label="Tool" value={view.tool} max={40} phone={phone} onCommit={(value) => commit({ tool: value })} />
+      </FieldBlock>
+      <FieldBlock label="What was done">
+        <CommitField key={`${view.id}:text`} label="What was done" value={view.text} max={140} multiline phone={phone} onCommit={(value) => commit({ text: value })} />
+      </FieldBlock>
+      <Section title="Picture" count={view.picture ? 1 : 0}>
+        {view.picture ? (
+          <div style={{ display: "grid", gridTemplateColumns: `1fr ${phone ? 44 : 24}px`, gap: 8, alignItems: "center", padding: "4px 0", borderTop: `1px solid ${t.hairline}` }}>
+            <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{view.picture.name}</span>
+            <MiniButton icon={X} label="Remove the picture" phone={phone} onClick={() => h.onManual?.(view.id, { media_id: null })} />
+          </div>
+        ) : null}
+        <input
+          ref={picker}
+          type="file"
+          accept="image/*"
+          hidden
+          data-testid="details-manual-picture"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) h.onManualPicture?.(view.id, file);
+          }}
+        />
+        <div>
+          <Button variant="ghost" size={phone ? 44 : 30} fontSize={12} icon={Plus} onClick={() => picker.current?.click()}>
+            {view.picture ? "Replace the picture" : "Add a picture"}
+          </Button>
+        </div>
+      </Section>
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
 /* ── a session ── */
 
 function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionView; phone: boolean } & Pick<DetailsHandlers, "onToggleSessionPrompt">) {
@@ -711,6 +783,7 @@ export function DetailsPanel({ view, phone, ...h }: DetailsPanelProps) {
   return (
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

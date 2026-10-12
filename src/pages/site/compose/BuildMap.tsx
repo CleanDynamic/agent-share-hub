@@ -128,6 +128,8 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
   // An agent's or a team's own box (on the map); the ones drawn inside an opened view are ordinary boxes.
   const big = container && box.contents !== null;
   const piece = box.kind === "file" || box.kind === "tool";
+  // Work done by hand (UI-P70): `--cell` with a 1px `--text2` border, so it reads as different without a new colour.
+  const manual = box.kind === "step" && box.stepKind === "manual";
   const inputRows = box.inputs.map((input, at) => (
     <span key={input.key} style={{ position: "relative", height: MAP_SIZES.row, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px 0 12px", ...mono(10.5), ...(input.suggested ? { fontStyle: "italic" } : null) }}>
       <span
@@ -171,8 +173,8 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
         flexDirection: "column",
         textAlign: "left",
         borderRadius: 12,
-        border: `1px solid ${box.kind === "result" ? t.evidence : t.line}`,
-        background: t.solid,
+        border: `1px solid ${box.kind === "result" ? t.evidence : manual ? t.text2 : t.line}`,
+        background: manual ? t.cell : t.solid,
         color: t.text,
         cursor: "pointer",
         opacity: dimmed ? DIMMED : 1,
@@ -193,8 +195,12 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
             </span>
           ) : (
             <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", minWidth: 0 }}>
-              {box.kind === "result" ? <span style={mono(10.5)}>Result</span> : !box.defaultTitle && box.number ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : null}
-              <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: box.defaultTitle ? 500 : 600, color: box.defaultTitle ? t.text2 : t.text, ...ellipsis }}>{box.title}</span>
+              {box.kind === "result" ? <span style={mono(10.5)}>Result</span> : manual ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : !box.defaultTitle && box.number ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : null}
+              {manual ? (
+                <span data-testid="manual-header" style={{ ...mono(10.5), ...ellipsis }}>By hand{box.tool ? ` · ${box.tool}` : ""}</span>
+              ) : (
+                <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: box.defaultTitle ? 500 : 600, color: box.defaultTitle ? t.text2 : t.text, ...ellipsis }}>{box.title}</span>
+              )}
               {box.stack ? <span style={{ ...mono(10.5), marginLeft: "auto", flexShrink: 0 }}>× {box.stack}</span> : null}
             </span>
           )}
@@ -239,7 +245,7 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
           )}
           {big ? null : (
             <span style={{ height: MAP_SIZES.foot, flexShrink: 0, padding: "0 10px", display: "flex", alignItems: "center", ...mono(10) }}>
-              {box.kind === "step" ? `${box.words} words` : ""}
+              {box.kind === "step" && !manual ? `${box.words} words` : ""}
             </span>
           )}
         </>

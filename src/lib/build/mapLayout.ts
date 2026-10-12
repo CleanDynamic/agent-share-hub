@@ -7,8 +7,9 @@
 //   lanes    one per session, in order of its first step; one per run of
 //            typed prompts; last, a dashed "Files and tools" lane when the
 //            build has any. An agent or a team has a lane of its own, labelled
-//            "Agent 5" over "runs by itself" (UI-P69). A manual step sits in
-//            the lane of the step before it.
+//            "Agent 5" over "runs by itself" (UI-P69). A manual step takes a
+//            "By hand" lane, one per run of manual steps, the way typed
+//            prompts take "Typed here" (UI-P70).
 //   columns  column(step) = max( dateColumn(step),
 //                                1 + column(previous step in its lane),
 //                                1 + max(column of each earlier step it uses) )
@@ -112,6 +113,8 @@ export interface MapBox {
   suggested: number;
   /** Columns the box covers: 2 for an agent or a team, else 1. */
   span: number;
+  /** A manual step's tool ("Figma"); null for any other box. */
+  tool?: string | null;
   /** An agent's or a team's "2 prompts · 1 file · 1 tool"; null for any other box. */
   contents: string | null;
   /** How an agent or a team runs, in words; null for any other box. */
@@ -122,7 +125,7 @@ export interface MapBox {
 
 export interface MapLane {
   key: string;
-  kind: "session" | "typed" | "files" | "agent";
+  kind: "session" | "typed" | "files" | "agent" | "hand";
   label: string;
   /** "Claude · Opus 5.5". */
   sub: string;
@@ -239,6 +242,17 @@ export function layoutMap(
   steps.forEach((step, at) => {
     if (isContainer(step)) {
       lanes.push({ key: `agent-${step.id}`, kind: "agent", label: `${step.kind === "team" ? "Team" : "Agent"} ${step.number}`, sub: "runs by itself", dashed: false, y: 0, h: 0 });
+      stepLane.push(lanes.length - 1);
+      return;
+    }
+    if (step.kind === "manual") {
+      // A run of manual steps shares one lane.
+      const before = at > 0 && steps[at - 1].kind === "manual" ? stepLane[at - 1] : undefined;
+      if (before !== undefined) {
+        stepLane.push(before);
+        return;
+      }
+      lanes.push({ key: `hand-${step.id}`, kind: "hand", label: "By hand", sub: "", dashed: false, y: 0, h: 0 });
       stepLane.push(lanes.length - 1);
       return;
     }
@@ -359,6 +373,7 @@ export function layoutMap(
       inputs,
       accepted: inputs.filter((input) => !input.suggested).length,
       suggested: inputs.filter((input) => input.suggested).length,
+      tool: step.kind === "manual" ? step.tool : null,
       span: spanOf(step),
       contents: container ? containsLine(step) : null,
       runs: container ? runsLabel(step.runs) : null,

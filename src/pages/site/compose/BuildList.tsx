@@ -36,6 +36,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { agentEyebrow, isClamped, madeIn, stepModel, suggestionKey, inputLabel, type ListResult, type ListSuggestion } from "./buildListModel";
 import { TextButton } from "./composeControls";
+import { ManualThumb } from "./ManualThumb";
 import type { SourceSession } from "./sourcesModel";
 
 export const LIST_COPY = {
@@ -559,22 +560,101 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
   );
 }
 
-function ManualCard({ step, props }: { step: Step; props: BuildListProps }) {
+/** Work done outside AI (UI-P70, D2 option B): a step card on `--cell` with a 1px `--text2` border, so it reads as different without a new colour. */
+function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const { phone } = props;
+  const selected = props.selectedId === step.id;
+  const isDefault = step.title === null;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const renameNext = useRef(false);
+  const finish = (save: boolean) => {
+    setRenaming(false);
+    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
+  };
   return (
     <div
       role="group"
       aria-label={`Manual step ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
+      data-kind="manual"
+      data-selected={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ borderRadius: 14, border: `1px solid ${props.selectedId === step.id ? "transparent" : t.line}`, boxShadow: props.selectedId === step.id ? `0 0 0 2px ${t.text}` : "none", background: t.solid, marginBottom: 8, padding: "10px 14px", outline: "none", cursor: "pointer" }}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          props.onSelect(step.id);
+        }
+      }}
+      style={{ borderRadius: 14, border: `1px solid ${t.text2}`, boxShadow: selected ? `0 0 0 2px ${t.text}` : "none", background: t.cell, marginBottom: 8, outline: "none", cursor: "pointer" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 8px 0 14px" }}>
         <Badge>{step.number}</Badge>
-        <div style={{ minWidth: 0 }}>
-          <div style={mono(12)}>Manual step{step.tool ? ` · ${step.tool}` : ""}</div>
-          <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, color: t.text }}>{step.text}</p>
+        <div style={{ minWidth: 0, flexGrow: 1 }}>
+          <div data-testid="manual-eyebrow" style={mono(12)}>
+            Manual step{step.tool ? ` · ${step.tool}` : ""} · added by maker
+          </div>
+          {renaming ? (
+            <input
+              autoFocus
+              aria-label={`Title of manual step ${step.number}`}
+              value={draft}
+              maxLength={80}
+              placeholder={step.defaultTitle}
+              onChange={(event) => setDraft(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                event.stopPropagation();
+                if (event.key === "Enter") finish(true);
+                if (event.key === "Escape") finish(false);
+              }}
+              onBlur={() => finish(true)}
+              style={{ width: "100%", boxSizing: "border-box", height: 28, padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 15, fontWeight: 600 }}
+            />
+          ) : (
+            <h3 data-default-title={isDefault ? "true" : undefined} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: isDefault ? 500 : 600, color: isDefault ? t.text2 : t.text, overflowWrap: "anywhere" }}>
+              {stepTitle(step)}
+            </h3>
+          )}
         </div>
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton icon={MoreHorizontal} label={`Manual step ${step.number} options`} size={30} onClick={(event) => event.stopPropagation()} />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Content
+              align="end"
+              sideOffset={4}
+              style={menuSurface}
+              onClick={(event) => event.stopPropagation()}
+              onCloseAutoFocus={(event) => {
+                if (!renameNext.current) return;
+                event.preventDefault();
+                renameNext.current = false;
+                setDraft(step.title ?? "");
+                setRenaming(true);
+              }}
+            >
+              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+      <div style={{ padding: "6px 14px 0 48px" }}>
+        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, color: t.text, overflowWrap: "anywhere" }}>{step.text}</p>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 10px 10px 48px" }}>
+        <UsesRow step={step} props={props} />
+        {step.mediaId ? (
+          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={mono(12)}>1 screenshot</span>
+            <ManualThumb mediaId={step.mediaId} />
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -743,7 +823,7 @@ export function BuildList(props: BuildListProps) {
           step.kind === "prompt" ? (
             <StepCard step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
           ) : step.kind === "manual" ? (
-            <ManualCard step={step} props={props} />
+            <ManualCard step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
           ) : (
             <ContainerCard step={step} props={props} />
           );

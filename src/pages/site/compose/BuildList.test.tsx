@@ -1,10 +1,12 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { sandboxListProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
+import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 
 import { BuildList, type BuildListProps } from "./BuildList";
 import { agentEyebrow, dividers, isClamped, madeIn } from "./buildListModel";
+
+vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), getMediaById: vi.fn(() => Promise.resolve(null)) }));
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -254,5 +256,76 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.getAllByTestId("inner-prompt")).toHaveLength(1);
     expect(screen.getByTestId("inner-prompt").textContent).toContain("Cite where each came from.");
     expect(screen.getByRole("button", { name: "Hide its prompt" })).toBeTruthy();
+  });
+});
+
+describe("a manual step (UI-P70)", () => {
+  // The fixture's own handlers are no-ops; `list` supplies the spies.
+  const manualList = (over: Partial<BuildListProps> = {}) => {
+    const { onSelect, onRename, onMove, onRemove, onAccept, onDismiss, onAddPrompt, ...rest } = sandboxManualFixture().list;
+    void [onSelect, onRename, onMove, onRemove, onAccept, onDismiss, onAddPrompt];
+    return list({ ...rest, ...over });
+  };
+  const card = () => screen.getByRole("group", { name: /^Manual step 3:/ });
+
+  it("is its own kind of card, headed 'Manual step · {tool} · added by maker'", () => {
+    manualList();
+    // The colours resolve in a browser, not here: the tier-3 spec reads them.
+    expect(card().getAttribute("data-kind")).toBe("manual");
+    expect(screen.getByTestId("manual-eyebrow").textContent).toBe("Manual step · Figma · added by maker");
+    expect(within(card()).getByRole("heading", { level: 3 }).textContent).toBe("Manual step 3");
+    expect(within(card()).getByRole("heading", { level: 3 }).getAttribute("data-default-title")).toBe("true");
+  });
+
+  it("shows its line unclamped, its Uses chips, and '1 screenshot' with a thumbnail", () => {
+    manualList();
+    const line = within(card()).getByText(/Laid out the hero/);
+    expect(line.getAttribute("style")).not.toMatch(/line-clamp/);
+    expect(within(card()).getByText("Output of 2 · Prompt 2")).toBeTruthy();
+    expect(within(card()).getByText("1 screenshot")).toBeTruthy();
+  });
+
+  it("has no screenshot line when it has no picture", () => {
+    const fixture = sandboxManualFixture().list;
+    manualList({ steps: fixture.steps.map((step) => (step.id === "m3" ? { ...step, mediaId: null } : step)) });
+    expect(within(card()).queryByText("1 screenshot")).toBeNull();
+  });
+
+  it("has Rename, Move up, Move down and Remove, and no 'Read all of it'", async () => {
+    const props = manualList();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent)).toEqual(["Rename", "Move up", "Move down", "Remove"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move up" }));
+    expect(props.onMove).toHaveBeenCalledWith("m3", -1);
+  });
+
+  it("removes, and cannot move up from the first step or down from the last", async () => {
+    const props = manualList();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    expect(props.onRemove).toHaveBeenCalledWith("m3");
+    cleanup();
+    const fixture = sandboxManualFixture().list;
+    const only = fixture.steps.filter((step) => step.id === "m3");
+    list({ steps: only, dividers: new Map(), intoResult: new Set(), selectedId: null });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
+    expect((await screen.findByRole("menuitem", { name: "Move up" })).getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByRole("menuitem", { name: "Move down" }).getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("renames in place: Enter saves", async () => {
+    const props = manualList();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Manual step 3 options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Rename" }));
+    const field = await screen.findByLabelText("Title of manual step 3");
+    fireEvent.change(field, { target: { value: "Hero in Figma" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(props.onRename).toHaveBeenCalledWith("m3", "Hero in Figma");
+  });
+
+  it("takes the next number: the prompt after it shows as 4 and uses its output", () => {
+    manualList();
+    expect(screen.getByRole("group", { name: /^Prompt 4:/ })).toBeTruthy();
+    expect(within(screen.getByRole("group", { name: /^Prompt 4:/ })).getByText("Output of 3 · Manual step 3")).toBeTruthy();
   });
 });

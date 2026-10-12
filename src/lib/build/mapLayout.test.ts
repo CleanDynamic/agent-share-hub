@@ -355,3 +355,33 @@ describe("an opened team (V5)", () => {
     expect(layout.wires.filter((wire) => !wire.named).map((wire) => wire.id)).toEqual(["a1:instructions>c2:next", "c2>c3:next"]);
   });
 });
+
+describe("a manual step in the Map (UI-P70)", () => {
+  const groups: SessionGroup[] = [
+    { sessionId: "s1", number: 1, tool: "Claude", model: null, startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "4"] },
+  ];
+  const steps = [
+    step({ id: "p1", number: "1", sessionId: "s1" }),
+    step({ id: "m2", number: "2", kind: "manual", tool: "Figma", text: "Laid out the hero" }),
+    step({ id: "m3", number: "3", kind: "manual", tool: "Lovable", text: "Deployed it" }),
+    step({ id: "p4", number: "4", sessionId: "s1", uses: [out("m3")] }),
+  ];
+
+  it("takes a 'By hand' lane, one per run of manual steps", () => {
+    const layout = layoutMap(steps, groups, [], [], []);
+    expect(layout.lanes.map((lane) => [lane.label, lane.kind])).toEqual([["Session 1", "session"], ["By hand", "hand"]]);
+    expect(layout.boxes.filter((box) => box.stepKind === "manual").map((box) => box.lane)).toEqual([1, 1]);
+    const split = layoutMap([steps[0], steps[1], step({ id: "p3", number: "3", sessionId: "s1" }), { ...steps[2], number: "4" }], groups, [], [], []);
+    expect(split.lanes.map((lane) => lane.label)).toEqual(["Session 1", "By hand", "By hand"]);
+  });
+
+  it("carries its tool and line, and a later step can use its output", () => {
+    const layout = layoutMap(steps, groups, [], [], []);
+    const box = layout.boxes.find((candidate) => candidate.id === "m2")!;
+    expect(box).toMatchObject({ tool: "Figma", text: "Laid out the hero", span: 1, w: MAP_SIZES.column });
+    const p4 = layout.boxes.find((candidate) => candidate.id === "p4")!;
+    expect(p4.inputs.map((input) => input.label)).toEqual(["Output of 3"]);
+    expect(layout.wires.some((wire) => wire.from === "m3" && wire.to === "p4" && wire.named)).toBe(true);
+    expect(p4.column).toBeGreaterThan(layout.boxes.find((candidate) => candidate.id === "m3")!.column);
+  });
+});

@@ -21,6 +21,8 @@ import {
   addManualStep,
   addTeam,
   setInstructions,
+  setManualFields,
+  placeAfterMoves,
   addUse,
   buildSteps,
   dismissSuggestion,
@@ -376,5 +378,80 @@ describe("adding", () => {
     getNodeTree.mockResolvedValue([{ ...agent, children: [node({ parent_id: "ag", position: 1 })] }]);
     await addAgentPrompt(agent as BuildNode, [agent], "Next");
     expect(upsertNode.mock.calls.map(([row]) => row.position)).toEqual([1, 2]);
+  });
+});
+
+describe("a manual step (UI-P70)", () => {
+  const manual = (id: string, position: number, over: Partial<NodeTree> = {}) =>
+    node({ id, position, type: "manual_step", payload: { tool: "Figma", text: "Laid out the hero" }, ...over });
+
+  it("takes the next number between two prompts, and the prompts after it shift", () => {
+    const steps = buildSteps([node({ id: "p1", position: 1 }), node({ id: "p2", position: 2 }), node({ id: "p3", position: 3 })]);
+    expect(steps.map((step) => step.number)).toEqual(["1", "2", "3"]);
+    const after = buildSteps([node({ id: "p1", position: 1 }), node({ id: "p2", position: 2 }), manual("m", 3), node({ id: "p3", position: 4 })]);
+    expect(after.map((step) => [step.id, step.number, step.kind])).toEqual([
+      ["p1", "1", "prompt"],
+      ["p2", "2", "prompt"],
+      ["m", "3", "manual"],
+      ["p3", "4", "prompt"],
+    ]);
+    expect(after[2]).toMatchObject({ defaultTitle: "Manual step 3", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
+  });
+
+  it("does not number files, tools or results that sit between steps", () => {
+    const steps = buildSteps([node({ id: "p1", position: 1 }), node({ id: "f", position: 2, type: "document", payload: { title: "a.md" } }), manual("m", 3)]);
+    expect(steps.map((step) => step.number)).toEqual(["1", "2"]);
+  });
+
+  it("reads its picture", () => {
+    const [step] = buildSteps([manual("m", 1, { payload: { tool: "Figma", text: "x", media_id: "media-1" } })]);
+    expect(step.mediaId).toBe("media-1");
+  });
+
+  it("is added with its picture, and refuses a tool over 40 or a line over 140", async () => {
+    await addManualStep(BUILD, [], { tool: "Figma", text: "Laid out the hero", media_id: "media-1" });
+    expect(payloadWritten()).toEqual({ tool: "Figma", text: "Laid out the hero", media_id: "media-1" });
+    await expect(addManualStep(BUILD, [], { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
+    await expect(addManualStep(BUILD, [], { tool: " ", text: "ok" })).rejects.toThrow(/1 to 40/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/1 to 140/);
+  });
+
+  it("changes its tool, line and picture within the limits, and takes the picture off with null", async () => {
+    const step = manual("m", 1, { payload: { tool: "Figma", text: "Old", media_id: "media-1" } }) as BuildNode;
+    await setManualFields(step, { tool: " Lovable ", text: " New line " });
+    expect(payloadWritten()).toEqual({ tool: "Lovable", text: "New line", media_id: "media-1" });
+    upsertNode.mockClear();
+    await setManualFields(step, { media_id: null });
+    expect(payloadWritten()).toEqual({ tool: "Figma", text: "Old" });
+    await expect(setManualFields(step, { tool: "x".repeat(41) })).rejects.toThrow(/40/);
+    await expect(setManualFields(step, { text: "x".repeat(141) })).rejects.toThrow(/140/);
+    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/1 to 140/);
+    await expect(setManualFields(node({}) as BuildNode, { text: "x" })).rejects.toThrow(/not a manual step/);
+  });
+
+  describe("placing after a step", () => {
+    const tree = [node({ id: "p1", position: 1 }), node({ id: "f", position: 2, type: "document" }), node({ id: "p2", position: 3 }), node({ id: "p3", position: 4 }), manual("m", 5)];
+
+    it("hands the steps' own positions out again, so the file keeps its own", () => {
+      // After p1: p1 m p2 p3 over the slots 1, 3, 4, 5.
+      expect(placeAfterMoves(tree, "m", "p1")).toEqual([
+        { id: "m", parent_id: null, position: 3 },
+        { id: "p2", parent_id: null, position: 4 },
+        { id: "p3", parent_id: null, position: 5 },
+      ]);
+    });
+
+    it("is nothing when it is already there, and goes first for a null", () => {
+      expect(placeAfterMoves(tree, "m", "p3")).toEqual([]);
+      expect(placeAfterMoves(tree, "m", null)).toEqual([
+        { id: "m", parent_id: null, position: 1 },
+        { id: "p1", parent_id: null, position: 3 },
+        { id: "p2", parent_id: null, position: 4 },
+        { id: "p3", parent_id: null, position: 5 },
+      ]);
+      expect(placeAfterMoves(tree, "missing", "p1")).toEqual([]);
+      expect(placeAfterMoves(tree, "m", "missing")).toEqual([]);
+    });
   });
 });

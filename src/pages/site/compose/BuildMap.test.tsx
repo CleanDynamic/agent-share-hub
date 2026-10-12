@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
+import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 import { layoutMap } from "@/lib/build/mapLayout";
 
 import { boxName, BuildMap, columnDate, DIMMED, type BuildMapProps } from "./BuildMap";
@@ -215,5 +215,40 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.getByTestId("opened-frame").textContent).toContain("Inside agent 3.2 · Writer");
     // An agent opens onto its instructions and prompts.
     expect(["t3b:instructions", "t3b-p2", "t3b-p3"].map((id) => screen.getByTestId(`map-box-${id}`))).toHaveLength(3);
+  });
+});
+
+describe("a manual step (UI-P70)", () => {
+  const manualMap = (over: Partial<BuildMapProps> = {}) => {
+    const props: BuildMapProps = { ...sandboxManualFixture().map, selectedId: null, onSelect: vi.fn(), onClear: vi.fn(), onConnect: vi.fn(), ...over };
+    render(<BuildMap {...props} />);
+    return props;
+  };
+
+  it("takes a 'By hand' lane and draws as a box like any other", () => {
+    manualMap();
+    expect(screen.getAllByTestId("map-lane").map((lane) => lane.textContent)).toContain("By hand");
+    const box = screen.getByTestId("map-box-m3");
+    // The colours resolve in a browser, not here: the tier-3 spec reads them.
+    expect(box.getAttribute("data-kind")).toBe("step");
+    expect(screen.getByTestId("manual-header").textContent).toBe("By hand · Figma");
+    expect(box.textContent).toContain("3");
+    expect(box.textContent).toContain("Laid out the hero");
+    expect(box.textContent).not.toMatch(/words/);
+    expect(screen.getByRole("button", { name: "Manual step 3, Manual step 3, 1 input" })).toBeTruthy();
+  });
+
+  it("has an input and an output dot, and a later step uses its output", () => {
+    manualMap();
+    expect(screen.getByTestId("map-input-m3-0")).toBeTruthy();
+    expect(screen.getByTestId("map-dot-m3")).toBeTruthy();
+    expect(screen.getByTestId("map-box-p4").textContent).toContain("Output of 3");
+    expect(screen.getAllByTestId("map-wire")).toHaveLength(3);
+  });
+
+  it("opens nothing on a double-click: there is no more to read", () => {
+    const props = manualMap({ onOpenPrompt: vi.fn() });
+    fireEvent.doubleClick(screen.getByTestId("map-box-m3"));
+    expect(props.onOpenPrompt).not.toHaveBeenCalled();
   });
 });

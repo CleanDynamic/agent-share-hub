@@ -6,6 +6,7 @@
    `?lens=map` draws the Map; `?build=big` is 60 steps for the long-task measurement (UI-P68).
    `?build=team` is the team build (S5): add `&lens=map` for its Map, and `&opened=t3` (or `t3b`) for the
    opened team (V5-TeamMap) (UI-P69).
+   `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    No board image is compared. */
 
@@ -14,7 +15,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 
-import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
+import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
@@ -34,7 +35,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
-  const team = asBuild === "team" ? sandboxTeamFixture() : null;
+  const team = asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
   const list = team?.list ?? sandboxListProps(which);
   const openedId = params.get("opened");
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;

@@ -224,3 +224,64 @@ describe("nothing selected", () => {
     expect(screen.getByText("Select a prompt, session or file to see it here.")).toBeTruthy();
   });
 });
+
+describe("a manual step (UI-P70)", () => {
+  const view = (over: Partial<Extract<NonNullable<DetailsPanelProps["view"]>, { kind: "manual" }>> = {}): DetailsPanelProps["view"] => ({
+    kind: "manual",
+    id: "m3",
+    number: "3",
+    title: null,
+    defaultTitle: "Manual step 3",
+    tool: "Figma",
+    text: "Laid out the hero",
+    picture: { id: "media-1", name: "hero.png" },
+    uses: [],
+    options: [],
+    goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
+    ...over,
+  });
+
+  it("shows the eyebrow, the title with Rename, and says it was never detected", () => {
+    panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByText("Manual step 3", { selector: "p" })).toBeTruthy();
+    expect(screen.getByText("Added by you · never detected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Title of manual step 3|Rename/ })).toBeTruthy();
+    expect(screen.getByText("Goes into")).toBeTruthy();
+    expect(screen.getByText("Uses")).toBeTruthy();
+  });
+
+  it("edits the tool and the line within their limits, and ignores a blank", () => {
+    const props = panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    const tool = screen.getByLabelText("Tool") as HTMLInputElement;
+    const line = screen.getByLabelText("What was done") as HTMLTextAreaElement;
+    expect(tool.maxLength).toBe(40);
+    expect(line.maxLength).toBe(140);
+    fireEvent.change(tool, { target: { value: "Lovable" } });
+    fireEvent.blur(tool);
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { tool: "Lovable" });
+    fireEvent.change(line, { target: { value: "  " } });
+    fireEvent.blur(line);
+    expect(props.onManual).toHaveBeenCalledTimes(1);
+    fireEvent.change(line, { target: { value: "Deployed it" } });
+    fireEvent.blur(line);
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { text: "Deployed it" });
+  });
+
+  it("removes the picture with null, and replaces it from a file", () => {
+    const props = panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByText("hero.png")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove the picture" }));
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { media_id: null });
+    expect(screen.getByRole("button", { name: "Replace the picture" })).toBeTruthy();
+    const file = new File(["x"], "new.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("details-manual-picture"), { target: { files: [file] } });
+    expect(props.onManualPicture).toHaveBeenCalledWith("m3", file);
+  });
+
+  it("offers Add a picture when it has none, and has no model and no Read all of it", () => {
+    panel("prompt", "bakery", { view: view({ picture: null }), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByRole("button", { name: "Add a picture" })).toBeTruthy();
+    expect(screen.queryByLabelText("Model")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Read all of it" })).toBeNull();
+  });
+});

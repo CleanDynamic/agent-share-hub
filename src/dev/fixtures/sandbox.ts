@@ -338,3 +338,41 @@ export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps
   };
   return { list, map };
 }
+
+/**
+ * The manual step build (board D2 option B): two prompts from one chat, a manual
+ * step between them (laying out the hero in Figma, with a screenshot), and a
+ * prompt that uses its output.
+ */
+export function sandboxManualFixture(): { list: BuildListProps; map: BuildMapProps } {
+  const out = (id: string) => ({ kind: "output" as const, node_id: id });
+  const steps: Step[] = [
+    step({ id: "p1", number: "1", title: "Brand brief", text: BRIEF, sessionId: "s1", model: "opus-5-5" }),
+    step({ id: "p2", number: "2", text: "List the sections the homepage needs.", sessionId: "s1", model: "opus-5-5", uses: [out("p1")] }),
+    step({ id: "m3", number: "3", kind: "manual", defaultTitle: "Manual step 3", tool: "Figma", text: "Laid out the hero and the menu grid from the copy, then exported the frames.", mediaId: "media-1", words: 0, uses: [out("p2")] }),
+    step({ id: "p4", number: "4", text: "Build the page from the frames in the attached export.", sessionId: "s1", model: "opus-5-5", uses: [out("m3")] }),
+  ];
+  const groups: SessionGroup[] = [{ sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2", "4"] }];
+  const list: BuildListProps = {
+    phone: false,
+    steps,
+    dividers: dividers(steps, groups),
+    names: {},
+    suggestions: [],
+    intoResult: new Set(["p4"]),
+    results: [],
+    selectedId: "m3",
+    onSelect: noop,
+    onRename: noop,
+    onMove: noop,
+    onRemove: noop,
+    onAccept: noop,
+    onDismiss: noop,
+    onAddPrompt: () => Promise.resolve(true),
+    focusAdd: 0,
+    onAddAgentPrompt: () => Promise.resolve(true),
+    onAddAgentTo: noop,
+  };
+  const map: BuildMapProps = { steps, groups, files: [], tools: [], results: [], suggestions: [], selectedId: "m3", onSelect: noop, onClear: noop, onConnect: noop };
+  return { list, map };
+}
