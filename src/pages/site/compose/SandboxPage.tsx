@@ -36,6 +36,7 @@ import { useComposePage } from "./ComposePage";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
+import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { DetailsPanel } from "./DetailsPanel";
 import { resolveView, type MediaFacts } from "./detailsView";
 import { SourcesPanel } from "./SourcesPanel";
@@ -114,6 +115,8 @@ export function SandboxPage() {
   /* ── Sources ── */
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** UI-P67: the prompt open in the full prompt window. */
+  const [openPromptId, setOpenPromptId] = useState<string | null>(null);
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
   const picker = useRef<HTMLInputElement>(null);
   const pick = useCallback(() => picker.current?.click(), []);
@@ -332,6 +335,7 @@ export function SandboxPage() {
             phone={phone}
             view={view}
             onSelect={setSelectedId}
+            onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
             onModel={prompts.setModel}
             onAddUse={(id, use) => {
@@ -373,6 +377,7 @@ export function SandboxPage() {
             results={listFacts.results}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
             onMove={prompts.move}
             onRemove={prompts.remove}
@@ -407,6 +412,16 @@ export function SandboxPage() {
         onLens={onLens}
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
+      />
+      <FullPromptWindow
+        steps={steps}
+        groups={groups}
+        names={listFacts.names}
+        openId={openPromptId}
+        mode="maker"
+        onTitle={prompts.rename}
+        onNavigate={setOpenPromptId}
+        onClose={() => setOpenPromptId(null)}
       />
     </>
   );
