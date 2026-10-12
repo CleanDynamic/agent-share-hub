@@ -43,7 +43,7 @@ import { refreshMakingStats } from "@/lib/build/making";
 import { modelLabel } from "@/lib/models/registry";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
-import { ComposeView, type ComposeSession, type ComposeStatus } from "./ComposeView";
+import { ComposeView, type ComposeSession, type ComposeStatus, type ComposeViewProps } from "./ComposeView";
 import {
   isUntitled,
   madeWithChips,
@@ -63,7 +63,7 @@ const coverKey = (buildId: string | undefined) => ["build", "getComposerCover", 
 
 const ACCEPT = coverMediaTypes(acceptedMediaTypes());
 
-export function ComposePage() {
+export function useComposePage() {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -322,58 +322,64 @@ export function ComposePage() {
           ? "notFound"
           : "ready";
 
+  const viewProps: ComposeViewProps = {
+    status,
+    onRetry: () => void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) }),
+    title,
+    onTitle,
+    description,
+    onDescription,
+    audience,
+    onAudience,
+    audienceOptions,
+    save: saveState({ isSaving: compose.isSaving, saveError: compose.saveError, lastSavedAt: compose.lastSavedAt }),
+    onRetrySave: () => compose.patchBuild({ title: title.trim() || UNTITLED }),
+    missing: missing.map((key) => PUBLISH_WORDS[key]),
+    intakeHref: buildId ? null : "/compose/start",
+    slug: build?.slug ?? null,
+    published,
+    publishing: compose.isPublishing,
+    onPublish: () => void onPublish(),
+    cover: coverMedia ? { url: coverUrl, kind: coverMedia.kind === "video" ? "video" : "image" } : null,
+    adding,
+    mediaError,
+    accept: ACCEPT,
+    onFiles: (files) => void onFiles(files),
+    onRemoveCover: () => void onRemoveCover(),
+    prompts: prompts.rows,
+    focusPrompt: prompts.focus,
+    onPromptText: prompts.setText,
+    onMovePrompt: prompts.move,
+    onRemovePrompt: prompts.remove,
+    onWritePrompt: prompts.write,
+    onDropPrompt: prompts.drop,
+    sessionsStatus: sessions.status,
+    onRetrySessions: sessions.retry,
+    sessions: sessionViews,
+    onSessionsOpen: sessions.setOpenIds,
+    onRetrySessionPrompts: sessions.retryPrompts,
+    onAddSessionPrompt: prompts.add,
+    onSetSessionModel: (sessionId, model) =>
+      void sessions.setModel(sessionId, model).then((saved) => {
+        if (saved) prompts.relabel(sessionId, modelLabel(model));
+      }),
+    madeWith,
+    onToggleMadeWith: sessions.toggleMadeWith,
+    onAddMadeWith: sessions.addMadeWith,
+    details: details.details,
+    onDetail: details.setDetail,
+    onGapSwitch: details.setGapOn,
+  };
+
+  return { viewProps, missing, build, tree: compose.tree, compose, ensureBuild, buildId };
+}
+
+export function ComposePage() {
+  const { viewProps } = useComposePage();
   return (
     <>
       <SeoHead title="Compose — buildgallery" description="Write your build." path="/compose" noIndex />
-      <ComposeView
-        status={status}
-        onRetry={() => void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(buildId) })}
-        title={title}
-        onTitle={onTitle}
-        description={description}
-        onDescription={onDescription}
-        audience={audience}
-        onAudience={onAudience}
-        audienceOptions={audienceOptions}
-        save={saveState({ isSaving: compose.isSaving, saveError: compose.saveError, lastSavedAt: compose.lastSavedAt })}
-        onRetrySave={() => compose.patchBuild({ title: title.trim() || UNTITLED })}
-        missing={missing.map((key) => PUBLISH_WORDS[key])}
-        intakeHref={buildId ? null : "/compose/start"}
-        slug={build?.slug ?? null}
-        published={published}
-        publishing={compose.isPublishing}
-        onPublish={() => void onPublish()}
-        cover={coverMedia ? { url: coverUrl, kind: coverMedia.kind === "video" ? "video" : "image" } : null}
-        adding={adding}
-        mediaError={mediaError}
-        accept={ACCEPT}
-        onFiles={(files) => void onFiles(files)}
-        onRemoveCover={() => void onRemoveCover()}
-        prompts={prompts.rows}
-        focusPrompt={prompts.focus}
-        onPromptText={prompts.setText}
-        onMovePrompt={prompts.move}
-        onRemovePrompt={prompts.remove}
-        onWritePrompt={prompts.write}
-        onDropPrompt={prompts.drop}
-        sessionsStatus={sessions.status}
-        onRetrySessions={sessions.retry}
-        sessions={sessionViews}
-        onSessionsOpen={sessions.setOpenIds}
-        onRetrySessionPrompts={sessions.retryPrompts}
-        onAddSessionPrompt={prompts.add}
-        onSetSessionModel={(sessionId, model) =>
-          void sessions.setModel(sessionId, model).then((saved) => {
-            if (saved) prompts.relabel(sessionId, modelLabel(model));
-          })
-        }
-        madeWith={madeWith}
-        onToggleMadeWith={sessions.toggleMadeWith}
-        onAddMadeWith={sessions.addMadeWith}
-        details={details.details}
-        onDetail={details.setDetail}
-        onGapSwitch={details.setGapOn}
-      />
+      <ComposeView {...viewProps} />
     </>
   );
 }

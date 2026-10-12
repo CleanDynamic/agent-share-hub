@@ -181,7 +181,7 @@ function LinkButton({ to, size, fontSize, variant, children }: { to: string | nu
 
 /* ── Media ── */
 
-function MediaPanel({
+export function MediaPanel({
   phone,
   cover,
   adding,
@@ -189,7 +189,8 @@ function MediaPanel({
   accept,
   onFiles,
   onRemoveCover,
-}: Pick<ComposeViewProps, "cover" | "adding" | "mediaError" | "accept" | "onFiles" | "onRemoveCover"> & { phone: boolean }) {
+  heading = "Media",
+}: Pick<ComposeViewProps, "cover" | "adding" | "mediaError" | "accept" | "onFiles" | "onRemoveCover"> & { phone: boolean; heading?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const pick = () => input.current?.click();
@@ -223,7 +224,7 @@ function MediaPanel({
 
   return (
     <Panel surface="flat" padding={phone ? "16px" : "24px"}>
-      <PanelHead title="Media" subtitle="What people see first in the Gallery." headingLevel={2} />
+      <PanelHead title={heading} subtitle="What people see first in the Gallery." headingLevel={2} />
       <input
         ref={input}
         type="file"

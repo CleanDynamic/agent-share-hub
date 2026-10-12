@@ -63,6 +63,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   drafts: lazy(() => import("./DraftsDemo")),
   /* UI-P47 — the composer (no board is compared). */
   compose: lazy(() => import("./ComposeDemo")),
+  /* UI-P63 — the new composer's frame (no board image is compared). */
+  sandbox: lazy(() => import("./SandboxDemo")),
   /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
   "bounty-board": lazy(() => import("./BountyBoardDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
@@ -96,6 +98,7 @@ const TRAILS: Record<string, readonly Crumb[]> = {
   activity: [{ label: "Home", href: "/" }, { label: "Activity" }],
   drafts: [{ label: "Home", href: "/" }, { label: "Drafts" }],
   compose: [{ label: "Home", href: "/" }, { label: "Drafts", href: "/drafts" }, { label: "Photo renamer by date taken" }],
+  sandbox: [{ label: "Home", href: "/" }, { label: "Drafts", href: "/drafts" }, { label: "A fox poster" }],
 };
 
 /** Where a board lights a different nav item than the default (the Gallery's): the Profile board lights Home in the header and on the dock; the Activity board lights no link, the bell, and the dock's Activity tile. */
@@ -106,6 +109,7 @@ const CHROME: Record<string, Partial<DevChromeOptions>> = {
   activity: { current: null, activityCurrent: true, dockCurrent: "activity" },
   drafts: { current: "drafts", dockCurrent: null },
   compose: { current: "drafts", dockCurrent: null },
+  sandbox: { current: "drafts", dockCurrent: null },
 };
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
