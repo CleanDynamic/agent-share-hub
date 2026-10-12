@@ -153,6 +153,47 @@ describe("an agent", () => {
   });
 });
 
+describe("an agent inside a team (UI-P69)", () => {
+  const inTeam = () => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    return { ...base.view, id: "t3b", number: "3.2", name: "Writer", defaultName: "Agent 3.2", runs: null, parent: "Team 3 · Copy team" };
+  };
+
+  it("adds 'In: Team {n} · {title}' and words Runs once as 'each time work is sent to it'", () => {
+    panel("agent", "bakery", { view: inTeam() });
+    expect(screen.getByText("In")).toBeTruthy();
+    expect(screen.getByText("Team 3 · Copy team")).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Runs once · each time work is sent to it" })).toBeTruthy();
+  });
+
+  it("leaves both out for an agent that is not in a team", () => {
+    panel("agent");
+    expect(screen.queryByText("In")).toBeNull();
+    expect(screen.getByRole("radio", { name: "Runs once" })).toBeTruthy();
+  });
+
+  it("edits the instructions and hands them over when the field is left", () => {
+    const props = panel("agent", "bakery", { onInstructions: vi.fn() });
+    const field = screen.getByLabelText("Instructions") as HTMLTextAreaElement;
+    expect(field.value).toBe("Check the menu and reply with any item that has no price.");
+    fireEvent.change(field, { target: { value: "Reply with any item over ten pounds." } });
+    fireEvent.blur(field);
+    expect(props.onInstructions).toHaveBeenCalledWith("a5", "Reply with any item over ten pounds.");
+  });
+
+  it("only shows the instructions when nothing can write them, and has none for a team", () => {
+    panel("agent");
+    expect(screen.queryByLabelText("Instructions")).toBeNull();
+    expect(screen.getByText("Check the menu and reply with any item that has no price.")).toBeTruthy();
+    cleanup();
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { onInstructions: vi.fn(), view: { ...base.view, kind: "team", instructions: "" } });
+    expect(screen.queryByText("Instructions")).toBeNull();
+  });
+});
+
 describe("a file, a tool, a result", () => {
   it("downloads a file and names who uses it", () => {
     const props = panel("file");

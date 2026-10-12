@@ -339,6 +339,7 @@ export {
   addManualStep,
   addResult,
   addTeam,
+  setInstructions,
   addTool,
   addUse,
   buildSteps,

@@ -223,7 +223,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
 /**
  * The steps in order, numbered (DATA §1). `tree` is the nested placed tree.
  * An agent's children are its instructions then its prompts; a team's are its
- * agents, each shown without children, since its own prompts show when opened.
+ * agents. An agent in a team has children only when it has prompts of its own
+ * (its instructions, then those prompts, numbered one level further, "3.1.2"),
+ * which show when it is opened.
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
@@ -239,7 +241,17 @@ export function buildSteps(tree: readonly NodeTree[]): Step[] {
     }
     if (kind === "team") {
       const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
-      return stepFor(node, number, kind, agents.map((child, i) => stepFor(child, `${number}.${i + 1}`, "agent")));
+      return stepFor(
+        node,
+        number,
+        kind,
+        agents.map((child, i) => {
+          const inner = `${number}.${i + 1}`;
+          // An agent in a team shows its instructions in its own row; any prompts of its own show when it is opened.
+          const own = byPosition((child.children ?? []).filter((grand) => grand.type === PROMPT_TYPE));
+          return stepFor(child, inner, "agent", own.length === 0 ? [] : [instructionsOf(child, `${inner}.1`), ...own.map((grand, k) => stepFor(grand, `${inner}.${k + 2}`, "prompt"))]);
+        }),
+      );
     }
     return stepFor(node, number, kind);
   });
@@ -442,22 +454,41 @@ async function requireLiveType(operation: string, key: string): Promise<void> {
 
 const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
 
+/**
+ * An agent: top level, or inside a team when `parentId` names one (UI-P69).
+ * A blank name saves as null, so the default "Agent {n}" shows.
+ */
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model }: { name?: string | null; model: string },
+  { name, model, parentId }: { name?: string | null; model: string; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  return placeTopNode(buildId, tree, { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } });
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } };
+  return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
-export async function addTeam(buildId: string, tree: readonly NodeTree[], { name }: { name?: string | null }): Promise<BuildNode> {
+/** A team is never empty: it is made holding one agent, which `model` names. */
+export async function addTeam(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { name, model }: { name?: string | null; model: string },
+): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
-  return placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  if (!model.trim()) throw refuse("addTeam", "An agent needs a model.");
+  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: "", model: model.trim() } });
+  return { team, agent };
+}
+
+/** An agent's instructions: `payload.system_prompt`, which is its sub-step n.1. */
+export async function setInstructions(agent: BuildNode, text: string): Promise<BuildNode> {
+  if (agent.type !== AGENT_TYPE) throw refuse("setInstructions", "Only an agent has instructions.");
+  return upsertNode(withPayload(agent, { ...payloadOf(agent), system_prompt: text }));
 }
 
 /** A further prompt inside an agent. Refuses empty text. */

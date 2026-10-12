@@ -173,6 +173,8 @@ export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps 
     onDismiss: noop,
     onAddPrompt: () => Promise.resolve(true),
     focusAdd: 0,
+    onAddAgentPrompt: () => Promise.resolve(true),
+    onAddAgentTo: noop,
   };
 }
 
@@ -218,7 +220,7 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
           goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
         },
     session: { kind: "session", key: "s1", number: 1, tool: "Claude", model: "Opus 5.5", date: "3 Mar", inBuild: 2, total: 3, status: "ready", checklist: [{ ordinal: 0, label: "Write the homepage copy", stepId: "p1" }, { ordinal: 1, label: "Prompt 2", stepId: "p2" }, { ordinal: 2, label: "Add a footer with the address", stepId: null }] },
-    agent: { kind: "agent", id: "a5", number: "5", name: "Order checker", defaultName: "Agent 5", model: "Opus 5.5", runs: { how: "until", detail: "every item has a price" }, inside: "1 prompt", insideRows: [{ id: "a5:p", label: "5.2 · Prompt 5.2" }], uses: [{ use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }], options: [], goesInto: [{ id: "result", label: "Result" }] },
+    agent: { kind: "agent", id: "a5", number: "5", name: "Order checker", defaultName: "Agent 5", model: "Opus 5.5", runs: { how: "until", detail: "every item has a price" }, inside: "1 prompt", insideRows: [{ id: "a5:p", label: "5.2 · Prompt 5.2" }], instructions: "Check the menu and reply with any item that has no price.", parent: null, uses: [{ use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }], options: [], goesInto: [{ id: "result", label: "Result" }] },
     file: { kind: "file", id: "f1", name: "menu.pdf", from: "opened in session 1", size: "212 KB", canDownload: true, usedBy: [{ id: "p3", label: "3 · Fix the mobile layout" }] },
     tool: { kind: "tool", id: "t1", service: "Gmail", scopes: "read, label, draft", usedBy: [{ id: "a5", label: "5 · Order checker" }] },
     result: { kind: "result", id: "r1", summary: fox ? "fox-poster.png" : "The finished homepage", url: fox ? "" : "https://plumandrye.example", pictures: fox ? [{ id: "m1", name: "fox-poster.png" }] : [] },
@@ -265,4 +267,74 @@ export function sandboxMapProps(which: SandboxMapFixture = "fox"): BuildMapProps
     onClear: noop,
     onConnect: noop,
   };
+}
+
+/**
+ * The team build (board S5 and V5-TeamMap): two prompts from one chat, then a
+ * team of four agents (a researcher, a writer run three at once, a checker that
+ * sends work back until it is approved, and a finisher), then a prompt that uses
+ * the team, and the result. The writer has two prompts of its own.
+ */
+export function sandboxTeamFixture(): { list: BuildListProps; map: BuildMapProps } {
+  const agent = (id: string, number: string, title: string | null, text: string, extra: Partial<Step> = {}) =>
+    step({ id, number, kind: "agent", title, defaultTitle: `Agent ${number}`, text, model: "opus-5-5", ...extra });
+  const out = (id: string) => ({ kind: "output" as const, node_id: id });
+  const researcher = agent("t3a", "3.1", "Researcher", "Find what other neighbourhood bakeries put on their homepage.", { uses: [{ kind: "file", node_id: "f1" }] });
+  const writer = agent("t3b", "3.2", "Writer", "Write the homepage copy from the research.", {
+    runs: { how: "parallel", count: 3 },
+    uses: [out("t3a"), out("t3c")],
+    children: [
+      step({ id: "t3b:instructions", number: "3.2.1", defaultTitle: "Instructions", text: "Write the homepage copy from the research." }),
+      step({ id: "t3b-p2", number: "3.2.2", text: "Keep every section under sixty words." }),
+      step({ id: "t3b-p3", number: "3.2.3", text: "Finish with one clear way to order." }),
+    ],
+  });
+  const checker = agent("t3c", "3.3", "Checker", "Reply approved, or send it back with what to change.", { runs: { how: "until", detail: "approved" }, uses: [out("t3b")] });
+  const finisher = agent("t3d", "3.4", "Finisher", "Format the approved copy as a single HTML page.", { uses: [out("t3c")] });
+  const steps: Step[] = [
+    step({ id: "p1", number: "1", title: "Brand brief", text: BRIEF, sessionId: "s1", model: "opus-5-5" }),
+    step({ id: "p2", number: "2", text: "List the sections the homepage needs.", sessionId: "s1", model: "opus-5-5", uses: [out("p1")] }),
+    step({ id: "t3", number: "3", kind: "team", title: "Copy team", defaultTitle: "Team 3", text: "", uses: [out("p2")], children: [researcher, writer, checker, finisher] }),
+    step({ id: "p4", number: "4", text: "Put the finished copy into the page.", tool: "Claude Code", uses: [out("t3")] }),
+  ];
+  const groups: SessionGroup[] = [
+    { sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"] },
+    { sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["4"] },
+  ];
+  const list: BuildListProps = {
+    phone: false,
+    steps,
+    dividers: dividers(steps, groups),
+    names: { f1: "menu.pdf" },
+    suggestions: [],
+    intoResult: new Set(["t3"]),
+    results: [{ id: "r1", title: "plumandrye.example", holds: "a link", from: "3" }],
+    selectedId: "t3",
+    onSelect: noop,
+    onRename: noop,
+    onMove: noop,
+    onRemove: noop,
+    onAccept: noop,
+    onDismiss: noop,
+    onAddPrompt: () => Promise.resolve(true),
+    focusAdd: 0,
+    onAddAgentPrompt: () => Promise.resolve(true),
+    onAddAgentTo: noop,
+  };
+  const map: BuildMapProps = {
+    steps,
+    groups,
+    files: [{ id: "f1", name: "menu.pdf" }],
+    tools: [],
+    results: [{ id: "r1", title: "plumandrye.example", fromId: "t3" }],
+    suggestions: [],
+    selectedId: "t3",
+    onSelect: noop,
+    onClear: noop,
+    onConnect: noop,
+    onOpenContainer: noop,
+    onBack: noop,
+    onLeave: noop,
+  };
+  return { list, map };
 }

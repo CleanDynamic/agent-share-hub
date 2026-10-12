@@ -31,12 +31,16 @@ import {
   setPromptModel,
 } from "@/lib/build/composePrompts";
 import {
+  addAgent,
+  addAgentPrompt,
   addResult,
+  addTeam,
   addTool,
   addUse,
   dismissSuggestion,
   removeUse,
   setNodeFields,
+  setInstructions,
   setRuns,
   setStepTitle,
   type Runs,
@@ -106,6 +110,14 @@ export interface ComposePrompts {
   removeInside: (id: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
+  /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
+  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string }) => Promise<string | null>;
+  /** UI-P69: add an agent inside a team. */
+  addAgentTo: (teamId: string, model: string) => Promise<string | null>;
+  /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
+  addPromptTo: (agentId: string, text: string) => Promise<boolean>;
+  /** UI-P69: an agent's instructions (its system prompt). */
+  setInstructions: (agentId: string, text: string) => void;
 }
 
 export function useComposePrompts({
@@ -412,6 +424,51 @@ export function useComposePrompts({
         return null;
       });
 
+  const addAgentOrTeam = ({ kind, name, model }: { kind: "agent" | "team"; name: string | null; model: string }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        if (kind === "agent") {
+          const created = await addAgent(build, nodes.current(), { name, model });
+          nodes.record(created.id, created);
+          return created.id;
+        }
+        const { team } = await addTeam(build, nodes.current(), { name, model });
+        nodes.record(team.id, team);
+        return team.id;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Teams need the Deploy queue item from UI-P61." : `Couldn't add that ${kind}. Try again.`)(cause);
+        return null;
+      });
+
+  const addAgentTo = (teamId: string, model: string) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        return (await addAgent(build, nodes.current(), { model, parentId: teamId })).id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that agent. Try again.")(cause);
+        return null;
+      });
+
+  const addPromptTo = (agentId: string, text: string) =>
+    nodes
+      .run(async () => {
+        const agent = findNode(nodes.current(), agentId);
+        if (!agent) return false;
+        await addAgentPrompt(rowOf(agent), nodes.current(), text);
+        return true;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that prompt. Try again.")(cause);
+        return false;
+      });
+
+  const setInstructionsOf = (agentId: string, text: string) =>
+    void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
+
   const rows = useMemo<ComposePromptRow[]>(() => {
     const saved = promptNodes(nodes.tree)
       .map((node) => ({ node, key: aliasOf.current.get(node.id) ?? node.id }))
@@ -423,5 +480,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf };
 }

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { sandboxMapProps } from "@/dev/fixtures/sandbox";
+import { sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 import { layoutMap } from "@/lib/build/mapLayout";
 
 import { boxName, BuildMap, columnDate, DIMMED, type BuildMapProps } from "./BuildMap";
@@ -124,5 +124,96 @@ describe("connecting", () => {
     pointer(box, "pointerup", 300, 300);
     expect(props.onConnect).not.toHaveBeenCalled();
     expect(props.onSelect).not.toHaveBeenCalled();
+  });
+});
+
+describe("agents and teams (UI-P69)", () => {
+  const teamMap = (over: Partial<BuildMapProps> = {}) => {
+    const props: BuildMapProps = { ...sandboxTeamFixture().map, selectedId: null, onSelect: vi.fn(), onClear: vi.fn(), onConnect: vi.fn(), onOpenContainer: vi.fn(), onBack: vi.fn(), onLeave: vi.fn(), ...over };
+    render(<BuildMap {...props} />);
+    return props;
+  };
+  const team = () => sandboxTeamFixture().map.steps.find((step) => step.id === "t3")!;
+
+  it("gives a team its own lane, a two-column box 112 tall, and 'Open' on its header", () => {
+    teamMap();
+    expect(screen.getAllByTestId("map-lane").map((lane) => lane.textContent)).toContain("Team 3runs by itself");
+    const box = screen.getByTestId("map-box-t3");
+    expect(box.style.height).toBe("112px");
+    expect(box.textContent).toContain("Team 3");
+    expect(box.textContent).toContain("Copy team");
+    expect(box.textContent).toContain("4 agents · 1 file");
+    expect(box.textContent).toContain("Runs once");
+    expect(screen.getByRole("button", { name: "Open Team 3" })).toBeTruthy();
+    expect(screen.getByText("Open shows what is inside the team")).toBeTruthy();
+  });
+
+  it("opens on Open, on a double-click and on Enter", () => {
+    const props = teamMap();
+    fireEvent.click(screen.getByRole("button", { name: "Open Team 3" }));
+    expect(props.onOpenContainer).toHaveBeenLastCalledWith("t3");
+    fireEvent.doubleClick(screen.getByTestId("map-box-t3"));
+    expect(props.onOpenContainer).toHaveBeenCalledTimes(2);
+    fireEvent.keyDown(screen.getByTestId("map-box-t3"), { key: "Enter" });
+    expect(props.onOpenContainer).toHaveBeenCalledTimes(3);
+    // A prompt still opens the full prompt window, not a container.
+    expect(props.onOpenPrompt).toBeUndefined();
+  });
+
+  it("draws the opened team: the frame, 3.1 to 3.4 left to right, one stacked box, the loop, outside dimmed", () => {
+    teamMap({ opened: team() });
+    expect(screen.getByTestId("opened-frame").textContent).toContain("Inside team 3 · Copy team");
+    expect(screen.getByTestId("opened-frame").textContent).toContain("Runs once");
+    const boxes = ["t3a", "t3b", "t3c", "t3d"].map((id) => screen.getByTestId(`map-box-${id}`));
+    const lefts = boxes.map((box) => parseFloat(box.style.left));
+    expect(lefts).toEqual([...lefts].sort((a, b) => a - b));
+    expect(new Set(boxes.map((box) => box.style.top)).size).toBe(1);
+
+    // The writer runs three at once: two copies behind it, the count at the right of its header.
+    const copies = screen.getAllByTestId("stack-copy");
+    expect(copies.map((copy) => copy.style.opacity)).toEqual(["0.5", "0.75"]);
+    expect(boxes[1].textContent).toContain("× 3");
+    // An input fed by it reads "Output of 3.2 × 3"; the loop arrives as "Sent back by 3.3".
+    expect(boxes[2].textContent).toContain("Output of 3.2 × 3");
+    expect(boxes[1].textContent).toContain("Sent back by 3.3");
+    expect(screen.getByTestId("map-wire-label").textContent).toBe("sent back until approved");
+
+    // Outside the frame, at the dimmed opacity.
+    expect(screen.getByText("Outside")).toBeTruthy();
+    for (const id of ["p2", "p4", "r1"]) expect(opacity(id)).toBe(String(DIMMED));
+    expect(screen.getByText("stacked box = runs several at once")).toBeTruthy();
+    expect(screen.getByText(/Esc goes back to the build/)).toBeTruthy();
+    expect(screen.getByText("Left to right by order · boxes outside the frame are part of the build, not the team")).toBeTruthy();
+  });
+
+  it("goes back to the build with a box that was clicked outside the frame selected", () => {
+    const props = teamMap({ opened: team() });
+    fireEvent.click(screen.getByTestId("map-box-p4"));
+    expect(props.onLeave).toHaveBeenCalledWith("p4");
+    expect(props.onSelect).not.toHaveBeenCalled();
+  });
+
+  it("selects a box inside, and says which is selected", () => {
+    const props = teamMap({ opened: team(), selectedId: "t3c" });
+    fireEvent.click(screen.getByTestId("map-box-t3b"));
+    expect(props.onSelect).toHaveBeenCalledWith("t3b");
+    expect(screen.getByText("Checker selected")).toBeTruthy();
+  });
+
+  it("goes up one level on Esc", () => {
+    const props = teamMap({ opened: team() });
+    fireEvent.keyDown(screen.getByTestId("opened-map"), { key: "Escape" });
+    expect(props.onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens an agent inside the opened team, which then replaces the view", () => {
+    const props = teamMap({ opened: team() });
+    fireEvent.doubleClick(screen.getByTestId("map-box-t3b"));
+    expect(props.onOpenContainer).toHaveBeenCalledWith("t3b");
+    cleanup();
+    teamMap({ opened: team().children.find((child) => child.id === "t3b")! });
+    expect(screen.getByTestId("opened-frame").textContent).toContain("Inside agent 3.2 · Writer");
+    // An agent opens onto its instructions and prompts.
+    expect(["t3b:instructions", "t3b-p2", "t3b-p3"].map((id) => screen.getByTestId(`map-box-${id}`))).toHaveLength(3);
   });
 });

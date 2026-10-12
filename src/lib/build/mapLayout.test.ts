@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SessionGroup, Step } from "./graph";
-import { joinedTo, layoutMap, MAP_SIZES, type MapLayout } from "./mapLayout";
+import { containsLine, joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapLayout } from "./mapLayout";
 
 const step = (over: Partial<Step> & Pick<Step, "id" | "number">): Step => ({
   kind: "prompt",
@@ -53,14 +53,14 @@ const overlaps = (layout: MapLayout) => {
 };
 
 describe("columns", () => {
-  it("puts the bakery's prompts in columns 0, 1, 1, 2, then the agent at 3, the result at 4 and CLAUDE.md at 1", () => {
+  it("puts the bakery's prompts in columns 0, 1, 1, 2, then the agent at 3 (it spans 3 and 4), the result at 5 and CLAUDE.md at 1", () => {
     const { layout } = bakery();
-    expect(["p1", "p2", "p3", "p4", "a5", "r1", "claude"].map((id) => col(layout, id))).toEqual([0, 1, 1, 2, 3, 4, 1]);
+    expect(["p1", "p2", "p3", "p4", "a5", "r1", "claude"].map((id) => col(layout, id))).toEqual([0, 1, 1, 2, 3, 5, 1]);
   });
 
   it("takes a typed prompt's date from its neighbour", () => {
     const { layout } = bakery();
-    expect(layout.columns.map((column) => column.date?.slice(0, 10) ?? null)).toEqual(["2026-03-03", "2026-03-03", "2026-03-04", "2026-03-04", null].slice(0, layout.columns.length));
+    expect(layout.columns.map((column) => column.date?.slice(0, 10) ?? null)).toEqual(["2026-03-03", "2026-03-03", "2026-03-04", "2026-03-04", null, null].slice(0, layout.columns.length));
   });
 
   it("keeps no column negative when a file comes before the first step", () => {
@@ -74,12 +74,13 @@ describe("columns", () => {
 });
 
 describe("lanes", () => {
-  it("lists sessions in order, a typed lane between them, and the dashed files lane last", () => {
+  it("lists sessions in order, a typed lane between them, the agent's lane, and the dashed files lane last", () => {
     const { layout } = bakery();
     expect(layout.lanes.map((lane) => [lane.label, lane.dashed])).toEqual([
       ["Session 1", false],
       ["Session 2", false],
       ["Typed here", false],
+      ["Agent 5", false],
       ["Files and tools", true],
     ]);
     expect(layout.lanes[0].sub).toBe("Claude · Opus 5.5");
@@ -87,11 +88,17 @@ describe("lanes", () => {
     expect(ys).toEqual([...ys].sort((a, b) => a - b));
   });
 
-  it("puts an agent in the lane of the step before it, and has no files lane without files or tools", () => {
+  it("gives an agent a lane of its own, and has no files lane without files or tools", () => {
     const { steps, groups } = bakery();
     const layout = layoutMap(steps, groups, [], [], []);
-    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 2", "Typed here"]);
-    expect(layout.boxes.find((box) => box.id === "a5")?.lane).toBe(2);
+    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Session 1", "Session 2", "Typed here", "Agent 5"]);
+    expect(layout.lanes[3]).toMatchObject({ kind: "agent", sub: "runs by itself" });
+    expect(layout.boxes.find((box) => box.id === "a5")?.lane).toBe(3);
+  });
+
+  it("labels a team's lane \"Team {n}\"", () => {
+    const layout = layoutMap([step({ id: "t1", number: "1", kind: "team" })], [], [], [], []);
+    expect(layout.lanes.map((lane) => lane.label)).toEqual(["Team 1"]);
   });
 
   it("puts a typed prompt between two sessions in its own lane", () => {
@@ -221,5 +228,130 @@ describe("dimming", () => {
     const p4 = joinedTo(layout, "p4");
     expect([...p4.boxes].sort()).toEqual(["a5", "claude", "p3", "p4"]);
     expect(joinedTo(layout, null).boxes.size).toBe(0);
+  });
+});
+
+describe("an agent or a team in the Map (UI-P69)", () => {
+  it("makes an agent's box span two columns, 112 tall, and starts what follows after both", () => {
+    const { layout } = bakery();
+    const agent = layout.boxes.find((box) => box.id === "a5")!;
+    const result = layout.boxes.find((box) => box.id === "r1")!;
+    expect(agent.span).toBe(2);
+    expect(agent.w).toBe(2 * MAP_SIZES.column + MAP_SIZES.gap);
+    expect(agent.inputs).toHaveLength(1);
+    expect(agent.h).toBe(112);
+    expect(result.column).toBe(agent.column + 2);
+    expect(result.x).toBeGreaterThanOrEqual(agent.x + agent.w + MAP_SIZES.gap);
+  });
+
+  it("is 112 tall with up to three inputs, and grows only past that", () => {
+    const others = ["a", "b", "c", "d"].map((id, at) => step({ id, number: String(at + 1) }));
+    const agentWith = (count: number) => {
+      const uses = others.slice(0, count).map((other) => out(other.id));
+      const layout = layoutMap([...others, step({ id: "ag", number: "5", kind: "agent", uses })], [], [], [], []);
+      return layout.boxes.find((box) => box.id === "ag")!.h;
+    };
+    expect([0, 1, 3].map(agentWith)).toEqual([112, 112, 112]);
+    expect(agentWith(4)).toBeGreaterThan(112);
+  });
+
+  it("counts prompts, files and tools, leaving zeros out", () => {
+    const agent = step({
+      id: "a1",
+      number: "1",
+      kind: "agent",
+      uses: [{ kind: "file", node_id: "f" }],
+      children: [
+        step({ id: "a1:instructions", number: "1.1" }),
+        step({ id: "c2", number: "1.2", uses: [{ kind: "file", node_id: "f" }, { kind: "tool", node_id: "t" }] }),
+        step({ id: "c3", number: "1.3" }),
+      ],
+    });
+    expect(containsLine(agent)).toBe("2 prompts · 1 file · 1 tool");
+    expect(containsLine(step({ id: "a2", number: "2", kind: "agent" }))).toBe("");
+  });
+});
+
+/** The S5 team: a researcher run several at once, a writer, a checker that sends work back, and one more. */
+function team() {
+  const researcher = step({ id: "t3a", number: "3.1", kind: "agent", defaultTitle: "Agent 3.1", model: "Opus 5.5", uses: [{ kind: "file", node_id: "brief" }] });
+  const writer = step({ id: "t3b", number: "3.2", kind: "agent", model: "Opus 5.5", runs: { how: "parallel", count: 3 }, uses: [out("t3a")] });
+  const checker = step({ id: "t3c", number: "3.3", kind: "agent", model: "Opus 5.5", uses: [out("t3b")] });
+  const loopBack = { ...writer, uses: [out("t3a"), out("t3c")] };
+  const finisher = step({ id: "t3d", number: "3.4", kind: "agent", model: "Opus 5.5", uses: [out("t3c")] });
+  const container = step({ id: "t3", number: "3", kind: "team", uses: [out("p2")], children: [researcher, loopBack, { ...checker, runs: { how: "until", detail: "approved" } }, finisher] });
+  const steps = [step({ id: "p1", number: "1" }), step({ id: "p2", number: "2", uses: [out("p1")] }), container, step({ id: "p4", number: "4", uses: [out("t3")] })];
+  const results = [{ id: "r1", title: "The site", fromId: "t3" }];
+  return { container, steps, results, layout: layoutOpened(container, steps, [{ id: "brief", name: "brief.md" }], [], results) };
+}
+
+describe("an opened team (V5)", () => {
+  it("puts 3.1 to 3.4 in columns 0 to 3, left to right on one row", () => {
+    const { layout } = team();
+    expect(layout.boxes.map((box) => box.number)).toEqual(["3.1", "3.2", "3.3", "3.4"]);
+    expect(layout.boxes.map((box) => box.column)).toEqual([0, 1, 2, 3]);
+    expect(new Set(layout.boxes.map((box) => box.y)).size).toBe(1);
+    const xs = layout.boxes.map((box) => box.x);
+    expect(xs).toEqual([...xs].sort((a, b) => a - b));
+  });
+
+  it("draws the several-at-once agent stacked, and an input fed by it reads \"Output of 3.2 × 3\"", () => {
+    const { layout } = team();
+    expect(layout.boxes.map((box) => box.stack)).toEqual([null, 3, null, null]);
+    expect(layout.boxes[2].inputs.map((input) => input.label)).toEqual(["Output of 3.2 × 3"]);
+  });
+
+  it("names a loop's input \"Sent back by 3.3\", routes its wire above, and labels it", () => {
+    const { layout } = team();
+    expect(layout.boxes[1].inputs.map((input) => input.label)).toEqual(["Output of 3.1", "Sent back by 3.3"]);
+    const loop = layout.wires.find((wire) => wire.loop && wire.to === "t3b");
+    expect(loop?.label).toBe("sent back until approved");
+    const rowTop = layout.boxes[0].y;
+    expect(Number(loop?.d.match(/V (-?[\d.]+) H/)?.[1])).toBeLessThan(rowTop);
+  });
+
+  it("puts what the team uses and goes into outside the frame, on the right, the result among them", () => {
+    const { layout } = team();
+    expect(layout.outside.map((box) => box.id)).toEqual(["p2", "p4", "r1"]);
+    expect(layout.outside.map((box) => box.kind)).toEqual(["step", "step", "result"]);
+    for (const box of layout.outside) expect(box.x).toBeGreaterThanOrEqual(layout.frame.x + layout.frame.w);
+  });
+
+  it("keeps the files used inside in a band along the bottom of the frame", () => {
+    const { layout } = team();
+    expect(layout.band.map((box) => box.title)).toEqual(["brief.md"]);
+    for (const box of layout.band) {
+      expect(box.y).toBeGreaterThan(layout.boxes[0].y + layout.boxes[0].h);
+      expect(box.y + box.h).toBeLessThanOrEqual(layout.frame.y + layout.frame.h);
+    }
+  });
+
+  it("keeps every box inside the frame and no two boxes on one another", () => {
+    const { layout } = team();
+    for (const box of layout.boxes) {
+      expect(box.x).toBeGreaterThanOrEqual(layout.frame.x);
+      expect(box.x + box.w).toBeLessThanOrEqual(layout.frame.x + layout.frame.w);
+      expect(box.y + box.h).toBeLessThanOrEqual(layout.frame.y + layout.frame.h);
+    }
+    const all = [...layout.boxes, ...layout.band, ...layout.outside];
+    for (let a = 0; a < all.length; a++) {
+      for (let b = a + 1; b < all.length; b++) {
+        const p = all[a];
+        const q = all[b];
+        expect(p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.h && q.y < p.y + p.h).toBe(false);
+      }
+    }
+  });
+
+  it("opens an agent onto its instructions and prompts, each following the one before", () => {
+    const agent = step({
+      id: "a1",
+      number: "1",
+      kind: "agent",
+      children: [step({ id: "a1:instructions", number: "1.1", defaultTitle: "Instructions" }), step({ id: "c2", number: "1.2" }), step({ id: "c3", number: "1.3" })],
+    });
+    const layout = layoutOpened(agent, [agent], [], []);
+    expect(layout.boxes.map((box) => box.column)).toEqual([0, 1, 2]);
+    expect(layout.wires.filter((wire) => !wire.named).map((wire) => wire.id)).toEqual(["a1:instructions>c2:next", "c2>c3:next"]);
   });
 });

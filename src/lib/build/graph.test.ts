@@ -20,6 +20,7 @@ import {
   addAgentPrompt,
   addManualStep,
   addTeam,
+  setInstructions,
   addUse,
   buildSteps,
   dismissSuggestion,
@@ -106,7 +107,7 @@ describe("buildSteps", () => {
     ]);
   });
 
-  it("numbers a team's four agents n.1 to n.4 and goes no deeper", () => {
+  it("numbers a team's four agents n.1 to n.4; an agent's own prompts are held for when it is opened", () => {
     const agents = [1, 2, 3, 4].map((i) =>
       node({
         id: `ag${i}`,
@@ -124,7 +125,18 @@ describe("buildSteps", () => {
     expect(lead.number).toBe("1");
     expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team 2" });
     expect(team.children.map((c) => c.number)).toEqual(["2.1", "2.2", "2.3", "2.4"]);
-    expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief", children: [] });
+    expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief" });
+    expect(team.children[0].children.map((c) => [c.number, c.defaultTitle, c.text])).toEqual([
+      ["2.1.1", "Instructions", "Agent 1 brief"],
+      ["2.1.2", "Prompt 2.1.2", "hidden until opened"],
+    ]);
+  });
+
+  it("gives an agent in a team no children when it has no prompts of its own", () => {
+    const [team] = buildSteps([
+      node({ id: "tm", type: "team", position: 1, payload: {}, children: [node({ id: "ag", parent_id: "tm", position: 1, type: "agent_config", payload: { system_prompt: "Brief", model: "m" } })] }),
+    ]);
+    expect(team.children[0].children).toEqual([]);
   });
 
   it("trims a typed title and falls back to the default for a blank one", () => {
@@ -303,7 +315,7 @@ describe("adding", () => {
   it("refuses a team and a manual step while their node types are not live", async () => {
     for (const missing of [null, { key: "team", is_active: false }]) {
       getNodeType.mockResolvedValue(missing);
-      await expect(addTeam(BUILD, [], { name: "Crew" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
+      await expect(addTeam(BUILD, [], { name: "Crew", model: "claude-sonnet-5-5" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
       await expect(addManualStep(BUILD, [], { tool: "Figma", text: "Exported" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
     }
     expect(upsertNode).not.toHaveBeenCalled();
@@ -312,16 +324,36 @@ describe("adding", () => {
   it("places an agent, a team and a manual step after the last top-level node", async () => {
     const tree = [node({ position: 4 })];
     await addAgent(BUILD, tree, { name: " Reviewer ", model: "claude-sonnet-5-5" });
-    await addTeam(BUILD, tree, { name: "" });
+    await addTeam(BUILD, tree, { name: "", model: "claude-sonnet-5-5" });
     await addManualStep(BUILD, tree, { tool: " Figma ", text: " Exported the frames " });
-    expect(upsertNode.mock.calls.map(([row]) => [row.type, row.position, row.parent_id, row.title])).toEqual([
+    expect(upsertNode.mock.calls.map(([row]) => [row.type, row.position, row.parent_id === null ? null : "child", row.title])).toEqual([
       ["agent_config", 5, null, "Reviewer"],
       ["team", 5, null, null],
+      ["agent_config", 1, "child", null],
       ["manual_step", 5, null, null],
     ]);
-    expect(upsertNode.mock.calls[2][0].payload).toEqual({ tool: "Figma", text: "Exported the frames" });
+    expect(upsertNode.mock.calls[3][0].payload).toEqual({ tool: "Figma", text: "Exported the frames" });
     await expect(addManualStep(BUILD, tree, { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
     await expect(addManualStep(BUILD, tree, { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
+  });
+
+  it("makes a team holding one agent, and puts an agent inside a team after its others", async () => {
+    upsertNode.mockImplementation(async (row: Record<string, unknown>) => ({ ...row, id: row.type === "team" ? "tm" : "new" }));
+    const made = await addTeam(BUILD, [], { name: "Crew", model: "claude-sonnet-5-5" });
+    expect(made.team.id).toBe("tm");
+    expect(upsertNode.mock.calls[1][0]).toMatchObject({ type: "agent_config", parent_id: "tm", position: 1, payload: { system_prompt: "", model: "claude-sonnet-5-5" } });
+    await expect(addTeam(BUILD, [], { name: "Crew", model: " " })).rejects.toThrow(/needs a model/);
+
+    const team = node({ id: "tm", type: "team", children: [node({ parent_id: "tm", position: 2 })] });
+    await addAgent(BUILD, [team], { model: "claude-sonnet-5-5", parentId: "tm" });
+    expect(upsertNode.mock.calls[2][0]).toMatchObject({ type: "agent_config", parent_id: "tm", position: 3 });
+  });
+
+  it("writes an agent's instructions as its system prompt, and only for an agent", async () => {
+    const agent = node({ id: "ag", type: "agent_config", payload: { system_prompt: "", model: "m" } }) as BuildNode;
+    await setInstructions(agent, "Be brief.");
+    expect(payloadWritten()).toEqual({ system_prompt: "Be brief.", model: "m" });
+    await expect(setInstructions(node({}) as BuildNode, "x")).rejects.toThrow(/Only an agent/);
   });
 
   it("places an agent's prompt one past its highest child, and refuses empty text or a non-agent", async () => {

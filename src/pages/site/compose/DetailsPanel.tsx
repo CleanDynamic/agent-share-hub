@@ -108,6 +108,10 @@ export interface AgentView extends InputsView {
   /** "Inside 2 prompts". */
   inside: string;
   insideRows: readonly { id: string; label: string }[];
+  /** An agent's instructions (its system prompt); empty for a team. */
+  instructions: string;
+  /** "Team 3 · Copy team" for an agent inside a team; null otherwise. */
+  parent: string | null;
 }
 
 export interface ResultView {
@@ -128,6 +132,8 @@ export interface DetailsHandlers {
   onAddUse: (id: string, use: Use) => void;
   onRemoveUse: (id: string, use: Use) => void;
   onRuns: (id: string, runs: Runs | null) => void;
+  /** UI-P69: write an agent's instructions. Absent, they are only shown. */
+  onInstructions?: (id: string, text: string) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   onDownload: (id: string) => void;
@@ -543,13 +549,14 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
       <div role="radiogroup" aria-label="How it runs" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {RUNS_CHOICES.map((entry) => {
           const chosen = entry.how === how;
+          const label = entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label;
           return (
             <label
               key={entry.how}
               style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 30, padding: "0 8px", borderRadius: r.control, background: chosen ? selTint : "transparent", cursor: "pointer", fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text }}
             >
               <input type="radio" name={name} checked={chosen} onChange={() => pick(entry)} style={{ margin: 0 }} />
-              {entry.label}
+              {label}
             </label>
           );
         })}
@@ -613,10 +620,20 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>
-      {view.model ? (
+      {view.model || view.parent ? (
         <div>
-          <KeyValue label="Model">{view.model}</KeyValue>
+          {view.parent ? <KeyValue label="In">{view.parent}</KeyValue> : null}
+          {view.model ? <KeyValue label="Model">{view.model}</KeyValue> : null}
         </div>
+      ) : null}
+      {view.kind === "agent" ? (
+        <FieldBlock label="Instructions">
+          {h.onInstructions ? (
+            <CommitField key={`${view.id}:instructions`} label="Instructions" value={view.instructions} placeholder="What this agent is told" multiline phone={phone} onCommit={(value) => h.onInstructions?.(view.id, value)} />
+          ) : (
+            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{view.instructions}</p>
+          )}
+        </FieldBlock>
       ) : null}
       <RunsGroup view={view} phone={phone} onRuns={h.onRuns} />
       <Section title={`Inside ${view.inside}`}>

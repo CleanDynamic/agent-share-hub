@@ -64,11 +64,25 @@ export function isClamped(box: { scrollHeight: number; clientHeight: number }): 
   return box.scrollHeight > box.clientHeight + 1;
 }
 
-/** "Agent · made in prompts 1 and 2 · Opus 5.5": the agent card's eyebrow. */
-export function agentEyebrow(made: readonly string[], model: string | null): string {
-  const parts = ["Agent"];
+/** "Agent · made in prompts 1 and 2 · Opus 5.5": the agent card's eyebrow. A team's reads "Team · made in …". */
+export function agentEyebrow(made: readonly string[], model: string | null, word: "Agent" | "Team" = "Agent"): string {
+  const parts: string[] = [word];
   if (made.length === 1) parts.push(`made in prompt ${made[0]}`);
   else if (made.length > 1) parts.push(`made in prompts ${made.slice(0, -1).join(", ")} and ${made[made.length - 1]}`);
   if (model) parts.push(model);
   return parts.join(" · ");
+}
+
+/**
+ * The steps an agent or a team is made from: the numbers of the steps in its
+ * output uses, in the order it lists them (UI-P69). Empty when it uses none.
+ */
+export function madeIn(step: Pick<Step, "uses">, steps: readonly Step[]): string[] {
+  const numbers: string[] = [];
+  for (const use of step.uses) {
+    if (use.kind !== "output") continue;
+    const from = steps.find((candidate) => candidate.id === use.node_id);
+    if (from) numbers.push(from.number);
+  }
+  return numbers;
 }

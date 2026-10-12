@@ -106,6 +106,12 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   };
 }
 
+/** "Team 3 · Copy team" for the team an agent sits in; null for anything at the top level. */
+function parentLine(id: string, steps: readonly Step[]): string | null {
+  const team = steps.find((candidate) => candidate.kind === "team" && candidate.children.some((child) => child.id === id));
+  return team ? `Team ${team.number} · ${stepTitle(team)}` : null;
+}
+
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
@@ -119,6 +125,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
+    instructions: step.kind === "agent" ? step.text : "",
+    parent: parentLine(step.id, ctx.steps),
     // An agent's instructions are its own row; only what can be taken out is listed.
     insideRows: step.children.filter((child) => !child.id.endsWith(":instructions")).map((child) => ({ id: child.id, label: `${child.number} · ${stepTitle(child)}` })),
   };

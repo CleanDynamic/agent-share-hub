@@ -5,8 +5,9 @@
 
    WHAT IT DRAWS, top to bottom: a hint; for each step a card, with a session
    divider before the first step of each run of steps from one session; the
-   result; and the field that adds a prompt. Agents and teams draw nested and
-   read-only here: their writes arrive with UI-P69.
+   result; and the field that adds a prompt. Agents and teams draw nested
+   (UI-P69): an agent's instructions then its prompts, with a ghost row to add
+   one; a team's agents as inner cards, with a ghost row to add another.
 
    A CARD IS SELECTED BY CLICKING IT, and opened by double-click, Enter, "Show
    full prompt" or its menu's "Read all of it" (`onOpenPrompt`, which UI-P67
@@ -19,7 +20,7 @@
    500: it is the default, not their words. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowUp, Check, ChevronDown, MoreHorizontal } from "lucide-react";
+import { ArrowUp, Check, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
@@ -33,7 +34,7 @@ import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { agentEyebrow, isClamped, stepModel, suggestionKey, inputLabel, type ListResult, type ListSuggestion } from "./buildListModel";
+import { agentEyebrow, isClamped, madeIn, stepModel, suggestionKey, inputLabel, type ListResult, type ListSuggestion } from "./buildListModel";
 import { TextButton } from "./composeControls";
 import type { SourceSession } from "./sourcesModel";
 
@@ -69,6 +70,10 @@ export interface BuildListProps {
   onAddPrompt: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
   /** Changes to put the cursor in the add field ("Add › Prompt"). */
   focusAdd: number;
+  /** UI-P69: "Add a prompt to this agent". Resolves true once it is saved. */
+  onAddAgentPrompt: (agentId: string, text: string) => Promise<boolean>;
+  /** UI-P69: "Add an agent to this team". */
+  onAddAgentTo: (teamId: string) => void;
 }
 
 /* ── small pieces ── */
@@ -402,17 +407,82 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   );
 }
 
-/* ── agents and teams: read-only until UI-P69 ── */
+/* ── agents and teams (UI-P69) ── */
 
-function InnerCard({ step, eyebrow, runs }: { step: Step; eyebrow?: string; runs?: string }) {
+function InnerCard({ step, eyebrow, runs, nested }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean }) {
   return (
-    <div style={{ display: "flex", gap: 10, padding: 10, borderRadius: 12, background: t.cell, border: `1px solid ${t.hairline}` }}>
+    <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ display: "flex", gap: 10, padding: 10, borderRadius: 12, background: t.cell, border: `1px solid ${t.hairline}` }}>
       <Badge wide>{step.number}</Badge>
       <div style={{ minWidth: 0, flexGrow: 1 }}>
         {eyebrow ? <div style={mono(12)}>{eyebrow}</div> : null}
         <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: step.title ? 600 : 500, color: step.title ? t.text : t.text2 }}>{stepTitle(step)}</div>
         <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13.5, lineHeight: 1.5, color: t.text, ...clamp2 }}>{step.text}</p>
-        {runs ? <div style={{ ...mono(11.5), marginTop: 4 }}>{runs}</div> : null}
+      </div>
+      {runs ? <Chip>{runs}</Chip> : null}
+    </div>
+  );
+}
+
+/** A quiet "+ …" row that opens a small field, for "Add a prompt to this agent". */
+function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      {...handlers}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      style={{ minHeight: phone ? 44 : 30, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1.5px dashed ${t.line}`, background: "transparent", color: t.text2, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "left", ...ring(state.focusVisible) }}
+    >
+      <Plus size={14} aria-hidden="true" />
+      {label}
+    </button>
+  );
+}
+
+/** The field "Add a prompt to this agent" opens: the List's add field without the tool and model chips (the agent's model applies). */
+function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildListProps; onDone: () => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const field = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => field.current?.focus(), []);
+  const submit = async () => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    const saved = await props.onAddAgentPrompt(agent.id, text);
+    setBusy(false);
+    if (saved) {
+      setText("");
+      onDone();
+    }
+  };
+  return (
+    <div data-testid="agent-prompt-field" onClick={(event) => event.stopPropagation()} style={{ borderRadius: 12, border: `1px solid ${t.line}`, background: t.field, padding: "10px 10px 8px 12px" }}>
+      <textarea
+        ref={field}
+        aria-label={`Add a prompt to agent ${agent.number}`}
+        rows={2}
+        value={text}
+        placeholder={LIST_COPY.placeholder}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            onDone();
+          } else if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            void submit();
+          }
+        }}
+        style={{ width: "100%", boxSizing: "border-box", resize: "none", border: "none", background: "transparent", outline: "none", color: t.text, fontFamily: FIGTREE, fontSize: props.phone ? 16 : 14, lineHeight: 1.5, padding: 0 }}
+      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginTop: 4 }}>
+        <TextButton onClick={onDone} target={props.phone}>
+          Cancel
+        </TextButton>
+        <IconButton icon={ArrowUp} label="Add prompt to this agent" size={props.phone ? 38 : 30} disabled={!text.trim() || busy} onClick={() => void submit()} />
       </div>
     </div>
   );
@@ -422,6 +492,10 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
   const isTeam = step.kind === "team";
   const model = stepModel(step);
   const selected = props.selectedId === step.id;
+  const made = madeIn(step, props.steps);
+  const [adding, setAdding] = useState(false);
+  /** One agent of a team shows its own prompts at a time. */
+  const [openAgent, setOpenAgent] = useState<string | null>(null);
   return (
     <div
       role="group"
@@ -434,23 +508,50 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <Badge>{step.number}</Badge>
         <div style={{ minWidth: 0, flexGrow: 1 }}>
-          <div style={mono(12)}>{isTeam ? "Team" : agentEyebrow([], model)}</div>
+          <div data-testid="container-eyebrow" style={mono(12)}>{isTeam ? agentEyebrow(made, null, "Team") : agentEyebrow(made, model)}</div>
           <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: step.title ? 600 : 500, color: step.title ? t.text : t.text2 }}>{stepTitle(step)}</h3>
         </div>
         <Chip>{runsLabel(step.runs)}</Chip>
       </div>
-      {step.children.length > 0 ? (
-        <div style={{ margin: "8px 0 0 12px", paddingLeft: 12, borderLeft: `2px solid ${t.line}`, display: "flex", flexDirection: "column", gap: 6 }}>
-          {step.children.map((child) => (
-            <InnerCard
-              key={child.id}
-              step={child}
-              eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
-              runs={isTeam ? runsLabel(child.runs) : undefined}
-            />
-          ))}
-        </div>
-      ) : null}
+      <div style={{ margin: "8px 0 0 12px", paddingLeft: 12, borderLeft: `2px solid ${t.line}`, display: "flex", flexDirection: "column", gap: 6 }}>
+        {step.children.map((child) => {
+          const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
+          const open = isTeam && openAgent === child.id;
+          return (
+            <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <InnerCard
+                step={child}
+                eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
+                runs={isTeam ? runsLabel(child.runs) : undefined}
+              />
+              {own.length > 0 ? (
+                <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span>
+                    <TextButton
+                      target={props.phone}
+                      aria-expanded={open}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setOpenAgent(open ? null : child.id);
+                      }}
+                    >
+                      {open ? `Hide its ${own.length === 1 ? "prompt" : `${own.length} prompts`}` : `Show its ${own.length === 1 ? "prompt" : `${own.length} prompts`}`}
+                    </TextButton>
+                  </span>
+                  {open ? own.map((grand) => <InnerCard key={grand.id} step={grand} nested />) : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+        {isTeam ? (
+          <GhostAdd label="Add an agent to this team" phone={props.phone} onClick={() => props.onAddAgentTo(step.id)} />
+        ) : adding ? (
+          <AgentPromptField agent={step} props={props} onDone={() => setAdding(false)} />
+        ) : (
+          <GhostAdd label="Add a prompt to this agent" phone={props.phone} onClick={() => setAdding(true)} />
+        )}
+      </div>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, paddingTop: 8 }}>
         <UsesRow step={step} props={props} />
       </div>

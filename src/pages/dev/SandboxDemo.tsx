@@ -4,6 +4,8 @@
    `?build=bakery` draws the second (S3); the default is the fox poster (S1).
    `?open=1` opens the full prompt window on the selected prompt (UI-P67).
    `?lens=map` draws the Map; `?build=big` is 60 steps for the long-task measurement (UI-P68).
+   `?build=team` is the team build (S5): add `&lens=map` for its Map, and `&opened=t3` (or `t3b`) for the
+   opened team (V5-TeamMap) (UI-P69).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    No board image is compared. */
 
@@ -12,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 
-import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
+import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
@@ -32,16 +34,20 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
-  const list = sandboxListProps(which);
+  const team = asBuild === "team" ? sandboxTeamFixture() : null;
+  const list = team?.list ?? sandboxListProps(which);
+  const openedId = params.get("opened");
+  const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
   return (
     <>
       <SandboxView
         fit={fit}
         {...sandboxViewProps(which, state)}
         lens={params.get("lens") === "map" ? "map" : "list"}
-        mapAvailable={params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
+        mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
-        map={<BuildMap {...sandboxMapProps(mapOf)} onOpenPrompt={setOpen} />}
+        map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
+        trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
         selection={<DetailsPanel {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
       />
