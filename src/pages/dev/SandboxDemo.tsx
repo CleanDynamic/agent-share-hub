@@ -6,13 +6,18 @@
 
 import { useSearchParams } from "react-router-dom";
 
-import { sandboxViewProps, type SandboxFixture } from "@/dev/fixtures/sandbox";
+import { sandboxListProps, sandboxSourcesProps, sandboxViewProps, type SandboxFixture } from "@/dev/fixtures/sandbox";
+import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
+import { BuildList } from "@/pages/site/compose/BuildList";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
+import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
 
 import type { DesignPageProps } from "./KitPages";
 
 export default function SandboxDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
   const which: SandboxFixture = params.get("build") === "bakery" ? "bakery" : "fox";
-  return <SandboxView fit={fit} {...sandboxViewProps(which, state)} />;
+  const phone = useIsPhone();
+  const fine = useFinePointer();
+  return <SandboxView fit={fit} {...sandboxViewProps(which, state)} list={<BuildList {...sandboxListProps(which)} phone={phone} />} sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />} />;
 }

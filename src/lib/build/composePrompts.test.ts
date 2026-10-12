@@ -121,6 +121,13 @@ describe("writing by hand", () => {
     expect(upsertNode.mock.calls[0][0]).toMatchObject({ type: "prompt", title: null, payload: { text: "Now make it run every night." }, source_ref: null, position: 5 });
   });
 
+  it("keeps the tool and model it names, and drops a tool no client knows", async () => {
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "claude-code", model: "Opus 5.5" });
+    expect(upsertNode.mock.calls[0][0].payload).toEqual({ text: "Hi", tool: "claude-code", model: "Opus 5.5" });
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "notepad", model: " " });
+    expect(upsertNode.mock.calls[1][0].payload).toEqual({ text: "Hi" });
+  });
+
   it("never writes an empty prompt", async () => {
     await expect(addWrittenPrompt({ buildId: BUILD, tree: [], text: "   " })).rejects.toThrow();
     await expect(savePromptText(node({}) as BuildNode, "")).rejects.toThrow();

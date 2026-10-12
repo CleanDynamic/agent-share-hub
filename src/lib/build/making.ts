@@ -22,6 +22,9 @@ const TOOL_LABELS: Record<string, string> = {
   cursor: "Cursor",
 };
 
+/** The clients `toolLabel` knows, in order: what a prompt written by hand can name as its tool (DATA §2). */
+export const TOOL_CLIENTS: readonly { client: string; label: string }[] = Object.entries(TOOL_LABELS).map(([client, label]) => ({ client, label }));
+
 /** The tool a client adds to Made with, or null for one that names none (web, unknown). */
 export function toolLabel(client: string | null | undefined): string | null {
   return client ? (TOOL_LABELS[client] ?? null) : null;

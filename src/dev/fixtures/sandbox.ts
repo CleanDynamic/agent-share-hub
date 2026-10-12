@@ -8,6 +8,10 @@ import type { DesignState } from "@/dev/useDesignTheme";
 import { composeViewProps } from "@/dev/fixtures/compose";
 import { PUBLISH_WORDS } from "@/pages/site/compose/composeModel";
 import type { SandboxViewProps } from "@/pages/site/compose/SandboxView";
+import type { SessionGroup, Step } from "@/lib/build/graph";
+import type { BuildListProps } from "@/pages/site/compose/BuildList";
+import { dividers } from "@/pages/site/compose/buildListModel";
+import type { SourcesPanelProps } from "@/pages/site/compose/SourcesPanel";
 
 const noop = () => undefined;
 
@@ -52,5 +56,114 @@ export function sandboxViewProps(which: SandboxFixture = "fox", state: DesignSta
     onLens: noop,
     mapAvailable: !fox,
     mapHint: !fox,
+  };
+}
+
+/** The Sources panel's rows for each build: the fox poster's one session, the bakery's three, two files and two waiting. */
+export function sandboxSourcesProps(which: SandboxFixture = "fox", state: DesignState = "populated"): SourcesPanelProps {
+  const fox = which === "fox";
+  const empty = state === "empty";
+  return {
+    phone: false,
+    fine: true,
+    status: state === "loading" ? "loading" : state === "error" ? "error" : "ready",
+    onRetry: noop,
+    sessions: empty
+      ? []
+      : fox
+        ? [{ key: "s1", number: 1, tool: "Claude", detail: "Opus 5.5 · 3 Mar", prompts: [{ id: "p1", number: "1", title: "Prompt 1", isDefault: true }] }]
+        : [
+            {
+              key: "s1",
+              number: 1,
+              tool: "Claude",
+              detail: "Opus 5.5 · 3 Mar",
+              prompts: [
+                { id: "p1", number: "1", title: "Write the homepage copy", isDefault: false },
+                { id: "p2", number: "2", title: "Prompt 2", isDefault: true },
+              ],
+            },
+            { key: "s2", number: 2, tool: "Claude Code", detail: "Sonnet 5.5 · 4 Mar", prompts: [{ id: "p3", number: "3", title: "Build the page", isDefault: false }] },
+            { key: "typed-3", number: 3, tool: "ChatGPT", detail: "typed here", prompts: [{ id: "p4", number: "4", title: "Prompt 4", isDefault: true }] },
+          ],
+    files: empty || fox ? [] : [
+      { id: "f1", name: "menu.pdf", note: "opened in session 1" },
+      { id: "f2", name: "logo.png", note: "added by you" },
+    ],
+    library: empty || fox ? [] : [
+      { id: "l1", label: "Claude", line: "1 Mar · 4 prompts", adding: false },
+      { id: "l2", label: "Cursor", line: "28 Feb · 2 prompts", adding: false },
+    ],
+    selectedId: fox ? "p1" : "p3",
+    onSelect: noop,
+    onAddSession: noop,
+    onDropFiles: noop,
+    onPick: noop,
+    connectHref: "/connect",
+  };
+}
+
+const step = (over: Partial<Step> & Pick<Step, "id" | "number" | "text">): Step => ({
+  kind: "prompt",
+  title: null,
+  defaultTitle: `Prompt ${over.number}`,
+  words: over.text.split(/\s+/).length,
+  model: null,
+  sessionId: null,
+  tool: null,
+  runs: null,
+  uses: [],
+  children: [],
+  ...over,
+});
+
+const FOX_TEXT = "A fox standing in a snowy wood at dusk, poster layout, a wide title across the top, soft grain, muted blues and one warm orange accent on the fox.";
+const BRIEF = "Write the homepage copy for a neighbourhood bakery called Plum & Rye: warm, short sentences, opening hours, a menu of six items, and a line about the sourdough that has been going since 2014. Keep every section under sixty words and finish with one clear way to order.";
+
+/** The List's rows for each build: the fox poster's one card, the bakery's sessions, an agent, a team and a result. */
+export function sandboxListProps(which: SandboxFixture = "fox"): BuildListProps {
+  const fox = which === "fox";
+  const steps: Step[] = fox
+    ? [step({ id: "p1", number: "1", text: FOX_TEXT, sessionId: "s1", model: "opus-5-5" })]
+    : [
+        step({ id: "p1", number: "1", title: "Homepage copy", text: BRIEF, sessionId: "s1", model: "opus-5-5" }),
+        step({ id: "p2", number: "2", text: "Turn that copy into a single HTML page with a sticky header and a menu grid.", sessionId: "s1", model: "opus-5-5", uses: [{ kind: "output", node_id: "p1" }] }),
+        step({ id: "p3", number: "3", title: "Fix the mobile layout", text: "The menu grid overflows on a phone. Stack it to one column below 600px and keep the header sticky.", sessionId: "s2", model: "sonnet-5-5", uses: [{ kind: "output", node_id: "p2" }, { kind: "file", node_id: "f1" }] }),
+        step({ id: "p4", number: "4", text: "Add the opening hours as a small table under the hero.", tool: "ChatGPT" }),
+        step({
+          id: "a5",
+          number: "5",
+          kind: "agent",
+          title: "Order checker",
+          text: "",
+          model: "opus-5-5",
+          runs: { how: "until", detail: "every item has a price" },
+          children: [step({ id: "a5:instructions", number: "5.1", defaultTitle: "Instructions", text: "Check the menu and reply with any item that has no price." })],
+        }),
+      ];
+  const groups: SessionGroup[] = fox
+    ? [{ sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1"] }]
+    : [
+        { sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"] },
+        { sessionId: "s2", number: 2, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-03-04T10:00:00", stepNumbers: ["3"] },
+        { sessionId: null, number: 3, tool: "ChatGPT", model: null, startedAt: "typed here", stepNumbers: ["4"] },
+      ];
+  return {
+    phone: false,
+    steps,
+    dividers: dividers(steps, groups),
+    names: { f1: "menu.pdf" },
+    suggestions: fox ? [] : [{ stepId: "p4", use: { kind: "output", node_id: "p1" }, label: "Output of 1 · Homepage copy", reason: "38 words match" }],
+    intoResult: new Set(fox ? ["p1"] : ["a5"]),
+    results: [{ id: "r1", title: fox ? "fox-poster.png" : "plumandrye.example", holds: fox ? "a picture" : "a link", from: fox ? "1" : "5" }],
+    selectedId: fox ? "p1" : "p3",
+    onSelect: noop,
+    onRename: noop,
+    onMove: noop,
+    onRemove: noop,
+    onAccept: noop,
+    onDismiss: noop,
+    onAddPrompt: () => Promise.resolve(true),
+    focusAdd: 0,
   };
 }

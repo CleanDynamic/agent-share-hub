@@ -24,6 +24,7 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeTopNode } from "./composeCover";
+import { toolLabel } from "./making";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import type { SessionPrompt } from "./sessions";
 import { buildLayerError, type BuildNode, type NodeTree } from "./types";
@@ -121,10 +122,28 @@ export async function addSessionPrompt({ buildId, tree, importSessionId, model, 
   });
 }
 
-/** Place a prompt the maker wrote. Refuses one with no text. */
-export async function addWrittenPrompt({ buildId, tree, text }: { buildId: string; tree: readonly NodeTree[]; text: string }): Promise<BuildNode> {
+/**
+ * Place a prompt the maker wrote. Refuses one with no text. `tool` (a client
+ * `toolLabel` knows) and `model` are kept in the payload when given (DATA §2).
+ */
+export async function addWrittenPrompt({
+  buildId,
+  tree,
+  text,
+  tool,
+  model,
+}: {
+  buildId: string;
+  tree: readonly NodeTree[];
+  text: string;
+  tool?: string | null;
+  model?: string | null;
+}): Promise<BuildNode> {
   if (!text.trim()) throw buildLayerError("addWrittenPrompt", new Error("A prompt needs its text."));
-  return placeTopNode(buildId, tree, { type: PROMPT_TYPE, title: null, payload: { text }, source_ref: null });
+  const payload: Record<string, string> = { text };
+  if (tool && toolLabel(tool)) payload.tool = tool;
+  if (model?.trim()) payload.model = model.trim();
+  return placeTopNode(buildId, tree, { type: PROMPT_TYPE, title: null, payload, source_ref: null });
 }
 
 /** Save a prompt's text, keeping everything else it carries. Refuses an empty one. */

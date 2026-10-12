@@ -82,8 +82,14 @@ export interface SandboxViewProps extends CardProps {
   mapHint: boolean;
   onUseResultPicture?: () => void;
 
-  /** Moves focus to the Build panel's add field, for the "a prompt" missing item. */
+  /** Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. */
   onAddPromptFocus?: () => void;
+
+  /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
+  onAddFile?: () => void;
+  /** Add › Session: the library's sessions that are in no build. Absent, the item stays disabled. */
+  addableSessions?: readonly { id: string; label: string; line: string }[];
+  onAddSession?: (id: string) => void;
 
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
@@ -102,10 +108,10 @@ export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual"
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
-  { key: "prompt", name: "Prompt", line: "A message you sent", ready: false },
-  { key: "session", name: "Session", line: "A chat from your sources", ready: false },
+  { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
+  { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: false },
-  { key: "file", name: "File", line: "Something the AI read", ready: false },
+  { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: false },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: false },
   { key: "result", name: "Result", line: "The finished thing", ready: false },
@@ -123,7 +129,44 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-function AddMenu() {
+type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus">;
+
+const itemStyle = (enabled: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: 1,
+  minHeight: 44,
+  boxSizing: "border-box",
+  justifyContent: "center",
+  padding: "6px 10px",
+  borderRadius: r.control,
+  cursor: enabled ? "pointer" : "default",
+  opacity: enabled ? 1 : 0.5,
+  outline: "none",
+});
+
+const menuSurface: CSSProperties = {
+  zIndex: 50,
+  width: 280,
+  maxWidth: "calc(100vw - 32px)",
+  padding: 6,
+  borderRadius: r.panel,
+  background: t.solid,
+  border: `1px solid ${t.line}`,
+  boxShadow: t.shadowFloat,
+  color: t.text,
+};
+
+function AddLabel({ name, line }: { name: string; line: string }) {
+  return (
+    <>
+      <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{name}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{line}</span>
+    </>
+  );
+}
+
+function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus }: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -157,40 +200,43 @@ function AddMenu() {
         <Menu.Content
           align="end"
           sideOffset={6}
-          style={{
-            zIndex: 50,
-            width: 280,
-            maxWidth: "calc(100vw - 32px)",
-            padding: 6,
-            borderRadius: r.panel,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowFloat,
-            color: t.text,
-          }}
+          style={menuSurface}
         >
-          {ADD_ITEMS.map((item) => (
-            <Menu.Item
-              key={item.key}
-              disabled={!item.ready}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-                minHeight: 44,
-                boxSizing: "border-box",
-                justifyContent: "center",
-                padding: "6px 10px",
-                borderRadius: r.control,
-                cursor: item.ready ? "pointer" : "default",
-                opacity: item.ready ? 1 : 0.5,
-                outline: "none",
-              }}
-            >
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{item.name}</span>
-              <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{item.line}</span>
-            </Menu.Item>
-          ))}
+          {ADD_ITEMS.map((item) => {
+            if (item.key === "session") {
+              const enabled = item.ready && Boolean(onAddSession);
+              const sessions = addableSessions ?? [];
+              return (
+                <Menu.Sub key={item.key}>
+                  <Menu.SubTrigger disabled={!enabled} style={itemStyle(enabled)}>
+                    <AddLabel name={item.name} line={item.line} />
+                  </Menu.SubTrigger>
+                  <Menu.Portal>
+                    <Menu.SubContent sideOffset={6} style={menuSurface}>
+                      {sessions.length === 0 ? (
+                        <Menu.Item disabled style={itemStyle(false)}>
+                          <AddLabel name="No sessions waiting" line="Every session is already in a build" />
+                        </Menu.Item>
+                      ) : (
+                        sessions.slice(0, 6).map((session) => (
+                          <Menu.Item key={session.id} onSelect={() => onAddSession?.(session.id)} style={itemStyle(true)}>
+                            <AddLabel name={session.label} line={session.line} />
+                          </Menu.Item>
+                        ))
+                      )}
+                    </Menu.SubContent>
+                  </Menu.Portal>
+                </Menu.Sub>
+              );
+            }
+            const handler = item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : undefined;
+            const enabled = item.ready && (item.key !== "file" || Boolean(onAddFile)) && (item.key !== "prompt" || Boolean(onAddPromptFocus));
+            return (
+              <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
+                <AddLabel name={item.name} line={item.line} />
+              </Menu.Item>
+            );
+          })}
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>
@@ -240,7 +286,7 @@ function PanelTitle({ children }: { children: ReactNode }) {
 
 const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
 
-function SourcesPanel({ rail, children }: { rail: boolean; children: ReactNode }) {
+function SourcesFrame({ rail, titled, children }: { rail: boolean; titled: boolean; children: ReactNode }) {
   if (rail) {
     return (
       <Panel surface="flat" padding="16px 0" style={{ display: "flex", justifyContent: "center" }}>
@@ -251,8 +297,8 @@ function SourcesPanel({ rail, children }: { rail: boolean; children: ReactNode }
   return (
     <section aria-label="Sources" style={{ minWidth: 0 }}>
       <Panel surface="flat" padding="16px">
-        <PanelTitle>Sources</PanelTitle>
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        {titled ? <PanelTitle>Sources</PanelTitle> : null}
+        <div style={{ marginTop: titled ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
       </Panel>
     </section>
   );
@@ -449,7 +495,7 @@ export function SandboxView(props: SandboxViewProps) {
               </Button>
             </>
           ) : null}
-          <AddMenu />
+          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -560,7 +606,7 @@ export function SandboxView(props: SandboxViewProps) {
       </div>
       {banner}
       <div style={{ display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
-        <SourcesPanel rail={rail}>{sourcesBody}</SourcesPanel>
+        <SourcesFrame rail={rail} titled={!props.sources}>{sourcesBody}</SourcesFrame>
         {buildPanel}
         {detailsPanel}
       </div>
