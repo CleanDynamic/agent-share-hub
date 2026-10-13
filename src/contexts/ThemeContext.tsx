@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLook } from "@/lib/theme/look";
 import { prefersReducedMotion, THEME_SWITCH } from "@/lib/theme/motion";
 
 
@@ -163,6 +164,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       delete root.dataset.themeChanging;
     };
   }, [resolved]);
+
+  /* UI-P78. `data-look="refined"` on <html> when the refined look is in force,
+     absent otherwise. It follows the route on dev pages. No transition. */
+  const look = useLook();
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (look === "refined") root.dataset.look = "refined";
+    else delete root.dataset.look;
+  }, [look]);
 
   const setTheme = useCallback((next: ThemeChoice) => {
     setThemeState(next);
