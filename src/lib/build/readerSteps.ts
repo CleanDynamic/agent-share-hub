@@ -28,6 +28,7 @@ import {
 import type { Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
+import type { MapPiece, MapResult } from "./mapLayout";
 import type { BuildMedia, NodeTree } from "./types";
 
 /* ── shapes ── */
@@ -116,6 +117,8 @@ export interface NeedRow {
   detail: string;
   /** A file's download. */
   download?: string | null;
+  /** An "Other parts" row's node, so the page can open it. */
+  id?: string;
 }
 
 export type NeedKey = "tools" | "files" | "runs" | "time" | "other";
@@ -442,6 +445,30 @@ export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<stri
     });
 }
 
+/** What the read-only Map draws besides the steps (UI-P74): the sessions, the files, the tools and the results. */
+export interface ReaderMapData {
+  groups: SessionGroup[];
+  files: MapPiece[];
+  tools: MapPiece[];
+  results: MapResult[];
+}
+
+export function readerMap(tree: readonly NodeTree[], making: Making | null | undefined, media: ReadonlyMap<string, ReaderMedia> = new Map()): ReaderMapData {
+  const context = contextFor(tree, making, media);
+  const results = readerResults(tree, media).map((result) => {
+    const node = tree.find((candidate) => candidate.id === result.id);
+    const uses = node && isRecord(node.payload) && Array.isArray(node.payload.uses) ? node.payload.uses : [];
+    const from = uses.find((use): use is { kind: string; node_id: string } => isRecord(use) && use.kind === "output" && typeof use.node_id === "string");
+    return { id: result.id, title: result.title, fromId: from?.node_id ?? null };
+  });
+  return {
+    groups: context.groups,
+    files: [...context.files.values()].map((file) => ({ id: file.id, name: file.name })),
+    tools: [...context.tools.values()].map((tool) => ({ id: tool.id, name: tool.name })),
+    results,
+  };
+}
+
 /* ── What you need ── */
 
 const HOW_WORDS: Record<string, string> = {
@@ -565,7 +592,7 @@ export function whatYouNeed(
   const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE]);
   const other: NeedRow[] = tree
     .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type))
-    .map((node) => ({ title: (node.title ?? "").trim() || node.type, detail: node.type }));
+    .map((node) => ({ id: node.id, title: (node.title ?? "").trim() || node.type, detail: node.type }));
   if (other.length > 0) groups.push({ key: "other", label: "Other parts", rows: other });
 
   return groups;

@@ -43,6 +43,8 @@ export interface FullPromptWindowProps {
   groups?: readonly SessionGroup[];
   /** File and tool names, by node id, for the Uses chips. */
   names?: Readonly<Record<string, string>>;
+  /** Reader mode (UI-P74): the "Before you send it" panel for a step, under the text, in place of the plain lines. */
+  renderBefore?: (step: Step) => ReactNode;
 }
 
 export const FULL_PROMPT_COPY = {
@@ -294,7 +296,8 @@ function Body({ props, step, prompts, phone }: { props: FullPromptWindowProps; s
           ))}
         </div>
       ) : null}
-      {mode === "reader" && before.length > 0 ? (
+      {mode === "reader" && props.renderBefore ? props.renderBefore(step) : null}
+      {mode === "reader" && !props.renderBefore && before.length > 0 ? (
         <section style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text }}>{FULL_PROMPT_COPY.before}</h3>
           {before.map((line) => (

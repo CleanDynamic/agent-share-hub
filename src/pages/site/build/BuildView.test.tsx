@@ -5,9 +5,10 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildFixture } from "@/dev/fixtures/build";
+import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
 
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton, PHONE_PARTS, type BuildViewProps } from "./BuildView";
-import { buildTabs } from "./buildModel";
+import { buildTabs, landTab, stepTabs } from "./buildModel";
 
 function mount(over: Partial<BuildViewProps> = {}, viewport: "desktop" | "mobile" = "desktop") {
   const props: BuildViewProps = { ...buildFixture(viewport), ...over };
@@ -298,5 +299,151 @@ describe("the states", () => {
     expect(screen.getByRole("heading", { level: 1, name: "This build could not be loaded." })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+/* ── UI-P73: the steps, The build and What you need ── */
+
+describe("BuildView with the steps drawn (UI-P73)", () => {
+  const mountSteps = (which: BuildStepsSample = "list", viewport: "desktop" | "mobile" = "desktop", over: Partial<BuildViewProps> = {}) => {
+    const { title, outcome, ...steps } = buildStepsFixture(which);
+    void title;
+    void outcome;
+    const base = buildFixture(viewport);
+    return mount({ viewer: { ...base.viewer, tabs: stepTabs(false), tab: "anatomy" }, steps, ...over }, viewport);
+  };
+
+  it("with no steps the page is the old one: the anatomy, the viewer and the timeline", () => {
+    mount();
+    expect(screen.getByTestId("build-anatomy")).toBeTruthy();
+    expect(screen.getByTestId("build-viewer")).toBeTruthy();
+    expect(screen.getByTestId("build-timeline")).toBeTruthy();
+    expect(screen.queryByTestId("build-steps")).toBeNull();
+  });
+
+  it("B1 shows 5 step cards, 4 chat heads, the paste-in chips and the CLAUDE.md download", () => {
+    mountSteps("list");
+    expect(screen.queryByTestId("build-anatomy")).toBeNull();
+    expect(screen.queryByTestId("build-timeline")).toBeNull();
+    expect(screen.getAllByTestId("step-card")).toHaveLength(5);
+    expect(screen.getAllByText(/^New chat/)).toHaveLength(4);
+    expect(screen.getByText("New chat in ChatGPT")).toBeTruthy();
+    expect(screen.getAllByText("what step 2 gave you").length).toBe(1);
+    expect(screen.getAllByText("what step 1 gave you").length).toBe(1);
+    expect(screen.getByText("attach CLAUDE.md")).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Download CLAUDE.md" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Send in the same chat as step 4")).toBeTruthy();
+    expect(screen.getByText("4 sessions · 5 prompts · 1 file · 3–6 Oct")).toBeTruthy();
+    expect(screen.getByText("copy each step into the chat it names")).toBeTruthy();
+  });
+
+  it("What you need lists tools, files and time, and says what Copy for AI copies", () => {
+    mountSteps("list");
+    const need = screen.getByTestId("build-need");
+    expect(within(need).getByRole("heading", { name: "What you need" })).toBeTruthy();
+    expect(within(need).getByText("to repeat this build")).toBeTruthy();
+    expect(within(need).getByText("Claude Code")).toBeTruthy();
+    expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
+    expect(within(need).getByText("Copy for AI copies all 5 steps in order, with each new chat and paste-in written out.")).toBeTruthy();
+  });
+
+  it("the tab strip starts with The build, holds at most 5 tabs, and has no Anatomy or Run it yourself", () => {
+    mountSteps("list");
+    const tabs = within(screen.getByRole("tablist", { name: "Sections of this build" })).getAllByRole("tab");
+    expect(tabs[0].textContent).toBe("The build");
+    expect(tabs.length).toBeLessThanOrEqual(5);
+    expect(tabs.map((tab) => tab.textContent)).not.toContain("Anatomy");
+    expect(tabs.map((tab) => tab.textContent)).not.toContain("Run it yourself");
+    expect(stepTabs(true).map((tab) => tab.label)).toEqual(["The build", "Watch it get built", "Understand it", "Where it broke", "Rebuilds"]);
+  });
+
+  it("only the first step's head says New chat, and a team's steps say Uses, never Paste in", () => {
+    mountSteps("team");
+    expect(screen.getByText("The team these made")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Copy the team/ })).toBeTruthy();
+    expect(screen.getAllByTestId("inner-card")).toHaveLength(4);
+    expect(screen.getAllByText("Uses").length).toBeGreaterThan(0);
+    expect(screen.getByText("steps 1–2 set it up · the team then runs by itself")).toBeTruthy();
+    expect(screen.getByText("3.3, until every claim has a source")).toBeTruthy();
+    const team = screen.getByTestId("build-steps").textContent ?? "";
+    expect(team.slice(team.indexOf("The team these made"))).not.toContain("Paste in");
+  });
+
+  it("B4 draws one prompt and says there is no map", () => {
+    mountSteps("one");
+    expect(screen.getAllByTestId("step-card")).toHaveLength(1);
+    expect(screen.getByText("New chat in ChatGPT")).toBeTruthy();
+    expect(screen.getByText("One prompt, so there is no map. Map appears once a build has two sessions or an agent.")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
+  });
+
+  it("the List and Map switch shows when there are two sessions or an agent", () => {
+    mountSteps("list");
+    expect(screen.getByRole("group", { name: "How to look at the build" })).toBeTruthy();
+  });
+
+  it("Copy copies the step's text and says so", async () => {
+    vi.useFakeTimers();
+    const onCopy = vi.fn().mockResolvedValue(true);
+    const { title, outcome, ...steps } = buildStepsFixture("list");
+    void title;
+    void outcome;
+    const base = buildFixture();
+    mount({ viewer: { ...base.viewer, tabs: stepTabs(false), tab: "anatomy" }, steps: { ...steps, onCopy } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy step 1" }));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(60);
+    });
+    expect(onCopy).toHaveBeenCalledWith(steps.steps[0].step.text);
+    expect(screen.getByTestId("build-live").textContent).toBe("Copied");
+  });
+
+  it("a paste-in chip scrolls to its step and rings it", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    mountSteps("list");
+    fireEvent.click(screen.getByText("what step 1 gave you"));
+    expect(scroll).toHaveBeenCalled();
+    expect(document.getElementById("step-p1")).toBe(scroll.mock.contexts[0]);
+  });
+
+  it("Read all of it opens the full prompt window for readers, and Esc closes it", () => {
+    mountSteps("list");
+    fireEvent.click(screen.getByRole("button", { name: "Read all of it" }));
+    const window = screen.getByTestId("full-prompt-window");
+    expect(window.textContent).toContain("Follow CLAUDE.md");
+    expect(within(window).queryByLabelText("Title")).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("full-prompt-window")).toBeNull();
+  });
+
+  it("on a phone the tabs are a sideways row, The build is one column and What you need follows it", () => {
+    phone(true);
+    mountSteps("list", "mobile");
+    expect(screen.getByRole("tablist", { name: "Sections of this build" })).toBeTruthy();
+    expect(screen.getAllByTestId("step-card")).toHaveLength(5);
+    expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
+    const steps = screen.getByTestId("build-steps");
+    const need = screen.getByTestId("build-need");
+    expect(steps.compareDocumentPosition(need) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("another tab keeps its own body under the strip", () => {
+    const base = buildFixture();
+    mountSteps("list", "desktop", { viewer: { ...base.viewer, tabs: stepTabs(false), tab: "watch", content: <p>the replay</p> } });
+    expect(screen.getByText("the replay")).toBeTruthy();
+    expect(screen.queryByTestId("build-steps")).toBeNull();
+    expect(screen.getByTestId("build-need")).toBeTruthy();
+  });
+});
+
+describe("landTab (UI-P73)", () => {
+  it("lands Run it yourself on The build when the steps are drawn, and nothing else", () => {
+    expect(landTab("run", true)).toBe("anatomy");
+    expect(landTab("run", false)).toBe("run");
+    expect(landTab("watch", true)).toBe("watch");
+    expect(landTab("understand", true)).toBe("understand");
   });
 });

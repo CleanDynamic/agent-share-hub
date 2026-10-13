@@ -313,7 +313,7 @@ describe("readerSteps — B4 and the edges", () => {
       node("sh", { position: 3, type: "screenshot", title: "Shot", payload: {} }),
     ];
     const need = whatYouNeed(readerSteps(tree, null), tree, null);
-    expect(need.find((g) => g.key === "other")).toEqual({ key: "other", label: "Other parts", rows: [{ title: "House style", detail: "system_prompt" }] });
+    expect(need.find((g) => g.key === "other")).toEqual({ key: "other", label: "Other parts", rows: [{ id: "sp", title: "House style", detail: "system_prompt" }] });
   });
 
   it("leaves Time out for one session or no dates", () => {

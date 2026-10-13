@@ -49,6 +49,11 @@ export const MAP_COPY = {
 export const DIMMED = 0.42;
 
 export interface BuildMapProps {
+  /**
+   * UI-P74: "reader" is the build page's Map. It draws no suggested input and no dot to drag from, has
+   * no legend of counts, and says "Step {n} open" in place of the maker's selected line. Default "maker".
+   */
+  mode?: "maker" | "reader";
   steps: readonly Step[];
   groups: readonly SessionGroup[];
   files: readonly MapPiece[];
@@ -110,11 +115,13 @@ interface BoxViewProps {
   onOpen?: (id: string) => void;
   /** Double-click or Enter on an agent or a team opens what is inside it. */
   onOpenContainer?: (id: string) => void;
+  /** UI-P74: the read-only map says how many inputs a box has, and nothing about suggesting or accepting. */
+  reader?: boolean;
 }
 
 const isContainerBox = (box: Pick<MapBox, "kind" | "stepKind">): boolean => box.kind === "step" && (box.stepKind === "agent" || box.stepKind === "team");
 
-const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer }: BoxViewProps) {
+const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer, reader }: BoxViewProps) {
   const container = isContainerBox(box);
   const openable = box.kind === "step" && (container ? Boolean(onOpenContainer) : box.stepKind === "prompt" && onOpen);
   const open = () => (container ? onOpenContainer?.(box.id) : onOpen?.(box.id));
@@ -219,7 +226,11 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
           )}
           {!big && box.inputs.length > 0 ? (
             <span style={{ height: MAP_SIZES.state, flexShrink: 0, padding: "0 10px", display: "flex", alignItems: "center", ...mono(10) }}>
-              {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
+              {reader
+                ? `${box.inputs.length} ${box.inputs.length === 1 ? "input" : "inputs"}`
+                : box.suggested > 0
+                  ? `${box.suggested} suggested`
+                  : `${box.accepted} of ${box.accepted} inputs accepted`}
             </span>
           ) : null}
           {big ? null : (
@@ -467,7 +478,10 @@ const inputFrom = (box: MapBox): Use | null =>
   box.kind === "step" ? { kind: "output", node_id: box.id } : box.kind === "file" ? { kind: "file", node_id: box.id } : box.kind === "tool" ? { kind: "tool", node_id: box.id } : null;
 
 export function BuildMap(props: BuildMapProps) {
-  const { steps, groups, files, tools, results, suggestions, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
+  const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
+  const reader = mode === "reader";
+  // Readers never see a suggestion: only the uses the maker accepted are published.
+  const suggestions = useMemo(() => (reader ? [] : asked), [reader, asked]);
   const layout = useMemo(() => layoutMap(steps, groups, files, tools, results, suggestions), [steps, groups, files, tools, results, suggestions]);
   const joined = useMemo(() => joinedTo(layout, selectedId), [layout, selectedId]);
   const [said, say] = useAnnouncer();
@@ -565,6 +579,7 @@ export function BuildMap(props: BuildMapProps) {
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <LiveRegion message={said} />
+      {reader ? null : (
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -578,6 +593,7 @@ export function BuildMap(props: BuildMapProps) {
         </span>
         <span style={mono(11.5)}>{MAP_COPY.key}</span>
       </div>
+      )}
 
       <div
         role="group"
@@ -648,6 +664,7 @@ export function BuildMap(props: BuildMapProps) {
               onSelect={onSelect}
               onOpen={onOpenPrompt ? open : undefined}
               onOpenContainer={onOpenContainer}
+              reader={reader}
             />
           ))}
 
@@ -693,11 +710,11 @@ export function BuildMap(props: BuildMapProps) {
                 key={`dot-${box.id}`}
                 data-testid={`map-dot-${box.id}`}
                 aria-hidden="true"
-                title="Drag to connect"
-                onPointerDown={onDotDown(box)}
-                onPointerMove={onDotMove}
-                onPointerUp={(event) => finish(event, true)}
-                onPointerCancel={(event) => finish(event, false)}
+                title={reader ? undefined : "Drag to connect"}
+                onPointerDown={reader ? undefined : onDotDown(box)}
+                onPointerMove={reader ? undefined : onDotMove}
+                onPointerUp={reader ? undefined : (event) => finish(event, true)}
+                onPointerCancel={reader ? undefined : (event) => finish(event, false)}
                 style={{
                   position: "absolute",
                   left: box.x + box.w - DOT / 2,
@@ -708,7 +725,8 @@ export function BuildMap(props: BuildMapProps) {
                   boxSizing: "border-box",
                   border: `1.5px solid ${selecting && joined.boxes.has(box.id) ? t.text : t.text2}`,
                   background: selecting && joined.boxes.has(box.id) ? t.text : t.solid,
-                  cursor: "crosshair",
+                  cursor: reader ? "default" : "crosshair",
+                  pointerEvents: reader ? "none" : undefined,
                   touchAction: "none",
                   opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
                 }}
@@ -741,8 +759,9 @@ export function BuildMap(props: BuildMapProps) {
           ) : null}
         </span>
         <span>
-          {selected && selected.kind === "step" ? `${boxName(selected).split(",")[0]} selected · ` : selected ? `${selected.title} selected · ` : ""}
-          what it doesn't touch is dimmed · Esc clears
+          {reader
+            ? `${selected && selected.kind === "step" ? `Step ${selected.number} open · ` : ""}what it doesn't touch is dimmed`
+            : `${selected && selected.kind === "step" ? `${boxName(selected).split(",")[0]} selected · ` : selected ? `${selected.title} selected · ` : ""}what it doesn't touch is dimmed · Esc clears`}
         </span>
       </div>
     </div>

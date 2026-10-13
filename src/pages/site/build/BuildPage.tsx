@@ -87,7 +87,9 @@ import {
   type RebuildSummary,
   type WhereNext,
 } from "@/lib/build";
+import { BUILD_PAGE_STEPS_ENABLED } from "@/lib/build/flags";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
+import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { isBuildHidden } from "@/lib/moderation";
@@ -103,10 +105,12 @@ import { EmptyState } from "@/components/brand/EmptyState";
 import { BuildView, BuildViewFailed, BuildViewNotice, BuildViewSkeleton } from "./BuildView";
 import {
   askLabel,
+  asMaking,
   breakageRows,
   buildTabs,
   deltaLine,
   evidenceDate,
+  landTab,
   layerSteps,
   makerLabel,
   openGaps,
@@ -117,8 +121,10 @@ import {
   replayMarkers,
   runBody,
   shortDate,
+  stepTabs,
   tabLayer,
   timelineFrom,
+  type BuildStepsView,
   type BuildTabKey,
   type CardView,
   type PartRowView,
@@ -463,16 +469,47 @@ export function BuildPage() {
     if (jumpTo !== null) setJumpTo(null);
   }, [jumpTo]);
 
-  /* #node-<id> in the address selects that part, as the old page scrolled to it. */
+  /* UI-P73 — the steps a reader repeats, when the switch is on and the build has any (DATA §1).
+     With either missing the page is the one it always was. */
+  const reader = useMemo(() => {
+    if (!BUILD_PAGE_STEPS_ENABLED || !build) return null;
+    const files = new Map<string, ReaderMedia>((media.data ?? []).map((row) => [row.id, row]));
+    const making = asMaking(build.making);
+    const steps = readerSteps(tree, making, files);
+    if (steps.length === 0) return null;
+    return {
+      steps,
+      results: readerResults(tree, files),
+      need: whatYouNeed(steps, tree, making, files),
+      counts: buildCounts(steps),
+      map: readerMap(tree, making, files),
+      mapAvailable: making.sessions.length >= 2 || steps.some((entry) => entry.step.kind === "agent" || entry.step.kind === "team"),
+    };
+  }, [build, tree, media.data]);
+  const stepsOn = reader !== null;
+  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
+
+  /* #node-<id> in the address selects that part, as the old page scrolled to it. With the steps drawn it
+     scrolls to that step's card and rings it, or to the part's row in What you need. */
   const { hash } = location;
   useEffect(() => {
     if (!record || !hash.startsWith("#node-")) return;
     const id = hash.slice("#node-".length);
+    if (reader) {
+      const inSteps = (list: readonly { step: { id: string }; children: readonly unknown[] }[]): boolean =>
+        list.some((entry) => entry.step.id === id || inSteps(entry.children as typeof list));
+      const inNeed = reader.need.some((group) => group.rows.some((row) => row.id === id));
+      if (inSteps(reader.steps) || inNeed) {
+        setTab("anatomy");
+        setFocus((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+        return;
+      }
+    }
     if (nodesById.has(id)) {
       setSelectedId(id);
       setTab("anatomy");
     }
-  }, [record, hash, nodesById]);
+  }, [record, hash, nodesById, reader]);
 
   const ordered = useMemo(() => partsInOrder(tree), [tree]);
   const selected = (selectedId ? nodesById.get(selectedId) : undefined) ?? ordered[0] ?? null;
@@ -482,11 +519,15 @@ export function BuildPage() {
     setTab("anatomy");
   }, []);
 
-  const onTabChange = useCallback((next: BuildTabKey) => {
-    setTab(next);
-    const layer = tabLayer(next);
-    if (layer) setMode(layer);
-  }, []);
+  const onTabChange = useCallback(
+    (asked: BuildTabKey) => {
+      const next = landTab(asked, stepsOn);
+      setTab(next);
+      const layer = tabLayer(next);
+      if (layer) setMode(layer);
+    },
+    [stepsOn],
+  );
 
   /* On the anatomy the switch reads the part two ways; anywhere else it is the
      Run / Understand pair of tabs, so moving it moves the tab with it. */
@@ -790,6 +831,21 @@ export function BuildPage() {
     }
   })();
 
+  const stepsView: BuildStepsView | undefined = reader
+    ? {
+        ...reader,
+        onCopy: copyText,
+        resolveMedia,
+        otherBody: (id) => {
+          const node = nodesById.get(id);
+          return node ? (
+            <NodeBody node={node} nodeType={typesByKey.get(node.type)} build={build} resolveNode={resolveNode} resolveMedia={resolveMedia} />
+          ) : null;
+        },
+        focus,
+      }
+    : undefined;
+
   /* The bounty "Solve it" opened, when its gap still has one open. */
   const solvingNode = solving ? nodesById.get(solving) : undefined;
   const solvingEntry = solving ? bountyByNode.get(solving) : undefined;
@@ -854,7 +910,12 @@ export function BuildPage() {
           delta,
         }}
         actions={{
-          onCopyForAI: () => copyText(toMarkdown(toPortable(record))),
+          onCopyForAI: () =>
+            copyText(
+              reader
+                ? stepsMarkdown({ title: build.title, outcome: build.outcome, live_url: build.live_url }, reader.steps, reader.results)
+                : toMarkdown(toPortable(record)),
+            ),
           onDownload: () => downloadPortable(record),
           onRebuild: () => navigate(isLoggedIn ? `/rebuild/${build.slug}` : loginBack(`/rebuild/${build.slug}`)),
           lineageTo: `/b2/${build.slug}/lineage`,
@@ -902,8 +963,8 @@ export function BuildPage() {
           ),
         }}
         viewer={{
-          tabs: buildTabs(hasRebuilds),
-          tab,
+          tabs: reader ? stepTabs(hasRebuilds) : buildTabs(hasRebuilds),
+          tab: landTab(tab, stepsOn),
           onTabChange,
           mode,
           onModeChange,
@@ -917,6 +978,7 @@ export function BuildPage() {
             ),
         }}
         timeline={{ ...timeline, onPlay: () => setTab("watch") }}
+        steps={stepsView}
       />
 
       <RunDialog
