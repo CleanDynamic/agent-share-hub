@@ -1363,3 +1363,951 @@ Follow `design/RULES.md`. **This is the only prompt that deletes anything.** Run
 **Commit.** `UI-P41a: frame unconditional` · `UI-P41b: delete FlatShell and phone chrome` · `UI-P41c: delete the right rail` · `UI-P41d: retire unused tokens` · `UI-P41e: registers and docs`
 
 ---
+
+## UI-P77 — Put the refined boards in the repo
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The refined boards and fonts are in the repo, the series is indexed, and the compare harness can check a page against a refined board.
+
+**Build.**
+1. `python3 design/refined_prompts.py write` has run (it wrote this prompt). Check that the repo now has `design/reference/refined/{dusk,noon}/*.html` (24 boards), `design/reference/refined/index.json`, and `design/reference/fonts/Geist-Variable.woff2`, `GeistMono-Variable.woff2` and `Geist-OFL.txt`. If the fonts are missing, run `python3 design/refined_prompts.py fonts` (it fetches the `geist` package from the npm registry with `npm pack` and copies the two files out; nothing is installed). If that fails too, stop and say so.
+2. Check that `design/prompts/00-INDEX.md` lists UI-P77 to UI-P99 and that `ALL-PROMPTS.md` ends with them; the script adds both.
+3. Extend `e2e/audit/design-compare.spec.ts` to read `design/reference/refined/index.json` as well. For kind `refined`: no 84px browser strip; the app URL is the entry's `devPage` plus `?theme=<theme>&viewport=desktop&look=refined` and whatever query the dev page needs to show the same state (for `build-map` the Map lens; for `composer-map` the Map lens with prompt 3 selected; for `prompt-window` the full prompt window open on prompt 3; for `composer-card` the Card sheet open). Find those queries in `src/dev/` and the dev pages; where none exists, add it to the dev page (dev code only) and say so. Boards without `devPage` (foundations, components, model-marks) map to `/dev/kit/components?look=refined` sections, compared once UI-P84 to UI-P86 exist; until then they skip. A dev page asked for `look=refined` with no refined view yet says `data-design-ready="false"`, so the board is skipped, not failed.
+4. Run `npm run audit:design -- --grep "refined/"` and record the result in `design/BASELINE.md` under a new heading "Refined look, before UI-P78": every refined board skipped.
+
+**Do not.** Touch `src/` except dev pages and `e2e/audit/`.
+
+**Done when.** The refined boards open in a browser with Geist loaded from `design/reference/fonts/`; the harness lists the 24 refined boards and skips them.
+
+**Commit.** `UI-P77: the refined boards, fonts and compare harness`
+
+---
+
+## UI-P78 — The look switch
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** One switch, off, that can turn the whole site to the refined look, and a dev override so every refined board can be checked while it is off.
+
+**Build.**
+1. `src/lib/theme/look.ts`: `export const REFINED_LOOK_ENABLED = false as const;` with a header comment in the style of `src/lib/build/flags.ts` (what it switches, which prompt turns it on — UI-P98 — and that rollback is setting it back to `false`). `export type Look = "current" | "refined"`. `export function useLook(): Look` — on `/dev/*` routes the URL decides when it has `look=refined` or `look=current`; otherwise `"refined"` when the switch is on and `"current"` when it is off.
+2. The theme provider (find it: it sets `data-theme` on `<html>`) also sets `data-look="refined"` on `<html>` when `useLook()` is refined, and removes it otherwise. It changes with the route on dev pages. No transition is added.
+3. The dev kit chrome (the bar that offers `theme` and `viewport` on `/dev/kit/*`) gains a **Look** choice, `current | refined`, writing `look=` into the URL.
+4. `src/lib/theme/look.test.ts`: switch off → `current`; dev route with `look=refined` → `refined`; dev route with `look=current` → `current`; non-dev route with `look=refined` → the switch's value.
+
+**Do not.** Read `useLook()` anywhere else yet.
+
+**Done when.** With the switch off, nothing on any page changes (run the full `npm run audit:design` and `e2e/tier1`; diffs equal the baseline). `/dev/kit/pages/home?look=refined` has `data-look="refined"` on `<html>`.
+
+**Commit.** `UI-P78: the refined look switch, off, with a dev override`
+
+---
+
+## UI-P79 — Refined colour tokens
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Every colour, shadow and edge the refined look needs, in both themes, behind the switch.
+
+**Build.**
+1. Add the new token names below to `TOKEN_NAMES` in `src/lib/theme/semantics.ts` (so `t.surface`, `t.module`, `t.tile`, `t.well`, `t.control` … exist), with their current-look **aliases** inside the existing `:root[data-theme="noon"]`, `:root[data-theme="dusk"]` and bare `:root` blocks of `src/index.css`. With the switch off nothing changes, because every alias points at the token a primitive reads today.
+2. Add `:root[data-theme="dusk"][data-look="refined"]` and `:root[data-theme="noon"][data-look="refined"]` blocks after the theme blocks with **every refined value below**, exactly as written. Mirror them in `design/tokens/tokens.css` and `tokens.json` under a `refined` key, and add the raw values to `design/tokens/token-map.md` in a "Refined" section.
+3. Recompute the shadcn HSL variables (`--background`, `--card`, `--popover`, `--primary`, `--border`, `--input`, `--ring` …) for the refined blocks in `src/lib/theme/shadcn.ts` (or wherever the triplets are derived): background = frame, card and popover = module, primary = action, border and input = hairline, ring = focus-ring.
+4. Tests. `css-parity` holds both refined blocks to the same set of names. `contrast` gains refined pairs, all ≥ 4.5:1: `text`, `text2`, `label` on `surface`, `module`, `tile`, `well`, `frame`; `evidence` on `evidence-fill`; `on-action` on `action`; `on-pill` on `pill`; `on-tag` on `tag-fill`; each `cat-*` on `module`. `glass` and `compliance` assert their current rules for `data-look` absent and assert, for refined, that `glass`, `glass-fill` and `module` are opaque and that `backdrop` is a flat colour.
+
+**The values.**
+
+New names, to add to `TOKEN_NAMES`: `frame`, `surface`, `surface-border`, `surface-shadow`, `module`, `module-border`, `module-shadow`, `tile`, `tile-border`, `well`, `well-border`, `well-shadow`, `hairline-module`, `control`, `control-border`, `control-shadow`, `control-on`, `seg-track`, `seg-border`, `action-shadow`, `tag-fill`, `on-tag`, `pill`, `on-pill`, `lit-mark`, `nav-mark`, `breakage`, `breakage-fill`, `info`, `frozen`, `selected-edge`, `selected-fill`, `selected-ring`, `window`, `window-border`, `window-shadow`, `sheet-shadow`, `dot-grid`, `avatar-fill`, `on-avatar`, `logo-ink`, `bar-mid`, `paper`, `dim-filter`.
+
+Under the current look each new name is an alias, so a primitive can read it in either look: `--frame: var(--bg)`, `--surface: var(--flat)`, `--surface-border: var(--hairline)`, `--surface-shadow: var(--panel-highlight)`, `--module: var(--glass)`, `--module-border: var(--glass-border)`, `--module-shadow: var(--shadow-card)`, `--tile: var(--cell)`, `--tile-border: var(--hairline)`, `--well: var(--field)`, `--well-border: var(--line)`, `--well-shadow: none`, `--hairline-module: var(--hairline)`, `--control: var(--glass-2)`, `--control-border: var(--line)`, `--control-shadow: none`, `--control-on: var(--tab)`, `--seg-track: var(--glass-2)`, `--seg-border: var(--line)`, `--action-shadow: none`, `--tag-fill: var(--glass-2)`, `--on-tag: var(--text2)`, `--pill: var(--glass-2)`, `--on-pill: var(--text)`, `--lit-mark: var(--lit)`, `--nav-mark: var(--lit)`, `--breakage: var(--cat-breakage)`, `--breakage-fill: var(--secret-fill)`, `--info: var(--cat-data)`, `--frozen: var(--cat-data)`, `--selected-edge: var(--text)`, `--selected-fill: var(--glass)`, `--selected-ring: 0 0 0 1px var(--text)`, `--window: var(--solid)`, `--window-border: var(--glass-border)`, `--window-shadow: var(--shadow-float)`, `--sheet-shadow: var(--shadow-float)`, `--dot-grid: var(--hairline)`, `--avatar-fill: var(--recess)`, `--on-avatar: var(--text)`, `--logo-ink: var(--text)`, `--bar-mid: var(--line)`, `--paper: var(--porthole)`, `--dim-filter: opacity(.45)`.
+
+Refined values, new and existing names alike:
+
+| token | Dusk | Noon | role |
+|---|---|---|---|
+| `--frame` | `#0F0F10` | `#E9E9E9` | the page behind everything; the header sits on it |
+| `--surface` | `#19191B` | `#F4F4F4` | the one panel inside the frame (inset 6px, radius 10) |
+| `--surface-border` | `#232326` | `#DCDCDC` | its single hairline |
+| `--surface-shadow` | `inset 0 1px 0 rgba(255,255,255,.035)` | `0 1px 2px rgba(0,0,0,.05)` |  |
+| `--module` | `#1E1E21` | `#FAFAFA` | a card: one step from the surface |
+| `--module-border` | `#29292D` | `#E1E1E1` |  |
+| `--module-shadow` | `none` | `0 1px 2px rgba(0,0,0,.04)` |  |
+| `--tile` | `#232327` | `#EFEFEF` | a tile inside a card (nested panel, selected table row, drafts box) |
+| `--tile-border` | `#2E2E33` | `#E2E2E2` |  |
+| `--well` | `#141416` | `#ECECEC` | below the surface: inputs, search, maps, media wells, code |
+| `--well-border` | `#27272B` | `#D9D9D9` |  |
+| `--well-shadow` | `inset 0 1px 1px rgba(0,0,0,.35)` | `inset 0 1px 2px rgba(0,0,0,.05)` |  |
+| `--hairline` | `#26262A` | `#E0E0E0` | row and section separators on the surface |
+| `--hairline-module` | `#2A2A2E` | `#E7E7E7` | separators inside a card |
+| `--line` | `#34343A` | `#CFCFCF` | dashed drop zones, chart rules, dividers in the header |
+| `--text` | `#EDEDEF` | `#1C1C1C` |  |
+| `--text2` | `#A0A0A6` | `#575757` |  |
+| `--label` | `#8E8E94` | `#666666` | third tier; 4.5:1 or better on every surface above |
+| `--control` | `#27272B` | `#FFFFFF` | raised controls: secondary buttons, icon buttons, menus, chips, number tiles |
+| `--control-border` | `#323237` | `#D9D9D9` |  |
+| `--control-shadow` | `inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.35)` | `0 1px 2px rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.03)` |  |
+| `--control-on` | `#2F2F34` | `#FFFFFF` | the chosen segment, the current nav row, a pressed toggle |
+| `--seg-track` | `#141416` | `#E6E6E6` | the recessed track behind segmented choices |
+| `--seg-border` | `#27272B` | `#D9D9D9` |  |
+| `--action` | `#EDEDEF` | `#1C1C1C` | the one filled button per view (ink, not colour) |
+| `--on-action` | `#121214` | `#FFFFFF` |  |
+| `--action-shadow` | `inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45)` | `inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25)` |  |
+| `--tag-fill` | `#26262A` | `#E9E9E9` | quiet tags: shape, model, date |
+| `--on-tag` | `#A0A0A6` | `#575757` |  |
+| `--pill` | `#303035` | `#E6E6E6` | mono pills: visitors' book kinds, ids, counts |
+| `--on-pill` | `#CFCFD3` | `#333333` |  |
+| `--lit` | `#F5CB4C` | `#E0A21A` | the lamp bar (3px high); light, never text |
+| `--lit-mark` | `#F5CB4C` | `#F5CB4C` | the lamp in the logo and the unread count badge |
+| `--lamp-glow` | `0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25)` | `none` | Dusk only; Noon has no glow |
+| `--nav-mark` | `#F5CB4C` | `#1C1C1C` | the 2px bar under the current nav item |
+| `--nav-lamp-glow` | `0 0 8px rgba(245,203,76,.55)` | `none` |  |
+| `--lit-ink` | `#E8C468` | `#8F5E00` | amber text (BUILD kind, chart marker) |
+| `--evidence` | `#86D193` | `#166F31` | reproduced, worked, the result |
+| `--evidence-fill` | `rgba(134,209,147,.12)` | `#E1F1E5` |  |
+| `--breakage` | `#E5807F` | `#C42E1C` |  |
+| `--breakage-fill` | `rgba(229,128,127,.12)` | `#F9E6E3` |  |
+| `--info` | `#82A9E8` | `#2563EB` | links in charts, the focus ring |
+| `--frozen` | `#8FB8D0` | `#3F86B5` | a frozen streak day |
+| `--selected-edge` | `#8E8E95` | `#1C1C1C` | the edge of a selected card or map box; never a colour |
+| `--selected-fill` | `#222226` | `#FFFFFF` |  |
+| `--selected-ring` | `0 0 0 1px #8E8E95` | `0 0 0 1px #1C1C1C` |  |
+| `--scrim` | `rgba(10,10,11,.72)` | `rgba(28,28,28,.32)` | behind dialogs and sheets; no blur |
+| `--window` | `#1E1E21` | `#FAFAFA` | dialogs and sheets |
+| `--window-border` | `#2E2E33` | `#DCDCDC` |  |
+| `--window-shadow` | `inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75)` | `0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3)` |  |
+| `--sheet-shadow` | `-24px 0 64px -16px rgba(0,0,0,.7)` | `-24px 0 64px -16px rgba(0,0,0,.25)` | side sheets |
+| `--dot-grid` | `rgba(255,255,255,.055)` | `rgba(0,0,0,.08)` | the 1px dots, 16px apart, in media wells and maps |
+| `--avatar-fill` | `#2C2C30` | `#E2E2E2` | initials avatars (photo avatars unchanged) |
+| `--on-avatar` | `#CFCFD3` | `#333333` |  |
+| `--logo-ink` | `#EDEDEF` | `#1C1C1C` | the frame and window of the mark |
+| `--bar-base` | `#3A3A3F` | `#E0E0E0` | unfilled part of a progress bar |
+| `--bar-mid` | `#55555B` | `#C4C4C4` | a sparkline with no activity |
+| `--paper` | `#0C0C0D` | `#F1F1F1` | inside a framed work or result window |
+| `--dim-filter` | `brightness(.48) saturate(.5)` | `contrast(.42) brightness(1.32)` | what a map does not touch; opaque, so wires never show through |
+| `--focus-ring` | `#8EB4F0` | `#2563EB` | 2px outline, 2px offset |
+
+Category colours under refined:
+
+| token | Dusk | Noon |
+|---|---|---|
+| `--cat-instruction` | `#E39A78` | `#C0623A` |
+| `--cat-instruction-fill` | `rgba(227,154,120,.12)` | `rgba(192,98,58,.10)` |
+| `--cat-configuration` | `#C9C27A` | `#857A14` |
+| `--cat-configuration-fill` | `rgba(201,194,122,.12)` | `rgba(133,122,20,.10)` |
+| `--cat-data` | `#82A9E8` | `#2D6BE4` |
+| `--cat-data-fill` | `rgba(130,169,232,.12)` | `rgba(45,107,228,.10)` |
+| `--cat-artefact` | `#D9B36C` | `#A3741A` |
+| `--cat-artefact-fill` | `rgba(217,179,108,.12)` | `rgba(163,116,26,.10)` |
+| `--cat-evidence` | `#86D193` | `#23804F` |
+| `--cat-evidence-fill` | `rgba(134,209,147,.12)` | `rgba(35,128,79,.10)` |
+| `--cat-narrative` | `#A0A0A6` | `#5F5F5B` |
+| `--cat-narrative-fill` | `rgba(160,160,166,.12)` | `rgba(95,95,91,.10)` |
+| `--cat-agents` | `#A996E8` | `#6B52D6` |
+| `--cat-agents-fill` | `rgba(169,150,232,.12)` | `rgba(107,82,214,.10)` |
+| `--cat-breakage` | `#E5807F` | `#C93E32` |
+| `--cat-breakage-fill` | `rgba(229,128,127,.12)` | `rgba(201,62,50,.10)` |
+| `--cat-media` | `#E08FB4` | `#BE4C84` |
+| `--cat-media-fill` | `rgba(224,143,180,.12)` | `rgba(190,76,132,.10)` |
+
+Existing tokens repointed under refined (glows, arcs, orbs and glass resolve to flat values):
+
+| token | Dusk | Noon |
+|---|---|---|
+| `--bg` | `var(--frame)` | `var(--frame)` |
+| `--backdrop` | `var(--frame)` | `var(--frame)` |
+| `--ambient` | `linear-gradient(transparent, transparent)` | `linear-gradient(transparent, transparent)` |
+| `--recess` | `var(--well)` | `var(--well)` |
+| `--glass` | `var(--module)` | `var(--module)` |
+| `--glass-2` | `var(--control)` | `var(--control)` |
+| `--glass-border` | `var(--module-border)` | `var(--module-border)` |
+| `--glass-hi` | `rgba(255,255,255,.04)` | `rgba(255,255,255,.6)` |
+| `--glass-fill` | `var(--module)` | `var(--module)` |
+| `--glass-rim` | `transparent` | `transparent` |
+| `--glass-halo` | `0 0 0 0 transparent` | `0 0 0 0 transparent` |
+| `--panel-highlight` | `var(--surface-shadow)` | `var(--surface-shadow)` |
+| `--panel-highlight-color` | `rgba(255,255,255,.035)` | `transparent` |
+| `--card-frame` | `var(--module)` | `var(--module)` |
+| `--card-thread` | `var(--tile)` | `var(--tile)` |
+| `--on-evidence` | `#121214` | `#FFFFFF` |
+| `--on-evidence-fill` | `var(--evidence)` | `var(--evidence)` |
+| `--on-lit` | `#111112` | `#111112` |
+| `--porthole` | `var(--paper)` | `var(--paper)` |
+| `--chrome-hi` | `#45454C` | `#FFFFFF` |
+| `--chrome-lo` | `#222225` | `#D6D6D6` |
+| `--on-text` | `#121214` | `#FFFFFF` |
+| `--header` | `transparent` | `transparent` |
+| `--header-border` | `transparent` | `transparent` |
+| `--cell` | `var(--tile)` | `var(--tile)` |
+| `--row-highlight` | `var(--tile)` | `var(--tile)` |
+| `--solid` | `var(--module)` | `var(--module)` |
+| `--flat` | `var(--surface)` | `var(--surface)` |
+| `--viewer-block` | `var(--well)` | `var(--well)` |
+| `--tab` | `var(--control-on)` | `var(--control-on)` |
+| `--field` | `var(--well)` | `var(--well)` |
+| `--media-tag` | `rgba(15,15,16,.78)` | `rgba(255,255,255,.88)` |
+| `--plate` | `rgba(15,15,16,.62)` | `rgba(250,250,250,.84)` |
+| `--dock` | `var(--surface)` | `var(--surface)` |
+| `--dock-border` | `var(--surface-border)` | `var(--surface-border)` |
+| `--dock-tile` | `var(--control)` | `var(--control)` |
+| `--inverse` | `var(--text)` | `var(--text)` |
+| `--on-inverse` | `#121214` | `#FFFFFF` |
+| `--on-inverse-2` | `#55555B` | `#BDBDBD` |
+| `--inverse-evidence-fill` | `#DDF2E1` | `#1F3A27` |
+| `--on-inverse-evidence-fill` | `#14301C` | `#DDF2E1` |
+| `--ring-glow` | `0 0 0 0 transparent` | `0 0 0 0 transparent` |
+| `--rank-glow` | `0 0 0 0 transparent` | `0 0 0 0 transparent` |
+| `--tagline-chip` | `var(--control)` | `var(--control)` |
+| `--on-tagline-chip` | `var(--text)` | `var(--text)` |
+| `--tagline-lamp` | `var(--lit)` | `var(--lit)` |
+| `--orb-glass` | `linear-gradient(var(--module), var(--module))` | `linear-gradient(var(--module), var(--module))` |
+| `--orb-glass-edge` | `var(--module-border)` | `var(--module-border)` |
+| `--on-orb-glass` | `var(--text)` | `var(--text)` |
+| `--orb-solid` | `linear-gradient(var(--module), var(--module))` | `linear-gradient(var(--module), var(--module))` |
+| `--on-orb-solid` | `var(--text)` | `var(--text)` |
+| `--on-orb-solid-2` | `var(--text2)` | `var(--text2)` |
+| `--arc-1` | `transparent` | `transparent` |
+| `--arc-2` | `transparent` | `transparent` |
+| `--arc-3` | `transparent` | `transparent` |
+| `--arc-haze` | `transparent` | `transparent` |
+| `--arc-outer` | `transparent` | `transparent` |
+| `--shadow-float` | `var(--window-shadow)` | `var(--window-shadow)` |
+| `--shadow-card` | `var(--module-shadow)` | `var(--module-shadow)` |
+| `--shadow-square` | `0 1px 2px rgba(0,0,0,.45)` | `0 1px 2px rgba(0,0,0,.08)` |
+| `--shadow-dock` | `inset 0 1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.5)` | `0 12px 32px rgba(0,0,0,.12)` |
+| `--shadow-sheet` | `0 -16px 48px rgba(0,0,0,.5)` | `0 -16px 48px rgba(0,0,0,.14)` |
+| `--ring-track` | `var(--hairline-module)` | `var(--hairline-module)` |
+| `--picture-lamp-glow` | `var(--lamp-glow)` | `var(--lamp-glow)` |
+| `--picture-lamp-wash` | `rgba(245,203,76,.10)` | `rgba(245,203,76,.16)` |
+| `--banner-scrim` | `rgba(15,15,16,.75)` | `rgba(244,244,244,.85)` |
+| `--inset` | `var(--tile)` | `var(--tile)` |
+| `--turn` | `rgba(255,255,255,.03)` | `rgba(0,0,0,.025)` |
+| `--secret-fill` | `var(--breakage-fill)` | `var(--breakage-fill)` |
+| `--sheet-dim` | `rgba(10,10,11,.5)` | `rgba(28,28,28,.25)` |
+| `--signin-edge` | `inset 0 0 0 1px var(--module-border)` | `inset 0 0 0 1px var(--module-border)` |
+| `--elev-raised` | `var(--control-shadow)` | `var(--control-shadow)` |
+| `--elev-overlay` | `var(--window-shadow)` | `var(--window-shadow)` |
+
+**Do not.** Use any new token in a component yet.
+
+**Done when.** `/dev/kit/components?look=refined` already shows the new colours wherever a primitive reads a repointed token; the switch-off audit is unchanged; theme guard tests pass.
+
+**Commit.** `UI-P79: refined colour tokens for Dusk and Noon behind the look switch`
+
+---
+
+## UI-P80 — Geist and Geist Mono
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The refined type: two self-hosted faces and the roles in the table below.
+
+**Build.**
+1. Copy `design/reference/fonts/Geist-Variable.woff2` and `GeistMono-Variable.woff2` to `public/fonts/`, and `Geist-OFL.txt` beside them. `@font-face` for each in `src/index.css` (`font-weight: 100 900`, `font-display: swap`) next to the Sentient rules. Preload `Geist-Variable.woff2` in `index.html` only when the switch is on (UI-P98 flips it; until then, no preload). This amends `design/RULES.md` §3 "never install a dependency": no package is installed, two font files are added.
+2. Font families become tokens: `--font-ui`, `--font-display`, `--font-data` (they exist in `design/tokens/tokens.css`; add them to `src/index.css` if missing). Current look: Figtree, Sentient, DM Mono, exactly as today. Refined look: Geist, Geist, Geist Mono.
+3. In `src/lib/theme/type.ts`, `FIGTREE`, `SENTIENT` and `DM_MONO` become `var(--font-ui)`, `var(--font-display)` and `var(--font-data)` with the current stacks as fallbacks, so every role switches with the look. Role **sizes** that differ under refined (the table below: hero 44, page title 20, card title 13.5–14, body 13, step text 13.5/22, label 12.5, eyebrow 10.5 caps .06em in Geist not mono, mono 10.5) become per-look values the same way: a `--type-<role>-size` (and `-tracking`, `-weight`, `-leading` where they differ) custom property per role, defaulting to today's value. Add the two new roles `figure` (24/500, -0.02em, tnum) and `mono` (Geist Mono 10.5) to `type.ts`.
+4. `type.test.ts`: roles resolve to today's values with the switch off and to the table below with `data-look="refined"`.
+
+**The roles under refined.**
+
+| role | face | size / weight | line height | tracking | notes |
+|---|---|---|---|---|---|
+| hero (statement) | Geist | 44 / 500 (mobile 32) | 1.04 | -0.04em | the tagline |
+| page title | Geist | 20 / 500 | 1.2 | -0.015em | h1 on every page but Home |
+| figure | Geist | 24 / 500 (large 32) | 1.1 | -0.02em | counts, tabular |
+| section / card title | Geist | 13.5–14 / 500 | 1.3 | -0.005em | |
+| body | Geist | 13 / 400 | 20px | 0 | |
+| step text | Geist | 13.5 / 400 | 22px | 0 | prompts and steps |
+| label | Geist | 12.5 / 500 | 1.3 | 0 | |
+| meta | Geist | 11.5–12 / 400 | 1.4 | 0 | `--text2` or `--label` |
+| eyebrow | Geist | 10.5 / 500 caps | 1.3 | .06em | `--label`; caps by CSS unless the code's string is already caps |
+| mono | Geist Mono | 10.5 / 400 | 18px | 0 | pills, ids, the `/` key |
+
+Inputs are 16px on mobile.
+
+**Do not.** Change any role's value under the current look.
+
+**Done when.** The switch-off audit is unchanged. On `/dev/kit/components?look=refined`, every label is Geist and nothing is serif.
+
+**Commit.** `UI-P80: Geist and Geist Mono as the refined faces, roles per look`
+
+---
+
+## UI-P81 — Radius, space, elevation — and no glass, no backdrop, no reveal
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The refined shape and depth, and the removal of everything the refined look does not have.
+
+**Build.**
+1. **Radius.** In the refined blocks set `--r-chip: 4px; --r-media: 6px; --r-control: 6px; --r-thread: 6px; --r-card: 8px; --r-panel: 10px` and add `--r-window: 12px` (current look: `--r-window` aliases `--r-panel`). Add `window` to `RADIUS` in `src/lib/theme/radius.ts` and update `radius.test.ts`.
+2. **Space.** Add `SPACE_REFINED` to `src/lib/theme/space.ts` — `2 4 6 8 12 16 20 24 32 40 48 64` — with `isRefinedStep()`, and the named layout values: `headerHeight: 48`, `gutter: "clamp(16px, 4.6vw, 64px)"`, `rowMin: 40`, `rowTwoLine: 48`, `rowAvatar: 56`, `modulePad: 16`, `tilePad: 12`. Tests.
+3. **Elevation.** `elev-raised` → `--control-shadow`, `elev-overlay` → `--window-shadow`, `shadow-card` → `--module-shadow` under refined (UI-P79 set them; check `elevation.ts` reads them).
+4. **No glass.** Under refined, `GlassFilter` renders nothing and the liquid-glass class from UI-P09b has no effect (scope its CSS to `:root:not([data-look="refined"])`). `Panel` with `surface="glass"` paints the module recipe. Update `glass-budget.spec.ts` and `glassFilter.test.tsx`: zero glass under refined.
+5. **No backdrop.** Under refined, `PageBackdrop`, `Arc`, the grain and the living backdrop (UI-P13, UI-P13b) render nothing; the page is `--frame`. `backdrop.test.tsx` gains the refined case.
+6. **No reveal.** `useReveal` returns "already revealed" under refined: nothing fades in on scroll. Hover styles that change `opacity` change background instead under refined (grep `onMouseEnter`/`useInteractive` in `src/components/brand/`).
+
+**Do not.** Remove anything: the current look still uses all of it.
+
+**Done when.** `/dev/kit/pages/home?look=refined` shows no gradient, no grain, no glass and nothing fading in; the switch-off audit is unchanged; theme guard tests pass.
+
+**Commit.** `UI-P81: refined radius, space and elevation; glass, backdrop and reveal off under refined`
+
+---
+
+## UI-P82 — The glyph set
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The refined icons: 16px square-cap glyphs, and no icon inside a labelled button.
+
+**Build.**
+1. `src/components/brand/Glyph.tsx`: `name` (the keys in the table below), `size` (default 16), `color` (default `currentColor`), stroke 1.3 (`more` is 2), `strokeLinecap="square"`, `fill="none"`, `aria-hidden="true"`. Paths exactly as in the table below.
+2. `src/components/brand/Icon.tsx`: `<Icon lucide={Search} glyph="search" />` renders the glyph under refined and the lucide icon under current. Lucide icons with no glyph render under refined at stroke 1.3 with square caps.
+3. Add the glyphs to the Controls section of `/dev/kit/components`.
+4. A unit test that every glyph name in the table renders one path.
+
+**The glyphs.** Where no glyph fits, `lucide-react` stays, at stroke 1.3 with square caps.
+
+| glyph | path (viewBox 0 0 16 16) |
+|---|---|
+| `chev` | `M6.5 4 10.5 8l-4 4` |
+| `chevd` | `M4 6.5 8 10.5l4-4` |
+| `chevl` | `M9.5 4 5.5 8l4 4` |
+| `search` | `M10.25 10.25 13.5 13.5M11.25 7a4.25 4.25 0 1 1-8.5 0 4.25 4.25 0 0 1 8.5 0z` |
+| `bell` | `M4.5 11V7.5a3.5 3.5 0 0 1 7 0V11l1 1.25h-9zM6.75 14.25h2.5` |
+| `moon` | `M12.75 9.75A5.25 5.25 0 0 1 6.25 3.25a5.25 5.25 0 1 0 6.5 6.5z` |
+| `sun` | `M8 5.25a2.75 2.75 0 1 1 0 5.5 2.75 2.75 0 0 1 0-5.5zM8 1.75v1.5M8 12.75v1.5M1.75 8h1.5M12.75 8h1.5M3.6 3.6l1 1M11.4 11.4l1 1M3.6 12.4l1-1M11.4 4.6l1-1` |
+| `plus` | `M8 3.5v9M3.5 8h9` |
+| `x` | `M4.5 4.5l7 7M11.5 4.5l-7 7` |
+| `pencil` | `M10.5 3.5l2 2L6 12H4v-2z` |
+| `file` | `M4 2.5h5.5L12 5v8.5H4zM9.5 2.5V5H12` |
+| `layers` | `M8 2.5 13.5 5.5 8 8.5 2.5 5.5zM2.5 8.5 8 11.5l5.5-3M2.5 11.25 8 14.25l5.5-3` |
+| `panel` | `M2.5 3h11v10h-11zM6 3v10M8.5 6.5 10 8l-1.5 1.5` |
+| `larr` | `M13 8H3.5M7 4.5 3.5 8 7 11.5` |
+| `rarr` | `M3 8h9.5M9 4.5 12.5 8 9 11.5` |
+| `check` | `M3.5 8.5 6.5 11.5 12.5 4.5` |
+| `more` | `M3.5 8h.01M8 8h.01M12.5 8h.01` |
+| `up` | `M8 13V3.5M4.5 7 8 3.5 11.5 7` |
+| `image` | `M2.5 3.5h11v9h-11zM2.5 10.5l3-3 3 3 2-2 3 3M10.5 6h.01` |
+| `play` | `M5 3.5v9l7-4.5z` |
+| `expand` | `M9.5 2.5h4v4M13.5 2.5l-5 5M6.5 13.5h-4v-4M2.5 13.5l5-5` |
+| `grid` | `M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z` |
+| `globe` | `M13.5 8a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0zM2.5 8h11M8 2.5c1.5 1.5 2.3 3.4 2.3 5.5S9.5 12 8 13.5M8 2.5C6.5 4 5.7 5.9 5.7 8s.8 4 2.3 5.5` |
+| `mail` | `M2.5 4h11v8h-11zM2.5 4.5 8 9l5.5-4.5` |
+
+**Do not.** Replace icons in pages; the page prompts do that in their refined views.
+
+**Done when.** The components board's glyph row compares within 0.04 under refined.
+
+**Commit.** `UI-P82: square-cap glyphs and the Icon switch`
+
+---
+
+## UI-P83 — Model marks with Lobe Icons, background-less
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Every model, lab and AI tool the site names gets its real logo beside the name: the logo alone, no tile, no background, no border.
+
+**This prompt amends `design/RULES.md` §3: it installs one dependency,** `@lobehub/icons-static-svg@^1.95` (MIT; static SVG files, no runtime dependencies). Do **not** install `@lobehub/icons`: it needs React 19, antd 6 and `@lobehub/ui`, and this site is React 18.
+
+**Build.**
+1. `npm install @lobehub/icons-static-svg@^1.95`. Check that `package-lock.json` gains only that package.
+2. `src/lib/models/marks.ts` (pure, tested) — `markFor({ tool, model, lab }): MarkKey | null`:
+   - **tool first** (session tools, `CONNECTOR_TOOLS` in `src/lib/connect/connector.ts`, and any tool name in session data): Claude → `claude-color`, Claude Code → `claudecode-color`, ChatGPT → `openai`, Cursor → `cursor`, Gemini → `gemini-color`, Grok → `grok`, Vercel → `vercel`;
+   - **then model**, through `normaliseModel()` in `src/lib/models/registry.ts` (so aliases resolve): lab Anthropic → `claude-color`, OpenAI → `openai`, Google → `gemini-color`, xAI → `grok`, DeepSeek → `deepseek-color`;
+   - **then lab** (the Gallery's Labs list): Anthropic → `anthropic`, OpenAI → `openai`, Google → `google-color`, xAI → `xai`, DeepSeek → `deepseek-color`;
+   - Gmail → the `mail` glyph; anything else → `null`.
+   Tests cover each row, an alias (e.g. `claude-sonnet-4.5` style spellings already in `registry.test.ts`), case and whitespace, and the null case.
+3. `src/components/brand/ModelMark.tsx` — props `tool?`, `model?`, `lab?`, `size: 14 | 16 | 18 | 20 | 24 | 28`. Import each of the 12 SVGs as a URL (`import claudeColor from "@lobehub/icons-static-svg/icons/claude-color.svg"`) so only those files ship. Rendering:
+   - keys ending `-color` → `<img src alt="" width height aria-hidden="true" draggable={false}>`, unaltered;
+   - mono keys → `<span aria-hidden="true">` sized `size`×`size`, `background-color: currentColor`, `mask-image` and `-webkit-mask-image: url(<file>)`, `mask-size: contain`, no repeat, centred, `color: t.text` unless the parent sets one;
+   - `mail` → `<Glyph name="mail">`; `null` → render nothing (the name stands alone).
+   - **No tile, no padding, no border, no background, no radius, no shadow.** `flex-shrink: 0`, `display: inline-block`, `vertical-align: middle`, `data-mark={key}`.
+4. `ModelTag` (a quiet tag with a 14px mark, gap 6, padding `0 8px 0 6px`, height 22, `--tag-fill`, `--on-tag` 11.5) and `ModelChip` (a control, height 32, padding `0 12px 0 8px`, 20px mark, gap 8; pressed = selected recipe) in `src/components/brand/`.
+5. `/dev/kit/components` gains a **Model marks** section built like the `model-marks` board: every lab at 14, 16, 20, 24 and 28 with the models it names, the tool rows, tags and chips. The board draws tiles with initials: build the marks alone, without the tile (expected difference).
+6. `THIRD_PARTY_NOTICES.md` at the repo root (create it if there is none): Lobe Icons, MIT, with the copyright line from its licence, and the note "Logos are trademarks of their owners; shown to name the tool a build was made with." Add Geist (OFL 1.1) there too.
+
+**Do not.** Recolour, crop, outline or redraw a mark; put one on a filled square; make one larger than 28px; place marks in pages (the page prompts do).
+
+**Done when.** `markFor` tests pass; the Model marks section shows the real marks with no background in both themes; `npm run build` shows only the 12 files added to the bundle.
+
+**Commit.** `UI-P83: model marks from Lobe Icons static SVGs, no background`
+
+---
+
+## UI-P84 — Controls under the refined look
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The control set from the `components` board, inside the existing primitives, so every call site gets it when the look is on.
+
+**Reference.** `refined/<theme>/components.html` sections Buttons, Segmented and tabs, Fields, Tags and plaque; `model-marks.html` for chips.
+
+**Build** (each under refined only; current look unchanged):
+1. **`Button`** — radius 6; heights 26, 28, 30, 32, 36 (map existing sizes to the nearest: ≤30 → 28, 32–34 → 32, ≥36 → 36; 44 and 48 stay for mobile); padding `0 12px` (≤28) or `0 16px`; text 12.5 (≤28) or 13, weight 500. primary = the primary recipe; secondary = control recipe; ghost = transparent, `--text2`. **The `icon` prop renders nothing under refined when the button has a label.**
+2. **`IconButton`** — 26, 28, 30; boxed (control recipe) by default, `boxed={false}` for ghost; glyph 16, `--text2`.
+3. **`Segmented`** — track `--seg-track`, 1px `--seg-border`, radius 6, padding 2, gap 2; items height = size − 6, padding `0 12px`, radius 4, Geist 12/500; current item control recipe with `--control-on`, others transparent `--text2`.
+4. **`UnderlineTabs`** — Geist 13/500, gap 24, height 40, current `--text` with a 2px `--text` bottom edge, others `--text2`; the 1px `--hairline` row border spans the column. Optional count in `--label` 11.5.
+5. **`FilterChip`** (mobile) — control recipe, radius 6, height 36; on = selected recipe (not inverted).
+6. **`CategoryChip`** — tag recipe: `--tag-fill`, radius 4, height 20, padding `0 6px`, Geist 11.5 `--on-tag`, a 6×6 radius-1 square in `--cat-<category>` before the word (dashed edge instead of fill where the chip marks a gap, as the board shows).
+7. **`Eyebrow`** — Geist 10.5/500, caps by CSS, .06em, `--label`.
+8. **`Avatar`** — initials on `--avatar-fill` in `--on-avatar`, Geist 500 at `size × .38`; photos unchanged.
+9. New: **`Pill`** (Geist Mono 10.5, height 18, padding `0 6px`, radius 4, `--pill`/`--on-pill`, optional `tone: "evidence" | "breakage" | "lit-ink" | category`), **`MenuButton`** (control recipe, height 28, `label` in `--text2` + `value` in `--text` 500 + `chevd` glyph in `--label`, `aria-haspopup`), **`SearchField`** (well recipe, height 30, padding `0 6px 0 12px`, search glyph, input Geist 12.5, optional key hint in a 1px `--control-border` box, Geist Mono 10.5), **`Checkbox`** (16, radius 4; on = `--action` fill with a `check` glyph in `--on-action`).
+10. Add each to the Controls section of `/dev/kit/components` in both looks.
+
+**Done when.** The components board's Buttons, Segmented and tabs, Fields and Tags sections compare within 0.04 under refined in both themes; `controls.test.tsx` covers the refined branch; the switch-off audit is unchanged.
+
+**Commit.** `UI-P84: refined controls in the existing primitives`
+
+---
+
+## UI-P85 — Surfaces, rows and data marks
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The layers and the small data pieces every page is built from.
+
+**Reference.** `components.html` sections Progress, Rows, Timeline, Card; `foundations.html` Surfaces and Depth.
+
+**Build** (under refined):
+1. **`Panel`** → module recipe (`surface="glass"` and `surface="solid"` alike), padding 16 unless a call site sets one. New **`Tile`** and **`Well`** components with the tile and well recipes.
+2. **`CardHead`** — title 13.5/500, optional subtitle 12 `--text2` (gap 4), optional action at the top right (an `IconButton` or a chevron link).
+3. **`Row`** — hairline-separated row, `min-height` 40 | 48 | 56, gap 12, label left in `--text2` 12.5 and value right in `--text` 12.5/500 tnum; `inModule` uses `--hairline-module`.
+4. **`Figure`** — the `figure` role with a unit in 12 `--text2`, gap 6, and an optional label above with an optional lamp bar.
+5. **`StripedBar` / progress** — refined: a flat bar 4 or 6 high, radius 1, fill in the tone given (`--lit`, `--evidence`), then a 2px gap, then the rest in `--bar-base`. Ticks (completeness) are 1px `--label` lines 12 high with the eyebrow label centred under each.
+6. **Charts** (`charts.tsx`) — sparkline stroke 1.2, no dots; mini bars 3 wide, gap 2, radius 1; line charts: line 1.4 in the tone, flat area at 7% (Dusk) / 8% (Noon), dashed `--hairline` grid, no gradient fills.
+7. **Timeline** — dots 7px, ring 3px of `--surface`, 1px `--line` spine, time in `--label` tnum, kind as an eyebrow in its tone, title 12.5/500.
+8. **`Plaque`** — `Pill` with tone evidence for the count, the lamp bar 8×3 (from `plaqueState()`, unchanged), then the freshness in 12 `--text2`; not yet reproduced = a neutral `Pill`.
+9. **`LampDot` / `PictureLamp`** — the lamp recipe; a lit frame never takes an amber edge.
+10. Update the Panels, Stats and Charts sections of `/dev/kit/components`.
+
+**Done when.** Those sections compare within 0.04 under refined; `panels.test.tsx`, `charts.test.tsx` and `Plaque.test.tsx` cover refined; the switch-off audit is unchanged.
+
+**Commit.** `UI-P85: refined module, tile, well, rows, figures, bars, charts, timeline and plaque`
+
+---
+
+## UI-P86 — Framed works, cover fallback and streak days
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The objects that carry the lamp.
+
+**Reference.** `components.html` Framed work and Streak days; `home.html` wall and visitors' book thumbnails; `build-list.html` hero.
+
+**Build** (under refined):
+1. **Framed work** (`CoverFallback` and the build card's cover frame): a raised object — Dusk `linear-gradient(#2A2A2E, #1F1F22)`, 1px `#333338` with a `#3C3C42` top edge, `inset 0 1px 0 rgba(255,255,255,.04), 0 1px 1px rgba(0,0,0,.55), 0 6px 12px -4px rgba(0,0,0,.45)`; Noon `#FFFFFF`, 1px `#D9D9D9`, `0 1px 1px rgba(20,20,18,.06), 0 6px 12px -6px rgba(20,20,18,.18)` — radius 4, padding 4 (3 under 40px), the picture inside on `--paper`, radius 2. These are the "artwork constants" `design/RULES.md` §2 allows: put them as named constants in the component. **Lit** adds the lamp bar centred 8px above the frame (`max(12, width/4)` wide) and a 60%-high wash inside the picture (`rgba(245,203,76,.10)` Dusk, `.14` Noon, to transparent). **Never** an amber border.
+2. **Picture light** over a hero picture: the 40×3 lamp bar and a cone below it, `clip-path: polygon(44.8% 0, 55.2% 0, 100% 100%, 0 100%)`, `linear-gradient(rgba(245,203,76,.10 Dusk / .18 Noon), transparent)`.
+3. **Streak day** — 32 high, radius 6, flex 1 in a row with gap 6: lit = control recipe with a 14×3 lamp bar; frozen = control recipe with a 14×3 `--frozen` bar; not lit = transparent with a 1px dashed `--line` edge. Day letter under it, 11 `--label`. Each day keeps its accessible name.
+4. **Result window** (build hero): the board's 304×176 window, raised as above, with a 20px chrome row (three 4px dots) and the picture on `--paper`.
+
+**Done when.** Those sections compare within 0.04 under refined; the lamp still comes only from data (`design/RULES.md` §5); the switch-off audit is unchanged.
+
+**Commit.** `UI-P86: refined framed works, picture light, streak days and the result window`
+
+---
+
+## UI-P87 — The frame
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Header, surface, breadcrumb and footer as every refined board draws them, desktop and mobile.
+
+**Reference.** The top 48px and the footer of every page board; `components.html` header strip.
+
+**Build** (under refined, in `SiteFrame`, `SiteHeader`, `Breadcrumb`, `SiteFooter`, `MobileHeader`, `Dock`, `BottomSheet`):
+1. **Header** — on `--frame`, no background, no border, height 48, padding `0 20px`, gap 8. Lockup (18px mark, Geist 14/600 -0.02em) · a 1px × 16 `--line` divider · nav links Geist 13/500, padding `0 10px`, `--text2`; current `--text` with a 2px `--nav-mark` bar at the bottom, inset 10px, with `--nav-lamp-glow`; Drafts keeps its count (11/500 `--label`). Then a spacer, `SearchField` 240×30 with the `/` key, **New build as a secondary button (30)** — no icon —, the bell as a ghost 30×30 icon link with the unread count as a 12px badge (`--lit-mark`, Geist 9/600 `#111112`, radius 6) at top right; on `/notifications` the bell is `aria-current="page"` and takes the `--control-on` fill and `--control-border` edge, never a colour. Theme as a ghost 30 icon button (`moon` in Dusk, `sun` in Noon). Avatar 26.
+2. **Surface** — the surface recipe wraps everything below the header; the footer sits inside it.
+3. **Breadcrumb** — Geist 12.5, gap 8, links `--text2`, separator `/` in `--label`, current `--text` 500.
+4. **Footer** — inside the surface under a 1px `--hairline`: padding `12px <gutter>`; lockup 15; links 12.5 `--text2`, gap `8px 20px`; spacer; Theme `Segmented` (26) Noon / Dusk / System; `© buildgallery` 12 `--label`.
+5. **Mobile** (below 768): the header becomes `--frame`, 48 high, the lockup and icon buttons only; the surface keeps a 6px inset and radius 10; the dock is a surface-coloured bar with a `--surface-border` top edge and control-recipe tiles, no glass; sheets use the window recipe.
+
+**Done when.** The header and footer rows of `refined/<theme>/home.html` compare within 0.03 (clip to the top 48px and the footer); `siteHeader.test.tsx`, `siteFrame.test.tsx`, `mobileChrome.test.tsx` and `breadcrumbFooter.test.tsx` cover refined; the switch-off audit is unchanged.
+
+**Commit.** `UI-P87: the refined frame: header, surface, breadcrumb, footer, mobile chrome`
+
+---
+
+## UI-P88 — Page: Home
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Home drawn as `refined/<theme>/home.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/home/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+1. **Layout.** Breadcrumb, then a wrapping row, gap 48: main column `flex: 999 1 640px`, gap 40; aside `flex: 1 1 300px`, max 340, `padding-left: 32px`, 1px `--hairline` left edge, gap 24.
+2. **Hero** (no card): a row with `Segmented` Whose builds (Following / Everyone) and, pushed right, the lit count line (`702 builds lit today` style, 12 `--text2`, a 10×3 lamp bar before it) — a plain line, not a badge. Below, a wrapping row (gap 32): the tagline as `hero` (44/500, -0.04em, lines indented 0 / 48 / 24, the 30px mark inline after "hung with") with **Enter the gallery** (primary, 32) and **How proof works** (secondary, 32) under it; and the **wall**: a 400×232 well with the dot grid, a 1px `--line` rail 16px from the top, the picture-light cone, and the six framed works at the board's positions (lit from data as today).
+3. **The visitors' book** — `CardHead` (title, subtitle, `Segmented` Show at the right), then rows: grid `96px 24px minmax(0,1fr) 56px 32px`, gap 12, min-height 60, `--hairline` between. Kind as a `Pill` in its tone (BUILD `--lit-ink`, REBUILD `--cat-agents`, REPRO NOTE `--evidence`, BOUNTY `--breakage`); avatar 24; the who-line 12.5 `--text2` (one line, ellipsis); title 13/500 + `Plaque`; a 56×36 framed thumbnail (lit from data); time 11.5 `--label` tnum, right. The newest-since-last-visit row takes the tile fill (radius 6, `margin: 0 -12px; padding: 0 12px`) instead of a hairline.
+4. **Aside.** The run counts as two `Figure`s side by side (Reproduced today with its lamp bar, This week) — **the orbs are not drawn under refined**; then This week's challenges (`CardHead` with the boxed chevron IconButton "Open this week", three rows with a 4px bar, `--lit` in progress, `--evidence` done); the streak (`CardHead`, seven streak days); Where next (rows 52 high: title 12.5/500, reason as written in the code in 10.5/500 `--label` .04em, a 56×16 sparkline in `--text2`).
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/home"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P88: Home in the refined look`
+
+---
+
+## UI-P89 — Page: Gallery
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Gallery drawn as `refined/<theme>/gallery-dashboard.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/gallery/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+1. **Layout.** Breadcrumb, then a wrapping row, gap 32: sidebar `flex: 1 1 208px`, max 224, `padding-right: 24px`, 1px `--hairline` right edge, gap 24; content `flex: 999 1 640px`, gap 16.
+2. **Sidebar.** "Gallery" 14/500 with its subtitle 12 `--text2`; the dashboard nav (Builds / Models / Makers with counts in `--label`), rows 32 high, current = control recipe (radius 6); **Labs** eyebrow, rows 30 high with `<ModelMark lab size={18}>` — replacing the initial square the current view draws — name, count; **Reporting** eyebrow and its toggles; **Connect a tool** (secondary 28) and **Help**; the drafts box as a tile with an underlined **Open drafts** link.
+3. **Content.** Title row: "Builds" page title, the active model filter as a tag, spacer, `SearchField` 240×28 without a key hint, `Segmented` Feed / Dashboard. `UnderlineTabs` Builds / Models / Makers. Filter row: the four `MenuButton`s, spacer, **Export** (secondary, no icon).
+4. **Table.** Columns `minmax(0,2.6fr) minmax(0,1.7fr) 64px 64px 64px 80px 72px minmax(0,1.5fr) 28px`, gap 12; header 36 high in 11.5/500 `--label`; rows 48 high with `--hairline`; numbers right-aligned tnum 12.5; the selected row takes the tile fill and loses its hairline. Build cell: `Checkbox`, title 12.5/500 (ellipsis), "by @handle" 11.5 `--label`. AI models cell: the count 12/500 then up to two `ModelTag`s (`model` prop) and "+n". Activity: 56×16 sparkline in `--evidence` (`--bar-mid` when all zero). Last activity: date 12/500 tnum, what-line 11.5 `--label`. Actions: ghost 24 chevron IconButton with the existing accessible name.
+5. **Summary bar** under a hairline: in-view and selected counts (numbers in `--text` 500), the calculation toggles (pressed = `--control-on` with control edge), "+ Add calculation" as disabled `--label` text.
+6. **Feed view** (`GalleryFeedView`, no board): fork it the same way using the build card, `Segmented`, `UnderlineTabs` and filter controls from UI-P84 to UI-P86; no other change.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/gallery-dashboard"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P89: Gallery dashboard and feed in the refined look`
+
+---
+
+## UI-P90 — Page: Build page — first screen and The build
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Build page — first screen and The build drawn as `refined/<theme>/build-list.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/build/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+The build page's view and its steps view (`BuildSteps.tsx`, `BeforeYouSend.tsx`, and the first-screen view that renders the hero) are forked; find the hero's view through `BuildPage`.
+1. **Top.** Breadcrumb, then a wrapping row, gap 48: the hero module (`flex: 999 1 640px`, padding 0, overflow hidden) and the reproduction column (`flex: 1 1 300px`, max 340, gap 20).
+2. **Hero module.** A 280-high media well with the dot grid and a module-border bottom edge; the picture light (40×3 bar 24px from the top, cone); the result window centred 64px from the top (UI-P86); the shape tag top-left (16, 16); the **action dock** top-right (16, 12): one control-recipe group, items 28 high, padding `0 12px`, 12.5/500, separated by 1px `--control-border`: Copy for AI, Download, Rebuild, Lineage (a link) — **text only, no icons**. Under the well, padding 16, gap 16: the 44×44 control-recipe tile with the 24px mark, the title as page title (20/500), the outcome 13/20 `--text2` (max 680), "made by @handle" 12 `--label`.
+3. **Reproduction column.** Eyebrow, then a row: the count as large `Figure` (32) + "ran it" 13 `--text2`, last date 12 `--label` at the right; the `Plaque`; **I ran this and it worked** — the view's one primary, 36 high, full width, no icon — with its note 12/18 `--text2`; the details as a module of `Row`s (padding `4px 16px`); completeness as a module with the bar and ticks (UI-P85) and the next-step line under a `--hairline-module`.
+4. **The build.** A wrapping row, gap 48: left `flex: 999 1 640px`, gap 16; right **What you need** (`flex: 1 1 300px`, max 340, `padding-left: 32px`, `--hairline` left edge). Left: `UnderlineTabs`; a toolbar row (`Segmented` List / Map, the summary 12 `--text2`, spacer, the hint 12 `--label`); session groups, each led by a group head — **`<ModelMark tool size={20}>`** in place of the dot, the "New chat in …" heading 13/500, its meta 12 `--label`, a hairline filling the rest — and its step modules: number tile 24 (control recipe, Geist Mono 11), title 14/500 (untitled steps in `--text2`), **Copy** (secondary 26, no icon) at the right; text 13.5/22 indented 36; long steps clamp to 4 lines with **Read all of it** (underlined text button) and the word count; **Paste in** as a tile indented 36 with an eyebrow and rows 32 high (what-line 12.5 `--text2` + a reference chip: 22 high, tile fill, 11.5) and the attach row with **Download** (secondary 26); same-chat notes 12 `--label`. The result: group head "Result", then a module with a 24px `--evidence-fill` square holding a `check` glyph in `--evidence`, the label, the host 14/500 link and "from step n".
+5. **What you need.** Title 13.5/500 + subtitle; sections with an eyebrow over a hairline; rows 48 high with **`<ModelMark tool size={28}>`** leading each Tools and models row, name 13/500, meta 11.5 `--label`, **Download** (secondary 26) on files; the Copy for AI note 12/18 `--text2`.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/build-list"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96, the hero picture (the app shows the build's own cover).
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P90: build page first screen and The build list in the refined look`
+
+---
+
+## UI-P91 — Page: Build page — the Map
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Build page — the Map drawn as `refined/<theme>/build-map.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/build/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+`ReaderMap.tsx` and `BuildMap.tsx` (reader mode) under refined. `BuildMap` is shared with the composer: branch on `useLook()` inside it for the look only; its layout maths (`src/lib/build/mapLayout.ts`) does not change.
+1. Toolbar as in UI-P90 with Map selected and the reader hint ("click a box to read it · Esc clears").
+2. **The map** sits in a well with the dot grid, padding 16. Lanes: radius 6, 1px `--hairline`, fill `rgba(255,255,255,.018)` Dusk / `rgba(20,20,18,.018)` Noon (artwork constants), the Files lane dashed `--line` and unfilled; lane name 12/500 with **`<ModelMark tool size={16}>`** before it, sub-line 11 `--label`. Date heads 10.5/500 `--label` .06em.
+3. **Boxes** (buttons, as today): radius 6; Dusk `linear-gradient(#232327, #1E1E21)`, 1px `#303035`, `inset 0 1px 0 rgba(255,255,255,.035), 0 1px 2px rgba(0,0,0,.45)`; Noon `#FFFFFF`, 1px `#D9D9D9`, `0 1px 2px rgba(20,20,18,.06)`; selected = `--selected-edge` 1px (+ `--selected-ring` in Noon, `0 8px 20px -6px rgba(0,0,0,.6)` in Dusk); dimmed = `filter: var(--dim-filter)` instead of opacity. Inputs 6×6 squares (radius 1) on the left edge, outputs on the right; on-path `--text`, off-path `--label`, suggested dashed. Head 28 (number in Geist Mono 10.5 `--label` + title 12/500), input rows 18, text 11 `--text2` one line, words 10.5 `--label`.
+4. **Wires**: 1.2px; on-path `--text` at 70%, others `--label` at 45%, suggested dashed `4 4`.
+5. **The open step** as a module (padding 20, width 380): eyebrow + close IconButton 26, title 18/500, tags (`ModelTag` for the chat's tool and the model), the text in a well (13/21, clamp 7), words + **Copy** (secondary 26), **Before you send it** and **Then** as hairline row lists with glyph leads (`larr`, `file`, `rarr`) and text links on the right.
+6. Footer line: rows caption and the open-step line, 12 `--text2`. **What you need** as in UI-P90.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/build-map"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P91: build page Map in the refined look`
+
+---
+
+## UI-P92 — Page: Activity
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Activity drawn as `refined/<theme>/activity.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/activity/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+1. **Layout.** Breadcrumb, then a wrapping row, gap 48: the list `flex: 999 1 560px`, gap 32; the aside `flex: 1 1 300px`, max 340, `padding-left: 32px`, `--hairline` left edge, gap 24. The header's bell is current (UI-P87).
+2. **Head.** Page title "Activity", under it the unread line 12 `--text2` with the lamp bar after it; **Mark all read** (secondary 28, **no icon**) at the right.
+3. **Groups.** Day as an eyebrow over a hairline; rows grid `8px 28px minmax(0,1fr) 48px 32px`, gap 12, min-height 56, `--hairline` between: an unread lamp bar 8×3 (empty space when read); avatar 28 with the kind badge (8×8, radius 2, its tone, a 2px `--surface` ring) at bottom-right; the line 13 (`--text` unread, `--text2` read) with the build title as a 500 `--text` link; the detail under it 12.5 `--text2`; a 48×32 framed thumbnail when the row names a build; time 11.5 `--label` tnum.
+4. **Aside.** People this week (`Figure` 41 + its line) beside Listening (lamp bar + "live" 13/500); **Runs of your builds** with its subtitle and the chart (UI-P85): the line in `--evidence`, the flat area, three dashed `--hairline` grid lines, the rebuild marker as a dashed `--lit-ink` line with an 8px ring dot (1.5px `--lit-ink`, `--surface` fill). **Show me**: rows 32 high, an 8×8 radius-2 square in the kind's tone, the kind, the count in `--label` tnum.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/activity"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P92: Activity in the refined look`
+
+---
+
+## UI-P93 — Page: Composer — List, Sources and Details
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Composer — List, Sources and Details drawn as `refined/<theme>/composer-list.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/compose/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+Fork `SandboxView.tsx` and, within it, `SourcesPanel.tsx`, `BuildList.tsx` and `DetailsPanel.tsx` (each as `Refined<X>.tsx` with the same props).
+1. **Title row** under a hairline (padding-bottom 20): the draft's title (20/500), the status line 12.5 `--text2` with the missing-part link underlined; `Segmented` List / Map with the "Map is now available" line 11.5 `--label` under it; **Card**, **Preview** (secondary 30) and **Publish** (primary 30) — the view's one primary. Header New build is secondary (UI-P87).
+2. **Columns**, gap 24: Sources (`flex: 1 1 216px`, max 232, `padding-right: 24px`, `--hairline` right edge, gap 20), Build (`flex: 999 1 480px`, gap 12), Details module (`flex: 1 1 280px`, max 300).
+3. **Sources.** Title 13.5/500 + in-build count; three groups, each with a 6px square (hollow for Not in a build) + label 12/500 `--text2` + count; session rows (`chev` glyph, **`<ModelMark tool size={20}>`**, name 13/500, meta 11.5 `--label`) separated by `--hairline`; file rows with the `file` glyph; not-in-a-build rows with the 20px mark, name 13 `--text2`, meta, and the boxed 26 plus IconButton ("Add session"); the drop zone 56 high, 1px dashed `--line`, radius 6, 12.5 `--text2`.
+4. **Build.** Head (13.5/500 + summary 12 `--text2` + **Add** `MenuButton`), the hint 12 `--label`; session group heads with the 20px mark (as UI-P90); prompt modules (padding 16, radius 8; selected = selected recipe): number tile 24, title 14/500 (`--text2` when untitled), ghost 26 `more` IconButton ("Prompt n options"), text 13.5/22 clamped to 2 lines and indented 36, then a row indented 36: "Uses" 11.5 `--label`, reference chips (22 high, tile fill and edge, 11.5), the suggestion chip (28 high, 1px dashed `--line`, radius 6, with **Accept** as a 20-high control and **Dismiss** as text), spacer, **Show full prompt** (underlined, 12/500), words 11.5 `--label`. The agent module: number tile, "Agent · " + a 14px mark + model name 11.5 `--label`, its title 14/500, the run rule as a tag; inside, indented 36 with a `--hairline-module` left edge: the instruction tile (Geist Mono 10.5 number, "Instructions" 13/500 `--text2`, text 13/21) and **Add a prompt to this agent** (32 high, dashed `--line`, radius 6, text only); "Goes into" + an evidence `Pill`. The result module (as UI-P90). The add field: a module with padding 12, a 2-row textarea in the well recipe, then two `MenuButton`s (tool, model) and the boxed 28 `up` IconButton ("Add the prompt").
+5. **Details.** Module: "Details" 13.5/500; eyebrow "Prompt n"; the title 18/500 with the ghost `pencil` IconButton ("Rename"); a row with **`<ModelMark tool size={24}>`** and the two meta lines 12/18 `--text2`; the text in a well (13/21); **Read all of it** (secondary 26) + word count; **Uses** and **Goes into** as hairline lists (lead glyph `larr` / `rarr` in `--label`, title 12.5/500, meta 11.5 `--label`, ghost 24 `x` IconButton "Remove …"); **Add an input** as a 12.5/500 `--text2` text button with no icon.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/composer-list"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P93: composer List, Sources and Details in the refined look`
+
+---
+
+## UI-P94 — Page: Composer — Map, full prompt window and Card
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Composer — Map, full prompt window and Card drawn as `refined/<theme>/composer-map.html`, both themes, desktop; mobile keeps today's stacking order in the refined look.
+
+**Pattern.** For each view this prompt names (in `src/pages/site/compose/`), a fork `Refined<Name>.tsx` beside it, typed with the existing view's props (import the type, do not copy it). The page container and the dev page render the fork when `useLook()` is refined. Same data, handlers, copy, order of parts and accessible names as the current view; only the look changes. Model marks (`ModelMark`, `ModelTag`) go wherever the board shows a tile with an initial, without the tile.
+
+**Build.**
+Continues UI-P93's fork. Boards: `composer-map`, `prompt-window`, `composer-card`.
+1. **Sources rail** (Map view): a module 52 wide, padding `8px 0`, vertical toolbar as today (Show sources, Sessions with count, Files with count, Add a source), ghost 36–44-high buttons with glyphs (`panel`, `layers`, `file`, `plus`) and counts 10.5/500 tnum, `--hairline-module` dividers 28 wide.
+2. **Build module** (Map view): head as UI-P93; the legend row (24px solid and dashed `--text2` samples with "goes into n" and "suggested n" 12 `--text2`, then the key hint 12 `--label`); the map well; the footer line. `BuildMap` in maker mode with UI-P91's lane, box, wire and dim recipes plus the maker parts: input rows 20, state line 18 (10.5 `--label`), body 36 (11 `--text2`, 2 lines), foot 20; output squares draggable as today; the **result box loses its evidence border** — its head shows "Result" in `--evidence` 10.5/500 before the title — update the "result with the evidence border" assertion in `BuildMap.test.tsx` to check the label instead, and say so. The agent box: head "Agent n" 10.5/500 `--label`, title 13.5/500, contents and run rule as today.
+3. **Full prompt window** (`FullPromptWindow.tsx`, used by composer and build page): the window recipe, 760 wide, radius 12, padding `20px 24px`, gap 16, over `--scrim`. Eyebrow heading "Prompt n of m · full prompt" with the boxed 28 close; the title field (well, 44 high, input 16/500, a `pencil` glyph in `--label`) and its hint 12 `--label`; the model as a `ModelTag`; the text area (well, 320 high, padding 16, 14.5/25; focused edge `--selected-edge`); words + **Copy prompt** (secondary 28, no icon); Uses chips; a footer under `--hairline-module`: ghost **← previous** and **next →** buttons, the hint centred 12 `--label`, **Done** (primary 30).
+4. **Card sheet** (`SandboxCard.tsx`): a side sheet 472 wide, inset 6 from the top, right and bottom, radius 12, window recipe with `--sheet-shadow`, over `--scrim`. Header 56 high under `--hairline-module`: "Card" 15/500 + boxed 30 close. Body padding 24, gap 24: Cover (title 13.5/500, subtitle 12 `--text2`, the drop zone 216 high, tile fill with the dot grid, 1px dashed `--line`, radius 8, an `image` glyph 20 `--text2`, the drop line 13/500 and the underlined browse link 12 `--text2`); the fields with labels 12.5/500, inputs in the well recipe 36 high (summary textarea 80 high, counter 11.5 `--label` tnum, hint 12 `--label`); **Made with**: `ModelTag`s with the tool and model; **More details (optional)** as a disclosure with a `chev` glyph, "(optional)" in `--text2` 400.
+
+**Compare.** `npm run audit:design -- --grep "refined/.*/composer-map"` within 0.06 in both themes. Expected differences: sample text, model marks (real logo without tile vs the board's initial in a tile), em dashes until UI-P96; prompt-window and composer-card compare with `--grep "refined/.*/(prompt-window|composer-card)"` too.
+
+**Done when.** Both themes compare as above; at 390 the page uses the refined tokens, rows and controls with no horizontal scroll; the switch-off audit is unchanged; the page's existing tests pass and a `Refined*.test.tsx` per fork renders it with the dev fixture.
+
+**Commit.** `UI-P94: composer Map, full prompt window and Card sheet in the refined look`
+
+---
+
+## UI-P95 — Pages without a refined board
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Every other page reads as the same system under the refined look, without new layouts.
+
+**Pages.** Bounties, solve and solvers; Profile; Rebuild and lineage; Library; Drafts; Import and Connect; Sign in, Join, reset and verify; any `/dev`-reachable page the frame renders.
+
+**Build.** Do **not** fork these views. The tokens, type, radius and primitives already re-skin them; fix only what still breaks the series rules under refined, branching inline on `useLook()` where a value must differ:
+1. Orbs, arcs, the sign-in edge glow, tagline chips and any glass that a page draws itself → module or tile recipe.
+2. Serif headings → the page title or hero role.
+3. Any second filled button in a view → secondary.
+4. Icons inside labelled buttons → removed under refined.
+5. Lists → hairline rows (UI-P85 `Row`); cards → module.
+6. Every place a model, lab or tool is named in text (rebuild credits, profile "made with", import session lists, connector tool lists) → `ModelMark` before the name at the size UI-P83 gives for that context (14 in tags, 16 in map lanes, 18 in lists, 20 in rows and group heads, 24 in headers, 28 in tool lists).
+7. Spacing on the series scale.
+
+**Done when.** Each page renders at 1440 and 390 under refined in both themes with no layout break (screenshot each into the report); `e2e/tier1` passes with `look=refined` forced through the dev override where the test can set it; the switch-off audit is unchanged.
+
+**Commit.** `UI-P95: the remaining pages under the refined look`
+
+---
+
+## UI-P96 — The trope sweep and the copy fixes
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Nothing on the trope list survives, and a test keeps it that way.
+
+**The trope list.** None of these may appear under the refined look:
+1. Purple-to-blue gradient. 2. Gradient text. 3. Emoji in headings. 4. Inter, or any font but Geist and Geist Mono. 5. Coloured-border cards (the only edges are hairlines, the neutral selected edge and dashed suggestions). 6. Glass, blur or translucency over content. 7. Low-contrast text (4.5:1 minimum). 8. Three icon boxes in a row. 9. A badge above the headline. 10. Lucide everywhere (glyphs, UI-P82). 11. Untouched shadcn defaults. 12. Fade-in on scroll. 13. Cursor-following light. 14. Buttons that fade on hover. 15. Spacing off the scale. 16. Em dashes in shown copy. 17. Buzzword copy. 18. Serif or italic accents. 19. Space Grotesk or Instrument Serif. 20. Grain over a gradient.
+
+**Build.**
+1. **Em dashes in shown copy.** These copy changes ship in **both** looks (they are copy, not look):
+   - page titles `"X — buildgallery"` → `"X · buildgallery"` (every `SeoHead` and `document.title`);
+   - joins inside a line → ` · ` — the visitors' book subtitle becomes "Builds, rebuilds, reproduction notes and asks · newest first" (`HomeView.tsx`), the repro-note line joins its quote with ` · ` (`homeModel.ts`), `composeModel.ts` "not saved · ";
+   - sentences → a full stop, words unchanged otherwise: "Please verify your email before signing in. Check your inbox.", "That email is already registered. Try signing in instead.", `Taken. Try "${suggestion}"`;
+   - a lone "—" meaning "no value" in a table cell → "–" (en dash) in `--label`;
+   - find the rest with `rg "—" src --glob "*.tsx" --glob "*.ts"` outside comments and tests, and list every change in the report. Update tests that assert the old strings.
+2. **`src/lib/theme/refinedTropes.test.ts`** reads every `Refined*.tsx` and the files UI-P84 to UI-P87 and UI-P95 changed, and fails on: `backdrop-filter`, `background-clip: text` / `WebkitBackgroundClip`, `fontStyle: "italic"`, a font name other than the `--font-*` tokens, `linear-gradient` outside the allowed list (framed work, map box, picture light, chart area), a hex or rgba outside the named artwork constants, `opacity` inside a hover handler, an em dash in a JSX text node or string literal, an emoji, a `gap`/`padding`/`margin` px value not on the series spacing scale.
+3. **One primary per view**: a test renders each refined view with its dev fixture and counts elements styled with `--action` as background: at most one.
+4. **No icon in a labelled button**: the same render asserts no `svg` inside a `button` or `a` that has text content, except `MenuButton`'s chevron and the disclosure chevron.
+5. Run `e2e/audit/contrast-sweep.spec.ts` and `theme-completeness.spec.ts` with `look=refined` on every refined dev page and fix what they find.
+
+**Done when.** The new tests pass; the contrast sweep is clean under refined; the report lists every copy change.
+
+**Commit.** `UI-P96: em dashes out of shown copy; the refined trope tests`
+
+---
+
+## UI-P97 — Every state, accessibility and the in-between widths
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** The refined views are complete, not just populated.
+
+**Build** (under refined):
+1. **States** for every refined view: loading = skeletons in `--well` at the content's size, no shimmer gradient; empty = one 13 `--text` line and one action (secondary unless the view has no other primary); error = one sentence and **Try again** (secondary). Reuse `Skeleton`, `EmptyState`, `ErrorState` with refined branches.
+2. **Focus.** Every focusable element shows a 2px `--focus-ring` outline at 2px offset under refined, including map boxes, rows that are links, segmented items and chips.
+3. **Keyboard.** The maps, the full prompt window (← → between prompts, Esc), the card sheet (focus trapped, Esc) and the dock behave as today; check each by keyboard and note it.
+4. **768–1279.** The refined surfaces wrap as their flex bases say; asides drop under the main column below 1024 and lose their left hairline (they take a top hairline instead); the gallery table scrolls inside its box; nothing scrolls the page sideways. Follow UI-P39's breakpoints.
+5. **390.** Inputs 16px; touch targets 44 (rows and icon buttons grow their hit area, not their drawing); the hero tagline uses the mobile hero size (32).
+6. **Reduced motion**: nothing in the refined look animates except the theme change, already guarded.
+
+**Done when.** `e2e/tier1` and the RC critique specs pass with `look=refined`; states render on every refined dev page via the existing `state=` dev queries; the report lists the keyboard checks.
+
+**Commit.** `UI-P97: refined states, focus, keyboard and in-between widths`
+
+---
+
+## UI-P98 — Turn on the refined look
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** Visitors see the refined look.
+
+**Build.**
+1. `REFINED_LOOK_ENABLED = true` in `src/lib/theme/look.ts`; update its header comment ("on since UI-P98; rollback is `false`").
+2. Preload `/fonts/Geist-Variable.woff2` in `index.html` (`as="font" type="font/woff2" crossorigin`).
+3. Run everything in `design/RULES.md` §4. In `npm run audit:design`, the current-look boards now open their dev pages with `look=current` (the dev override), so they still pass until UI-P99; the refined boards open with the switch's own value. Run `e2e/audit/performance.spec.ts`: Geist plus the 12 marks must not move LCP beyond the baseline by more than 5%.
+4. Update `design/HANDOFF.md` and `design/README.md`: the refined boards are the source of truth from now on.
+
+**Do not.** Delete anything; the current look stays one line away until UI-P99.
+
+**Done when.** Production build shows the refined look in both themes; all checks pass; the report says how to roll back.
+
+**Commit.** `UI-P98: turn on the refined look`
+
+---
+
+## UI-P99 — Retire the current look
+
+Follow `design/RULES.md`.
+
+**Series rules (UI-P77 to UI-P99).** These hold for every prompt in the series, after `design/RULES.md`.
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Source of truth.** `design/reference/refined/{dusk,noon}/<board>.html`, 1440 wide, values exact, no browser strip, no mobile boards: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·" (they ship in UI-P96).
+- **The switch.** Everything is behind `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` (UI-P78), off until UI-P98. `useLook()` returns `"refined" | "current"`; on `/dev/*`, `?look=refined` or `?look=current` decides. Refined token values live in `:root[data-theme="…"][data-look="refined"]`.
+- **Forks.** A page is forked, not edited: `Refined<Name>.tsx` beside the view, typed with the view's own props (imported, not copied); the page container and the dev page choose with `useLook()`. Current views go only in UI-P99. Primitives keep their props and branch inside. Under the refined look only, this series amends `design/RULES.md` §3: primitives and the frame may change padding, gap, height and radius to the values given here.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never under refined.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+
+**Goal.** One look in the code. Run this only after the refined look has been live long enough that nobody wants it back.
+
+**This is the only prompt in the series that deletes.**
+
+**Build.**
+1. Delete every `<X>View.tsx` that has a `Refined<X>View.tsx`, rename the refined file to `<X>View.tsx`, and remove the `useLook()` choice from each `<X>Page`.
+2. Remove the current-look branches from the primitives, `useLook()`, `look.ts`, the `data-look` attribute, and the dev override. The refined token values become the only values in the `noon` and `dusk` blocks; delete the tokens nothing reads any more (orbs, arcs, glass, backdrop, tagline chip, porthole, chrome) and their tests.
+3. Delete `GlassFilter`, `PageBackdrop`, `Arc`, the orbs, `OrbRing`, `backdropCanvas.ts`, `useReveal` if nothing uses it, the liquid-glass CSS class, and the Sentient, Figtree and DM Mono font files and `@font-face` rules. If Figtree or DM Mono come from an npm package, **propose** removing the package and stop for that part.
+4. The current-look reference boards move to `design/reference/archive/`; `index.json` lists only refined boards; the harness drops the `look` handling.
+5. Update `design/RULES.md` with a section on the refined system (the series rules at the top of each prompt in this series, and the values from UI-P79 to UI-P83), `design/HANDOFF.md`, and note in the report which skills (`buildgallery-theme`, `buildgallery-ui-overhaul`) now describe the old look and need rewriting.
+
+**Done when.** `rg "Sentient|Figtree|DM Mono|glass|Orb|useLook" src` finds nothing but comments explaining the history; everything in `design/RULES.md` §4 passes; bundle size is smaller than before UI-P98.
+
+**Commit.** `UI-P99: retire the current look`
+
+---
