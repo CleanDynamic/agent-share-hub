@@ -10,7 +10,7 @@
    1.2s. Inside an agent or a team the word is "Uses", never "Paste in". The
    words are CONCEPT §8's and are not reworded here. */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowLeft, Check, Copy, Download, Paperclip } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
@@ -27,7 +27,11 @@ import { useInteractive } from "@/lib/theme/interactive";
 import { tokenAlpha, t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { BeforeYouSend, hasBeforeYouSend } from "./BeforeYouSend";
 import type { BuildStepsView } from "./buildModel";
+
+/** The Map is loaded when a reader first chooses it, and not before (UI-P74). */
+const ReaderMap = lazy(() => import("./ReaderMap"));
 
 /** How long the step a chip or an address named stays ringed. */
 const RING_MS = 1200;
@@ -209,7 +213,7 @@ function StepText({ step, onRead, size = 15, alone = false }: { step: Step; onRe
   );
 }
 
-function ReadAll({ onRead }: { onRead: () => void }) {
+function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; label?: string }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -218,7 +222,7 @@ function ReadAll({ onRead }: { onRead: () => void }) {
       {...handlers}
       style={{ background: "none", border: 0, padding: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
     >
-      Read all of it
+      {label}
     </button>
   );
 }
@@ -276,6 +280,8 @@ interface Ctx {
   ringed: string | null;
   go: (id: string) => void;
   read: (id: string) => void;
+  /** "See the team in Map": the Map with that team opened. Absent on a phone, which has no Map. */
+  seeMap?: (id: string) => void;
 }
 
 function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
@@ -421,6 +427,12 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
         ))}
       </div>
+      {ctx.seeMap ? (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "6px 0 0 34px" }}>
+          <ReadAll label={`See the ${team ? "team" : "agent"} in Map`} onRead={() => ctx.seeMap?.(step.id)} />
+          <span style={mono(12)}>shows who passes work to whom</span>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -488,6 +500,7 @@ export function StepsList({ view, phone, announce }: { view: BuildStepsView; pho
   const [lens, setLens] = useState<"list" | "map">("list");
   const [ringed, setRinged] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [start, setStart] = useState<{ opened: string | null; selected: string | null } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -511,7 +524,31 @@ export function StepsList({ view, phone, announce }: { view: BuildStepsView; pho
 
   const raw = useMemo(() => steps.map((entry) => entry.step), [steps]);
   const names = useMemo(() => namesIn(steps), [steps]);
-  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen };
+  const seeMap = useCallback(
+    (id: string) => {
+      const inside = steps.find((entry) => entry.step.id === id)?.children.filter((child) => !child.step.id.endsWith(":instructions"));
+      setStart({ opened: id, selected: inside?.[0]?.step.id ?? id });
+      setLens("map");
+    },
+    [steps],
+  );
+  const toolOf = useMemo(() => {
+    const tools = new Map<string, string | null>();
+    let current: string | null = null;
+    for (const entry of steps) {
+      if (entry.chat?.kind === "new") current = entry.chat.tool;
+      if (entry.chat) tools.set(entry.step.id, current);
+    }
+    return (id: string) => tools.get(id) ?? null;
+  }, [steps]);
+  const flat = useMemo(() => {
+    const out = new Map<string, ReaderStep>();
+    const visit = (list: readonly ReaderStep[]) => list.forEach((entry) => (out.set(entry.step.id, entry), visit(entry.children)));
+    visit(steps);
+    return out;
+  }, [steps]);
+  const map = lens === "map" && !phone && view.mapAvailable;
+  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap: phone || !view.mapAvailable ? undefined : seeMap };
 
   const rows = steps.map((entry) => {
     const chat = entry.chat?.kind === "new" ? entry.chat : null;
@@ -533,7 +570,7 @@ export function StepsList({ view, phone, announce }: { view: BuildStepsView; pho
   return (
     <div data-testid="build-steps">
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "12px 0 0" }}>
-        {view.mapAvailable ? (
+        {view.mapAvailable && !phone ? (
           <Segmented<"list" | "map">
             label="How to look at the build"
             items={[
@@ -541,30 +578,42 @@ export function StepsList({ view, phone, announce }: { view: BuildStepsView; pho
               { value: "map", label: "Map" },
             ]}
             value={lens}
-            onChange={setLens}
+            onChange={(next) => {
+              if (next === "list") setStart(null);
+              setLens(next);
+            }}
             size={30}
             fontSize={12}
           />
         ) : null}
         <span style={mono(12)}>{view.counts}</span>
         {phone ? null : (
-          <span style={{ ...mono(11.5), marginLeft: "auto", textAlign: "right" }}>{headNote(steps)}</span>
+          <span style={{ ...mono(11.5), marginLeft: "auto", textAlign: "right" }}>{map ? "click a box to read it · Esc clears" : headNote(steps)}</span>
         )}
       </div>
-      {rows}
-      {results.length > 0 ? (
+      {map ? (
+        <Suspense fallback={<div role="status" style={{ ...mono(12), padding: "24px 0" }}>Drawing the map…</div>}>
+          <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
+        </Suspense>
+      ) : null}
+      {map ? null : rows}
+      {map || results.length === 0 ? null : (
         <>
           <Head>Result</Head>
           {results.map((result) => (
             <ResultCard key={result.id} result={result} ctx={ctx} />
           ))}
         </>
-      ) : null}
+      )}
       <FullPromptWindow
         steps={raw}
         openId={open}
         mode="reader"
         names={names}
+        renderBefore={(step) => {
+          const entry = flat.get(step.id);
+          return entry && hasBeforeYouSend(entry) ? <BeforeYouSend entry={entry} toolOf={toolOf} onSelect={setOpen} /> : null;
+        }}
         onClose={() => setOpen(null)}
         onNavigate={setOpen}
       />

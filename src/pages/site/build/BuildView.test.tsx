@@ -424,7 +424,7 @@ describe("BuildView with the steps drawn (UI-P73)", () => {
     mountSteps("list", "mobile");
     expect(screen.getByRole("tablist", { name: "Sections of this build" })).toBeTruthy();
     expect(screen.getAllByTestId("step-card")).toHaveLength(5);
-    expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
     const steps = screen.getByTestId("build-steps");
     const need = screen.getByTestId("build-need");
     expect(steps.compareDocumentPosition(need) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

@@ -89,7 +89,7 @@ import {
 } from "@/lib/build";
 import { BUILD_PAGE_STEPS_ENABLED } from "@/lib/build/flags";
 import { toMarkdown, toPortable } from "@/lib/build/portable";
-import { buildCounts, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
+import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { isBuildHidden } from "@/lib/moderation";
@@ -482,6 +482,7 @@ export function BuildPage() {
       results: readerResults(tree, files),
       need: whatYouNeed(steps, tree, making, files),
       counts: buildCounts(steps),
+      map: readerMap(tree, making, files),
       mapAvailable: making.sessions.length >= 2 || steps.some((entry) => entry.step.kind === "agent" || entry.step.kind === "team"),
     };
   }, [build, tree, media.data]);

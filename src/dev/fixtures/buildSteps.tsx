@@ -6,7 +6,7 @@
    its `builds.making`, put through the same functions the page uses
    (`readerSteps.ts`), so the dev page shows what a reader would be given. */
 
-import { buildCounts, readerResults, readerSteps, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
+import { buildCounts, readerMap, readerResults, readerSteps, whatYouNeed, type ReaderMedia } from "@/lib/build/readerSteps";
 import type { Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
@@ -152,6 +152,7 @@ export function buildStepsFixture(which: BuildStepsSample = "list"): BuildStepsV
     results: readerResults(tree, media),
     need: whatYouNeed(steps, tree, making, media),
     counts: buildCounts(steps),
+    map: readerMap(tree, making, media),
     mapAvailable: making.sessions.length >= 2 || steps.some((entry) => entry.step.kind === "agent" || entry.step.kind === "team"),
     onCopy: async () => true,
     resolveMedia: () => undefined,

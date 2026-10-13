@@ -32,7 +32,7 @@ import {
 } from "@/lib/build";
 import type { Making, MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
-import type { NeedGroup, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
+import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
 /* ── the tabs ── */
 
@@ -201,8 +201,10 @@ export interface BuildStepsView {
   need: readonly NeedGroup[];
   /** `buildCounts(steps)`. */
   counts: string;
-  /** CONCEPT §5: two sessions or an agent. The map itself is UI-P74. */
+  /** CONCEPT §5: two sessions or an agent. */
   mapAvailable: boolean;
+  /** What the read-only Map draws besides the steps (UI-P74). */
+  map: ReaderMapData;
   /** Puts a text on the clipboard. Resolves true when it landed. */
   onCopy: (text: string) => Promise<boolean>;
   resolveMedia: ResolveMedia;

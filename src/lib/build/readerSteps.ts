@@ -28,6 +28,7 @@ import {
 import type { Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
+import type { MapPiece, MapResult } from "./mapLayout";
 import type { BuildMedia, NodeTree } from "./types";
 
 /* ── shapes ── */
@@ -442,6 +443,30 @@ export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<stri
         from: from ? (numberOf.get(from.node_id) ?? null) : null,
       };
     });
+}
+
+/** What the read-only Map draws besides the steps (UI-P74): the sessions, the files, the tools and the results. */
+export interface ReaderMapData {
+  groups: SessionGroup[];
+  files: MapPiece[];
+  tools: MapPiece[];
+  results: MapResult[];
+}
+
+export function readerMap(tree: readonly NodeTree[], making: Making | null | undefined, media: ReadonlyMap<string, ReaderMedia> = new Map()): ReaderMapData {
+  const context = contextFor(tree, making, media);
+  const results = readerResults(tree, media).map((result) => {
+    const node = tree.find((candidate) => candidate.id === result.id);
+    const uses = node && isRecord(node.payload) && Array.isArray(node.payload.uses) ? node.payload.uses : [];
+    const from = uses.find((use): use is { kind: string; node_id: string } => isRecord(use) && use.kind === "output" && typeof use.node_id === "string");
+    return { id: result.id, title: result.title, fromId: from?.node_id ?? null };
+  });
+  return {
+    groups: context.groups,
+    files: [...context.files.values()].map((file) => ({ id: file.id, name: file.name })),
+    tools: [...context.tools.values()].map((tool) => ({ id: tool.id, name: tool.name })),
+    results,
+  };
 }
 
 /* ── What you need ── */
