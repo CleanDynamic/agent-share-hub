@@ -73,6 +73,12 @@
 - **[UI-P40](UI-P40.md)** — The performance pass
 - **[UI-P41](UI-P41.md)** — Retire the old frame
 
+## The sandbox composer and the build page steps (UI-P60 to UI-P76)
+
+These prompts live in `design/sandbox_prompts.py` (`python design/sandbox_prompts.py show P73`), not in this folder.
+
+
+
 ## Rules of the road
 
 - **In order.** Four must not be skipped or moved: `UI-P01` (the compare harness), `UI-P03` (the tokens), `UI-P16` (the frame skeleton) and **`UI-P36b`** (the switch — until it runs, everything from `UI-P16` on is built but invisible to visitors).
