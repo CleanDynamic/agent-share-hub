@@ -124,6 +124,8 @@ export default function KitPages() {
   const View = Object.prototype.hasOwnProperty.call(VIEWS, page) ? VIEWS[page] : undefined;
 
   if (!View) return <div data-design-ready="false">Not built yet</div>;
+  /* UI-P77: `?look=refined` asks for the refined view. None exists until UI-P78 and the page forks after it, so say so and the compare harness skips the board. */
+  if (new URLSearchParams(window.location.search).get("look") === "refined") return <div data-design-ready="false">No refined view yet</div>;
 
   return (
     <div
