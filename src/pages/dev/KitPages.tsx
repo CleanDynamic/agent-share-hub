@@ -52,6 +52,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   "gallery-dashboard": lazy(() => import("./GalleryDashboardDemo")),
   /* UI-P29 — the Build page's first screen. */
   build: lazy(() => import("./BuildDemo")),
+  /* UI-P73 — the build page with the steps drawn (no board image is compared). */
+  "build-steps": lazy(() => import("./BuildStepsDemo")),
   /* UI-P31 — Rebuild, and the lineage page built from the same pieces (no board). */
   rebuild: lazy(() => import("./RebuildDemo")),
   lineage: lazy(() => import("./LineageDemo")),

@@ -15,6 +15,7 @@ import { gapStatement } from "@/components/build/GapPanel";
 import { asPayload, eventLead, payloadNumber, payloadText } from "@/components/build/eventDisplay";
 import { creatorLabel } from "@/components/build/rebuildDisplay";
 import { collectRunSequence, runSequenceText } from "@/components/build/RunView";
+import type { ResolveMedia } from "@/components/build/MediaFigure";
 import type { BuildBounty } from "@/lib/bounty";
 import {
   LAYER_ATTRIBUTION,
@@ -29,7 +30,9 @@ import {
   type NodeType,
   type RebuildSummary,
 } from "@/lib/build";
+import type { Making, MakingSession } from "@/lib/build/making";
 import type { PortableCost } from "@/lib/build/portable";
+import type { NeedGroup, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
 /* ── the tabs ── */
 
@@ -52,6 +55,27 @@ export const BUILD_TABS: readonly { value: BuildTabKey; label: string }[] = [
 
 export function buildTabs(hasRebuilds: boolean): { value: BuildTabKey; label: string }[] {
   return BUILD_TABS.filter((tab) => tab.value !== "rebuilds" || hasRebuilds);
+}
+
+/**
+ * UI-P73 — the page's sections when the build page draws the steps (CONCEPT §6):
+ * The build, Watch it get built, Understand it, Where it broke, Rebuilds (only
+ * when there are some), at most five. The keys stay as they are, so `anatomy` is
+ * The build and every link that set `run` still lands somewhere (`landTab`).
+ */
+export function stepTabs(hasRebuilds: boolean): { value: BuildTabKey; label: string }[] {
+  return [
+    { value: "anatomy", label: "The build" },
+    { value: "watch", label: "Watch it get built" },
+    { value: "understand", label: "Understand it" },
+    { value: "broke", label: "Where it broke" },
+    ...(hasRebuilds ? [{ value: "rebuilds" as const, label: "Rebuilds" }] : []),
+  ];
+}
+
+/** Where a tab lands: with the steps drawn, Run it yourself is The build. */
+export function landTab(tab: BuildTabKey, stepsOn: boolean): BuildTabKey {
+  return stepsOn && tab === "run" ? "anatomy" : tab;
 }
 
 /** The layer a tab presets the Run / Understand switch to, or null for the tabs that have none. */
@@ -164,6 +188,38 @@ export interface BuildViewerView {
   content: ReactNode;
   /** Copies the selected part's content. Resolves true when it landed. */
   onCopy: () => Promise<boolean>;
+}
+
+/**
+ * UI-P73 — what the build page needs to draw the steps (`readerSteps.ts`). Absent,
+ * the page is the one it always was; present, The build and What you need take
+ * the place of the anatomy, the part viewer and the timeline.
+ */
+export interface BuildStepsView {
+  steps: readonly ReaderStep[];
+  results: readonly ReaderResult[];
+  need: readonly NeedGroup[];
+  /** `buildCounts(steps)`. */
+  counts: string;
+  /** CONCEPT §5: two sessions or an agent. The map itself is UI-P74. */
+  mapAvailable: boolean;
+  /** Puts a text on the clipboard. Resolves true when it landed. */
+  onCopy: (text: string) => Promise<boolean>;
+  resolveMedia: ResolveMedia;
+  /** An "Other parts" row, opened as the page's own body for that part. */
+  otherBody: (id: string) => ReactNode;
+  /** The part a `#node-` address named: a step to scroll to and ring, or a row in What you need. `n` changes on every visit. */
+  focus: { id: string; n: number } | null;
+}
+
+/** builds.making is jsonb the maker can write: keep only what has the shape. */
+export function asMaking(value: unknown): Making {
+  const record = value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  const sessions = Array.isArray(record.sessions)
+    ? record.sessions.filter((entry): entry is MakingSession => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
+    : [];
+  const excluded = Array.isArray(record.excluded_models) ? record.excluded_models.filter((entry): entry is string => typeof entry === "string") : [];
+  return { sessions, excluded_models: excluded };
 }
 
 export interface BuildTimelineView {

@@ -116,6 +116,8 @@ export interface NeedRow {
   detail: string;
   /** A file's download. */
   download?: string | null;
+  /** An "Other parts" row's node, so the page can open it. */
+  id?: string;
 }
 
 export type NeedKey = "tools" | "files" | "runs" | "time" | "other";
@@ -565,7 +567,7 @@ export function whatYouNeed(
   const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE]);
   const other: NeedRow[] = tree
     .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type))
-    .map((node) => ({ title: (node.title ?? "").trim() || node.type, detail: node.type }));
+    .map((node) => ({ id: node.id, title: (node.title ?? "").trim() || node.type, detail: node.type }));
   if (other.length > 0) groups.push({ key: "other", label: "Other parts", rows: other });
 
   return groups;

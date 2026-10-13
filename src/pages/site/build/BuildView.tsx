@@ -47,6 +47,7 @@ import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { Timeline } from "@/components/brand/Timeline";
 import { WallLabel } from "@/components/brand/WallLabel";
 import { ScrollRow } from "@/components/shell/ScrollRow";
+import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { sideTrack, useIsPhone, useTierFit, useWidthTier, type WidthTier } from "@/components/shell/useMinWidth";
 import { categoryColour } from "@/lib/theme/category";
@@ -57,6 +58,7 @@ import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
+import { NeedPanel, StepsList } from "./BuildSteps";
 import {
   anatomySubtitle,
   ranIt,
@@ -67,6 +69,7 @@ import {
   type BuildCreditView,
   type BuildHeroView,
   type BuildProofView,
+  type BuildStepsView,
   type BuildTabKey,
   type BuildTimelineView,
   type BuildViewerView,
@@ -87,6 +90,12 @@ export interface BuildViewProps {
   anatomy: BuildAnatomyView;
   viewer: BuildViewerView;
   timeline: BuildTimelineView;
+  /**
+   * UI-P73 — the steps. Given, the second row is The build and What you need,
+   * and the anatomy, the part viewer and the timeline are not drawn. Absent,
+   * the page is exactly as it was.
+   */
+  steps?: BuildStepsView;
 }
 
 /** The first row's height on the desktop board. */
@@ -185,10 +194,10 @@ function CreditText({ credit }: { credit: BuildCreditView }) {
   if (credit.rebuiltFrom) {
     const by = credit.rebuiltFrom.handle ? ` by @${credit.rebuiltFrom.handle}` : "";
     return (
-      <>
+        <>
         Rebuilt from <i style={{ color: t.text }}>{credit.rebuiltFrom.title}</i>
         {`${by}${madeBy ? ` · ${madeBy}` : ""}`}
-      </>
+        </>
     );
   }
   return madeBy ? <>{madeBy}</> : null;
@@ -552,7 +561,17 @@ function PartRow({
   );
 }
 
-function AnatomyDialog({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: ReactNode }) {
+function AnatomyDialog({
+  open,
+  onOpenChange,
+  children,
+  title = "Anatomy",
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+  title?: string;
+}) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -580,7 +599,7 @@ function AnatomyDialog({ open, onOpenChange, children }: { open: boolean; onOpen
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, marginBottom: 10 }}>
-            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>Anatomy</Dialog.Title>
+            <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={34} />
             </Dialog.Close>
@@ -725,22 +744,63 @@ function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineVie
   );
 }
 
+/* ── UI-P73: The build and What you need ── */
+
+const BUILD_PANEL = "build-tabpanel";
+
+/** The tab strip, then the body: the steps on The build, and the tab's own body on every other. */
+function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildViewerView; steps: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
+  const onSteps = viewer.tab === "anatomy";
+  return (
+    <Panel padding={phone ? "12px 12px" : "14px 16px"}>
+      <div data-testid="build-steps-panel">
+        {phone ? null : (
+          <UnderlineTabs
+            label="Sections of this build"
+            fontSize={13}
+            tabs={viewer.tabs.map((tab) => ({ ...tab, id: `build-tab-${tab.value}`, controls: BUILD_PANEL }))}
+            value={viewer.tab}
+            onChange={viewer.onTabChange}
+          />
+        )}
+        <div role="tabpanel" id={BUILD_PANEL} aria-labelledby={`build-tab-${viewer.tab}`} style={{ paddingTop: phone || !onSteps ? 12 : 0 }}>
+          {onSteps ? <StepsList view={steps} phone={phone} announce={announce} /> : viewer.content}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/** What you need, with the dialog an "Other parts" row opens its own body in. */
+function StepsNeed({ steps }: { steps: BuildStepsView }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const row = open ? steps.need.flatMap((group) => group.rows).find((candidate) => candidate.id === open) : undefined;
+  return (
+    <>
+      <NeedPanel view={steps} onOpenOther={setOpen} />
+      <AnatomyDialog open={Boolean(open)} onOpenChange={(next) => !next && setOpen(null)} title={row?.title ?? "Part"}>
+        {open ? steps.otherBody(open) : null}
+      </AnatomyDialog>
+    </>
+  );
+}
+
 /* ── desktop ── */
 
 const selectedPart = (anatomy: BuildAnatomyView): PartRowView | null =>
   anatomy.parts.find((part) => part.id === anatomy.selectedId) ?? anatomy.parts[0] ?? null;
 
 function DesktopBuild(props: BuildViewProps) {
-  const { fit = "content", now, hero, actions, proof, anatomy, viewer, timeline } = props;
+  const { fit = "content", now, hero, actions, proof, anatomy, viewer, timeline, steps } = props;
   const tier = useWidthTier();
-  const board = fit === "board" && tier === "full";
+  const board = fit === "board" && tier === "full" && !steps;
   const { announce, region } = useAnnouncer();
 
   return (
     <div
       data-testid="build-view"
       data-viewport="desktop"
-      style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: steps ? 12 : 9, lineHeight: "normal", ...(steps ? null : boardHeight(fit)) }}
     >
       <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
@@ -750,17 +810,31 @@ function DesktopBuild(props: BuildViewProps) {
           <ProofPanel proof={proof} phone={false} now={now} />
         </div>
       </div>
-      <div style={bottomRow(tier)}>
-        <div style={{ minHeight: 0 }}>
-          <AnatomyPanel anatomy={anatomy} phone={false} onSelect={anatomy.onSelect} />
+      {steps ? (
+        <div
+          data-testid="build-second-row"
+          style={{ display: "grid", gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(320)}`, gap: 12, alignItems: "start" }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <StepsNeed steps={steps} />
+          </div>
         </div>
-        <div style={{ minHeight: 0, minWidth: 0 }}>
-          <Viewer viewer={viewer} part={selectedPart(anatomy)} phone={false} announce={announce} />
+      ) : (
+        <div style={bottomRow(tier)}>
+          <div style={{ minHeight: 0 }}>
+            <AnatomyPanel anatomy={anatomy} phone={false} onSelect={anatomy.onSelect} />
+          </div>
+          <div style={{ minHeight: 0, minWidth: 0 }}>
+            <Viewer viewer={viewer} part={selectedPart(anatomy)} phone={false} announce={announce} />
+          </div>
+          <div style={{ minHeight: 0, ...dropped(tier) }}>
+            <TimelinePanel timeline={timeline} phone={false} onPlay={timeline.onPlay} />
+          </div>
         </div>
-        <div style={{ minHeight: 0, ...dropped(tier) }}>
-          <TimelinePanel timeline={timeline} phone={false} onPlay={timeline.onPlay} />
-        </div>
-      </div>
+      )}
       {region}
     </div>
   );
@@ -769,7 +843,7 @@ function DesktopBuild(props: BuildViewProps) {
 /* ── phone ── */
 
 function PhoneBuild(props: BuildViewProps) {
-  const { now, hero, actions, proof, anatomy, viewer, timeline } = props;
+  const { now, hero, actions, proof, anatomy, viewer, timeline, steps } = props;
   const { announce, region } = useAnnouncer();
   const viewerRef = useRef<HTMLDivElement>(null);
 
@@ -790,31 +864,41 @@ function PhoneBuild(props: BuildViewProps) {
             tab={{ id: `build-tab-${tab.value}`, controls: "build-tabpanel" }}
             onClick={() => {
               viewer.onTabChange(tab.value);
-              reveal();
+              if (!steps) reveal();
             }}
           />
         ))}
       </ScrollRow>
-      <AnatomyPanel
-        anatomy={anatomy}
-        phone
-        onSelect={(id) => {
-          anatomy.onSelect(id);
-          reveal();
-        }}
-      />
-      <div ref={viewerRef} role="tabpanel" id="build-tabpanel" aria-labelledby={`build-tab-${viewer.tab}`} style={{ scrollMarginTop: 72 }}>
-        <Viewer viewer={viewer} part={selectedPart(anatomy)} phone announce={announce} />
-      </div>
-      <TimelinePanel
-        timeline={timeline}
-        phone
-        onPlay={() => {
-          timeline.onPlay();
-          viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" });
-        }}
-      />
-      {region}
+      {steps ? (
+        <>
+          <BuildPanel viewer={viewer} steps={steps} phone announce={announce} />
+          <StepsNeed steps={steps} />
+          {region}
+        </>
+      ) : (
+      <>
+        <AnatomyPanel
+          anatomy={anatomy}
+          phone
+          onSelect={(id) => {
+            anatomy.onSelect(id);
+            reveal();
+          }}
+        />
+        <div ref={viewerRef} role="tabpanel" id="build-tabpanel" aria-labelledby={`build-tab-${viewer.tab}`} style={{ scrollMarginTop: 72 }}>
+          <Viewer viewer={viewer} part={selectedPart(anatomy)} phone announce={announce} />
+        </div>
+        <TimelinePanel
+          timeline={timeline}
+          phone
+          onPlay={() => {
+            timeline.onPlay();
+            viewerRef.current?.scrollIntoView?.({ behavior: scrollBehavior(), block: "start" });
+          }}
+        />
+        {region}
+      </>
+      )}
     </div>
   );
 }
