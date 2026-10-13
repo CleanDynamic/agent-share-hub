@@ -934,8 +934,42 @@ function ProofSkeleton({ phone }: { phone: boolean }) {
   );
 }
 
+/** UI-P73: the steps' shape before the record arrives, at their final size: a tab strip, three cards, and What you need. */
+function StepsSkeleton({ phone, tier }: { phone: boolean; tier: WidthTier }) {
+  const cards = (
+    <Panel padding={phone ? "12px 12px" : "14px 16px"}>
+      <PanelHead headingLevel={2} title="The build" subtitle={"\u00a0"} />
+      <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 8 }}>
+        <Skeleton height={112} radius={14} />
+        <Skeleton height={136} radius={14} />
+        <Skeleton height={112} radius={14} />
+      </div>
+    </Panel>
+  );
+  const need = (
+    <Panel padding="16px 16px">
+      <PanelHead headingLevel={2} title="What you need" subtitle="to repeat this build" titleSize={16} />
+      <div style={{ marginTop: 9 }}>{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} height={44} radius={r.control} style={i ? { marginTop: 6 } : undefined} />)}</div>
+    </Panel>
+  );
+  if (phone) {
+    return (
+      <>
+        {cards}
+        {need}
+      </>
+    );
+  }
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(320)}`, gap: 12, alignItems: "start" }}>
+      {cards}
+      {need}
+    </div>
+  );
+}
+
 /** The first screen's shape before the record arrives: the panels, their heads and padding are the real ones; only what is inside them is a bone. */
-export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
+export function BuildViewSkeleton({ fit = "content", steps = false }: { fit?: PageFit; steps?: boolean }) {
   const phone = useIsPhone();
   const tier = useWidthTier();
   const rows = (height: number, count: number, gap: number) =>
@@ -947,27 +981,28 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
         <Skeleton height={30} radius={r.media} />
-        <Panel surface="glass" padding="14px 10px">
+        {steps ? <StepsSkeleton phone tier={tier} /> : null}
+        {steps ? null : <Panel surface="glass" padding="14px 10px">
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 6 }}>{rows(46, MOCK_ROWS, 2)}</div>
           {/* "Show n more parts" */}
           <Skeleton width={120} height={13} style={{ margin: "10px 0 0 7px" }} />
-        </Panel>
-        <Skeleton height={317} radius={r.panel} />
-        <Panel surface="glass" padding="14px 16px">
+        </Panel>}
+        {steps ? null : <Skeleton height={317} radius={r.panel} />}
+        {steps ? null : <Panel surface="glass" padding="14px 16px">
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
           <div style={{ marginTop: 9 }}>{rows(43, 4, 0)}</div>
-        </Panel>
+        </Panel>}
       </LoadingRegion>
     );
   }
-  const board = fit === "board" && tier === "full";
+  const board = fit === "board" && tier === "full" && !steps;
   return (
     <LoadingRegion
       what="the build"
       announce
       data-testid="build-loading"
-      style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: steps ? 12 : 9, lineHeight: "normal", ...(steps ? null : boardHeight(fit)) }}
     >
       <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
@@ -977,7 +1012,8 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
           <ProofSkeleton phone={false} />
         </div>
       </div>
-      <div style={bottomRow(tier)}>
+      {steps ? <StepsSkeleton phone={false} tier={tier} /> : null}
+      {steps ? null : <div style={bottomRow(tier)}>
         <Panel surface="glass" padding="14px 12px" style={{ height: "100%" }}>
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 6 }}>{rows(40, MOCK_ROWS, 2)}</div>
@@ -987,7 +1023,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
           <div style={{ marginTop: 9 }}>{rows(41, 5, 0)}</div>
         </Panel>
-      </div>
+      </div>}
     </LoadingRegion>
   );
 }

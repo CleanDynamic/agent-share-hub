@@ -677,7 +677,7 @@ export function BuildPage() {
 
   /* ── the states ── */
 
-  if (recordQuery.isPending && Boolean(slug)) return <BuildViewSkeleton />;
+  if (recordQuery.isPending && Boolean(slug)) return <BuildViewSkeleton steps={BUILD_PAGE_STEPS_ENABLED} />;
 
   if (recordQuery.isError) return <BuildViewFailed onRetry={() => void recordQuery.refetch()} error={recordQuery.error} />;
 
