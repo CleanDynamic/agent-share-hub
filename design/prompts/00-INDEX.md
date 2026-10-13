@@ -73,6 +73,47 @@
 - **[UI-P40](UI-P40.md)** — The performance pass
 - **[UI-P41](UI-P41.md)** — Retire the old frame
 
+UI-P77 to UI-P99 re-skin the site in the refined look (`design/refined_prompts.py`). Everything is built behind `REFINED_LOOK_ENABLED`; nothing changes for visitors until UI-P98. UI-P99 is the only prompt that deletes, and it waits until the refined look has proved itself.
+
+### Refined wave 1 — foundation
+
+- **[UI-P77](UI-P77.md)** — Put the refined boards in the repo
+- **[UI-P78](UI-P78.md)** — The look switch
+- **[UI-P79](UI-P79.md)** — Refined colour tokens
+- **[UI-P80](UI-P80.md)** — Geist and Geist Mono
+- **[UI-P81](UI-P81.md)** — Radius, space, elevation — and no glass, no backdrop, no reveal
+- **[UI-P82](UI-P82.md)** — The glyph set
+- **[UI-P83](UI-P83.md)** — Model marks with Lobe Icons, background-less
+
+### Refined wave 2 — primitives
+
+- **[UI-P84](UI-P84.md)** — Controls under the refined look
+- **[UI-P85](UI-P85.md)** — Surfaces, rows and data marks
+- **[UI-P86](UI-P86.md)** — Framed works, cover fallback and streak days
+
+### Refined wave 3 — the frame
+
+- **[UI-P87](UI-P87.md)** — The frame
+
+### Refined wave 4 — pages
+
+- **[UI-P88](UI-P88.md)** — Page: Home
+- **[UI-P89](UI-P89.md)** — Page: Gallery
+- **[UI-P90](UI-P90.md)** — Page: Build page — first screen and The build
+- **[UI-P91](UI-P91.md)** — Page: Build page — the Map
+- **[UI-P92](UI-P92.md)** — Page: Activity
+- **[UI-P93](UI-P93.md)** — Page: Composer — List, Sources and Details
+- **[UI-P94](UI-P94.md)** — Page: Composer — Map, full prompt window and Card
+- **[UI-P95](UI-P95.md)** — Pages without a refined board
+
+### Refined wave 5 — finish
+
+- **[UI-P96](UI-P96.md)** — The trope sweep and the copy fixes
+- **[UI-P97](UI-P97.md)** — Every state, accessibility and the in-between widths
+- **[UI-P98](UI-P98.md)** — Turn on the refined look
+- **[UI-P99](UI-P99.md)** — Retire the current look
+
+
 ## Rules of the road
 
 - **In order.** Four must not be skipped or moved: `UI-P01` (the compare harness), `UI-P03` (the tokens), `UI-P16` (the frame skeleton) and **`UI-P36b`** (the switch — until it runs, everything from `UI-P16` on is built but invisible to visitors).
