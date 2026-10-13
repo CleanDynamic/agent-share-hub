@@ -90,9 +90,9 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the seven Add items in order; Prompt, Session, File, Tool and Result are live so far (UI-P64 to UI-P66)", () => {
+  it("lists the seven Add items in order; all seven are live (UI-P64 to UI-P70)", () => {
     expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "file", "tool", "result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "result"]);
   });
 
   it("opens the Card from its button with the six sections' fields", () => {
@@ -113,5 +113,82 @@ describe("SandboxView on a phone", () => {
     expect(screen.getByRole("button", { name: "Details" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Details" })).toBeNull();
+  });
+});
+
+describe("the Build panel's head when an agent or a team is opened (UI-P69)", () => {
+  const trail = [{ id: "t3", title: "Copy team" }, { id: "t3b", title: "Writer" }];
+
+  it("reads 'Build › {title}', with Build a link back and a Back to build beside Add", () => {
+    const props = view({ lens: "map", trail: [trail[0]], onTrail: vi.fn() });
+    const head = screen.getByTestId("sandbox-trail");
+    expect(head.textContent).toBe("Build›Copy team");
+    expect(within(head).getByText("Copy team").getAttribute("aria-current")).toBe("page");
+    fireEvent.click(within(head).getByRole("button", { name: "Build" }));
+    expect(props.onTrail).toHaveBeenLastCalledWith(0);
+    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
+    expect(props.onTrail).toHaveBeenLastCalledWith(0);
+  });
+
+  it("reads 'Build › {team} › {agent}' one level further in, and Back goes up one level", () => {
+    const props = view({ lens: "map", trail, onTrail: vi.fn() });
+    expect(screen.getByTestId("sandbox-trail").textContent).toBe("Build›Copy team›Writer");
+    fireEvent.click(within(screen.getByTestId("sandbox-trail")).getByRole("button", { name: "Copy team" }));
+    expect(props.onTrail).toHaveBeenLastCalledWith(1);
+    fireEvent.click(screen.getByRole("button", { name: "Back to build" }));
+    expect(props.onTrail).toHaveBeenLastCalledWith(1);
+  });
+
+  it("is the plain 'Build' title with nothing opened, and in List even when something is", () => {
+    view({ lens: "map", trail: [] });
+    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Back to build" })).toBeNull();
+    cleanup();
+    view({ lens: "list", trail });
+    expect(screen.queryByTestId("sandbox-trail")).toBeNull();
+  });
+
+  it("opens the Add dialog from Add › Agent or team", async () => {
+    const onAddAgent = vi.fn();
+    view({ onAddAgent });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    const item = await screen.findByRole("menuitem", { name: /Agent or team/ });
+    expect(item.getAttribute("aria-disabled")).not.toBe("true");
+    fireEvent.click(item);
+    expect(onAddAgent).toHaveBeenCalled();
+  });
+
+  it("leaves Agent or team disabled when nothing opens the dialog", async () => {
+    view();
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    const item = await screen.findByRole("menuitem", { name: /Agent or team/ });
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+  });
+});
+
+describe("the Add menu holds exactly 7 items, all enabled (UI-P70)", () => {
+  it("enables every item once each has something to open", async () => {
+    view({
+      onAddFile: vi.fn(),
+      onAddTool: vi.fn(),
+      onAddResult: vi.fn(),
+      onAddPromptFocus: vi.fn(),
+      onAddAgent: vi.fn(),
+      onAddManual: vi.fn(),
+      onAddSession: vi.fn(),
+      addableSessions: [{ id: "x", label: "A chat", line: "today" }],
+    });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items).toHaveLength(7);
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(7).fill(null));
+  });
+
+  it("opens the manual step dialog from Add › Manual step", async () => {
+    const onAddManual = vi.fn();
+    view({ onAddManual });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
+    expect(onAddManual).toHaveBeenCalled();
   });
 });

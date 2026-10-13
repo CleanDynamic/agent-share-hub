@@ -20,6 +20,9 @@ import {
   addAgentPrompt,
   addManualStep,
   addTeam,
+  setInstructions,
+  setManualFields,
+  placeAfterMoves,
   addUse,
   buildSteps,
   dismissSuggestion,
@@ -106,7 +109,7 @@ describe("buildSteps", () => {
     ]);
   });
 
-  it("numbers a team's four agents n.1 to n.4 and goes no deeper", () => {
+  it("numbers a team's four agents n.1 to n.4; an agent's own prompts are held for when it is opened", () => {
     const agents = [1, 2, 3, 4].map((i) =>
       node({
         id: `ag${i}`,
@@ -124,7 +127,18 @@ describe("buildSteps", () => {
     expect(lead.number).toBe("1");
     expect(team).toMatchObject({ kind: "team", number: "2", defaultTitle: "Team 2" });
     expect(team.children.map((c) => c.number)).toEqual(["2.1", "2.2", "2.3", "2.4"]);
-    expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief", children: [] });
+    expect(team.children[0]).toMatchObject({ kind: "agent", text: "Agent 1 brief" });
+    expect(team.children[0].children.map((c) => [c.number, c.defaultTitle, c.text])).toEqual([
+      ["2.1.1", "Instructions", "Agent 1 brief"],
+      ["2.1.2", "Prompt 2.1.2", "hidden until opened"],
+    ]);
+  });
+
+  it("gives an agent in a team no children when it has no prompts of its own", () => {
+    const [team] = buildSteps([
+      node({ id: "tm", type: "team", position: 1, payload: {}, children: [node({ id: "ag", parent_id: "tm", position: 1, type: "agent_config", payload: { system_prompt: "Brief", model: "m" } })] }),
+    ]);
+    expect(team.children[0].children).toEqual([]);
   });
 
   it("trims a typed title and falls back to the default for a blank one", () => {
@@ -303,7 +317,7 @@ describe("adding", () => {
   it("refuses a team and a manual step while their node types are not live", async () => {
     for (const missing of [null, { key: "team", is_active: false }]) {
       getNodeType.mockResolvedValue(missing);
-      await expect(addTeam(BUILD, [], { name: "Crew" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
+      await expect(addTeam(BUILD, [], { name: "Crew", model: "claude-sonnet-5-5" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
       await expect(addManualStep(BUILD, [], { tool: "Figma", text: "Exported" })).rejects.toThrow("That needs the Deploy queue item from UI-P61.");
     }
     expect(upsertNode).not.toHaveBeenCalled();
@@ -312,16 +326,36 @@ describe("adding", () => {
   it("places an agent, a team and a manual step after the last top-level node", async () => {
     const tree = [node({ position: 4 })];
     await addAgent(BUILD, tree, { name: " Reviewer ", model: "claude-sonnet-5-5" });
-    await addTeam(BUILD, tree, { name: "" });
+    await addTeam(BUILD, tree, { name: "", model: "claude-sonnet-5-5" });
     await addManualStep(BUILD, tree, { tool: " Figma ", text: " Exported the frames " });
-    expect(upsertNode.mock.calls.map(([row]) => [row.type, row.position, row.parent_id, row.title])).toEqual([
+    expect(upsertNode.mock.calls.map(([row]) => [row.type, row.position, row.parent_id === null ? null : "child", row.title])).toEqual([
       ["agent_config", 5, null, "Reviewer"],
       ["team", 5, null, null],
+      ["agent_config", 1, "child", null],
       ["manual_step", 5, null, null],
     ]);
-    expect(upsertNode.mock.calls[2][0].payload).toEqual({ tool: "Figma", text: "Exported the frames" });
+    expect(upsertNode.mock.calls[3][0].payload).toEqual({ tool: "Figma", text: "Exported the frames" });
     await expect(addManualStep(BUILD, tree, { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
     await expect(addManualStep(BUILD, tree, { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
+  });
+
+  it("makes a team holding one agent, and puts an agent inside a team after its others", async () => {
+    upsertNode.mockImplementation(async (row: Record<string, unknown>) => ({ ...row, id: row.type === "team" ? "tm" : "new" }));
+    const made = await addTeam(BUILD, [], { name: "Crew", model: "claude-sonnet-5-5" });
+    expect(made.team.id).toBe("tm");
+    expect(upsertNode.mock.calls[1][0]).toMatchObject({ type: "agent_config", parent_id: "tm", position: 1, payload: { system_prompt: "", model: "claude-sonnet-5-5" } });
+    await expect(addTeam(BUILD, [], { name: "Crew", model: " " })).rejects.toThrow(/needs a model/);
+
+    const team = node({ id: "tm", type: "team", children: [node({ parent_id: "tm", position: 2 })] });
+    await addAgent(BUILD, [team], { model: "claude-sonnet-5-5", parentId: "tm" });
+    expect(upsertNode.mock.calls[2][0]).toMatchObject({ type: "agent_config", parent_id: "tm", position: 3 });
+  });
+
+  it("writes an agent's instructions as its system prompt, and only for an agent", async () => {
+    const agent = node({ id: "ag", type: "agent_config", payload: { system_prompt: "", model: "m" } }) as BuildNode;
+    await setInstructions(agent, "Be brief.");
+    expect(payloadWritten()).toEqual({ system_prompt: "Be brief.", model: "m" });
+    await expect(setInstructions(node({}) as BuildNode, "x")).rejects.toThrow(/Only an agent/);
   });
 
   it("places an agent's prompt one past its highest child, and refuses empty text or a non-agent", async () => {
@@ -344,5 +378,80 @@ describe("adding", () => {
     getNodeTree.mockResolvedValue([{ ...agent, children: [node({ parent_id: "ag", position: 1 })] }]);
     await addAgentPrompt(agent as BuildNode, [agent], "Next");
     expect(upsertNode.mock.calls.map(([row]) => row.position)).toEqual([1, 2]);
+  });
+});
+
+describe("a manual step (UI-P70)", () => {
+  const manual = (id: string, position: number, over: Partial<NodeTree> = {}) =>
+    node({ id, position, type: "manual_step", payload: { tool: "Figma", text: "Laid out the hero" }, ...over });
+
+  it("takes the next number between two prompts, and the prompts after it shift", () => {
+    const steps = buildSteps([node({ id: "p1", position: 1 }), node({ id: "p2", position: 2 }), node({ id: "p3", position: 3 })]);
+    expect(steps.map((step) => step.number)).toEqual(["1", "2", "3"]);
+    const after = buildSteps([node({ id: "p1", position: 1 }), node({ id: "p2", position: 2 }), manual("m", 3), node({ id: "p3", position: 4 })]);
+    expect(after.map((step) => [step.id, step.number, step.kind])).toEqual([
+      ["p1", "1", "prompt"],
+      ["p2", "2", "prompt"],
+      ["m", "3", "manual"],
+      ["p3", "4", "prompt"],
+    ]);
+    expect(after[2]).toMatchObject({ defaultTitle: "Manual step 3", title: null, tool: "Figma", text: "Laid out the hero", model: null, runs: null, mediaId: null });
+  });
+
+  it("does not number files, tools or results that sit between steps", () => {
+    const steps = buildSteps([node({ id: "p1", position: 1 }), node({ id: "f", position: 2, type: "document", payload: { title: "a.md" } }), manual("m", 3)]);
+    expect(steps.map((step) => step.number)).toEqual(["1", "2"]);
+  });
+
+  it("reads its picture", () => {
+    const [step] = buildSteps([manual("m", 1, { payload: { tool: "Figma", text: "x", media_id: "media-1" } })]);
+    expect(step.mediaId).toBe("media-1");
+  });
+
+  it("is added with its picture, and refuses a tool over 40 or a line over 140", async () => {
+    await addManualStep(BUILD, [], { tool: "Figma", text: "Laid out the hero", media_id: "media-1" });
+    expect(payloadWritten()).toEqual({ tool: "Figma", text: "Laid out the hero", media_id: "media-1" });
+    await expect(addManualStep(BUILD, [], { tool: "x".repeat(41), text: "ok" })).rejects.toThrow(/40/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "x".repeat(141) })).rejects.toThrow(/140/);
+    await expect(addManualStep(BUILD, [], { tool: " ", text: "ok" })).rejects.toThrow(/1 to 40/);
+    await expect(addManualStep(BUILD, [], { tool: "Figma", text: "  " })).rejects.toThrow(/1 to 140/);
+  });
+
+  it("changes its tool, line and picture within the limits, and takes the picture off with null", async () => {
+    const step = manual("m", 1, { payload: { tool: "Figma", text: "Old", media_id: "media-1" } }) as BuildNode;
+    await setManualFields(step, { tool: " Lovable ", text: " New line " });
+    expect(payloadWritten()).toEqual({ tool: "Lovable", text: "New line", media_id: "media-1" });
+    upsertNode.mockClear();
+    await setManualFields(step, { media_id: null });
+    expect(payloadWritten()).toEqual({ tool: "Figma", text: "Old" });
+    await expect(setManualFields(step, { tool: "x".repeat(41) })).rejects.toThrow(/40/);
+    await expect(setManualFields(step, { text: "x".repeat(141) })).rejects.toThrow(/140/);
+    await expect(setManualFields(step, { text: "" })).rejects.toThrow(/1 to 140/);
+    await expect(setManualFields(node({}) as BuildNode, { text: "x" })).rejects.toThrow(/not a manual step/);
+  });
+
+  describe("placing after a step", () => {
+    const tree = [node({ id: "p1", position: 1 }), node({ id: "f", position: 2, type: "document" }), node({ id: "p2", position: 3 }), node({ id: "p3", position: 4 }), manual("m", 5)];
+
+    it("hands the steps' own positions out again, so the file keeps its own", () => {
+      // After p1: p1 m p2 p3 over the slots 1, 3, 4, 5.
+      expect(placeAfterMoves(tree, "m", "p1")).toEqual([
+        { id: "m", parent_id: null, position: 3 },
+        { id: "p2", parent_id: null, position: 4 },
+        { id: "p3", parent_id: null, position: 5 },
+      ]);
+    });
+
+    it("is nothing when it is already there, and goes first for a null", () => {
+      expect(placeAfterMoves(tree, "m", "p3")).toEqual([]);
+      expect(placeAfterMoves(tree, "m", null)).toEqual([
+        { id: "m", parent_id: null, position: 1 },
+        { id: "p1", parent_id: null, position: 3 },
+        { id: "p2", parent_id: null, position: 4 },
+        { id: "p3", parent_id: null, position: 5 },
+      ]);
+      expect(placeAfterMoves(tree, "missing", "p1")).toEqual([]);
+      expect(placeAfterMoves(tree, "m", "missing")).toEqual([]);
+    });
   });
 });

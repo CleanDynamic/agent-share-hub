@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 import {
@@ -31,12 +32,21 @@ import {
   setPromptModel,
 } from "@/lib/build/composePrompts";
 import {
+  addAgent,
+  addAgentPrompt,
+  addManualStep,
   addResult,
+  addTeam,
   addTool,
   addUse,
   dismissSuggestion,
+  MANUAL_STEP_TYPE,
+  moveStep,
+  placeStepAfter,
   removeUse,
   setNodeFields,
+  setInstructions,
+  setManualFields,
   setRuns,
   setStepTitle,
   type Runs,
@@ -106,6 +116,20 @@ export interface ComposePrompts {
   removeInside: (id: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
+  /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
+  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string }) => Promise<string | null>;
+  /** UI-P69: add an agent inside a team. */
+  addAgentTo: (teamId: string, model: string) => Promise<string | null>;
+  /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
+  addPromptTo: (agentId: string, text: string) => Promise<boolean>;
+  /** UI-P69: an agent's instructions (its system prompt). */
+  setInstructions: (agentId: string, text: string) => void;
+  /** UI-P70: add a manual step, with its picture if given, straight after step `afterId` (the end when null). Resolves its id, or null if it failed. */
+  addManual: (input: { tool: string; text: string; file: File | null; afterId: string | null }) => Promise<string | null>;
+  /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
+  setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
+  /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
+  setManualPicture: (id: string, file: File) => Promise<boolean>;
 }
 
 export function useComposePrompts({
@@ -242,6 +266,14 @@ export function useComposePrompts({
       .run(async () => {
         const build = latest.current.buildId;
         if (!build) return;
+        // A manual step swaps with the step next to it, whatever that is.
+        if (findTop(nodes.current(), id)?.type === MANUAL_STEP_TYPE) {
+          for (const step of await moveStep(build, nodes.current(), id, direction)) {
+            const node = findTop(nodes.current(), step.id);
+            if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
+          }
+          return;
+        }
         const prompts = promptNodes(nodes.current());
         const index = prompts.findIndex((node) => node.id === id);
         if (index === -1) return;
@@ -412,6 +444,91 @@ export function useComposePrompts({
         return null;
       });
 
+  const addAgentOrTeam = ({ kind, name, model }: { kind: "agent" | "team"; name: string | null; model: string }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        if (kind === "agent") {
+          const created = await addAgent(build, nodes.current(), { name, model });
+          nodes.record(created.id, created);
+          return created.id;
+        }
+        const { team } = await addTeam(build, nodes.current(), { name, model });
+        nodes.record(team.id, team);
+        return team.id;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Teams need the Deploy queue item from UI-P61." : `Couldn't add that ${kind}. Try again.`)(cause);
+        return null;
+      });
+
+  const addAgentTo = (teamId: string, model: string) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        return (await addAgent(build, nodes.current(), { model, parentId: teamId })).id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that agent. Try again.")(cause);
+        return null;
+      });
+
+  const addPromptTo = (agentId: string, text: string) =>
+    nodes
+      .run(async () => {
+        const agent = findNode(nodes.current(), agentId);
+        if (!agent) return false;
+        await addAgentPrompt(rowOf(agent), nodes.current(), text);
+        return true;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that prompt. Try again.")(cause);
+        return false;
+      });
+
+  const setInstructionsOf = (agentId: string, text: string) =>
+    void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
+
+  const addManual = ({ tool, text, file, afterId }: { tool: string; text: string; file: File | null; afterId: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        let mediaId: string | undefined;
+        if (file) mediaId = (await uploadMedia({ buildId: build, file })).id;
+        // `addManualStep` places it last; then it moves straight after the selected step.
+        const created = await addManualStep(build, nodes.current(), { tool, text, media_id: mediaId });
+        nodes.record(created.id, created);
+        if (afterId) {
+          for (const step of await placeStepAfter(build, nodes.current(), created.id, afterId)) {
+            const node = findTop(nodes.current(), step.id);
+            if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
+          }
+        }
+        return created.id;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Manual steps need the Deploy queue item from UI-P61." : "Couldn't add that manual step. Try again.")(cause);
+        return null;
+      });
+
+  const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
+    void writeStep(id, "Couldn't save that. Try again.", (node) => setManualFields(node, fields));
+
+  const setManualPicture = (id: string, file: File) =>
+    nodes
+      .run(async () => {
+        if (mediaKindFor(file.type) !== "image" || file.size > MEDIA_MAX_BYTES) throw new Error("not a picture that can be added");
+        const build = await latest.current.ensureBuild();
+        const media = await uploadMedia({ buildId: build, file });
+        const node = findNode(nodes.current(), id);
+        if (node) nodes.record(node.id, await setManualFields(rowOf(node), { media_id: media.id }));
+        return true;
+      })
+      .catch((cause) => {
+        failed(`Couldn't add ${file.name}. Try again.`)(cause);
+        return false;
+      });
+
   const rows = useMemo<ComposePromptRow[]>(() => {
     const saved = promptNodes(nodes.tree)
       .map((node) => ({ node, key: aliasOf.current.get(node.id) ?? node.id }))
@@ -423,5 +540,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
 }

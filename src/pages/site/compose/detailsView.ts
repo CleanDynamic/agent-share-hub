@@ -31,7 +31,7 @@ import {
   type ChecklistRow,
   type NamedPiece,
 } from "./detailsModel";
-import type { AgentView, DetailsView, FileView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import type { AgentView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
 export interface MediaFacts {
@@ -106,6 +106,29 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   };
 }
 
+/** "Team 3 · Copy team" for the team an agent sits in; null for anything at the top level. */
+function parentLine(id: string, steps: readonly Step[]): string | null {
+  const team = steps.find((candidate) => candidate.kind === "team" && candidate.children.some((child) => child.id === id));
+  return team ? `Team ${team.number} · ${stepTitle(team)}` : null;
+}
+
+function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): ManualView {
+  const facts = step.mediaId ? ctx.media(step.mediaId) : undefined;
+  return {
+    kind: "manual",
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    tool: step.tool ?? "",
+    text: step.text,
+    picture: step.mediaId ? { id: step.mediaId, name: facts?.name ?? "Picture" } : null,
+    uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
+    goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+  };
+}
+
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
@@ -119,6 +142,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
+    instructions: step.kind === "agent" ? step.text : "",
+    parent: parentLine(step.id, ctx.steps),
     // An agent's instructions are its own row; only what can be taken out is listed.
     insideRows: step.children.filter((child) => !child.id.endsWith(":instructions")).map((child) => ({ id: child.id, label: `${child.number} · ${stepTitle(child)}` })),
   };
@@ -215,7 +240,7 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
-    return null; // a manual step: UI-P70
+    return manualView(step, ctx, all);
   }
   const source = ctx.sources.find((candidate) => candidate.key === id);
   if (source) return sessionView(source, ctx);

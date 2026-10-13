@@ -6,15 +6,18 @@
 //
 //   lanes    one per session, in order of its first step; one per run of
 //            typed prompts; last, a dashed "Files and tools" lane when the
-//            build has any. A step that is not a prompt (an agent, a team, a
-//            manual step) sits in the lane of the step before it.
+//            build has any. An agent or a team has a lane of its own, labelled
+//            "Agent 5" over "runs by itself" (UI-P69). A manual step takes a
+//            "By hand" lane, one per run of manual steps, the way typed
+//            prompts take "Typed here" (UI-P70).
 //   columns  column(step) = max( dateColumn(step),
 //                                1 + column(previous step in its lane),
 //                                1 + max(column of each earlier step it uses) )
 //            dateColumn is the index of the step's session date among the
 //            build's distinct dates; a typed prompt takes its neighbour's.
 //            A result goes one column after the step it comes from; a file or
-//            a tool sits one column before its first user.
+//            a tool sits one column before its first user. An agent's or a
+//            team's box spans two columns, so what follows it starts after both.
 //   wires    from an output dot (right edge, the middle of the header) to a
 //            named input dot (left edge, the middle of its row). The next step
 //            in the same session joins level with the header, unnamed. A loop
@@ -22,7 +25,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import type { SessionGroup, Step, StepKind, Use } from "./graph";
+import { runsLabel, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -40,6 +43,20 @@ export const MAP_SIZES = {
   top: 24,
   loopRise: 36,
   arrow: 6,
+  /**
+   * An agent's or a team's box is 112 tall: a head, then the named inputs down
+   * the left and the title, counts and how it runs beside them. Only more than
+   * three inputs make it taller.
+   */
+  agentHeight: 112,
+  /** Opened view: the frame's padding, the caption above the boxes, the band of files and tools, and the outside column. */
+  framePad: 16,
+  frameCaption: 28,
+  band: 72,
+  outsideGap: 56,
+  stackOffset: 5,
+  /** Room above the opened frame for a wire that comes back over it. */
+  outerRise: 24,
 } as const;
 
 export interface MapPiece {
@@ -94,11 +111,21 @@ export interface MapBox {
   /** Inputs the maker accepted, and the ones still only suggested. */
   accepted: number;
   suggested: number;
+  /** Columns the box covers: 2 for an agent or a team, else 1. */
+  span: number;
+  /** A manual step's tool ("Figma"); null for any other box. */
+  tool?: string | null;
+  /** An agent's or a team's "2 prompts · 1 file · 1 tool"; null for any other box. */
+  contents: string | null;
+  /** How an agent or a team runs, in words; null for any other box. */
+  runs: string | null;
+  /** More than one copy runs at once (opened view): how many. */
+  stack: number | null;
 }
 
 export interface MapLane {
   key: string;
-  kind: "session" | "typed" | "files";
+  kind: "session" | "typed" | "files" | "agent" | "hand";
   label: string;
   /** "Claude · Opus 5.5". */
   sub: string;
@@ -128,6 +155,11 @@ export interface MapWire {
   y1: number;
   x2: number;
   y2: number;
+  /** A word or two drawn on the wire: "sent back until approved". */
+  label?: string;
+  /** Where the label sits (its middle). */
+  labelX?: number;
+  labelY?: number;
 }
 
 export interface MapLayout {
@@ -143,6 +175,35 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 const dayOf = (startedAt: string | null): string | null => (startedAt && ISO_DAY.test(startedAt) ? startedAt.slice(0, 10) : null);
 
 const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
+
+const isContainer = (step: Pick<Step, "kind">): boolean => step.kind === "agent" || step.kind === "team";
+
+/** Columns a step's box covers. */
+const spanOf = (step: Pick<Step, "kind">): number => (isContainer(step) ? 2 : 1);
+
+const plural = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
+
+/**
+ * "2 prompts · 1 file · 1 tool", leaving out zeros: what an agent or a team holds.
+ * A team counts its agents where an agent counts its prompts; an agent's own
+ * instructions are not counted.
+ */
+export function containsLine(step: Step): string {
+  const inner = step.children.filter((child) => !child.id.endsWith(":instructions"));
+  const files = new Set<string>();
+  const tools = new Set<string>();
+  for (const part of [step, ...step.children]) {
+    for (const use of part.uses) {
+      if (use.kind === "file") files.add(use.node_id);
+      else if (use.kind === "tool") tools.add(use.node_id);
+    }
+  }
+  const parts: string[] = [];
+  if (inner.length > 0) parts.push(step.kind === "team" ? plural(inner.length, "agent") : plural(inner.length, "prompt"));
+  if (files.size > 0) parts.push(plural(files.size, "file"));
+  if (tools.size > 0) parts.push(plural(tools.size, "tool"));
+  return parts.join(" · ");
+}
 
 interface Placed {
   box: MapBox;
@@ -179,6 +240,22 @@ export function layoutMap(
 
   const stepLane: number[] = [];
   steps.forEach((step, at) => {
+    if (isContainer(step)) {
+      lanes.push({ key: `agent-${step.id}`, kind: "agent", label: `${step.kind === "team" ? "Team" : "Agent"} ${step.number}`, sub: "runs by itself", dashed: false, y: 0, h: 0 });
+      stepLane.push(lanes.length - 1);
+      return;
+    }
+    if (step.kind === "manual") {
+      // A run of manual steps shares one lane.
+      const before = at > 0 && steps[at - 1].kind === "manual" ? stepLane[at - 1] : undefined;
+      if (before !== undefined) {
+        stepLane.push(before);
+        return;
+      }
+      lanes.push({ key: `hand-${step.id}`, kind: "hand", label: "By hand", sub: "", dashed: false, y: 0, h: 0 });
+      stepLane.push(lanes.length - 1);
+      return;
+    }
     let lane = laneOfNumber.get(step.number);
     if (lane === undefined) lane = at > 0 ? stepLane[at - 1] : undefined;
     if (lane === undefined) {
@@ -223,12 +300,12 @@ export function layoutMap(
   steps.forEach((step, at) => {
     let column = dateColumn[at];
     const before = lastInLane.get(stepLane[at]);
-    if (before !== undefined) column = Math.max(column, 1 + stepColumn[before]);
+    if (before !== undefined) column = Math.max(column, stepColumn[before] + spanOf(steps[before]));
     for (const use of step.uses) {
       if (use.kind !== "output") continue;
       const from = indexOfStep.get(use.node_id);
       // A use of a later step is a loop: it does not push this one right.
-      if (from !== undefined && from < at) column = Math.max(column, 1 + stepColumn[from]);
+      if (from !== undefined && from < at) column = Math.max(column, stepColumn[from] + spanOf(steps[from]));
     }
     stepColumn.push(column);
     lastInLane.set(stepLane[at], at);
@@ -274,7 +351,10 @@ export function layoutMap(
 
   steps.forEach((step, at) => {
     const inputs = inputsOf(step.id, step.uses);
-    const { w, h } = sizeOf(inputs.length);
+    const container = isContainer(step);
+    const { w, h } = container
+      ? { w: 2 * S.column + S.gap, h: Math.max(S.agentHeight, S.head + S.row * inputs.length + S.lanePad) }
+      : sizeOf(inputs.length);
     add({
       id: step.id,
       kind: "step",
@@ -293,6 +373,11 @@ export function layoutMap(
       inputs,
       accepted: inputs.filter((input) => !input.suggested).length,
       suggested: inputs.filter((input) => input.suggested).length,
+      tool: step.kind === "manual" ? step.tool : null,
+      span: spanOf(step),
+      contents: container ? containsLine(step) : null,
+      runs: container ? runsLabel(step.runs) : null,
+      stack: null,
     });
   });
 
@@ -302,11 +387,11 @@ export function layoutMap(
     const from = result.fromId ? indexOfStep.get(result.fromId) : undefined;
     const at = from ?? lastStep;
     const lane = at >= 0 ? stepLane[at] : Math.max(0, lanes.length - 1);
-    const column = at >= 0 ? stepColumn[at] + 1 : 0;
+    const column = at >= 0 ? stepColumn[at] + spanOf(steps[at]) : 0;
     const source = from !== undefined ? steps[from] : null;
     const inputs: MapInput[] = source ? [{ key: `output:${source.id}`, label: `Output of ${source.number}`, suggested: false, use: { kind: "output", node_id: source.id }, from: source.id }] : [];
     const { w, h } = sizeOf(inputs.length);
-    add({ id: result.id, kind: "result", stepKind: null, number: null, title: result.title, defaultTitle: false, text: "", words: 0, lane, column, x: 0, y: 0, w, h, inputs, accepted: inputs.length, suggested: 0 });
+    add({ id: result.id, kind: "result", stepKind: null, number: null, title: result.title, defaultTitle: false, text: "", words: 0, lane, column, x: 0, y: 0, w, h, inputs, accepted: inputs.length, suggested: 0, span: 1, contents: null, runs: null, stack: null });
   }
 
   // Files and tools: one column before the first step that uses them.
@@ -316,7 +401,7 @@ export function layoutMap(
   });
   const addPiece = (piece: MapPiece, kind: "file" | "tool") => {
     const user = firstUser.get(piece.id);
-    add({ id: piece.id, kind, stepKind: null, number: null, title: piece.name, defaultTitle: false, text: "", words: 0, lane: filesLane, column: user === undefined ? 0 : user - 1, x: 0, y: 0, w: S.column, h: S.piece, inputs: [], accepted: 0, suggested: 0 });
+    add({ id: piece.id, kind, stepKind: null, number: null, title: piece.name, defaultTitle: false, text: "", words: 0, lane: filesLane, column: user === undefined ? 0 : user - 1, x: 0, y: 0, w: S.column, h: S.piece, inputs: [], accepted: 0, suggested: 0, span: 1, contents: null, runs: null, stack: null });
   };
   for (const file of files) addPiece(file, "file");
   for (const tool of tools) addPiece(tool, "tool");
@@ -326,9 +411,14 @@ export function layoutMap(
   if (shift < 0) for (const box of boxes) box.column -= shift;
 
   /* ── places ── */
-  const columnCount = boxes.reduce((most, box) => Math.max(most, box.column + 1), 0);
+  const columnCount = boxes.reduce((most, box) => Math.max(most, box.column + box.span), 0);
   const columnWidth = Array.from({ length: columnCount }, () => 0);
-  for (const box of boxes) columnWidth[box.column] = Math.max(columnWidth[box.column], box.w);
+  for (const box of boxes) {
+    // A box that spans columns is as wide as they are together, so each takes a share.
+    const share = box.span > 1 ? S.column : box.w;
+    for (let at = box.column; at < box.column + box.span; at++) columnWidth[at] = Math.max(columnWidth[at], share);
+  }
+  for (const box of boxes) if (box.span > 1) box.w = columnWidth.slice(box.column, box.column + box.span).reduce((sum, w) => sum + w, 0) + S.gap * (box.span - 1);
   const columnX: number[] = [];
   let cursor = S.label;
   for (let at = 0; at < columnCount; at++) {
@@ -429,4 +519,290 @@ export function joinedTo(layout: Pick<MapLayout, "wires">, id: string | null): {
     boxes.add(wire.to);
   }
   return { boxes, wires };
+}
+
+/* ── an opened agent or team (UI-P69, CONCEPT §2.5) ── */
+
+export interface OpenedLayout {
+  /** The steps inside the container, left to right by sub-number. */
+  boxes: MapBox[];
+  /** Files and tools used inside: the band along the bottom of the frame. */
+  band: MapBox[];
+  /** Boxes the container uses or goes into, drawn dimmed on the right. */
+  outside: MapBox[];
+  wires: MapWire[];
+  /** The dashed frame, in the opened map's own space. */
+  frame: { x: number; y: number; w: number; h: number };
+  /** Where "files and tools" is captioned inside the frame. */
+  bandY: number;
+  width: number;
+  height: number;
+}
+
+/** The sub-steps a container opens onto: an agent's instructions and prompts, a team's agents. */
+export const insideOf = (container: Step): Step[] => container.children;
+
+/**
+ * Lay out what is inside one agent or team.
+ *
+ *   one lane, left to right by sub-number, by the same column rule as the
+ *   Map: a box sits one column after the one before it and after every earlier
+ *   box it uses. A use of a later box is a loop and is routed above.
+ *   A box that runs several at once is drawn stacked (`stack` is its count).
+ *   Files and tools used inside sit in a band along the bottom of the frame.
+ *   Outside the frame, on the right: every box the container uses or goes
+ *   into (a step, or the result), for the view to draw dimmed.
+ */
+export function layoutOpened(
+  container: Step,
+  steps: readonly Step[],
+  files: readonly MapPiece[],
+  tools: readonly MapPiece[],
+  results: readonly MapResult[] = [],
+): OpenedLayout {
+  const S = MAP_SIZES;
+  const inside = insideOf(container);
+  const pieceName = new Map<string, string>();
+  for (const piece of [...files, ...tools]) pieceName.set(piece.id, piece.name);
+  const insideAt = new Map(inside.map((child, at) => [child.id, at]));
+  const stackOf = (child: Step): number | null => (child.runs?.how === "parallel" && typeof child.runs.count === "number" && child.runs.count > 1 ? child.runs.count : null);
+
+  /* ── columns: one lane, so each box is after the one before ── */
+  const column: number[] = [];
+  inside.forEach((child, at) => {
+    let next = at === 0 ? 0 : column[at - 1] + 1;
+    for (const use of child.uses) {
+      const from = use.kind === "output" ? insideAt.get(use.node_id) : undefined;
+      if (from !== undefined && from < at) next = Math.max(next, column[from] + 1);
+    }
+    column.push(next);
+  });
+
+  /* ── what is used inside, and what is outside ── */
+  const usedPieces: string[] = [];
+  const outsideSteps: Step[] = [];
+  const notePiece = (id: string) => {
+    if (pieceName.has(id) && !usedPieces.includes(id)) usedPieces.push(id);
+  };
+  for (const part of [container, ...inside]) {
+    for (const use of part.uses) {
+      if (use.kind !== "output") notePiece(use.node_id);
+      else if (!insideAt.has(use.node_id) && use.node_id !== container.id) {
+        const outer = steps.find((candidate) => candidate.id === use.node_id);
+        if (outer && !outsideSteps.includes(outer)) outsideSteps.push(outer);
+      }
+    }
+  }
+  const goesInto = steps.filter((candidate) => candidate.id !== container.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === container.id));
+  const goesIntoResults = results.filter((result) => result.fromId === container.id);
+
+  /* ── boxes inside ── */
+  const labelFor = (child: Step, use: Use): string | null => {
+    if (use.kind !== "output") return pieceName.get(use.node_id) ?? null;
+    const at = insideAt.get(use.node_id);
+    if (at !== undefined) {
+      const source = inside[at];
+      if (at > insideAt.get(child.id)!) return `Sent back by ${source.number}`;
+      const many = stackOf(source);
+      return many ? `Output of ${source.number} × ${many}` : `Output of ${source.number}`;
+    }
+    const outer = steps.find((candidate) => candidate.id === use.node_id);
+    return outer ? `Output of ${outer.number}` : null;
+  };
+
+  const boxes: MapBox[] = inside.map((child, at) => {
+    const inputs: MapInput[] = child.uses.flatMap((use) => {
+      const label = labelFor(child, use);
+      return label ? [{ key: `${use.kind}:${use.node_id}`, label, suggested: false, use, from: use.node_id }] : [];
+    });
+    const w = inputs.length >= 3 ? S.columnWide : S.column;
+    const h = S.head + (inputs.length > 0 ? S.row * inputs.length + S.state : 0) + S.body + S.foot;
+    return {
+      id: child.id,
+      kind: "step" as const,
+      stepKind: child.kind,
+      number: child.number,
+      title: child.title ?? child.defaultTitle,
+      defaultTitle: child.title === null,
+      text: child.text,
+      words: child.words,
+      lane: 0,
+      column: column[at],
+      x: 0,
+      y: 0,
+      w,
+      h,
+      inputs,
+      accepted: inputs.length,
+      suggested: 0,
+      span: 1,
+      contents: null,
+      runs: child.kind === "agent" ? runsLabel(child.runs) : null,
+      stack: stackOf(child),
+    };
+  });
+
+  const columnCount = boxes.reduce((most, box) => Math.max(most, box.column + 1), 0);
+  const columnWidth = Array.from({ length: columnCount }, () => 0);
+  // A stacked box shows two copies behind it, offset down and right.
+  const stackExtra = (box: MapBox) => (box.stack ? 2 * S.stackOffset : 0);
+  for (const box of boxes) columnWidth[box.column] = Math.max(columnWidth[box.column], box.w + stackExtra(box));
+  const columnX: number[] = [];
+  const innerLeft = S.framePad;
+  let cursor = innerLeft;
+  for (let at = 0; at < columnCount; at++) {
+    columnX.push(cursor);
+    cursor += columnWidth[at] + S.gap;
+  }
+  const innerWidth = columnCount > 0 ? cursor - S.gap - innerLeft : S.column;
+
+  // Space above the frame for a wire from outside that comes back over it.
+  const frameTop = S.outerRise;
+  const loops = inside.some((child, at) => child.uses.some((use) => (insideAt.get(use.node_id) ?? -1) > at));
+  const tallest = boxes.reduce((most, box) => Math.max(most, box.h + stackExtra(box)), S.body);
+  const rowY = frameTop + S.frameCaption + (loops ? S.loopRise : 0) + S.framePad;
+  for (const box of boxes) {
+    box.x = columnX[box.column];
+    box.y = rowY;
+  }
+
+  /* ── the band of files and tools ── */
+  const bandY = rowY + tallest + S.framePad;
+  const band: MapBox[] = usedPieces.map((id, at) => ({
+    id,
+    kind: files.some((file) => file.id === id) ? ("file" as const) : ("tool" as const),
+    stepKind: null,
+    number: null,
+    title: pieceName.get(id) ?? "",
+    defaultTitle: false,
+    text: "",
+    words: 0,
+    lane: 1,
+    column: at,
+    x: innerLeft + at * (S.column + S.gap / 2),
+    y: bandY + 20,
+    w: S.column,
+    h: S.piece,
+    inputs: [],
+    accepted: 0,
+    suggested: 0,
+    span: 1,
+    contents: null,
+    runs: null,
+    stack: null,
+  }));
+  const bandWidth = band.length > 0 ? band.length * (S.column + S.gap / 2) - S.gap / 2 : 0;
+
+  const frameW = Math.max(innerWidth, bandWidth) + 2 * S.framePad;
+  const frameBottom = (band.length > 0 ? bandY + 20 + S.piece : bandY - S.framePad) + S.framePad;
+  const frame = { x: 0, y: frameTop, w: frameW, h: frameBottom - frameTop };
+
+  /* ── outside, on the right ── */
+  const outsideX = frame.x + frame.w + S.outsideGap;
+  const outside: MapBox[] = [];
+  let outsideY = frame.y + S.frameCaption;
+  const addOutside = (id: string, kind: "step" | "result", step: Step | null, title: string, number: string | null, inputs: MapInput[]) => {
+    const h = S.head + (inputs.length > 0 ? S.row * inputs.length + S.state : 0) + S.body + S.foot;
+    outside.push({
+      id,
+      kind,
+      stepKind: step?.kind ?? null,
+      number,
+      title,
+      defaultTitle: step ? step.title === null : false,
+      text: step?.text ?? "",
+      words: step?.words ?? 0,
+      lane: 2,
+      column: 0,
+      x: outsideX,
+      y: outsideY,
+      w: inputs.length >= 3 ? S.columnWide : S.column,
+      h,
+      inputs,
+      accepted: inputs.length,
+      suggested: 0,
+      span: 1,
+      contents: null,
+      runs: null,
+      stack: null,
+    });
+    outsideY += h + S.laneGap;
+  };
+  for (const outer of outsideSteps) addOutside(outer.id, "step", outer, outer.title ?? outer.defaultTitle, outer.number, []);
+  for (const next of goesInto) {
+    if (outside.some((box) => box.id === next.id)) continue;
+    addOutside(next.id, "step", next, next.title ?? next.defaultTitle, next.number, [
+      { key: `output:${container.id}`, label: `Output of ${container.number}`, suggested: false, use: { kind: "output", node_id: container.id }, from: container.id },
+    ]);
+  }
+  for (const result of goesIntoResults) {
+    addOutside(result.id, "result", null, result.title, null, [
+      { key: `output:${container.id}`, label: `Output of ${container.number}`, suggested: false, use: { kind: "output", node_id: container.id }, from: container.id },
+    ]);
+  }
+
+  /* ── wires ── */
+  const wires: MapWire[] = [];
+  const all = new Map<string, MapBox>([...boxes, ...band, ...outside].map((box) => [box.id, box]));
+  const inBand = new Set(band.map((box) => box.id));
+  const isOutside = new Set(outside.map((box) => box.id));
+  const wire = (from: MapBox, to: MapBox, inputAt: number | null, label?: string) => {
+    const fromBand = inBand.has(from.id);
+    const x1 = fromBand ? from.x + from.w / 2 : from.x + from.w;
+    const y1 = fromBand ? from.y : from.y + S.head / 2;
+    const x2 = to.x;
+    const y2 = inputAt === null ? to.y + S.head / 2 : to.y + S.head + S.row * inputAt + S.row / 2;
+    const loop = !fromBand && x2 <= x1;
+    // A box outside comes back over the frame; one inside, over the row it is in.
+    const rise = isOutside.has(from.id) ? frame.y - S.outerRise / 2 : Math.min(from.y, to.y) - S.loopRise / 2;
+    const d = fromBand
+      ? `M ${x1} ${y1} C ${x1} ${y1 - 50}, ${x2 - 40} ${y2}, ${x2 - S.arrow} ${y2}`
+      : loop
+        ? `M ${x1} ${y1} H ${x1 + 14} V ${rise} H ${x2 - 14} V ${y2} H ${x2 - S.arrow}`
+        : `M ${x1} ${y1} C ${x1 + 0.6 * (x2 - x1)} ${y1}, ${x2 - 0.6 * (x2 - x1)} ${y2}, ${x2 - S.arrow} ${y2}`;
+    wires.push({
+      id: `${from.id}>${to.id}:${inputAt ?? "next"}`,
+      from: from.id,
+      to: to.id,
+      suggested: false,
+      loop,
+      named: inputAt !== null,
+      d,
+      x1,
+      y1,
+      x2,
+      y2,
+      ...(label ? { label, labelX: (x1 + x2) / 2, labelY: loop ? rise - 5 : (y1 + y2) / 2 - 6 } : null),
+    });
+  };
+  boxes.forEach((box, at) => {
+    const child = inside[at];
+    box.inputs.forEach((input, index) => {
+      const from = all.get(input.from);
+      if (!from) return;
+      const sentBack = input.from !== child.id && (insideAt.get(input.from) ?? -1) > at;
+      const detail = sentBack ? inside[insideAt.get(input.from)!].runs?.detail : undefined;
+      wire(from, box, index, sentBack && detail ? `sent back until ${detail}` : sentBack ? "sent back" : undefined);
+    });
+  });
+  // Inside an agent, each prompt follows the one before it.
+  if (container.kind === "agent") {
+    boxes.forEach((box, at) => {
+      if (at === 0) return;
+      if (wires.some((candidate) => candidate.from === boxes[at - 1].id && candidate.to === box.id)) return;
+      wire(boxes[at - 1], box, null);
+    });
+  }
+  // The container's output leaves its last box for what goes into it.
+  const last = boxes[boxes.length - 1];
+  if (last) {
+    for (const box of outside) {
+      if (!box.inputs.some((input) => input.from === container.id)) continue;
+      wire(last, box, 0);
+    }
+  }
+
+  const width = outside.length > 0 ? outsideX + Math.max(...outside.map((box) => box.w)) : frame.x + frame.w;
+  const height = Math.max(frame.y + frame.h + 8, outsideY - S.laneGap);
+  return { boxes, band, outside, wires, frame, bandY, width, height };
 }

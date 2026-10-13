@@ -16,10 +16,15 @@
    `addFile`, queued behind the composer's other node writes; a dropped `.json`
    is taken for a session export and sent to the intake.
 
+   UI-P69: agents and teams. Add › "Agent or team" opens the dialog; `trail` is
+   the agents and teams opened in the Map, outermost first (one level shows at a
+   time, Esc or "Back to build" goes up one); the List's ghost rows add a prompt
+   to an agent and an agent to a team.
+
    Mounted by `ComposeRoute` only while SANDBOX_COMPOSER_ENABLED is on. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -30,10 +35,13 @@ import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, 
 import type { MakingSession } from "@/lib/build/making";
 import { getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
+import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { PUBLISH_WORDS } from "./composeModel";
 import { useComposePage } from "./ComposePage";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
+import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
+import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput } from "./AddAgentDialog";
 import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
@@ -81,6 +89,38 @@ export function SandboxPage() {
   }, [tree, made]);
 
   const mapAvailable = sessionCount >= 2 || hasAgent;
+
+  /* ── agents and teams (UI-P69) ── */
+
+  const teamType = useQuery({ queryKey: ["build", "getNodeType", "team"], queryFn: () => getNodeType("team"), staleTime: Infinity });
+  const teamsAvailable = Boolean(teamType.data?.is_active);
+  const [addAgentOpen, setAddAgentOpen] = useState(false);
+  const [addManualOpen, setAddManualOpen] = useState(false);
+  const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
+  const manualAvailable = Boolean(manualType.data?.is_active);
+  /** Ids of the agents and teams opened in the Map, outermost first. */
+  const [trail, setTrail] = useState<readonly string[]>([]);
+  const trailSteps = useMemo(() => {
+    const all = flatten(steps);
+    const found: Step[] = [];
+    for (const id of trail) {
+      const step = all.find((candidate) => candidate.id === id && (candidate.kind === "agent" || candidate.kind === "team"));
+      if (!step) break;
+      found.push(step);
+    }
+    return found;
+  }, [steps, trail]);
+  const opened = trailSteps.length > 0 ? trailSteps[trailSteps.length - 1] : null;
+  const onOpenContainer = useCallback(
+    (id: string) =>
+      setTrail((previous) => {
+        const at = previous.indexOf(id);
+        return at >= 0 ? previous.slice(0, at + 1) : [...previous, id];
+      }),
+    [],
+  );
+  const onBack = useCallback(() => setTrail((previous) => previous.slice(0, -1)), []);
+  const onTrail = useCallback((depth: number) => setTrail((previous) => previous.slice(0, depth)), []);
 
   /* ── List (UI-P65) ── */
 
@@ -188,6 +228,54 @@ export function SandboxPage() {
       if (build?.id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build.id) });
     });
   }, [nodes, build?.id, queryClient]);
+
+  const onAddAgentOrTeam = useCallback(
+    async (input: AddAgentInput) => {
+      const id = await prompts.addAgentOrTeam(input);
+      if (!id) return;
+      setSelectedId(id);
+      afterWrite();
+    },
+    [prompts, afterWrite],
+  );
+
+  const onAddAgentTo = useCallback(
+    async (teamId: string) => {
+      const team = steps.find((candidate) => candidate.id === teamId);
+      // The new agent starts on the model of the last one in the team.
+      const model = team?.children[team.children.length - 1]?.model ?? DEFAULT_AGENT_MODEL;
+      const id = await prompts.addAgentTo(teamId, model);
+      if (!id) return;
+      setSelectedId(id);
+      afterWrite();
+    },
+    [prompts, steps, afterWrite],
+  );
+
+  /** Goes after the selected step (the one a selected step sits in, when it is inside an agent or a team), else at the end. */
+  const afterStep = useMemo(() => {
+    const top = steps.find((step) => step.id === selectedId || flatten(step.children).some((child) => child.id === selectedId));
+    return top ?? null;
+  }, [steps, selectedId]);
+
+  const onAddManual = useCallback(
+    async (input: AddManualStepInput) => {
+      const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null });
+      if (!id) return;
+      setSelectedId(id);
+      afterWrite();
+    },
+    [prompts, afterStep, afterWrite],
+  );
+
+  const onAddAgentPrompt = useCallback(
+    async (agentId: string, text: string) => {
+      const saved = await prompts.addPromptTo(agentId, text);
+      if (saved) afterWrite();
+      return saved;
+    },
+    [prompts, afterWrite],
+  );
 
   const addPiece = useCallback(
     async (kind: "tool" | "result") => {
@@ -345,6 +433,10 @@ export function SandboxPage() {
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => void addPiece("tool")}
         onAddResult={() => void addPiece("result")}
+        onAddAgent={() => setAddAgentOpen(true)}
+        onAddManual={() => setAddManualOpen(true)}
+        trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
+        onTrail={onTrail}
         map={
           <BuildMap
             steps={steps}
@@ -357,6 +449,13 @@ export function SandboxPage() {
             onSelect={setSelectedId}
             onClear={() => setSelectedId(null)}
             onOpenPrompt={setOpenPromptId}
+            opened={opened}
+            onOpenContainer={onOpenContainer}
+            onBack={onBack}
+            onLeave={(id) => {
+              setTrail([]);
+              setSelectedId(id);
+            }}
             onConnect={(toId, use) => {
               prompts.accept(toId, use, steps);
               afterWrite();
@@ -381,6 +480,17 @@ export function SandboxPage() {
             }}
             onRuns={(id, runs) => {
               prompts.setRuns(id, runs);
+              afterWrite();
+            }}
+            onManual={(id, fields) => {
+              prompts.setManual(id, fields);
+              afterWrite();
+            }}
+            onManualPicture={(id, file) => {
+              void prompts.setManualPicture(id, file).then(afterWrite);
+            }}
+            onInstructions={(id, text) => {
+              prompts.setInstructions(id, text);
               afterWrite();
             }}
             onRemoveInside={(id) => {
@@ -414,6 +524,8 @@ export function SandboxPage() {
             onRename={prompts.rename}
             onMove={prompts.move}
             onRemove={prompts.remove}
+            onAddAgentPrompt={onAddAgentPrompt}
+            onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={prompts.addNow}
@@ -445,6 +557,20 @@ export function SandboxPage() {
         onLens={onLens}
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
+      />
+      <AddAgentDialog
+        open={addAgentOpen}
+        onOpenChange={setAddAgentOpen}
+        nextNumber={steps.length + 1}
+        teamsAvailable={teamsAvailable}
+        onAdd={(input) => void onAddAgentOrTeam(input)}
+      />
+      <AddManualStepDialog
+        open={addManualOpen}
+        onOpenChange={setAddManualOpen}
+        after={afterStep ? `${afterStep.number} · ${afterStep.title ?? afterStep.defaultTitle}` : null}
+        available={manualAvailable}
+        onAdd={(input) => void onAddManual(input)}
       />
       <FullPromptWindow
         steps={steps}

@@ -19,7 +19,7 @@
    two buttons in its head. In Map, Sources folds to a 56px rail. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown, FileText, Layers, PanelLeftOpen, Plus, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, FileText, Layers, PanelLeftOpen, Plus, X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -96,6 +96,16 @@ export interface SandboxViewProps extends CardProps {
   onAddTool?: () => void;
   onAddResult?: () => void;
 
+  /** Add › Agent or team: opens the Add dialog. Absent, the item stays disabled. */
+  onAddAgent?: () => void;
+  /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
+  onAddManual?: () => void;
+
+  /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
+  trail?: readonly { id: string; title: string }[];
+  /** Go up to `depth` levels open: 0 is the build, 1 the first of the trail. */
+  onTrail?: (depth: number) => void;
+
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
   list?: ReactNode;
@@ -115,10 +125,10 @@ export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual"
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
   { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
   { key: "session", name: "Session", line: "A chat from your sources", ready: true },
-  { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: false },
+  { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
   { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
-  { key: "manual", name: "Manual step", line: "Work done outside AI", ready: false },
+  { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
   { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
 
@@ -134,7 +144,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult">;
+type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual">;
 
 const itemStyle = (enabled: boolean): CSSProperties => ({
   display: "flex",
@@ -171,7 +181,7 @@ function AddLabel({ name, line }: { name: string; line: string }) {
   );
 }
 
-function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult }: AddMenuProps) {
+function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual }: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -235,8 +245,8 @@ function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, o
               );
             }
             const handler =
-              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : undefined;
-            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result";
+              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : item.key === "manual" ? onAddManual : undefined;
+            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent" || item.key === "manual";
             const enabled = item.ready && (!wired || Boolean(handler));
             return (
               <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
@@ -546,6 +556,7 @@ export function SandboxView(props: SandboxViewProps) {
     </div>
   ) : null;
 
+  const trail = lens === "map" ? (props.trail ?? []) : [];
   const detailsBody = props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>;
   const sourcesBody = props.sources ?? <DefaultSources />;
 
@@ -554,7 +565,33 @@ export function SandboxView(props: SandboxViewProps) {
     <Panel surface="flat" padding="16px">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 9, minWidth: 0, flexWrap: "wrap" }}>
-          <PanelTitle>Build</PanelTitle>
+          {trail.length > 0 ? (
+            <h2 data-testid="sandbox-trail" style={{ margin: 0, display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", gap: 6, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>
+              <button
+                type="button"
+                onClick={() => props.onTrail?.(0)}
+                style={{ padding: 0, border: 0, background: "none", font: "inherit", color: t.text2, textDecoration: "underline", cursor: "pointer" }}
+              >
+                Build
+              </button>
+              {trail.map((entry, at) => (
+                <span key={entry.id} style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+                  <span aria-hidden="true" style={{ color: t.text2 }}>
+                    ›
+                  </span>
+                  {at < trail.length - 1 ? (
+                    <button type="button" onClick={() => props.onTrail?.(at + 1)} style={{ padding: 0, border: 0, background: "none", font: "inherit", color: t.text2, textDecoration: "underline", cursor: "pointer" }}>
+                      {entry.title}
+                    </button>
+                  ) : (
+                    <span aria-current="page">{entry.title}</span>
+                  )}
+                </span>
+              ))}
+            </h2>
+          ) : (
+            <PanelTitle>Build</PanelTitle>
+          )}
           <span data-testid="sandbox-counts" style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
             {countsLine(props.counts)}
           </span>
@@ -570,7 +607,12 @@ export function SandboxView(props: SandboxViewProps) {
               </Button>
             </>
           ) : null}
-          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} />
+          {trail.length > 0 ? (
+            <Button variant="secondary" size={30} fontSize={12} icon={ArrowLeft} onClick={() => props.onTrail?.(trail.length - 1)}>
+              Back to build
+            </Button>
+          ) : null}
+          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} onAddAgent={props.onAddAgent} onAddManual={props.onAddManual} />
         </div>
       </div>
       <div style={{ marginTop: 12 }}>

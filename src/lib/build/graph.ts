@@ -15,10 +15,10 @@
 
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
-import { PROMPT_TYPE } from "./composePrompts";
+import { PROMPT_TYPE, swapMoves } from "./composePrompts";
 import { toolLabel, type MakingSession } from "./making";
 import { getNodeType } from "./nodeTypes";
-import { upsertNode } from "./nodes";
+import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
 
@@ -65,6 +65,8 @@ export interface Step {
   runs: Runs | null;
   uses: Use[];
   children: Step[];
+  /** A manual step's picture (its `media_id`), when it has one. */
+  mediaId?: string | null;
 }
 
 export interface SessionGroup {
@@ -200,6 +202,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
     uses: usesOf(node),
     children,
+    ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
   };
 }
 
@@ -223,7 +226,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
 /**
  * The steps in order, numbered (DATA §1). `tree` is the nested placed tree.
  * An agent's children are its instructions then its prompts; a team's are its
- * agents, each shown without children, since its own prompts show when opened.
+ * agents. An agent in a team has children only when it has prompts of its own
+ * (its instructions, then those prompts, numbered one level further, "3.1.2"),
+ * which show when it is opened.
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
@@ -239,7 +244,17 @@ export function buildSteps(tree: readonly NodeTree[]): Step[] {
     }
     if (kind === "team") {
       const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
-      return stepFor(node, number, kind, agents.map((child, i) => stepFor(child, `${number}.${i + 1}`, "agent")));
+      return stepFor(
+        node,
+        number,
+        kind,
+        agents.map((child, i) => {
+          const inner = `${number}.${i + 1}`;
+          // An agent in a team shows its instructions in its own row; any prompts of its own show when it is opened.
+          const own = byPosition((child.children ?? []).filter((grand) => grand.type === PROMPT_TYPE));
+          return stepFor(child, inner, "agent", own.length === 0 ? [] : [instructionsOf(child, `${inner}.1`), ...own.map((grand, k) => stepFor(grand, `${inner}.${k + 2}`, "prompt"))]);
+        }),
+      );
     }
     return stepFor(node, number, kind);
   });
@@ -442,22 +457,41 @@ async function requireLiveType(operation: string, key: string): Promise<void> {
 
 const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
 
+/**
+ * An agent: top level, or inside a team when `parentId` names one (UI-P69).
+ * A blank name saves as null, so the default "Agent {n}" shows.
+ */
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model }: { name?: string | null; model: string },
+  { name, model, parentId }: { name?: string | null; model: string; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  return placeTopNode(buildId, tree, { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } });
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } };
+  return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
-export async function addTeam(buildId: string, tree: readonly NodeTree[], { name }: { name?: string | null }): Promise<BuildNode> {
+/** A team is never empty: it is made holding one agent, which `model` names. */
+export async function addTeam(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { name, model }: { name?: string | null; model: string },
+): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
-  return placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  if (!model.trim()) throw refuse("addTeam", "An agent needs a model.");
+  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: "", model: model.trim() } });
+  return { team, agent };
+}
+
+/** An agent's instructions: `payload.system_prompt`, which is its sub-step n.1. */
+export async function setInstructions(agent: BuildNode, text: string): Promise<BuildNode> {
+  if (agent.type !== AGENT_TYPE) throw refuse("setInstructions", "Only an agent has instructions.");
+  return upsertNode(withPayload(agent, { ...payloadOf(agent), system_prompt: text }));
 }
 
 /** A further prompt inside an agent. Refuses empty text. */
@@ -470,14 +504,95 @@ export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[]
 export async function addManualStep(
   buildId: string,
   tree: readonly NodeTree[],
-  { tool, text }: { tool: string; text: string },
+  { tool, text, media_id }: { tool: string; text: string; media_id?: string | null },
 ): Promise<BuildNode> {
   await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
   const name = tool.trim();
   const line = text.trim();
   if (!name || name.length > MANUAL_TOOL_MAX) throw refuse("addManualStep", `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
   if (!line || line.length > MANUAL_TEXT_MAX) throw refuse("addManualStep", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
-  return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload: { tool: name, text: line } });
+  const payload: Record<string, string> = { tool: name, text: line };
+  if (media_id) payload.media_id = media_id;
+  return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload });
+}
+
+/**
+ * Change a manual step's tool, its line or its picture (DATA §2). The tool is
+ * 1 to 40 characters and the line 1 to 140; `media_id: null` takes the picture off.
+ */
+export async function setManualFields(
+  node: BuildNode,
+  fields: { tool?: string; text?: string; media_id?: string | null },
+): Promise<BuildNode> {
+  if (node.type !== MANUAL_STEP_TYPE) throw refuse("setManualFields", "That is not a manual step.");
+  const payload = { ...payloadOf(node) };
+  if (fields.tool !== undefined) {
+    const tool = fields.tool.trim();
+    if (!tool || tool.length > MANUAL_TOOL_MAX) throw refuse("setManualFields", `A tool is 1 to ${MANUAL_TOOL_MAX} characters.`);
+    payload.tool = tool;
+  }
+  if (fields.text !== undefined) {
+    const text = fields.text.trim();
+    if (!text || text.length > MANUAL_TEXT_MAX) throw refuse("setManualFields", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
+    payload.text = text;
+  }
+  if (fields.media_id !== undefined) {
+    if (fields.media_id) payload.media_id = fields.media_id;
+    else delete payload.media_id;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/** The top-level steps of a tree, in order: the rows that are numbered. */
+export function topSteps<T extends Pick<BuildNode, "parent_id" | "position" | "type">>(tree: readonly T[]): T[] {
+  return byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
+}
+
+/**
+ * The moves that put step `id` straight after step `afterId` (the start when
+ * null), handing the steps' own positions out again in order, so files, tools
+ * and results keep theirs. None when it is already there.
+ */
+export function placeAfterMoves(
+  tree: readonly Pick<BuildNode, "id" | "parent_id" | "position" | "type">[],
+  id: string,
+  afterId: string | null,
+): NodeMove[] {
+  const steps = topSteps(tree);
+  const slots = steps.map((step) => step.position as number);
+  const order = steps.filter((step) => step.id !== id);
+  const moving = steps.find((step) => step.id === id);
+  if (!moving) return [];
+  const at = afterId === null ? 0 : order.findIndex((step) => step.id === afterId) + 1;
+  if (afterId !== null && at === 0) return [];
+  order.splice(at, 0, moving);
+  return order.flatMap((step, i) => (steps[i].id === step.id ? [] : [{ id: step.id, parent_id: null, position: slots[i] }]));
+}
+
+/** Put a step straight after another, in one write. Resolves with the moves written. */
+export async function placeStepAfter(
+  buildId: string,
+  tree: readonly Pick<BuildNode, "id" | "parent_id" | "position" | "type">[],
+  id: string,
+  afterId: string | null,
+): Promise<NodeMove[]> {
+  const moves = placeAfterMoves(tree, id, afterId);
+  if (moves.length > 0) await reorderNodes(buildId, moves);
+  return moves;
+}
+
+/** Swap a step with the step before or after it, whatever kind each is. */
+export async function moveStep(
+  buildId: string,
+  tree: readonly Pick<BuildNode, "id" | "parent_id" | "position" | "type">[],
+  id: string,
+  direction: -1 | 1,
+): Promise<NodeMove[]> {
+  const steps = topSteps(tree);
+  const at = steps.findIndex((step) => step.id === id);
+  const moves = swapMoves(steps, at, direction);
+  if (moves.length > 0) await reorderNodes(buildId, moves);
+  return moves;
 }
 
 /** A file the AI read. `title` is the file name. */

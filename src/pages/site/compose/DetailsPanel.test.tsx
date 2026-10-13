@@ -153,6 +153,47 @@ describe("an agent", () => {
   });
 });
 
+describe("an agent inside a team (UI-P69)", () => {
+  const inTeam = () => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    return { ...base.view, id: "t3b", number: "3.2", name: "Writer", defaultName: "Agent 3.2", runs: null, parent: "Team 3 · Copy team" };
+  };
+
+  it("adds 'In: Team {n} · {title}' and words Runs once as 'each time work is sent to it'", () => {
+    panel("agent", "bakery", { view: inTeam() });
+    expect(screen.getByText("In")).toBeTruthy();
+    expect(screen.getByText("Team 3 · Copy team")).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Runs once · each time work is sent to it" })).toBeTruthy();
+  });
+
+  it("leaves both out for an agent that is not in a team", () => {
+    panel("agent");
+    expect(screen.queryByText("In")).toBeNull();
+    expect(screen.getByRole("radio", { name: "Runs once" })).toBeTruthy();
+  });
+
+  it("edits the instructions and hands them over when the field is left", () => {
+    const props = panel("agent", "bakery", { onInstructions: vi.fn() });
+    const field = screen.getByLabelText("Instructions") as HTMLTextAreaElement;
+    expect(field.value).toBe("Check the menu and reply with any item that has no price.");
+    fireEvent.change(field, { target: { value: "Reply with any item over ten pounds." } });
+    fireEvent.blur(field);
+    expect(props.onInstructions).toHaveBeenCalledWith("a5", "Reply with any item over ten pounds.");
+  });
+
+  it("only shows the instructions when nothing can write them, and has none for a team", () => {
+    panel("agent");
+    expect(screen.queryByLabelText("Instructions")).toBeNull();
+    expect(screen.getByText("Check the menu and reply with any item that has no price.")).toBeTruthy();
+    cleanup();
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { onInstructions: vi.fn(), view: { ...base.view, kind: "team", instructions: "" } });
+    expect(screen.queryByText("Instructions")).toBeNull();
+  });
+});
+
 describe("a file, a tool, a result", () => {
   it("downloads a file and names who uses it", () => {
     const props = panel("file");
@@ -181,5 +222,66 @@ describe("nothing selected", () => {
   it("says what to select", () => {
     render(<DetailsPanel {...sandboxDetailsProps("prompt")} view={null} />);
     expect(screen.getByText("Select a prompt, session or file to see it here.")).toBeTruthy();
+  });
+});
+
+describe("a manual step (UI-P70)", () => {
+  const view = (over: Partial<Extract<NonNullable<DetailsPanelProps["view"]>, { kind: "manual" }>> = {}): DetailsPanelProps["view"] => ({
+    kind: "manual",
+    id: "m3",
+    number: "3",
+    title: null,
+    defaultTitle: "Manual step 3",
+    tool: "Figma",
+    text: "Laid out the hero",
+    picture: { id: "media-1", name: "hero.png" },
+    uses: [],
+    options: [],
+    goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
+    ...over,
+  });
+
+  it("shows the eyebrow, the title with Rename, and says it was never detected", () => {
+    panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByText("Manual step 3", { selector: "p" })).toBeTruthy();
+    expect(screen.getByText("Added by you · never detected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Title of manual step 3|Rename/ })).toBeTruthy();
+    expect(screen.getByText("Goes into")).toBeTruthy();
+    expect(screen.getByText("Uses")).toBeTruthy();
+  });
+
+  it("edits the tool and the line within their limits, and ignores a blank", () => {
+    const props = panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    const tool = screen.getByLabelText("Tool") as HTMLInputElement;
+    const line = screen.getByLabelText("What was done") as HTMLTextAreaElement;
+    expect(tool.maxLength).toBe(40);
+    expect(line.maxLength).toBe(140);
+    fireEvent.change(tool, { target: { value: "Lovable" } });
+    fireEvent.blur(tool);
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { tool: "Lovable" });
+    fireEvent.change(line, { target: { value: "  " } });
+    fireEvent.blur(line);
+    expect(props.onManual).toHaveBeenCalledTimes(1);
+    fireEvent.change(line, { target: { value: "Deployed it" } });
+    fireEvent.blur(line);
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { text: "Deployed it" });
+  });
+
+  it("removes the picture with null, and replaces it from a file", () => {
+    const props = panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByText("hero.png")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove the picture" }));
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { media_id: null });
+    expect(screen.getByRole("button", { name: "Replace the picture" })).toBeTruthy();
+    const file = new File(["x"], "new.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("details-manual-picture"), { target: { files: [file] } });
+    expect(props.onManualPicture).toHaveBeenCalledWith("m3", file);
+  });
+
+  it("offers Add a picture when it has none, and has no model and no Read all of it", () => {
+    panel("prompt", "bakery", { view: view({ picture: null }), onManual: vi.fn(), onManualPicture: vi.fn() });
+    expect(screen.getByRole("button", { name: "Add a picture" })).toBeTruthy();
+    expect(screen.queryByLabelText("Model")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Read all of it" })).toBeNull();
   });
 });

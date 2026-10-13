@@ -14,15 +14,22 @@
    back, with the reason read out through a live region. The keyboard way is
    Details › Add an input.
 
+   AGENTS AND TEAMS (UI-P69). An agent's or a team's box spans two columns and
+   has "Open" on its header; Open, double-click or Enter shows what is inside it
+   in place of the map (`OpenedMap`, drawn from `layoutOpened`): the dashed
+   frame, the files and tools along its bottom, and everything outside it that
+   it uses or goes into, dimmed, on the right. One level is open at a time; Esc
+   goes up one.
+
    HAND-WRITTEN SVG, no dependency (RULES §3): one layer of wires under the
    boxes, and one overlay for the line that follows the pointer. The boxes are
    real buttons, in lane order then column order, which is the focus order. */
 
-import { memo, useCallback, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
-import { inputRefusal, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
-import { joinedTo, layoutMap, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
+import { inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -30,6 +37,12 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
   rows: "Rows by session, left to right by date",
+  openAgent: "Open shows what is inside the agent",
+  openTeam: "Open shows what is inside the team",
+  stacked: "stacked box = runs several at once",
+  openedRows: "Left to right by order · boxes outside the frame are part of the build, not the team",
+  outside: "Outside",
+  bandCaption: "files and tools",
 } as const;
 
 /** What the joined boxes keep and the rest drop to (UI-P68). */
@@ -49,6 +62,14 @@ export interface BuildMapProps {
   onOpenPrompt?: (id: string) => void;
   /** A drag from one box's output dot ended on a step that takes it: add `use` to that step. */
   onConnect: (toId: string, use: Use) => void;
+  /** UI-P69: the agent or team opened in place of the map, with the steps it sits among. Absent: the map. */
+  opened?: Step | null;
+  /** "Open", double-click or Enter on an agent or a team. */
+  onOpenContainer?: (id: string) => void;
+  /** Esc: up one level. */
+  onBack?: () => void;
+  /** A box outside the opened frame was clicked: back to the build with it selected. */
+  onLeave?: (id: string) => void;
 }
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -87,18 +108,48 @@ interface BoxViewProps {
   target: boolean;
   onSelect: (id: string) => void;
   onOpen?: (id: string) => void;
+  /** Double-click or Enter on an agent or a team opens what is inside it. */
+  onOpenContainer?: (id: string) => void;
 }
 
-const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen }: BoxViewProps) {
-  const openable = box.kind === "step" && box.stepKind === "prompt" && onOpen;
+const isContainerBox = (box: Pick<MapBox, "kind" | "stepKind">): boolean => box.kind === "step" && (box.stepKind === "agent" || box.stepKind === "team");
+
+const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer }: BoxViewProps) {
+  const container = isContainerBox(box);
+  const openable = box.kind === "step" && (container ? Boolean(onOpenContainer) : box.stepKind === "prompt" && onOpen);
+  const open = () => (container ? onOpenContainer?.(box.id) : onOpen?.(box.id));
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" && openable) {
       event.preventDefault();
       onSelect(box.id);
-      onOpen?.(box.id);
+      open();
     }
   };
+  // An agent's or a team's own box (on the map); the ones drawn inside an opened view are ordinary boxes.
+  const big = container && box.contents !== null;
   const piece = box.kind === "file" || box.kind === "tool";
+  // Work done by hand (UI-P70): `--cell` with a 1px `--text2` border, so it reads as different without a new colour.
+  const manual = box.kind === "step" && box.stepKind === "manual";
+  const inputRows = box.inputs.map((input, at) => (
+    <span key={input.key} style={{ position: "relative", height: MAP_SIZES.row, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px 0 12px", ...mono(10.5), ...(input.suggested ? { fontStyle: "italic" } : null) }}>
+      <span
+        aria-hidden="true"
+        data-testid={`map-input-${box.id}-${at}`}
+        style={{
+          position: "absolute",
+          left: -DOT / 2 - 1,
+          top: (MAP_SIZES.row - DOT) / 2,
+          width: DOT,
+          height: DOT,
+          borderRadius: r.full,
+          boxSizing: "border-box",
+          border: `1.5px ${input.suggested ? "dashed" : "solid"} ${onPath ? t.text : t.text2}`,
+          background: onPath && !input.suggested ? t.text : t.solid,
+        }}
+      />
+      <span style={ellipsis}>{input.label}</span>
+    </span>
+  ));
   return (
     <button
       type="button"
@@ -108,7 +159,7 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
       aria-label={boxName(box)}
       aria-pressed={selected}
       onClick={() => onSelect(box.id)}
-      onDoubleClick={openable ? () => onOpen?.(box.id) : undefined}
+      onDoubleClick={openable ? open : undefined}
       onKeyDown={onKeyDown}
       style={{
         position: "absolute",
@@ -122,8 +173,8 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
         flexDirection: "column",
         textAlign: "left",
         borderRadius: 12,
-        border: `1px solid ${box.kind === "result" ? t.evidence : t.line}`,
-        background: t.solid,
+        border: `1px solid ${box.kind === "result" ? t.evidence : manual ? t.text2 : t.line}`,
+        background: manual ? t.cell : t.solid,
         color: t.text,
         cursor: "pointer",
         opacity: dimmed ? DIMMED : 1,
@@ -138,35 +189,40 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
         </span>
       ) : (
         <>
-          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", minWidth: 0 }}>
-            {box.kind === "result" ? <span style={mono(10.5)}>Result</span> : !box.defaultTitle && box.number ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : null}
-            <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: box.defaultTitle ? 500 : 600, color: box.defaultTitle ? t.text2 : t.text, ...ellipsis }}>{box.title}</span>
-          </span>
-          {box.inputs.map((input, at) => (
-            <span key={input.key} style={{ position: "relative", height: MAP_SIZES.row, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px 0 12px", ...mono(10.5), ...(input.suggested ? { fontStyle: "italic" } : null) }}>
-              <span
-                aria-hidden="true"
-                data-testid={`map-input-${box.id}-${at}`}
-                style={{
-                  position: "absolute",
-                  left: -DOT / 2 - 1,
-                  top: (MAP_SIZES.row - DOT) / 2,
-                  width: DOT,
-                  height: DOT,
-                  borderRadius: r.full,
-                  boxSizing: "border-box",
-                  border: `1.5px ${input.suggested ? "dashed" : "solid"} ${onPath ? t.text : t.text2}`,
-                  background: onPath && !input.suggested ? t.text : t.solid,
-                }}
-              />
-              <span style={ellipsis}>{input.label}</span>
+          {big ? (
+            <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px", ...mono(10.5) }}>
+              {box.stepKind === "team" ? "Team" : "Agent"} {box.number}
             </span>
-          ))}
-          {box.inputs.length > 0 ? (
+          ) : (
+            <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "0 10px", minWidth: 0 }}>
+              {box.kind === "result" ? <span style={mono(10.5)}>Result</span> : manual ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : !box.defaultTitle && box.number ? <span style={{ ...mono(10.5), color: t.text }}>{box.number}</span> : null}
+              {manual ? (
+                <span data-testid="manual-header" style={{ ...mono(10.5), ...ellipsis }}>By hand{box.tool ? ` · ${box.tool}` : ""}</span>
+              ) : (
+                <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: box.defaultTitle ? 500 : 600, color: box.defaultTitle ? t.text2 : t.text, ...ellipsis }}>{box.title}</span>
+              )}
+              {box.stack ? <span style={{ ...mono(10.5), marginLeft: "auto", flexShrink: 0 }}>× {box.stack}</span> : null}
+            </span>
+          )}
+          {big ? (
+            // 112 tall: the named inputs down the left, the title, counts and how it runs beside them.
+            <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
+              <span style={{ width: "46%", flexShrink: 0, display: "flex", flexDirection: "column" }}>{inputRows}</span>
+              <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 10px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: box.defaultTitle ? t.text2 : t.text, ...ellipsis }}>{box.title}</span>
+                <span style={{ ...mono(11), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
+                <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2, ...ellipsis }}>{box.runs}</span>
+              </span>
+            </span>
+          ) : (
+            inputRows
+          )}
+          {!big && box.inputs.length > 0 ? (
             <span style={{ height: MAP_SIZES.state, flexShrink: 0, padding: "0 10px", display: "flex", alignItems: "center", ...mono(10) }}>
               {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
             </span>
           ) : null}
+          {big ? null : (
           <span
             style={{
               height: MAP_SIZES.body,
@@ -186,9 +242,12 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
           >
             {box.text}
           </span>
-          <span style={{ height: MAP_SIZES.foot, flexShrink: 0, padding: "0 10px", display: "flex", alignItems: "center", ...mono(10) }}>
-            {box.kind === "step" ? `${box.words} words` : ""}
-          </span>
+          )}
+          {big ? null : (
+            <span style={{ height: MAP_SIZES.foot, flexShrink: 0, padding: "0 10px", display: "flex", alignItems: "center", ...mono(10) }}>
+              {box.kind === "step" && !manual ? `${box.words} words` : ""}
+            </span>
+          )}
         </>
       )}
     </button>
@@ -204,8 +263,13 @@ function Wires({ wires, joined, selecting, marker, markerStrong }: { wires: read
         const strong = joined.has(wire.id);
         const dim = selecting && !strong;
         return (
+          <g key={wire.id}>
+          {wire.label && wire.labelX !== undefined && wire.labelY !== undefined ? (
+            <text data-testid="map-wire-label" x={wire.labelX} y={wire.labelY} textAnchor="middle" style={{ fontFamily: DM_MONO, fontSize: 10.5, fill: t.text2, opacity: dim ? DIMMED : 1 }}>
+              {wire.label}
+            </text>
+          ) : null}
           <path
-            key={wire.id}
             data-testid="map-wire"
             data-strong={strong ? "true" : undefined}
             data-suggested={wire.suggested ? "true" : undefined}
@@ -216,9 +280,174 @@ function Wires({ wires, joined, selecting, marker, markerStrong }: { wires: read
             markerEnd={`url(#${strong ? markerStrong : marker})`}
             style={{ stroke: strong ? t.text : t.text2, opacity: dim ? DIMMED : 1 }}
           />
+          </g>
         );
       })}
     </>
+  );
+}
+
+/* ── an opened agent or team (UI-P69, V5-TeamMap) ── */
+
+interface OpenedMapProps {
+  container: Step;
+  steps: readonly Step[];
+  files: readonly MapPiece[];
+  tools: readonly MapPiece[];
+  results: readonly MapResult[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onOpenContainer?: (id: string) => void;
+  onBack?: () => void;
+  onLeave?: (id: string) => void;
+}
+
+const flat = (list: readonly Step[]): Step[] => list.flatMap((step) => [step, ...flat(step.children)]);
+
+function OpenedMap({ container, steps, files, tools, results, selectedId, onSelect, onOpenContainer, onBack, onLeave }: OpenedMapProps) {
+  const layout = useMemo(() => layoutOpened(container, steps, files, tools, results), [container, steps, files, tools, results]);
+  const uid = useId().replace(/:/g, "");
+  const marker = `arrow-${uid}`;
+  const markerStrong = `arrow-strong-${uid}`;
+  const word = container.kind === "team" ? "team" : "agent";
+  const outsideIds = useMemo(() => new Set(layout.outside.map((box) => box.id)), [layout]);
+  const joined = useMemo(() => joinedTo(layout, selectedId), [layout, selectedId]);
+  // Only a box in the frame dims the rest: what is selected outside it (or in another level) is not drawn here.
+  const drawn = useMemo(() => new Set([...layout.boxes, ...layout.band].map((box) => box.id)), [layout]);
+  const selecting = selectedId !== null && drawn.has(selectedId);
+  const stacked = layout.boxes.some((box) => box.stack);
+  const selectedStep = selectedId ? flat(container.children).find((step) => step.id === selectedId) : undefined;
+  const selectedTitle = selectedStep ? stepTitle(selectedStep) : null;
+  const ordered = useMemo(() => [...layout.boxes, ...layout.band, ...layout.outside], [layout]);
+  /** Only an agent inside an opened team opens further: one level shows at a time. */
+  const insideAgents = useMemo(() => new Set(container.kind === "team" ? container.children.filter((child) => child.kind === "agent").map((child) => child.id) : []), [container]);
+
+  // The box that was opened is gone, so focus moves here: Esc is heard from this level.
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => root.current?.focus({ preventScroll: true }), [container.id]);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      onBack?.();
+    }
+  };
+
+  /** A box outside the frame is part of the build, not the team: clicking it goes back to the build. */
+  const select = (id: string) => (outsideIds.has(id) ? onLeave?.(id) : onSelect(id));
+  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `1.5px solid ${t.text2}`, verticalAlign: "middle" };
+
+  return (
+    <div ref={root} tabIndex={-1} onKeyDown={onKeyDown} data-testid="opened-map" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, outline: "none" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span aria-hidden="true" style={sample} />
+            goes into <span style={mono(11)}>{layout.wires.length}</span>
+          </span>
+          {stacked ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span aria-hidden="true" style={{ width: 14, height: 10, borderRadius: 3, border: `1.5px solid ${t.text2}`, boxShadow: `3px 3px 0 -1px ${t.solid}, 3px 3px 0 0 ${t.text2}` }} />
+              {MAP_COPY.stacked}
+            </span>
+          ) : null}
+        </span>
+        <span style={mono(11.5)}>
+          inside {word} {container.number} · Esc goes back to the build
+        </span>
+      </div>
+
+      <div
+        role="group"
+        aria-label={`Inside ${word} ${container.number}`}
+        data-testid="build-map"
+        style={{
+          overflow: "auto",
+          maxHeight: "70dvh",
+          padding: 16,
+          borderRadius: 12,
+          border: `1px solid ${t.hairline}`,
+          background: `radial-gradient(${t.hairline} 1px, transparent 1px) 0 0 / 16px 16px, ${t.cell}`,
+          backgroundAttachment: "local",
+        }}
+      >
+        <div style={{ position: "relative", width: layout.width, height: layout.height }}>
+          <div
+            data-testid="opened-frame"
+            style={{ position: "absolute", left: layout.frame.x, top: layout.frame.y, width: layout.frame.w, height: layout.frame.h, boxSizing: "border-box", borderRadius: 14, border: `1.5px dashed ${t.line}` }}
+          >
+            <div style={{ position: "absolute", left: 16, top: 8, right: 16, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span style={{ ...mono(11.5), textTransform: "uppercase", letterSpacing: "0.06em", ...ellipsis }}>
+                Inside {word} {container.number} · {stepTitle(container)}
+              </span>
+              <span style={{ height: 20, padding: "0 8px", borderRadius: 7, display: "inline-flex", alignItems: "center", background: tokenAlpha("action", 0.08), ...mono(11), color: t.text, whiteSpace: "nowrap" }}>
+                {runsLabel(container.runs)}
+              </span>
+            </div>
+            {layout.band.length > 0 ? (
+              <span style={{ position: "absolute", left: 16, top: layout.bandY - layout.frame.y + 2, ...mono(10.5), textTransform: "uppercase", letterSpacing: "0.06em" }}>{MAP_COPY.bandCaption}</span>
+            ) : null}
+          </div>
+          {layout.outside.length > 0 ? (
+            <span style={{ position: "absolute", left: layout.outside[0].x, top: layout.frame.y + 8, ...mono(11.5), textTransform: "uppercase", letterSpacing: "0.06em" }}>{MAP_COPY.outside}</span>
+          ) : null}
+
+          <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
+            <defs>
+              <marker id={marker} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto">
+                <path d="M 0 0 L 6 3 L 0 6 z" style={{ fill: t.text2 }} />
+              </marker>
+              <marker id={markerStrong} viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto">
+                <path d="M 0 0 L 6 3 L 0 6 z" style={{ fill: t.text }} />
+              </marker>
+            </defs>
+            <Wires wires={layout.wires} joined={joined.wires} selecting={selecting} marker={marker} markerStrong={markerStrong} />
+          </svg>
+
+          {layout.boxes
+            .filter((box) => box.stack)
+            .map((box) =>
+              [2, 1].map((copy) => (
+                <div
+                  key={`${box.id}-copy-${copy}`}
+                  data-testid="stack-copy"
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: box.x + copy * MAP_SIZES.stackOffset,
+                    top: box.y + copy * MAP_SIZES.stackOffset,
+                    width: box.w,
+                    height: box.h,
+                    boxSizing: "border-box",
+                    borderRadius: 12,
+                    border: `1px solid ${t.line}`,
+                    background: t.solid,
+                    opacity: copy === 1 ? 0.75 : 0.5,
+                  }}
+                />
+              )),
+            )}
+
+          {ordered.map((box) => (
+            <BoxView
+              key={box.id}
+              box={box}
+              selected={selectedId === box.id}
+              dimmed={outsideIds.has(box.id) || (selecting && !joined.boxes.has(box.id))}
+              onPath={selecting && joined.boxes.has(box.id)}
+              target={false}
+              onSelect={select}
+              onOpenContainer={insideAgents.has(box.id) ? onOpenContainer : undefined}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+        <span>{MAP_COPY.openedRows}</span>
+        <span>{selectedTitle ? `${selectedTitle} selected` : ""}</span>
+      </div>
+    </div>
   );
 }
 
@@ -238,7 +467,7 @@ const inputFrom = (box: MapBox): Use | null =>
   box.kind === "step" ? { kind: "output", node_id: box.id } : box.kind === "file" ? { kind: "file", node_id: box.id } : box.kind === "tool" ? { kind: "tool", node_id: box.id } : null;
 
 export function BuildMap(props: BuildMapProps) {
-  const { steps, groups, files, tools, results, suggestions, selectedId, onSelect, onClear, onOpenPrompt, onConnect } = props;
+  const { steps, groups, files, tools, results, suggestions, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
   const layout = useMemo(() => layoutMap(steps, groups, files, tools, results, suggestions), [steps, groups, files, tools, results, suggestions]);
   const joined = useMemo(() => joinedTo(layout, selectedId), [layout, selectedId]);
   const [said, say] = useAnnouncer();
@@ -311,6 +540,25 @@ export function BuildMap(props: BuildMapProps) {
   };
 
   const open = useCallback((id: string) => onOpenPrompt?.(id), [onOpenPrompt]);
+
+  if (opened) {
+    return (
+      <OpenedMap
+        container={opened}
+        steps={steps}
+        files={files}
+        tools={tools}
+        results={results}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        onOpenContainer={onOpenContainer}
+        onBack={onBack}
+        onLeave={onLeave}
+      />
+    );
+  }
+  const hasContainer = steps.some((step) => step.kind === "agent" || step.kind === "team");
+  const hasAgent = steps.some((step) => step.kind === "agent");
 
   const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `1.5px solid ${t.text2}`, verticalAlign: "middle" };
 
@@ -399,8 +647,44 @@ export function BuildMap(props: BuildMapProps) {
               target={drag?.over === box.id}
               onSelect={onSelect}
               onOpen={onOpenPrompt ? open : undefined}
+              onOpenContainer={onOpenContainer}
             />
           ))}
+
+          {onOpenContainer
+            ? ordered
+                .filter((box) => isContainerBox(box))
+                .map((box) => (
+                  <button
+                    key={`open-${box.id}`}
+                    type="button"
+                    data-testid={`map-open-${box.id}`}
+                    aria-label={`Open ${boxName(box).split(",")[0]}`}
+                    onClick={() => {
+                      onSelect(box.id);
+                      onOpenContainer(box.id);
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: box.x + box.w - 54,
+                      top: box.y + 3,
+                      height: 22,
+                      padding: "0 8px",
+                      borderRadius: 7,
+                      border: `1px solid ${t.line}`,
+                      background: "transparent",
+                      color: t.text2,
+                      fontFamily: FIGTREE,
+                      fontSize: 11.5,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
+                    }}
+                  >
+                    Open
+                  </button>
+                ))
+            : null}
 
           {ordered
             .filter((box) => box.kind !== "result")
@@ -447,7 +731,15 @@ export function BuildMap(props: BuildMapProps) {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
-        <span>{MAP_COPY.rows}</span>
+        <span>
+          {MAP_COPY.rows}
+          {hasContainer && onOpenContainer ? (
+            <>
+              {" · "}
+              <span>{hasAgent ? MAP_COPY.openAgent : MAP_COPY.openTeam}</span>
+            </>
+          ) : null}
+        </span>
         <span>
           {selected && selected.kind === "step" ? `${boxName(selected).split(",")[0]} selected · ` : selected ? `${selected.title} selected · ` : ""}
           what it doesn't touch is dimmed · Esc clears
