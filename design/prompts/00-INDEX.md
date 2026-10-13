@@ -73,6 +73,29 @@
 - **[UI-P40](UI-P40.md)** — The performance pass
 - **[UI-P41](UI-P41.md)** — Retire the old frame
 
+## The sandbox composer and the build page steps (UI-P60 to UI-P76)
+
+These prompts live in `design/sandbox_prompts.py` (`python design/sandbox_prompts.py show P73`), not in this folder.
+
+- **UI-P60** — Put the concept and the boards in the repo
+- **UI-P61** — Proposal: the data shapes and one migration
+- **UI-P62** — Data: steps, numbers, titles, uses and how it runs
+- **UI-P63** — The composer frame: Sources, Build, Details and the Card
+- **UI-P64** — Sources
+- **UI-P65** — List view
+- **UI-P66** — Details
+- **UI-P67** — The full prompt window
+- **UI-P68** — Map view
+- **UI-P69** — Agents and teams
+- **UI-P70** — Manual step
+- **UI-P71** — Detection, and the parser proposal
+- **UI-P72** — Steps for readers, What you need, Copy for AI
+- **UI-P73** — The build, What you need and the tabs
+- **UI-P74** — The map, read-only
+- **UI-P75** — States, phones, accessibility, budget tests
+- **UI-P76** — Switch it on
+
+
 ## Rules of the road
 
 - **In order.** Four must not be skipped or moved: `UI-P01` (the compare harness), `UI-P03` (the tokens), `UI-P16` (the frame skeleton) and **`UI-P36b`** (the switch — until it runs, everything from `UI-P16` on is built but invisible to visitors).

@@ -6,7 +6,7 @@
    box, which connects them.
 
    SELECTING. A click selects (Details shows it); every box and wire not joined
-   directly to the selection drops to opacity 0.42 and the joined wires go
+   directly to the selection drops to DIMMED (0.67) and the joined wires go
    strong. Esc clears. Double-click or Enter opens the full prompt window.
 
    CONNECTING. Dragging from a box's output dot to a step calls `onConnect`
@@ -28,6 +28,7 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
 import { r } from "@/lib/theme/radius";
@@ -43,10 +44,16 @@ export const MAP_COPY = {
   openedRows: "Left to right by order · boxes outside the frame are part of the build, not the team",
   outside: "Outside",
   bandCaption: "files and tools",
+  /** For a screen reader: the Map is a picture of the List, which reads the same build in order. */
+  listIsReading: "The List shows this same build in order and is the accessible way to read it.",
 } as const;
 
-/** What the joined boxes keep and the rest drop to (UI-P68). */
-export const DIMMED = 0.42;
+/**
+ * What the joined boxes keep and the rest drop to. UI-P68 drew 0.42; UI-P75 measured it: in Noon the
+ * dimmed box's secondary text is 1.9:1 against the frame (3:1 is the floor). 0.67 is the lowest value
+ * at which every text on a dimmed box keeps 3:1 in both themes (Noon 3.02:1, Dusk 4.29:1).
+ */
+export const DIMMED = 0.67;
 
 export interface BuildMapProps {
   /**
@@ -579,6 +586,7 @@ export function BuildMap(props: BuildMapProps) {
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <LiveRegion message={said} />
+      <span style={VISUALLY_HIDDEN}>{MAP_COPY.listIsReading}</span>
       {reader ? null : (
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>

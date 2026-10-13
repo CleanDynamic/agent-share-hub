@@ -58,7 +58,7 @@ describe("selecting", () => {
     expect(props.onOpenPrompt).toHaveBeenCalledTimes(2);
   });
 
-  it("leaves exactly the selected box and its joined boxes at full strength, and the rest at 0.42", () => {
+  it("leaves exactly the selected box and its joined boxes at full strength, and the rest at DIMMED", () => {
     map({ selectedId: "p2" });
     const layout = layoutMap(sandboxMapProps("bakery").steps, sandboxMapProps("bakery").groups, [{ id: "f1", name: "menu.pdf" }], [{ id: "t1", name: "Gmail" }], []);
     const joined = new Set(layout.wires.filter((wire) => wire.from === "p2" || wire.to === "p2").flatMap((wire) => [wire.from, wire.to]));

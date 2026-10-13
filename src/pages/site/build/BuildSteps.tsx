@@ -21,7 +21,7 @@ import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import type { Step } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList, type NeedGroup, type NeedRow, type ReaderFile, type ReaderResult, type ReaderStep } from "@/lib/build/readerSteps";
-import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
+import { scrollBehavior } from "@/lib/theme/motion";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { tokenAlpha, t } from "@/lib/theme/tokens";
@@ -268,7 +268,6 @@ const cardStyle = (ringed: boolean): CSSProperties => ({
   padding: "14px 16px",
   marginBottom: 8,
   boxSizing: "border-box",
-  transition: prefersReducedMotion() ? undefined : "box-shadow 200ms, border-color 200ms",
 });
 
 /* ── the cards ── */

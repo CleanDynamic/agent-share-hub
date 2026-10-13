@@ -877,3 +877,25 @@ describe("publishRebuild", () => {
     expect(mocks.updateBuild.mock.calls[0][1]).toEqual({ rebuild_note: null });
   });
 });
+
+// UI-P75 — a rebuild that renames a step and changes what it uses reads as one change per part.
+describe("changeSet lines for the steps (UI-P75)", () => {
+  it("a changed title and a changed uses are each one 'Changed the prompt' line", () => {
+    const source = sourceRecord();
+    source.tree[0].payload = { text: "Write a short reply", model: "Claude Sonnet", uses: [{ kind: "file", node_id: "n-code" }] } as never;
+    const draft = forkOf(source);
+    draft.tree[0].title = "Draft the reply, shorter";
+    draft.tree[1].title = "The wrapper";
+    draft.tree[0].payload = { text: "Write a short reply", model: "Claude Sonnet", uses: [] } as never;
+    const lines = serialiseChangeSet(changeSet(source, draft)).map((line) => line.text);
+    expect(lines).toEqual(["Changed the prompt 'Draft the reply, shorter'"]);
+  });
+
+  it("changing only what a step uses is still reported, by the step's title", () => {
+    const source = sourceRecord();
+    source.tree[0].payload = { text: "Write a short reply", model: "Claude Sonnet", uses: [{ kind: "file", node_id: "n-code" }] } as never;
+    const draft = forkOf(source);
+    draft.tree[0].payload = { text: "Write a short reply", model: "Claude Sonnet", uses: [] } as never;
+    expect(serialiseChangeSet(changeSet(source, draft)).map((line) => line.text)).toEqual(["Changed the prompt 'Draft the reply'"]);
+  });
+});
