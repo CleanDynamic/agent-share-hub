@@ -365,4 +365,5 @@ export {
   type Use,
   type UseKind,
 } from "./graph";
+export { suggestFromProposal, suggestUses, type Suggestion } from "./suggest";
 export { placeChildNode } from "./composeCover";

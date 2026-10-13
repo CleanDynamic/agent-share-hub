@@ -26,6 +26,7 @@ Contract: docs/reconciliation/CONTRACT.md. Read it, then the newest entry below.
 - FlatShell rightRail and forceRightRail, .fs-right CSS, AppShell's /upload/blueprint branch: removed in RC-P08b (RC-P06)
 - UploadPickerContext, UploadTypePicker, UploadPickerProvider, still imported by src/pages/UploadTypeSelector.tsx and src/lib/bounty-legacy/legacyBountyCreateRetired.test.tsx; deleted in RC-P08b (RC-P08)
 - sitemap-xml, public-api and post-json read content_items: repointed in RC-P30 (RC-P16b)
+- Parser proposal for the composer's detection: design/sandbox/DETECTION-PROPOSAL.md (UI-P71).
 
 ## Critique findings deferred
 From RC-P09c, docs/reconciliation/critique/phase-2.md. Two majors fall outside step 5's limits, each with its reason:
