@@ -44,16 +44,35 @@ import { REPO_ROOT } from "./support/harness";
 
 interface Board {
   file: string;
-  kind: "desktop" | "mobile" | "brand" | "components";
+  kind: "desktop" | "mobile" | "brand" | "components" | "refined";
   theme: "noon" | "dusk";
   page: string;
   width: number;
   height: number;
   title: string;
+  /** Refined boards only: the dev page that draws the same page. Absent for foundations, components and model-marks. */
+  devPage?: string;
 }
 
 const DESIGN_DIR = path.join(REPO_ROOT, "design");
-const BOARDS: Board[] = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, "reference", "index.json"), "utf8"));
+const readIndex = (...parts: string[]): Board[] => JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, ...parts), "utf8"));
+/* UI-P77: the refined look has its own index (24 boards, 1440 wide, no browser strip, no mobile). */
+const BOARDS: Board[] = [...readIndex("reference", "index.json"), ...readIndex("reference", "refined", "index.json")];
+
+/** What a refined board needs done to the dev page to show the same state. The dev pages already take `?lens`, `?build` and `?open`; the rest is clicked after load, so no source outside the dev pages changes. */
+interface RefinedState {
+  query: string;
+  actions?: (page: Page) => Promise<void>;
+}
+const REFINED_STATE: Record<string, RefinedState> = {
+  "build-map": { query: "", actions: async (p) => void (await p.getByRole("radio", { name: "Map" }).click()) },
+  "composer-map": {
+    query: "&build=bakery&lens=map",
+    actions: async (p) => void (await p.getByRole("button", { name: /^Prompt 3\b/ }).click()),
+  },
+  "prompt-window": { query: "&build=bakery&open=1" },
+  "composer-card": { query: "", actions: async (p) => void (await p.getByRole("button", { name: "Card" }).first().click()) },
+};
 
 /** The drawn browser across the top of a desktop board. Not product. */
 const BROWSER_STRIP = 84;
@@ -123,6 +142,56 @@ for (const board of BOARDS) {
         refShot = await refPage.screenshot({
           clip: { x: 0, y: stripped, width: area.width, height: area.height },
         });
+      } finally {
+        await refContext.close();
+      }
+
+      const name = `${slug(title)}.png`;
+      fs.mkdirSync(path.dirname(testInfo.snapshotPath(name)), { recursive: true });
+      fs.writeFileSync(testInfo.snapshotPath(name), refShot);
+      expect.soft(appShot).toMatchSnapshot(name, { maxDiffPixelRatio: MAX_DIFF });
+    });
+  } else if (board.kind === "refined") {
+    if (!board.devPage) {
+      // foundations, components, model-marks: sections of /dev/kit/components?look=refined, compared once UI-P84 to UI-P86 exist.
+      test.skip(`${title} (no dev page yet: compared through /dev/kit/components?look=refined after UI-P84 to UI-P86)`, () => {});
+      continue;
+    }
+    test(title, async ({ browser }, testInfo) => {
+      const area = { x: 0, y: 0, width: board.width, height: board.height };
+      const state = REFINED_STATE[board.page] ?? { query: "" };
+      const appUrl = `${board.devPage}?theme=${board.theme}&viewport=desktop&look=refined${state.query}`;
+
+      const appContext = await browser.newContext({
+        viewport: { width: area.width, height: area.height },
+        deviceScaleFactor: 1,
+        baseURL: testInfo.project.use.baseURL,
+      });
+      const appPage = await appContext.newPage();
+      let appShot: Buffer;
+      try {
+        await openApp(appPage, appUrl);
+        const ready = await appPage.locator("[data-design-ready]").first().getAttribute("data-design-ready");
+        if (ready !== "true") {
+          console.log(`  skipped ${title}: no refined view yet`);
+          test.skip(true, `${title}: no refined view yet (${appUrl} reports data-design-ready="${ready}")`);
+        }
+        await state.actions?.(appPage);
+        appShot = await appPage.screenshot({ fullPage: true, clip: area });
+      } finally {
+        await appContext.close();
+      }
+
+      // No browser strip: a refined board is the page from its top edge.
+      const refContext = await browser.newContext({
+        viewport: { width: board.width, height: board.height },
+        deviceScaleFactor: 1,
+      });
+      const refPage = await refContext.newPage();
+      let refShot: Buffer;
+      try {
+        await openReference(refPage, board);
+        refShot = await refPage.screenshot({ clip: area });
       } finally {
         await refContext.close();
       }

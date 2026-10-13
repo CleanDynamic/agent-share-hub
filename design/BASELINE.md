@@ -186,3 +186,11 @@ Measured on the UI-P52 branch with `DESIGN_MAX_DIFF=0`, so every board reports i
 Import, bounties and solve have no compare page yet (`data-design-ready="false"`), so they are skipped, not compared. After the pass all 28 compared page boards are above 4%. Two failures predate it and are not caused by it: 17 of those 28 were already above 4%, and the catalogue already failed on two section heights (Panels 392px in the reference against 529px in the app, Build cards 700px against 713px, both themes).
 
 `python3 design/build-kit.py --check` passes again. Before UI-P52 it reported six kit files as changed since UI-P00 — `HANDOFF.md`, `README.md` and `RULES.md` (edited by UI-P01, UI-P09b, UI-P13b, UI-P20, UI-P36 and UI-P41c) and the three files in `tokens/` (UI-P09b) — so a restore would have reverted them. The script now carries them as they are.
+
+## Refined look, before UI-P78
+
+`npm run audit:design -- --grep "refined/"` on the UI-P77 harness: **24 skipped, 0 passed, 0 failed.**
+
+- 18 boards with a dev page (`home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`, in Noon and Dusk) are skipped because `/dev/kit/pages/<page>?look=refined` reports `data-design-ready="false"`: no refined view exists yet.
+- 6 boards without a dev page (`foundations`, `components`, `model-marks`, in both themes) are skipped until UI-P84 to UI-P86 give `/dev/kit/components?look=refined` its sections.
+- Dev-page states: the dev pages already took `?lens=map`, `?build=bakery` and `?open=1`, so the only dev change is `KitPages` answering `?look=refined` with `data-design-ready="false"`. The Map radio on `build-map`, Prompt 3 on `composer-map` and the Card button on `composer-card` are clicked by the harness after load (`REFINED_STATE` in `design-compare.spec.ts`).
