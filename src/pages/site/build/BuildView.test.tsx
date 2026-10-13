@@ -447,3 +447,17 @@ describe("landTab (UI-P73)", () => {
     expect(landTab("understand", true)).toBe("understand");
   });
 });
+
+describe("BuildViewSkeleton with the steps (UI-P75)", () => {
+  it("draws The build and What you need as bones, and no anatomy, viewer or timeline", () => {
+    render(
+      <MemoryRouter>
+        <BuildViewSkeleton steps />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "The build" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "What you need" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Anatomy" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Watch it get built" })).toBeNull();
+  });
+});

@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
@@ -235,6 +236,31 @@ export function SandboxPage() {
   );
 
   /** Writes to a node inside an agent or a team are not laid over the tree, so read the build again once they land. */
+  /* UI-P75 — what a screen reader hears: "Prompt 3 added", "Prompt 2 removed", "Moved to 1", "Input added", "Map is now available". */
+  const [heard, say] = useAnnouncer();
+  const numberOf = (id: string) => flatten(steps).find((step) => step.id === id)?.number;
+  const addNow = (input: { text: string; tool: string | null; model: string | null }) => {
+    const n = steps.length + 1;
+    return prompts.addNow(input).then((added) => {
+      if (added) say(`Prompt ${n} added`);
+      return added;
+    });
+  };
+  const move = (key: string, direction: -1 | 1) => {
+    const at = steps.findIndex((step) => step.id === key);
+    prompts.move(key, direction);
+    if (at >= 0) say(`Moved to ${at + direction + 1}`);
+  };
+  const remove = (key: string) => {
+    const n = numberOf(key);
+    prompts.remove(key);
+    if (n) say(`Prompt ${n} removed`);
+  };
+  const wasMapAvailable = useRef(mapAvailable);
+  useEffect(() => {
+    if (mapAvailable && !wasMapAvailable.current) say("Map is now available");
+    wasMapAvailable.current = mapAvailable;
+  }, [mapAvailable, say]);
   const afterWrite = useCallback(() => {
     void nodes.settled().then(() => {
       if (build?.id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build.id) });
@@ -439,6 +465,7 @@ export function SandboxPage() {
           if (files.length > 0) onPicked(files);
         }}
       />
+      <LiveRegion message={heard} />
       <SandboxView
         {...viewProps}
         onAddFile={pick}
@@ -470,6 +497,7 @@ export function SandboxPage() {
             }}
             onConnect={(toId, use) => {
               prompts.accept(toId, use, steps);
+              say("Input added");
               afterWrite();
             }}
           />
@@ -484,6 +512,7 @@ export function SandboxPage() {
             onModel={prompts.setModel}
             onAddUse={(id, use) => {
               prompts.accept(id, use, steps);
+              say("Input added");
               afterWrite();
             }}
             onRemoveUse={(id, use) => {
@@ -534,13 +563,13 @@ export function SandboxPage() {
             onSelect={setSelectedId}
             onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
-            onMove={prompts.move}
-            onRemove={prompts.remove}
+            onMove={move}
+            onRemove={remove}
             onAddAgentPrompt={onAddAgentPrompt}
             onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
-            onAddPrompt={prompts.addNow}
+            onAddPrompt={addNow}
             focusAdd={focusAdd}
           />
         }
