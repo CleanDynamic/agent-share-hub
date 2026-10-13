@@ -78,6 +78,13 @@
       "when": 1791469695447,
       "tag": "0010_sessions_and_making",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791897168380,
+      "tag": "0011_sandbox_node_types",
+      "breakpoints": true
     }
   ]
 }
