@@ -18,6 +18,7 @@
 
 import { describe, expect, it } from "vitest";
 import { dusk, noon, type TokenName } from "./semantics";
+import { resolveRefined } from "./refined";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
@@ -463,5 +464,70 @@ describe("text on --glass-fill over the backdrop's extremes", () => {
 
   it("keeps the two fills different on purpose, and raises neither to match the other", () => {
     expect(THEMES.noon["glass-fill"]).not.toBe(THEMES.dusk["glass-fill"]);
+  });
+});
+
+/* ── the refined look (UI-P79) ────────────────────────────────────────────────
+   The refined blocks in src/index.css, measured from refined.ts. Translucent
+   fills (Dusk's evidence-fill) are composited over the card they sit on. */
+
+describe("the refined look's colour contract (UI-P79)", () => {
+  const resolved = (theme: ThemeKey, name: string) => resolveRefined(theme, name);
+  const paint = (theme: ThemeKey, name: string, on: string) => {
+    const value = resolved(theme, name);
+    return parse(value)[3] === 1 ? value : over(value, resolved(theme, on));
+  };
+  const ratio = (theme: ThemeKey, fg: string, bg: string, floorGround = bg) =>
+    contrast(resolved(theme, fg), paint(theme, bg, floorGround));
+
+  const GROUNDS = ["surface", "module", "tile", "well", "frame"];
+  const cases: Array<[ThemeKey, string, string]> = [];
+  for (const theme of ["noon", "dusk"] as const) {
+    for (const fg of ["text", "text2", "label"]) for (const bg of GROUNDS) cases.push([theme, fg, bg]);
+  }
+
+  it.each(cases)("%s: %s on %s is at least 4.5:1", (theme, fg, bg) => {
+    expect(round(ratio(theme, fg, bg))).toBeGreaterThanOrEqual(TEXT_FLOOR);
+  });
+
+  it.each(["noon", "dusk"] as const)("%s: evidence on evidence-fill, on a card and on the surface", (theme) => {
+    for (const on of ["module", "surface"]) {
+      expect(round(contrast(resolved(theme, "evidence"), paint(theme, "evidence-fill", on)))).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    }
+  });
+
+  it.each(["noon", "dusk"] as const)("%s: the filled pairs read", (theme) => {
+    for (const [fg, bg] of [["on-action", "action"], ["on-pill", "pill"], ["on-tag", "tag-fill"]]) {
+      expect(round(ratio(theme, fg, bg)), `${fg} on ${bg}`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    }
+  });
+
+  /* UI-P79 asks every `cat-*` to reach 4.5:1 on `module` AND to use the values
+     it lists, "exactly as written". Four of Noon's nine cannot do both: measured
+     on #FAFAFA, cat-instruction is 3.98, cat-artefact 3.97, cat-configuration
+     4.20 and cat-media 4.42. The values are kept as the prompt gives them and
+     the shortfall is pinned here at what was measured (a ratchet: it may rise,
+     never fall), not hidden and not quietly passed. They are above the 3.0 UI
+     floor, which is what a chip's mark and edge need; text in these hues must
+     sit on the `cat-*-fill` pairing or be darkened by a later prompt. Dusk's
+     nine all pass 4.5. */
+  const NOON_BELOW_TEXT_FLOOR: Record<string, number> = {
+    "cat-instruction": 3.98,
+    "cat-artefact": 3.97,
+    "cat-configuration": 4.2,
+    "cat-media": 4.42,
+  };
+
+  it.each(["noon", "dusk"] as const)("%s: each category hue on module", (theme) => {
+    for (const cat of CATEGORIES) {
+      const measured = round(ratio(theme, cat, "module"));
+      const pinned = theme === "noon" ? NOON_BELOW_TEXT_FLOOR[cat] : undefined;
+      if (pinned === undefined) {
+        expect(measured, `${cat} on module`).toBeGreaterThanOrEqual(TEXT_FLOOR);
+      } else {
+        expect(measured, `${cat} on module is pinned below ${TEXT_FLOOR}`).toBeGreaterThanOrEqual(pinned);
+        expect(measured, `${cat} now reaches ${TEXT_FLOOR}: remove it from NOON_BELOW_TEXT_FLOOR`).toBeLessThan(TEXT_FLOOR);
+      }
+    }
   });
 });

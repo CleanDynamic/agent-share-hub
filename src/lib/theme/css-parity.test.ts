@@ -14,7 +14,8 @@ import { readFileSync } from "node:fs";
 import { TOKEN_NAMES, noon, dusk } from "./semantics";
 import { RADIUS, RADIUS_NAMES } from "./radius";
 import { ELEVATION_TOKENS, duskElevation, noonElevation } from "./elevation";
-import { SHADCN_NAMES, duskShadcn, noonShadcn } from "./shadcn";
+import { SHADCN_NAMES, duskShadcn, noonShadcn, duskRefinedShadcn, noonRefinedShadcn } from "./shadcn";
+import { REFINED_NAMES, REFINED_NEW_NAMES, duskRefined, noonRefined } from "./refined";
 import { MOTION_NAMES, MOTION_TOKENS } from "./motion";
 
 const css = readFileSync("src/index.css", "utf-8");
@@ -142,5 +143,51 @@ describe("index.css mirrors elevation.ts", () => {
     const light = parse(':root,\n:root[data-theme="noon"]');
     const dark = parse(':root[data-theme="dusk"]');
     for (const n of ELEVATION_TOKENS) expect(dark[n]).not.toBe(light[n]);
+  });
+});
+
+describe("index.css mirrors refined.ts (UI-P79)", () => {
+  const dusk_ = parse(':root[data-theme="dusk"][data-look="refined"]');
+  const noon_ = parse(':root[data-theme="noon"][data-look="refined"]');
+  const expected = [...REFINED_NAMES, ...SHADCN_NAMES].sort();
+
+  it("holds both refined blocks to the same set of names", () => {
+    expect(Object.keys(dusk_).sort()).toEqual(Object.keys(noon_).sort());
+    expect(Object.keys(noon_).sort()).toEqual(expected);
+  });
+
+  it("declares every refined value, as written", () => {
+    for (const n of REFINED_NAMES) {
+      expect([n, dusk_[n]]).toEqual([n, duskRefined[n]]);
+      expect([n, noon_[n]]).toEqual([n, noonRefined[n]]);
+    }
+  });
+
+  it("declares the shadcn bridge, repointed", () => {
+    for (const n of SHADCN_NAMES) {
+      expect([n, dusk_[n]]).toEqual([n, duskRefinedShadcn[n]]);
+      expect([n, noon_[n]]).toEqual([n, noonRefinedShadcn[n]]);
+    }
+  });
+
+  it("repoints only names the theme blocks already declare, plus the new ones", () => {
+    const declared = new Set<string>(DECLARED);
+    const stray = REFINED_NAMES.filter((n) => !declared.has(n));
+    expect(stray).toEqual([]);
+  });
+
+  it("aliases every new name in the current look, so the switch off changes nothing", () => {
+    const light = parse(':root,\n:root[data-theme="noon"]');
+    const dark = parse(':root[data-theme="dusk"]');
+    for (const n of REFINED_NEW_NAMES) {
+      expect(light[n], `--${n} in the noon block`).toBeDefined();
+      expect([n, dark[n]]).toEqual([n, light[n]]);
+    }
+  });
+
+  it("keeps the refined blocks after the theme blocks and out of the bare :root", () => {
+    const at = (sel: string) => css.indexOf(sel);
+    expect(at(':root[data-theme="dusk"][data-look="refined"]')).toBeGreaterThan(at(':root[data-theme="dusk"] {'));
+    expect(at(':root[data-theme="noon"][data-look="refined"]')).toBeGreaterThan(at(':root[data-theme="dusk"][data-look="refined"]'));
   });
 });

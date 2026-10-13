@@ -202,7 +202,7 @@ export function ContentCard({
         className="relative w-full text-left flex flex-col p-5"
         data-visual-slot="feed-card"
         style={{
-          background: 'var(--surface)',
+          background: 'var(--glass)',
           border: '1px solid var(--line)',
           borderRadius: 'var(--radius-card)',
           marginBottom: '8px',

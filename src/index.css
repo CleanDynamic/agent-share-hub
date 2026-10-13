@@ -87,7 +87,10 @@
      cards, and the theme says a card is --glass over --glass-border. It was
      `rgba(255,255,255,0.03)`: a 3% white wash, which is an invisible card on
      the Noon ground and was never a surface tier in this system. */
-  --surface: var(--glass);
+  /* --surface WAS HERE, `var(--glass)`, for ContentCard, FeedItem and BountyCard.
+     UI-P79 gives the name to the refined look's one page panel (theme blocks
+     below), so those three read `var(--glass)` directly, which is the value
+     this was. */
   /* The hover step for the same three cards' hairline. `--text2` is what the
      Explore rail's own stylesheet already steps a hairline up to on hover
      (`.ns-right-search:hover`), so this is a legal pairing reused rather than
@@ -239,6 +242,54 @@
   --shadow-dock: inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3);
   --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
   --signin-edge: inset 0 0 0 1px rgba(255,255,255,.9), inset 0 0 120px rgba(203,198,228,.6), inset 0 -80px 160px rgba(239,196,168,.55);
+
+  /* UI-P79 — current-look aliases of the refined names (semantics.ts). Each
+     points at the token a primitive reads today, so nothing moves while
+     data-look is absent. */
+  --frame: var(--bg);
+  --surface: var(--flat);
+  --surface-border: var(--hairline);
+  --surface-shadow: var(--panel-highlight);
+  --module: var(--glass);
+  --module-border: var(--glass-border);
+  --module-shadow: var(--shadow-card);
+  --tile: var(--cell);
+  --tile-border: var(--hairline);
+  --well: var(--field);
+  --well-border: var(--line);
+  --well-shadow: none;
+  --hairline-module: var(--hairline);
+  --control: var(--glass-2);
+  --control-border: var(--line);
+  --control-shadow: none;
+  --control-on: var(--tab);
+  --seg-track: var(--glass-2);
+  --seg-border: var(--line);
+  --action-shadow: none;
+  --tag-fill: var(--glass-2);
+  --on-tag: var(--text2);
+  --pill: var(--glass-2);
+  --on-pill: var(--text);
+  --lit-mark: var(--lit);
+  --nav-mark: var(--lit);
+  --breakage: var(--cat-breakage);
+  --breakage-fill: var(--secret-fill);
+  --info: var(--cat-data);
+  --frozen: var(--cat-data);
+  --selected-edge: var(--text);
+  --selected-fill: var(--glass);
+  --selected-ring: 0 0 0 1px var(--text);
+  --window: var(--solid);
+  --window-border: var(--glass-border);
+  --window-shadow: var(--shadow-float);
+  --sheet-shadow: var(--shadow-float);
+  --dot-grid: var(--hairline);
+  --avatar-fill: var(--recess);
+  --on-avatar: var(--text);
+  --logo-ink: var(--text);
+  --bar-mid: var(--line);
+  --paper: var(--porthole);
+  --dim-filter: opacity(.45);
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
@@ -448,6 +499,54 @@
   --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
   --signin-edge: inset 0 0 0 1px rgba(203,198,228,.25), inset 0 0 26px rgba(203,198,228,.45), inset 0 0 120px rgba(217,140,107,.45), inset 0 -80px 180px rgba(140,120,196,.45);
 
+  /* UI-P79 — current-look aliases of the refined names (semantics.ts). Each
+     points at the token a primitive reads today, so nothing moves while
+     data-look is absent. */
+  --frame: var(--bg);
+  --surface: var(--flat);
+  --surface-border: var(--hairline);
+  --surface-shadow: var(--panel-highlight);
+  --module: var(--glass);
+  --module-border: var(--glass-border);
+  --module-shadow: var(--shadow-card);
+  --tile: var(--cell);
+  --tile-border: var(--hairline);
+  --well: var(--field);
+  --well-border: var(--line);
+  --well-shadow: none;
+  --hairline-module: var(--hairline);
+  --control: var(--glass-2);
+  --control-border: var(--line);
+  --control-shadow: none;
+  --control-on: var(--tab);
+  --seg-track: var(--glass-2);
+  --seg-border: var(--line);
+  --action-shadow: none;
+  --tag-fill: var(--glass-2);
+  --on-tag: var(--text2);
+  --pill: var(--glass-2);
+  --on-pill: var(--text);
+  --lit-mark: var(--lit);
+  --nav-mark: var(--lit);
+  --breakage: var(--cat-breakage);
+  --breakage-fill: var(--secret-fill);
+  --info: var(--cat-data);
+  --frozen: var(--cat-data);
+  --selected-edge: var(--text);
+  --selected-fill: var(--glass);
+  --selected-ring: 0 0 0 1px var(--text);
+  --window: var(--solid);
+  --window-border: var(--glass-border);
+  --window-shadow: var(--shadow-float);
+  --sheet-shadow: var(--shadow-float);
+  --dot-grid: var(--hairline);
+  --avatar-fill: var(--recess);
+  --on-avatar: var(--text);
+  --logo-ink: var(--text);
+  --bar-mid: var(--line);
+  --paper: var(--porthole);
+  --dim-filter: opacity(.45);
+
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
@@ -510,6 +609,381 @@
   --sidebar-accent-foreground: 264 31% 94%;
   --sidebar-border: 266 13% 24%;
   --sidebar-ring: 39 67% 55%;
+}
+
+/* ── The refined look (UI-P79) ─────────────────────────────────────────────────
+   Every colour, shadow and edge the refined look needs, in both themes. The
+   values are in src/lib/theme/refined.ts (from design/prompts/UI-P79.md);
+   css-parity.test.ts holds this to it. These blocks apply only when
+   <html data-look="refined"> is set (src/lib/theme/look.ts), which is off until
+   UI-P98 and on for `/dev/*?look=refined`. With the attribute absent the
+   current look is untouched. Glows, arcs, orbs and glass resolve to flat values.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root[data-theme="dusk"][data-look="refined"] {
+  --frame: #0F0F10;
+  --surface: #19191B;
+  --surface-border: #232326;
+  --surface-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  --module: #1E1E21;
+  --module-border: #29292D;
+  --module-shadow: none;
+  --tile: #232327;
+  --tile-border: #2E2E33;
+  --well: #141416;
+  --well-border: #27272B;
+  --well-shadow: inset 0 1px 1px rgba(0,0,0,.35);
+  --hairline: #26262A;
+  --hairline-module: #2A2A2E;
+  --line: #34343A;
+  --text: #EDEDEF;
+  --text2: #A0A0A6;
+  --label: #8E8E94;
+  --control: #27272B;
+  --control-border: #323237;
+  --control-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.35);
+  --control-on: #2F2F34;
+  --seg-track: #141416;
+  --seg-border: #27272B;
+  --action: #EDEDEF;
+  --on-action: #121214;
+  --action-shadow: inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45);
+  --tag-fill: #26262A;
+  --on-tag: #A0A0A6;
+  --pill: #303035;
+  --on-pill: #CFCFD3;
+  --lit: #F5CB4C;
+  --lit-mark: #F5CB4C;
+  --lamp-glow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25);
+  --nav-mark: #F5CB4C;
+  --nav-lamp-glow: 0 0 8px rgba(245,203,76,.55);
+  --lit-ink: #E8C468;
+  --evidence: #86D193;
+  --evidence-fill: rgba(134,209,147,.12);
+  --breakage: #E5807F;
+  --breakage-fill: rgba(229,128,127,.12);
+  --info: #82A9E8;
+  --frozen: #8FB8D0;
+  --selected-edge: #8E8E95;
+  --selected-fill: #222226;
+  --selected-ring: 0 0 0 1px #8E8E95;
+  --scrim: rgba(10,10,11,.72);
+  --window: #1E1E21;
+  --window-border: #2E2E33;
+  --window-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75);
+  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.7);
+  --dot-grid: rgba(255,255,255,.055);
+  --avatar-fill: #2C2C30;
+  --on-avatar: #CFCFD3;
+  --logo-ink: #EDEDEF;
+  --bar-base: #3A3A3F;
+  --bar-mid: #55555B;
+  --paper: #0C0C0D;
+  --dim-filter: brightness(.48) saturate(.5);
+  --focus-ring: #8EB4F0;
+  --cat-instruction: #E39A78;
+  --cat-instruction-fill: rgba(227,154,120,.12);
+  --cat-configuration: #C9C27A;
+  --cat-configuration-fill: rgba(201,194,122,.12);
+  --cat-data: #82A9E8;
+  --cat-data-fill: rgba(130,169,232,.12);
+  --cat-artefact: #D9B36C;
+  --cat-artefact-fill: rgba(217,179,108,.12);
+  --cat-evidence: #86D193;
+  --cat-evidence-fill: rgba(134,209,147,.12);
+  --cat-narrative: #A0A0A6;
+  --cat-narrative-fill: rgba(160,160,166,.12);
+  --cat-agents: #A996E8;
+  --cat-agents-fill: rgba(169,150,232,.12);
+  --cat-breakage: #E5807F;
+  --cat-breakage-fill: rgba(229,128,127,.12);
+  --cat-media: #E08FB4;
+  --cat-media-fill: rgba(224,143,180,.12);
+  --bg: var(--frame);
+  --backdrop: var(--frame);
+  --ambient: linear-gradient(transparent, transparent);
+  --recess: var(--well);
+  --glass: var(--module);
+  --glass-2: var(--control);
+  --glass-border: var(--module-border);
+  --glass-hi: rgba(255,255,255,.04);
+  --glass-fill: var(--module);
+  --glass-rim: transparent;
+  --glass-halo: 0 0 0 0 transparent;
+  --panel-highlight: var(--surface-shadow);
+  --panel-highlight-color: rgba(255,255,255,.035);
+  --card-frame: var(--module);
+  --card-thread: var(--tile);
+  --on-evidence: #121214;
+  --on-evidence-fill: var(--evidence);
+  --on-lit: #111112;
+  --porthole: var(--paper);
+  --chrome-hi: #45454C;
+  --chrome-lo: #222225;
+  --on-text: #121214;
+  --header: transparent;
+  --header-border: transparent;
+  --cell: var(--tile);
+  --row-highlight: var(--tile);
+  --solid: var(--module);
+  --flat: var(--surface);
+  --viewer-block: var(--well);
+  --tab: var(--control-on);
+  --field: var(--well);
+  --media-tag: rgba(15,15,16,.78);
+  --plate: rgba(15,15,16,.62);
+  --dock: var(--surface);
+  --dock-border: var(--surface-border);
+  --dock-tile: var(--control);
+  --inverse: var(--text);
+  --on-inverse: #121214;
+  --on-inverse-2: #55555B;
+  --inverse-evidence-fill: #DDF2E1;
+  --on-inverse-evidence-fill: #14301C;
+  --ring-glow: 0 0 0 0 transparent;
+  --rank-glow: 0 0 0 0 transparent;
+  --tagline-chip: var(--control);
+  --on-tagline-chip: var(--text);
+  --tagline-lamp: var(--lit);
+  --orb-glass: linear-gradient(var(--module), var(--module));
+  --orb-glass-edge: var(--module-border);
+  --on-orb-glass: var(--text);
+  --orb-solid: linear-gradient(var(--module), var(--module));
+  --on-orb-solid: var(--text);
+  --on-orb-solid-2: var(--text2);
+  --arc-1: transparent;
+  --arc-2: transparent;
+  --arc-3: transparent;
+  --arc-haze: transparent;
+  --arc-outer: transparent;
+  --shadow-float: var(--window-shadow);
+  --shadow-card: var(--module-shadow);
+  --shadow-square: 0 1px 2px rgba(0,0,0,.45);
+  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.5);
+  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.5);
+  --ring-track: var(--hairline-module);
+  --picture-lamp-glow: var(--lamp-glow);
+  --picture-lamp-wash: rgba(245,203,76,.10);
+  --banner-scrim: rgba(15,15,16,.75);
+  --inset: var(--tile);
+  --turn: rgba(255,255,255,.03);
+  --secret-fill: var(--breakage-fill);
+  --sheet-dim: rgba(10,10,11,.5);
+  --signin-edge: inset 0 0 0 1px var(--module-border);
+  --elev-raised: var(--control-shadow);
+  --elev-overlay: var(--window-shadow);
+
+  /* The shadcn bridge, repointed (shadcn.ts). */
+  --background: 240 3% 6%;
+  --foreground: 240 6% 93%;
+  --card: 240 5% 12%;
+  --card-foreground: 240 6% 93%;
+  --popover: 240 5% 12%;
+  --popover-foreground: 240 6% 93%;
+  --primary: 240 6% 93%;
+  --primary-foreground: 240 5% 7%;
+  --secondary: 240 5% 8%;
+  --secondary-foreground: 240 6% 93%;
+  --muted: 240 5% 8%;
+  --muted-foreground: 240 3% 64%;
+  --accent: 240 5% 8%;
+  --accent-foreground: 240 6% 93%;
+  --destructive: 1 66% 70%;
+  --destructive-foreground: 240 5% 7%;
+  --border: 240 5% 16%;
+  --input: 240 5% 16%;
+  --ring: 217 77% 75%;
+  --sidebar-background: 240 3% 6%;
+  --sidebar-foreground: 240 6% 93%;
+  --sidebar-primary: 240 6% 93%;
+  --sidebar-primary-foreground: 240 5% 7%;
+  --sidebar-accent: 240 5% 8%;
+  --sidebar-accent-foreground: 240 6% 93%;
+  --sidebar-border: 240 5% 16%;
+  --sidebar-ring: 217 77% 75%;
+}
+
+:root[data-theme="noon"][data-look="refined"] {
+  --frame: #E9E9E9;
+  --surface: #F4F4F4;
+  --surface-border: #DCDCDC;
+  --surface-shadow: 0 1px 2px rgba(0,0,0,.05);
+  --module: #FAFAFA;
+  --module-border: #E1E1E1;
+  --module-shadow: 0 1px 2px rgba(0,0,0,.04);
+  --tile: #EFEFEF;
+  --tile-border: #E2E2E2;
+  --well: #ECECEC;
+  --well-border: #D9D9D9;
+  --well-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+  --hairline: #E0E0E0;
+  --hairline-module: #E7E7E7;
+  --line: #CFCFCF;
+  --text: #1C1C1C;
+  --text2: #575757;
+  --label: #666666;
+  --control: #FFFFFF;
+  --control-border: #D9D9D9;
+  --control-shadow: 0 1px 2px rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.03);
+  --control-on: #FFFFFF;
+  --seg-track: #E6E6E6;
+  --seg-border: #D9D9D9;
+  --action: #1C1C1C;
+  --on-action: #FFFFFF;
+  --action-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25);
+  --tag-fill: #E9E9E9;
+  --on-tag: #575757;
+  --pill: #E6E6E6;
+  --on-pill: #333333;
+  --lit: #E0A21A;
+  --lit-mark: #F5CB4C;
+  --lamp-glow: none;
+  --nav-mark: #1C1C1C;
+  --nav-lamp-glow: none;
+  --lit-ink: #8F5E00;
+  --evidence: #166F31;
+  --evidence-fill: #E1F1E5;
+  --breakage: #C42E1C;
+  --breakage-fill: #F9E6E3;
+  --info: #2563EB;
+  --frozen: #3F86B5;
+  --selected-edge: #1C1C1C;
+  --selected-fill: #FFFFFF;
+  --selected-ring: 0 0 0 1px #1C1C1C;
+  --scrim: rgba(28,28,28,.32);
+  --window: #FAFAFA;
+  --window-border: #DCDCDC;
+  --window-shadow: 0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3);
+  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.25);
+  --dot-grid: rgba(0,0,0,.08);
+  --avatar-fill: #E2E2E2;
+  --on-avatar: #333333;
+  --logo-ink: #1C1C1C;
+  --bar-base: #E0E0E0;
+  --bar-mid: #C4C4C4;
+  --paper: #F1F1F1;
+  --dim-filter: contrast(.42) brightness(1.32);
+  --focus-ring: #2563EB;
+  --cat-instruction: #C0623A;
+  --cat-instruction-fill: rgba(192,98,58,.10);
+  --cat-configuration: #857A14;
+  --cat-configuration-fill: rgba(133,122,20,.10);
+  --cat-data: #2D6BE4;
+  --cat-data-fill: rgba(45,107,228,.10);
+  --cat-artefact: #A3741A;
+  --cat-artefact-fill: rgba(163,116,26,.10);
+  --cat-evidence: #23804F;
+  --cat-evidence-fill: rgba(35,128,79,.10);
+  --cat-narrative: #5F5F5B;
+  --cat-narrative-fill: rgba(95,95,91,.10);
+  --cat-agents: #6B52D6;
+  --cat-agents-fill: rgba(107,82,214,.10);
+  --cat-breakage: #C93E32;
+  --cat-breakage-fill: rgba(201,62,50,.10);
+  --cat-media: #BE4C84;
+  --cat-media-fill: rgba(190,76,132,.10);
+  --bg: var(--frame);
+  --backdrop: var(--frame);
+  --ambient: linear-gradient(transparent, transparent);
+  --recess: var(--well);
+  --glass: var(--module);
+  --glass-2: var(--control);
+  --glass-border: var(--module-border);
+  --glass-hi: rgba(255,255,255,.6);
+  --glass-fill: var(--module);
+  --glass-rim: transparent;
+  --glass-halo: 0 0 0 0 transparent;
+  --panel-highlight: var(--surface-shadow);
+  --panel-highlight-color: transparent;
+  --card-frame: var(--module);
+  --card-thread: var(--tile);
+  --on-evidence: #FFFFFF;
+  --on-evidence-fill: var(--evidence);
+  --on-lit: #111112;
+  --porthole: var(--paper);
+  --chrome-hi: #FFFFFF;
+  --chrome-lo: #D6D6D6;
+  --on-text: #FFFFFF;
+  --header: transparent;
+  --header-border: transparent;
+  --cell: var(--tile);
+  --row-highlight: var(--tile);
+  --solid: var(--module);
+  --flat: var(--surface);
+  --viewer-block: var(--well);
+  --tab: var(--control-on);
+  --field: var(--well);
+  --media-tag: rgba(255,255,255,.88);
+  --plate: rgba(250,250,250,.84);
+  --dock: var(--surface);
+  --dock-border: var(--surface-border);
+  --dock-tile: var(--control);
+  --inverse: var(--text);
+  --on-inverse: #FFFFFF;
+  --on-inverse-2: #BDBDBD;
+  --inverse-evidence-fill: #1F3A27;
+  --on-inverse-evidence-fill: #DDF2E1;
+  --ring-glow: 0 0 0 0 transparent;
+  --rank-glow: 0 0 0 0 transparent;
+  --tagline-chip: var(--control);
+  --on-tagline-chip: var(--text);
+  --tagline-lamp: var(--lit);
+  --orb-glass: linear-gradient(var(--module), var(--module));
+  --orb-glass-edge: var(--module-border);
+  --on-orb-glass: var(--text);
+  --orb-solid: linear-gradient(var(--module), var(--module));
+  --on-orb-solid: var(--text);
+  --on-orb-solid-2: var(--text2);
+  --arc-1: transparent;
+  --arc-2: transparent;
+  --arc-3: transparent;
+  --arc-haze: transparent;
+  --arc-outer: transparent;
+  --shadow-float: var(--window-shadow);
+  --shadow-card: var(--module-shadow);
+  --shadow-square: 0 1px 2px rgba(0,0,0,.08);
+  --shadow-dock: 0 12px 32px rgba(0,0,0,.12);
+  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.14);
+  --ring-track: var(--hairline-module);
+  --picture-lamp-glow: var(--lamp-glow);
+  --picture-lamp-wash: rgba(245,203,76,.16);
+  --banner-scrim: rgba(244,244,244,.85);
+  --inset: var(--tile);
+  --turn: rgba(0,0,0,.025);
+  --secret-fill: var(--breakage-fill);
+  --sheet-dim: rgba(28,28,28,.25);
+  --signin-edge: inset 0 0 0 1px var(--module-border);
+  --elev-raised: var(--control-shadow);
+  --elev-overlay: var(--window-shadow);
+
+  /* The shadcn bridge, repointed (shadcn.ts). */
+  --background: 0 0% 91%;
+  --foreground: 0 0% 11%;
+  --card: 0 0% 98%;
+  --card-foreground: 0 0% 11%;
+  --popover: 0 0% 98%;
+  --popover-foreground: 0 0% 11%;
+  --primary: 0 0% 11%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 93%;
+  --secondary-foreground: 0 0% 11%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 34%;
+  --accent: 0 0% 93%;
+  --accent-foreground: 0 0% 11%;
+  --destructive: 6 75% 44%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 221 83% 53%;
+  --sidebar-background: 0 0% 91%;
+  --sidebar-foreground: 0 0% 11%;
+  --sidebar-primary: 0 0% 11%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 93%;
+  --sidebar-accent-foreground: 0 0% 11%;
+  --sidebar-border: 0 0% 88%;
+  --sidebar-ring: 221 83% 53%;
 }
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
