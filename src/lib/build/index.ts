@@ -365,4 +365,17 @@ export {
   type Use,
   type UseKind,
 } from "./graph";
+export {
+  buildCounts,
+  readerResults,
+  readerSteps,
+  stepsMarkdown,
+  whatYouNeed,
+  type NeedGroup,
+  type NeedRow,
+  type ReaderChat,
+  type ReaderResult,
+  type ReaderStep,
+} from "./readerSteps";
+export { suggestFromProposal, suggestUses, type Suggestion } from "./suggest";
 export { placeChildNode } from "./composeCover";

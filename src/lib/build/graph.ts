@@ -64,6 +64,8 @@ export interface Step {
   tool: string | null;
   runs: Runs | null;
   uses: Use[];
+  /** Suggestions the maker dismissed, as "<kind>:<node_id>". */
+  dismissed?: string[];
   children: Step[];
   /** A manual step's picture (its `media_id`), when it has one. */
   mediaId?: string | null;
@@ -183,6 +185,9 @@ const byPosition = <T extends Pick<BuildNode, "position">>(nodes: readonly T[]):
     .filter((node) => typeof node.position === "number")
     .sort((a, b) => (a.position as number) - (b.position as number));
 
+const dismissedOf = (payload: Payload): string[] =>
+  Array.isArray(payload.dismissed) ? payload.dismissed.filter((key): key is string => typeof key === "string") : [];
+
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
   const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : (stringOf(payload.text) ?? "");
@@ -201,6 +206,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     tool: tool ? (toolLabel(tool) ?? tool) : null,
     runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
     uses: usesOf(node),
+    dismissed: dismissedOf(payload),
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
   };
@@ -217,6 +223,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     defaultTitle: "Instructions",
     runs: null,
     uses: [],
+    dismissed: [],
     sessionId: null,
     tool: null,
     children: [],

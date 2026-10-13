@@ -49,6 +49,7 @@ import { BuildMap } from "./BuildMap";
 import { DetailsPanel } from "./DetailsPanel";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
+import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
@@ -126,10 +127,6 @@ export function SandboxPage() {
 
   const [focusAdd, setFocusAdd] = useState(0);
   const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
-  // Suggestions arrive with UI-P71; until then there are none.
-  const suggestions: ListSuggestion[] = useMemo(() => [], []);
-  const mapSuggestions: MapSuggestion[] = useMemo(() => [], []);
-
   const listFacts = useMemo(() => {
     const names: Record<string, string> = {};
     const intoResult = new Set<string>();
@@ -154,6 +151,21 @@ export function SandboxPage() {
     return { names, intoResult, results };
   }, [tree, steps]);
   const mapPieces = useMemo(() => pieces(tree, []), [tree]);
+  // UI-P71: exact facts only — a file named word for word in a prompt.
+  const suggestions: ListSuggestion[] = useMemo(
+    () =>
+      suggestUses(
+        steps,
+        Object.entries(listFacts.names)
+          .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE))
+          .map(([id, name]) => ({ id, name })),
+      ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
+    [steps, tree, listFacts.names],
+  );
+  const mapSuggestions: MapSuggestion[] = useMemo(
+    () => suggestions.map(({ stepId, use, label }) => ({ stepId, use, label })),
+    [suggestions],
+  );
   const mapResults = useMemo<MapResult[]>(
     () =>
       tree
