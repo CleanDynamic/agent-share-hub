@@ -14,6 +14,6 @@
    ROLLBACK is to set the value back to `false`. Nothing the old screens use
    is removed. */
 
-export const SANDBOX_COMPOSER_ENABLED = false as const;
+export const SANDBOX_COMPOSER_ENABLED = true as const;
 
-export const BUILD_PAGE_STEPS_ENABLED = false as const;
+export const BUILD_PAGE_STEPS_ENABLED = true as const;
