@@ -94,7 +94,7 @@ function NumberField({
   );
 }
 
-function Switch({ on, label, onChange, phone }: { on: boolean; label: string; onChange: (on: boolean) => void; phone: boolean }) {
+export function Switch({ on, label, onChange, phone }: { on: boolean; label: string; onChange: (on: boolean) => void; phone: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button

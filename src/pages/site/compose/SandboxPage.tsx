@@ -46,6 +46,7 @@ import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput } from "./AddAg
 import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { RefinedFullPromptWindow } from "@/components/build/RefinedFullPromptWindow";
 import { BuildMap } from "./BuildMap";
 import { DetailsPanel } from "./DetailsPanel";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
@@ -79,6 +80,8 @@ export function SandboxPage() {
   const List = refined ? RefinedBuildList : BuildList;
   const Details = refined ? RefinedDetailsPanel : DetailsPanel;
   const Sources = refined ? RefinedSourcesPanel : SourcesPanel;
+  /* UI-P94: and the full prompt window's fork. */
+  const PromptWindow = refined ? RefinedFullPromptWindow : FullPromptWindow;
 
   const [lens, setLens] = useState<SandboxLens>("list");
   const [switched, setSwitched] = useState(false);
@@ -595,7 +598,7 @@ export function SandboxPage() {
         available={manualAvailable}
         onAdd={(input) => void onAddManual(input)}
       />
-      <FullPromptWindow
+      <PromptWindow
         steps={steps}
         groups={groups}
         names={listFacts.names}

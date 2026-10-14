@@ -42,7 +42,7 @@ describe("countsLine", () => {
 });
 
 describe("the Sources rail in Map", () => {
-  it("folds Sources to a rail of 44-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
+  it("folds Sources to a rail of 40-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
     view({ lens: "map", sources: <p>the sources panel</p> });
     const rail = screen.getByTestId("sources-rail");
     expect(within(rail).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["Show sources", "Sessions", "Files", "Add a source"]);
@@ -229,5 +229,24 @@ describe("the refined look (UI-P93)", () => {
     const add = screen.getByTestId("sandbox-add");
     expect(add.getAttribute("data-ui")).toBe("menu-button");
     expect(add.textContent).toBe("Add");
+  });
+});
+
+describe("the refined look in Map (UI-P94)", () => {
+  it("draws the Sources rail as a 52-wide module and Build as a module beside it", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+        <SandboxView {...sandboxViewProps("bakery")} lens="map" />
+      </MemoryRouter>,
+    );
+    expect(html).toMatch(/data-testid="sources-rail"[^>]*style="background:var\(--module\)[^"]*padding:8px 0[^"]*flex:0 0 52px/);
+    expect(html).toMatch(/aria-label="Build"[^>]*style="[^"]*background:var\(--module\)[^"]*flex:999 1 560px/);
+    expect(html).toContain("width:28px;height:1px;background:var(--hairline-module)");
+  });
+
+  it("opens the refined Card sheet", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    expect(screen.getByTestId("sandbox-card").getAttribute("data-look")).toBe("refined");
   });
 });

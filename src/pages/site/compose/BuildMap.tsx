@@ -130,6 +130,17 @@ function squarePaint(on: boolean, suggested = false): CSSProperties {
   };
 }
 
+/** UI-P94: an input's square on the maker's box: accepted is solid `--label` (`--text` on the path), suggested is the
+    well with a dashed `--text2` edge. */
+function makerInput(onPath: boolean, suggested: boolean): CSSProperties {
+  const square: CSSProperties = { width: SQUARE, height: SQUARE, borderRadius: 1, boxSizing: "border-box" };
+  if (suggested) return { ...square, background: t.well, border: `1px dashed ${t.text2}` };
+  return { ...square, background: onPath ? t.text : t.label };
+}
+
+/** UI-P94: an input row on the maker's box is 20 high. */
+const MAKER_ROW = 20;
+
 const geist = (size: number, weight: 400 | 500, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: "normal", color });
 
 /** Geist Mono 10.5 `--label`: a step's number, its only id on the box. */
@@ -358,7 +369,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
       type="button"
       data-testid={`map-box-${box.id}`}
       data-kind={box.kind}
-      data-evidence={box.kind === "result" ? "true" : undefined}
+      data-evidence={box.kind === "result" && reader ? "true" : undefined}
       aria-label={boxName(box)}
       aria-pressed={selected}
       onClick={() => onSelect(box.id)}
@@ -400,10 +411,74 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
           <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
             <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
             <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-              <span style={{ ...geist(13, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
+              <span style={{ ...geist(reader ? 13 : 13.5, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
               <span style={{ ...geist(11, 400, t.label), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
               <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.runs}</span>
             </span>
+          </span>
+        </>
+      ) : !reader ? (
+        /* UI-P94, the maker's box (`refined/{dusk,noon}/composer-map.html`): head 28, input rows 20, the state line 18,
+           the body 36 (two lines), the foot 20. The rows keep the 22 pitch `layoutMap` puts each wire end on (2 apart,
+           1 under the head), and the foot gives up what that pitch adds, so nothing moves. The result has no border of
+           its own: its head says "Result" in `--evidence`. */
+        <>
+          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minWidth: 0 }}>
+            {box.kind === "result" ? (
+              <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
+                Result
+              </span>
+            ) : manual || (!box.defaultTitle && box.number) ? (
+              <span style={refinedNumber}>{box.number}</span>
+            ) : null}
+            {manual ? (
+              <span data-testid="manual-header" style={{ ...geist(10.5, 400, t.label), ...ellipsis }}>By hand{box.tool ? ` · ${box.tool}` : ""}</span>
+            ) : (
+              <span style={{ ...geist(12, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
+            )}
+            {box.stack ? <span style={{ ...geist(10.5, 400, t.label), marginLeft: "auto", flexShrink: 0 }}>× {box.stack}</span> : null}
+          </span>
+          {box.inputs.length > 0 ? (
+            <>
+              <span style={{ display: "flex", flexDirection: "column", gap: MAP_SIZES.row - MAKER_ROW, paddingTop: (MAP_SIZES.row - MAKER_ROW) / 2, flexShrink: 0 }}>
+                {box.inputs.map((input, at) => (
+                  <span
+                    key={input.key}
+                    style={{ position: "relative", height: MAKER_ROW, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(11, 400, input.suggested ? t.text2 : t.text) }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      data-testid={`map-input-${box.id}-${at}`}
+                      style={{ position: "absolute", left: -4, top: (MAKER_ROW - SQUARE) / 2, ...makerInput(onPath, input.suggested) }}
+                    />
+                    <span style={ellipsis}>{input.label}</span>
+                  </span>
+                ))}
+              </span>
+              <span style={{ height: 18, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", whiteSpace: "nowrap", overflow: "hidden", ...geist(10.5, 400, t.label) }}>
+                {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
+              </span>
+            </>
+          ) : null}
+          <span
+            style={{
+              height: 36,
+              flexShrink: 0,
+              padding: "0 12px",
+              boxSizing: "border-box",
+              ...geist(11, 400, t.text2),
+              lineHeight: 1.5,
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {box.text}
+          </span>
+          <span style={{ height: 20, minHeight: 0, flexShrink: 1, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
+            {box.kind === "step" && !manual ? `${box.words} words` : ""}
           </span>
         </>
       ) : (
@@ -801,13 +876,28 @@ export function BuildMap(props: BuildMapProps) {
   const caption: CSSProperties = refined ? geist(12, 400, t.text2) : { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
   const count: CSSProperties = refined ? { fontVariantNumeric: "tabular-nums" } : mono(11);
   const Box = refined ? RefinedBoxView : BoxView;
+  const legendSample: CSSProperties = { display: "inline-block", width: 24, borderTop: `1px solid ${t.text2}` };
   /** The session each lane is led by the real mark of (its tool's, else its model's), from the groups `layoutMap` made the first lanes from. */
   const laneMark = new Map(groups.map((group) => [group.sessionId ?? `typed-${group.number}`, group]));
 
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <LiveRegion message={said} />
-      {reader ? null : (
+      {reader ? null : refined ? (
+        /* UI-P94: the legend row: 24px solid and dashed `--text2` samples with their counts, then the key hint in `--label`. */
+        <div data-testid="map-legend" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", ...caption }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span aria-hidden="true" style={legendSample} />
+            goes into <span style={count}>{accepted}</span>
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span aria-hidden="true" style={{ ...legendSample, borderTopStyle: "dashed" }} />
+            suggested <span style={count}>{suggested}</span>
+          </span>
+          <span style={{ flexGrow: 1 }} />
+          <span style={geist(12, 400, t.label)}>{MAP_COPY.key}</span>
+        </div>
+      ) : (
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -1044,8 +1134,8 @@ export function BuildMap(props: BuildMapProps) {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, ...caption }}>
-        <span>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: refined ? "8px 16px" : 8, ...caption }}>
+        <span style={refined ? { flexGrow: 1 } : undefined}>
           {MAP_COPY.rows}
           {hasContainer && onOpenContainer ? (
             <>

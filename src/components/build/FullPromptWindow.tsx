@@ -65,7 +65,7 @@ function shortDate(iso: string | null | undefined): string {
 
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
-const isInstructions = (step: Pick<Step, "id">): boolean => step.id.endsWith(":instructions");
+export const isInstructions = (step: Pick<Step, "id">): boolean => step.id.endsWith(":instructions");
 
 /** The prompts the window moves between: every step with a text of its own, in order. */
 export function windowPrompts(steps: readonly Step[]): Step[] {
@@ -191,28 +191,10 @@ function TextBox({ text, boxRef, phone }: { text: string; boxRef: React.RefObjec
   );
 }
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function Body({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
-  const { mode, steps, groups = [], names = {}, onTitle, onClose, onNavigate } = props;
-  const [said, say] = useAnnouncer();
-  const textRef = useRef<HTMLDivElement>(null);
-  const { previous, next } = neighbours(prompts, step.id);
-  const place = prompts.findIndex((candidate) => candidate.id === step.id) + 1;
-  const instructions = isInstructions(step);
-
-  // Opening puts focus on the text box.
-  useEffect(() => {
-    textRef.current?.focus();
-  }, []);
-
+/** What the window says about a prompt (UI-P94 shares it with `RefinedFullPromptWindow`): the facts (where it ran, the
+    model, the day, its place in the session), what it uses and what it goes into, and the reader's "before" lines. */
+export function promptContext(props: Pick<FullPromptWindowProps, "steps" | "groups" | "names">, step: Step) {
+  const { steps, groups = [], names = {} } = props;
   const group = step.sessionId
     ? groups.find((candidate) => candidate.sessionId === step.sessionId)
     : groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
@@ -238,6 +220,33 @@ function Body({ props, step, prompts, phone }: { props: FullPromptWindowProps; s
   });
   const goesInto = all.filter((candidate) => candidate.id !== step.id && candidate.uses.some((use) => use.kind === "output" && use.node_id === step.id));
   const before = uses.flatMap((use) => (use.paste ? [use.paste] : []));
+
+  return { group, tool, model, when, inSession, facts, uses, goesInto, before };
+}
+
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function Body({ props, step, prompts, phone }: { props: FullPromptWindowProps; step: Step; prompts: readonly Step[]; phone: boolean }) {
+  const { mode, onTitle, onClose, onNavigate } = props;
+  const [said, say] = useAnnouncer();
+  const textRef = useRef<HTMLDivElement>(null);
+  const { previous, next } = neighbours(prompts, step.id);
+  const place = prompts.findIndex((candidate) => candidate.id === step.id) + 1;
+  const instructions = isInstructions(step);
+
+  // Opening puts focus on the text box.
+  useEffect(() => {
+    textRef.current?.focus();
+  }, []);
+
+  const { facts, uses, goesInto, before } = promptContext(props, step);
 
   const copy = async () => {
     say((await copyText(step.text)) ? FULL_PROMPT_COPY.copied : "Couldn't copy. Select the text and copy it.");

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
@@ -31,10 +31,11 @@ describe("the boxes", () => {
     expect(boxName({ kind: "step", stepKind: "prompt", number: "2", title: "Prompt 2", inputs: [] })).toBe("Prompt 2, Prompt 2, 0 inputs");
   });
 
-  it("draws a dashed Files and tools lane, the result with the evidence border, and a suggested input", () => {
+  /* UI-P94: the refined maker's result loses its evidence border, so this checks what both looks draw: "Result" on its head. */
+  it("draws a dashed Files and tools lane, the result labelled Result, and a suggested input", () => {
     map();
     expect(screen.getAllByTestId("map-lane").some((lane) => lane.getAttribute("data-dashed") === "true")).toBe(true);
-    expect(screen.getByTestId("map-box-r1").getAttribute("data-evidence")).toBe("true");
+    expect(within(screen.getByTestId("map-box-r1")).getByText("Result")).toBeTruthy();
     expect(screen.getByText("1 suggested")).toBeTruthy();
     expect(screen.getAllByTestId("map-wire").some((wire) => wire.getAttribute("data-suggested") === "true")).toBe(true);
   });

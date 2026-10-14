@@ -22,7 +22,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
-import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { RefinedFullPromptWindow as FullPromptWindow } from "@/components/build/RefinedFullPromptWindow";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";

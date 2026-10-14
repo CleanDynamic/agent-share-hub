@@ -83,7 +83,8 @@ const REFINED_STATE: Record<string, RefinedState> = {
     actions: async (p) => void (await p.getByRole("button", { name: /^Prompt 3\b/ }).click()),
   },
   "prompt-window": { query: "&build=bakery&open=1" },
-  "composer-card": { query: "", actions: async (p) => void (await p.getByRole("button", { name: "Card" }).first().click()) },
+  /* UI-P94: the sheet opens over the bakery's composer, as the board draws it. */
+  "composer-card": { query: "&build=bakery", actions: async (p) => void (await p.getByRole("button", { name: "Card" }).first().click()) },
   /* UI-P89: the board ticks one row and shows the sum of prompts. */
   "gallery-dashboard": {
     query: "",

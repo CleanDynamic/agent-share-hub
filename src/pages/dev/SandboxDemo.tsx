@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { RefinedFullPromptWindow } from "@/components/build/RefinedFullPromptWindow";
 
 import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
@@ -49,6 +50,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const List = refined ? RefinedBuildList : BuildList;
   const Details = refined ? RefinedDetailsPanel : DetailsPanel;
   const Sources = refined ? RefinedSourcesPanel : SourcesPanel;
+  const PromptWindow = refined ? RefinedFullPromptWindow : FullPromptWindow;
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
   return (
     <>
@@ -63,7 +65,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         selection={<Details {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
         sources={<Sources {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
       />
-      <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
+      <PromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>
   );
 }

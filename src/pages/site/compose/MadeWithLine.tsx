@@ -74,7 +74,7 @@ function Chip({ chip }: { chip: MadeWithChip }) {
   );
 }
 
-function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean; onToggle: MadeWithLineProps["onToggle"] }) {
+export function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean; onToggle: MadeWithLineProps["onToggle"] }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -122,7 +122,7 @@ function Toggle({ chip, phone, onToggle }: { chip: MadeWithChip; phone: boolean;
 }
 
 /** "+ Add a tool or model": the free-text input "Other…" opens, on its own. */
-function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => void }) {
+export function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const id = useId();

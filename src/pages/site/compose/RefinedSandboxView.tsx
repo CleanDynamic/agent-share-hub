@@ -10,8 +10,9 @@
    underlined; List / Map with "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
    30), the view's one primary. THE COLUMNS, a wrapping row with gap 24: Sources on the surface with a hairline on its
    right (`flex: 1 1 216px`, max 232), Build (`flex: 999 1 480px`), Details as a module (`flex: 1 1 280px`, max 300).
-   In Map, Sources folds to a 56 rail as today. A phone keeps today's order: the title, the Build panel with Sources
-   and Details behind two buttons, and the action bar. */
+   In Map (UI-P94, `composer-map.html`), Sources folds to a rail as today, drawn as a 52-wide module, and Build is a
+   module (`flex: 999 1 560px`); the Card is `RefinedSandboxCard`, the side sheet. A phone keeps today's order: the
+   title, the Build panel with Sources and Details behind two buttons, and the action bar. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { X } from "lucide-react";
@@ -34,7 +35,8 @@ import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey } from "./composeModel";
-import { SandboxCard, type CardField } from "./SandboxCard";
+import { RefinedSandboxCard } from "./RefinedSandboxCard";
+import type { CardField } from "./SandboxCard";
 import { DETAILS_EMPTY, LIST_HINT, addEntries, countsLine, type AddMenuProps, type SandboxLens, type SandboxViewProps } from "./SandboxView";
 import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 
@@ -143,9 +145,11 @@ function PanelTitle({ children }: { children: ReactNode }) {
 
 const quiet: CSSProperties = { ...text(13, 400, t.text2), margin: 0 };
 
-/** One 44-wide button of the Sources rail: a ghost glyph in `--text2`, and its count under it when it has one. */
+/** One button of the Sources rail (UI-P94): a ghost 40 wide, 36 high (44 with its count), the glyph in `--text2` and the
+    count under it at 10.5/500 tnum. */
 function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers" | "file" | "plus"; label: string; count?: number; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const counted = typeof count === "number";
   return (
     <button
       type="button"
@@ -155,15 +159,15 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
       {...handlers}
       style={{
         ...bareButton,
-        width: 44,
-        minHeight: 44,
-        padding: "4px 0",
+        width: 40,
+        height: counted ? 44 : 36,
+        padding: 0,
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 2,
+        gap: 4,
         borderRadius: 6,
         color: state.hovered ? t.text : t.text2,
         ...(state.hovered ? { background: t.controlOn } : null),
@@ -171,7 +175,7 @@ function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers
       }}
     >
       <Glyph name={glyph} size={16} />
-      {typeof count === "number" ? <span style={{ ...text(11, 400, t.label), ...tnum }}>{count}</span> : null}
+      {counted ? <span style={{ ...text(10.5, 500, "currentColor"), ...tnum }}>{count}</span> : null}
     </button>
   );
 }
@@ -217,7 +221,8 @@ function SourcesFrame({
     </section>
   );
   if (!rail) return column(false);
-  const hairline: CSSProperties = { width: 24, height: 1, background: t.hairline, margin: "4px 0" };
+  /* UI-P94: the rail is a module 52 wide, padding `8px 0`, its groups parted by 28-wide `--hairline-module` rules. */
+  const hairline: CSSProperties = { width: 28, height: 1, background: t.hairlineModule, margin: "4px 0" };
   return (
     <>
       <div
@@ -225,7 +230,7 @@ function SourcesFrame({
         role="toolbar"
         aria-label="Sources"
         aria-orientation="vertical"
-        style={{ flex: "0 0 56px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, paddingRight: 12, borderRight: `1px solid ${t.hairline}`, boxSizing: "border-box" }}
+        style={{ ...moduleStyle(false, "8px 0"), flex: "0 0 52px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
       >
         <RailButton glyph="panel" label="Show sources" onClick={onOpen} />
         <span aria-hidden="true" style={hairline} />
@@ -442,7 +447,15 @@ export function RefinedSandboxView(props: SandboxViewProps) {
       ref={buildRef}
       aria-label="Build"
       tabIndex={-1}
-      style={{ outline: "none", minWidth: 0, flex: "999 1 480px", display: "flex", flexDirection: "column", gap: 12 }}
+      style={{
+        outline: "none",
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        /* UI-P94: in Map the Build panel is a module beside the rail. */
+        ...(lens === "map" ? { ...moduleStyle(), flex: "999 1 560px" } : { flex: "999 1 480px" }),
+      }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
         {trail.length > 0 ? (
@@ -495,7 +508,7 @@ export function RefinedSandboxView(props: SandboxViewProps) {
     </section>
   );
 
-  const card = <SandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} />;
+  const card = <RefinedSandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} />;
 
   if (phone) {
     return (
