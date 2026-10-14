@@ -26,7 +26,9 @@
 // UNDER THE REFINED LOOK THERE IS NO LIQUID GLASS (UI-P81), so `glass` paints the MODULE recipe instead: `--module`
 // over a 1px `--module-border`, radius `--r-card` (8 there), `--module-shadow`, and no class, no blur and no
 // filter. The prop keeps its name so no call site changes, and `data-surface` still reports what was asked for. Only
-// that paint moves here: the module's 16px padding and the other surfaces' refined recipes are UI-P85's.
+// that paint moved there. UI-P85 finishes it: `plain` is a module too (one recipe for every panel, nothing nests glass),
+// the default padding is the module's 16, and the head is `CardHead`'s (13.5/500 over a 12 subtitle, gap 4). A caller's
+// own padding still wins. `flat` keeps the workspace paint, at the card radius.
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ElementType, ReactNode } from "react";
@@ -36,6 +38,8 @@ import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+
+import { CardHead } from "./CardHead";
 
 export type PanelSurface = "glass" | "flat" | "plain";
 
@@ -68,11 +72,13 @@ function useWarnOnNestedGlass(active: boolean) {
   return ref;
 }
 
-export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "section", style, children }: PanelProps) {
+export function Panel({ surface = "plain", padding, as: Tag = "section", style, children }: PanelProps) {
   const refined = useLook() === "refined";
-  /* Liquid glass exists in the current look only; under the refined one the same request is a module. */
+  /* Liquid glass exists in the current look only; under the refined one the same request is a module, and so is
+     `plain`: the module recipe is the one panel. */
   const glass = surface === "glass" && !refined;
-  const asModule = surface === "glass" && refined;
+  const asModule = refined && surface !== "flat";
+  const pad = padding ?? (refined ? "16px" : "16px 18px");
   const ref = useWarnOnNestedGlass(glass);
   return (
     <Tag
@@ -84,8 +90,8 @@ export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "sec
         position: "relative",
         background: glass ? "none" : asModule ? t.module : surface === "flat" ? t.flat : t.glass,
         border: glass ? "none" : `1px solid ${asModule ? t.moduleBorder : t.glassBorder}`,
-        borderRadius: asModule ? r.card : r.panel,
-        padding: densePx(padding, denseSpace),
+        borderRadius: refined ? r.card : r.panel,
+        padding: refined ? pad : densePx(pad, denseSpace),
         boxShadow: glass
           ? `${t.glassHalo}, ${t.shadowCard}`
           : asModule
@@ -117,6 +123,8 @@ export interface PanelHeadProps {
 }
 
 export function PanelHead({ title, subtitle, right, titleSize = 16, headingLevel }: PanelHeadProps) {
+  const refined = useLook() === "refined";
+  if (refined) return <CardHead title={title} subtitle={subtitle} action={right} headingLevel={headingLevel} />;
   const Title: ElementType = headingLevel ? (`h${headingLevel}` as ElementType) : "div";
   return (
     <div

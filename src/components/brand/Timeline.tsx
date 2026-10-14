@@ -17,12 +17,20 @@
 //
 // `at` is the caller's: "04:12" is a clock inside the build, not a date.
 //
+// UNDER THE REFINED LOOK (UI-P85) the rail is quieter and every event lives in tokens: a 7px dot in a 3px ring of
+// `--surface` (so the 1px `--line` spine passes behind it), the time in `--label`, tabular, the kind as an eyebrow in
+// its tone, and the title 12.5/500. There is no glow, and deploy is `--evidence`: amber is light, never text, and a
+// dot that is not a lamp does not take it.
+//
 // ON A PHONE (`size="phone"`, UI-P29) the time column is 48px and the type a
 // step up: the time 11px, the kind 10px, the text 14px.
 
 import type { EventKind } from "@/lib/build";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+
+import { Eyebrow } from "./Eyebrow";
 
 import { useRoom } from "./useRoom";
 
@@ -55,9 +63,69 @@ const INK: Record<EventKind, string> = { ...DOT, deploy: t.litInk };
 /** The same two maps for anything else that names an event's kind (the replay, UI-P30), so the colours cannot drift. */
 export { DOT as EVENT_DOT, INK as EVENT_INK };
 
+/** Refined: the tone of the dot and of the kind's name. */
+const REFINED_TONE: Record<EventKind, string> = {
+  prompt: t.catInstruction,
+  milestone: t.evidence,
+  breakage: t.breakage,
+  note: t.label,
+  deploy: t.evidence,
+};
+
+function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "label">) {
+  return (
+    <div data-ui="timeline" style={{ position: "relative" }}>
+      <span aria-hidden="true" style={{ position: "absolute", left: 3, top: 8, bottom: 8, width: 1, background: t.line }} />
+      <ol aria-label={label} style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {events.map((event, i) => (
+          <li
+            key={i}
+            data-event-kind={event.kind}
+            style={{
+              position: "relative",
+              display: "grid",
+              gridTemplateColumns: "8px 48px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "baseline",
+              paddingBottom: i === events.length - 1 ? 0 : 16,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "relative",
+                top: 1,
+                width: 7,
+                height: 7,
+                boxSizing: "border-box",
+                borderRadius: "50%",
+                background: REFINED_TONE[event.kind],
+                boxShadow: `0 0 0 3px ${t.surface}`,
+              }}
+            />
+            <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+              {event.at}
+            </span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+              <Eyebrow as="span" style={{ color: REFINED_TONE[event.kind] }}>
+                {event.kind}
+              </Eyebrow>
+              <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text }}>
+                {event.text}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function Timeline({ events, label = "Events", size = "desktop" }: TimelineProps) {
+  const refined = useLook() === "refined";
   const dusk = useRoom() === "dusk";
   const phone = size === "phone";
+  if (refined) return <RefinedTimeline events={events} label={label} />;
 
   return (
     <div data-ui="timeline" style={{ position: "relative" }}>
