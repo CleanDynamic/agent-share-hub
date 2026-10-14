@@ -9,7 +9,9 @@
    "£150 ask"), in sample content only. */
 
 import { activityFixture } from "@/dev/fixtures/activity";
+import { useLook } from "@/lib/theme/look";
 import { ActivityView } from "@/pages/site/activity/ActivityView";
+import { RefinedActivityView } from "@/pages/site/activity/RefinedActivityView";
 import type { ActivityGroup } from "@/pages/site/activity/activityModel";
 
 import type { DesignPageProps } from "./KitPages";
@@ -37,6 +39,8 @@ function forPhone(groups: readonly ActivityGroup[]): ActivityGroup[] {
 
 export default function ActivityDemo({ fit = "board", viewport, state = "populated" }: DesignPageProps) {
   const sample = activityFixture(state);
-  if (viewport !== "mobile" || state !== "populated") return <ActivityView fit={fit} {...sample} />;
-  return <ActivityView fit={fit} {...sample} list={{ ...sample.list, groups: forPhone(sample.list.groups) }} />;
+  /* UI-P92: `?look=refined` draws the fork, from the same fixture. */
+  const View = useLook() === "refined" ? RefinedActivityView : ActivityView;
+  if (viewport !== "mobile" || state !== "populated") return <View fit={fit} {...sample} />;
+  return <View fit={fit} {...sample} list={{ ...sample.list, groups: forPhone(sample.list.groups) }} />;
 }

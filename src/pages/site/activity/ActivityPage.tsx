@@ -42,9 +42,11 @@ import {
 } from "@/lib/notifications";
 import { resolveNotificationCovers } from "@/lib/notifications/covers";
 import type { GetNotificationsResult } from "@/lib/notifications/getNotifications";
+import { useLook } from "@/lib/theme/look";
 
 import { ActivityView, type ActivityListProps, type ActivityLoad, type ActivityRuns } from "./ActivityView";
 import { activityRowOf, countKinds, groupByDay, runsLabel, scaleSeries, type ActivityRow } from "./activityModel";
+import { RefinedActivityView } from "./RefinedActivityView";
 
 /** Notifications per page. */
 const PAGE_SIZE = 50;
@@ -89,6 +91,8 @@ export function ActivityPage() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const qc = useQueryClient();
+  /* UI-P92: the refined look renders the fork, with the same props. */
+  const View = useLook() === "refined" ? RefinedActivityView : ActivityView;
 
   /* ── the list ── */
 
@@ -263,7 +267,7 @@ export function ActivityPage() {
     <>
       <SeoHead title="Activity — buildgallery" description="What happened to your builds." path="/notifications" noIndex />
       <LiveRegion message={announcement} />
-      <ActivityView
+      <View
         now={now}
         list={list}
         unread={typeof unreadQuery.data === "number" ? unreadQuery.data : null}

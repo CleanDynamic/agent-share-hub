@@ -1,6 +1,7 @@
 // A menu button (UI-P84, refined look): the control recipe, 28 high, `0 8px 0 12px`. The label sits in `--text2`, the
 // chosen value in `--text` at 500, then a `chevd` glyph in `--label`. It only opens a menu: `aria-haspopup`, and
-// `aria-expanded` when the caller says it is open. The menu itself is the caller's.
+// `aria-expanded` when the caller says it is open. The menu itself is the caller's. An empty `value` draws the label
+// alone (the composer's Add, UI-P93).
 
 import type { ButtonHTMLAttributes } from "react";
 
@@ -73,7 +74,7 @@ export function MenuButton({
       }}
     >
       {label}
-      <span style={{ color: t.text, fontWeight: 500 }}>{value}</span>
+      {value ? <span style={{ color: t.text, fontWeight: 500 }}>{value}</span> : null}
       <Glyph name="chevd" size={16} color={t.label} />
     </button>
   );
