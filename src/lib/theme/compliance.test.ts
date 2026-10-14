@@ -188,6 +188,17 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "constants RULES §2 allows, written as named constants in the component. THE " +
       "CAP IS 26 BECAUSE THAT IS ALL THE BOARDS DRAW: a new value is a design decision.",
   },
+  "src/pages/site/compose/mapArtwork.ts": {
+    max: 11,
+    why:
+      "THE MAP'S BOXES AND LANES, PER ROOM (UI-P91) — a box on the Map is a raised " +
+      "object laid on the well, not a surface: Dusk's shaded fill (two stops), edge, " +
+      "two-part shadow and the selected lift; Noon's white fill, edge and shadow; and " +
+      "each room's faint lane wash. UI-P91 names these as the artwork constants RULES " +
+      "§2 allows, as `refined/{dusk,noon}/build-map.html` draws them, written as named " +
+      "constants in the module that owns them. THE CAP IS 11 BECAUSE THAT IS ALL THE " +
+      "BOARDS DRAW: a new value is a design decision.",
+  },
   "src/components/brand/CoverFallback.tsx": {
     max: 46,
     why:

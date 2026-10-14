@@ -23,16 +23,28 @@
 
    HAND-WRITTEN SVG, no dependency (RULES §3): one layer of wires under the
    boxes, and one overlay for the line that follows the pointer. The boxes are
-   real buttons, in lane order then column order, which is the focus order. */
+   real buttons, in lane order then column order, which is the focus order.
+
+   THE REFINED LOOK (UI-P91, `refined/{dusk,noon}/build-map.html`). Under `useLook() === "refined"` the same map is
+   drawn in a well with the dot grid; lanes are radius 6 on a hairline, led by the session tool's real mark; boxes are
+   raised objects (`mapArtwork.ts`) with 6x6 squares for inputs and outputs; wires are 1.2px with no arrowhead; what
+   is not joined to the selection takes `--dim-filter`, never an opacity. Only the look branches: `layoutMap` places
+   everything exactly as before, so the squares sit on the same wire ends. */
 
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
+import { ModelMark } from "@/components/brand/ModelMark";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+
+import { MAP_ARTWORK, type MapRoom } from "./mapArtwork";
 
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
@@ -103,6 +115,50 @@ const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", 
 
 const DOT = 9;
 
+/* ── the refined look's pieces (UI-P91) ── */
+
+/** A 6x6 square, radius 1: an input on a box's left edge, an output on its right. On the path it is solid `--text`. */
+const SQUARE = 6;
+
+function squarePaint(on: boolean, suggested = false): CSSProperties {
+  return {
+    width: SQUARE,
+    height: SQUARE,
+    borderRadius: 1,
+    boxSizing: "border-box",
+    ...(on && !suggested ? { background: t.text } : { background: t.well, border: `1px ${suggested ? "dashed" : "solid"} ${on ? t.text : t.label}` }),
+  };
+}
+
+const geist = (size: number, weight: 400 | 500, color: string): CSSProperties => ({ fontFamily: FIGTREE, fontSize: size, fontWeight: weight, lineHeight: "normal", color });
+
+/** Geist Mono 10.5 `--label`: a step's number, its only id on the box. */
+const refinedNumber: CSSProperties = { fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "normal", color: t.label, flexShrink: 0, fontVariantNumeric: "tabular-nums" };
+
+const DIM: CSSProperties = { filter: t.dimFilter };
+
+/** The well the map sits in: padding 16, the dot grid at 16px, radius 6. */
+const refinedWell: CSSProperties = {
+  overflow: "auto",
+  maxHeight: "70dvh",
+  padding: 16,
+  boxSizing: "border-box",
+  borderRadius: 6,
+  border: `1px solid ${t.wellBorder}`,
+  boxShadow: t.wellShadow,
+  background: `radial-gradient(${t.dotGrid} 1px, transparent 1px) 0 0 / 16px 16px, ${t.well}`,
+  backgroundAttachment: "local",
+};
+
+/** A box's paint in the refined look: the room's artwork, or the tile for work done by hand; the selected recipe over it. */
+function refinedBoxPaint(room: MapRoom, manual: boolean, selected: boolean, target: boolean): CSSProperties {
+  const art = MAP_ARTWORK[room];
+  const rest: CSSProperties = manual ? { background: t.tile, border: `1px solid ${t.tileBorder}`, boxShadow: "none" } : art.box;
+  if (!selected && !target) return rest;
+  /* The whole border, not its colour: a longhand over the shorthand would be left stale when the box is let go. */
+  return { ...rest, border: `1px solid ${t.selectedEdge}`, boxShadow: art.selectedShadow ?? t.selectedRing };
+}
+
 /* ── a box ── */
 
 interface BoxViewProps {
@@ -117,6 +173,8 @@ interface BoxViewProps {
   onOpenContainer?: (id: string) => void;
   /** UI-P74: the read-only map says how many inputs a box has, and nothing about suggesting or accepting. */
   reader?: boolean;
+  /** UI-P91: the room whose artwork a refined box is painted with. */
+  room?: MapRoom;
 }
 
 const isContainerBox = (box: Pick<MapBox, "kind" | "stepKind">): boolean => box.kind === "step" && (box.stepKind === "agent" || box.stepKind === "team");
@@ -265,14 +323,152 @@ const BoxView = memo(function BoxView({ box, selected, dimmed, onPath, target, o
   );
 });
 
+/** UI-P91: the same box in the refined look. Same button, name, handlers and words; only the paint and type differ. */
+const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer, reader, room = "dusk" }: BoxViewProps) {
+  const container = isContainerBox(box);
+  const openable = box.kind === "step" && (container ? Boolean(onOpenContainer) : box.stepKind === "prompt" && onOpen);
+  const open = () => (container ? onOpenContainer?.(box.id) : onOpen?.(box.id));
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Enter" && openable) {
+      event.preventDefault();
+      onSelect(box.id);
+      open();
+    }
+  };
+  const big = container && box.contents !== null;
+  const piece = box.kind === "file" || box.kind === "tool";
+  const manual = box.kind === "step" && box.stepKind === "manual";
+  /* Rows 18 high, 4 apart: the 22 pitch `layoutMap` puts each wire end on, from 1 under the head. */
+  const inputRows = (
+    <span style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 1 }}>
+      {box.inputs.map((input, at) => (
+        <span key={input.key} style={{ position: "relative", height: 18, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(11, 400, onPath ? t.text : t.text2) }}>
+          <span
+            aria-hidden="true"
+            data-testid={`map-input-${box.id}-${at}`}
+            style={{ position: "absolute", left: -4, top: (18 - SQUARE) / 2, ...squarePaint(onPath, input.suggested) }}
+          />
+          <span style={ellipsis}>{input.label}</span>
+        </span>
+      ))}
+    </span>
+  );
+  return (
+    <button
+      type="button"
+      data-testid={`map-box-${box.id}`}
+      data-kind={box.kind}
+      data-evidence={box.kind === "result" ? "true" : undefined}
+      aria-label={boxName(box)}
+      aria-pressed={selected}
+      onClick={() => onSelect(box.id)}
+      onDoubleClick={openable ? open : undefined}
+      onKeyDown={onKeyDown}
+      style={{
+        position: "absolute",
+        left: box.x,
+        top: box.y,
+        width: box.w,
+        height: box.h,
+        boxSizing: "border-box",
+        padding: piece ? "0 12px" : 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: piece ? "center" : undefined,
+        gap: piece ? 2 : 0,
+        textAlign: "left",
+        borderRadius: 6,
+        ...refinedBoxPaint(room, manual, selected, target),
+        color: t.text,
+        cursor: "pointer",
+        overflow: "hidden",
+        ...(dimmed ? DIM : null),
+        outline: "none",
+      }}
+    >
+      {piece ? (
+        <>
+          <span style={{ ...geist(10.5, 400, t.label), lineHeight: "14px" }}>{box.kind === "file" ? "File" : "Tool"}</span>
+          <span style={{ ...geist(12, 500, t.text), lineHeight: "16px", ...ellipsis }}>{box.title}</span>
+        </>
+      ) : big ? (
+        <>
+          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(10.5, 500, t.label) }}>
+            {box.stepKind === "team" ? "Team" : "Agent"} {box.number}
+          </span>
+          {/* The named inputs down the left, the title, counts and how it runs beside them. */}
+          <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
+            <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
+            <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+              <span style={{ ...geist(13, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
+              <span style={{ ...geist(11, 400, t.label), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
+              <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.runs}</span>
+            </span>
+          </span>
+        </>
+      ) : (
+        <>
+          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minWidth: 0 }}>
+            {box.kind === "result" ? (
+              <span style={geist(10.5, 400, t.label)}>Result</span>
+            ) : manual || (!box.defaultTitle && box.number) ? (
+              <span style={refinedNumber}>{box.number}</span>
+            ) : null}
+            {manual ? (
+              <span data-testid="manual-header" style={{ ...geist(10.5, 400, t.label), ...ellipsis }}>By hand{box.tool ? ` · ${box.tool}` : ""}</span>
+            ) : (
+              <span style={{ ...geist(12, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
+            )}
+            {box.stack ? <span style={{ ...geist(10.5, 400, t.label), marginLeft: "auto", flexShrink: 0 }}>× {box.stack}</span> : null}
+          </span>
+          {box.inputs.length > 0 ? inputRows : null}
+          {/* The maker's accepted and suggested count. The reader's box says its inputs in its name alone, as the board draws it. */}
+          {!reader && box.inputs.length > 0 ? (
+            <span style={{ height: MAP_SIZES.state, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label) }}>
+              {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
+            </span>
+          ) : null}
+          {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
+          {box.kind === "step" && !manual ? (
+            <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{box.words} words</span>
+          ) : null}
+        </>
+      )}
+    </button>
+  );
+});
+
 /* ── the wires ── */
 
-function Wires({ wires, joined, selecting, marker, markerStrong }: { wires: readonly MapWire[]; joined: ReadonlySet<string>; selecting: boolean; marker: string; markerStrong: string }) {
+function Wires({ wires, joined, selecting, marker, markerStrong, refined = false }: { wires: readonly MapWire[]; joined: ReadonlySet<string>; selecting: boolean; marker: string; markerStrong: string; refined?: boolean }) {
   return (
     <>
       {wires.map((wire) => {
         const strong = joined.has(wire.id);
         const dim = selecting && !strong;
+        if (refined) {
+          /* 1.2px, no arrowhead: the line runs on to the input's square (the arrow's length `layoutMap` leaves). On the
+             path `--text` at 70%, the rest `--label` at 45%; suggested dashed 4 4. */
+          return (
+            <g key={wire.id}>
+              {wire.label && wire.labelX !== undefined && wire.labelY !== undefined ? (
+                <text data-testid="map-wire-label" x={wire.labelX} y={wire.labelY} textAnchor="middle" style={{ fontFamily: FIGTREE, fontSize: 10.5, fill: t.label, ...(dim ? DIM : null) }}>
+                  {wire.label}
+                </text>
+              ) : null}
+              <path
+                data-testid="map-wire"
+                data-strong={strong ? "true" : undefined}
+                data-suggested={wire.suggested ? "true" : undefined}
+                d={`${wire.d} h ${MAP_SIZES.arrow}`}
+                fill="none"
+                strokeWidth={1.2}
+                strokeDasharray={wire.suggested ? "4 4" : undefined}
+                style={{ stroke: strong ? t.text : t.label, strokeOpacity: strong ? 0.7 : 0.45 }}
+              />
+            </g>
+          );
+        }
         return (
           <g key={wire.id}>
           {wire.label && wire.labelX !== undefined && wire.labelY !== undefined ? (
@@ -317,6 +513,8 @@ const flat = (list: readonly Step[]): Step[] => list.flatMap((step) => [step, ..
 
 function OpenedMap({ container, steps, files, tools, results, selectedId, onSelect, onOpenContainer, onBack, onLeave }: OpenedMapProps) {
   const layout = useMemo(() => layoutOpened(container, steps, files, tools, results), [container, steps, files, tools, results]);
+  const refined = useLook() === "refined";
+  const room = useResolvedTheme();
   const uid = useId().replace(/:/g, "");
   const marker = `arrow-${uid}`;
   const markerStrong = `arrow-strong-${uid}`;
@@ -346,24 +544,37 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
 
   /** A box outside the frame is part of the build, not the team: clicking it goes back to the build. */
   const select = (id: string) => (outsideIds.has(id) ? onLeave?.(id) : onSelect(id));
-  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `1.5px solid ${t.text2}`, verticalAlign: "middle" };
+  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${refined ? 1.2 : 1.5}px solid ${refined ? t.label : t.text2}`, verticalAlign: "middle" };
+  const caption: CSSProperties = refined ? geist(12, 400, t.text2) : { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
+  const count: CSSProperties = refined ? { fontVariantNumeric: "tabular-nums" } : mono(11);
+  /* The frame's captions: an eyebrow in the refined look, Geist 10.5/500 `--label` .06em. */
+  const eyebrow = (size: 10.5 | 11.5): CSSProperties =>
+    refined ? { ...geist(10.5, 500, t.label), textTransform: "uppercase", letterSpacing: "0.06em" } : { ...mono(size), textTransform: "uppercase", letterSpacing: "0.06em" };
+  const Box = refined ? RefinedBoxView : BoxView;
 
   return (
     <div ref={root} tabIndex={-1} onKeyDown={onKeyDown} data-testid="opened-map" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, outline: "none" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span aria-hidden="true" style={sample} />
-            goes into <span style={mono(11)}>{layout.wires.length}</span>
+            goes into <span style={count}>{layout.wires.length}</span>
           </span>
           {stacked ? (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span aria-hidden="true" style={{ width: 14, height: 10, borderRadius: 3, border: `1.5px solid ${t.text2}`, boxShadow: `3px 3px 0 -1px ${t.solid}, 3px 3px 0 0 ${t.text2}` }} />
+              <span
+                aria-hidden="true"
+                style={
+                  refined
+                    ? { width: 14, height: 10, borderRadius: 2, border: `1px solid ${t.label}`, boxShadow: `3px 3px 0 -1px ${t.surface}, 3px 3px 0 0 ${t.label}` }
+                    : { width: 14, height: 10, borderRadius: 3, border: `1.5px solid ${t.text2}`, boxShadow: `3px 3px 0 -1px ${t.solid}, 3px 3px 0 0 ${t.text2}` }
+                }
+              />
               {MAP_COPY.stacked}
             </span>
           ) : null}
         </span>
-        <span style={mono(11.5)}>
+        <span style={refined ? geist(12, 400, t.label) : mono(11.5)}>
           inside {word} {container.number} · Esc goes back to the build
         </span>
       </div>
@@ -372,35 +583,45 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
         role="group"
         aria-label={`Inside ${word} ${container.number}`}
         data-testid="build-map"
-        style={{
-          overflow: "auto",
-          maxHeight: "70dvh",
-          padding: 16,
-          borderRadius: 12,
-          border: `1px solid ${t.hairline}`,
-          background: `radial-gradient(${t.hairline} 1px, transparent 1px) 0 0 / 16px 16px, ${t.cell}`,
-          backgroundAttachment: "local",
-        }}
+        style={
+          refined
+            ? refinedWell
+            : {
+                overflow: "auto",
+                maxHeight: "70dvh",
+                padding: 16,
+                borderRadius: 12,
+                border: `1px solid ${t.hairline}`,
+                background: `radial-gradient(${t.hairline} 1px, transparent 1px) 0 0 / 16px 16px, ${t.cell}`,
+                backgroundAttachment: "local",
+              }
+        }
       >
         <div style={{ position: "relative", width: layout.width, height: layout.height }}>
           <div
             data-testid="opened-frame"
-            style={{ position: "absolute", left: layout.frame.x, top: layout.frame.y, width: layout.frame.w, height: layout.frame.h, boxSizing: "border-box", borderRadius: 14, border: `1.5px dashed ${t.line}` }}
+            style={{ position: "absolute", left: layout.frame.x, top: layout.frame.y, width: layout.frame.w, height: layout.frame.h, boxSizing: "border-box", borderRadius: refined ? 8 : 14, border: `${refined ? 1 : 1.5}px dashed ${t.line}` }}
           >
             <div style={{ position: "absolute", left: 16, top: 8, right: 16, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span style={{ ...mono(11.5), textTransform: "uppercase", letterSpacing: "0.06em", ...ellipsis }}>
+              <span style={{ ...eyebrow(11.5), ...ellipsis }}>
                 Inside {word} {container.number} · {stepTitle(container)}
               </span>
-              <span style={{ height: 20, padding: "0 8px", borderRadius: 7, display: "inline-flex", alignItems: "center", background: tokenAlpha("action", 0.08), ...mono(11), color: t.text, whiteSpace: "nowrap" }}>
+              <span
+                style={
+                  refined
+                    ? { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
+                    : { height: 20, padding: "0 8px", borderRadius: 7, display: "inline-flex", alignItems: "center", background: tokenAlpha("action", 0.08), ...mono(11), color: t.text, whiteSpace: "nowrap" }
+                }
+              >
                 {runsLabel(container.runs)}
               </span>
             </div>
             {layout.band.length > 0 ? (
-              <span style={{ position: "absolute", left: 16, top: layout.bandY - layout.frame.y + 2, ...mono(10.5), textTransform: "uppercase", letterSpacing: "0.06em" }}>{MAP_COPY.bandCaption}</span>
+              <span style={{ position: "absolute", left: 16, top: layout.bandY - layout.frame.y + 2, ...eyebrow(10.5) }}>{MAP_COPY.bandCaption}</span>
             ) : null}
           </div>
           {layout.outside.length > 0 ? (
-            <span style={{ position: "absolute", left: layout.outside[0].x, top: layout.frame.y + 8, ...mono(11.5), textTransform: "uppercase", letterSpacing: "0.06em" }}>{MAP_COPY.outside}</span>
+            <span style={{ position: "absolute", left: layout.outside[0].x, top: layout.frame.y + 8, ...eyebrow(11.5) }}>{MAP_COPY.outside}</span>
           ) : null}
 
           <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
@@ -412,7 +633,7 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
                 <path d="M 0 0 L 6 3 L 0 6 z" style={{ fill: t.text }} />
               </marker>
             </defs>
-            <Wires wires={layout.wires} joined={joined.wires} selecting={selecting} marker={marker} markerStrong={markerStrong} />
+            <Wires wires={layout.wires} joined={joined.wires} selecting={selecting} marker={marker} markerStrong={markerStrong} refined={refined} />
           </svg>
 
           {layout.boxes
@@ -430,18 +651,18 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
                     width: box.w,
                     height: box.h,
                     boxSizing: "border-box",
-                    borderRadius: 12,
-                    border: `1px solid ${t.line}`,
-                    background: t.solid,
-                    opacity: copy === 1 ? 0.75 : 0.5,
+                    ...(refined
+                      ? { borderRadius: 6, ...MAP_ARTWORK[room].box }
+                      : { borderRadius: 12, border: `1px solid ${t.line}`, background: t.solid, opacity: copy === 1 ? 0.75 : 0.5 }),
                   }}
                 />
               )),
             )}
 
           {ordered.map((box) => (
-            <BoxView
+            <Box
               key={box.id}
+              room={room}
               box={box}
               selected={selectedId === box.id}
               dimmed={outsideIds.has(box.id) || (selecting && !joined.boxes.has(box.id))}
@@ -454,7 +675,7 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, ...caption }}>
         <span>{MAP_COPY.openedRows}</span>
         <span>{selectedTitle ? `${selectedTitle} selected` : ""}</span>
       </div>
@@ -480,6 +701,8 @@ const inputFrom = (box: MapBox): Use | null =>
 export function BuildMap(props: BuildMapProps) {
   const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
   const reader = mode === "reader";
+  const refined = useLook() === "refined";
+  const room = useResolvedTheme();
   // Readers never see a suggestion: only the uses the maker accepted are published.
   const suggestions = useMemo(() => (reader ? [] : asked), [reader, asked]);
   const layout = useMemo(() => layoutMap(steps, groups, files, tools, results, suggestions), [steps, groups, files, tools, results, suggestions]);
@@ -574,24 +797,29 @@ export function BuildMap(props: BuildMapProps) {
   const hasContainer = steps.some((step) => step.kind === "agent" || step.kind === "team");
   const hasAgent = steps.some((step) => step.kind === "agent");
 
-  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `1.5px solid ${t.text2}`, verticalAlign: "middle" };
+  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${refined ? 1.2 : 1.5}px solid ${refined ? t.label : t.text2}`, verticalAlign: "middle" };
+  const caption: CSSProperties = refined ? geist(12, 400, t.text2) : { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
+  const count: CSSProperties = refined ? { fontVariantNumeric: "tabular-nums" } : mono(11);
+  const Box = refined ? RefinedBoxView : BoxView;
+  /** The session each lane is led by the real mark of (its tool's, else its model's), from the groups `layoutMap` made the first lanes from. */
+  const laneMark = new Map(groups.map((group) => [group.sessionId ?? `typed-${group.number}`, group]));
 
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <LiveRegion message={said} />
       {reader ? null : (
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span aria-hidden="true" style={sample} />
-            goes into <span style={mono(11)}>{accepted}</span>
+            goes into <span style={count}>{accepted}</span>
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span aria-hidden="true" style={{ ...sample, borderTopStyle: "dashed" }} />
-            suggested <span style={mono(11)}>{suggested}</span>
+            suggested <span style={count}>{suggested}</span>
           </span>
         </span>
-        <span style={mono(11.5)}>{MAP_COPY.key}</span>
+        <span style={refined ? geist(12, 400, t.label) : mono(11.5)}>{MAP_COPY.key}</span>
       </div>
       )}
 
@@ -599,18 +827,50 @@ export function BuildMap(props: BuildMapProps) {
         role="group"
         aria-label="Map"
         data-testid="build-map"
-        style={{
-          overflow: "auto",
-          maxHeight: "70dvh",
-          padding: 16,
-          borderRadius: 12,
-          border: `1px solid ${t.hairline}`,
-          background: `radial-gradient(${t.hairline} 1px, transparent 1px) 0 0 / 16px 16px, ${t.cell}`,
-          backgroundAttachment: "local",
-        }}
+        style={
+          refined
+            ? refinedWell
+            : {
+                overflow: "auto",
+                maxHeight: "70dvh",
+                padding: 16,
+                borderRadius: 12,
+                border: `1px solid ${t.hairline}`,
+                background: `radial-gradient(${t.hairline} 1px, transparent 1px) 0 0 / 16px 16px, ${t.cell}`,
+                backgroundAttachment: "local",
+              }
+        }
       >
         <div ref={canvas} style={{ position: "relative", width: layout.width, height: layout.height }}>
-          {layout.lanes.map((lane) => (
+          {layout.lanes.map((lane) =>
+            refined ? (
+              <div
+                key={lane.key}
+                data-testid="map-lane"
+                data-dashed={lane.dashed ? "true" : undefined}
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: lane.y,
+                  width: layout.width,
+                  height: lane.h,
+                  boxSizing: "border-box",
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  borderRadius: 6,
+                  background: lane.dashed ? "transparent" : MAP_ARTWORK[room].lane,
+                  border: `1px ${lane.dashed ? `dashed ${t.line}` : `solid ${t.hairline}`}`,
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 6, maxWidth: MAP_SIZES.label - 16, minWidth: 0, ...geist(12, 500, t.text) }}>
+                  <ModelMark tool={laneMark.get(lane.key)?.tool} model={laneMark.get(lane.key)?.model} size={16} />
+                  <span style={ellipsis}>{lane.label}</span>
+                </span>
+                {lane.sub ? <span style={{ ...geist(11, 400, t.label), maxWidth: 100, lineHeight: "14px" }}>{lane.sub}</span> : null}
+              </div>
+            ) : (
             <div
               key={lane.key}
               data-testid="map-lane"
@@ -632,10 +892,15 @@ export function BuildMap(props: BuildMapProps) {
                 {lane.sub ? <span style={{ ...mono(11), ...ellipsis }}>{lane.sub}</span> : null}
               </div>
             </div>
-          ))}
+            ),
+          )}
           {layout.columns.map((column) =>
             column.date ? (
-              <span key={column.index} data-testid="map-column-date" style={{ position: "absolute", left: column.x, top: 2, ...mono(10.5), textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <span
+                key={column.index}
+                data-testid="map-column-date"
+                style={{ position: "absolute", left: column.x, top: refined ? 0 : 2, ...(refined ? geist(10.5, 500, t.label) : mono(10.5)), textTransform: "uppercase", letterSpacing: "0.06em" }}
+              >
                 {columnDate(column.date)}
               </span>
             ) : null,
@@ -650,12 +915,13 @@ export function BuildMap(props: BuildMapProps) {
                 <path d="M 0 0 L 6 3 L 0 6 z" style={{ fill: t.text }} />
               </marker>
             </defs>
-            <Wires wires={layout.wires} joined={joined.wires} selecting={selecting} marker={marker} markerStrong={markerStrong} />
+            <Wires wires={layout.wires} joined={joined.wires} selecting={selecting} marker={marker} markerStrong={markerStrong} refined={refined} />
           </svg>
 
           {ordered.map((box) => (
-            <BoxView
+            <Box
               key={box.id}
+              room={room}
               box={box}
               selected={selectedId === box.id}
               dimmed={selecting && !joined.boxes.has(box.id)}
@@ -681,22 +947,38 @@ export function BuildMap(props: BuildMapProps) {
                       onSelect(box.id);
                       onOpenContainer(box.id);
                     }}
-                    style={{
-                      position: "absolute",
-                      left: box.x + box.w - 54,
-                      top: box.y + 3,
-                      height: 22,
-                      padding: "0 8px",
-                      borderRadius: 7,
-                      border: `1px solid ${t.line}`,
-                      background: "transparent",
-                      color: t.text2,
-                      fontFamily: FIGTREE,
-                      fontSize: 11.5,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
-                    }}
+                    style={
+                      refined
+                        ? {
+                            position: "absolute",
+                            left: box.x + box.w - 54,
+                            top: box.y + 3,
+                            height: 22,
+                            padding: "0 8px",
+                            boxSizing: "border-box",
+                            borderRadius: 6,
+                            ...CONTROL,
+                            ...geist(11.5, 500, t.text),
+                            cursor: "pointer",
+                            ...(selecting && !joined.boxes.has(box.id) ? DIM : null),
+                          }
+                        : {
+                            position: "absolute",
+                            left: box.x + box.w - 54,
+                            top: box.y + 3,
+                            height: 22,
+                            padding: "0 8px",
+                            borderRadius: 7,
+                            border: `1px solid ${t.line}`,
+                            background: "transparent",
+                            color: t.text2,
+                            fontFamily: FIGTREE,
+                            fontSize: 11.5,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
+                          }
+                    }
                   >
                     Open
                   </button>
@@ -715,21 +997,35 @@ export function BuildMap(props: BuildMapProps) {
                 onPointerMove={reader ? undefined : onDotMove}
                 onPointerUp={reader ? undefined : (event) => finish(event, true)}
                 onPointerCancel={reader ? undefined : (event) => finish(event, false)}
-                style={{
-                  position: "absolute",
-                  left: box.x + box.w - DOT / 2,
-                  top: box.y + MAP_SIZES.head / 2 - DOT / 2,
-                  width: DOT,
-                  height: DOT,
-                  borderRadius: r.full,
-                  boxSizing: "border-box",
-                  border: `1.5px solid ${selecting && joined.boxes.has(box.id) ? t.text : t.text2}`,
-                  background: selecting && joined.boxes.has(box.id) ? t.text : t.solid,
-                  cursor: reader ? "default" : "crosshair",
-                  pointerEvents: reader ? "none" : undefined,
-                  touchAction: "none",
-                  opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
-                }}
+                style={
+                  refined
+                    ? {
+                        /* The output's square on the box's right edge, centred on the head as the wire leaves it. */
+                        position: "absolute",
+                        left: box.x + box.w - SQUARE / 2,
+                        top: box.y + MAP_SIZES.head / 2 - SQUARE / 2,
+                        ...squarePaint(selecting && joined.boxes.has(box.id)),
+                        cursor: reader ? "default" : "crosshair",
+                        pointerEvents: reader ? "none" : undefined,
+                        touchAction: "none",
+                        ...(selecting && !joined.boxes.has(box.id) ? DIM : null),
+                      }
+                    : {
+                        position: "absolute",
+                        left: box.x + box.w - DOT / 2,
+                        top: box.y + MAP_SIZES.head / 2 - DOT / 2,
+                        width: DOT,
+                        height: DOT,
+                        borderRadius: r.full,
+                        boxSizing: "border-box",
+                        border: `1.5px solid ${selecting && joined.boxes.has(box.id) ? t.text : t.text2}`,
+                        background: selecting && joined.boxes.has(box.id) ? t.text : t.solid,
+                        cursor: reader ? "default" : "crosshair",
+                        pointerEvents: reader ? "none" : undefined,
+                        touchAction: "none",
+                        opacity: selecting && !joined.boxes.has(box.id) ? DIMMED : 1,
+                      }
+                }
               />
             ))}
 
@@ -739,16 +1035,16 @@ export function BuildMap(props: BuildMapProps) {
                 data-testid="map-drag-line"
                 d={`M ${drag.x1} ${drag.y1} C ${drag.x1 + 0.6 * (drag.x - drag.x1)} ${drag.y1}, ${drag.x - 0.6 * (drag.x - drag.x1)} ${drag.y}, ${drag.x} ${drag.y}`}
                 fill="none"
-                strokeWidth={1.75}
+                strokeWidth={refined ? 1.2 : 1.75}
                 strokeDasharray="4 4"
-                style={{ stroke: t.action }}
+                style={{ stroke: refined ? t.text : t.action }}
               />
             </svg>
           ) : null}
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, ...caption }}>
         <span>
           {MAP_COPY.rows}
           {hasContainer && onOpenContainer ? (
