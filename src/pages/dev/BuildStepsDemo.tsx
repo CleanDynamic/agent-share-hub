@@ -12,7 +12,9 @@ import { useSearchParams } from "react-router-dom";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { buildFixture, buildTabFixture, SAMPLE_TABS } from "@/dev/fixtures/build";
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
+import { useLook } from "@/lib/theme/look";
 import { BuildView } from "@/pages/site/build/BuildView";
+import { RefinedBuildView } from "@/pages/site/build/RefinedBuildView";
 import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildModel";
 
 import type { DesignPageProps } from "./KitPages";
@@ -26,10 +28,12 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const first = params.get("tab") as BuildTabKey | null;
   const [tab, setTab] = useState<BuildTabKey>(landTab(first && SAMPLE_TABS.includes(first) ? first : "anatomy", true));
 
+  /* UI-P90: `?look=refined` draws the fork, from the same fixture. */
+  const View = useLook() === "refined" ? RefinedBuildView : BuildView;
   const { title, outcome, ...steps } = buildStepsFixture(which);
   const props = buildFixture(viewport);
   return (
-    <BuildView
+    <View
       fit="content"
       {...props}
       hero={{ ...props.hero, title, outcome }}

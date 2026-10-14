@@ -44,12 +44,12 @@ const LONG_WORDS = 40;
 
 const mono = (size: 11 | 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
 
-const stepDomId = (id: string) => `step-${id}`;
-const needDomId = (id: string) => `need-${id}`;
+export const stepDomId = (id: string) => `step-${id}`;
+export const needDomId = (id: string) => `need-${id}`;
 
-const isInstructions = (entry: ReaderStep) => entry.step.id.endsWith(":instructions");
-const isContainer = (entry: ReaderStep) => entry.step.kind === "agent" || entry.step.kind === "team";
-const isLong = (step: Step) => step.words > LONG_WORDS || step.text.split("\n").length > 4;
+export const isInstructions = (entry: ReaderStep) => entry.step.id.endsWith(":instructions");
+export const isContainer = (entry: ReaderStep) => entry.step.kind === "agent" || entry.step.kind === "team";
+export const isLong = (step: Step) => step.words > LONG_WORDS || step.text.split("\n").length > 4;
 
 /** The text "Copy the team" puts on the clipboard: each agent, numbered, with its instructions whole. */
 function teamText(entry: ReaderStep): string {
@@ -65,11 +65,11 @@ function teamText(entry: ReaderStep): string {
 }
 
 /** The words a copy puts on the clipboard for a step. */
-const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.text);
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.text);
 
 /* ── small parts ── */
 
-function useConfirmed(): [boolean, () => void] {
+export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -403,7 +403,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   );
 }
 
-const modelOf = (step: Step): string => (step.model ? modelLabel(step.model) || step.model : "");
+export const modelOf = (step: Step): string => (step.model ? modelLabel(step.model) || step.model : "");
 
 /** An agent or a team: its card, with its sub-steps inside it. */
 function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
@@ -473,7 +473,7 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
 /* ── The build ── */
 
 /** The names the full prompt window shows on its Uses chips. */
-function namesIn(steps: readonly ReaderStep[]): Record<string, string> {
+export function namesIn(steps: readonly ReaderStep[]): Record<string, string> {
   const names: Record<string, string> = {};
   const visit = (list: readonly ReaderStep[]) => {
     for (const entry of list) {
@@ -487,7 +487,7 @@ function namesIn(steps: readonly ReaderStep[]): Record<string, string> {
 }
 
 /** The sentence on the right of the head row. */
-function headNote(steps: readonly ReaderStep[]): string {
+export function headNote(steps: readonly ReaderStep[]): string {
   const at = steps.findIndex(isContainer);
   if (at < 0) return "copy each step into the chat it names";
   const word = steps[at].step.kind === "team" ? "team" : "agent";
@@ -495,8 +495,18 @@ function headNote(steps: readonly ReaderStep[]): string {
   return before.length > 0 ? `${stepList(before)} set it up · the ${word} then runs by itself` : `the ${word} runs by itself`;
 }
 
-export function StepsList({ view, phone, announce }: { view: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
-  const { steps, results } = view;
+export interface StepsListProps {
+  view: BuildStepsView;
+  phone: boolean;
+  announce: (text: string) => void;
+}
+
+/**
+ * What The build keeps between renders, shared by this view and its refined fork (UI-P90): the lens, the step that is
+ * ringed, the step open in the full prompt window, where the Map starts, and the lookups the window reads.
+ */
+export function useStepsList(view: BuildStepsView, phone: boolean) {
+  const { steps } = view;
   const [lens, setLens] = useState<"list" | "map">("list");
   const [ringed, setRinged] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -548,7 +558,13 @@ export function StepsList({ view, phone, announce }: { view: BuildStepsView; pho
     return out;
   }, [steps]);
   const map = lens === "map" && !phone && view.mapAvailable;
-  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap: phone || !view.mapAvailable ? undefined : seeMap };
+  return { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap: phone || !view.mapAvailable ? undefined : seeMap, toolOf, flat, map };
+}
+
+export function StepsList({ view, phone, announce }: StepsListProps) {
+  const { steps, results } = view;
+  const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
+  const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
 
   const rows = steps.map((entry) => {
     const chat = entry.chat?.kind === "new" ? entry.chat : null;
@@ -697,7 +713,12 @@ function FileDownload({ row }: { row: NeedRow }) {
 }
 
 /** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
-export function NeedPanel({ view, onOpenOther }: { view: BuildStepsView; onOpenOther: (id: string) => void }) {
+export interface NeedPanelProps {
+  view: BuildStepsView;
+  onOpenOther: (id: string) => void;
+}
+
+export function NeedPanel({ view, onOpenOther }: NeedPanelProps) {
   const total = view.steps.length;
   const single = total === 1 && !view.steps.some(isContainer);
   return (

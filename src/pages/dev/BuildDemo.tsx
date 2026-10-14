@@ -19,7 +19,9 @@ import { LAYER_BLURB } from "@/lib/build";
 import { SAMPLE_TABS, buildFixture, buildLowerFixture, buildTabFixture } from "@/dev/fixtures/build";
 import { LowerSections } from "@/pages/site/build/BuildLower";
 import { EmptyState } from "@/components/brand/EmptyState";
+import { useLook } from "@/lib/theme/look";
 import { BuildView, BuildViewFailed, BuildViewSkeleton } from "@/pages/site/build/BuildView";
+import { RefinedBuildView } from "@/pages/site/build/RefinedBuildView";
 import { buildTabs, tabLayer, type BuildTabKey } from "@/pages/site/build/buildModel";
 
 import type { DesignPageProps } from "./KitPages";
@@ -30,13 +32,15 @@ export default function BuildDemo({ fit = "board", viewport, state = "populated"
   const tab: BuildTabKey = asked && SAMPLE_TABS.includes(asked) ? asked : "anatomy";
   const lower = params.get("lower") === "1";
   const props = buildFixture(viewport);
+  /* UI-P90: `?look=refined` draws the fork, from the same fixture. */
+  const View = useLook() === "refined" ? RefinedBuildView : BuildView;
 
   /* UI-P37 — the other three states, from the same sample. */
   if (state === "loading") return <BuildViewSkeleton fit={fit} />;
   if (state === "error") return <BuildViewFailed onRetry={() => undefined} />;
   if (state === "empty") {
     return (
-      <BuildView
+      <View
         fit={fit}
         {...props}
         anatomy={{ ...props.anatomy, parts: [], gaps: 0, selectedId: null, full: null }}
@@ -46,7 +50,7 @@ export default function BuildDemo({ fit = "board", viewport, state = "populated"
     );
   }
 
-  if (tab === "anatomy" && !lower) return <BuildView fit={fit} {...props} />;
+  if (tab === "anatomy" && !lower) return <View fit={fit} {...props} />;
 
   const layer = tabLayer(tab);
   const viewer =
@@ -63,7 +67,7 @@ export default function BuildDemo({ fit = "board", viewport, state = "populated"
 
   return (
     <div>
-      <BuildView fit="content" {...props} viewer={viewer} />
+      <View fit="content" {...props} viewer={viewer} />
       {lower ? <LowerSections>{buildLowerFixture(viewport)}</LowerSections> : null}
     </div>
   );
