@@ -22,10 +22,15 @@
 //
 // The gradient runs `userSpaceOnUse` from the circle's left edge at the top
 // (x = cx − r) to the artboard's bottom-right corner.
+//
+// THE REFINED LOOK HAS NO ARC (UI-P81). `Arc` renders nothing there, wherever it is placed — the page, the Build
+// hero, the Profile banner — so the two blurs and the gradient are not even built. It is a gate in front of the
+// drawing and not a branch inside it, which keeps the drawing's hooks out of the refined look entirely.
 
 import { useId } from "react";
 import type { CSSProperties } from "react";
 
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { useRoom } from "./useRoom";
@@ -58,7 +63,13 @@ export interface ArcProps {
   style?: CSSProperties;
 }
 
-export function Arc({ geometry, preserveAspectRatio = "xMaxYMin slice", style }: ArcProps) {
+export function Arc(props: ArcProps) {
+  if (useLook() === "refined") return null;
+  return <ArcDrawing {...props} />;
+}
+
+/** The current look's arc: a haze, a gradient stroke and an outer ring in the room's own shape. */
+function ArcDrawing({ geometry, preserveAspectRatio = "xMaxYMin slice", style }: ArcProps) {
   const { width, height, cx, cy, r } = geometry;
   const dusk = useRoom() === "dusk";
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");

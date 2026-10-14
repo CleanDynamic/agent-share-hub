@@ -50,6 +50,11 @@ const SRC = join(ROOT, "src");
 const EXTS = [".ts", ".tsx", ".css"];
 const IS_TEST = /\.(test|spec)\.tsx?$/;
 
+/** The scope UI-P81 puts in front of every .bg-glass selector: liquid glass exists in the current look only. */
+const CURRENT_LOOK_ONLY_PLAIN = ':root:not([data-look="refined"]) ';
+/** The same, escaped for a RegExp. */
+const CURRENT_LOOK_ONLY = String.raw`:root:not\(\[data-look="refined"\]\) `;
+
 /**
  * Files allowed to declare a different blur, with the reason. A RATCHET: it may
  * only shrink.
@@ -205,9 +210,43 @@ describe("§Glass — liquid glass (UI-P09b)", () => {
 
   it("drops the displacement below 768px and under reduced transparency, and the blur too in the latter", () => {
     const css = readFileSync(join(SRC, "index.css"), "utf8");
-    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*\.bg-glass::after \{ filter: none; -webkit-filter: none; \}/);
+    // UI-P81 scoped every .bg-glass selector to the current look, the guards included. The phone guard's pattern
+    // names its selector, so it grew by the scope; the other two match through it as before. What each guard drops,
+    // and where, is unchanged.
+    expect(css).toMatch(
+      new RegExp(String.raw`@media \(max-width: 767px\) \{\s*${CURRENT_LOOK_ONLY}\.bg-glass::after \{ filter: none; -webkit-filter: none; \}`),
+    );
     expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)[\s\S]*?backdrop-filter: none/);
     expect(css).toMatch(/@supports not \(backdrop-filter: blur\(2px\)\)[\s\S]*?filter: none/);
+  });
+});
+
+describe("§Glass — the refined look has none (UI-P81)", () => {
+  const css = readFileSync(join(SRC, "index.css"), "utf8");
+  /** Every rule prelude (the text before a `{`) in the stylesheet that names the .bg-glass class. */
+  const glassRules = [...code(css).matchAll(/([^{};]+)\{/g)]
+    .map((m) => m[1].trim())
+    .filter((prelude) => /(^|[\s,>+~])\.bg-glass(?![\w-])/.test(prelude));
+
+  it("finds the liquid-glass rules, so a green run is not an empty scan", () => {
+    // base, `> *`, ::before, ::after, and the three overrides of ::after: phone, reduced transparency, no backdrop-filter.
+    expect(glassRules.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it("scopes every .bg-glass selector to :root:not([data-look=\"refined\"]), the overrides included", () => {
+    const unscoped = glassRules.filter((prelude) => !prelude.startsWith(`${CURRENT_LOOK_ONLY_PLAIN}.bg-glass`));
+    expect(unscoped, unscoped.join("\n")).toEqual([]);
+  });
+
+  it("keeps every blur and the distortion filter in the stylesheet inside those scoped rules", () => {
+    // Innermost rules only (`prelude { body }` with no braces in the body), so a rule inside an @media is read as
+    // itself and not as the @media. A stylesheet that matches `[data-look="refined"]` selects none of these.
+    const rules = [...code(css).matchAll(/([^{};]+)\{([^{}]*)\}/g)].map((m) => ({ prelude: m[1].trim(), body: m[2] }));
+    const carriers = rules.filter(({ body }) => /url\(#bg-glass-distortion\)|blur\(/.test(body));
+    expect(carriers.length, "no rule carries a blur: the scan is empty").toBeGreaterThan(0);
+    for (const { prelude, body } of carriers) {
+      expect(prelude.startsWith(`${CURRENT_LOOK_ONLY_PLAIN}.bg-glass`), `"${prelude}" blurs: ${body.trim().slice(0, 80)}`).toBe(true);
+    }
   });
 });
 

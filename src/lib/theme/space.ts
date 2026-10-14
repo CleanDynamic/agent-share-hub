@@ -36,6 +36,12 @@
 // at the same relationships. It is what new code uses, and what the pages use
 // from UI-P55 to UI-P58 as they move to the tightened boards. `SPACE` stays, so
 // nothing that spends it breaks; the rule below holds on both scales.
+//
+// THE REFINED SCALE (UI-P81). The refined look is drawn on twelve plain steps,
+// 2 to 64, and a handful of named layout values, `SPACE_REFINED` and
+// `LAYOUT_REFINED` below. They sit beside the two named scales and replace
+// neither: the current look keeps spending `SPACE` and `SPACE_COMPACT`, and a
+// component reads these only on its refined branch.
 
 /**
  * The scale, by role.
@@ -124,6 +130,57 @@ export const SPACE_COMPACT_STEPS = SPACE_NAMES.map((n) => SPACE_COMPACT[n]);
 
 /** True when `value` is one of the seven compact steps. */
 export const isCompactStep = (value: number): boolean => SPACE_COMPACT_STEPS.includes(value as never);
+
+/**
+ * The refined look's scale (UI-P81): twelve steps, smallest first.
+ *
+ * NUMBERED, NOT NAMED, UNLIKE THE TWO ABOVE. `SPACE` is seven roles because a gap
+ * chosen as "sm" survives a redesign that moves what sm measures. The refined
+ * look is specified the other way round, as twelve plain numbers picked per
+ * place, so the steps carry their values and nothing else. 2 is for segmented
+ * tracks and 6 for tight inline pairs. The steps walk in twos to 8, in fours to
+ * 24 and in eights to 48, where a few pixels decide whether two things read as
+ * one group or two; 64 closes the scale.
+ *
+ * `assertPadding` below is the current look's rule and is not applied to this
+ * scale: how a refined module's padding relates to the gap beside it is for the
+ * boards to say, not this file.
+ */
+export const SPACE_REFINED = [2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64] as const;
+
+/** True when `value` is one of the twelve refined steps. */
+export const isRefinedStep = (value: number): boolean => SPACE_REFINED.includes(value as never);
+
+/**
+ * The refined look's named layout values (UI-P81): the measures the boards repeat
+ * often enough that a component should say what it means rather than type the
+ * number. Heights and paddings are pixels as numbers, like the scales above; the
+ * gutter is a CSS length, because it is a `clamp()`, and is spent as a string.
+ *
+ * `modulePad` and `tilePad` are steps of `SPACE_REFINED`, and the gutter is a
+ * clamp between two of them, 16 and 64. The rest are heights, not gaps: a row
+ * with an avatar in it is 56 high, and 56 is not a step.
+ */
+export const LAYOUT_REFINED = {
+  /** The header bar. It sits on the frame with no background or border of its own. */
+  headerHeight: 48,
+  /**
+   * The page's side padding: 16 on a phone, 64 on a wide window, 4.6vw between.
+   * The surface spends it as `padding: 24px <gutter> 48px`, and the footer inside
+   * the surface spends it as the sides of its own padding.
+   */
+  gutter: "clamp(16px, 4.6vw, 64px)",
+  /** A row's minimum height when it carries one line. */
+  rowMin: 40,
+  /** A row with a second line of text. */
+  rowTwoLine: 48,
+  /** A row that carries an avatar. */
+  rowAvatar: 56,
+  /** A module's padding. */
+  modulePad: 16,
+  /** A tile's padding. */
+  tilePad: 12,
+} as const;
 
 
 /**

@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { TOKEN_NAMES, noon, dusk } from "./semantics";
-import { RADIUS, RADIUS_NAMES } from "./radius";
+import { RADIUS, RADIUS_NAMES, REFINED_RADIUS, REFINED_RADIUS_NAMES } from "./radius";
 import { ELEVATION_TOKENS, duskElevation, noonElevation } from "./elevation";
 import { SHADCN_NAMES, duskShadcn, noonShadcn, duskRefinedShadcn, noonRefinedShadcn } from "./shadcn";
 import { REFINED_NAMES, REFINED_NEW_NAMES, duskRefined, noonRefined } from "./refined";
@@ -149,11 +149,22 @@ describe("index.css mirrors elevation.ts", () => {
 describe("index.css mirrors refined.ts (UI-P79)", () => {
   const dusk_ = parse(':root[data-theme="dusk"][data-look="refined"]');
   const noon_ = parse(':root[data-theme="noon"][data-look="refined"]');
-  const expected = [...REFINED_NAMES, ...SHADCN_NAMES].sort();
+  // UI-P81 adds the refined radius scale to the same two blocks: seven radius
+  // names, which the current blocks already declare (so none is a new name).
+  const expected = [...REFINED_NAMES, ...SHADCN_NAMES, ...REFINED_RADIUS_NAMES].sort();
 
   it("holds both refined blocks to the same set of names", () => {
     expect(Object.keys(dusk_).sort()).toEqual(Object.keys(noon_).sort());
     expect(Object.keys(noon_).sort()).toEqual(expected);
+  });
+
+  it("declares the refined radius scale (UI-P81), and leaves --r-full to the theme blocks", () => {
+    for (const n of REFINED_RADIUS_NAMES) {
+      expect([n, dusk_[n]]).toEqual([n, REFINED_RADIUS[n]]);
+      expect([n, noon_[n]]).toEqual([n, REFINED_RADIUS[n]]);
+    }
+    expect(dusk_["r-full"]).toBeUndefined();
+    expect(noon_["r-full"]).toBeUndefined();
   });
 
   it("declares every refined value, as written", () => {

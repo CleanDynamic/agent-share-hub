@@ -1,8 +1,10 @@
 // UI-P13 — the page backdrop: the layer, the arc in both rooms and both
 // artboards, Dusk's grain, and the rules that keep it static.
+// UI-P81 — and its absence under the refined look: nothing drawn, nothing hosted.
 
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -199,5 +201,106 @@ describe("Arc", () => {
     const ids = [...container.querySelectorAll("[id]")].map((e) => e.id);
     expect(ids).toHaveLength(6);
     expect(new Set(ids).size).toBe(6);
+  });
+});
+
+/* ── The refined look has no backdrop (UI-P81) ─────────────────────────────────
+   `?look=refined` counts on `/dev/*` only (UI-P78), so the look is set the way a dev page sets it: by the router's
+   location. Without a router there is no URL to read and the switch decides, which is why every test above runs
+   the current look unchanged.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const at = (url: string, node: React.ReactElement) => <MemoryRouter initialEntries={[url]}>{node}</MemoryRouter>;
+const REFINED = "/dev/kit/pages/home?look=refined";
+
+describe("PageBackdrop under the refined look", () => {
+  it.each(["noon", "dusk"] as const)("%s: renders nothing — no layer, no arc, no grain, no canvas host", (name) => {
+    room(name);
+    const { container } = render(at(REFINED, <PageBackdrop />));
+    expect(container.innerHTML).toBe("");
+    for (const selector of ['[data-ui="page-backdrop"]', 'svg[data-ui="arc"]', 'svg[data-ui="grain"]', '[data-slot="backdrop-canvas-host"]']) {
+      expect(container.querySelector(selector), selector).toBeNull();
+    }
+    expect(renderToStaticMarkup(at(REFINED, <PageBackdrop />))).toBe("");
+  });
+
+  it("renders nothing on a phone and on the entrance either", () => {
+    room("dusk");
+    expect(render(at(REFINED, <PageBackdrop viewport="mobile" />)).container.innerHTML).toBe("");
+    expect(render(at(REFINED, <PageBackdrop viewport="desktop" tone="signin" />)).container.innerHTML).toBe("");
+    expect(render(at(REFINED, <PageBackdrop viewport="mobile" tone="signin" />)).container.innerHTML).toBe("");
+  });
+
+  it("puts no canvas in the document: nothing is hosted, so nothing attaches", () => {
+    room("dusk");
+    render(at(REFINED, <PageBackdrop />));
+    expect(document.querySelector('canvas[data-ui="backdrop-canvas"]')).toBeNull();
+    expect(document.querySelector('[data-slot="backdrop-canvas-host"]')).toBeNull();
+  });
+
+  it("is the room as before where the look is current, on a dev route too", () => {
+    room("noon");
+    const html = renderToStaticMarkup(<PageBackdrop />);
+    expect(renderToStaticMarkup(at("/dev/kit/pages/home?look=current", <PageBackdrop />))).toBe(html);
+    expect(renderToStaticMarkup(at("/gallery?look=refined", <PageBackdrop />))).toBe(html);
+    expect(html).toContain('data-ui="page-backdrop"');
+  });
+
+  it("follows the look while it is mounted: the room goes when the look turns refined and returns when it turns back", () => {
+    room("dusk");
+    function Switch() {
+      const navigate = useNavigate();
+      return (
+        <>
+          <button onClick={() => navigate("/dev/kit?look=refined")}>refine</button>
+          <button onClick={() => navigate("/dev/kit?look=current")}>revert</button>
+        </>
+      );
+    }
+    const { container } = render(
+      at(
+        "/dev/kit?look=current",
+        <>
+          <Switch />
+          <PageBackdrop />
+        </>,
+      ),
+    );
+    const layer = () => container.querySelector('[data-ui="page-backdrop"]');
+    expect(layer()).not.toBeNull();
+    expect(container.querySelector('svg[data-ui="grain"]')).not.toBeNull();
+
+    fireEvent.click(screen.getByText("refine"));
+    expect(layer()).toBeNull();
+    expect(container.querySelector('svg[data-ui="grain"]')).toBeNull();
+    expect(container.querySelector('[data-slot="backdrop-canvas-host"]')).toBeNull();
+
+    fireEvent.click(screen.getByText("revert"));
+    expect(layer()).not.toBeNull();
+    expect(container.querySelector('[data-slot="backdrop-canvas-host"]')).not.toBeNull();
+  });
+});
+
+describe("Arc under the refined look", () => {
+  it.each([
+    ["the page, desktop", ARC_PAGE_DESKTOP],
+    ["the page, mobile", ARC_PAGE_MOBILE],
+    ["the entrance", ARC_SIGNIN_DESKTOP],
+    ["the build hero", ARC_BUILD_HERO],
+    ["the build hero, mobile", ARC_BUILD_HERO_MOBILE],
+    ["the profile banner", ARC_PROFILE_BANNER],
+  ])("%s: renders nothing, so no haze, no blur and no gradient are built", (_where, geometry) => {
+    for (const name of ["noon", "dusk"] as const) {
+      room(name);
+      const { container } = render(at(REFINED, <Arc geometry={geometry} />));
+      expect(container.innerHTML).toBe("");
+    }
+  });
+
+  it("draws as before where the look is current", () => {
+    room("dusk");
+    const { container } = render(at("/dev/kit?look=current", <Arc geometry={ARC_PAGE_DESKTOP} />));
+    expect(container.querySelector('svg[data-ui="arc"]')).not.toBeNull();
+    expect(circles(container)).toHaveLength(4);
   });
 });

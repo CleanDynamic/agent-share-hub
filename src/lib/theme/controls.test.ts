@@ -9,6 +9,7 @@
 //     the class form;
 //   - no blurred surface can nest inside another.
 
+import type { CSSProperties } from "react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -19,6 +20,7 @@ import {
   CONTROL_CLASS,
   CONTROL_SIZE,
   dialogPanelStyle,
+  fieldStyle,
   FOCUS_RING_CLASS,
   GLASS_BLUR,
   menuItemStyle,
@@ -31,6 +33,7 @@ import {
   switchThumbStyle,
   switchTrackStyle,
   tabTriggerStyle,
+  themeToggleSegmentStyle,
   tooltipStyle,
   TOUCH_HIT_CLASS,
   touchHit,
@@ -199,6 +202,40 @@ describe("motion", () => {
 
   it("does not lift a disabled button", () => {
     expect(buttonStyle("default", { hovered: true, disabled: true }).transform).toBeUndefined();
+  });
+});
+
+describe("hover is a step on the fill, a border, a colour or a filter — never on opacity (UI-P81)", () => {
+  // The refined look forbids hover fades ("hover `--control-on`, never opacity").
+  // Every builder that takes a state already spends hover that way, which is
+  // why the refined look needs no hover branch of its own to meet the rule;
+  // pinning it here means a builder cannot acquire a hover fade unnoticed.
+  const hot = { hovered: true } as const;
+  const BUILDERS: Record<string, (state: { hovered?: boolean }) => CSSProperties> = {
+    ...Object.fromEntries(VARIANTS.map((v) => [`button ${v}`, (s: { hovered?: boolean }) => buttonStyle(v, s)])),
+    field: (s) => fieldStyle(s),
+    "tab trigger": (s) => tabTriggerStyle(s),
+    "switch track": (s) => switchTrackStyle(s),
+    checkbox: (s) => checkboxStyle(s),
+    radio: (s) => radioStyle(s),
+    "menu item": (s) => menuItemStyle(s),
+    "theme segment": (s) => themeToggleSegmentStyle(s),
+    "selectable chip": (s) => chipStyle("neutral", { selectable: true, ...s }),
+  };
+
+  it.each(Object.keys(BUILDERS))("%s: hovering does not change its opacity", (name) => {
+    const resting = BUILDERS[name]({});
+    const hovered = BUILDERS[name](hot);
+    expect(hovered.opacity, name).toBe(resting.opacity);
+  });
+
+  it("scans a non-empty set, and finds that hovering changes something else", () => {
+    // Without this a typo in BUILDERS would leave the loop above comparing nothing to nothing.
+    expect(Object.keys(BUILDERS).length).toBeGreaterThanOrEqual(14);
+    const changed = Object.values(BUILDERS).filter(
+      (build) => JSON.stringify(build(hot)) !== JSON.stringify(build({})),
+    );
+    expect(changed.length).toBeGreaterThan(8);
   });
 });
 

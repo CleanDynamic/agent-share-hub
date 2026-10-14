@@ -5,6 +5,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { Detail } from "./Detail";
@@ -15,6 +16,10 @@ import { StripedBar } from "./StripedBar";
 import { WallLabel } from "./WallLabel";
 
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
+
+/** The refined look, the way a dev page asks for it: `?look=refined` on a `/dev/*` route (UI-P78). */
+const REFINED_URL = "/dev/kit/pages/home?look=refined";
+const underRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED_URL]}>{node}</MemoryRouter>;
 
 describe("Panel", () => {
   it("is plain by default: --glass over a --glass-border hairline, radius 16, the card shadow and the top highlight", () => {
@@ -90,6 +95,76 @@ describe("Panel", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+describe("Panel under the refined look (UI-P81)", () => {
+  it('paints the module recipe for surface="glass": --module, a --module-border hairline, radius --r-card, --module-shadow', () => {
+    const html = markup(underRefined(<Panel surface="glass">x</Panel>));
+    // It still reports what was asked for, so a call site and its tests need no change.
+    expect(html).toContain('data-surface="glass"');
+    expect(html).toContain("background:var(--module)");
+    expect(html).toContain("border:1px solid var(--module-border)");
+    expect(html).toContain("border-radius:var(--r-card)");
+    expect(html).toContain("box-shadow:var(--module-shadow)");
+    expect(html).toContain("overflow:hidden");
+  });
+
+  it("has no liquid glass: no class, no halo, no fill of `none`, no border of `none`", () => {
+    const html = markup(underRefined(<Panel surface="glass">x</Panel>));
+    expect(html).not.toContain("bg-glass");
+    expect(html).not.toContain("class=");
+    expect(html).not.toContain("var(--glass-halo)");
+    expect(html).not.toContain("background:none");
+    expect(html).not.toContain("border:none");
+  });
+
+  it("sets no blur and no filter on any surface", () => {
+    for (const surface of ["glass", "plain", "flat"] as const) {
+      expect(markup(underRefined(<Panel surface={surface}>x</Panel>))).not.toMatch(/backdrop-filter|blur|filter:/i);
+    }
+  });
+
+  it("carries no raw colour on any surface", () => {
+    const html = (["glass", "plain", "flat"] as const).map((surface) => markup(underRefined(<Panel surface={surface}>x</Panel>))).join("");
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(html).not.toMatch(/rgba?\(/);
+  });
+
+  it("leaves plain and flat to their tokens, which the look repoints: only the radius is the scale's", () => {
+    const plain = markup(underRefined(<Panel>x</Panel>));
+    expect(plain).toContain("background:var(--glass)");
+    expect(plain).toContain("border-radius:var(--r-panel)");
+    const flat = markup(underRefined(<Panel surface="flat">x</Panel>));
+    expect(flat).toContain("background:var(--flat)");
+  });
+
+  it("keeps the padding the caller gave, through the same table (the module's own is UI-P85's)", () => {
+    expect(markup(underRefined(<Panel surface="glass">x</Panel>))).toContain("padding:12px 13px");
+    expect(markup(underRefined(<Panel surface="glass" padding="0">x</Panel>))).toContain("padding:0");
+  });
+
+  it("does not warn about nested glass, because there is none to nest", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(
+        underRefined(
+          <Panel surface="glass">
+            <Panel surface="glass">nested</Panel>
+          </Panel>,
+        ),
+      );
+      // The router logs its own future-flag warnings through the same channel; only the panel's is in question.
+      expect(warn.mock.calls.filter(([message]) => String(message).includes("liquid-glass"))).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("is the same panel as before for the current look, on a dev route too", () => {
+    const current = markup(<MemoryRouter initialEntries={["/dev/kit?look=current"]}><Panel surface="glass">x</Panel></MemoryRouter>);
+    expect(current).toBe(markup(<Panel surface="glass">x</Panel>));
+    expect(current).toContain('class="bg-glass"');
   });
 });
 
