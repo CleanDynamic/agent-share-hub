@@ -23,6 +23,7 @@ import { FrameSection } from "./catalogue/FrameSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
 import { OrbsSection } from "./catalogue/OrbsSection";
 import { PanelsSection } from "./catalogue/PanelsSection";
+import { ModelMarksSection } from "./catalogue/ModelMarksSection";
 import { ProofSection } from "./catalogue/ProofSection";
 import { TaglineSection } from "./catalogue/TaglineSection";
 
@@ -60,6 +61,7 @@ export default function KitComponents() {
       <ChartsSection />
       <CompositionsSection />
       <FrameSection />
+      <ModelMarksSection />
     </div>
   );
 }
