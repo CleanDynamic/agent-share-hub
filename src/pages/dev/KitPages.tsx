@@ -107,12 +107,17 @@ const TRAILS: Record<string, readonly Crumb[]> = {
 const CHROME: Record<string, Partial<DevChromeOptions>> = {
   /* UI-P57: the Home board lights Home in the header and on the dock, not the Gallery. */
   home: { current: "home", dockCurrent: "home" },
+  frame: { current: "home", dockCurrent: "home" },
   profile: { current: "home", dockCurrent: "home" },
   activity: { current: null, activityCurrent: true, dockCurrent: "activity" },
   drafts: { current: "drafts", dockCurrent: null },
   compose: { current: "drafts", dockCurrent: null },
   sandbox: { current: "drafts", dockCurrent: null },
 };
+
+/* UI-P87: the pages with a refined view. `frame` is the empty frame: the refined header, surface, breadcrumb, footer
+   and phone chrome around the grid placeholder, lit as the Home board lights them. */
+const REFINED_READY = new Set(["frame"]);
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 
@@ -125,7 +130,9 @@ export default function KitPages() {
 
   if (!View) return <div data-design-ready="false">Not built yet</div>;
   /* UI-P77: `?look=refined` asks for the refined view. None exists until UI-P78 and the page forks after it, so say so and the compare harness skips the board. */
-  if (new URLSearchParams(window.location.search).get("look") === "refined") return <div data-design-ready="false">No refined view yet</div>;
+  if (new URLSearchParams(window.location.search).get("look") === "refined" && !REFINED_READY.has(page)) {
+    return <div data-design-ready="false">No refined view yet</div>;
+  }
 
   return (
     <div

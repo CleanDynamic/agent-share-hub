@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -128,5 +129,89 @@ describe("SiteHeaderView", () => {
       "Theme: Noon",
       "Account",
     ]);
+  });
+});
+
+/* UI-P87 — the refined header. Names and order are the current header's; styles are read from SSR markup, where the
+   var() values survive (jsdom's cssstyle drops them). */
+describe("SiteHeaderView under the refined look", () => {
+  const REFINED = "/dev/kit/pages/home?look=refined";
+  const base = (props: Partial<SiteHeaderViewProps> = {}): SiteHeaderViewProps => ({
+    current: "home",
+    unread: 3,
+    drafts: 2,
+    viewer,
+    theme: "dusk",
+    onToggleTheme: vi.fn(),
+    onSignIn: vi.fn(),
+    onSignOut: vi.fn(),
+    onNewBuild: vi.fn(),
+    ...props,
+  });
+  const refined = (props: Partial<SiteHeaderViewProps> = {}) =>
+    render(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <SiteHeaderView {...base(props)} />
+      </MemoryRouter>,
+    );
+  const markup = (props: Partial<SiteHeaderViewProps> = {}) =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <SiteHeaderView {...base(props)} />
+      </MemoryRouter>,
+    );
+
+  it("keeps every name and the order: links, search, New build, Activity, theme, account", () => {
+    refined();
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Home", "Gallery", "Bounties", "Library", "Drafts2"]);
+    expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "New build" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Activity, 3 unread" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Theme: Dusk" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
+    expect(screen.getByTestId("site-header").getAttribute("data-look")).toBe("refined");
+  });
+
+  it("sits on the frame: 48 high, 0 20px, gap 8, no background and no border", () => {
+    const html = markup();
+    const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
+    expect(head).toContain("height:48px");
+    expect(head).toContain("padding:0 20px");
+    expect(head).toContain("gap:8px");
+    expect(head).not.toContain("background");
+    expect(head).not.toMatch(/[;"]border(-bottom)?:/);
+    expect(head).not.toContain("backdrop-filter");
+  });
+
+  it("marks the current link with the 2px --nav-mark bar and its glow, and the count at 11/500 --label", () => {
+    const html = markup();
+    expect(html.match(/data-ui="nav-mark"/g)).toHaveLength(1);
+    expect(html).toContain("background:var(--nav-mark)");
+    expect(html).toContain("box-shadow:var(--nav-lamp-glow)");
+    expect(html).toMatch(/font-size:11px;font-weight:500;color:var\(--label\)/);
+  });
+
+  it("draws New build as a secondary button 30 high with no icon", () => {
+    refined();
+    const button = screen.getByRole("button", { name: "New build" });
+    expect(button.getAttribute("data-variant")).toBe("secondary");
+    expect(button.style.height).toBe("30px");
+    expect(button.querySelector("svg")).toBeNull();
+  });
+
+  it("badges the bell with a 12px --lit-mark count, and on /notifications fills it with --control-on, never a colour", () => {
+    const html = markup();
+    expect(html).toContain("background:var(--lit-mark)");
+    expect(html).toContain("color:var(--on-lit)");
+    const current = markup({ activityCurrent: true });
+    expect(current).toContain("background:var(--control-on)");
+    expect(current).toContain("border:1px solid var(--control-border)");
+  });
+
+  it("is the current header with the switch off", () => {
+    header();
+    expect(screen.getByTestId("site-header").getAttribute("data-look")).toBeNull();
   });
 });

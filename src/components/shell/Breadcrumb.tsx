@@ -8,9 +8,13 @@
 // `--recess` skeleton.
 //
 // `BreadcrumbView` is pure (a trail in, a nav out); `Breadcrumb` reads the route.
+//
+// UNDER THE REFINED LOOK (UI-P87): Geist 12.5, 8 apart, no fixed height; ancestors `--text2`, the "/" in Geist
+// `--label`, the current page `--text` at 500. The structure and the names are the same.
 
 import { memo, type CSSProperties } from "react";
 
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -18,15 +22,20 @@ import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
 
-const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12 };
-
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
+  const refined = useLook() === "refined";
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: refined ? 12.5 : 12 };
+  const currentWeight = refined ? 500 : 600;
   return (
     <nav
       data-testid="breadcrumb"
       data-ui="breadcrumb"
       aria-label="Breadcrumb"
-      style={{ display: "flex", alignItems: "center", gap: 6, height: 33, minWidth: 0 }}
+      style={
+        refined
+          ? { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }
+          : { display: "flex", alignItems: "center", gap: 6, height: 33, minWidth: 0 }
+      }
     >
       {trail.map((crumb, index) => {
         const last = index === trail.length - 1;
@@ -45,7 +54,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
                   aria-current={last ? "page" : undefined}
                   style={{
                     ...text,
-                    fontWeight: last ? 600 : 400,
+                    fontWeight: last ? currentWeight : 400,
                     color: last ? t.text : t.text2,
                     maxWidth: 480,
                     overflow: "hidden",
@@ -68,7 +77,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
               </FrameLink>
             )}
             {!last && (
-              <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 12, color: t.label }}>
+              <span aria-hidden="true" style={{ fontFamily: refined ? FIGTREE : DM_MONO, fontSize: refined ? 12.5 : 12, color: t.label }}>
                 /
               </span>
             )}

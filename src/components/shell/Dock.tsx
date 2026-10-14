@@ -17,8 +17,12 @@ import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "l
 import { memo, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
 
+import type { GlyphName } from "@/components/brand/Glyph";
+import { Icon as AnyIcon } from "@/components/brand/Icon";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { GLASS_BLUR } from "@/lib/theme/controls";
+import { useLook } from "@/lib/theme/look";
+import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -43,7 +47,108 @@ export interface DockViewProps {
   placement?: "fixed" | "absolute";
 }
 
-export function DockView({ current, unread, placement = "fixed" }: DockViewProps) {
+/* UI-P87, refined: no glass. A bar the width of the screen on `--surface` with a 1px `--surface-border` top edge, and
+   five control-recipe tiles in it, 44 high, radius 6, 6 apart: the glyph at 16 over the label at 10.5/500. The current
+   tile is the bell's current state, the `--control-on` fill and `--control-border` edge in `--text`, with the 2px
+   `--nav-mark` bar along its foot; never a colour. The unread count is the header's 12px `--lit-mark` badge. */
+const TILE_GLYPH: Partial<Record<DockTileName, GlyphName>> = { gallery: "image", new: "plus", activity: "bell" };
+
+function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps) {
+  return (
+    <nav
+      data-testid="dock"
+      data-ui="dock"
+      data-look="refined"
+      aria-label="Primary"
+      style={{
+        position: placement,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 30,
+        display: "flex",
+        gap: 6,
+        padding: "6px 8px calc(6px + env(safe-area-inset-bottom))",
+        boxSizing: "border-box",
+        background: t.surface,
+        borderTop: `1px solid ${t.surfaceBorder}`,
+      }}
+    >
+      {TILES.map(({ name, label, href, icon }) => {
+        const isCurrent = name === current;
+        const badged = name === "activity" && unread > 0;
+        return (
+          <FrameLink
+            key={name}
+            to={href}
+            data-testid={`dock-tile-${name}`}
+            aria-current={isCurrent ? "page" : undefined}
+            aria-label={badged ? `Activity, ${unread} unread` : label}
+            style={{
+              position: "relative",
+              flex: 1,
+              minWidth: 0,
+              height: 44,
+              boxSizing: "border-box",
+              borderRadius: 6,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              fontFamily: FIGTREE,
+              fontSize: 10.5,
+              fontWeight: 500,
+              ...CONTROL,
+              ...(isCurrent ? { background: t.controlOn, color: t.text } : { color: t.text2 }),
+            }}
+          >
+            {isCurrent && (
+              <span
+                aria-hidden="true"
+                data-ui="nav-mark"
+                style={{ position: "absolute", left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1, background: t.navMark, boxShadow: t.navLampGlow }}
+              />
+            )}
+            {badged && (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 3,
+                  right: 3,
+                  minWidth: 12,
+                  height: 12,
+                  padding: "0 3px",
+                  boxSizing: "border-box",
+                  borderRadius: 6,
+                  background: t.litMark,
+                  color: t.onLit,
+                  fontFamily: FIGTREE,
+                  fontSize: 9,
+                  fontWeight: 600,
+                  lineHeight: "12px",
+                  textAlign: "center",
+                }}
+              >
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+            <AnyIcon lucide={icon} glyph={TILE_GLYPH[name]} size={16} />
+            <span aria-hidden="true">{label}</span>
+          </FrameLink>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function DockView(props: DockViewProps) {
+  const refined = useLook() === "refined";
+  return refined ? <RefinedDockView {...props} /> : <CurrentDockView {...props} />;
+}
+
+function CurrentDockView({ current, unread, placement = "fixed" }: DockViewProps) {
   return (
     <nav
       data-testid="dock"

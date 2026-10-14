@@ -1,11 +1,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 
-import { Breadcrumb } from "./Breadcrumb";
+import { Breadcrumb, BreadcrumbView } from "./Breadcrumb";
 import { trailFor } from "./breadcrumbTrail";
 import { SiteFooterView } from "./SiteFooter";
 import { CrumbTitleProvider, useCrumbTitle } from "./useBreadcrumb";
@@ -135,5 +136,56 @@ describe("ThemeSegmented", () => {
       fireEvent.click(screen.getByRole("button", { name: "System" }));
     });
     expect(window.localStorage.getItem("bg-theme")).toBe("system");
+  });
+});
+
+/* UI-P87 — the refined breadcrumb and footer. Names, items and order are the current ones; styles from SSR markup. */
+describe("breadcrumb and footer under the refined look", () => {
+  const REFINED = "/dev/kit/pages/home?look=refined";
+
+  it("the breadcrumb is Geist 12.5, 8 apart, '/' in --label, the current page --text at 500", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <BreadcrumbView
+          trail={[
+            { label: "Home", href: "/" },
+            { label: "Gallery", href: "/gallery" },
+            { label: "Bakery homepage" },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+    expect(html).toContain("gap:8px");
+    expect(html).not.toContain("height:33px");
+    expect(html).toContain("font-size:12.5px;color:var(--text2)");
+    expect(html).toMatch(/aria-hidden="true" style="[^"]*font-size:12.5px;color:var\(--label\)">\//);
+    expect(html).toMatch(/aria-current="page" style="[^"]*font-size:12.5px;font-weight:500;color:var\(--text\)/);
+  });
+
+  const refinedFooter = (signedIn: boolean) => (
+    <MemoryRouter initialEntries={[REFINED]}>
+      <ThemeProvider>
+        <SiteFooterView signedIn={signedIn} onSignOut={vi.fn()} onConnect={vi.fn()} />
+      </ThemeProvider>
+    </MemoryRouter>
+  );
+
+  it("the footer keeps its items, names and order", () => {
+    render(refinedFooter(false));
+    expect(screen.getAllByRole("link").map((a) => a.textContent)).toEqual(["buildgallery", "About", "API docs", "Solvers", "Sign in"]);
+    expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Theme" })).toBeTruthy();
+    expect(screen.getByText("© buildgallery")).toBeTruthy();
+    expect(screen.getByTestId("site-footer").getAttribute("data-look")).toBe("refined");
+  });
+
+  it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, Theme at 26", () => {
+    const html = renderToStaticMarkup(refinedFooter(true));
+    expect(html).toContain("border-top:1px solid var(--hairline);padding:12px clamp(16px, 4.6vw, 64px)");
+    expect(html).toContain("gap:8px 20px");
+    expect(html).toContain("font-size:12.5px;font-weight:400;color:var(--text2)");
+    expect(html).toMatch(/data-ui="segmented"[^>]*height:26px/);
+    expect(html).toContain("font-size:12px;font-weight:400;color:var(--label)");
+    expect(html).not.toContain("var(--header)");
   });
 });

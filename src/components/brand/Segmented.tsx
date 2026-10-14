@@ -37,7 +37,7 @@ import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-export type SegmentedSize = 28 | 30 | 32 | 34 | 36 | 38;
+export type SegmentedSize = 26 | 28 | 30 | 32 | 34 | 36 | 38;
 export type SegmentedFontSize = 11 | 12 | 13;
 
 export interface SegmentedItem<V extends string = string> {

@@ -21,8 +21,9 @@ import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import { denseSpace } from "@/lib/theme/density";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { display } from "@/lib/theme/type";
+import { display, FIGTREE } from "@/lib/theme/type";
 
 import { Mark } from "./Mark";
 import { useRoom } from "./useRoom";
@@ -34,9 +35,41 @@ export interface LockupProps {
   color?: string;
   /** Make the lockup a link home. */
   to?: string;
+  /** Refined only (UI-P87): the mark's size. The header draws 18 beside 14, the footer 15 beside 13. */
+  markSize?: number;
 }
 
-export function Lockup({ size, color = t.text, to }: LockupProps) {
+/* UI-P87, refined: the mark at `markSize` (no halo), 8 apart from the word in Geist 600 at `size`, -0.02em. */
+function RefinedLockup({ size, color = t.text, to, markSize = Math.round(size * 1.25) }: LockupProps) {
+  const row: CSSProperties = { display: "flex", alignItems: "center", gap: 8, color, textDecoration: "none" };
+  const content = (
+    <>
+      <Mark size={markSize} />
+      <span style={{ fontFamily: FIGTREE, fontSize: size, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: "normal" }}>
+        buildgallery
+      </span>
+    </>
+  );
+  if (to) {
+    return (
+      <Link data-ui="lockup" to={to} aria-label="buildgallery home" style={row}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <div data-ui="lockup" style={row}>
+      {content}
+    </div>
+  );
+}
+
+export function Lockup(props: LockupProps) {
+  const refined = useLook() === "refined";
+  return refined ? <RefinedLockup {...props} /> : <CurrentLockup {...props} />;
+}
+
+function CurrentLockup({ size, color = t.text, to }: LockupProps) {
   const halo = useRoom() === "dusk";
 
   const row: CSSProperties = {

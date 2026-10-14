@@ -2,7 +2,7 @@
 // Geist 12.5, and an optional key hint ("/") in a 1px `--control-border` box in Geist Mono 10.5. The input is 16px
 // under 768px so a phone does not zoom on focus. `label` is the input's accessible name.
 
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, Ref } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { r } from "@/lib/theme/radius";
@@ -17,6 +17,8 @@ export interface SearchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElem
   /** The key that focuses it, drawn at the end. */
   hint?: string;
   width?: number | string;
+  /** The input, for a caller that focuses it (the header's "/" key). */
+  ref?: Ref<HTMLInputElement>;
 }
 
 export function SearchField({ label, hint, width = 260, style, ...rest }: SearchFieldProps) {
@@ -36,6 +38,8 @@ export function SearchField({ label, hint, width = 260, style, ...rest }: Search
         borderRadius: r.control,
         ...WELL,
         color: t.label,
+        /* Above 768px index.css makes every input inherit its font size, so the size is set here, on its box, too. */
+        fontSize: phone ? 16 : 12.5,
         ...style,
       }}
     >
