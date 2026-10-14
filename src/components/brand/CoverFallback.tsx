@@ -16,8 +16,19 @@
 // keeps its sky from one render to the next and on every surface it appears on.
 // `sky` overrides it, which is how the dev fixtures reproduce the mockup's
 // choice for a given board.
+//
+// UNDER THE REFINED LOOK (UI-P86) there is no landscape. The fallback is the
+// picture the boards hang in every framed work: `--paper` with a sketch of a
+// page on it, a 3px headline at 45% and two 2px lines at 70% and 55%. The ink
+// is an artwork constant per room (RULES §2). The margin is 8, or 4 once the
+// picture is under 50px high, as the boards draw it. `data-sky` is still the
+// seed's sky, so the build keeps its identity in the markup.
 
-import { useId } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
+
+import { useResolvedTheme } from "@/contexts/ThemeContext";
+import { useLook } from "@/lib/theme/look";
+import { t } from "@/lib/theme/tokens";
 
 import { hashSeed } from "./hash";
 
@@ -58,12 +69,70 @@ export interface CoverFallbackProps {
   sky?: number;
 }
 
-export function CoverFallback({ seed, radius, sky }: CoverFallbackProps) {
-  const gradientId = `sky-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+/** The sketch's ink per room: the headline, then the two lines. Artwork constants (RULES §2). */
+export const SKETCH_INK = {
+  dusk: ["rgba(255,255,255,.14)", "rgba(255,255,255,.06)"],
+  noon: ["rgba(20,20,18,.16)", "rgba(20,20,18,.07)"],
+} as const;
+
+/** Under this height the sketch's margin goes from 8 to 4. */
+const SKETCH_COMPACT_BELOW = 50;
+
+function RefinedCoverFallback({ radius, index }: { radius: string | number; index: number }) {
+  const room = useResolvedTheme();
+  const ref = useRef<HTMLSpanElement>(null);
+  const [compact, setCompact] = useState(false);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => setCompact(node.clientHeight > 0 && node.clientHeight < SKETCH_COMPACT_BELOW);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const [head, line] = SKETCH_INK[room];
+  return (
+    <span
+      ref={ref}
+      data-ui="cover-fallback"
+      data-sky={index}
+      aria-hidden="true"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        width: "100%",
+        height: "100%",
+        boxSizing: "border-box",
+        padding: compact ? 4 : 8,
+        borderRadius: radius,
+        background: t.paper,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ width: "45%", height: 3, background: head }} />
+      <span style={{ width: "70%", height: 2, background: line }} />
+      <span style={{ width: "55%", height: 2, background: line }} />
+    </span>
+  );
+}
+
+export function CoverFallback(props: CoverFallbackProps) {
+  const refined = useLook() === "refined";
+  const { seed, radius, sky } = props;
   const i =
     sky !== undefined && Number.isInteger(sky) && sky >= 0 && sky < COVER_SKIES.length
       ? sky
       : skyIndex(seed);
+  if (refined) return <RefinedCoverFallback radius={radius} index={i} />;
+  return <LandscapeCoverFallback radius={radius} index={i} />;
+}
+
+function LandscapeCoverFallback({ radius, index: i }: { radius: string | number; index: number }) {
+  const gradientId = `sky-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const [top, middle, horizon, sun, far, mid, near] = COVER_SKIES[i];
 
   return (

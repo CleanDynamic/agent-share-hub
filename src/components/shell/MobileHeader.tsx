@@ -25,6 +25,7 @@ import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { useAuth } from "@/contexts/AuthContext";
 import { GLASS_BLUR, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -40,7 +41,7 @@ export interface MobileHeaderViewProps {
   onSignIn: () => void;
 }
 
-function AvatarButton({ viewer, onClick }: { viewer: FrameViewer; onClick: () => void }) {
+function AvatarButton({ viewer, onClick, size = 34 }: { viewer: FrameViewer; onClick: () => void; size?: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
@@ -54,7 +55,7 @@ function AvatarButton({ viewer, onClick }: { viewer: FrameViewer; onClick: () =>
            the 34 before). */
         width: 44,
         height: 44,
-        margin: "-8px",
+        margin: `${-(44 - (size === 34 ? 28 : size)) / 2}px`,
         padding: 0,
         border: 0,
         background: "transparent",
@@ -66,12 +67,53 @@ function AvatarButton({ viewer, onClick }: { viewer: FrameViewer; onClick: () =>
         ...ring(state.focusVisible),
       }}
     >
-      <Avatar size={34} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
+      <Avatar size={size} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
     </button>
   );
 }
 
-export function MobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn }: MobileHeaderViewProps) {
+/* UI-P87, refined: on `--frame`, 48 high with no edge and no blur, `0 12px`: the lockup (18 / 14), then the search as a
+   ghost 30 icon button and the avatar at 26 (inside its 44px touch target), or Sign in. */
+function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn }: MobileHeaderViewProps) {
+  return (
+    <header
+      data-testid="mobile-header"
+      data-ui="mobile-header"
+      data-look="refined"
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        height: 48,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 12px",
+        boxSizing: "border-box",
+        background: t.frame,
+      }}
+    >
+      <Lockup size={14} markSize={18} to={SITE_NAV.home} />
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={30} onClick={onSearchOpen} />
+        {viewer ? (
+          <AvatarButton viewer={viewer} onClick={onAccountOpen} size={26} />
+        ) : (
+          <Button variant="secondary" size={30} onClick={onSignIn} style={{ height: 30 }}>
+            Sign in
+          </Button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+export function MobileHeaderView(props: MobileHeaderViewProps) {
+  const refined = useLook() === "refined";
+  return refined ? <RefinedMobileHeaderView {...props} /> : <CurrentMobileHeaderView {...props} />;
+}
+
+function CurrentMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn }: MobileHeaderViewProps) {
   return (
     <header
       data-testid="mobile-header"

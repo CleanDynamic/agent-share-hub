@@ -19,8 +19,10 @@ import { Search } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
+import { SearchField } from "@/components/brand/SearchField";
 import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
 import { ring } from "@/lib/theme/controls";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -78,6 +80,7 @@ export function HeaderSearch({
 }: HeaderSearchProps) {
   const [value, setValue] = useState(initialValue);
   const field = useRef<HTMLInputElement | null>(null);
+  const refined = useLook() === "refined";
   const [focused, setFocused] = useState(false);
   const [focusVisible, setFocusVisible] = useState(false);
 
@@ -101,6 +104,27 @@ export function HeaderSearch({
   };
 
   const sheet = variant === "sheet";
+
+  /* UI-P87, refined: the bar's field is the refined `SearchField`, 240×30 with the "/" key, on the well recipe. The
+     form, its name, the shortcut and the submit are the same. The sheet's 44px field stays: it is a touch target. */
+  if (refined && !sheet) {
+    return (
+      <form role="search" aria-label="Search builds" onSubmit={submit} style={{ margin: 0, display: "flex" }}>
+        <SearchField
+          ref={field}
+          label="Search builds"
+          hint="/"
+          width={width ?? 240}
+          placeholder={width !== undefined && width < 240 ? "Search builds" : "Search builds, makers, tools"}
+          className={INPUT_CLASS}
+          maxLength={SEARCH_MAX}
+          value={value}
+          autoFocus={autoFocus}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      </form>
+    );
+  }
 
   return (
     <form

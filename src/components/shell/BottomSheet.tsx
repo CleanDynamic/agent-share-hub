@@ -20,6 +20,7 @@ import { X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
@@ -38,6 +39,9 @@ export interface BottomSheetProps {
 }
 
 export function BottomSheet({ open, onOpenChange, title, hideTitle = false, children }: BottomSheetProps) {
+  /* UI-P87, refined: the window recipe, as a side sheet: `--window`, a 1px `--window-border`, radius 12 at the top,
+     `--sheet-shadow`, over `--scrim`, no blur. Everything else, the drag to close included, is the same. */
+  const refined = useLook() === "refined";
   const start = useRef<number | null>(null);
   const [drag, setDrag] = useState(0);
 
@@ -59,7 +63,7 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 40 }} />
+        <Dialog.Overlay style={{ position: "fixed", inset: 0, background: refined ? t.scrim : t.sheetDim, zIndex: 40 }} />
         <Dialog.Content
           data-testid="bottom-sheet"
           aria-describedby={undefined}
@@ -76,10 +80,20 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
             overflowY: "auto",
             boxSizing: "border-box",
             padding: "7px 12px calc(17px + env(safe-area-inset-bottom))",
-            borderRadius: "22px 22px 0 0",
-            background: t.solid,
-            borderTop: `1px solid ${t.glassBorder}`,
-            boxShadow: t.shadowSheet,
+            ...(refined
+              ? {
+                  borderRadius: "12px 12px 0 0",
+                  background: t.window,
+                  border: `1px solid ${t.windowBorder}`,
+                  borderBottom: 0,
+                  boxShadow: t.sheetShadow,
+                }
+              : {
+                  borderRadius: "22px 22px 0 0",
+                  background: t.solid,
+                  borderTop: `1px solid ${t.glassBorder}`,
+                  boxShadow: t.shadowSheet,
+                }),
             color: t.text,
             fontFamily: FIGTREE,
             transform: drag ? `translateY(${drag}px)` : undefined,
@@ -106,7 +120,7 @@ export function BottomSheet({ open, onOpenChange, title, hideTitle = false, chil
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
-              <IconButton icon={X} label="Close" size={38} style={{ marginLeft: "auto" }} />
+              <IconButton icon={X} glyph="x" label="Close" size={refined ? 30 : 38} style={{ marginLeft: "auto" }} />
             </Dialog.Close>
           </div>
           {children}

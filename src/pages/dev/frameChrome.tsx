@@ -16,6 +16,7 @@ import { SiteHeaderView } from "@/components/shell/SiteHeader";
 import type { PrimarySection } from "@/components/shell/siteNav";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { fixtures } from "@/dev/designFixtures";
+import { useLook } from "@/lib/theme/look";
 
 import type { Crumb } from "@/components/shell/breadcrumbTrail";
 
@@ -47,6 +48,12 @@ export interface DevChrome {
 }
 
 const noop = () => undefined;
+
+/** The footer's static theme control, at the size the look draws it: 26 under the refined look (UI-P87), 32 otherwise. */
+function DevThemeControl({ theme }: { theme: "noon" | "dusk" }) {
+  const refined = useLook() === "refined";
+  return <ThemeSegmented size={refined ? 26 : 32} fontSize={refined ? 12 : 11} value={theme} onChange={noop} />;
+}
 
 /** The sample build's title, for the trails that end in a record. */
 export const FIXTURE_BUILD_TITLE = fixtures.builds[fixtures.build_page.build - 1].title;
@@ -82,7 +89,7 @@ export function devChrome({ theme, current = "gallery", activityCurrent = false,
         signedIn
         onSignOut={noop}
         onConnect={noop}
-        themeControl={<ThemeSegmented size={32} fontSize={11} value={theme} onChange={noop} />}
+        themeControl={<DevThemeControl theme={theme} />}
       />
     ),
   };

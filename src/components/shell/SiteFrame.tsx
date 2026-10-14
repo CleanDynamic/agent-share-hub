@@ -26,6 +26,14 @@
 // root's first child. It is the one SVG filter `.bg-glass` panels refract through, mounted once per frame and
 // before the page, and it is a 0 x 0 hidden SVG that paints nothing.
 //
+// THE REFINED FRAME (UI-P87). Under the refined look the root is `--frame` and a flex column. The header sits on it
+// (sticky, 48, the frame behind it so the page scrolls under the frame and not through it), and one SURFACE wraps
+// everything below: `calc(100% - 12px)` wide, max 1428, `0 auto 6px`, `--surface`, a 1px `--surface-border`, radius 10,
+// `--surface-shadow`. `<main>` inside it has `24px clamp(16px, 4.6vw, 64px) 48px` and a 24px column gap, the
+// breadcrumb first; the footer is inside the surface, pushed to its foot. On a phone the surface keeps its 6px inset
+// and radius 10 under the 48px header, and the dock is fixed below it. The slots, their order and `#main` are the
+// same in both looks.
+//
 // `bare` (sign in, join, reset, verify) is the backdrop and the page and nothing
 // else. The backdrop is the root's first child, `position: absolute` inside a
 // `position: relative` root (see PageBackdrop) — never `fixed` — and it is the
@@ -35,6 +43,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { GlassFilter } from "@/components/brand/GlassFilter";
 import { PageBackdrop } from "@/components/brand/PageBackdrop";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -95,6 +104,22 @@ const SKIP_BASE: CSSProperties = {
   textDecoration: "none",
 };
 
+/** The refined look's one surface (UI-P87). */
+const SURFACE: CSSProperties = {
+  width: "calc(100% - 12px)",
+  maxWidth: 1428,
+  margin: "0 auto 6px",
+  flexGrow: 1,
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  minWidth: 0,
+  background: t.surface,
+  border: `1px solid ${t.surfaceBorder}`,
+  borderRadius: 10,
+  boxShadow: t.surfaceShadow,
+};
+
 /** "Skip to content": first focusable element, off-screen until focused, targets `#main`. 36 tall, and 44 on a phone. */
 function SkipLink({ phone }: { phone: boolean }) {
   return (
@@ -128,6 +153,7 @@ export function SiteFrameView({
   const narrow = useIsPhone();
   const wide = useMinWidth(SITE_COLUMN_FULL);
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
+  const refined = useLook() === "refined";
 
   const root: CSSProperties = {
     position: "relative",
@@ -145,6 +171,49 @@ export function SiteFrameView({
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}
         </main>
+      </div>
+    );
+  }
+
+  if (refined) {
+    const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
+    return (
+      <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} data-look="refined" style={refinedRoot}>
+        <PageBackdrop viewport={phone ? "mobile" : "desktop"} />
+        <GlassFilter />
+        <SkipLink phone={phone} />
+        <div
+          data-slot={phone ? "mobile-header" : "header"}
+          style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48, background: t.frame }}
+        >
+          {phone ? mobileHeader : header}
+        </div>
+        <div data-ui="surface" style={SURFACE}>
+          <main
+            id="main"
+            style={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: phone ? 16 : 24,
+              padding: phone
+                ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
+                : "24px clamp(16px, 4.6vw, 64px) 48px",
+              boxSizing: "border-box",
+              minWidth: 0,
+            }}
+          >
+            {phone ? null : <div data-slot="breadcrumb">{breadcrumb}</div>}
+            {children}
+          </main>
+          {phone ? null : (
+            <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
+              {footer}
+            </div>
+          )}
+        </div>
+        {phone ? <div data-slot="dock">{dock}</div> : null}
       </div>
     );
   }

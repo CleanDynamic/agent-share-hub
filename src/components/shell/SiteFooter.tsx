@@ -18,6 +18,7 @@ import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -36,7 +37,57 @@ export interface SiteFooterViewProps {
 
 const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, color: t.text2 };
 
-export function SiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
+/* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
+   items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, the Theme segmented control at
+   26, and "© buildgallery" at 12 `--label`. The items, their order and their names are the current footer's. */
+const refinedLink: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, color: t.text2 };
+const refinedButtonLink: CSSProperties = { ...refinedLink, padding: 0, border: 0, background: "transparent", cursor: "pointer" };
+
+function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
+  return (
+    <footer
+      data-testid="site-footer"
+      data-ui="site-footer"
+      data-look="refined"
+      style={{
+        marginTop: "auto",
+        borderTop: `1px solid ${t.hairline}`,
+        padding: "12px clamp(16px, 4.6vw, 64px)",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: "12px 24px",
+      }}
+    >
+      <Lockup size={13} markSize={15} to={SITE_NAV.home} />
+      <nav aria-label="Footer" style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px" }}>
+        <FrameLink to="/about" style={refinedLink} hoverStyle={{ color: t.text }}>About</FrameLink>
+        <FrameLink to="/api-docs" style={refinedLink} hoverStyle={{ color: t.text }}>API docs</FrameLink>
+        <FrameLink to="/bounties/solvers" style={refinedLink} hoverStyle={{ color: t.text }}>Solvers</FrameLink>
+        <button type="button" onClick={onConnect} style={refinedButtonLink}>
+          Connect a tool
+        </button>
+        {signedIn ? (
+          <button type="button" onClick={onSignOut} style={refinedButtonLink}>
+            Sign out
+          </button>
+        ) : (
+          <FrameLink to="/login" style={refinedLink} hoverStyle={{ color: t.text }}>Sign in</FrameLink>
+        )}
+      </nav>
+      <span style={{ flexGrow: 1 }} />
+      {themeControl ?? <ThemeSegmented size={26} fontSize={12} />}
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, color: t.label }}>© buildgallery</span>
+    </footer>
+  );
+}
+
+export function SiteFooterView(props: SiteFooterViewProps) {
+  const refined = useLook() === "refined";
+  return refined ? <RefinedSiteFooterView {...props} /> : <CurrentSiteFooterView {...props} />;
+}
+
+function CurrentSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
   const wide = useMinWidth(1328);
   /* Below 1100 the row cannot hold lockup, five links, the theme control and the
      credit on one line, so it wraps and the footer grows past its 88px. */

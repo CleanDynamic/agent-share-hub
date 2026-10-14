@@ -33,6 +33,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { Icon } from "@/components/brand/Icon";
 import { IconButton } from "@/components/brand/IconButton";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +42,7 @@ import { countDraftBuilds } from "@/lib/build/sessions";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 import { GLASS_BLUR, MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -140,7 +142,7 @@ function Lamp({ width, place }: { width: number; place: CSSProperties }) {
   return <span aria-hidden="true" style={{ position: "absolute", width, height: 6, borderRadius: "50%", background: t.lit, boxShadow: t.navLampGlow, ...place }} />;
 }
 
-function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: () => void }) {
+function AccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const profileHref = viewer.handle ? `/profile/${viewer.handle}` : SITE_NAV.profile;
   const item: CSSProperties = {
@@ -169,7 +171,7 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
           {...handlers}
           style={{ padding: 0, border: 0, background: "transparent", borderRadius: "50%", cursor: "pointer", display: "flex", ...ring(state.focusVisible) }}
         >
-          <Avatar size={34} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
+          <Avatar size={avatarSize} userId={viewer.id} name={viewer.name} hue={viewer.hue} src={viewer.avatarUrl} />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -206,7 +208,215 @@ function AccountMenu({ viewer, onSignOut }: { viewer: FrameViewer; onSignOut: ()
   );
 }
 
-export function SiteHeaderView({
+/* ── UI-P87, refined ──
+   On `--frame` with no background and no border, 48 high, `0 20px`, gap 8: the lockup (18 / 14), a 1px × 16 `--line`
+   divider, the links (13/500 `--text2`, `0 12px` as the board draws them; the current one `--text` with a 2px
+   `--nav-mark` bar 10 in from each side and `--nav-lamp-glow`; Drafts keeps its count at 11/500 `--label`), a spacer,
+   the search (240×30, "/"), New build as a secondary button 30 high with no icon, the bell as a ghost 30 icon link with
+   the unread count as a 12px `--lit-mark` badge, the theme as a ghost 30 icon button, and the avatar at 26. On
+   /notifications the bell takes the `--control-on` fill and the `--control-border` edge, never a colour. The steps the
+   header gives ground in between the boards are the current header's. */
+
+const refinedLink: CSSProperties = {
+  position: "relative",
+  height: 48,
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  fontFamily: FIGTREE,
+  fontSize: 13,
+  fontWeight: 500,
+};
+
+/* The header's buttons are drawn 30 high with the 32 button's `0 16px` and 13px label (the refined `Button` steps
+   28 → 32, and the board draws 30). */
+const REFINED_30: CSSProperties = { height: 30, padding: "0 16px", fontSize: 13 };
+
+const refinedBadge: CSSProperties = {
+  position: "absolute",
+  top: 3,
+  right: 3,
+  minWidth: 12,
+  height: 12,
+  padding: "0 3px",
+  boxSizing: "border-box",
+  borderRadius: 6,
+  background: t.litMark,
+  color: t.onLit,
+  fontFamily: FIGTREE,
+  fontSize: 9,
+  fontWeight: 600,
+  lineHeight: "12px",
+  textAlign: "center",
+};
+
+function RefinedSiteHeaderView({
+  current,
+  activityCurrent = false,
+  unread,
+  drafts = 0,
+  viewer,
+  theme,
+  onToggleTheme,
+  onSignIn,
+  onSignOut,
+  onNewBuild,
+  onSearch,
+  searchInitial,
+}: SiteHeaderViewProps) {
+  const full = useMinWidth(FULL_MIN);
+  const compact = !useMinWidth(MID_MIN);
+  const searchFull = useMinWidth(SEARCH_FULL_MIN);
+  const searchField = useMinWidth(SEARCH_FIELD_MIN);
+  const newLabel = useMinWidth(NEW_LABEL_MIN);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const signedIn = viewer !== null;
+  const linkPad = full ? "0 12px" : compact ? "0 6px" : "0 8px";
+  const unreadLabel = unread > 9 ? "9+" : String(unread);
+
+  return (
+    <header
+      data-testid="site-header"
+      data-ui="site-header"
+      data-look="refined"
+      style={{
+        width: "100%",
+        maxWidth: 1440,
+        margin: "0 auto",
+        height: 48,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "0 20px",
+        boxSizing: "border-box",
+      }}
+    >
+      <span style={{ display: "flex", paddingRight: 8 }}>
+        <Lockup size={14} markSize={18} to={SITE_NAV.home} />
+      </span>
+      <span aria-hidden="true" style={{ width: 1, height: 16, background: t.line, flexShrink: 0 }} />
+
+      <nav aria-label="Primary" style={{ display: "flex", alignItems: "stretch", height: 48, paddingLeft: 4 }}>
+        {PRIMARY_LINKS.filter((link) => !link.authOnly || signedIn).map((link) => {
+          const isCurrent = link.key === current;
+          return (
+            <FrameLink
+              key={link.key}
+              to={link.href}
+              aria-current={isCurrent ? "page" : undefined}
+              style={{ ...refinedLink, padding: linkPad, color: isCurrent ? t.text : t.text2 }}
+              hoverStyle={{ color: t.text }}
+            >
+              {link.label}
+              {link.key === "drafts" && drafts > 0 && (
+                <span
+                  data-testid="drafts-count"
+                  style={{ fontFamily: FIGTREE, fontSize: 11, fontWeight: 500, color: t.label, fontVariantNumeric: "tabular-nums" }}
+                >
+                  {drafts}
+                </span>
+              )}
+              {isCurrent && (
+                <span
+                  aria-hidden="true"
+                  data-ui="nav-mark"
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    right: 10,
+                    bottom: -1,
+                    height: 2,
+                    borderRadius: 1,
+                    background: t.navMark,
+                    boxShadow: t.navLampGlow,
+                  }}
+                />
+              )}
+            </FrameLink>
+          );
+        })}
+      </nav>
+
+      <span style={{ flexGrow: 1 }} />
+
+      {searchField ? (
+        <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} width={searchFull ? 240 : 200} />
+      ) : (
+        <IconButton icon={Search} glyph="search" boxed={false} label="Search" size={30} onClick={() => setSearchOpen(true)} />
+      )}
+
+      <Button variant="secondary" size={30} onClick={onNewBuild} style={newLabel ? REFINED_30 : { ...REFINED_30, width: 30, padding: 0 }}>
+        {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
+      </Button>
+
+      {signedIn && (
+        <FrameLink
+          to={SITE_NAV.activity}
+          aria-label={unread > 0 ? `Activity, ${unread} unread` : "Activity"}
+          aria-current={activityCurrent ? "page" : undefined}
+          style={{
+            position: "relative",
+            width: 30,
+            height: 30,
+            boxSizing: "border-box",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            borderRadius: r.control,
+            color: activityCurrent ? t.text : t.text2,
+            ...(activityCurrent
+              ? { background: t.controlOn, border: `1px solid ${t.controlBorder}` }
+              : { background: "transparent", border: "1px solid transparent" }),
+          }}
+          hoverStyle={{ color: t.text }}
+        >
+          <Icon lucide={Bell} glyph="bell" size={16} />
+          {unread > 0 && <span aria-hidden="true" style={refinedBadge}>{unreadLabel}</span>}
+        </FrameLink>
+      )}
+
+      <IconButton
+        size={30}
+        boxed={false}
+        icon={theme === "dusk" ? Moon : Sun}
+        glyph={theme === "dusk" ? "moon" : "sun"}
+        label={theme === "dusk" ? "Theme: Dusk" : "Theme: Noon"}
+        onClick={onToggleTheme}
+      />
+
+      {viewer ? (
+        <AccountMenu viewer={viewer} onSignOut={onSignOut} avatarSize={26} />
+      ) : (
+        <Button variant="secondary" size={30} onClick={onSignIn} style={REFINED_30}>
+          Sign in
+        </Button>
+      )}
+
+      {searchField ? null : (
+        <BottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
+          <HeaderSearch
+            variant="sheet"
+            autoFocus
+            initialValue={searchInitial}
+            onSubmit={(query) => {
+              const used = onSearch?.(query);
+              if (used) setSearchOpen(false);
+              return used;
+            }}
+          />
+        </BottomSheet>
+      )}
+    </header>
+  );
+}
+
+export function SiteHeaderView(props: SiteHeaderViewProps) {
+  const refined = useLook() === "refined";
+  return refined ? <RefinedSiteHeaderView {...props} /> : <CurrentSiteHeaderView {...props} />;
+}
+
+function CurrentSiteHeaderView({
   current,
   activityCurrent = false,
   unread,

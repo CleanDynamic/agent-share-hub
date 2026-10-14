@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { useLook } from "@/lib/theme/look";
@@ -196,4 +197,26 @@ export function useTheme(): ThemeState {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used inside <ThemeProvider>");
   return context;
+}
+
+/* UI-P86. The room on the root element, read from the attribute itself: the compare pages set `<html data-theme>`
+   directly, so the provider's state is not always the room on screen. */
+function readRootRoom(): ResolvedTheme {
+  if (typeof document === "undefined") return DEFAULT_THEME === "dusk" ? "dusk" : "noon";
+  return document.documentElement.getAttribute("data-theme") === "dusk" ? "dusk" : "noon";
+}
+
+function subscribeRootRoom(onChange: () => void): () => void {
+  if (typeof document === "undefined" || typeof MutationObserver === "undefined") return () => {};
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => observer.disconnect();
+}
+
+/**
+ * UI-P86. The room on screen, for the few refined pieces whose artwork constants differ by room (the framed work's
+ * raised frame). It follows `<html data-theme>`, whoever wrote it, and works outside a provider.
+ */
+export function useResolvedTheme(): ResolvedTheme {
+  return useSyncExternalStore(subscribeRootRoom, readRootRoom, () => (DEFAULT_THEME === "dusk" ? "dusk" : "noon"));
 }

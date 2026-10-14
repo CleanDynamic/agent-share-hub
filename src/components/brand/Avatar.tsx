@@ -61,7 +61,8 @@ export function avatarHue(userId: string, hue?: number): string {
 
 export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
   const refined = useLook() === "refined";
-  const box = denseHeight(size);
+  /* UI-P87: the refined look draws the size it is given (the header's 26); the density table is the current look's. */
+  const box = refined ? size : denseHeight(size);
   const circle: CSSProperties = {
     width: box,
     height: box,

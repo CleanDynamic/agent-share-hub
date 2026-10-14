@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -144,5 +145,59 @@ describe("BottomSheet", () => {
     fireEvent.pointerMove(grabber, { clientY: 190, pointerId: 1 });
     fireEvent.pointerUp(grabber, { pointerId: 1 });
     expect(onClose).toHaveBeenCalledWith(false);
+  });
+});
+
+/* UI-P87 — the refined phone chrome: header on --frame, the dock with no glass, sheets on the window recipe. */
+describe("phone chrome under the refined look", () => {
+  const REFINED = "/dev/kit/pages/home?look=refined";
+  const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
+
+  it("the header is --frame, 48 high, no edge and no blur, with the lockup and icon buttons, names kept", () => {
+    render(inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />));
+    expect(screen.getByRole("link", { name: "buildgallery home" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
+    const html = renderToStaticMarkup(
+      inRefined(<MobileHeaderView viewer={viewer} onSearchOpen={vi.fn()} onAccountOpen={vi.fn()} onSignIn={vi.fn()} />),
+    );
+    const head = html.slice(html.indexOf("<header"), html.indexOf(">", html.indexOf("<header")));
+    expect(head).toContain("height:48px");
+    expect(head).toContain("background:var(--frame)");
+    expect(head).not.toMatch(/[;"]border(-bottom)?:/);
+    expect(head).not.toContain("backdrop-filter");
+  });
+
+  it("the dock is a --surface bar with a --surface-border top edge and control tiles, no glass, names kept", () => {
+    render(inRefined(<DockView current="gallery" unread={4} />));
+    expect(screen.getAllByRole("link").map((a) => a.getAttribute("aria-label"))).toEqual([
+      "Home",
+      "Gallery",
+      "New",
+      "Bounties",
+      "Activity, 4 unread",
+    ]);
+    expect(screen.getByTestId("dock-tile-gallery").getAttribute("aria-current")).toBe("page");
+    const html = renderToStaticMarkup(inRefined(<DockView current="gallery" unread={4} />));
+    expect(html).toContain("background:var(--surface);border-top:1px solid var(--surface-border)");
+    expect(html).toContain("background:var(--control-on)");
+    expect(html).toContain("border:1px solid var(--control-border)");
+    expect(html).not.toContain("backdrop-filter");
+    expect(html).not.toContain("var(--dock)");
+  });
+
+  it("a sheet takes the window recipe over --scrim, and keeps its name and Close", () => {
+    render(
+      inRefined(
+        <BottomSheet open onOpenChange={vi.fn()} title="Account">
+          <p>inside</p>
+        </BottomSheet>,
+      ),
+    );
+    expect(screen.getByRole("dialog", { name: "Account" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+    const sheet = screen.getByTestId("bottom-sheet");
+    expect(sheet.style.borderRadius).toBe("12px 12px 0 0");
+    expect(sheet.style.backdropFilter ?? "").toBe("");
   });
 });
