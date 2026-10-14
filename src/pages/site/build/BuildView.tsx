@@ -108,7 +108,7 @@ const BOTTOM_ROW = BOARD_GRID_HEIGHT - HERO_ROW - 12;
    1024 (the proof narrowing to 340) and stacks below. The bottom row's narrowest
    panel, the timeline, drops below the anatomy and the viewer under 1280, full
    width at the row's height. */
-function heroRow(tier: WidthTier): CSSProperties {
+export function heroRow(tier: WidthTier): CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
@@ -118,20 +118,20 @@ function heroRow(tier: WidthTier): CSSProperties {
   };
 }
 
-function bottomRow(tier: WidthTier): CSSProperties {
+export function bottomRow(tier: WidthTier): CSSProperties {
   return tier === "full"
     ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 9, flexGrow: 1, minHeight: 0 }
     : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 9, flexGrow: 1 };
 }
 
 /** The timeline's cell: its own track at 1280 and up, the row's full width below. */
-const dropped = (tier: WidthTier): CSSProperties => (tier === "full" ? {} : { gridColumn: "1 / -1" });
+export const dropped = (tier: WidthTier): CSSProperties => (tier === "full" ? {} : { gridColumn: "1 / -1" });
 /** The phone shows this many parts before "Show n more parts". */
 export const PHONE_PARTS = 6;
 
-const NOTE = "Your run relights the lamp and records the model you used.";
+export const NOTE = "Your run relights the lamp and records the model you used.";
 
-const ACTION_LABEL: Record<ProofActionKind, string> = {
+export const ACTION_LABEL: Record<ProofActionKind, string> = {
   reproduce: "I ran this and it worked",
   reconfirm: "Re-confirm it still works",
   "sign-in": "Sign in to confirm",
@@ -148,7 +148,7 @@ const CONFIRMED_MS = 1500;
 /* ── the polite "Copied" ── */
 
 /** One live region for the page's two copy controls. Saying the same word twice re-announces it. */
-function useAnnouncer() {
+export function useAnnouncer() {
   const [message, setMessage] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -171,7 +171,7 @@ function useAnnouncer() {
 }
 
 /** True for CONFIRMED_MS after `confirm()` is called. */
-function useConfirmed(): [boolean, () => void] {
+export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -189,7 +189,7 @@ function useConfirmed(): [boolean, () => void] {
  * The plate's credit. Desktop puts each piece in the plate's flex row, as the
  * reference does; the phone's plate reads it as one line of text.
  */
-function CreditText({ credit }: { credit: BuildCreditView }) {
+export function CreditText({ credit }: { credit: BuildCreditView }) {
   const madeBy = credit.madeBy ? `made by ${credit.madeBy}` : null;
   if (credit.rebuiltFrom) {
     const by = credit.rebuiltFrom.handle ? ` by @${credit.rebuiltFrom.handle}` : "";
@@ -413,7 +413,7 @@ function CompletenessBlock({ completeness }: { completeness: CompletenessView })
 }
 
 /** An optimistic run that the server refused: said once in the panel, with a retry. */
-function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
+export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["writeError"]> }) {
   return (
     <ErrorState
       line="That didn't save."
@@ -561,7 +561,7 @@ function PartRow({
   );
 }
 
-function AnatomyDialog({
+export function AnatomyDialog({
   open,
   onOpenChange,
   children,
@@ -611,7 +611,7 @@ function AnatomyDialog({
   );
 }
 
-function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView; phone: boolean; onSelect: (id: string) => void }) {
+export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView; phone: boolean; onSelect: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const { parts, gaps, selectedId } = anatomy;
@@ -681,7 +681,7 @@ function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnatomyView;
 
 /* ── the viewer ── */
 
-function Viewer({
+export function Viewer({
   viewer,
   part,
   phone,
@@ -721,7 +721,7 @@ function Viewer({
 
 /* ── the timeline ── */
 
-function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineView; phone: boolean; onPlay: () => void }) {
+export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTimelineView; phone: boolean; onPlay: () => void }) {
   const { events, duration } = timeline;
   return (
     <Panel surface="glass" padding="14px 16px" style={phone ? undefined : { height: "100%" }}>
@@ -787,7 +787,7 @@ function StepsNeed({ steps }: { steps: BuildStepsView }) {
 
 /* ── desktop ── */
 
-const selectedPart = (anatomy: BuildAnatomyView): PartRowView | null =>
+export const selectedPart = (anatomy: BuildAnatomyView): PartRowView | null =>
   anatomy.parts.find((part) => part.id === anatomy.selectedId) ?? anatomy.parts[0] ?? null;
 
 function DesktopBuild(props: BuildViewProps) {

@@ -116,8 +116,9 @@ const CHROME: Record<string, Partial<DevChromeOptions>> = {
 };
 
 /* UI-P87: the pages with a refined view. `frame` is the empty frame: the refined header, surface, breadcrumb, footer
-   and phone chrome around the grid placeholder, lit as the Home board lights them. UI-P88 adds Home, UI-P89 the Gallery dashboard and its feed. */
-const REFINED_READY = new Set(["frame", "home", "gallery-dashboard", "gallery-feed"]);
+   and phone chrome around the grid placeholder, lit as the Home board lights them. UI-P88 adds Home, UI-P89 the Gallery dashboard and its feed,
+   UI-P90 the Build page (its first screen and The build). */
+const REFINED_READY = new Set(["frame", "home", "gallery-dashboard", "gallery-feed", "build", "build-steps"]);
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 

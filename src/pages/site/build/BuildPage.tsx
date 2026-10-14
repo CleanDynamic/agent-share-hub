@@ -95,6 +95,7 @@ import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { isBuildHidden } from "@/lib/moderation";
 import { getMakerName } from "@/lib/profile/makerName";
 import { numberParts } from "@/lib/social";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -131,6 +132,7 @@ import {
   type WhereNextRowView,
 } from "./buildModel";
 import { RebuildsBody, REBUILD_CARD } from "./RebuildsBody";
+import { RefinedBuildView } from "./RefinedBuildView";
 import { ReplayBody } from "./ReplayBody";
 import { ResultFrame } from "./ResultFrame";
 import { RunDialog, type RunSubmission } from "./RunDialog";
@@ -322,6 +324,8 @@ export function BuildPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  /* UI-P90: the refined look renders the fork, with the same props. */
+  const View = useLook() === "refined" ? RefinedBuildView : BuildView;
 
   /* ── the record and what hangs off it ── */
 
@@ -893,7 +897,7 @@ export function BuildPage() {
         </div>
       ) : null}
       <LiveRegion message={announcement} />
-      <BuildView
+      <View
         fit="content"
         hero={{
           title: build.title,
