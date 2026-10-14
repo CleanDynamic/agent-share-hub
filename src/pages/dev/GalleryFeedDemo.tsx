@@ -17,7 +17,9 @@ import {
 } from "@/dev/fixtures/gallery-feed";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { useLook } from "@/lib/theme/look";
 import { GalleryFeedView, type FeedListView, type FeedSectionView } from "@/pages/site/gallery/GalleryFeedView";
+import { RefinedGalleryFeedView } from "@/pages/site/gallery/RefinedGalleryFeedView";
 import { feedRowView } from "@/pages/site/gallery/galleryModel";
 import type { GalleryFeedRow } from "@/lib/build/gallery";
 import type { ModelVersion } from "@/lib/models/registry";
@@ -36,6 +38,8 @@ const section = (rows: GalleryFeedRow[], model: ModelVersion | null): FeedSectio
 });
 
 export default function GalleryFeedDemo({ fit = "board", state = "populated" }: DesignPageProps) {
+  /* UI-P89: `?look=refined` draws the fork, from the same fixture. */
+  const FeedView = useLook() === "refined" ? RefinedGalleryFeedView : GalleryFeedView;
   const [view, setView] = useState<GalleryViewMode>("feed");
   const [filters, setFilters] = useState<FeedFixtureFilters>({ model: null, audience: null, sort: "newest", q: null });
   const set = (next: Partial<FeedFixtureFilters>) => setFilters((current) => ({ ...current, ...next }));
@@ -47,7 +51,7 @@ export default function GalleryFeedDemo({ fit = "board", state = "populated" }: 
       : { kind: "model", reproducedOn: section(feed.reproducedOn, feed.model), notYet: section(feed.notYet, feed.model) };
 
   return (
-    <GalleryFeedView
+    <FeedView
       fit={fit}
       now={FEED_FIXTURE_NOW}
       view={view}

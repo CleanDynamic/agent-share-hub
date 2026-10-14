@@ -396,7 +396,7 @@ function Sidebar(props: GalleryDashboardViewProps) {
 
 /* ── the toolbar's menus ── */
 
-interface ToolbarOption {
+export interface ToolbarOption {
   key: string;
   label: string;
   /** A mono note on the right: a count, or a model's lab. */
@@ -405,7 +405,7 @@ interface ToolbarOption {
   onSelect: () => void;
 }
 
-interface ToolbarMenu {
+export interface ToolbarMenu {
   key: string;
   label: string;
   value: string;
@@ -466,7 +466,7 @@ function ToolbarMenuView({ menu }: { menu: ToolbarMenu }) {
   );
 }
 
-function menusFor(props: GalleryDashboardViewProps): ToolbarMenu[] {
+export function menusFor(props: GalleryDashboardViewProps): ToolbarMenu[] {
   const { sort, onSortChange, model, onModelChange, audience, onAudienceChange, allRows, active, onActiveChange } = props;
   const audiences = audienceCounts(allRows);
   // A chosen audience nobody lists any more (an old link) can still be seen and turned off.

@@ -72,6 +72,14 @@ const REFINED_STATE: Record<string, RefinedState> = {
   },
   "prompt-window": { query: "&build=bakery&open=1" },
   "composer-card": { query: "", actions: async (p) => void (await p.getByRole("button", { name: "Card" }).first().click()) },
+  /* UI-P89: the board ticks one row and shows the sum of prompts. */
+  "gallery-dashboard": {
+    query: "",
+    actions: async (p) => {
+      await p.getByRole("checkbox", { name: "Select Pull request reviewer for small teams" }).check();
+      await p.getByRole("button", { name: "Sum of prompts" }).click();
+    },
+  },
 };
 
 /** The drawn browser across the top of a desktop board. Not product. */
