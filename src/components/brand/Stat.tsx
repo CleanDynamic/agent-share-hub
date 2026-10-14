@@ -7,7 +7,8 @@
 import type { ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
-import { mono } from "@/lib/theme/type";
+import { useLook } from "@/lib/theme/look";
+import { FIGTREE, figure, mono } from "@/lib/theme/type";
 
 import { Eyebrow } from "./Eyebrow";
 import { Skeleton } from "./Skeleton";
@@ -28,14 +29,27 @@ export interface StatProps {
 }
 
 export function Stat({ label, value, of, bar, barLoading = false }: StatProps) {
+  const refined = useLook() === "refined";
   return (
     <span data-ui="stat" style={{ display: "contents" }}>
       <Eyebrow size={10}>{label}</Eyebrow>
-      <div style={{ display: "flex", alignItems: "baseline" }}>
-        <span style={{ ...mono(22), lineHeight: "normal", color: t.text, letterSpacing: "-0.02em" }}>{value}</span>
-        {of !== undefined ? (
-          <span style={{ ...mono(12), lineHeight: "normal", color: t.text2 }}>&nbsp;/ {of}</span>
-        ) : null}
+      <div style={{ display: "flex", alignItems: "baseline", gap: refined ? 6 : undefined }}>
+        {refined ? (
+          /* UI-P85: the figure role, with its unit in 12 --text2. */
+          <>
+            <span style={{ ...figure, color: t.text }}>{value}</span>
+            {of !== undefined ? (
+              <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>/ {of}</span>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <span style={{ ...mono(22), lineHeight: "normal", color: t.text, letterSpacing: "-0.02em" }}>{value}</span>
+            {of !== undefined ? (
+              <span style={{ ...mono(12), lineHeight: "normal", color: t.text2 }}>&nbsp;/ {of}</span>
+            ) : null}
+          </>
+        )}
       </div>
       {bar ? <StripedBar {...bar} height={10} /> : barLoading ? <Skeleton height={10} radius={5} /> : null}
     </span>

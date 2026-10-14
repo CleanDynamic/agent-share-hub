@@ -1,21 +1,106 @@
 /* UI-P09 — the Panels section: glass and flat panels, the panel head, the wall
    label with its stats and details, and the striped bar. */
 
-import { Maximize2 } from "lucide-react";
+import { ChevronRight, Maximize2 } from "lucide-react";
 
+import { CardHead } from "@/components/brand/CardHead";
 import { Detail } from "@/components/brand/Detail";
+import { Figure } from "@/components/brand/Figure";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
+import { Plaque } from "@/components/brand/Plaque";
+import { Row as DataRow } from "@/components/brand/Row";
 import { Stat } from "@/components/brand/Stat";
 import { StripedBar } from "@/components/brand/StripedBar";
+import { Tile, Well } from "@/components/brand/Tile";
+import { Timeline } from "@/components/brand/Timeline";
 import { WallLabel } from "@/components/brand/WallLabel";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { Example, Row, Section } from "./parts";
 
 const TOP = { alignItems: "flex-start" } as const;
 
+/** UI-P85 — the refined look's layers and data marks, drawn from `components.html` (Progress, Rows, Timeline, Card). */
+function RefinedBlocks() {
+  const now = Date.parse("2026-10-14T12:00:00Z");
+  const day = 86_400_000;
+  const build = (count: number, confirmedDaysAgo: number | null) => ({
+    reproduction_count: count,
+    last_confirmed_at: confirmedDaysAgo === null ? null : new Date(now - confirmedDaysAgo * day).toISOString(),
+    last_confirmed_model: confirmedDaysAgo === null ? null : "sonnet-4.5",
+    published_at: new Date(now - 200 * day).toISOString(),
+  });
+  return (
+    <Row style={TOP}>
+      <Example caption="card · head, action, progress">
+        <div style={{ width: 360 }}>
+          <Panel surface="glass" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <CardHead
+              title="This week’s challenges"
+              subtitle="Resets Monday 00:00 UTC"
+              action={<IconButton icon={ChevronRight} label="Open this week" size={34} />}
+            />
+            <StripedBar value={33} colour={t.lit} height={6} label="Run three builds, 1 of 3" />
+          </Panel>
+        </div>
+      </Example>
+      <Example caption="tile · completeness, ticks at publish 60 and gallery 80">
+        <div style={{ width: 420 }}>
+          <Tile style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <DataRow label="Completeness" value="86 / 100" style={{ borderBottom: "none", minHeight: 0 }} />
+            <StripedBar
+              value={86}
+              colour={t.evidence}
+              height={6}
+              label="Completeness"
+              ticks={[
+                { at: 60, colour: t.label, label: "Publish 60" },
+                { at: 80, colour: t.label, label: "Gallery 80" },
+              ]}
+            />
+          </Tile>
+        </div>
+      </Example>
+      <Example caption="rows · in a module, 40 and 48 · figure">
+        <div style={{ width: 300 }}>
+          <Panel surface="glass" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <Figure label="Streak" lamp value="12" unit="days" />
+            <div>
+              <DataRow inModule label="Reproductions" value="41" />
+              <DataRow inModule height={48} label="Last confirmed" value="3 days ago" />
+            </div>
+          </Panel>
+        </div>
+      </Example>
+      <Example caption="well · dot grid">
+        <Well dots style={{ width: 200, height: 96 }} />
+      </Example>
+      <Example caption="timeline">
+        <div style={{ width: 300 }}>
+          <Timeline
+            events={[
+              { kind: "breakage", at: "11:40", text: "Failed on euro totals" },
+              { kind: "prompt", at: "18:05", text: "Asked for totals in pence" },
+              { kind: "deploy", at: "26:30", text: "Running on the shared inbox" },
+            ]}
+          />
+        </div>
+      </Example>
+      <Example caption="plaque · fresh, stale, not yet reproduced">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Plaque build={build(41, 3)} now={now} />
+          <Plaque build={build(12, 130)} now={now} />
+          <Plaque build={build(0, null)} now={now} />
+        </div>
+      </Example>
+    </Row>
+  );
+}
+
 export function PanelsSection() {
+  const refined = useLook() === "refined";
   return (
     <Section
       name="Panels"
@@ -104,6 +189,12 @@ export function PanelsSection() {
           </div>
         </Example>
       </Row>
+      {refined ? (
+        <>
+          <div style={{ height: 18 }} />
+          <RefinedBlocks />
+        </>
+      ) : null}
     </Section>
   );
 }

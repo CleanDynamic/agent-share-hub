@@ -49,11 +49,13 @@ import {
   type FreshnessSource,
   type StalenessSource,
 } from "@/lib/build/signals";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
 
 import { LampDot } from "./LampDot";
+import { Pill } from "./Pill";
 
 /**
  * Where the plaque is standing.
@@ -163,6 +165,7 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
   const state = plaqueState(build, now);
   const stale = state === "stale";
   const inverse = tone === "inverse";
+  const refined = useLook() === "refined" && !inverse;
 
   /* On the inverse panel the tag is the reference's own 10px and the line beside
      it 11px (the featured plate draws them that way), the lamp is the same lit
@@ -193,6 +196,42 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
     "data-plaque-state": state,
     "data-plaque-tone": inverse ? "inverse" : undefined,
   } as const;
+
+  /* UI-P85, REFINED: the count is an evidence `Pill`, then the lamp bar 8×3 from `plaqueState()` (dimmed when stale,
+     absent when nobody has reproduced it), then the freshness in 12 `--text2`; a stale claim reads in `--label`. Not
+     yet reproduced is a neutral `Pill`. The hooks and the hover are the ones below. */
+  if (refined) {
+    const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal" };
+    if (state === "unreproduced") {
+      return (
+        <div {...marks} data-variant="never" style={{ ...frame, gap: 8 }}>
+          <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(0)} style={{ display: "inline-flex" }}>
+            <Pill>{NEVER_REPRODUCED}</Pill>
+          </span>
+          {trailing}
+        </div>
+      );
+    }
+    const words =
+      (wording ?? (size === "header" || size === "proof" ? "full" : "short")) === "full"
+        ? freshnessLabel(build, now)
+        : freshnessShort(build, now);
+    return (
+      <div {...marks} data-variant={stale ? "stale" : "fresh"} style={{ ...frame, gap: 8 }}>
+        <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(count)} style={{ display: "inline-flex" }}>
+          <Pill tone="evidence">{count} reproduced</Pill>
+        </span>
+        <span
+          data-plaque-freshness=""
+          style={{ ...text, display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: stale ? t.label : t.text2 }}
+        >
+          <LampDot data-plaque-lamp={stale ? "dim" : "lit"} dim={stale} width={8} />
+          {words ?? NEVER_CONFIRMED}
+        </span>
+        {trailing}
+      </div>
+    );
+  }
 
   /* UNREPRODUCED: one quiet line. No tag, no lamp, no freshness. It keeps the
      tag's hooks (`data-plaque-reproduction`, the test id and the hover) because

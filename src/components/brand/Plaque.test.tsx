@@ -8,6 +8,7 @@
 
 import { render } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { LampDot } from "./LampDot";
@@ -334,5 +335,56 @@ describe("Plaque — every state, every size", () => {
     expect(renderPlaque(BY_STATE.unreproduced).querySelector("[title]")?.getAttribute("title")).toMatch(
       /Nobody other than the creator/,
     );
+  });
+});
+
+
+describe("refined plaque and lamps (UI-P85)", () => {
+  const refined = (node: React.ReactElement) =>
+    renderToStaticMarkup(<MemoryRouter initialEntries={["/dev/kit/components?look=refined"]}>{node}</MemoryRouter>);
+
+  it("LampDot is a 3px bar, radius 1, --lit with --lamp-glow; dimmed is the filter, never an opacity", () => {
+    const lit = refined(<LampDot />);
+    expect(lit).toContain("height:3px");
+    expect(lit).toContain("width:8px");
+    expect(lit).toContain("border-radius:1px");
+    expect(lit).toContain("background-color:var(--lit)");
+    expect(lit).toContain("box-shadow:var(--lamp-glow)");
+    const dim = refined(<LampDot dim />);
+    expect(dim).toContain("filter:var(--dim-filter)");
+    expect(dim).not.toContain("opacity");
+  });
+
+  it("PictureLamp is lit, dimmed by the filter when stale, and absent when unreproduced; no amber edge", () => {
+    expect(refined(<PictureLamp state="healthy" />)).toContain('data-variant="on"');
+    const stale = refined(<PictureLamp state="stale" />);
+    expect(stale).toContain('data-variant="dim"');
+    expect(stale).toContain("filter:var(--dim-filter)");
+    expect(stale).not.toContain("opacity");
+    expect(refined(<PictureLamp state="unreproduced" />)).toContain('data-variant="off"');
+    expect(refined(<PictureLamp state="healthy" />)).not.toMatch(/border(?!-radius)/);
+  });
+
+  it("Plaque: an evidence pill, the lamp bar, then the freshness in 12 --text2; the states come from plaqueState()", () => {
+    const fresh = refined(<Plaque build={build()} now={NOW} />);
+    expect(fresh).toContain('data-plaque-state="healthy"');
+    expect(fresh).toContain('data-tone="evidence"');
+    expect(fresh).toContain("41 reproduced");
+    expect(fresh).toContain('data-plaque-lamp="lit"');
+    expect(fresh).toContain("font-size:12px");
+    expect(fresh).toContain("color:var(--text2)");
+
+    const stale = refined(<Plaque build={build({ last_confirmed_at: new Date(NOW - (STALE_AFTER_DAYS + 5) * DAY).toISOString() })} now={NOW} />);
+    expect(stale).toContain('data-plaque-state="stale"');
+    expect(stale).toContain('data-plaque-lamp="dim"');
+    expect(stale).toContain("filter:var(--dim-filter)");
+  });
+
+  it("Plaque: not yet reproduced is a neutral pill with no lamp", () => {
+    const html = refined(<Plaque build={build({ reproduction_count: 0 })} now={NOW} />);
+    expect(html).toContain("not yet reproduced");
+    expect(html).toContain('data-ui="pill"');
+    expect(html).not.toContain('data-tone=');
+    expect(html).not.toContain("data-plaque-lamp");
   });
 });

@@ -11,12 +11,19 @@
 // `design/tokens/token-map.md` records for values that are identical in both
 // themes. Nothing theme-dependent is ever a constant.
 //
+// UNDER THE REFINED LOOK (UI-P85) the drawings are flat: a sparkline is a 1.2 stroke with no dots; line and step charts
+// draw their line at 1.4 in the tone they are given, over a FLAT area at 7% (Dusk) or 8% (Noon) of the same tone, on a
+// dashed `--hairline` grid. No gradient fills. `MiniBars` is the small column chart: 3 wide, 2 apart, radius 1.
+//
 // VALUES ARE 0–1. Each chart takes its series already scaled to the unit
 // interval, so the drawing never decides what a number means.
 
 import { useId } from "react";
 
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
+
+import { useRoom } from "./useRoom";
 
 /** The highlighted bars of a histogram. Identical in both themes. */
 const HISTOGRAM_HIGHLIGHT = "#E8A283";
@@ -52,6 +59,8 @@ export interface LineChartProps extends ChartBase {
    * series is drawn as the part after it, since there is no before.
    */
   markerIndex: number | null;
+  /** Refined look: the line's colour, a token. `--evidence` by default. */
+  tone?: string;
 }
 
 /** Room under the series and over it, so a series never touches either edge. */
@@ -61,8 +70,10 @@ const LINE_TOP = 8;
 const TICK_BAND = 10;
 const TICK_SHORT = 6;
 
-export function LineChart({ width, height, values, markerIndex, label }: LineChartProps) {
+export function LineChart({ width, height, values, markerIndex, label, tone = t.evidence }: LineChartProps) {
   const gradient = useSvgId("line-fill");
+  const refined = useLook() === "refined";
+  const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
   const n = values.length;
   const baseline = height - TICK_BAND;
   const x = (i: number) => (n > 1 ? (i * width) / (n - 1) : 0);
@@ -85,14 +96,24 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
       style={{ display: "block", maxWidth: "100%", height: "auto" }}
       {...svgA11y(label)}
     >
-      <defs>
-        <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={t.evidence} stopOpacity=".28" />
-          <stop offset="1" stopColor={t.evidence} stopOpacity="0" />
-        </linearGradient>
-      </defs>
+      {refined ? null : (
+        <defs>
+          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={t.evidence} stopOpacity=".28" />
+            <stop offset="1" stopColor={t.evidence} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      )}
       {[1, 2, 3, 4, 5].map((k) => (
-        <line key={k} x1={f((k * width) / 6)} y1={0} x2={f((k * width) / 6)} y2={baseline} stroke={t.hairline} />
+        <line
+          key={k}
+          x1={f((k * width) / 6)}
+          y1={0}
+          x2={f((k * width) / 6)}
+          y2={baseline}
+          stroke={t.hairline}
+          strokeDasharray={refined ? "2 3" : undefined}
+        />
       ))}
       {Array.from({ length: 101 }, (_, k) => {
         const tx = f((k * width) / 100);
@@ -111,7 +132,8 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
         <>
           <path
             d={`M${f(mx)},${baseline} ${after.map((i) => `L${point(i)}`).join(" ")} L${width},${baseline} Z`}
-            fill={`url(#${gradient})`}
+            fill={refined ? tone : `url(#${gradient})`}
+            fillOpacity={refined ? areaAlpha : undefined}
           />
           {marked ? (
             <polyline
@@ -122,7 +144,12 @@ export function LineChart({ width, height, values, markerIndex, label }: LineCha
               opacity={0.7}
             />
           ) : null}
-          <polyline points={after.map(point).join(" ")} fill="none" stroke={t.evidence} strokeWidth={1.8} />
+          <polyline
+            points={after.map(point).join(" ")}
+            fill="none"
+            stroke={refined ? tone : t.evidence}
+            strokeWidth={refined ? 1.4 : 1.8}
+          />
           {marked ? (
             <line x1={f(mx)} y1={0} x2={f(mx)} y2={height} stroke={t.text} strokeWidth={1.4} strokeDasharray="3 3" />
           ) : null}
@@ -143,10 +170,14 @@ export interface StepPoint {
 
 export interface StepChartProps extends ChartBase {
   points: readonly StepPoint[];
+  /** Refined look: the line's colour, a token. `--cat-agents` by default. */
+  tone?: string;
 }
 
-export function StepChart({ width, height, points, label }: StepChartProps) {
+export function StepChart({ width, height, points, label, tone = t.catAgents }: StepChartProps) {
   const gradient = useSvgId("step-fill");
+  const refined = useLook() === "refined";
+  const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
   const px = (p: StepPoint) => clamp01(p.at) * width;
   const py = (p: StepPoint) => height * (1 - clamp01(p.value));
 
@@ -167,19 +198,33 @@ export function StepChart({ width, height, points, label }: StepChartProps) {
       style={{ display: "block" }}
       {...svgA11y(label)}
     >
-      <defs>
-        <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={t.catAgents} stopOpacity=".4" />
-          <stop offset="1" stopColor={t.catAgents} stopOpacity=".03" />
-        </linearGradient>
-      </defs>
+      {refined ? null : (
+        <defs>
+          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={t.catAgents} stopOpacity=".4" />
+            <stop offset="1" stopColor={t.catAgents} stopOpacity=".03" />
+          </linearGradient>
+        </defs>
+      )}
       {[1, 2, 3, 4, 5, 6].map((k) => (
-        <line key={k} x1={f((k * width) / 7)} y1={0} x2={f((k * width) / 7)} y2={height} stroke={t.hairline} />
+        <line
+          key={k}
+          x1={f((k * width) / 7)}
+          y1={0}
+          x2={f((k * width) / 7)}
+          y2={height}
+          stroke={t.hairline}
+          strokeDasharray={refined ? "2 3" : undefined}
+        />
       ))}
       {points.length ? (
         <>
-          <path d={`M0 ${height} L${line.slice(1)} L${width} ${height} Z`} fill={`url(#${gradient})`} />
-          <path d={line} fill="none" stroke={t.catAgents} strokeWidth={1.6} />
+          <path
+            d={`M0 ${height} L${line.slice(1)} L${width} ${height} Z`}
+            fill={refined ? tone : `url(#${gradient})`}
+            fillOpacity={refined ? areaAlpha : undefined}
+          />
+          <path d={line} fill="none" stroke={refined ? tone : t.catAgents} strokeWidth={refined ? 1.4 : 1.6} />
         </>
       ) : null}
     </svg>
@@ -195,9 +240,12 @@ export interface SparklineProps {
   /** 18–20 in the design. */
   height?: number;
   label?: string;
+  /** Refined look: the stroke's colour, a token. */
+  tone?: string;
 }
 
-export function Sparkline({ values, width = 60, height = 20, label }: SparklineProps) {
+export function Sparkline({ values, width = 60, height = 20, label, tone = t.evidence }: SparklineProps) {
+  const refined = useLook() === "refined";
   const n = values.length;
   const points = values
     .map((v, i) => `${f(n > 1 ? (i * width) / (n - 1) : 0)},${f(2 + (1 - clamp01(v)) * (height - 4))}`)
@@ -211,7 +259,11 @@ export function Sparkline({ values, width = 60, height = 20, label }: SparklineP
       style={{ display: "block", flexShrink: 0 }}
       {...svgA11y(label)}
     >
-      <polyline points={points} fill="none" stroke={t.evidence} strokeWidth={1.4} />
+      {refined ? (
+        <polyline points={points} fill="none" stroke={tone} strokeWidth={1.2} strokeLinejoin="round" />
+      ) : (
+        <polyline points={points} fill="none" stroke={t.evidence} strokeWidth={1.4} />
+      )}
     </svg>
   );
 }
@@ -255,6 +307,39 @@ export function Histogram({ width, height, values, fromIndex, label }: Histogram
             fill={k >= from ? HISTOGRAM_HIGHLIGHT : t.barBase}
           />
         );
+      })}
+    </svg>
+  );
+}
+
+/* ── MiniBars (refined look) ───────────────────────────────────────────── */
+
+export interface MiniBarsProps {
+  /** One bar per value, 0–1. */
+  values: readonly number[];
+  /** The tallest bar's height; 16 by default. */
+  height?: number;
+  /** A token. `--evidence` by default. */
+  tone?: string;
+  label?: string;
+}
+
+/** Bars 3 wide, 2 apart, radius 1, standing on a common baseline. A bar is never shorter than 2px, so a zero is still seen. */
+export function MiniBars({ values, height = 16, tone = t.evidence, label }: MiniBarsProps) {
+  const n = values.length;
+  const width = n > 0 ? n * 3 + (n - 1) * 2 : 0;
+  return (
+    <svg
+      data-ui="mini-bars"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      style={{ display: "block", flexShrink: 0 }}
+      {...svgA11y(label)}
+    >
+      {values.map((v, k) => {
+        const h = Math.max(2, clamp01(v) * height);
+        return <rect key={k} x={k * 5} y={f(height - h)} width={3} height={f(h)} rx={1} fill={tone} />;
       })}
     </svg>
   );

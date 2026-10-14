@@ -6,10 +6,11 @@
 
 import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { ActivityGrid, activityLevels, type ActivityDay } from "./ActivityGrid";
-import { Histogram, LineChart, Sparkline, StepChart } from "./charts";
+import { Histogram, LineChart, MiniBars, Sparkline, StepChart } from "./charts";
 import { MarkTile, RankRung } from "./RankRung";
 import { Timeline } from "./Timeline";
 
@@ -257,5 +258,59 @@ describe("RankRung and MarkTile", () => {
     expect(highest).toContain("box-shadow:var(--rank-glow)");
     expect(highest).toContain("First hang");
     expect(markup(<MarkTile tier="rare" caption="x" />)).not.toContain("box-shadow");
+  });
+});
+
+
+describe("refined charts and timeline (UI-P85)", () => {
+  const refined = (node: React.ReactElement) =>
+    markup(<MemoryRouter initialEntries={["/dev/kit/components?look=refined"]}>{node}</MemoryRouter>);
+  const values = Array.from({ length: 20 }, (_, i) => i / 19);
+
+  it("Sparkline strokes at 1.2 with no dots", () => {
+    const html = refined(<Sparkline values={values} />);
+    expect(html).toContain('stroke-width="1.2"');
+    expect(html).not.toContain("<circle");
+    expect(markup(<Sparkline values={values} />)).toContain('stroke-width="1.4"');
+  });
+
+  it("LineChart and StepChart draw a 1.4 line over a flat area, on a dashed hairline grid, with no gradient", () => {
+    const line = refined(<LineChart width={360} height={120} values={values} markerIndex={null} />);
+    const step = refined(<StepChart width={360} height={90} points={[{ at: 0, value: 0.2 }, { at: 0.5, value: 0.6 }]} />);
+    for (const html of [line, step]) {
+      expect(html).not.toContain("linearGradient");
+      expect(html).not.toContain("url(#");
+      expect(html).toContain('stroke-width="1.4"');
+      expect(html).toContain('stroke-dasharray="2 3"');
+      expect(html).toMatch(/fill-opacity="0\.0[78]"/);
+    }
+  });
+
+  it("MiniBars are 3 wide, 2 apart, radius 1", () => {
+    const html = markup(<MiniBars values={[0.2, 0.5, 1]} />);
+    expect(html).toContain('width="13"');
+    expect(html.match(/width="3"/g)).toHaveLength(3);
+    expect(html).toContain('x="5"');
+    expect(html).toContain('x="10"');
+    expect(html).toContain('rx="1"');
+  });
+
+  it("Timeline has 7px dots in a 3px ring of --surface, a 1px --line spine, the kind as an eyebrow, no glow", () => {
+    const html = refined(
+      <Timeline
+        events={[
+          { kind: "breakage", at: "11:40", text: "Failed" },
+          { kind: "deploy", at: "26:30", text: "Running" },
+        ]}
+      />,
+    );
+    expect(html).toContain("width:7px;height:7px");
+    expect(html).toContain("box-shadow:0 0 0 3px var(--surface)");
+    expect(html).toContain("width:1px;background:var(--line)");
+    expect(html).toContain("grid-template-columns:8px 48px minmax(0, 1fr)");
+    expect(html).toContain("color:var(--breakage)");
+    expect(html).toContain("text-transform:uppercase");
+    expect(html).not.toContain("0 0 10px");
+    expect(html).not.toContain("var(--lit)");
   });
 });
