@@ -1,4 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
@@ -31,10 +33,11 @@ describe("the boxes", () => {
     expect(boxName({ kind: "step", stepKind: "prompt", number: "2", title: "Prompt 2", inputs: [] })).toBe("Prompt 2, Prompt 2, 0 inputs");
   });
 
-  it("draws a dashed Files and tools lane, the result with the evidence border, and a suggested input", () => {
+  /* UI-P94: the refined result box has no evidence border, so the box is told by its "Result" label in either look. */
+  it("draws a dashed Files and tools lane, the result with its Result label, and a suggested input", () => {
     map();
     expect(screen.getAllByTestId("map-lane").some((lane) => lane.getAttribute("data-dashed") === "true")).toBe(true);
-    expect(screen.getByTestId("map-box-r1").getAttribute("data-evidence")).toBe("true");
+    expect(within(screen.getByTestId("map-box-r1")).getByText("Result")).toBeTruthy();
     expect(screen.getByText("1 suggested")).toBeTruthy();
     expect(screen.getAllByTestId("map-wire").some((wire) => wire.getAttribute("data-suggested") === "true")).toBe(true);
   });
@@ -250,5 +253,72 @@ describe("a manual step (UI-P70)", () => {
     const props = manualMap({ onOpenPrompt: vi.fn() });
     fireEvent.doubleClick(screen.getByTestId("map-box-m3"));
     expect(props.onOpenPrompt).not.toHaveBeenCalled();
+  });
+});
+
+describe("the maker's Map in the refined look (UI-P94)", () => {
+  function refinedMap(over: Partial<BuildMapProps> = {}) {
+    const props: BuildMapProps = { ...sandboxMapProps("bakery"), selectedId: null, onSelect: vi.fn(), onClear: vi.fn(), onConnect: vi.fn(), onOpenPrompt: vi.fn(), ...over };
+    render(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+        <BuildMap {...props} />
+      </MemoryRouter>,
+    );
+    return props;
+  }
+  const markup = () =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+        <BuildMap {...sandboxMapProps("bakery")} selectedId={null} onSelect={vi.fn()} onClear={vi.fn()} onConnect={vi.fn()} onOpenPrompt={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+  it("keeps the names, the selection and the connecting dots", () => {
+    const props = refinedMap();
+    fireEvent.click(screen.getByRole("button", { name: "Prompt 3, Fix the mobile layout, 2 inputs" }));
+    expect(props.onSelect).toHaveBeenCalledWith("p3");
+    expect(screen.getByTestId("map-dot-p3").getAttribute("title")).toBe("Drag to connect");
+    expect(screen.getByText("1 suggested")).toBeTruthy();
+  });
+
+  it("draws input rows 20 high on the 22 pitch, the state line 18, the text 36 in two lines and the foot 20", () => {
+    refinedMap();
+    const row = screen.getByTestId("map-input-p3-0").parentElement as HTMLElement;
+    expect(row.style.height).toBe("20px");
+    expect((row.parentElement as HTMLElement).style.gap).toBe("2px");
+    const box = screen.getByTestId("map-box-p3");
+    const state = within(box).getByText("2 of 2 inputs accepted");
+    expect(state.style.height).toBe("18px");
+    expect(state.style.fontSize).toBe("10.5px");
+    const words = within(box).getByText("19 words");
+    expect(words.style.height).toBe("20px");
+    const body = words.previousElementSibling as HTMLElement;
+    expect(body.style.flex).toBe("0 1 36px");
+    // jsdom drops the clamp and var() colours, so they are read from the server markup.
+    expect(markup()).toContain("font-size:11px;font-weight:400;line-height:1.5;color:var(--text2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2");
+  });
+
+  it("gives the result no evidence border: its head says Result in --evidence 10.5/500", () => {
+    refinedMap();
+    const result = screen.getByTestId("map-box-r1");
+    expect(result.getAttribute("data-evidence")).toBeNull();
+    const label = within(result).getByTestId("map-result-label");
+    expect(label.textContent).toBe("Result");
+    expect(label.style.fontSize).toBe("10.5px");
+    expect(label.style.fontWeight).toBe("500");
+    expect(markup()).toMatch(/data-testid="map-result-label" style="[^"]*color:var\(--evidence\)/);
+  });
+
+  it("titles the agent 13.5/500 under its 'Agent n' head", () => {
+    refinedMap();
+    const agent = screen.getByTestId("map-box-a5");
+    expect(within(agent).getByText("Agent 5").style.fontSize).toBe("10.5px");
+    const title = within(agent).getByText("Order checker");
+    expect(title.style.fontSize).toBe("13.5px");
+    expect(title.style.fontWeight).toBe("500");
+  });
+
+  it("draws the legend's samples 1px in --text2", () => {
+    expect(markup()).toContain("width:24px;height:0;border-top:1px solid var(--text2)");
   });
 });

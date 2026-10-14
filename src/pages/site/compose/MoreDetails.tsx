@@ -5,14 +5,20 @@
    Closed by default. Open, one flat panel: where it broke (two fields that
    make one breakage part), what it costs and how soon it gives a first result
    (three numbers on the build), and a switch that leaves one part open for
-   someone else to solve (a gap part). */
+   someone else to solve (a gap part).
+
+   THE REFINED LOOK (UI-P94, `refined/{dusk,noon}/composer-card.html`): the line is a disclosure 32 high, a `chev`
+   glyph in `--label` (`chevd` when open), "More details" 13/500 and "(optional)" in `--text2` 400. Only the look
+   branches. */
 
 import { useId, useState, type CSSProperties } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Glyph } from "@/components/brand/Glyph";
 import { Panel } from "@/components/brand/Panel";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -145,7 +151,43 @@ function Switch({ on, label, onChange, phone }: { on: boolean; label: string; on
   );
 }
 
+/** UI-P94: the refined disclosure, 32 high (44 on a phone). */
+function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; controls: string | undefined; phone: boolean; onClick: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={controls}
+      onClick={onClick}
+      {...handlers}
+      style={{
+        alignSelf: "flex-start",
+        height: phone ? 44 : 32,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "0 12px 0 0",
+        border: 0,
+        borderRadius: 6,
+        background: "transparent",
+        fontFamily: FIGTREE,
+        fontSize: 13,
+        fontWeight: 500,
+        color: t.text,
+        cursor: "pointer",
+        ...ring(state.focusVisible),
+      }}
+    >
+      <Glyph name={open ? "chevd" : "chev"} size={16} color={t.label} />
+      More details
+      <span style={{ color: t.text2, fontWeight: 400, whiteSpace: "pre" }}> (optional)</span>
+    </button>
+  );
+}
+
 export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetailsProps) {
+  const refined = useLook() === "refined";
   const [open, setOpen] = useState(false);
   const id = useId();
   const gapRing = useRing<HTMLInputElement>();
@@ -153,6 +195,9 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {refined ? (
+        <RefinedDisclosure open={open} controls={open ? `${id}-panel` : undefined} phone={phone} onClick={() => setOpen((value) => !value)} />
+      ) : (
       <Button
         variant="ghost"
         size={phone ? 44 : 38}
@@ -168,6 +213,7 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
         More details
         <span style={{ color: t.text2, whiteSpace: "pre" }}> (optional)</span>
       </Button>
+      )}
 
       {open ? (
         <div id={`${id}-panel`}>

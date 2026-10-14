@@ -12,16 +12,23 @@
    CHANGE opens one toggle per chip that has something to untick: a session's
    model, or an entry typed by hand. A session whose model is not known has
    nothing to untick. While the row is open, an entry unticked keeps its toggle
-   (off) so it can be ticked back; "Done" lets it go. */
+   (off) so it can be ticked back; "Done" lets it go.
+
+   THE REFINED LOOK (UI-P94, `refined/{dusk,noon}/composer-card.html`). Under `useLook() === "refined"` the line is
+   12.5 `--text2` with 8 between its parts, and each chip is a `ModelTag` with the tool's and model's real mark; a
+   model left out is the same tag with its name struck through. Change is underlined `--text`. Only the look branches. */
 
 import * as Popover from "@radix-ui/react-popover";
 import { Check } from "lucide-react";
 import { useId, useState, type CSSProperties, type FormEvent } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { ModelMark } from "@/components/brand/ModelMark";
+import { ModelTag } from "@/components/brand/ModelTag";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -52,6 +59,26 @@ const floating: CSSProperties = {
   color: t.text,
   zIndex: 50,
 };
+
+/** UI-P94: the chip as a `ModelTag`, with the tool's and model's real mark. */
+function RefinedChip({ chip }: { chip: MadeWithChip }) {
+  const out = chip.kind === "model" && !chip.on;
+  const marks = { tool: chip.tool, model: chip.model };
+  return (
+    <span data-testid="made-with-chip" data-on={chip.on ? "true" : "false"} style={{ display: "inline-flex" }}>
+      {out ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 22, boxSizing: "border-box", padding: "0 8px 0 6px", borderRadius: 4, background: t.tagFill, color: t.onTag, fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 500, lineHeight: 1, whiteSpace: "nowrap" }}>
+          <ModelMark {...marks} size={14} />
+          {chip.tool ? `${chip.tool} · ` : null}
+          <s style={{ color: t.text2 }}>{chip.model}</s>
+          <span style={VISUALLY_HIDDEN}> (left out)</span>
+        </span>
+      ) : (
+        <ModelTag {...marks}>{chip.label}</ModelTag>
+      )}
+    </span>
+  );
+}
 
 function Chip({ chip }: { chip: MadeWithChip }) {
   const out = chip.kind === "model" && !chip.on;
@@ -186,6 +213,8 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
 }
 
 export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: MadeWithLineProps) {
+  const refined = useLook() === "refined";
+  const Tag = refined ? RefinedChip : Chip;
   const [open, setOpen] = useState(false);
   /** The chips as they were when Change opened, so an entry unticked keeps its toggle until Done. */
   const [opened, setOpened] = useState<readonly MadeWithChip[]>([]);
@@ -207,18 +236,24 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
 
   return (
     <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 6px", fontFamily: FIGTREE, fontSize: 13, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: refined ? 8 : "4px 6px", fontFamily: FIGTREE, fontSize: refined ? 12.5 : 13, color: t.text2 }}>
         <span>Made with</span>
         {fromSessions.map((chip) => (
-          <Chip key={chip.key} chip={chip} />
+          <Tag key={chip.key} chip={chip} />
         ))}
         {hasSessions ? <span>from your sessions.</span> : null}
         {typed.map((chip) => (
-          <Chip key={chip.key} chip={chip} />
+          <Tag key={chip.key} chip={chip} />
         ))}
         {hasSessions ? null : <AddEntry phone={phone} onAdd={onAdd} />}
         {changeable || open ? (
-          <TextButton underline target={phone} aria-expanded={open} onClick={flip}>
+          <TextButton
+            underline
+            target={phone}
+            aria-expanded={open}
+            onClick={flip}
+            style={refined ? { fontSize: 12.5, color: t.text, textUnderlineOffset: 3, textDecorationColor: t.line } : undefined}
+          >
             {open ? "Done" : "Change"}
           </TextButton>
         ) : null}

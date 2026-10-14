@@ -42,7 +42,7 @@ describe("countsLine", () => {
 });
 
 describe("the Sources rail in Map", () => {
-  it("folds Sources to a rail of 44-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
+  it("folds Sources to a rail of 40-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
     view({ lens: "map", sources: <p>the sources panel</p> });
     const rail = screen.getByTestId("sources-rail");
     expect(within(rail).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["Show sources", "Sessions", "Files", "Add a source"]);
@@ -229,5 +229,41 @@ describe("the refined look (UI-P93)", () => {
     const add = screen.getByTestId("sandbox-add");
     expect(add.getAttribute("data-ui")).toBe("menu-button");
     expect(add.textContent).toBe("Add");
+  });
+});
+
+describe("the refined Map and Card (UI-P94)", () => {
+  const markup = (over: Partial<SandboxViewProps> = {}) =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+        <SandboxView {...sandboxViewProps("bakery")} {...over} />
+      </MemoryRouter>,
+    );
+
+  it("draws the Sources rail as a module 52 wide, its buttons 40 wide, 36 high or 44 with a count", () => {
+    view({ lens: "map", sources: <p>the sources panel</p> });
+    const rail = screen.getByTestId("sources-rail");
+    expect(rail.style.flex).toBe("0 0 52px");
+    expect(rail.style.padding).toBe("8px 0px");
+    expect(rail.style.borderRadius).toBe("8px");
+    const show = within(rail).getByRole("button", { name: "Show sources" });
+    expect([show.style.width, show.style.height]).toEqual(["40px", "36px"]);
+    const sessions = within(rail).getByRole("button", { name: "Sessions" });
+    expect(sessions.style.height).toBe("44px");
+    expect((sessions.lastElementChild as HTMLElement).style.fontSize).toBe("10.5px");
+    expect(markup({ lens: "map" })).toContain("width:28px;height:1px;background:var(--hairline-module)");
+  });
+
+  it("makes Build a module beside the rail in Map, and leaves it on the surface in List", () => {
+    expect(markup({ lens: "map" })).toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)[^"]*flex:999 1 560px/);
+    expect(markup({ lens: "list" })).not.toContain("flex:999 1 560px");
+  });
+
+  it("opens the Card as the refined side sheet", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    const card = screen.getByTestId("sandbox-card");
+    expect(card.getAttribute("data-look")).toBe("refined");
+    expect(card.style.width).toBe("472px");
   });
 });

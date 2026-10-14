@@ -29,7 +29,12 @@
    drawn in a well with the dot grid; lanes are radius 6 on a hairline, led by the session tool's real mark; boxes are
    raised objects (`mapArtwork.ts`) with 6x6 squares for inputs and outputs; wires are 1.2px with no arrowhead; what
    is not joined to the selection takes `--dim-filter`, never an opacity. Only the look branches: `layoutMap` places
-   everything exactly as before, so the squares sit on the same wire ends. */
+   everything exactly as before, so the squares sit on the same wire ends.
+
+   THE MAKER'S PARTS (UI-P94, `refined/{dusk,noon}/composer-map.html`). The composer's Map adds to UI-P91's recipes:
+   input rows 20 high (2 apart, so each square stays on its wire end's 22 pitch), the state line 18 (10.5 `--label`),
+   the text 36 (11 `--text2`, two lines), the foot 20; the legend's samples are 1px `--text2`. The result box has no
+   evidence border in the refined look: its head says "Result" in `--evidence` 10.5/500 before the title. */
 
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
@@ -338,15 +343,17 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   const big = container && box.contents !== null;
   const piece = box.kind === "file" || box.kind === "tool";
   const manual = box.kind === "step" && box.stepKind === "manual";
-  /* Rows 18 high, 4 apart: the 22 pitch `layoutMap` puts each wire end on, from 1 under the head. */
+  /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
+     puts each wire end on, from 1 under the head. */
+  const row = reader ? 18 : 20;
   const inputRows = (
-    <span style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 1 }}>
+    <span style={{ display: "flex", flexDirection: "column", gap: MAP_SIZES.row - row, paddingTop: 1, flexShrink: 0 }}>
       {box.inputs.map((input, at) => (
-        <span key={input.key} style={{ position: "relative", height: 18, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(11, 400, onPath ? t.text : t.text2) }}>
+        <span key={input.key} style={{ position: "relative", height: row, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(11, 400, onPath ? t.text : t.text2) }}>
           <span
             aria-hidden="true"
             data-testid={`map-input-${box.id}-${at}`}
-            style={{ position: "absolute", left: -4, top: (18 - SQUARE) / 2, ...squarePaint(onPath, input.suggested) }}
+            style={{ position: "absolute", left: -4, top: (row - SQUARE) / 2, ...squarePaint(onPath, input.suggested) }}
           />
           <span style={ellipsis}>{input.label}</span>
         </span>
@@ -358,7 +365,6 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
       type="button"
       data-testid={`map-box-${box.id}`}
       data-kind={box.kind}
-      data-evidence={box.kind === "result" ? "true" : undefined}
       aria-label={boxName(box)}
       aria-pressed={selected}
       onClick={() => onSelect(box.id)}
@@ -400,9 +406,9 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
           <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
             <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
             <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-              <span style={{ ...geist(13, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
-              <span style={{ ...geist(11, 400, t.label), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
-              <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.runs}</span>
+              <span style={{ ...geist(13.5, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
+              <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
+              <span style={{ ...geist(11.5, 400, t.text2), ...ellipsis }}>{box.runs}</span>
             </span>
           </span>
         </>
@@ -410,7 +416,10 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
         <>
           <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 12px", minWidth: 0 }}>
             {box.kind === "result" ? (
-              <span style={geist(10.5, 400, t.label)}>Result</span>
+              /* UI-P94: no evidence border; the word says what it is. */
+              <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
+                Result
+              </span>
             ) : manual || (!box.defaultTitle && box.number) ? (
               <span style={refinedNumber}>{box.number}</span>
             ) : null}
@@ -422,16 +431,45 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
             {box.stack ? <span style={{ ...geist(10.5, 400, t.label), marginLeft: "auto", flexShrink: 0 }}>× {box.stack}</span> : null}
           </span>
           {box.inputs.length > 0 ? inputRows : null}
-          {/* The maker's accepted and suggested count. The reader's box says its inputs in its name alone, as the board draws it. */}
-          {!reader && box.inputs.length > 0 ? (
-            <span style={{ height: MAP_SIZES.state, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label) }}>
-              {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
-            </span>
-          ) : null}
-          {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
-          {box.kind === "step" && !manual ? (
-            <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{box.words} words</span>
-          ) : null}
+          {reader ? (
+            <>
+              {/* The reader's box says its inputs in its name alone, as the board draws it. */}
+              {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
+              {box.kind === "step" && !manual ? (
+                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{box.words} words</span>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {/* UI-P94: the maker's accepted and suggested count, 18 high. */}
+              {box.inputs.length > 0 ? (
+                <span style={{ height: 18, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label) }}>
+                  {box.suggested > 0 ? `${box.suggested} suggested` : `${box.accepted} of ${box.accepted} inputs accepted`}
+                </span>
+              ) : null}
+              {/* The text, two lines in 36; it gives up a pixel or two when the box `layoutMap` sized is shorter. */}
+              <span
+                style={{
+                  flex: "0 1 36px",
+                  minHeight: 0,
+                  padding: "0 12px",
+                  boxSizing: "border-box",
+                  ...geist(11, 400, t.text2),
+                  lineHeight: 1.5,
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {box.text}
+              </span>
+              <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
+                {box.kind === "step" && !manual ? `${box.words} words` : ""}
+              </span>
+            </>
+          )}
         </>
       )}
     </button>
@@ -797,7 +835,8 @@ export function BuildMap(props: BuildMapProps) {
   const hasContainer = steps.some((step) => step.kind === "agent" || step.kind === "team");
   const hasAgent = steps.some((step) => step.kind === "agent");
 
-  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${refined ? 1.2 : 1.5}px solid ${refined ? t.label : t.text2}`, verticalAlign: "middle" };
+  /* UI-P94: the maker's legend draws its samples 1px `--text2`, as the composer's board does. */
+  const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${refined ? 1 : 1.5}px solid ${t.text2}`, verticalAlign: "middle" };
   const caption: CSSProperties = refined ? geist(12, 400, t.text2) : { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
   const count: CSSProperties = refined ? { fontVariantNumeric: "tabular-nums" } : mono(11);
   const Box = refined ? RefinedBoxView : BoxView;
@@ -808,13 +847,13 @@ export function BuildMap(props: BuildMapProps) {
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <LiveRegion message={said} />
       {reader ? null : (
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: refined ? "8px 16px" : 8, ...caption }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: refined ? 16 : 14 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: refined ? 8 : 6 }}>
             <span aria-hidden="true" style={sample} />
             goes into <span style={count}>{accepted}</span>
           </span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: refined ? 8 : 6 }}>
             <span aria-hidden="true" style={{ ...sample, borderTopStyle: "dashed" }} />
             suggested <span style={count}>{suggested}</span>
           </span>
@@ -1044,7 +1083,7 @@ export function BuildMap(props: BuildMapProps) {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, ...caption }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: refined ? "8px 16px" : 8, ...caption }}>
         <span>
           {MAP_COPY.rows}
           {hasContainer && onOpenContainer ? (
