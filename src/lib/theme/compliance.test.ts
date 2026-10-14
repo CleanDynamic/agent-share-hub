@@ -53,6 +53,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { resolveRefined } from "./refined";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -83,12 +84,13 @@ const CATEGORIES: Category[] = [
       "THE THEME LAYER ITSELF — tier one of two, and the one place a value is " +
       "allowed to be a value. primitives.ts names the raw colours and is " +
       "referenced by nothing but semantics.ts; elevation.ts holds the two " +
-      "per-theme shadows; index.css declares the token blocks those two " +
-      "generate. A sweep that emptied these would have nowhere left to put " +
+      "per-theme shadows; refined.ts holds the refined look's values " +
+      "(UI-P79); index.css declares the token blocks those generate. A sweep that emptied these would have nowhere left to put " +
       "the palette. css-parity.test.ts holds index.css to the modules.",
     match: (p) =>
       p === "src/lib/theme/primitives.ts" ||
       p === "src/lib/theme/elevation.ts" ||
+      p === "src/lib/theme/refined.ts" ||
       p === "src/index.css",
   },
   {
@@ -507,5 +509,29 @@ describe("colour compliance across src/", () => {
     expect(code.match(HEX)).toEqual(["#abc123", "#DEADBE"]);
     RAW_RGBA.lastIndex = 0;
     expect(code.match(RAW_RGBA)).toBeNull();
+  });
+});
+
+describe("the refined look's surfaces (UI-P79)", () => {
+  /* The current rules above hold for data-look absent, and they are scans of
+     src/, which refined.ts joins as theme-layer. These are the refined half:
+     no translucent glass, no gradient backdrop. */
+  const opaque = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
+
+  it.each(["noon", "dusk"] as const)("%s: glass, glass-fill and module are opaque; backdrop is flat", (theme) => {
+    for (const name of ["glass", "glass-fill", "module", "backdrop"]) {
+      const value = resolveRefined(theme, name);
+      expect(opaque(value), `--${name} resolves to ${value}`).toBe(true);
+    }
+  });
+
+  it("repoints the glow, arc and orb tokens at flat values", () => {
+    for (const theme of ["noon", "dusk"] as const) {
+      for (const name of ["arc-1", "arc-2", "arc-3", "arc-haze", "arc-outer"]) {
+        expect(resolveRefined(theme, name)).toBe("transparent");
+      }
+      expect(resolveRefined(theme, "ambient")).toBe("linear-gradient(transparent, transparent)");
+      expect(resolveRefined(theme, "orb-glass")).toBe("linear-gradient(var(--module), var(--module))");
+    }
   });
 });

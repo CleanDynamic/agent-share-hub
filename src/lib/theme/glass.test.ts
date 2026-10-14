@@ -42,6 +42,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 import { GLASS_BLUR } from "./controls";
+import { resolveRefined } from "./refined";
+import { dusk, noon } from "./semantics";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -206,5 +208,37 @@ describe("§Glass — liquid glass (UI-P09b)", () => {
     expect(css).toMatch(/@media \(max-width: 767px\) \{\s*\.bg-glass::after \{ filter: none; -webkit-filter: none; \}/);
     expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)[\s\S]*?backdrop-filter: none/);
     expect(css).toMatch(/@supports not \(backdrop-filter: blur\(2px\)\)[\s\S]*?filter: none/);
+  });
+});
+
+describe("§Glass — the refined look is opaque (UI-P79)", () => {
+  const alpha = (colour: string) => {
+    if (/^#[0-9a-f]{6}$/i.test(colour)) return 1;
+    const m = /^rgba\(([^)]*)\)$/.exec(colour.replace(/\s/g, ""));
+    return m ? Number(m[1].split(",")[3] ?? 1) : NaN;
+  };
+
+  it.each(["noon", "dusk"] as const)("%s: glass, glass-fill and module are opaque, and the backdrop is a flat colour", (theme) => {
+    for (const name of ["glass", "glass-fill", "module", "backdrop"]) {
+      const value = resolveRefined(theme, name);
+      expect(alpha(value), `--${name} resolves to ${value}`).toBe(1);
+    }
+  });
+
+  it("keeps the current look as it was: glass is still translucent while data-look is absent", () => {
+    expect(alpha(noon.glass)).toBeLessThan(1);
+    expect(alpha(dusk.glass)).toBeLessThan(1);
+    expect(noon.backdrop).toMatch(/gradient/);
+    expect(dusk.backdrop).toMatch(/gradient/);
+  });
+
+  it("declares no blur in the refined blocks, which hold custom properties only", () => {
+    const css = readFileSync(join(SRC, "index.css"), "utf8");
+    for (const theme of ["dusk", "noon"]) {
+      const start = css.indexOf(`:root[data-theme="${theme}"][data-look="refined"] {`);
+      const body = css.slice(start, css.indexOf("\n}\n", start));
+      expect(start).toBeGreaterThan(-1);
+      expect(body).not.toMatch(/backdrop-filter|blur\(/);
+    }
   });
 });

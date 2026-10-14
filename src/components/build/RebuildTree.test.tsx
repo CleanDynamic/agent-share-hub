@@ -4,6 +4,7 @@
 // indenting after depth 4. Plus the Rebuilds tab's THE FAMILY, above the list
 // that was there before.
 
+import { fallbackOf, type as typeScale } from "@/lib/theme/type";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -146,7 +147,8 @@ describe("RebuildTree", () => {
     expect(notes).toHaveLength(1);
     expect(notes[0].textContent).toBe("Δ Swapped the model and cut two steps");
     expect(notes[0].style.fontFamily).toContain("DM Mono");
-    expect(notes[0].style.fontSize).toBe("12px");
+    // jsdom drops a var() font-size, so assert the role: the current look's 12px.
+    expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
     expect(notes[0].style.whiteSpace).toBe("nowrap");
     expect(notes[0].style.textOverflow).toBe("ellipsis");
   });
@@ -225,7 +227,7 @@ describe("the Rebuilds tab's family", () => {
 
     const heading = screen.getByRole("heading", { name: "The family" });
     expect(heading.style.fontFamily).toContain("DM Mono");
-    expect(heading.style.fontSize).toBe("12px");
+    expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
     expect(heading.style.textTransform).toBe("uppercase");
 
     const section = screen.getByTestId("rebuild-family");

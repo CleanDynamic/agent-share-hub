@@ -139,7 +139,82 @@ export const duskShadcn: Record<ShadcnName, string> = {
   "sidebar-ring": "39 67% 55%",
 };
 
+/* UI-P79 — the refined look. The same bridge, repointed: background = frame,
+   card and popover = module, primary = action, border and input = hairline,
+   ring = focus-ring, foreground = text, muted-foreground = text2, destructive
+   = breakage with on-action on it, and secondary / muted / accent = well, the
+   token the current look's --recess meant. Declared in the refined blocks in
+   src/index.css (`data-look="refined"`); the triples are the values in
+   refined.ts, converted. */
+
+/** Noon, refined. */
+export const noonRefinedShadcn: Record<ShadcnName, string> = {
+  background: "0 0% 91%",
+  foreground: "0 0% 11%",
+  card: "0 0% 98%",
+  "card-foreground": "0 0% 11%",
+  popover: "0 0% 98%",
+  "popover-foreground": "0 0% 11%",
+  primary: "0 0% 11%",
+  "primary-foreground": "0 0% 100%",
+  secondary: "0 0% 93%",
+  "secondary-foreground": "0 0% 11%",
+  muted: "0 0% 93%",
+  "muted-foreground": "0 0% 34%",
+  accent: "0 0% 93%",
+  "accent-foreground": "0 0% 11%",
+  destructive: "6 75% 44%",
+  "destructive-foreground": "0 0% 100%",
+  border: "0 0% 88%",
+  input: "0 0% 88%",
+  ring: "221 83% 53%",
+  "sidebar-background": "0 0% 91%",
+  "sidebar-foreground": "0 0% 11%",
+  "sidebar-primary": "0 0% 11%",
+  "sidebar-primary-foreground": "0 0% 100%",
+  "sidebar-accent": "0 0% 93%",
+  "sidebar-accent-foreground": "0 0% 11%",
+  "sidebar-border": "0 0% 88%",
+  "sidebar-ring": "221 83% 53%",
+};
+
+/** Dusk, refined. */
+export const duskRefinedShadcn: Record<ShadcnName, string> = {
+  background: "240 3% 6%",
+  foreground: "240 6% 93%",
+  card: "240 5% 12%",
+  "card-foreground": "240 6% 93%",
+  popover: "240 5% 12%",
+  "popover-foreground": "240 6% 93%",
+  primary: "240 6% 93%",
+  "primary-foreground": "240 5% 7%",
+  secondary: "240 5% 8%",
+  "secondary-foreground": "240 6% 93%",
+  muted: "240 5% 8%",
+  "muted-foreground": "240 3% 64%",
+  accent: "240 5% 8%",
+  "accent-foreground": "240 6% 93%",
+  destructive: "1 66% 70%",
+  "destructive-foreground": "240 5% 7%",
+  border: "240 5% 16%",
+  input: "240 5% 16%",
+  ring: "217 77% 75%",
+  "sidebar-background": "240 3% 6%",
+  "sidebar-foreground": "240 6% 93%",
+  "sidebar-primary": "240 6% 93%",
+  "sidebar-primary-foreground": "240 5% 7%",
+  "sidebar-accent": "240 5% 8%",
+  "sidebar-accent-foreground": "240 6% 93%",
+  "sidebar-border": "240 5% 16%",
+  "sidebar-ring": "217 77% 75%",
+};
+
 export const shadcnThemes = {
   noon: noonShadcn,
   dusk: duskShadcn,
+} as const;
+
+export const shadcnRefinedThemes = {
+  noon: noonRefinedShadcn,
+  dusk: duskRefinedShadcn,
 } as const;

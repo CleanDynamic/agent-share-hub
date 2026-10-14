@@ -22,6 +22,7 @@ import {
   DISPLAY_MIN_PX,
   DM_MONO,
   FIGTREE,
+  fallbackOf,
   LOCKUP_MIN_PX,
   SENTIENT,
   assertFloors,
@@ -176,19 +177,22 @@ describe("the scale", () => {
   });
 
   it("matches the sizes and faces the theme specifies", () => {
-    expect(type.eyebrow.fontSize).toBe("12px");
-    expect(type.eyebrow.fontFamily).toBe(DM_MONO);
-    expect(type.eyebrow.letterSpacing).toBe("0.08em");
+    // UI-P80: sizes and families are var() with today's value as the fallback;
+    // `now` reads that, which is what renders while data-look is absent.
+    const now = (v: unknown) => fallbackOf(String(v));
+    expect(now(type.eyebrow.fontSize)).toBe("12px");
+    expect(type.eyebrow.fontFamily).toBe(`var(--type-eyebrow-font, ${DM_MONO})`);
+    expect(now(type.eyebrow.letterSpacing)).toBe("0.08em");
     expect(type.eyebrow.textTransform).toBe("uppercase");
 
     // UI-P52 density pass: every size below is its old size through the table
     // (design/prompts/README-density.md) — body 16 → 15, bodyLarge 17 → 16,
     // section heads 30 → 22, the hero 44 → 33, data 13 → 12, labels 13 → 12.
     // The eyebrow's 12 is in the kept band.
-    expect(type.body.fontSize).toBe("15px");
+    expect(now(type.body.fontSize)).toBe("15px");
     expect(type.body.fontWeight).toBe(400);
-    expect(type.body.lineHeight).toBe(1.55);
-    expect(type.bodyLarge.fontSize).toBe("16px");
+    expect(now(type.body.lineHeight)).toBe("1.55");
+    expect(now(type.bodyLarge.fontSize)).toBe("16px");
 
     // THE CARD TITLE. BG-P09 made it the display face at a fixed 22 (22 ≥ the
     // floor of the day, 17), so a title under a picture wins the eye by face and
@@ -197,12 +201,13 @@ describe("the scale", () => {
     // and is set in Figtree 600 instead — still clear of the weight floor.
     expect(minPx(type.cardTitle.fontSize)).toBe(19);
     expect(type.cardTitle.fontFamily).toBe(FIGTREE);
-    expect(type.cardTitle.fontWeight).toBe(600);
+    expect(now(type.cardTitle.fontWeight)).toBe("600");
     expect(floorViolations("cardTitle", type.cardTitle)).toEqual([]);
     expect(minPx(type.sectionHead.fontSize)).toBe(22);
     expect(minPx(type.hero.fontSize)).toBe(33);
     expect(minPx(type.data.fontSize)).toBe(12);
-    expect(type.label.fontSize).toBe("12px");
+    expect(now(type.label.fontSize)).toBe("12px");
+    expect(now(type.label.letterSpacing)).toBe("0.01em");
   });
 
   it("balances headings and prettifies descriptions", () => {
@@ -501,5 +506,98 @@ describe("type.mono(px, { caps })", () => {
   it("is never under the weight floor", () => {
     expect(floorViolations("mono", mono(10))).toEqual([]);
     expect(Number(mono(10, { caps: true }).fontWeight)).toBeGreaterThanOrEqual(BODY_MIN_WEIGHT);
+  });
+});
+
+/* ── UI-P80 — the two looks ────────────────────────────────────────────────
+   The roles are var() references; the declarations are in src/index.css. This
+   resolves them the way the browser does, once with no `data-look` (only the
+   family block in `:root`) and once with `:root[data-look="refined"]`. */
+
+describe("roles per look (UI-P80)", () => {
+  const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
+  const declarations = (selector: string) => {
+    const open = css.indexOf("{", css.indexOf(`\n${selector} {`));
+    const out: Record<string, string> = {};
+    for (const m of css.slice(open + 1, css.indexOf("}", open)).matchAll(/^\s*--([a-z0-9-]+):\s*(.+);\s*$/gm)) out[m[1]] = m[2];
+    return out;
+  };
+  const current = declarations(":root");
+  const refined = { ...current, ...declarations(':root[data-look="refined"]') };
+
+  /** `var(--a, fb)` as a browser resolves it, innermost first. */
+  const resolve = (value: unknown, vars: Record<string, string>): string => {
+    let v = String(value);
+    for (let i = 0; i < 12 && v.includes("var("); i++) {
+      v = v.replace(/var\(\s*--([a-z0-9-]+)\s*(?:,\s*((?:[^()]|\([^()]*\))*))?\)/, (_, name: string, fb?: string) => vars[name] ?? fb ?? "");
+    }
+    return v.trim();
+  };
+  const first = (family: string) => /^'?([^',]+)'?/.exec(family)![1];
+
+  it("declares the three family tokens: Figtree, Sentient and DM Mono now; Geist, Geist and Geist Mono refined", () => {
+    expect(first(current["font-ui"])).toBe("Figtree");
+    expect(first(current["font-display"])).toBe("Sentient");
+    expect(first(current["font-data"])).toBe("DM Mono");
+    expect(first(refined["font-ui"])).toBe("Geist");
+    expect(first(refined["font-display"])).toBe("Geist");
+    expect(first(refined["font-data"])).toBe("Geist Mono");
+  });
+
+  it("resolves every role to today's value with the switch off", () => {
+    expect(resolve(type.body.fontSize, current)).toBe("15px");
+    expect(resolve(type.body.lineHeight, current)).toBe("1.55");
+    expect(resolve(type.bodyLarge.fontSize, current)).toBe("16px");
+    expect(resolve(type.cardTitle.fontSize, current)).toBe("19px");
+    expect(resolve(type.cardTitle.fontWeight, current)).toBe("600");
+    expect(resolve(type.sectionHead.fontSize, current)).toBe("clamp(22px, 2.7vw, 36px)");
+    expect(resolve(type.hero.fontSize, current)).toBe("clamp(33px, 4.8vw, 58px)");
+    expect(resolve(type.hero.letterSpacing, current)).toBe("-0.02em");
+    expect(resolve(type.data.fontSize, current)).toBe("clamp(12px, 0.83vw, 13px)");
+    expect(resolve(type.label.fontSize, current)).toBe("12px");
+    expect(first(resolve(type.body.fontFamily, current))).toBe("Figtree");
+    expect(first(resolve(type.hero.fontFamily, current))).toBe("Sentient");
+    expect(first(resolve(type.eyebrow.fontFamily, current))).toBe("DM Mono");
+    expect(resolve(type.eyebrow.letterSpacing, current)).toBe("0.08em");
+  });
+
+  it("resolves to the refined table with data-look=\"refined\"", () => {
+    const r = (v: unknown) => resolve(v, refined);
+    // hero 44 / 1.04 / -0.04em, Geist; 32 on mobile
+    expect([r(type.hero.fontSize), r(type.hero.lineHeight), r(type.hero.letterSpacing), r(type.hero.fontWeight)]).toEqual(["44px", "1.04", "-0.04em", "500"]);
+    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root\[data-look="refined"\] \{ --type-hero-size: 32px; \}/);
+    // page title 20 / 500 / 1.2 / -0.015em
+    expect([r(type.sectionHead.fontSize), r(type.sectionHead.lineHeight), r(type.sectionHead.letterSpacing)]).toEqual(["20px", "1.2", "-0.015em"]);
+    // figure 24 / 500 / 1.1 / -0.02em, tabular
+    expect([r(type.figure.fontSize), r(type.figure.fontWeight), r(type.figure.lineHeight), r(type.figure.letterSpacing)]).toEqual(["24px", "500", "1.1", "-0.02em"]);
+    expect(type.figure.fontVariantNumeric).toBe("tabular-nums");
+    // card title 14 / 500 / 1.3 / -0.005em
+    expect([r(type.cardTitle.fontSize), r(type.cardTitle.fontWeight), r(type.cardTitle.lineHeight), r(type.cardTitle.letterSpacing)]).toEqual(["14px", "500", "1.3", "-0.005em"]);
+    // body 13 / 400 / 20px; step text 13.5 / 22px
+    expect([r(type.body.fontSize), r(type.body.fontWeight), r(type.body.lineHeight)]).toEqual(["13px", "400", "20px"]);
+    expect([r(type.bodyLarge.fontSize), r(type.bodyLarge.lineHeight)]).toEqual(["13.5px", "22px"]);
+    // label 12.5 / 500 / 1.3 / 0
+    expect([r(type.label.fontSize), r(type.label.fontWeight), r(type.label.lineHeight), r(type.label.letterSpacing)]).toEqual(["12.5px", "500", "1.3", "0"]);
+    // eyebrow 10.5 / 500 caps / .06em, in Geist, not mono
+    expect([r(type.eyebrow.fontSize), r(type.eyebrow.fontWeight), r(type.eyebrow.letterSpacing), type.eyebrow.textTransform]).toEqual(["10.5px", "500", "0.06em", "uppercase"]);
+    expect(first(r(type.eyebrow.fontFamily))).toBe("Geist");
+    // meta (the data role) 12 / 400 / 1.4 in Geist
+    expect([r(type.data.fontSize), r(type.data.lineHeight)]).toEqual(["12px", "1.4"]);
+    expect(first(r(type.data.fontFamily))).toBe("Geist");
+    // mono 10.5 / 400 / 18px in Geist Mono
+    expect([r(type.monoLabel.fontSize), r(type.monoLabel.fontWeight), r(type.monoLabel.lineHeight)]).toEqual(["10.5px", "400", "18px"]);
+    expect(first(r(type.monoLabel.fontFamily))).toBe("Geist Mono");
+  });
+
+  it("sets every refined heading and label in Geist, and nothing in a serif", () => {
+    for (const [role, style] of Object.entries(scale)) {
+      const face = first(resolve((style as { fontFamily: string }).fontFamily, refined));
+      expect(["Geist", "Geist Mono"], `${role} resolves to ${face}`).toContain(face);
+    }
+    expect(refined["font-display"]).not.toMatch(/serif(?!\s*$)|Georgia|Sentient/);
+  });
+
+  it("keeps the floors over the current look's values", () => {
+    expect(assertFloors()).toEqual([]);
   });
 });

@@ -250,7 +250,7 @@ export function FeedItem({ item, rank, context = "home", navState }: FeedItemPro
       onClick={handleCardClick}
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
+        background: 'var(--glass)',
         border: '1px solid var(--line)',
         borderRadius: 'var(--radius-card)',
         marginBottom: 12,

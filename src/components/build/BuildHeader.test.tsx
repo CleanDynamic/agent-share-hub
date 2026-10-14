@@ -139,7 +139,7 @@ describe("the header block", () => {
       p.textContent?.startsWith("Sorts a morning")
     );
     // UI-P52 density pass: bodyLarge is 16px (it was 17).
-    expect(styleOf(outcome)).toContain("font-size:16px");
+    expect(styleOf(outcome)).toContain("font-size:var(--type-body-large-size, 16px)");
     expect(styleOf(outcome)).toContain("max-width:68ch");
     expect(styleOf(outcome)).toContain("color:var(--text2)");
   });

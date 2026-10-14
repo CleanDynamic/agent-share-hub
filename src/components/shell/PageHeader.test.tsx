@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PageHeader } from "./PageHeader";
-import { SENTIENT, DM_MONO, sectionHead } from "@/lib/theme/type";
+import { SENTIENT, sectionHead, type } from "@/lib/theme/type";
 import { t } from "@/lib/theme/tokens";
 
 /* ────────────────────────────────────────────────
@@ -46,7 +46,7 @@ describe("PageHeader", () => {
   it("sets the eyebrow in the mono face above the title", () => {
     render(<PageHeader eyebrow="42 builds" title="The gallery" />);
     const eyebrow = screen.getByText("42 builds");
-    expect(eyebrow.style.fontFamily).toBe(DM_MONO);
+    expect(eyebrow.style.fontFamily).toBe(type.eyebrow.fontFamily);
     expect(eyebrow.style.textTransform).toBe("uppercase");
     expect(eyebrow.compareDocumentPosition(screen.getByRole("heading", { level: 1 })))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);

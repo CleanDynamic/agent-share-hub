@@ -65,7 +65,7 @@ export function BountyCard({ item, context = "home", navState }: BountyCardProps
       className="overflow-hidden"
       data-visual-slot="feed-card"
       style={{
-        background: 'var(--surface)',
+        background: 'var(--glass)',
         border: '1px solid var(--line)',
         borderLeft: `3px solid ${sc.border}`,
         borderRadius: 'var(--radius-card)',
