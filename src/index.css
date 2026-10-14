@@ -32,6 +32,69 @@
   font-display: swap;
 }
 
+/* UI-P80 — Geist and Geist Mono, the refined look's faces. Variable files, one
+   per family, self-hosted; Geist-OFL.txt sits beside them. Nothing uses them
+   until data-look="refined" repoints the --font-* tokens below. The preload is
+   not in index.html: UI-P98 adds it when the switch goes on. */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* UI-P80 — the three family tokens. Current look: Figtree, Sentient and DM Mono,
+   exactly as src/lib/theme/type.ts spelled them before. Refined look: Geist,
+   Geist and Geist Mono, and the per-role sizes in the table of UI-P80
+   (`--type-<role>-<prop>`; absent means "today's value", which is the fallback
+   written into each role in type.ts). Theme-independent, so it is not in the
+   theme blocks and css-parity does not count it. */
+:root {
+  --font-ui: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Sentient', Georgia, 'Times New Roman', serif;
+  --font-data: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+}
+:root[data-look="refined"] {
+  --font-ui: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-data: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --type-hero-size: 44px;
+  --type-hero-leading: 1.04;
+  --type-hero-tracking: -0.04em;
+  --type-section-head-size: 20px;
+  --type-section-head-leading: 1.2;
+  --type-section-head-tracking: -0.015em;
+  --type-figure-size: 24px;
+  --type-card-title-size: 14px;
+  --type-card-title-weight: 500;
+  --type-card-title-leading: 1.3;
+  --type-card-title-tracking: -0.005em;
+  --type-body-size: 13px;
+  --type-body-leading: 20px;
+  --type-body-large-size: 13.5px;
+  --type-body-large-leading: 22px;
+  --type-label-size: 12.5px;
+  --type-label-tracking: 0;
+  --type-data-font: var(--font-ui);
+  --type-data-size: 12px;
+  --type-data-leading: 1.4;
+  --type-eyebrow-font: var(--font-ui);
+  --type-eyebrow-size: 10.5px;
+  --type-eyebrow-tracking: 0.06em;
+}
+@media (max-width: 767px) {
+  :root[data-look="refined"] { --type-hero-size: 32px; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

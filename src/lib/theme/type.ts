@@ -51,21 +51,52 @@ import type { CSSProperties } from "react";
 
 import { denseFont } from "./density";
 
+/* ── Two looks, one table (UI-P80) ─────────────────────────────────────────
+   Every family and every size that differs under the refined look is read
+   through a custom property whose FALLBACK is today's value:
+
+     --font-ui / --font-display / --font-data     the three families
+     --type-<role>-{size,weight,leading,tracking,font}   a role's own overrides
+
+   With `data-look` absent none of them is declared except the three families
+   (src/index.css, `:root`, set to Figtree, Sentient and DM Mono), so every role
+   renders exactly what it did before. `:root[data-look="refined"]` in the same
+   file redeclares them with the refined table: Geist, Geist and Geist Mono.
+   `fallbackOf` is how the floors below, and the tests, read the current-look
+   value out of a `var(--x, value)`. */
+
+/** `var(--x, fallback)` → `fallback`, through nested vars. Anything else comes back unchanged. */
+export function fallbackOf(value: string): string {
+  let current = value.trim();
+  for (;;) {
+    const m = /^var\(\s*--[a-z0-9-]+\s*,\s*([\s\S]+)\)$/i.exec(current);
+    if (!m) return current;
+    current = m[1].trim();
+  }
+}
+
+/** A role property: the custom property for it, defaulting to today's value. */
+const roleVar = (role: string, prop: "size" | "weight" | "leading" | "tracking" | "font", fallback: string | number) =>
+  `var(--type-${role}-${prop}, ${fallback})`;
+
 /* ── Families ──────────────────────────────────────────────────────────────
    Each stack falls back within its own job, so a face that fails to load
    degrades to something doing the same work rather than to the body face. */
 
-/** Body and UI. */
-export const FIGTREE =
+/** Body and UI. Geist under the refined look (UI-P80); the `*_STACK` constants are today's stacks, the fallbacks. */
+export const FIGTREE_STACK =
   "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+export const FIGTREE = `var(--font-ui, ${FIGTREE_STACK})`;
 
 /** Display, 20px and up (15px only for the lockup wordmark). Loaded by the
  *  `@font-face` rules in src/index.css, weights 500 and 700. */
-export const SENTIENT = "'Sentient', Georgia, 'Times New Roman', serif";
+export const SENTIENT_STACK = "'Sentient', Georgia, 'Times New Roman', serif";
+export const SENTIENT = `var(--font-display, ${SENTIENT_STACK})`;
 
 /** Data. */
-export const DM_MONO =
+export const DM_MONO_STACK =
   "'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace";
+export const DM_MONO = `var(--font-data, ${DM_MONO_STACK})`;
 
 /* ── The scale ─────────────────────────────────────────────────────────────
    Eight roles. Sizes given as a range in the spec are `clamp()`d between those
@@ -86,20 +117,20 @@ export const DM_MONO =
     `mono(px, { caps: true })` is the same job at the reference's other sizes.
     12 is in the table's kept band (10–12), so the pass left it alone. */
 export const eyebrow = {
-  fontFamily: DM_MONO,
-  fontSize: "12px",
+  fontFamily: roleVar("eyebrow", "font", DM_MONO),
+  fontSize: roleVar("eyebrow", "size", "12px"),
   fontWeight: 500,
   lineHeight: 1.3,
-  letterSpacing: "0.08em",
+  letterSpacing: roleVar("eyebrow", "tracking", "0.08em"),
   textTransform: "uppercase",
 } as const satisfies CSSProperties;
 
 /** 15px Figtree (16 before UI-P53). The default for prose and any text that wraps. */
 export const body = {
   fontFamily: FIGTREE,
-  fontSize: "15px",
+  fontSize: roleVar("body", "size", "15px"),
   fontWeight: 400,
-  lineHeight: 1.55,
+  lineHeight: roleVar("body", "leading", 1.55),
   letterSpacing: "0",
   textWrap: "pretty",
 } as const satisfies CSSProperties;
@@ -107,9 +138,9 @@ export const body = {
 /** 16px Figtree (17 before UI-P53). Body copy that leads — a standfirst, a build's summary. */
 export const bodyLarge = {
   fontFamily: FIGTREE,
-  fontSize: "16px",
+  fontSize: roleVar("body-large", "size", "16px"),
   fontWeight: 400,
-  lineHeight: 1.55,
+  lineHeight: roleVar("body-large", "leading", 1.55),
   letterSpacing: "0",
   textWrap: "pretty",
 } as const satisfies CSSProperties;
@@ -127,30 +158,30 @@ export const bodyLarge = {
  */
 export const cardTitle = {
   fontFamily: FIGTREE,
-  fontSize: "19px",
-  fontWeight: 600,
-  lineHeight: 1.25,
-  letterSpacing: "-0.01em",
+  fontSize: roleVar("card-title", "size", "19px"),
+  fontWeight: roleVar("card-title", "weight", 600),
+  lineHeight: roleVar("card-title", "leading", 1.25),
+  letterSpacing: roleVar("card-title", "tracking", "-0.01em"),
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
 /** 22–36px Sentient (30–48 before UI-P53). A section heading on a reading surface. */
 export const sectionHead = {
   fontFamily: SENTIENT,
-  fontSize: "clamp(22px, 2.7vw, 36px)",
+  fontSize: roleVar("section-head", "size", "clamp(22px, 2.7vw, 36px)"),
   fontWeight: 500,
-  lineHeight: 1.12,
-  letterSpacing: "-0.01em",
+  lineHeight: roleVar("section-head", "leading", 1.12),
+  letterSpacing: roleVar("section-head", "tracking", "-0.01em"),
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
 /** 33–58px Sentient (44–78 before UI-P53). One per page, at most. */
 export const hero = {
   fontFamily: SENTIENT,
-  fontSize: "clamp(33px, 4.8vw, 58px)",
+  fontSize: roleVar("hero", "size", "clamp(33px, 4.8vw, 58px)"),
   fontWeight: 500,
-  lineHeight: 1.05,
-  letterSpacing: "-0.02em",
+  lineHeight: roleVar("hero", "leading", 1.05),
+  letterSpacing: roleVar("hero", "tracking", "-0.02em"),
   textWrap: "balance",
 } as const satisfies CSSProperties;
 
@@ -158,23 +189,47 @@ export const hero = {
     summaries, counts. Pair with `tabular` wherever the digits sit in a column.
     0.83vw keeps it at 12px at 1440, where the old role rendered 13. */
 export const data = {
-  fontFamily: DM_MONO,
-  fontSize: "clamp(12px, 0.83vw, 13px)",
+  fontFamily: roleVar("data", "font", DM_MONO),
+  fontSize: roleVar("data", "size", "clamp(12px, 0.83vw, 13px)"),
   fontWeight: 400,
-  lineHeight: 1.45,
+  lineHeight: roleVar("data", "leading", 1.45),
   letterSpacing: "0",
 } as const satisfies CSSProperties;
 
 /** 12px Figtree 500 (13 before UI-P53). A field label or a chip — short, and never wrapping. */
 export const label = {
   fontFamily: FIGTREE,
-  fontSize: "12px",
+  fontSize: roleVar("label", "size", "12px"),
   fontWeight: 500,
   lineHeight: 1.3,
-  letterSpacing: "0.01em",
+  letterSpacing: roleVar("label", "tracking", "0.01em"),
 } as const satisfies CSSProperties;
 
-/** The eight static roles, by name. The floors are checked over this table;
+/** 24px Geist 500 (UI-P80, new). A count or a headline number; large is 32 via
+    `--type-figure-size`. Tabular, so a figure cannot be set without it. Figtree
+    under the current look, where no board draws it yet. */
+export const figure = {
+  fontFamily: FIGTREE,
+  fontSize: roleVar("figure", "size", "24px"),
+  fontWeight: 500,
+  lineHeight: 1.1,
+  letterSpacing: "-0.02em",
+  fontVariantNumeric: "tabular-nums",
+} as const satisfies CSSProperties;
+
+/** 10.5px mono (UI-P80, new). Pills, ids, the `/` key. Geist Mono under the
+    refined look, DM Mono under the current. Named `monoLabel` because `mono`
+    is already the sized function below. */
+export const monoLabel = {
+  fontFamily: DM_MONO,
+  fontSize: "10.5px",
+  fontWeight: 400,
+  lineHeight: "18px",
+  letterSpacing: "0",
+  fontVariantNumeric: "tabular-nums",
+} as const satisfies CSSProperties;
+
+/** The ten static roles, by name. The floors are checked over this table;
     `display` and `mono` below are functions and are checked at the call. */
 export const scale = {
   eyebrow,
@@ -185,6 +240,8 @@ export const scale = {
   hero,
   data,
   label,
+  figure,
+  monoLabel,
 } as const;
 
 /* ── Sized roles ───────────────────────────────────────────────────────────
@@ -370,7 +427,8 @@ export const BODY_MIN_WEIGHT = 400;
  * units this check cannot resolve statically, which is the honest answer — a
  * caller deciding a floor treats null as "unknown", never as "fine".
  */
-export function minPx(fontSize: string): number | null {
+export function minPx(rawFontSize: string): number | null {
+  const fontSize = fallbackOf(rawFontSize);
   const clamped = /^clamp\(\s*(-?[\d.]+)px\s*,/.exec(fontSize);
   if (clamped) return Number(clamped[1]);
   const plain = /^(-?[\d.]+)px$/.exec(fontSize);
@@ -379,7 +437,7 @@ export function minPx(fontSize: string): number | null {
 
 /** True when the stack leads with the named family. */
 const leadsWith = (fontFamily: string, family: string) =>
-  fontFamily.trim().startsWith(`'${family}'`);
+  fallbackOf(fontFamily).trim().startsWith(`'${family}'`);
 
 /**
  * Check one style object against both floors. Returns the violations it finds
@@ -392,8 +450,10 @@ const leadsWith = (fontFamily: string, family: string) =>
 export function floorViolations(role: string, style: CSSProperties): string[] {
   const found: string[] = [];
   const family = String(style.fontFamily ?? "");
+  // The current look's value: a role's weight may be a var() with today's as its fallback.
+  const rawWeight = typeof style.fontWeight === "string" ? fallbackOf(style.fontWeight) : style.fontWeight;
   const size = typeof style.fontSize === "string" ? minPx(style.fontSize) : null;
-  const weight = Number(style.fontWeight ?? BODY_MIN_WEIGHT);
+  const weight = Number(rawWeight ?? BODY_MIN_WEIGHT);
 
   if (leadsWith(family, "Sentient")) {
     if (size === null) {

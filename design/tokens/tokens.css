@@ -653,3 +653,10 @@
   --sidebar-border: 0 0% 88%;
   --sidebar-ring: 221 83% 53%;
 }
+
+/* UI-P80 — the refined faces. Per-role sizes are in src/index.css (`--type-<role>-<prop>`). */
+:root[data-look="refined"] {
+  --font-ui: 'Geist', system-ui, sans-serif;
+  --font-display: 'Geist', system-ui, sans-serif;
+  --font-data: 'Geist Mono', ui-monospace, monospace;
+}

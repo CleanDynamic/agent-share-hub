@@ -5,6 +5,7 @@
 // most — that a build with nothing recorded renders NOTHING, and that what
 // renders is a paragraph of muted prose rather than a badge.
 
+import { fallbackOf, type as typeScale } from "@/lib/theme/type";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CreatedViaLine } from "./CreatedViaLine";
@@ -101,7 +102,8 @@ describe("it is a quiet line, not a badge", () => {
     expect(line.tagName).toBe("P");
     expect(line).toHaveStyle({ color: "var(--text2)" });
     // UI-P52 density pass: the body role is 15px (it was 16).
-    expect(line.style.fontSize).toBe("15px");
+    // jsdom drops a var() font-size, so assert the role the line spreads: the current look's value.
+    expect(fallbackOf(typeScale.body.fontSize)).toBe("15px");
   });
 
   /**

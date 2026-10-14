@@ -122,7 +122,7 @@ describe("EmptyState", () => {
     const html = markup(<EmptyState line="Nothing hung yet." />);
     expect(html.match(/<p /g)).toHaveLength(1);
     expect(html).toContain("font-size:17px;font-weight:600");
-    expect(html).toContain("font-family:&#x27;Figtree&#x27;");
+    expect(html).toContain("font-family:var(--font-ui, &#x27;Figtree&#x27;");
     expect(html).toContain("color:var(--text)");
     expect(html).toContain("Nothing hung yet.");
   });

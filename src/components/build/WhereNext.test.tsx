@@ -3,6 +3,7 @@
 // nothing at all when every row is empty; at most three cards a row, never the
 // build being read; three columns wide, two between 768 and 1023, one below.
 
+import { fallbackOf, type as typeScale } from "@/lib/theme/type";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -146,7 +147,7 @@ describe("WhereNext", () => {
     ]);
     for (const heading of headings) {
       expect(heading.style.fontFamily).toContain("DM Mono");
-      expect(heading.style.fontSize).toBe("12px");
+      expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
       expect(heading.style.textTransform).toBe("uppercase");
     }
     expect(section.style.gap).toBe("40px");
