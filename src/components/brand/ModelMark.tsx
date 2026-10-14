@@ -84,6 +84,9 @@ export function ModelMark({ tool, model, lab, size }: ModelMarkProps) {
     );
   }
 
+  /* Quoted: Vite inlines a small SVG as a data URI, whose quotes and brackets make an unquoted `url()` invalid, and
+     the browser then drops the mask and paints the whole box. */
+  const mask = `url("${file}")`;
   return (
     <span
       aria-hidden="true"
@@ -91,8 +94,8 @@ export function ModelMark({ tool, model, lab, size }: ModelMarkProps) {
       style={{
         ...box,
         backgroundColor: "currentColor",
-        maskImage: `url(${file})`,
-        WebkitMaskImage: `url(${file})`,
+        maskImage: mask,
+        WebkitMaskImage: mask,
         maskSize: "contain",
         WebkitMaskSize: "contain",
         maskRepeat: "no-repeat",

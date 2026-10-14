@@ -25,8 +25,10 @@ import type { GalleryMedia } from "@/lib/build/gallery";
 import { getBuildFeed, type FeedItem } from "@/lib/feed/getBuildFeed";
 import { getStreakDays } from "@/lib/progress";
 import { weeklyProgress } from "@/lib/progress/weekly";
+import { useLook } from "@/lib/theme/look";
 
 import { HomeView, type HomeScope, type Loadable } from "./HomeView";
+import { RefinedHomeView } from "./RefinedHomeView";
 import {
   challengeRows,
   homeRowOf,
@@ -65,6 +67,8 @@ function loadable<T, U>(
 export function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  /* UI-P88: the refined look renders the fork, with the same props. */
+  const View = useLook() === "refined" ? RefinedHomeView : HomeView;
   const [params, setParams] = useSearchParams();
 
   const userId = user?.id ?? null;
@@ -187,7 +191,7 @@ export function HomePage() {
         description="Download AI assistants, blueprints and workflows. Works with ChatGPT, Claude, Gemini and any AI tool."
         path="/"
       />
-      <HomeView
+      <View
         fit="content"
         now={now}
         scope={scope}

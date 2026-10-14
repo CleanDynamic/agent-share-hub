@@ -134,7 +134,7 @@ const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   ...extra,
 });
 
-const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * The field is the form around the input, so the input itself is bare. The app
@@ -142,16 +142,16 @@ const SEARCH_DEBOUNCE_MS = 300;
  * `!important`, which a style object cannot outrank; an inline declaration
  * marked important can, and only on this one element.
  */
-const bareInput = (node: HTMLInputElement | null) => {
+export const bareInput = (node: HTMLInputElement | null) => {
   if (!node) return;
   node.style.setProperty("background", "transparent", "important");
   node.style.setProperty("border-width", "0", "important");
 };
-const PLACEHOLDER = "Search builds, makers, models";
+export const PLACEHOLDER = "Search builds, makers, models";
 
 /* ── the menus' options, shared by the dropdowns and the sheets ── */
 
-interface MenuOption {
+export interface MenuOption {
   key: string;
   label: string;
   count?: number;
@@ -160,19 +160,19 @@ interface MenuOption {
   onSelect: () => void;
 }
 
-interface MenuGroup {
+export interface MenuGroup {
   heading?: string;
   options: MenuOption[];
 }
 
-interface FeedMenu {
+export interface FeedMenu {
   key: "model" | "for" | "sort";
   label: string;
   value: string;
   groups: MenuGroup[];
 }
 
-function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
+export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
   const { model, onModelChange, audience, onAudienceChange, audiences, sort, onSortChange, counts } = props;
 
   const modelGroups: MenuGroup[] = [
@@ -646,7 +646,7 @@ function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
 
 /* ── the heading ── */
 
-function countLineOf(props: GalleryFeedViewProps): string | null {
+export function countLineOf(props: GalleryFeedViewProps): string | null {
   const { list, model, sort, status } = props;
   if (status !== "ready") return null;
   if (list.kind === "all") return feedCountLine(sort, list.list.total, null);
