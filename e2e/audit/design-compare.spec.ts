@@ -65,7 +65,17 @@ interface RefinedState {
   actions?: (page: Page) => Promise<void>;
 }
 const REFINED_STATE: Record<string, RefinedState> = {
-  "build-map": { query: "", actions: async (p) => void (await p.getByRole("radio", { name: "Map" }).click()) },
+  /* UI-P91: the board is the bare surface (`part=steps`), with Map chosen and step 4 open. */
+  "build-map": {
+    query: "&part=steps",
+    actions: async (p) => {
+      await p.getByRole("button", { name: "Map", exact: true }).click();
+      await p.getByRole("button", { name: /^Prompt 4, / }).click();
+      /* The click scrolled the box into view; the board shows the well at rest. */
+      await p.getByTestId("build-map").evaluate((well) => well.scrollTo(0, 0));
+      await p.evaluate(() => document.fonts.ready);
+    },
+  },
   "composer-map": {
     query: "&build=bakery&lens=map",
     actions: async (p) => void (await p.getByRole("button", { name: /^Prompt 3\b/ }).click()),

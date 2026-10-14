@@ -50,8 +50,8 @@ import {
 } from "./BuildSteps";
 import { RefinedBeforeYouSend } from "./RefinedBeforeYouSend";
 
-/** The Map is loaded when a reader first chooses it, and not before (UI-P74). */
-const ReaderMap = lazy(() => import("./ReaderMap"));
+/** The Map is loaded when a reader first chooses it, and not before (UI-P74). UI-P91: its refined fork. */
+const ReaderMap = lazy(() => import("./RefinedReaderMap"));
 
 /* ── type ── */
 

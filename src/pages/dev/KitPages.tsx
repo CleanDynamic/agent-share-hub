@@ -76,6 +76,9 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
 /** Entries that draw their own room and are not wrapped in the site frame (Sign in draws the bare one itself). */
 const UNFRAMED = new Set(["backdrop", "signin"]);
 
+/** UI-P91: `build-steps?part=steps` is the Map board, a bare surface the dev page draws itself. */
+const isBare = (page: string, search: string): boolean => page === "build-steps" && new URLSearchParams(search).get("part") === "steps";
+
 /** The trail a board draws, where it is not the default Home / Gallery / the sample build. */
 const TRAILS: Record<string, readonly Crumb[]> = {
   rebuild: [
@@ -145,7 +148,7 @@ export default function KitPages() {
       style={{ width: WIDTH[viewport] }}
     >
       <Suspense fallback={null}>
-        {UNFRAMED.has(page) ? (
+        {UNFRAMED.has(page) || isBare(page, window.location.search) ? (
           <View viewport={viewport} fit="board" state={state} />
         ) : (
           <SiteFrameView viewport={viewport} fit="board" {...devChrome({ theme, trail: TRAILS[page], ...CHROME[page] })}>

@@ -364,7 +364,8 @@ function Proof({ proof, phone, now }: { proof: BuildProofView; phone: boolean; n
 
 const BUILD_PANEL = "build-tabpanel";
 
-function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildViewerView; steps: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
+/** The tabs and The build. Exported for the dev page's Map board (UI-P91), which draws it on a bare surface. */
+export function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildViewerView; steps: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
   const onSteps = viewer.tab === "anatomy";
   return (
     <div data-testid="build-steps-panel" style={{ ...(phone ? null : wide), display: "flex", flexDirection: "column", gap: 16 }}>
