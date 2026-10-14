@@ -10,9 +10,13 @@ import { ArrowRight, Bell, Check, Plus, Search } from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { Checkbox } from "@/components/brand/Checkbox";
 import { CategoryChip } from "@/components/brand/CategoryChip";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { IconButton } from "@/components/brand/IconButton";
+import { MenuButton } from "@/components/brand/MenuButton";
+import { Pill } from "@/components/brand/Pill";
+import { SearchField } from "@/components/brand/SearchField";
 import { useRoom } from "@/components/brand/useRoom";
 import { Segmented } from "@/components/brand/Segmented";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
@@ -34,6 +38,7 @@ export function ControlsSection() {
   const [tab, setTab] = useState("anatomy");
   const [filter, setFilter] = useState("all");
   const refined = useLook() === "refined";
+  const [ticks, setTicks] = useState<[boolean, boolean]>([false, true]);
 
   return (
     <Section
@@ -60,10 +65,10 @@ export function ControlsSection() {
           </Button>
         </Example>
         <Example caption="icon button 34">
-          <IconButton icon={Search} label="Search" size={34} />
+          <IconButton icon={Search} glyph="search" label="Search" size={34} />
         </Example>
         <Example caption="icon button 38">
-          <IconButton icon={Bell} label="Activity" size={38} />
+          <IconButton icon={Bell} glyph="bell" label="Activity" size={38} />
         </Example>
       </Row>
       {GAP_18}
@@ -158,6 +163,30 @@ export function ControlsSection() {
         </Example>
         <Example caption="avatar 78">
           <Avatar size={78} userId="u-in" name="Ines Novak" hue={4} />
+        </Example>
+      </Row>
+      {GAP_18}
+      <Row>
+        <Example caption="pill">
+          <Row gap={8}>
+            <Pill>not yet reproduced</Pill>
+            <Pill tone="evidence">41 reproduced</Pill>
+            <Pill tone="breakage">1 secret found</Pill>
+            <Pill tone="lit-ink">new</Pill>
+            <Pill tone="instruction">instruction</Pill>
+          </Row>
+        </Example>
+        <Example caption="menu button">
+          <MenuButton label="Sort by" value="Engagement" />
+        </Example>
+        <Example caption="search field">
+          <SearchField label="Search builds" placeholder="Search builds, makers, tools" hint="/" />
+        </Example>
+        <Example caption="checkbox, off and on">
+          <Row gap={12}>
+            <Checkbox label="Off" checked={ticks[0]} onChange={(e) => setTicks([e.target.checked, ticks[1]])} />
+            <Checkbox label="On" checked={ticks[1]} onChange={(e) => setTicks([ticks[0], e.target.checked])} />
+          </Row>
         </Example>
       </Row>
       {refined ? (

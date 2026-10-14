@@ -15,6 +15,7 @@ import { useRef, type KeyboardEvent } from "react";
 import { denseFont } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -27,6 +28,8 @@ export interface UnderlineTab<V extends string = string> {
   id?: string;
   /** The panel this tab controls. */
   controls?: string;
+  /** Refined only: a count after the label, in `--label`. */
+  count?: number | string;
 }
 
 export interface UnderlineTabsProps<V extends string = string> {
@@ -45,6 +48,7 @@ function Tab({
   controls,
   onSelect,
   onKeyDown,
+  count,
   children,
   tabIndex,
 }: {
@@ -56,8 +60,56 @@ function Tab({
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   children: string;
   tabIndex: number;
+  count?: number | string;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const refined = useLook() === "refined";
+
+  /* UI-P84: Geist 13/500, 40 high, the current tab `--text` over a 2px `--text` edge that sits on the row's hairline;
+     the others `--text2` over a transparent 2px edge. */
+  if (refined) {
+    return (
+      <button
+        type="button"
+        role="tab"
+        id={id}
+        aria-selected={current}
+        aria-controls={controls}
+        tabIndex={tabIndex}
+        onClick={onSelect}
+        onKeyDown={onKeyDown}
+        {...handlers}
+        style={{
+          boxSizing: "border-box",
+          height: 40,
+          margin: "0 0 -1px",
+          padding: 0,
+          background: "none",
+          border: 0,
+          borderBottom: `2px solid ${current ? t.text : "transparent"}`,
+          fontFamily: FIGTREE,
+          fontSize: 13,
+          fontWeight: 500,
+          lineHeight: "normal",
+          color: current ? t.text : t.text2,
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          ...ring(state.focusVisible),
+        }}
+      >
+        {children}
+        {count !== undefined ? (
+          <>
+            {" "}
+            <span style={{ fontSize: 11.5, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }}>
+              {count}
+            </span>
+          </>
+        ) : null}
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -99,6 +151,7 @@ export function UnderlineTabs<V extends string = string>({
   label,
 }: UnderlineTabsProps<V>) {
   const list = useRef<HTMLDivElement>(null);
+  const refined = useLook() === "refined";
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const last = tabs.length - 1;
@@ -120,12 +173,16 @@ export function UnderlineTabs<V extends string = string>({
       data-ui="tabs"
       role="tablist"
       aria-label={label}
-      style={{
-        display: "flex",
-        gap: 17,
-        alignItems: "flex-end",
-        borderBottom: `1px solid ${t.line}`,
-      }}
+      style={
+        refined
+          ? { display: "flex", gap: 24, borderBottom: `1px solid ${t.hairline}` }
+          : {
+              display: "flex",
+              gap: 17,
+              alignItems: "flex-end",
+              borderBottom: `1px solid ${t.line}`,
+            }
+      }
     >
       {tabs.map((tab, index) => (
         <Tab
@@ -134,6 +191,7 @@ export function UnderlineTabs<V extends string = string>({
           fontSize={fontSize}
           id={tab.id}
           controls={tab.controls}
+          count={tab.count}
           tabIndex={tab.value === value ? 0 : -1}
           onSelect={() => onChange(tab.value)}
           onKeyDown={(event) => move(event, index)}
