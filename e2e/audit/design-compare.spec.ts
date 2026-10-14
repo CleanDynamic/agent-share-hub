@@ -76,6 +76,8 @@ const REFINED_STATE: Record<string, RefinedState> = {
       await p.evaluate(() => document.fonts.ready);
     },
   },
+  /* UI-P93: the board is the bakery, prompt 3 selected (the fixture's own selection). */
+  "composer-list": { query: "&build=bakery" },
   "composer-map": {
     query: "&build=bakery&lens=map",
     actions: async (p) => void (await p.getByRole("button", { name: /^Prompt 3\b/ }).click()),

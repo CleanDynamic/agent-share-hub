@@ -22,6 +22,11 @@ import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
+import { RefinedBuildList } from "@/pages/site/compose/RefinedBuildList";
+import { RefinedDetailsPanel } from "@/pages/site/compose/RefinedDetailsPanel";
+import { RefinedSandboxView } from "@/pages/site/compose/RefinedSandboxView";
+import { RefinedSourcesPanel } from "@/pages/site/compose/RefinedSourcesPanel";
+import { useLook } from "@/lib/theme/look";
 
 import type { DesignPageProps } from "./KitPages";
 
@@ -38,19 +43,25 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const team = asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
   const list = team?.list ?? sandboxListProps(which);
   const openedId = params.get("opened");
+  /* UI-P93: `?look=refined` draws the forks, from the same fixtures. */
+  const refined = useLook() === "refined";
+  const View = refined ? RefinedSandboxView : SandboxView;
+  const List = refined ? RefinedBuildList : BuildList;
+  const Details = refined ? RefinedDetailsPanel : DetailsPanel;
+  const Sources = refined ? RefinedSourcesPanel : SourcesPanel;
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
   return (
     <>
-      <SandboxView
+      <View
         fit={fit}
         {...sandboxViewProps(which, state)}
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
-        list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
+        list={<List {...list} phone={phone} onOpenPrompt={setOpen} />}
         map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
-        selection={<DetailsPanel {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
-        sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
+        selection={<Details {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
+        sources={<Sources {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
       />
       <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>

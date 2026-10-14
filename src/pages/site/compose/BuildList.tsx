@@ -177,8 +177,8 @@ const menuSurface: CSSProperties = {
   color: t.text,
 };
 
-/** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. */
-function useClamped<T extends HTMLElement>(text: string) {
+/** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
+export function useClamped<T extends HTMLElement>(text: string) {
   const ref = useRef<T>(null);
   const [clamped, setClamped] = useState(false);
   useLayoutEffect(() => {
@@ -194,7 +194,7 @@ function useClamped<T extends HTMLElement>(text: string) {
   return { ref, clamped };
 }
 
-const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
 /* ── dividers ── */
 

@@ -36,6 +36,7 @@ import type { MakingSession } from "@/lib/build/making";
 import { getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
+import { useLook } from "@/lib/theme/look";
 
 import { PUBLISH_WORDS } from "./composeModel";
 import { useComposePage } from "./ComposePage";
@@ -51,6 +52,10 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
+import { RefinedBuildList } from "./RefinedBuildList";
+import { RefinedDetailsPanel } from "./RefinedDetailsPanel";
+import { RefinedSandboxView } from "./RefinedSandboxView";
+import { RefinedSourcesPanel } from "./RefinedSourcesPanel";
 import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 
@@ -68,6 +73,12 @@ export function SandboxPage() {
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
+  /* UI-P93: the refined look renders the forks of the frame and its List, Sources and Details, with the same props. */
+  const refined = useLook() === "refined";
+  const View = refined ? RefinedSandboxView : SandboxView;
+  const List = refined ? RefinedBuildList : BuildList;
+  const Details = refined ? RefinedDetailsPanel : DetailsPanel;
+  const Sources = refined ? RefinedSourcesPanel : SourcesPanel;
 
   const [lens, setLens] = useState<SandboxLens>("list");
   const [switched, setSwitched] = useState(false);
@@ -439,7 +450,7 @@ export function SandboxPage() {
           if (files.length > 0) onPicked(files);
         }}
       />
-      <SandboxView
+      <View
         {...viewProps}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
@@ -475,7 +486,7 @@ export function SandboxPage() {
           />
         }
         selection={
-          <DetailsPanel
+          <Details
             phone={phone}
             view={view}
             onSelect={setSelectedId}
@@ -522,7 +533,7 @@ export function SandboxPage() {
           />
         }
         list={
-          <BuildList
+          <List
             phone={phone}
             steps={steps}
             dividers={dividerRows}
@@ -547,7 +558,7 @@ export function SandboxPage() {
         addableSessions={libraryRows.filter((row) => !row.adding)}
         onAddSession={(id) => void onAddSession(id)}
         sources={
-          <SourcesPanel
+          <Sources
             phone={phone}
             fine={fine}
             status={sessions.status}

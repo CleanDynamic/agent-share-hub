@@ -132,8 +132,8 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
 
-const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
-const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
+export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
+export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
 export function countsLine(counts: SandboxCounts): string {
@@ -144,7 +144,34 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual">;
+
+/** One item of the Add menu, wired: what it calls, whether it is enabled. Session carries its submenu's rows. Shared with the refined fork (UI-P93). */
+export interface AddEntry {
+  key: AddKey;
+  name: string;
+  line: string;
+  enabled: boolean;
+  onSelect?: () => void;
+  /** Session only: the library's sessions that are in no build, at most six. */
+  sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
+}
+
+export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual }: AddMenuProps): AddEntry[] {
+  return ADD_ITEMS.map((item) => {
+    if (item.key === "session") {
+      return {
+        ...item,
+        enabled: item.ready && Boolean(onAddSession),
+        sessions: (addableSessions ?? []).slice(0, 6).map((session) => ({ ...session, onSelect: () => onAddSession?.(session.id) })),
+      };
+    }
+    const handler =
+      item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : item.key === "manual" ? onAddManual : undefined;
+    const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent" || item.key === "manual";
+    return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler };
+  });
+}
 
 const itemStyle = (enabled: boolean): CSSProperties => ({
   display: "flex",
@@ -181,7 +208,7 @@ function AddLabel({ name, line }: { name: string; line: string }) {
   );
 }
 
-function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual }: AddMenuProps) {
+function AddMenu(props: AddMenuProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
@@ -217,24 +244,22 @@ function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, o
           sideOffset={6}
           style={menuSurface}
         >
-          {ADD_ITEMS.map((item) => {
-            if (item.key === "session") {
-              const enabled = item.ready && Boolean(onAddSession);
-              const sessions = addableSessions ?? [];
+          {addEntries(props).map((item) => {
+            if (item.sessions) {
               return (
                 <Menu.Sub key={item.key}>
-                  <Menu.SubTrigger disabled={!enabled} style={itemStyle(enabled)}>
+                  <Menu.SubTrigger disabled={!item.enabled} style={itemStyle(item.enabled)}>
                     <AddLabel name={item.name} line={item.line} />
                   </Menu.SubTrigger>
                   <Menu.Portal>
                     <Menu.SubContent sideOffset={6} style={menuSurface}>
-                      {sessions.length === 0 ? (
+                      {item.sessions.length === 0 ? (
                         <Menu.Item disabled style={itemStyle(false)}>
                           <AddLabel name="No sessions waiting" line="Every session is already in a build" />
                         </Menu.Item>
                       ) : (
-                        sessions.slice(0, 6).map((session) => (
-                          <Menu.Item key={session.id} onSelect={() => onAddSession?.(session.id)} style={itemStyle(true)}>
+                        item.sessions.map((session) => (
+                          <Menu.Item key={session.id} onSelect={session.onSelect} style={itemStyle(true)}>
                             <AddLabel name={session.label} line={session.line} />
                           </Menu.Item>
                         ))
@@ -244,12 +269,8 @@ function AddMenu({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, o
                 </Menu.Sub>
               );
             }
-            const handler =
-              item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : item.key === "manual" ? onAddManual : undefined;
-            const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent" || item.key === "manual";
-            const enabled = item.ready && (!wired || Boolean(handler));
             return (
-              <Menu.Item key={item.key} disabled={!enabled} onSelect={handler} style={itemStyle(enabled)}>
+              <Menu.Item key={item.key} disabled={!item.enabled} onSelect={item.onSelect} style={itemStyle(item.enabled)}>
                 <AddLabel name={item.name} line={item.line} />
               </Menu.Item>
             );
