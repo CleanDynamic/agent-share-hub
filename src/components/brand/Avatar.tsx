@@ -16,7 +16,9 @@
 import type { CSSProperties } from "react";
 
 import { denseFont, denseHeight } from "@/lib/theme/density";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
+import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { hashSeed } from "./hash";
@@ -58,6 +60,7 @@ export function avatarHue(userId: string, hue?: number): string {
 }
 
 export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
+  const refined = useLook() === "refined";
   const box = denseHeight(size);
   const circle: CSSProperties = {
     width: box,
@@ -87,11 +90,12 @@ export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
       aria-label={name}
       style={{
         ...circle,
-        background: avatarHue(userId, hue),
-        color: AVATAR_INK,
+        /* UI-P84: initials on `--avatar-fill` in `--on-avatar`, Geist 500 at size × .38 (10 at the least). */
+        background: refined ? t.avatarFill : avatarHue(userId, hue),
+        color: refined ? t.onAvatar : AVATAR_INK,
         fontFamily: FIGTREE,
-        fontSize: denseFont(Math.trunc(size * 0.38)),
-        fontWeight: 600,
+        fontSize: refined ? Math.max(10, Math.round(size * 0.38 * 10) / 10) : denseFont(Math.trunc(size * 0.38)),
+        fontWeight: refined ? 500 : 600,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

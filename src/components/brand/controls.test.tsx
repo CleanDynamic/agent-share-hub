@@ -16,6 +16,11 @@ import { denseFont, denseHeight } from "@/lib/theme/density";
 
 import { Avatar, AVATAR_HUES, avatarHue, initialsOf } from "./Avatar";
 import { Button } from "./Button";
+import { CategoryChip } from "./CategoryChip";
+import { Checkbox } from "./Checkbox";
+import { MenuButton } from "./MenuButton";
+import { Pill } from "./Pill";
+import { SearchField } from "./SearchField";
 import { Eyebrow } from "./Eyebrow";
 import { FilterChip } from "./FilterChip";
 import { IconButton } from "./IconButton";
@@ -476,5 +481,176 @@ describe("Avatar", () => {
   it("is named for a screen reader and hides the letters", () => {
     render(<Avatar size={34} userId="u" name="Ada Lovelace" />);
     expect(screen.getByRole("img", { name: "Ada Lovelace" })).toBeTruthy();
+  });
+});
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// UI-P84 — the refined branch. The look is chosen the way a dev page chooses it: `?look=refined` on a `/dev/*` route.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const REFINED = "/dev/kit/components?look=refined";
+const CURRENT = "/dev/kit/components?look=current";
+const at = (url: string, node: React.ReactElement) => (
+  <MemoryRouter initialEntries={[url]}>{node}</MemoryRouter>
+);
+const refined = (node: React.ReactElement) => markup(at(REFINED, node));
+
+describe("refined controls (UI-P84)", () => {
+  it("Button maps its sizes to 28, 32 and 36 and draws no icon behind a label", () => {
+    const h = (size: 28 | 30 | 32 | 34 | 36 | 38 | 42) =>
+      refined(<Button size={size} icon={Plus}>Go</Button>);
+    expect(h(28)).toContain("height:28px");
+    expect(h(30)).toContain("height:28px");
+    expect(h(32)).toContain("height:32px");
+    expect(h(34)).toContain("height:32px");
+    expect(h(36)).toContain("height:36px");
+    expect(h(42)).toContain("height:36px");
+    expect(h(36)).not.toContain("<svg");
+    expect(h(28)).toContain("padding:0 12px");
+    expect(h(32)).toContain("padding:0 16px");
+    expect(h(28)).toContain("font-size:12.5px");
+    expect(h(32)).toContain("font-size:13px");
+    expect(h(36)).toContain("font-weight:500");
+  });
+
+  it("Button paints primary, secondary and ghost from the recipes' tokens", () => {
+    const primary = refined(<Button variant="primary">Go</Button>);
+    expect(primary).toContain("background:var(--action)");
+    expect(primary).toContain("box-shadow:var(--action-shadow)");
+    expect(primary).toContain("color:var(--on-action)");
+    const secondary = refined(<Button variant="secondary">Go</Button>);
+    expect(secondary).toContain("background:var(--control)");
+    expect(secondary).toContain("var(--control-border)");
+    expect(secondary).toContain("box-shadow:var(--control-shadow)");
+    const ghost = refined(<Button variant="ghost">Go</Button>);
+    expect(ghost).toContain("background:transparent");
+    expect(ghost).toContain("color:var(--text2)");
+  });
+
+  it("Button leaves the current look as it was", () => {
+    const html = markup(at(CURRENT, <Button icon={Plus}>Go</Button>));
+    expect(html).toContain("<svg");
+    expect(html).toContain("background:var(--action)");
+    expect(html).not.toContain("box-shadow:var(--action-shadow)");
+  });
+
+  it("IconButton is boxed by default at 26, 28 or 30 and ghost with boxed={false}", () => {
+    const boxed = refined(<IconButton icon={Plus} glyph="plus" label="New" size={28} />);
+    expect(boxed).toContain("width:28px");
+    expect(boxed).toContain("background:var(--control)");
+    expect(boxed).toContain('viewBox="0 0 16 16"');
+    expect(refined(<IconButton icon={Plus} label="New" size={38} />)).toContain("width:30px");
+    const ghost = refined(<IconButton icon={Plus} label="New" boxed={false} />);
+    expect(ghost).toContain("background:transparent");
+    expect(ghost).not.toContain("--control-shadow");
+  });
+
+  it("Segmented has a 2px track in --seg-track and items size − 6 tall", () => {
+    const html = refined(
+      <Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
+    );
+    expect(html).toContain("background:var(--seg-track)");
+    expect(html).toContain("var(--seg-border)");
+    expect(html).toContain("padding:2px");
+    expect(html).toContain("height:28px");
+    expect(html).toContain("height:22px");
+    expect(html).toContain("padding:0 12px");
+    expect(html).toContain("background:var(--control-on)");
+  });
+
+  it("UnderlineTabs is 40 high with a 2px --text edge, a hairline row and an optional count", () => {
+    const html = refined(
+      <UnderlineTabs
+        label="Sections"
+        value="a"
+        onChange={() => {}}
+        tabs={[{ value: "a", label: "Builds", count: 10 }, { value: "b", label: "Models" }]}
+      />,
+    );
+    expect(html).toContain("height:40px");
+    expect(html).toContain("border-bottom:2px solid var(--text)");
+    expect(html).toContain("border-bottom:2px solid transparent");
+    expect(html).toContain("border-bottom:1px solid var(--hairline)");
+    expect(html).toContain("gap:24px");
+    expect(html).toContain("font-size:11.5px");
+  });
+
+  it("FilterChip is the control recipe at 36 and selected when on, never inverted", () => {
+    const off = refined(<FilterChip label="All" />);
+    expect(off).toContain("height:36px");
+    expect(off).toContain("background:var(--control)");
+    const on = refined(<FilterChip label="All" on />);
+    expect(on).toContain("background:var(--selected-fill)");
+    expect(on).toContain("var(--selected-edge)");
+    expect(on).not.toContain("var(--on-text)");
+  });
+
+  it("CategoryChip is a tag with a 6px square, dashed when it marks a gap", () => {
+    const solid = refined(<CategoryChip category="data" label="data" />);
+    expect(solid).toContain("background:var(--tag-fill)");
+    expect(solid).toContain("height:20px");
+    expect(solid).toContain("width:6px");
+    expect(solid).toContain("border-radius:1px");
+    const gap = refined(<CategoryChip category="data" label="data" gap />);
+    expect(gap).toContain("1px dashed");
+    expect(refined(<CategoryChip variant="overflow" count={4} />)).toContain("background:var(--tag-fill)");
+  });
+
+  it("Eyebrow is Geist 10.5/500 in capitals by CSS", () => {
+    const html = refined(<Eyebrow>Maker</Eyebrow>);
+    expect(html).toContain("font-size:10.5px");
+    expect(html).toContain("font-weight:500");
+    expect(html).toContain("text-transform:uppercase");
+    expect(html).toContain("letter-spacing:.06em");
+  });
+
+  it("Avatar initials sit on --avatar-fill in --on-avatar at 500", () => {
+    const html = refined(<Avatar size={34} userId="u" name="Ada Diaz" />);
+    expect(html).toContain("background:var(--avatar-fill)");
+    expect(html).toContain("color:var(--on-avatar)");
+    expect(html).toContain("font-weight:500");
+    expect(html).toContain("font-size:12.9px");
+  });
+});
+
+describe("Pill, MenuButton, SearchField and Checkbox (UI-P84)", () => {
+  it("Pill is 18 high in mono 10.5 and takes its tone's fill and ink", () => {
+    const plain = markup(<Pill>x</Pill>);
+    expect(plain).toContain("height:18px");
+    expect(plain).toContain("font-size:10.5px");
+    expect(plain).toContain("background:var(--pill)");
+    expect(plain).toContain("color:var(--on-pill)");
+    expect(markup(<Pill tone="evidence">x</Pill>)).toContain("background:var(--evidence-fill)");
+    expect(markup(<Pill tone="breakage">x</Pill>)).toContain("color:var(--breakage)");
+    expect(markup(<Pill tone="lit-ink">x</Pill>)).toContain("color:var(--lit-ink)");
+    expect(markup(<Pill tone="data">x</Pill>)).toContain("background:var(--cat-data-fill)");
+  });
+
+  it("MenuButton announces a menu and shows label, value and chevron", () => {
+    render(<MenuButton label="Sort by" value="Engagement" />);
+    const button = screen.getByRole("button");
+    expect(button.getAttribute("aria-haspopup")).toBe("menu");
+    expect(button.textContent).toBe("Sort byEngagement");
+    expect(button.querySelector("svg")).not.toBeNull();
+    expect(button.style.height).toBe("28px");
+  });
+
+  it("SearchField names its input and draws the key hint", () => {
+    render(<SearchField label="Search builds" hint="/" />);
+    expect(screen.getByRole("searchbox", { name: "Search builds" })).toBeTruthy();
+    expect(screen.getByText("/")).toBeTruthy();
+  });
+
+  it("Checkbox is a real checkbox, 16 square, with a check when on", () => {
+    const onChange = vi.fn();
+    const { container, rerender } = render(<Checkbox label="Agree" checked={false} onChange={onChange} />);
+    const box = screen.getByRole("checkbox", { name: "Agree" });
+    expect(container.querySelector("svg")).toBeNull();
+    fireEvent.click(box);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    rerender(<Checkbox label="Agree" checked onChange={onChange} />);
+    expect(container.querySelector("svg")).not.toBeNull();
+    expect((container.firstElementChild as HTMLElement).style.width).toBe("16px");
   });
 });

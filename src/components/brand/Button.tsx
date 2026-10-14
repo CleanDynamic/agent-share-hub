@@ -30,7 +30,9 @@ import { useIsPhone } from "@/components/shell/useMinWidth";
 import { denseFont, denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
+import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -96,6 +98,58 @@ export function Button({
     { disabled },
   );
   const phone = useIsPhone();
+  const refined = useLook() === "refined";
+
+  if (refined) {
+    /* UI-P84: radius 6, heights 28/32/36 (a phone's 44 and 48 stay), padding 0 12px up to 28 and 0 16px above, 12.5/13
+       at 500. Primary, secondary (the control recipe) and ghost are the board's. A labelled button draws no icon. */
+    const height = refinedButtonHeight(size, phone);
+    const small = height <= 28;
+    const paint: CSSProperties =
+      variant === "primary"
+        ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
+        : variant === "secondary"
+          ? controlPaint(state)
+          : {
+              background: "transparent",
+              border: "1px solid transparent",
+              color: state.hovered ? t.text : t.text2,
+            };
+    return (
+      <button
+        data-ui="button"
+        data-variant={variant}
+        type={type}
+        disabled={disabled}
+        {...rest}
+        {...handlers}
+        style={{
+          boxSizing: "border-box",
+          height,
+          padding: small ? "0 12px" : "0 16px",
+          borderRadius: r.control,
+          color: variant === "secondary" ? t.text : undefined,
+          ...paint,
+          fontFamily: FIGTREE,
+          fontSize: small ? 12.5 : 13,
+          fontWeight: 500,
+          display: fullWidth ? "flex" : "inline-flex",
+          width: fullWidth ? "100%" : undefined,
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : undefined,
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          ...ring(state.focusVisible),
+          ...style,
+        }}
+      >
+        {children}
+      </button>
+    );
+  }
 
   /* Hover is a step on the fill, never an opacity change: a primary button is
      solid, and letting the page show through it is the opposite of the job. */

@@ -7,7 +7,8 @@
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
 import { t } from "@/lib/theme/tokens";
-import { mono } from "@/lib/theme/type";
+import { useLook } from "@/lib/theme/look";
+import { FIGTREE, mono } from "@/lib/theme/type";
 
 export interface EyebrowProps {
   children: ReactNode;
@@ -18,12 +19,22 @@ export interface EyebrowProps {
 }
 
 export function Eyebrow({ children, size = 11, as: Tag = "div", style }: EyebrowProps) {
+  const refined = useLook() === "refined";
+
+  /* UI-P84: Geist 10.5/500, capitals by CSS, .06em, `--label`. */
   return (
     <Tag
       data-ui="eyebrow"
       style={{
-        ...mono(size, { caps: true }),
-        fontWeight: 400,
+        ...(refined
+          ? {
+              fontFamily: FIGTREE,
+              fontSize: 10.5,
+              fontWeight: 500,
+              letterSpacing: ".06em",
+              textTransform: "uppercase" as const,
+            }
+          : { ...mono(size, { caps: true }), fontWeight: 400 }),
         lineHeight: "normal",
         color: t.label,
         whiteSpace: "nowrap",
