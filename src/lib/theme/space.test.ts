@@ -3,13 +3,16 @@
 import { describe, expect, it } from "vitest";
 import { denseSpace } from "./density";
 import {
+  LAYOUT_REFINED,
   SPACE,
   SPACE_COMPACT,
   SPACE_COMPACT_STEPS,
   SPACE_NAMES,
+  SPACE_REFINED,
   SPACE_STEPS,
   assertPadding,
   isCompactStep,
+  isRefinedStep,
   isSpaceStep,
   px,
 } from "./space";
@@ -77,6 +80,79 @@ describe("the compact scale (UI-P53)", () => {
     expect(assertPadding(SPACE_COMPACT.md, SPACE_COMPACT.lg)).toBeNull();
     for (const step of SPACE_COMPACT_STEPS) expect(assertPadding(step, step)).toBeNull();
     expect(assertPadding(SPACE_COMPACT.lg, SPACE_COMPACT.md)).toContain("reads as one band");
+  });
+});
+
+describe("the refined scale (UI-P81)", () => {
+  // The refined look is specified as twelve plain numbers, not as named roles,
+  // and as a handful of named layout values. Both sit beside SPACE and
+  // SPACE_COMPACT; neither replaces them.
+  it("is the twelve steps the refined look names", () => {
+    expect([...SPACE_REFINED]).toEqual([2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48, 64]);
+  });
+
+  it("steps upward and repeats nothing", () => {
+    expect([...SPACE_REFINED]).toEqual([...SPACE_REFINED].sort((a, b) => a - b));
+    expect(new Set(SPACE_REFINED).size).toBe(SPACE_REFINED.length);
+  });
+
+  it("walks in twos to 8, fours to 24 and eights to 48, then closes at 64", () => {
+    const gaps = SPACE_REFINED.slice(1).map((v, i) => v - SPACE_REFINED[i]);
+    expect(gaps).toEqual([2, 2, 2, 4, 4, 4, 4, 8, 8, 8, 16]);
+  });
+
+  it("recognises its own steps and nothing between them", () => {
+    for (const step of SPACE_REFINED) expect(isRefinedStep(step), `${step}`).toBe(true);
+    for (const between of [0, 1, 3, 5, 7, 10, 14, 18, 22, 28, 36, 44, 56, 72]) {
+      expect(isRefinedStep(between), `${between} is not a step and must not pass`).toBe(false);
+    }
+  });
+
+  it("is a different scale from the other two, not one of them", () => {
+    // The compact scale's 17, 29, 46, 69 and 95, and SPACE's 96 and 132, are not refined steps.
+    for (const step of [17, 29, 46, 69, 95, 96, 132]) expect(isRefinedStep(step), `${step}`).toBe(false);
+    expect(isSpaceStep(2)).toBe(false);
+    expect(isCompactStep(2)).toBe(false);
+  });
+
+  it("renders a step as pixels when a string is wanted", () => {
+    expect(px(SPACE_REFINED[5])).toBe("16px");
+  });
+});
+
+describe("the refined layout values (UI-P81)", () => {
+  it("names the measures the refined boards repeat", () => {
+    expect(LAYOUT_REFINED).toEqual({
+      headerHeight: 48,
+      gutter: "clamp(16px, 4.6vw, 64px)",
+      rowMin: 40,
+      rowTwoLine: 48,
+      rowAvatar: 56,
+      modulePad: 16,
+      tilePad: 12,
+    });
+  });
+
+  it("pads modules and tiles by steps of the refined scale", () => {
+    expect(isRefinedStep(LAYOUT_REFINED.modulePad)).toBe(true);
+    expect(isRefinedStep(LAYOUT_REFINED.tilePad)).toBe(true);
+    expect(LAYOUT_REFINED.tilePad).toBeLessThan(LAYOUT_REFINED.modulePad);
+  });
+
+  it("bounds the gutter by two steps, so it never lands off the scale at either end", () => {
+    const [, min, max] = /^clamp\((\d+)px, [\d.]+vw, (\d+)px\)$/.exec(LAYOUT_REFINED.gutter) ?? [];
+    expect([Number(min), Number(max)]).toEqual([16, 64]);
+    expect(isRefinedStep(Number(min))).toBe(true);
+    expect(isRefinedStep(Number(max))).toBe(true);
+  });
+
+  it("grows a row with what it carries: one line, two lines, an avatar", () => {
+    expect(LAYOUT_REFINED.rowMin).toBeLessThan(LAYOUT_REFINED.rowTwoLine);
+    expect(LAYOUT_REFINED.rowTwoLine).toBeLessThan(LAYOUT_REFINED.rowAvatar);
+  });
+
+  it("keeps the avatar row off the scale: it is a height, and 56 is not a gap", () => {
+    expect(isRefinedStep(LAYOUT_REFINED.rowAvatar)).toBe(false);
   });
 });
 

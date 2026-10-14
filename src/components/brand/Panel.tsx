@@ -22,11 +22,17 @@
 // The padding is the caller's to set: 16px 18px by default, 14px 16px for lists. Those are the drawn
 // values: since UI-P54 the panel renders whatever padding it is given through the density table, so the
 // default is 12px 13px and a list's 10px 12px, and every caller tightened without being edited.
+//
+// UNDER THE REFINED LOOK THERE IS NO LIQUID GLASS (UI-P81), so `glass` paints the MODULE recipe instead: `--module`
+// over a 1px `--module-border`, radius `--r-card` (8 there), `--module-shadow`, and no class, no blur and no
+// filter. The prop keeps its name so no call site changes, and `data-surface` still reports what was asked for. Only
+// that paint moves here: the module's 16px padding and the other surfaces' refined recipes are UI-P85's.
 
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
 import { densePx, denseFont, denseSpace } from "@/lib/theme/density";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -63,7 +69,10 @@ function useWarnOnNestedGlass(active: boolean) {
 }
 
 export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "section", style, children }: PanelProps) {
-  const glass = surface === "glass";
+  const refined = useLook() === "refined";
+  /* Liquid glass exists in the current look only; under the refined one the same request is a module. */
+  const glass = surface === "glass" && !refined;
+  const asModule = surface === "glass" && refined;
   const ref = useWarnOnNestedGlass(glass);
   return (
     <Tag
@@ -73,15 +82,17 @@ export function Panel({ surface = "plain", padding = "16px 18px", as: Tag = "sec
       className={glass ? GLASS_CLASS : undefined}
       style={{
         position: "relative",
-        background: glass ? "none" : surface === "flat" ? t.flat : t.glass,
-        border: glass ? "none" : `1px solid ${t.glassBorder}`,
-        borderRadius: r.panel,
+        background: glass ? "none" : asModule ? t.module : surface === "flat" ? t.flat : t.glass,
+        border: glass ? "none" : `1px solid ${asModule ? t.moduleBorder : t.glassBorder}`,
+        borderRadius: asModule ? r.card : r.panel,
         padding: densePx(padding, denseSpace),
         boxShadow: glass
           ? `${t.glassHalo}, ${t.shadowCard}`
-          : surface === "flat"
-            ? "none"
-            : `${t.shadowCard}, ${t.panelHighlight}`,
+          : asModule
+            ? t.moduleShadow
+            : surface === "flat"
+              ? "none"
+              : `${t.shadowCard}, ${t.panelHighlight}`,
         overflow: "hidden",
         minWidth: 0,
         minHeight: 0,

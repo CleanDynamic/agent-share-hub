@@ -29,10 +29,20 @@
 // lit from the edges: on desktop the horizon gives way to `--ambient` over the
 // flat `--bg`, the box gets `--signin-edge`, and the arc is drawn on a
 // 1440 × 1000 board. On a phone `signin` changes nothing.
+//
+// THE REFINED LOOK HAS NO BACKDROP (UI-P81). `PageBackdrop` renders nothing there — no room, no arc, no
+// grain and no canvas host — and the page is the frame colour, which `html, body, #root` already paint
+// as `--bg` (`--frame` under that look). The gate is a component of its own in front of the room, not a
+// branch inside it, so under the refined look none of the room's hooks run: no room observer, no
+// breakpoint listener and, above all, no `attachBackdrop`, so under that look nothing creates the one
+// WebGL canvas, adds its window listeners or requests an animation frame. If the look changes while a
+// page is open the room unmounts, and its effect's release stops the loop as it does when a frame
+// unmounts.
 
 import { useEffect, useId, useRef } from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { Arc, ARC_PAGE_DESKTOP, ARC_PAGE_MOBILE, ARC_SIGNIN_DESKTOP } from "./Arc";
@@ -48,7 +58,13 @@ export interface PageBackdropProps {
   tone?: PageBackdropTone;
 }
 
-export function PageBackdrop({ viewport, tone = "page" }: PageBackdropProps) {
+export function PageBackdrop(props: PageBackdropProps) {
+  if (useLook() === "refined") return null;
+  return <PageRoom {...props} />;
+}
+
+/** The current look's room: the static layer and, over it, the living canvas. */
+function PageRoom({ viewport, tone = "page" }: PageBackdropProps) {
   const room = useRoom();
   const dusk = room === "dusk";
   const isMobile = useIsMobile();

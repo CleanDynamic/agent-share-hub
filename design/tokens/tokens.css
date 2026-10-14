@@ -286,6 +286,7 @@
 /* radius · spacing · type */
 :root {
   --r-chip: 8px; --r-control: 12px; --r-media: 10px; --r-card: 14px; --r-panel: 16px; --r-full: 999px;
+  --r-window: var(--r-panel);   /* UI-P81 — dialogs and side sheets; its own 12px under data-look="refined" */
   --font-display: 'Sentient', Georgia, serif;   /* 500 and 700, headings 17px and up */
   --font-ui: 'Figtree', system-ui, sans-serif;  /* 400 / 500 / 600 */
   --font-data: 'DM Mono', ui-monospace, monospace; /* 400 / 500 — labels, counts, Δ lines */
@@ -659,4 +660,14 @@
   --font-ui: 'Geist', system-ui, sans-serif;
   --font-display: 'Geist', system-ui, sans-serif;
   --font-data: 'Geist Mono', ui-monospace, monospace;
+
+  /* UI-P81 — the refined radius scale: 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+     Mirrored in REFINED_RADIUS (src/lib/theme/radius.ts) and src/index.css. --r-full stays 999px. */
+  --r-chip: 4px;
+  --r-media: 6px;
+  --r-control: 6px;
+  --r-thread: 6px;
+  --r-card: 8px;
+  --r-panel: 10px;
+  --r-window: 12px;
 }

@@ -25,6 +25,14 @@
 // colour. `flat` needs no token: it is the absence of a shadow plus a hairline
 // in `--line`, which already flips.
 //
+// UNDER THE REFINED LOOK (UI-P81) THE LEVELS KEEP THEIR NAMES AND CHANGE THEIR
+// SHADOWS, WITHOUT A BRANCH HERE. `raised` and `overlay` spend the variables
+// `--elev-raised` and `--elev-overlay`, never the values in the tables below, so
+// when `data-look="refined"` points them at `--control-shadow` and
+// `--window-shadow` (and a card's resting `--shadow-card` at `--module-shadow`)
+// every surface that spreads a level follows. The tables below are the current
+// look's; the refined values live in `refined.ts`.
+//
 // AN ELEVATION THAT CHANGES ON HOVER IS A PSEUDO-ELEMENT, NEVER AN ANIMATED
 // BOX-SHADOW. `box-shadow` cannot be composited: animating it re-rasterises the
 // element on every frame, which is what turns a grid of hovering cards into a

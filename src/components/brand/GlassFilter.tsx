@@ -9,10 +9,17 @@
 // baseFrequency 0.035 and scale 180, which tears a 1280px panel apart. 0.012 makes one wave span the panel
 // instead of twenty, and 42 bends the edge without smearing it. x/y/width/height stay 0% / 100%: that clips the
 // displacement to the panel and stops the corners pulling in content from outside.
+//
+// THE REFINED LOOK HAS NO GLASS, SO IT RENDERS NOTHING THERE (UI-P81). `.bg-glass` is scoped to the current look in
+// index.css and `Panel` paints a module instead, so no rule is left that points at the filter; an SVG filter nothing
+// references would only be a node in the document.
+
+import { useLook } from "@/lib/theme/look";
 
 export const GLASS_FILTER_ID = "bg-glass-distortion";
 
 export function GlassFilter() {
+  if (useLook() === "refined") return null;
   return (
     <svg
       width="0"

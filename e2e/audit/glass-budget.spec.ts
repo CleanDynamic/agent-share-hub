@@ -18,6 +18,16 @@
  * and twelve compositing layers on the page. The static half — that there is
  * exactly one blur value in the codebase — is asserted in
  * src/lib/theme/glass.test.ts, where a source scan belongs.
+ *
+ * UI-P81 — THE REFINED LOOK HAS NO GLASS, and the second test below is where that
+ * is counted. The refined look can only be asked for on `/dev/*` (UI-P78), and
+ * every `/dev/kit/pages/*?look=refined` answers "No refined view yet" until its
+ * page forks (UI-P77), so the pages it visits are the ones that DO draw under it:
+ * the component catalogue, which carries a liquid-glass panel to take away. Zero
+ * is asserted for LIQUID glass — `.bg-glass` panels and the distortion filter.
+ * The frame's own blurs (the header, the dock, the build page's plate and action
+ * dock) are listed in the report and not failed: UI-P87 and UI-P90 rebuild those
+ * surfaces and take them to zero, and raise this assertion when they do.
  */
 
 import { expect, test } from "@playwright/test";
@@ -112,6 +122,95 @@ test("BG-P31 — every route is inside the glass budget, with no nesting", async
   ].join("\n");
 
   writeText("glass-census.txt", summary);
+  console.log("\n" + summary + "\n");
+
+  expect(findings, findings.join("\n")).toEqual([]);
+});
+
+/* UI-P81 — the refined look has no liquid glass.
+ *
+ * Each page is opened under `?look=refined` in both rooms, and the test first
+ * proves it is looking at what it claims to: `<html data-look="refined">`, the
+ * page drawn, and at least one panel that ASKED for glass. Without that last
+ * condition a page with no glass panels would pass "zero glass" for free.
+ */
+test("UI-P81 — under the refined look no panel is liquid glass and no distortion filter is mounted", async ({ browser }) => {
+  const findings: string[] = [];
+  const rows: unknown[][] = [];
+  const chromeBlur: string[] = [];
+
+  const refinedPages = (theme: string) => [
+    // `?theme=` because the compare pages take their room from the URL, not from storage.
+    { id: "dev-components", path: `/dev/kit/components?theme=${theme}&look=refined`, drawn: '[data-design-page="components"]' },
+  ];
+
+  for (const theme of THEMES) {
+    for (const entry of refinedPages(theme)) {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      const page = await context.newPage();
+      try {
+        await openRoute(page, { id: entry.id, path: entry.path }, theme);
+
+        const probe = await page.evaluate((drawn) => {
+          const blurOf = (el: Element, pseudo?: string) => {
+            const s = getComputedStyle(el, pseudo);
+            const value = s.backdropFilter || (s as unknown as Record<string, string>).webkitBackdropFilter;
+            return value && value !== "none" ? value : "";
+          };
+          const distortedBy = (el: Element, pseudo?: string) => getComputedStyle(el, pseudo).filter.includes("bg-glass-distortion");
+          const liquid = Array.from(document.querySelectorAll(".bg-glass"));
+          return {
+            look: document.documentElement.dataset.look ?? "",
+            drawn: Boolean(document.querySelector(drawn)),
+            askedForGlass: document.querySelectorAll('[data-ui="panel"][data-surface="glass"]').length,
+            glassClass: liquid.length,
+            blurred: liquid.filter((el) => blurOf(el) || blurOf(el, "::after")).length,
+            distorted: liquid.filter((el) => distortedBy(el) || distortedBy(el, "::after")).length,
+            filterNodes: document.querySelectorAll("#bg-glass-distortion, feDisplacementMap").length,
+          };
+        }, entry.drawn);
+
+        const label = `${entry.id} ${theme}`;
+        if (probe.look !== "refined") findings.push(`${label}: <html data-look> is "${probe.look}", so this did not run under the refined look`);
+        if (!probe.drawn) findings.push(`${label}: ${entry.drawn} is not on the page, so nothing was measured`);
+        if (probe.askedForGlass === 0) findings.push(`${label}: no panel asked for surface="glass", so zero liquid glass proves nothing here`);
+        if (probe.glassClass > 0) findings.push(`${label}: ${probe.glassClass} element(s) still carry the .bg-glass class`);
+        if (probe.blurred > 0) findings.push(`${label}: ${probe.blurred} .bg-glass element(s) still blur what is behind them`);
+        if (probe.distorted > 0) findings.push(`${label}: ${probe.distorted} .bg-glass element(s) are still refracted by #bg-glass-distortion`);
+        if (probe.filterNodes > 0) findings.push(`${label}: the distortion filter is still mounted (${probe.filterNodes} node(s))`);
+
+        // Everything else that blurs is the frame's, reported for UI-P87 and UI-P90 and not failed here.
+        const census = await page.evaluate(collectGlass);
+        for (const surface of census.surfaces) chromeBlur.push(`${label}: ${surface.selector} blur(${surface.blur})`);
+
+        rows.push([entry.id, theme, probe.look, probe.askedForGlass, probe.glassClass, probe.blurred, probe.distorted, probe.filterNodes, census.count]);
+      } finally {
+        await context.close();
+      }
+    }
+  }
+
+  const file = writeCsv(
+    "glass-census-refined.csv",
+    ["page", "theme", "data_look", "panels_asking_for_glass", "bg_glass_elements", "bg_glass_blurred", "bg_glass_distorted", "filter_nodes", "other_blurred_surfaces"],
+    rows,
+  );
+  const summary = [
+    "UI-P81 refined glass census",
+    "",
+    `visits      ${rows.length}`,
+    `findings    ${findings.length}`,
+    "",
+    "findings",
+    ...(findings.length ? findings.map((f) => "  " + f) : ["  none"]),
+    "",
+    "other blurred surfaces (the frame's own; UI-P87 and UI-P90 take these to zero)",
+    ...(chromeBlur.length ? chromeBlur.map((c) => "  " + c) : ["  none"]),
+    "",
+    `written: ${file}`,
+  ].join("\n");
+
+  writeText("glass-census-refined.txt", summary);
   console.log("\n" + summary + "\n");
 
   expect(findings, findings.join("\n")).toEqual([]);

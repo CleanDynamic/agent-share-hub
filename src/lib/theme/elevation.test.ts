@@ -15,6 +15,7 @@ import {
   elevationThemes,
   noonElevation,
 } from "./elevation";
+import { refinedThemes, resolveRefined } from "./refined";
 
 describe("the elevation model", () => {
   it("is three levels, and no fourth", () => {
@@ -89,6 +90,28 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
   it("names the same two tokens in both themes", () => {
     expect(Object.keys(noonElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
     expect(Object.keys(duskElevation).sort()).toEqual([...ELEVATION_TOKENS].sort());
+  });
+});
+
+describe("elevation under the refined look (UI-P81)", () => {
+  // UI-P79 set the refined values and `css-parity.test.ts` proves index.css says
+  // what `refined.ts` says. What is pinned here is the wiring: the levels spend
+  // `--elev-raised` and `--elev-overlay` (asserted at the top of this file), and
+  // the refined look repoints those at the control and window recipes, and a
+  // card's resting `--shadow-card` at the module's.
+  it.each(["noon", "dusk"] as const)("%s: raised is the control recipe, overlay the window recipe, a card's shadow the module's", (theme) => {
+    expect(refinedThemes[theme]["elev-raised"]).toBe("var(--control-shadow)");
+    expect(refinedThemes[theme]["elev-overlay"]).toBe("var(--window-shadow)");
+    expect(refinedThemes[theme]["shadow-card"]).toBe("var(--module-shadow)");
+  });
+
+  it.each(["noon", "dusk"] as const)("%s: both levels resolve to a real shadow, and overlay travels further than raised", (theme) => {
+    const raised = resolveRefined(theme, "elev-raised");
+    const overlay = resolveRefined(theme, "elev-overlay");
+    expect(raised).toBe(resolveRefined(theme, "control-shadow"));
+    expect(overlay).toBe(resolveRefined(theme, "window-shadow"));
+    const spread = (shadow: string) => Math.max(...[...shadow.matchAll(/(\d+)px/g)].map((m) => Number(m[1])));
+    expect(spread(overlay)).toBeGreaterThan(spread(raised));
   });
 });
 

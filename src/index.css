@@ -358,13 +358,16 @@
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
      --radius-btn/--radius-badge above were the pill rule this replaces, and
-     BG-P07 repointed them at --r-control and --r-chip. */
+     BG-P07 repointed them at --r-control and --r-chip. UI-P81 adds --r-window,
+     the dialog and side-sheet radius: it is the panel's here, and 12px under
+     data-look="refined", which declares its own, tighter scale further down. */
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
   --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
+  --r-window: var(--r-panel);
   --r-full: 999px;
 
   /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
@@ -614,13 +617,16 @@
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
      --radius-btn/--radius-badge above were the pill rule this replaces, and
-     BG-P07 repointed them at --r-control and --r-chip. */
+     BG-P07 repointed them at --r-control and --r-chip. UI-P81 adds --r-window,
+     the dialog and side-sheet radius: it is the panel's here, and 12px under
+     data-look="refined", which declares its own, tighter scale further down. */
   --r-chip: 8px;
   --r-media: 10px;
   --r-control: 12px;
   --r-thread: 12px;
   --r-card: 14px;
   --r-panel: 16px;
+  --r-window: var(--r-panel);
   --r-full: 999px;
 
   /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
@@ -836,6 +842,17 @@
   --elev-raised: var(--control-shadow);
   --elev-overlay: var(--window-shadow);
 
+  /* UI-P81 — the refined radius scale (REFINED_RADIUS in radius.ts): 4 tag, 6
+     control and media, 8 card, 10 surface, 12 window. --r-full stays 999px, for
+     circular things only, so it is not repeated here. */
+  --r-chip: 4px;
+  --r-media: 6px;
+  --r-control: 6px;
+  --r-thread: 6px;
+  --r-card: 8px;
+  --r-panel: 10px;
+  --r-window: 12px;
+
   /* The shadcn bridge, repointed (shadcn.ts). */
   --background: 240 3% 6%;
   --foreground: 240 6% 93%;
@@ -1018,6 +1035,17 @@
   --signin-edge: inset 0 0 0 1px var(--module-border);
   --elev-raised: var(--control-shadow);
   --elev-overlay: var(--window-shadow);
+
+  /* UI-P81 — the refined radius scale (REFINED_RADIUS in radius.ts): 4 tag, 6
+     control and media, 8 card, 10 surface, 12 window. --r-full stays 999px, for
+     circular things only, so it is not repeated here. */
+  --r-chip: 4px;
+  --r-media: 6px;
+  --r-control: 6px;
+  --r-thread: 6px;
+  --r-card: 8px;
+  --r-panel: 10px;
+  --r-window: 12px;
 
   /* The shadcn bridge, repointed (shadcn.ts). */
   --background: 0 0% 91%;
@@ -1769,17 +1797,22 @@ input[type="search"] { border-radius: var(--r-control); }
 
    The blur is 16px, the one radius the codebase uses (glass.test.ts); the saturate is 1.2 where GLASS_BLUR's is 1.15.
    The filter is #bg-glass-distortion, mounted once by GlassFilter in SiteFrame, and it is the only
-   feDisplacementMap in the app. */
-.bg-glass { position: relative; isolation: isolate; }
-.bg-glass > * { position: relative; z-index: 1; }
-.bg-glass::before {
+   feDisplacementMap in the app.
+
+   UI-P81: EVERY RULE BELOW IS SCOPED TO :root:not([data-look="refined"]). The refined look has no glass, so a
+   .bg-glass element under it is an ordinary box. Panel does not set the class there (surface="glass" paints the
+   module recipe); the scope is the backstop for anything that does, and for the @media and @supports overrides,
+   which would otherwise outlive the rules they override. glass.test.ts holds every selector to it. */
+:root:not([data-look="refined"]) .bg-glass { position: relative; isolation: isolate; }
+:root:not([data-look="refined"]) .bg-glass > * { position: relative; z-index: 1; }
+:root:not([data-look="refined"]) .bg-glass::before {
   content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit;
   pointer-events: none; background: var(--glass-fill);
   border: 1px solid var(--glass-border);
   box-shadow: inset 0 1px 0 var(--panel-highlight-color),
               inset 0 0 20px -12px var(--glass-rim);
 }
-.bg-glass::after {
+:root:not([data-look="refined"]) .bg-glass::after {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
   pointer-events: none; isolation: isolate;
   backdrop-filter: blur(16px) saturate(1.2);
@@ -1791,14 +1824,14 @@ input[type="search"] { border-radius: var(--r-control); }
 /* Guards. Phone: keep the blur and the fill, drop the displacement — phone GPUs and mobile Safari pay for it on every
    scroll frame, and at phone width the refraction is a few pixels wide. In CSS, not JS. */
 @media (max-width: 767px) {
-  .bg-glass::after { filter: none; -webkit-filter: none; }
+  :root:not([data-look="refined"]) .bg-glass::after { filter: none; -webkit-filter: none; }
 }
 
 /* Reduced transparency: no filter, no backdrop-filter, and a fill near-opaque in both themes. */
 @media (prefers-reduced-transparency: reduce) {
   :root, :root[data-theme="noon"] { --glass-fill: rgba(255,255,255,.96); }
   :root[data-theme="dusk"] { --glass-fill: rgba(26,21,35,.96); }
-  .bg-glass::after {
+  :root:not([data-look="refined"]) .bg-glass::after {
     filter: none; -webkit-filter: none;
     backdrop-filter: none; -webkit-backdrop-filter: none;
   }
@@ -1807,5 +1840,5 @@ input[type="search"] { border-radius: var(--r-control); }
 /* No backdrop-filter at all: the fill alone, and no filter either (a filter with nothing behind it to bend is cost
    for no picture). */
 @supports not (backdrop-filter: blur(2px)) {
-  .bg-glass::after { filter: none; -webkit-filter: none; }
+  :root:not([data-look="refined"]) .bg-glass::after { filter: none; -webkit-filter: none; }
 }
