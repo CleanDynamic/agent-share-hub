@@ -1,7 +1,9 @@
 /* UI-P07 — the Controls section: buttons, icon buttons, segmented controls,
    tabs, filter chips, category chips and avatars. Every control here is live
    (the segmented controls, tabs and chips change state) so it can be operated
-   from the keyboard on this page, which is part of what this section is for. */
+   from the keyboard on this page, which is part of what this section is for.
+
+   UI-P82 adds the glyph rows at the foot, under the refined look only. */
 
 import { useState } from "react";
 import { ArrowRight, Bell, Check, Plus, Search } from "lucide-react";
@@ -15,7 +17,9 @@ import { useRoom } from "@/components/brand/useRoom";
 import { Segmented } from "@/components/brand/Segmented";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { CATEGORIES } from "@/lib/theme/category";
+import { useLook } from "@/lib/theme/look";
 
+import { GlyphRows } from "./GlyphRows";
 import { Example, Row, Section } from "./parts";
 
 const GAP_18 = <div style={{ height: 18 }} />;
@@ -29,6 +33,7 @@ export function ControlsSection() {
   const room = picked ?? painted;
   const [tab, setTab] = useState("anatomy");
   const [filter, setFilter] = useState("all");
+  const refined = useLook() === "refined";
 
   return (
     <Section
@@ -155,6 +160,12 @@ export function ControlsSection() {
           <Avatar size={78} userId="u-in" name="Ines Novak" hue={4} />
         </Example>
       </Row>
+      {refined ? (
+        <>
+          {GAP_18}
+          <GlyphRows />
+        </>
+      ) : null}
     </Section>
   );
 }
