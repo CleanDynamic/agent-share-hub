@@ -177,8 +177,19 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "in the component that owns them. Every other colour a chart draws is a token. " +
       "THE CAP IS 2 BECAUSE THAT IS ALL THERE IS.",
   },
+  "src/components/brand/FramedWork.tsx": {
+    max: 26,
+    why:
+      "THE FRAMED WORK'S ARTWORK CONSTANTS (UI-P86) — the raised frame a picture " +
+      "hangs in, per room: Dusk's shaded fill, edge, top edge and three-part shadow; " +
+      "Noon's white fill, edge and two-part shadow; the result window's deeper drop " +
+      "and chrome dots; the lit wash and the picture light's cone. The frame is an " +
+      "object hung on the wall, not the room, and UI-P86 names these as the artwork " +
+      "constants RULES §2 allows, written as named constants in the component. THE " +
+      "CAP IS 26 BECAUSE THAT IS ALL THE BOARDS DRAW: a new value is a design decision.",
+  },
   "src/components/brand/CoverFallback.tsx": {
-    max: 42,
+    max: 46,
     why:
       "THE SIX COVER SKIES — artwork, seven colours each (sky top, middle and " +
       "horizon, sun, three hills). A picture of a sky does not follow the room: " +
@@ -187,7 +198,9 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "artwork live as named constants in the component that owns them. The " +
       "source of the values is `_notes.coverFallbackSkies` in " +
       "design/tokens/tokens.json. THE CAP IS 42 BECAUSE 6 x 7 IS ALL THERE IS: " +
-      "an eighth colour on a sky is a new decision, not a mechanical one.",
+      "an eighth colour on a sky is a new decision, not a mechanical one. " +
+      "PLUS 4 (UI-P86): the refined fallback's sketch ink, a headline and a line " +
+      "per room, artwork on `--paper`.",
   },
   "src/components/article/blocks/CodeBlock.tsx": {
     max: 5,

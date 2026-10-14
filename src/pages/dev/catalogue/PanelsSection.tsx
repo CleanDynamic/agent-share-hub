@@ -5,12 +5,15 @@ import { ChevronRight, Maximize2 } from "lucide-react";
 
 import { CardHead } from "@/components/brand/CardHead";
 import { Detail } from "@/components/brand/Detail";
+import { CoverFallback } from "@/components/brand/CoverFallback";
 import { Figure } from "@/components/brand/Figure";
+import { FramedWork, PictureLight, ResultWindow } from "@/components/brand/FramedWork";
 import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { Plaque } from "@/components/brand/Plaque";
 import { Row as DataRow } from "@/components/brand/Row";
 import { Stat } from "@/components/brand/Stat";
+import { StreakDay, StreakWeek, type StreakDayState } from "@/components/brand/StreakDay";
 import { StripedBar } from "@/components/brand/StripedBar";
 import { Tile, Well } from "@/components/brand/Tile";
 import { Timeline } from "@/components/brand/Timeline";
@@ -93,6 +96,56 @@ function RefinedBlocks() {
           <Plaque build={build(41, 3)} now={now} />
           <Plaque build={build(12, 130)} now={now} />
           <Plaque build={build(0, null)} now={now} />
+        </div>
+      </Example>
+    </Row>
+  );
+}
+
+const WEEK: readonly [string, string, StreakDayState][] = [
+  ["Monday", "M", "active"],
+  ["Tuesday", "T", "active"],
+  ["Wednesday", "W", "frozen"],
+  ["Thursday", "T", "active"],
+  ["Friday", "F", "active"],
+  ["Saturday", "S", "none"],
+  ["Sunday", "S", "none"],
+];
+
+/** UI-P86 — the objects that carry the lamp: `components.html` Framed work and Streak days, `build-list.html` hero. */
+function RefinedLampObjects() {
+  return (
+    <Row style={{ alignItems: "flex-end" }}>
+      <Example caption="framed work · unlit">
+        <FramedWork width={120} height={72}>
+          <CoverFallback seed="unlit" radius={2} />
+        </FramedWork>
+      </Example>
+      <Example caption="framed work · lit">
+        <FramedWork lit width={120} height={72}>
+          <CoverFallback seed="lit" radius={2} />
+        </FramedWork>
+      </Example>
+      <Example caption="framed work · under 40, lit">
+        <FramedWork lit width={56} height={36}>
+          <CoverFallback seed="small" radius={2} />
+        </FramedWork>
+      </Example>
+      <Example caption="streak days · lit, frozen, not lit">
+        <div style={{ width: 300 }}>
+          <StreakWeek>
+            {WEEK.map(([dayName, letter, state]) => (
+              <StreakDay key={dayName} dayName={dayName} letter={letter} state={state} />
+            ))}
+          </StreakWeek>
+        </div>
+      </Example>
+      <Example caption="hero · picture light, result window">
+        <div style={{ position: "relative", width: 480, height: 280 }}>
+          <PictureLight />
+          <ResultWindow label="Bakery homepage · Result" style={{ position: "absolute", left: "calc(50% - 152px)", top: 64 }}>
+            <CoverFallback seed="bakery" radius={3} />
+          </ResultWindow>
         </div>
       </Example>
     </Row>
@@ -193,6 +246,8 @@ export function PanelsSection() {
         <>
           <div style={{ height: 18 }} />
           <RefinedBlocks />
+          <div style={{ height: 18 }} />
+          <RefinedLampObjects />
         </>
       ) : null}
     </Section>

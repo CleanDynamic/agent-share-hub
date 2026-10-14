@@ -14,7 +14,7 @@
 // caller says otherwise (14 in a streak day, 32 above a picture). Dimmed is `filter: var(--dim-filter)`, never an
 // opacity. The lamp is light, so it never becomes an edge colour and is never written on.
 
-import type { HTMLAttributes } from "react";
+import type { CSSProperties, HTMLAttributes } from "react";
 
 import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
@@ -54,7 +54,17 @@ export function LampDot({ width, height = 7, dim = false, ...rest }: LampDotProp
 }
 
 /** The refined lamp: a bar. Exported for the streak day, the figure's label and the picture lamp, which size it themselves. */
-export function LampBar({ width = 8, dim = false, ...rest }: Omit<LampDotProps, "height">) {
+export function LampBar({
+  width = 8,
+  dim = false,
+  style,
+  ...rest
+}: Omit<LampDotProps, "height" | "width"> & {
+  /** Px, or a CSS length (the framed work's `max(12px, 25%)`). */
+  width?: number | string;
+  /** Placement only: where a caller hangs the bar. */
+  style?: CSSProperties;
+}) {
   return (
     <span
       {...rest}
@@ -70,6 +80,7 @@ export function LampBar({ width = 8, dim = false, ...rest }: Omit<LampDotProps, 
         filter: dim ? t.dimFilter : undefined,
         flexShrink: 0,
         display: "inline-block",
+        ...style,
       }}
     />
   );

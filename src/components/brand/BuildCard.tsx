@@ -43,12 +43,14 @@ import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
+import { useLook } from "@/lib/theme/look";
 import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { display, DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { CategoryChip } from "./CategoryChip";
+import { FramedWork } from "./FramedWork";
 import { gapEdge } from "./GapMarker";
 import { PictureLamp } from "./PictureLamp";
 import { Plaque, plaqueState, type PlaqueBuild } from "./Plaque";
@@ -109,6 +111,13 @@ export interface BuildCardProps {
   shapeKey?: string;
 }
 
+/* UI-P86, refined: the cover hangs in a framed work. It is unlit: the card's lamp is the picture lamp above it, and one
+   fact gets one lamp. */
+function CoverBox({ refined, height, children }: { refined: boolean; height: number; children: ReactNode }) {
+  if (refined) return <FramedWork height={height}>{children}</FramedWork>;
+  return <div style={{ position: "relative", height, borderRadius: r.media, overflow: "hidden" }}>{children}</div>;
+}
+
 const CARD_BASE: CSSProperties = {
   position: "relative",
   display: "flex",
@@ -147,6 +156,7 @@ export function BuildCard({
   const [hover, setHover] = useState(false);
   const lifted = hover && hoverIsFine() && !prefersReducedMotion();
   const chips = categories.filter((category) => category !== "breakage");
+  const refined = useLook() === "refined";
 
   return (
     <div data-ui="build-card" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -171,7 +181,7 @@ export function BuildCard({
         }}
       >
         {media ?? (
-          <div style={{ position: "relative", height: coverHeight, borderRadius: r.media, overflow: "hidden" }}>
+          <CoverBox refined={refined} height={coverHeight}>
             {cover}
             {shape ? (
               <span
@@ -192,7 +202,7 @@ export function BuildCard({
                 {shape}
               </span>
             ) : null}
-          </div>
+          </CoverBox>
         )}
 
         <div style={{ padding: "0 5px 5px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
