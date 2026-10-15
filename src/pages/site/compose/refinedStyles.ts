@@ -1,5 +1,5 @@
-/* UI-P93 — the composer's refined styles, shared by its forks (`RefinedSandboxView`, `RefinedSourcesPanel`,
-   `RefinedBuildList`, `RefinedDetailsPanel`).
+/* UI-P93 — the composer's refined styles, shared by its forks (`SandboxView`, `SourcesPanel`,
+   `BuildList`, `DetailsPanel`).
 
    Recipes from the series rules: the module (a prompt, an agent, the result, Details), the tile (an agent's
    instructions, a reference chip), the well (a field, the prompt's text), the selected recipe (an edge and a ring,

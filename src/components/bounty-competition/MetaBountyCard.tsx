@@ -59,7 +59,7 @@ export function MetaBountyCard({
           right: "16px",
           background: "color-mix(in srgb, var(--action) 14%, transparent)",
           color: "var(--action)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: "9px",
           fontWeight: 600,
           letterSpacing: "0.06em",
@@ -84,7 +84,7 @@ export function MetaBountyCard({
           />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: "10px",
               fontWeight: 600,
               letterSpacing: "0.08em",
@@ -97,7 +97,7 @@ export function MetaBountyCard({
         </div>
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: "11px",
             fontWeight: 400,
             color: "var(--text2)",
@@ -111,7 +111,7 @@ export function MetaBountyCard({
 
       <h3
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: "16px",
           fontWeight: 700,
           color: "var(--text)",
@@ -128,7 +128,7 @@ export function MetaBountyCard({
 
       <p
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: "12px",
           fontWeight: 400,
           color: "var(--text2)",
@@ -161,7 +161,7 @@ export function MetaBountyCard({
               >
                 <span
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: "11px",
                     fontWeight: 500,
                     color: "var(--text)",
@@ -171,7 +171,7 @@ export function MetaBountyCard({
                 </span>
                 <span
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: "10px",
                     fontWeight: 400,
                     color: "var(--text2)",
@@ -220,7 +220,7 @@ export function MetaBountyCard({
           style={{
             background: "var(--action)",
             color: "white",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: "11px",
             fontWeight: 600,
             padding: "8px 16px",
@@ -239,7 +239,7 @@ export function MetaBountyCard({
           style={{
             background: "transparent",
             color: "var(--text2)",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: "11px",
             fontWeight: 500,
             padding: "8px 12px",

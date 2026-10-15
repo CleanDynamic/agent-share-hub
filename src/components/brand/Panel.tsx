@@ -1,43 +1,17 @@
-// The panel and its head (UI-P09, UI-P09b).
+// The panel and its head (UI-P09, UI-P85).
 //
-// THREE SURFACES.
-//   `glass` is LIQUID GLASS (UI-P09b): the `.bg-glass` class in index.css — a refracted edge where the backdrop bends
-//   through the panel, over `--glass-fill`, a fill solid enough to read body text on. It is for the page-level panel
-//   that is a direct child of the page column and sits on the backdrop, and for nothing else.
-//   `plain` is every other reading surface: `--glass` over a `--glass-border` hairline, radius 16, `--shadow-card`
-//   plus the 1px top highlight `--panel-highlight`, `overflow: hidden`. Slightly translucent and flat, no blur and
-//   no filter. It is what anything that repeats inside a panel or a grid keeps, and it is the default, so a panel
-//   is liquid glass only when somebody chose it.
-//   `flat` is the workspace — compose and import only — a solid `--flat` with the same hairline and no shadow,
-//   because a place you work in is not a thing on display. A working surface does not refract.
+// ONE RECIPE. `glass` and `plain` both paint the MODULE: `--module` over a 1px `--module-border`, radius `--r-card`
+// (8), `--module-shadow`, no blur and no filter. The prop keeps its name so no call site changes, and `data-surface`
+// still reports what was asked for. `flat` is the workspace, compose and import only: a solid `--flat` with the
+// same hairline and no shadow, because a place you work in is not a thing on display.
 //
-// THE BLUR BELONGS TO `glass` ALONE, and `glass` never nests: a `.bg-glass` inside another doubles the blur cost
-// and reads as fog. In development a nested one warns in the console. `glass.test.ts` holds the codebase to one blur
-// value and to the files that may declare one; `src/index.css` is the file for panels.
-//
-// A glass panel draws its own hairline and fill in `::before`, so the element itself carries neither — only the
-// halo and the card shadow, which sit outside the border box. The border is dropped rather than made transparent
-// so the pseudo-element's hairline is the panel's edge.
-//
-// The padding is the caller's to set: 16px 18px by default, 14px 16px for lists. Those are the drawn
-// values: since UI-P54 the panel renders whatever padding it is given through the density table, so the
-// default is 12px 13px and a list's 10px 12px, and every caller tightened without being edited.
-//
-// UNDER THE REFINED LOOK THERE IS NO LIQUID GLASS (UI-P81), so `glass` paints the MODULE recipe instead: `--module`
-// over a 1px `--module-border`, radius `--r-card` (8 there), `--module-shadow`, and no class, no blur and no
-// filter. The prop keeps its name so no call site changes, and `data-surface` still reports what was asked for. Only
-// that paint moved there. UI-P85 finishes it: `plain` is a module too (one recipe for every panel, nothing nests glass),
-// the default padding is the module's 16, and the head is `CardHead`'s (13.5/500 over a 12 subtitle, gap 4). A caller's
-// own padding still wins. `flat` keeps the workspace paint, at the card radius.
+// The padding is the caller's to set; the default is the module's 16, and the head is `CardHead`'s (13.5/500 over a 12
+// subtitle, gap 4).
 
-import { useEffect, useRef } from "react";
 import type { CSSProperties, ElementType, ReactNode } from "react";
 
-import { densePx, denseFont, denseSpace } from "@/lib/theme/density";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
 
 import { CardHead } from "./CardHead";
 
@@ -53,52 +27,19 @@ export interface PanelProps {
   className?: never;
 }
 
-/** The class `src/index.css` defines. The only one this module spends. */
-const GLASS_CLASS = "bg-glass";
-
-/** Dev only: a liquid-glass panel inside another one doubles the blur cost, so say so. */
-function useWarnOnNestedGlass(active: boolean) {
-  const ref = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!import.meta.env.DEV || !active) return;
-    const parent = ref.current?.parentElement;
-    if (parent?.closest(`.${GLASS_CLASS}`)) {
-      console.warn(
-        '[Panel] surface="glass" is nested inside another liquid-glass panel. Nested glass doubles the blur cost and reads as fog; use surface="plain" for anything inside a panel.',
-        ref.current,
-      );
-    }
-  }, [active]);
-  return ref;
-}
-
 export function Panel({ surface = "plain", padding, as: Tag = "section", style, children }: PanelProps) {
-  const refined = useLook() === "refined";
-  /* Liquid glass exists in the current look only; under the refined one the same request is a module, and so is
-     `plain`: the module recipe is the one panel. */
-  const glass = surface === "glass" && !refined;
-  const asModule = refined && surface !== "flat";
-  const pad = padding ?? (refined ? "16px" : "16px 18px");
-  const ref = useWarnOnNestedGlass(glass);
+  const asModule = surface !== "flat";
   return (
     <Tag
-      ref={ref}
       data-ui="panel"
       data-surface={surface}
-      className={glass ? GLASS_CLASS : undefined}
       style={{
         position: "relative",
-        background: glass ? "none" : asModule ? t.module : surface === "flat" ? t.flat : t.glass,
-        border: glass ? "none" : `1px solid ${asModule ? t.moduleBorder : t.glassBorder}`,
-        borderRadius: refined ? r.card : r.panel,
-        padding: refined ? pad : densePx(pad, denseSpace),
-        boxShadow: glass
-          ? `${t.glassHalo}, ${t.shadowCard}`
-          : asModule
-            ? t.moduleShadow
-            : surface === "flat"
-              ? "none"
-              : `${t.shadowCard}, ${t.panelHighlight}`,
+        background: asModule ? t.module : t.flat,
+        border: `1px solid ${asModule ? t.moduleBorder : t.glassBorder}`,
+        borderRadius: r.card,
+        padding: padding ?? "16px",
+        boxShadow: asModule ? t.moduleShadow : "none",
         overflow: "hidden",
         minWidth: 0,
         minHeight: 0,
@@ -122,35 +63,8 @@ export interface PanelHeadProps {
   headingLevel?: 1 | 2 | 3 | 4;
 }
 
-export function PanelHead({ title, subtitle, right, titleSize = 16, headingLevel }: PanelHeadProps) {
-  const refined = useLook() === "refined";
-  if (refined) return <CardHead title={title} subtitle={subtitle} action={right} headingLevel={headingLevel} />;
-  const Title: ElementType = headingLevel ? (`h${headingLevel}` as ElementType) : "div";
-  return (
-    <div
-      data-ui="panel-head"
-      style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9 }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-        <Title
-          style={{
-            margin: 0,
-            fontFamily: FIGTREE,
-            fontSize: denseFont(titleSize),
-            fontWeight: 600,
-            lineHeight: "normal",
-            color: t.text,
-          }}
-        >
-          {title}
-        </Title>
-        {subtitle ? (
-          <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>{subtitle}</div>
-        ) : null}
-      </div>
-      {right ? <div style={{ display: "flex", gap: 4, alignItems: "center" }}>{right}</div> : null}
-    </div>
-  );
+export function PanelHead({ title, subtitle, right, headingLevel }: PanelHeadProps) {
+  return <CardHead title={title} subtitle={subtitle} action={right} headingLevel={headingLevel} />;
 }
 
 export default Panel;

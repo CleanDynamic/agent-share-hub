@@ -35,19 +35,19 @@ describe("refinedLayout", () => {
   });
 });
 
-describe("the refined rules in index.css", () => {
+describe("the focus, motion and phone rules in index.css", () => {
   const css = readFileSync("src/index.css", "utf8");
 
-  it("rings every focusable thing with the one ring, scoped to the refined look", () => {
-    expect(css).toMatch(/:root\[data-look="refined"\] :where\([\s\S]*?a\[href\],[\s\S]*?\):focus-visible\s*\{\s*outline: 2px solid var\(--focus-ring\) !important;\s*outline-offset: 2px !important;/);
-    expect(css).toContain(':root[data-look="refined"] [data-ring-inset]:focus-visible');
+  it("rings every focusable thing with the one ring", () => {
+    expect(css).toMatch(/:root :where\([\s\S]*?a\[href\],[\s\S]*?\):focus-visible\s*\{\s*outline: 2px solid var\(--focus-ring\) !important;\s*outline-offset: 2px !important;/);
+    expect(css).toContain(':root [data-ring-inset]:focus-visible');
   });
 
-  it("stops every transition and animation under the refined look except the theme change", () => {
-    expect(css).toMatch(/:root\[data-look="refined"\]:not\(\[data-theme-changing\]\) \*,[\s\S]*?transition: none !important;\s*animation: none !important;/);
+  it("stops every transition and animation except the theme change", () => {
+    expect(css).toMatch(/:root:not\(\[data-theme-changing\]\) \*,[\s\S]*?transition: none !important;\s*animation: none !important;/);
   });
 
   it("makes a phone's fields 16px", () => {
-    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root\[data-look="refined"\] :is\([\s\S]*?font-size: 16px !important;/);
+    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root :is\([\s\S]*?font-size: 16px !important;/);
   });
 });

@@ -129,7 +129,7 @@ function PostTypePill({
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 11,
           fontWeight: 700,
           letterSpacing: 1,
@@ -148,7 +148,7 @@ function PostTypePill({
       {postType === "bounty" && bountyMeta?.isSolved && (
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 10,
             fontWeight: 700,
             color: "var(--evidence)",
@@ -164,7 +164,7 @@ function PostTypePill({
       {postType === "bounty" && !bountyMeta?.isSolved && bountyMeta && (
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             color: "var(--text2)",
           }}
@@ -214,7 +214,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
       <div style={{ padding: 12 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: 1,
@@ -227,7 +227,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
         </div>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 13,
             fontWeight: 600,
             color: "var(--text)",
@@ -246,7 +246,7 @@ function RelatedPostCard({ post }: { post: RelatedPostCardData }) {
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             color: "var(--text2)",
           }}
@@ -374,7 +374,7 @@ export function ContentDetailShell({
             border: "none",
             color: "var(--text2)",
             fontSize: 13,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             cursor: "pointer",
           }}
         >
@@ -440,7 +440,7 @@ export function ContentDetailShell({
         {headerSlot}
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
           <PostTypePill postType={post.postType} bountyMeta={post.bountyMeta} />
-          <span style={{ fontSize: 12, color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}>
+          <span style={{ fontSize: 12, color: "var(--text2)", fontFamily: "var(--font-ui)" }}>
             {formatRelativeTime(post.publishedAt)}
           </span>
         </div>
@@ -502,7 +502,7 @@ export function ContentDetailShell({
                   cursor: "pointer",
                   padding: 0,
                   marginTop: 4,
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   fontWeight: 500,
                   color: TYPE_COLOR[post.postType],
@@ -545,12 +545,12 @@ export function ContentDetailShell({
             />
             <div style={{ textAlign: "left" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
                   {author.displayName}
                 </span>
                 {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
               </div>
-              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text2)" }}>
                 @{author.handle}
               </span>
             </div>
@@ -559,7 +559,7 @@ export function ContentDetailShell({
             <button
               onClick={handleFollow}
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 fontWeight: 500,
                 color: isFollowing ? "var(--text2)" : "var(--action)",
@@ -583,7 +583,7 @@ export function ContentDetailShell({
               alignItems: "center",
               gap: 6,
               marginBottom: 16,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               color: "var(--text2)",
               fontStyle: "italic",
@@ -604,7 +604,7 @@ export function ContentDetailShell({
             paddingTop: 16,
             paddingBottom: 24,
             borderTop: "1px solid var(--line)",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             color: "var(--text2)",
           }}
@@ -679,7 +679,7 @@ export function ContentDetailShell({
               />
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--text)" }}>
                     {author.displayName}
                   </span>
                   {author.isVerified && <BadgeCheck size={14} color="var(--evidence)" />}
@@ -709,7 +709,7 @@ export function ContentDetailShell({
                   handleFollow();
                 }}
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   fontWeight: 500,
                   color: isFollowing ? "var(--text2)" : "var(--action)",
@@ -745,10 +745,10 @@ export function ContentDetailShell({
       {relatedPosts.length > 0 && (
         <div style={{ maxWidth: 960, margin: "32px auto 0", padding: "0 24px" }}>
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>
+            <h3 style={{ fontFamily: "var(--font-ui)", fontSize: 16, fontWeight: 600, color: "var(--text)", margin: 0 }}>
               Related {post.postType === "bounty" ? "bounties" : post.postType === "blog" ? "blogs" : "blueprints"}
             </h3>
-            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text2)", margin: "4px 0 0" }}>
               From similar topics or referencing this content
             </p>
           </div>
@@ -770,10 +770,10 @@ export function ContentDetailShell({
       <div style={{ maxWidth: 960, margin: "48px auto 0", padding: "32px 24px 64px", borderTop: "1px solid var(--line)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
           <div>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
+            <div style={{ fontFamily: "var(--font-ui)", fontSize: 16, fontWeight: 600, color: "var(--text)" }}>
               Want to publish on buildgallery?
             </div>
-            <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--text2)" }}>
+            <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text2)" }}>
               Share your blueprints, blogs, and bounties with the community.
             </div>
           </div>
@@ -783,7 +783,7 @@ export function ContentDetailShell({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 600,
               color: "var(--action)",
@@ -794,7 +794,7 @@ export function ContentDetailShell({
             <ChevronRight size={14} />
           </a>
         </div>
-        <div style={{ display: "flex", gap: 16, fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)" }}>
+        <div style={{ display: "flex", gap: 16, fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text2)" }}>
           <button style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0 }}>
             Report this post
           </button>

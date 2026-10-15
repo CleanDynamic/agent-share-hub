@@ -107,7 +107,7 @@ export default function SkillTreeTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, color: "var(--text2)" }}>
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--text2)" }}>
           Track: <span style={{ color: meta.color, fontWeight: 600 }}>{meta.name}</span>
         </div>
         <button

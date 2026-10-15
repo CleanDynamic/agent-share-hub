@@ -18,13 +18,11 @@ import { useConnectorDialog } from "@/components/connect/ConnectorDialog";
 import { Lockup } from "@/components/brand/Lockup";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
 import { SITE_NAV } from "./siteNav";
-import { useMinWidth } from "./useMinWidth";
 
 export interface SiteFooterViewProps {
   signedIn: boolean;
@@ -34,8 +32,6 @@ export interface SiteFooterViewProps {
   /** Defaults to the live `ThemeSegmented` (32, 11px). The compare page passes a static one. */
   themeControl?: ReactNode;
 }
-
-const link: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, color: t.text2 };
 
 /* UI-P87, refined: inside the surface, under a 1px `--hairline`, `12px <gutter>`, wrapping with `12px 24px` between
    items: the lockup (15 / 13), the links at 12.5 `--text2` `8px 20px` apart, a spacer, the Theme segmented control at
@@ -48,7 +44,6 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }:
     <footer
       data-testid="site-footer"
       data-ui="site-footer"
-      data-look="refined"
       style={{
         marginTop: "auto",
         borderTop: `1px solid ${t.hairline}`,
@@ -83,66 +78,7 @@ function RefinedSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }:
 }
 
 export function SiteFooterView(props: SiteFooterViewProps) {
-  const refined = useLook() === "refined";
-  return refined ? <RefinedSiteFooterView {...props} /> : <CurrentSiteFooterView {...props} />;
-}
-
-function CurrentSiteFooterView({ signedIn, onSignOut, onConnect, themeControl }: SiteFooterViewProps) {
-  const wide = useMinWidth(1328);
-  /* Below 1100 the row cannot hold lockup, five links, the theme control and the
-     credit on one line, so it wraps and the footer grows past its 88px. */
-  const narrow = !useMinWidth(1100);
-  return (
-    <footer
-      data-testid="site-footer"
-      data-ui="site-footer"
-      style={{ height: narrow ? undefined : 88, minHeight: 88, borderTop: `1px solid ${t.headerBorder}`, background: t.header, boxSizing: "border-box", overflow: "hidden" }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          height: narrow ? undefined : 88,
-          minHeight: 88,
-          display: "flex",
-          flexWrap: narrow ? "wrap" : undefined,
-          alignItems: "center",
-          gap: narrow ? "9px 14px" : 20,
-          padding: wide ? 0 : narrow ? "9px 24px" : "0 24px",
-          boxSizing: "border-box",
-        }}
-      >
-        <Lockup size={16} to={SITE_NAV.home} />
-        <nav aria-label="Footer" style={{ display: "flex", flexWrap: narrow ? "wrap" : undefined, gap: narrow ? "6px 12px" : 16 }}>
-          <FrameLink to="/about" style={link}>About</FrameLink>
-          <FrameLink to="/api-docs" style={link}>API docs</FrameLink>
-          <FrameLink to="/bounties/solvers" style={link}>Solvers</FrameLink>
-          <button
-            type="button"
-            onClick={onConnect}
-            style={{ ...link, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
-          >
-            Connect a tool
-          </button>
-          {signedIn ? (
-            <button
-              type="button"
-              onClick={onSignOut}
-              style={{ ...link, padding: 0, border: 0, background: "transparent", cursor: "pointer" }}
-            >
-              Sign out
-            </button>
-          ) : (
-            <FrameLink to="/login" style={link}>Sign in</FrameLink>
-          )}
-        </nav>
-        <span style={{ flexGrow: 1 }} />
-        {themeControl ?? <ThemeSegmented size={32} fontSize={11} />}
-        <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.label }}>© buildgallery</span>
-      </div>
-    </footer>
-  );
+  return <RefinedSiteFooterView {...props} />;
 }
 
 /** The container: signed-in state and sign-out from `useAuth()`. */

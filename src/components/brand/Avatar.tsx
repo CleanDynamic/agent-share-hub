@@ -15,8 +15,6 @@
 
 import type { CSSProperties } from "react";
 
-import { denseFont, denseHeight } from "@/lib/theme/density";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -25,9 +23,6 @@ import { hashSeed } from "./hash";
 
 /** The six hues, the same in both themes. */
 export const AVATAR_HUES = ["#5C5480", "#3F7A8C", "#9A5B4A", "#4B3F8C", "#3E6B55", "#8C4A6A"] as const;
-
-/** The initials' ink, on every hue. */
-const AVATAR_INK = "#F7F8F9";
 
 export interface AvatarProps {
   /** Diameter in px, 18 to 110. */
@@ -59,10 +54,9 @@ export function avatarHue(userId: string, hue?: number): string {
   return AVATAR_HUES[hashSeed(userId) % AVATAR_HUES.length];
 }
 
-export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
-  const refined = useLook() === "refined";
+export function Avatar({ size, name, src, style }: AvatarProps) {
   /* UI-P87: the refined look draws the size it is given (the header's 26); the density table is the current look's. */
-  const box = refined ? size : denseHeight(size);
+  const box = size;
   const circle: CSSProperties = {
     width: box,
     height: box,
@@ -92,11 +86,11 @@ export function Avatar({ size, userId, name, hue, src, style }: AvatarProps) {
       style={{
         ...circle,
         /* UI-P84: initials on `--avatar-fill` in `--on-avatar`, Geist 500 at size × .38 (10 at the least). */
-        background: refined ? t.avatarFill : avatarHue(userId, hue),
-        color: refined ? t.onAvatar : AVATAR_INK,
+        background: t.avatarFill,
+        color: t.onAvatar,
         fontFamily: FIGTREE,
-        fontSize: refined ? Math.max(10, Math.round(size * 0.38 * 10) / 10) : denseFont(Math.trunc(size * 0.38)),
-        fontWeight: refined ? 500 : 600,
+        fontSize: Math.max(10, Math.round(size * 0.38 * 10) / 10),
+        fontWeight: 500,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",

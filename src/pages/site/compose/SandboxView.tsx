@@ -1,51 +1,49 @@
-/* UI-P63 — the new composer: the frame. Sources, Build and Details, the Card,
-   and the header that holds Publish.
+/* UI-P93 — the composer's frame in the refined look, as `design/reference/refined/{dusk,noon}/composer-list.html`
+   draws it: the title row, then Sources, Build and Details.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   `Link`. `SandboxPage` supplies the build and the writes; the dev page supplies
-   a fixture. The viewport is read here (768) so both behave alike.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `SandboxView` stays the current look; this takes its props (imported, not copied), keeps the
+   same slots (`sources`, `list`, `map`, `selection`), the same Add menu (its wiring is `addEntries`, shared), the same
+   Card (drawn by `SandboxCard`, UI-P94), the same order of parts and the same accessible names. The page and
+   the dev page choose with `useLook()`, and hand this the refined forks of the panels.
 
-   THE PANELS' INSIDES ARE NOT HERE. Sources, the Build list and Map, and
-   Details are slots (`sources`, `list`, `map`, `selection`), each with the
-   empty state this prompt draws. UI-P64 to UI-P66 fill them.
+   THE TITLE ROW, under a hairline: the draft's title 20/500 and its status line 12.5 `--text2` with the missing part
+   underlined; List / Map with "Map is now available" under it; Card and Preview (secondary 30) and Publish (primary
+   30), the view's one primary. THE COLUMNS, a wrapping row with gap 24: Sources on the surface with a hairline on its
+   right (`flex: 1 1 216px`, max 232), Build (`flex: 999 1 480px`), Details as a module (`flex: 1 1 280px`, max 300).
+   A phone keeps today's order: the title, the Build panel with Sources and Details behind two buttons, and the action
+   bar.
 
-   EVERY PANEL IS FLAT. A place you work in is not a thing on display, so
-   nothing on this route has `--glass` or a blur. Publish is the page's one
-   primary.
-
-   THREE COLUMNS at 1280 and wider (250 · fluid · 290), then 220 · fluid · 260
-   to 900, then Sources and Build side by side with Details under them, then on
-   a phone one column: the Build panel alone, with Sources and Details behind
-   two buttons in its head. In Map, Sources folds to a 56px rail. */
+   MAP (UI-P94, `refined/{dusk,noon}/composer-map.html`). Sources folds to its rail as today, drawn as a module 52
+   wide (padding `8px 0`): ghost 40-wide buttons, 36 high, 44 with a count under the glyph (10.5/500, tabular),
+   between `--hairline-module` dividers 28 wide. Build becomes a module (`flex: 999 1 560px`) holding its head, the
+   Map's legend, the map well and its footer line. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowLeft, ChevronDown, FileText, Layers, PanelLeftOpen, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
-import { IconButton } from "@/components/brand/IconButton";
 import { ErrorState } from "@/components/brand/ErrorState";
-import { Panel } from "@/components/brand/Panel";
+import { Glyph } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
+import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
-import { useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
-import { denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
+import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import { isUntitled, SAVE_WORDS, UNTITLED, type PublishKey, type SaveState } from "./composeModel";
+import { SandboxCard } from "./SandboxCard";
+import type { CardField } from "./SandboxCard";
+import { bareButton, menuItem, menuSurface, moduleStyle, text, tnum } from "./refinedStyles";
 import type { ComposePublished, ComposeStatus } from "./ComposeView";
-import { SandboxCard, type CardField, type CardProps } from "./SandboxCard";
-
-export type { CardField } from "./SandboxCard";
-
-/* ── the view's props ── */
+import { type CardProps } from "./SandboxCard";
 
 export type SandboxLens = "list" | "map";
 
@@ -113,8 +111,6 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-/* ── the Add menu ── */
-
 export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "result";
 
 /**
@@ -133,6 +129,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
 ];
 
 export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
+
 export const DETAILS_EMPTY = "Select a prompt, session or file to see it here.";
 
 /** "3 sessions · 12 prompts · 2 files", leaving out any zero. */
@@ -173,93 +170,51 @@ export function addEntries({ onAddFile, addableSessions, onAddSession, onAddProm
   });
 }
 
-const itemStyle = (enabled: boolean): CSSProperties => ({
-  display: "flex",
-  flexDirection: "column",
-  gap: 1,
-  minHeight: 44,
-  boxSizing: "border-box",
-  justifyContent: "center",
-  padding: "6px 10px",
-  borderRadius: r.control,
-  cursor: enabled ? "pointer" : "default",
-  opacity: enabled ? 1 : 0.5,
-  outline: "none",
-});
-
-const menuSurface: CSSProperties = {
-  zIndex: 50,
-  width: 280,
-  maxWidth: "calc(100vw - 32px)",
-  padding: 6,
-  borderRadius: r.panel,
-  background: t.solid,
-  border: `1px solid ${t.line}`,
-  boxShadow: t.shadowFloat,
-  color: t.text,
-};
+/* ── the Add menu ── */
 
 function AddLabel({ name, line }: { name: string; line: string }) {
   return (
     <>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{name}</span>
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{line}</span>
+      <span style={text(13, 500, t.text)}>{name}</span>
+      <span style={text(11.5, 400, t.label)}>{line}</span>
     </>
   );
 }
 
-function AddMenu(props: AddMenuProps) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+const addItem = (enabled: boolean): CSSProperties => ({
+  ...menuItem(enabled, false),
+  flexDirection: "column",
+  alignItems: "flex-start",
+  justifyContent: "center",
+  gap: 2,
+  minHeight: 44,
+  padding: "6px 10px",
+});
+
+function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
   return (
     <Menu.Root>
       <Menu.Trigger asChild>
-        <button
-          type="button"
-          data-testid="sandbox-add"
-          {...handlers}
-          style={{
-            height: 30,
-            padding: "0 10px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            borderRadius: r.control,
-            border: `1px solid ${t.line}`,
-            background: t.glass2,
-            color: t.text,
-            fontFamily: FIGTREE,
-            fontSize: 12,
-            fontWeight: 500,
-            cursor: "pointer",
-            ...ring(state.focusVisible),
-          }}
-        >
-          Add
-          <ChevronDown size={14} strokeWidth={1.8} aria-hidden="true" />
-        </button>
+        <MenuButton label="Add" value="" data-testid="sandbox-add" style={phone ? { height: 44 } : undefined} />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content
-          align="end"
-          sideOffset={6}
-          style={menuSurface}
-        >
+        <Menu.Content align="end" sideOffset={6} style={menuSurface(280)}>
           {addEntries(props).map((item) => {
             if (item.sessions) {
               return (
                 <Menu.Sub key={item.key}>
-                  <Menu.SubTrigger disabled={!item.enabled} style={itemStyle(item.enabled)}>
+                  <Menu.SubTrigger disabled={!item.enabled} style={addItem(item.enabled)}>
                     <AddLabel name={item.name} line={item.line} />
                   </Menu.SubTrigger>
                   <Menu.Portal>
-                    <Menu.SubContent sideOffset={6} style={menuSurface}>
+                    <Menu.SubContent sideOffset={6} style={menuSurface(280)}>
                       {item.sessions.length === 0 ? (
-                        <Menu.Item disabled style={itemStyle(false)}>
+                        <Menu.Item disabled style={addItem(false)}>
                           <AddLabel name="No sessions waiting" line="Every session is already in a build" />
                         </Menu.Item>
                       ) : (
                         item.sessions.map((session) => (
-                          <Menu.Item key={session.id} onSelect={session.onSelect} style={itemStyle(true)}>
+                          <Menu.Item key={session.id} onSelect={session.onSelect} style={addItem(true)}>
                             <AddLabel name={session.label} line={session.line} />
                           </Menu.Item>
                         ))
@@ -270,7 +225,7 @@ function AddMenu(props: AddMenuProps) {
               );
             }
             return (
-              <Menu.Item key={item.key} disabled={!item.enabled} onSelect={item.onSelect} style={itemStyle(item.enabled)}>
+              <Menu.Item key={item.key} disabled={!item.enabled} onSelect={item.onSelect} style={addItem(item.enabled)}>
                 <AddLabel name={item.name} line={item.line} />
               </Menu.Item>
             );
@@ -283,30 +238,26 @@ function AddMenu(props: AddMenuProps) {
 
 /* ── pieces ── */
 
-/** A link drawn as a button of the same size and type, for Preview. */
-function LinkButton({ to, size, children }: { to: string | null; size: 30 | 42 | 48; children: ReactNode }) {
+/** A link drawn as a secondary button, for Preview: 30 high (48 on a phone), the control recipe. */
+function LinkButton({ to, phone, children }: { to: string | null; phone: boolean; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  const phone = useIsPhone();
   const common: CSSProperties = {
-    height: denseHeight(size, { touch: phone }),
-    padding: "0 10px",
-    borderRadius: r.control,
+    height: phone ? 48 : 30,
+    padding: "0 16px",
+    borderRadius: 6,
     boxSizing: "border-box",
-    fontFamily: FIGTREE,
-    fontSize: 14,
-    fontWeight: 500,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     textDecoration: "none",
-    border: `1px solid ${t.line}`,
-    background: t.glass2,
-    color: t.text,
     whiteSpace: "nowrap",
+    flexShrink: 0,
+    ...controlPaint(state),
+    ...text(13, 500, t.text),
   };
   if (!to) {
     return (
-      <span aria-disabled="true" style={{ ...common, opacity: 0.5, cursor: "not-allowed" }}>
+      <span aria-disabled="true" style={{ ...common, filter: t.dimFilter, cursor: "not-allowed" }}>
         {children}
       </span>
     );
@@ -319,14 +270,15 @@ function LinkButton({ to, size, children }: { to: string | null; size: 30 | 42 |
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {
-  return <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{children}</h2>;
+  return <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>{children}</h2>;
 }
 
-const quiet: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
+const quiet: CSSProperties = { ...text(13, 400, t.text2), margin: 0 };
 
-/** One 44-wide button of the Sources rail: an icon, and a count when it has one. */
-function RailButton({ icon: Icon, label, count, onClick }: { icon: typeof Plus; label: string; count?: number; onClick: () => void }) {
+/** One 40-wide ghost button of the Sources rail (UI-P94): the glyph in `--text2`, 36 high, or 44 with its count under it. */
+function RailButton({ glyph, label, count, onClick }: { glyph: "panel" | "layers" | "file" | "plus"; label: string; count?: number; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const counted = typeof count === "number";
   return (
     <button
       type="button"
@@ -334,20 +286,30 @@ function RailButton({ icon: Icon, label, count, onClick }: { icon: typeof Plus; 
       title={label}
       onClick={onClick}
       {...handlers}
-      style={{ width: 44, minHeight: 44, padding: "4px 0", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: 0, borderRadius: r.control, background: "transparent", color: t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
+      style={{
+        ...bareButton,
+        width: 40,
+        height: counted ? 44 : 36,
+        padding: 0,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+        borderRadius: 6,
+        color: state.hovered ? t.text : t.text2,
+        ...(state.hovered ? { background: t.controlOn } : null),
+        ...ring(state.focusVisible),
+      }}
     >
-      <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
-      {typeof count === "number" ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>{count}</span> : null}
+      <Glyph name={glyph} size={16} />
+      {counted ? <span style={{ ...text(10.5, 500, "inherit"), ...tnum }}>{count}</span> : null}
     </button>
   );
 }
 
-/**
- * In Map the Sources column is a 56px rail of 44-wide buttons: show sources,
- * sessions and files with their counts, and add a source, with hairlines
- * between the groups. Any of them puts the full panel back over the map's left
- * side until it is closed.
- */
+/** Sources: the column on the surface; in Map, a 56 rail that opens the full column over the map's left side. */
 function SourcesFrame({
   rail,
   titled,
@@ -359,36 +321,51 @@ function SourcesFrame({
 }: {
   rail: boolean;
   titled: boolean;
-  counts: SandboxCounts;
+  counts: SandboxViewProps["counts"];
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
   children: ReactNode;
 }) {
-  const full = (
-    <section aria-label="Sources" style={{ minWidth: 0 }}>
-      <Panel surface="flat" padding="16px">
+  const column = (overlay: boolean) => (
+    <section
+      aria-label="Sources"
+      style={{
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 20,
+        ...(overlay
+          ? { ...moduleStyle(), background: t.window, borderColor: t.windowBorder, boxShadow: t.windowShadow }
+          : { flex: "1 1 216px", maxWidth: 232, boxSizing: "border-box", paddingRight: 24, borderRight: `1px solid ${t.hairline}` }),
+      }}
+    >
+      {titled || overlay ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           {titled ? <PanelTitle>Sources</PanelTitle> : <span />}
-          {rail ? <IconButton icon={X} label="Close sources" size={30} onClick={onClose} /> : null}
+          {overlay ? <IconButton icon={X} glyph="x" boxed={false} label="Close sources" size={26} onClick={onClose} /> : null}
         </div>
-        <div style={{ marginTop: titled || rail ? 12 : 0, display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
-      </Panel>
+      ) : null}
+      {children}
     </section>
   );
-  if (!rail) return full;
-  const hairline: CSSProperties = { width: 32, height: 1, background: t.hairline, margin: "4px 0" };
+  if (!rail) return column(false);
+  const hairline: CSSProperties = { width: 28, height: 1, background: t.hairlineModule, margin: "4px 0" };
   return (
     <>
-      <div data-testid="sources-rail" role="toolbar" aria-label="Sources" aria-orientation="vertical" style={{ minWidth: 0 }}>
-        <Panel surface="flat" padding="8px 0" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <RailButton icon={PanelLeftOpen} label="Show sources" onClick={onOpen} />
-          <span aria-hidden="true" style={hairline} />
-          <RailButton icon={Layers} label="Sessions" count={counts.sessions} onClick={onOpen} />
-          <RailButton icon={FileText} label="Files" count={counts.files} onClick={onOpen} />
-          <span aria-hidden="true" style={hairline} />
-          <RailButton icon={Plus} label="Add a source" onClick={onOpen} />
-        </Panel>
+      <div
+        data-testid="sources-rail"
+        role="toolbar"
+        aria-label="Sources"
+        aria-orientation="vertical"
+        style={{ ...moduleStyle(false, "8px 0"), flex: "0 0 52px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
+      >
+        <RailButton glyph="panel" label="Show sources" onClick={onOpen} />
+        <span aria-hidden="true" style={hairline} />
+        <RailButton glyph="layers" label="Sessions" count={counts.sessions} onClick={onOpen} />
+        <RailButton glyph="file" label="Files" count={counts.files} onClick={onOpen} />
+        <span aria-hidden="true" style={hairline} />
+        <RailButton glyph="plus" label="Add a source" onClick={onOpen} />
       </div>
       {open ? (
         <div
@@ -399,9 +376,9 @@ function SourcesFrame({
               onClose();
             }
           }}
-          style={{ position: "absolute", left: 0, top: 0, width: 250, zIndex: 20, boxShadow: t.shadowFloat, borderRadius: r.panel }}
+          style={{ position: "absolute", left: 0, top: 0, width: 260, zIndex: 20 }}
         >
-          {full}
+          {column(true)}
         </div>
       ) : null}
     </>
@@ -409,24 +386,13 @@ function SourcesFrame({
 }
 
 function DefaultSources() {
-  const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 12, color: t.text2 };
+  const label = text(12, 500, t.text2);
   return (
     <>
       <span style={label}>Sessions in this build</span>
       <span style={label}>Files in this build</span>
       <span style={label}>Not in a build</span>
-      <div
-        style={{
-          borderRadius: r.media,
-          border: `1.5px dashed ${t.line}`,
-          background: t.recess,
-          padding: 16,
-          textAlign: "center",
-          fontFamily: FIGTREE,
-          fontSize: 13.5,
-          color: t.text2,
-        }}
-      >
+      <div style={{ minHeight: 56, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 6, border: `1px dashed ${t.line}`, ...text(12.5, 400, t.text2) }}>
         Drop sessions or files
       </div>
     </>
@@ -436,12 +402,15 @@ function DefaultSources() {
 function Skeletons({ phone }: { phone: boolean }) {
   return (
     <LoadingRegion what="the composer" announce>
-      <div style={{ display: "flex", flexDirection: "column", gap: phone ? 9 : 12 }}>
-        <Skeleton width={phone ? "70%" : 360} height={phone ? 25 : 33} radius={r.chip} />
-        <Panel surface="flat" padding="16px">
-          <Skeleton width={120} height={16} />
-          <Skeleton height={phone ? 180 : 320} radius={r.media} style={{ marginTop: 12 }} />
-        </Panel>
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
+          <Skeleton width={phone ? "70%" : 280} height={22} radius={4} />
+          <Skeleton width={phone ? "50%" : 220} height={13} radius={4} />
+        </div>
+        <div style={{ ...moduleStyle(), display: "flex", flexDirection: "column", gap: 12 }}>
+          <Skeleton width={120} height={14} />
+          <Skeleton height={phone ? 180 : 320} radius={6} />
+        </div>
       </div>
     </LoadingRegion>
   );
@@ -449,24 +418,24 @@ function Skeletons({ phone }: { phone: boolean }) {
 
 function NotFound() {
   return (
-    <Panel surface="flat" padding="24px" style={{ maxWidth: 520 }}>
-      <h1 style={{ ...display(30), margin: 0, color: t.text }}>No build at this address</h1>
-      <p style={{ margin: "7px 0 10px", fontFamily: FIGTREE, fontSize: 14, color: t.text2 }}>
+    <div style={{ ...moduleStyle(false, 24), maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
+      <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em" }}>No build at this address</h1>
+      <p style={{ ...text(13, 400, t.text2), margin: 0 }}>
         Nothing here, or nothing you can open. It may have been deleted, or it may be another creator's build.
       </p>
-      <Link to="/compose/new" style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text2, textDecoration: "underline" }}>
+      <Link to="/compose/new" style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" }}>
         Start a new build
       </Link>
-    </Panel>
+    </div>
   );
 }
+
+const underlined: CSSProperties = { ...text(12.5, 400, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
 
 /* ── the view ── */
 
 export function SandboxView(props: SandboxViewProps) {
   const phone = useIsPhone();
-  const wide = useMinWidth(1280);
-  const mid = useMinWidth(900);
   const { status, published, missing, save } = props;
 
   const [cardOpen, setCardOpen] = useState(false);
@@ -480,9 +449,9 @@ export function SandboxView(props: SandboxViewProps) {
   if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
     return (
-      <Panel surface="flat" padding="16px">
+      <div style={moduleStyle()}>
         <ErrorState line="This build didn't load." panel="The composer" onRetry={props.onRetry} />
-      </Panel>
+      </div>
     );
   }
   if (status === "notFound") return <NotFound />;
@@ -506,13 +475,20 @@ export function SandboxView(props: SandboxViewProps) {
   };
 
   const statusLine = (
-    <p data-testid="sandbox-status" style={{ margin: "4px 0 0", fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
+    <p data-testid="sandbox-status" style={{ ...text(12.5, 400, t.text2), margin: 0, overflowWrap: "anywhere" }}>
       {published ? "Published" : "Draft"}
       {save !== "idle" ? (
         <>
           {" · "}
           {SAVE_WORDS[save]}
-          {save === "error" ? <TextButton onClick={props.onRetrySave}>Try again</TextButton> : null}
+          {save === "error" ? (
+            <>
+              {" "}
+              <TextButton underline onClick={props.onRetrySave} style={underlined}>
+                Try again
+              </TextButton>
+            </>
+          ) : null}
         </>
       ) : null}
       {needs ? (
@@ -521,7 +497,7 @@ export function SandboxView(props: SandboxViewProps) {
           {missing.map((item, index) => (
             <span key={item.key}>
               {index > 0 ? ", " : null}
-              <TextButton underline onClick={() => onMissing(item.key)} target={phone}>
+              <TextButton underline onClick={() => onMissing(item.key)} target={phone} style={underlined}>
                 {item.label}
               </TextButton>
             </span>
@@ -534,7 +510,7 @@ export function SandboxView(props: SandboxViewProps) {
   const heading = (
     <h1
       data-testid="sandbox-heading"
-      style={{ ...display(phone ? 30 : 34, { mobilePageHeading: phone }), margin: 0, color: untitled ? t.text2 : t.text, overflowWrap: "anywhere" }}
+      style={{ ...text(20, 500, untitled ? t.text2 : t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}
     >
       {untitled ? UNTITLED : props.title.trim()}
     </h1>
@@ -542,36 +518,35 @@ export function SandboxView(props: SandboxViewProps) {
 
   const publishLabel = published ? "Published" : props.publishing ? "Publishing…" : "Publish";
   const publishDisabled = Boolean(published) || props.publishing;
-  const publishStyle: CSSProperties | undefined = needs ? { opacity: 0.7 } : undefined;
+  /* The board draws Publish at full strength beside the missing part: the status line says what is missing. */
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
-  const lensSwitch = props.mapAvailable && !phone ? (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-      <Segmented
-        label="Build view"
-        size={32}
-        fontSize={12}
-        value={props.lens}
-        onChange={props.onLens}
-        items={[
-          { value: "list", label: "List" },
-          { value: "map", label: "Map" },
-        ]}
-      />
-      {props.mapHint ? <span style={{ fontFamily: DM_MONO, fontSize: 11, color: t.text2 }}>Map is now available</span> : null}
-    </div>
-  ) : null;
+  const lensSwitch =
+    props.mapAvailable && !phone ? (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <Segmented
+          label="Build view"
+          size={28}
+          fontSize={12}
+          value={props.lens}
+          onChange={props.onLens}
+          items={[
+            { value: "list", label: "List" },
+            { value: "map", label: "Map" },
+          ]}
+        />
+        {props.mapHint ? <span style={text(11.5, 400, t.label)}>Map is now available</span> : null}
+      </div>
+    ) : null;
 
   const banner = published ? (
     <div
       role="status"
       data-testid="sandbox-published"
-      style={{ padding: "9px 12px", borderRadius: 12, background: t.evidenceFill, color: t.onEvidenceFill, fontFamily: FIGTREE, fontSize: 13, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
+      style={{ padding: "8px 12px", borderRadius: 6, background: t.evidenceFill, ...text(12.5, 400, t.text), display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 4 }}
     >
-      <span>
-        Published. {published.inGallery ? "It is in the Gallery now." : `It will show in the Gallery once you ${published.shortfall}.`}
-      </span>
-      <Link to={`/b2/${published.slug}`} style={{ color: "inherit", fontWeight: 600, textDecoration: "underline" }}>
+      <span>Published. {published.inGallery ? "It is in the Gallery now." : `It will show in the Gallery once you ${published.shortfall}.`}</span>
+      <Link to={`/b2/${published.slug}`} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3 }}>
         See it
       </Link>
     </div>
@@ -581,86 +556,92 @@ export function SandboxView(props: SandboxViewProps) {
   const detailsBody = props.selection ?? <p style={quiet}>{DETAILS_EMPTY}</p>;
   const sourcesBody = props.sources ?? <DefaultSources />;
 
+  const addMenu = (
+    <AddMenu
+      phone={phone}
+      onAddFile={props.onAddFile}
+      addableSessions={props.addableSessions}
+      onAddSession={props.onAddSession}
+      onAddPromptFocus={props.onAddPromptFocus}
+      onAddTool={props.onAddTool}
+      onAddResult={props.onAddResult}
+      onAddAgent={props.onAddAgent}
+      onAddManual={props.onAddManual}
+    />
+  );
+  const trailLink: CSSProperties = { ...bareButton, ...underlined, fontSize: 13.5, fontWeight: 500, color: t.text2 };
   const buildPanel = (
-    <section ref={buildRef} aria-label="Build" tabIndex={-1} style={{ outline: "none", minWidth: 0 }}>
-    <Panel surface="flat" padding="16px">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 9, minWidth: 0, flexWrap: "wrap" }}>
-          {trail.length > 0 ? (
-            <h2 data-testid="sandbox-trail" style={{ margin: 0, display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", gap: 6, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>
-              <button
-                type="button"
-                onClick={() => props.onTrail?.(0)}
-                style={{ padding: 0, border: 0, background: "none", font: "inherit", color: t.text2, textDecoration: "underline", cursor: "pointer" }}
-              >
-                Build
-              </button>
-              {trail.map((entry, at) => (
-                <span key={entry.id} style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
-                  <span aria-hidden="true" style={{ color: t.text2 }}>
-                    ›
-                  </span>
-                  {at < trail.length - 1 ? (
-                    <button type="button" onClick={() => props.onTrail?.(at + 1)} style={{ padding: 0, border: 0, background: "none", font: "inherit", color: t.text2, textDecoration: "underline", cursor: "pointer" }}>
-                      {entry.title}
-                    </button>
-                  ) : (
-                    <span aria-current="page">{entry.title}</span>
-                  )}
+    <section
+      ref={buildRef}
+      aria-label="Build"
+      tabIndex={-1}
+      style={{
+        outline: "none",
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        /* UI-P94: in Map, Build is a module beside the rail. */
+        ...(lens === "map" && !phone ? { ...moduleStyle(), flex: "999 1 560px" } : { flex: "999 1 480px" }),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+        {trail.length > 0 ? (
+          <h2 data-testid="sandbox-trail" style={{ ...text(13.5, 500, t.text), margin: 0, display: "inline-flex", flexWrap: "wrap", alignItems: "baseline", gap: 6 }}>
+            <button type="button" onClick={() => props.onTrail?.(0)} style={trailLink}>
+              Build
+            </button>
+            {trail.map((entry, at) => (
+              <span key={entry.id} style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+                <span aria-hidden="true" style={{ color: t.label }}>
+                  ›
                 </span>
-              ))}
-            </h2>
-          ) : (
-            <PanelTitle>Build</PanelTitle>
-          )}
-          <span data-testid="sandbox-counts" style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text2 }}>
-            {countsLine(props.counts)}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          {phone ? (
-            <>
-              <Button variant="secondary" size={30} fontSize={12} onClick={() => setSourcesOpen(true)}>
-                Sources
-              </Button>
-              <Button variant="secondary" size={30} fontSize={12} onClick={() => setDetailsOpen(true)}>
-                Details
-              </Button>
-            </>
-          ) : null}
-          {trail.length > 0 ? (
-            <Button variant="secondary" size={30} fontSize={12} icon={ArrowLeft} onClick={() => props.onTrail?.(trail.length - 1)}>
-              Back to build
-            </Button>
-          ) : null}
-          <AddMenu onAddFile={props.onAddFile} addableSessions={props.addableSessions} onAddSession={props.onAddSession} onAddPromptFocus={props.onAddPromptFocus} onAddTool={props.onAddTool} onAddResult={props.onAddResult} onAddAgent={props.onAddAgent} onAddManual={props.onAddManual} />
-        </div>
-      </div>
-      <div style={{ marginTop: 12 }}>
-        {lens === "map" ? (
-          (props.map ?? null)
+                {at < trail.length - 1 ? (
+                  <button type="button" onClick={() => props.onTrail?.(at + 1)} style={trailLink}>
+                    {entry.title}
+                  </button>
+                ) : (
+                  <span aria-current="page">{entry.title}</span>
+                )}
+              </span>
+            ))}
+          </h2>
         ) : (
-          (props.list ?? <p style={quiet}>{LIST_HINT}</p>)
+          <PanelTitle>Build</PanelTitle>
         )}
+        <span data-testid="sandbox-counts" style={{ ...text(12, 400, t.text2), ...tnum, flexGrow: 1, minWidth: 0 }}>
+          {countsLine(props.counts)}
+        </span>
+        {phone ? (
+          /* A phone puts Sources, Details and Add on a line of their own under the title, at touch size. */
+          <span style={{ flexBasis: "100%", display: "flex", gap: 8 }}>
+            <Button variant="secondary" size={44} fontSize={13} onClick={() => setSourcesOpen(true)}>
+              Sources
+            </Button>
+            <Button variant="secondary" size={44} fontSize={13} onClick={() => setDetailsOpen(true)}>
+              Details
+            </Button>
+            <span style={{ flexGrow: 1 }} />
+            {addMenu}
+          </span>
+        ) : null}
+        {trail.length > 0 ? (
+          <Button variant="secondary" size={28} fontSize={12} onClick={() => props.onTrail?.(trail.length - 1)}>
+            Back to build
+          </Button>
+        ) : null}
+        {phone ? null : addMenu}
       </div>
-    </Panel>
+      {lens === "map" ? (props.map ?? null) : (props.list ?? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_HINT}</p>)}
     </section>
   );
 
-  const card = (
-    <SandboxCard
-      {...props}
-      phone={phone}
-      open={cardOpen}
-      onOpenChange={setCardOpen}
-      field={cardField}
-    />
-  );
+  const card = <SandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} />;
 
   if (phone) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}>
           {heading}
           {statusLine}
         </div>
@@ -674,23 +655,23 @@ export function SandboxView(props: SandboxViewProps) {
             bottom: "calc(92px + env(safe-area-inset-bottom))",
             zIndex: 5,
             display: "flex",
-            gap: 6,
-            padding: 7,
-            borderRadius: 16,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowCard,
+            gap: 8,
+            padding: 8,
+            borderRadius: 12,
+            background: t.window,
+            border: `1px solid ${t.windowBorder}`,
+            boxShadow: t.windowShadow,
             boxSizing: "border-box",
           }}
         >
           <Button variant="ghost" size={48} fontSize={14} onClick={() => openCard(null)}>
             Card
           </Button>
-          <LinkButton to={previewTo} size={48}>
+          <LinkButton to={previewTo} phone>
             Preview
           </LinkButton>
           <div style={{ flexGrow: 1 }}>
-            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
+            <Button size={48} fontSize={15} fullWidth disabled={publishDisabled} onClick={props.onPublish}>
               {publishLabel}
             </Button>
           </div>
@@ -707,48 +688,37 @@ export function SandboxView(props: SandboxViewProps) {
   }
 
   const rail = lens === "map";
-  const columns = !mid
-    ? "220px minmax(0, 1fr)"
-    : wide
-      ? `${rail ? "56px" : "250px"} minmax(0, 1fr) 290px`
-      : `${rail ? "56px" : "220px"} minmax(0, 1fr) 260px`;
-
-  const detailsPanel = (
-    <section aria-label="Details" style={{ minWidth: 0, ...(!mid ? { gridColumn: "1 / -1" } : null) }}>
-      <Panel surface="flat" padding="16px">
-        <PanelTitle>Details</PanelTitle>
-        <div style={{ marginTop: 12 }}>{detailsBody}</div>
-      </Panel>
-    </section>
-  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 16, paddingBottom: 20, borderBottom: `1px solid ${t.hairline}` }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
           {heading}
           {statusLine}
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 7, flexShrink: 0 }}>
-          {lensSwitch}
-          <Button variant="secondary" size={42} fontSize={14} onClick={() => openCard(null)}>
+        {lensSwitch}
+        <div style={{ display: "flex", gap: 8, alignSelf: "flex-start", paddingTop: 2 }}>
+          <Button variant="secondary" size={32} fontSize={13} onClick={() => openCard(null)} style={{ height: 30 }}>
             Card
           </Button>
-          <LinkButton to={previewTo} size={42}>
+          <LinkButton to={previewTo} phone={false}>
             Preview
           </LinkButton>
-          <Button size={42} fontSize={14} disabled={publishDisabled} onClick={props.onPublish} style={publishStyle}>
+          <Button size={32} fontSize={13} disabled={publishDisabled} onClick={props.onPublish} style={{ height: 30 }}>
             {publishLabel}
           </Button>
         </div>
       </div>
       {banner}
-      <div style={{ position: "relative", display: "grid", gridTemplateColumns: columns, gap: 16, alignItems: "start" }}>
+      <div style={{ position: "relative", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
         <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
           {sourcesBody}
         </SourcesFrame>
         {buildPanel}
-        {detailsPanel}
+        <section aria-label="Details" style={{ ...moduleStyle(), flex: "1 1 280px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
+          <PanelTitle>Details</PanelTitle>
+          {detailsBody}
+        </section>
       </div>
       {card}
     </div>

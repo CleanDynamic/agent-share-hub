@@ -27,10 +27,8 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { denseFont, denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, PRIMARY, refinedButtonHeight } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -52,27 +50,6 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   fullWidth?: boolean;
   children: ReactNode;
 }
-
-const PAINT: Record<ButtonVariant, CSSProperties> = {
-  primary: {
-    background: t.action,
-    color: t.onAction,
-    border: `1px solid ${t.action}`,
-    fontWeight: 600,
-  },
-  secondary: {
-    background: t.glass2,
-    color: t.text,
-    border: `1px solid ${t.line}`,
-    fontWeight: 500,
-  },
-  ghost: {
-    background: "transparent",
-    color: t.text2,
-    border: "1px solid transparent",
-    fontWeight: 500,
-  },
-};
 
 export function Button({
   variant = "primary",
@@ -98,69 +75,20 @@ export function Button({
     { disabled },
   );
   const phone = useIsPhone();
-  const refined = useLook() === "refined";
-
-  if (refined) {
-    /* UI-P84: radius 6, heights 28/32/36 (a phone's 44 and 48 stay), padding 0 12px up to 28 and 0 16px above, 12.5/13
-       at 500. Primary, secondary (the control recipe) and ghost are the board's. A labelled button draws no icon. */
-    const height = refinedButtonHeight(size, phone);
-    const small = height <= 28;
-    const paint: CSSProperties =
-      variant === "primary"
-        ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
-        : variant === "secondary"
-          ? controlPaint(state)
-          : {
-              background: "transparent",
-              border: "1px solid transparent",
-              color: state.hovered ? t.text : t.text2,
-            };
-    return (
-      <button
-        data-ui="button"
-        data-variant={variant}
-        type={type}
-        disabled={disabled}
-        {...rest}
-        {...handlers}
-        style={{
-          boxSizing: "border-box",
-          height,
-          padding: small ? "0 12px" : "0 16px",
-          borderRadius: r.control,
-          color: variant === "secondary" ? t.text : undefined,
-          ...paint,
-          fontFamily: FIGTREE,
-          fontSize: small ? 12.5 : 13,
-          fontWeight: 500,
-          display: fullWidth ? "flex" : "inline-flex",
-          width: fullWidth ? "100%" : undefined,
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          cursor: disabled ? "not-allowed" : "pointer",
-          opacity: disabled ? 0.5 : undefined,
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-          ...ring(state.focusVisible),
-          ...style,
-        }}
-      >
-        {children}
-      </button>
-    );
-  }
-
-  /* Hover is a step on the fill, never an opacity change: a primary button is
-     solid, and letting the page show through it is the opposite of the job. */
-  const hover: CSSProperties = state.hovered
-    ? variant === "primary"
-      ? { filter: "brightness(1.08)" }
-      : variant === "ghost"
-        ? { background: t.glass2, color: t.text }
-        : { borderColor: t.text2 }
-    : {};
-
+  /* UI-P84: radius 6, heights 28/32/36 (a phone's 44 and 48 stay), padding 0 12px up to 28 and 0 16px above, 12.5/13
+     at 500. Primary, secondary (the control recipe) and ghost are the board's. A labelled button draws no icon. */
+  const height = refinedButtonHeight(size, phone);
+  const small = height <= 28;
+  const paint: CSSProperties =
+    variant === "primary"
+      ? { ...PRIMARY, ...(state.hovered ? { filter: "brightness(1.08)" } : null) }
+      : variant === "secondary"
+        ? controlPaint(state)
+        : {
+            background: "transparent",
+            border: "1px solid transparent",
+            color: state.hovered ? t.text : t.text2,
+          };
   return (
     <button
       data-ui="button"
@@ -170,27 +98,28 @@ export function Button({
       {...rest}
       {...handlers}
       style={{
-        height: denseHeight(size, { touch: phone }),
-        padding: "0 10px",
+        boxSizing: "border-box",
+        height,
+        padding: small ? "0 12px" : "0 16px",
         borderRadius: r.control,
-        ...PAINT[variant],
+        color: variant === "secondary" ? t.text : undefined,
+        ...paint,
         fontFamily: FIGTREE,
-        fontSize: denseFont(fontSize),
+        fontSize: small ? 12.5 : 13,
+        fontWeight: 500,
         display: fullWidth ? "flex" : "inline-flex",
         width: fullWidth ? "100%" : undefined,
         alignItems: "center",
         justifyContent: "center",
-        gap: 5,
+        gap: 8,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : undefined,
         whiteSpace: "nowrap",
         flexShrink: 0,
-        ...hover,
         ...ring(state.focusVisible),
         ...style,
       }}
     >
-      {Icon ? <Icon size={15} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} /> : null}
       {children}
     </button>
   );

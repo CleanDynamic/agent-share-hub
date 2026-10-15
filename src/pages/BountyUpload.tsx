@@ -135,7 +135,7 @@ export default function BountyUpload() {
                 border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: 'var(--text)', outline: 'none',
-                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
+                resize: 'vertical', fontFamily: 'var(--font-ui)',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -201,7 +201,7 @@ export default function BountyUpload() {
                 border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: 'var(--text)', outline: 'none',
-                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
+                resize: 'vertical', fontFamily: 'var(--font-ui)',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -222,7 +222,7 @@ export default function BountyUpload() {
                 border: '1px solid var(--line)',
                 borderRadius: 10, padding: '12px 14px',
                 fontSize: 14, color: 'var(--text)', outline: 'none',
-                resize: 'vertical', fontFamily: 'Figtree, sans-serif',
+                resize: 'vertical', fontFamily: 'var(--font-ui)',
                 lineHeight: 1.6, boxSizing: 'border-box',
               }}
             />
@@ -267,7 +267,7 @@ export default function BountyUpload() {
                   borderRadius: 10, padding: '14px 14px 14px 32px',
                   fontSize: 22, fontWeight: 700, color: 'var(--cat-breakage)',
                   outline: 'none', boxSizing: 'border-box',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                 }}
               />
             </div>
@@ -383,7 +383,7 @@ export default function BountyUpload() {
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 color: 'var(--text2)',
-                fontSize: 13, cursor: 'pointer', fontFamily: 'Figtree',
+                fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-ui)',
               }}
             >
               ← Back
@@ -405,7 +405,7 @@ export default function BountyUpload() {
               background: 'linear-gradient(135deg, var(--cat-breakage), var(--lit))',
               border: 'none', color: 'var(--text)',
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'Figtree', opacity: submitting ? 0.6 : 1,
+              fontFamily: 'var(--font-ui)', opacity: submitting ? 0.6 : 1,
             }}
           >
             {submitting ? 'Posting...'

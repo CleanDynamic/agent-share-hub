@@ -60,7 +60,7 @@ export function BountyByline({
           <div style={{ textAlign: "left" }}>
             <div
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 fontWeight: 600,
                 color: "var(--text)",
@@ -70,7 +70,7 @@ export function BountyByline({
             </div>
             <div
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 color: "var(--text2)",
               }}
@@ -92,7 +92,7 @@ export function BountyByline({
               background: "color-mix(in srgb, var(--evidence) 10%, transparent)",
               border: "0.5px solid color-mix(in srgb, var(--evidence) 25%, transparent)",
               color: "var(--evidence)",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 600,
               cursor: "pointer",
@@ -131,7 +131,7 @@ export function BountyByline({
                 <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
                   <span
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 600,
                       color: "var(--text)",
@@ -141,7 +141,7 @@ export function BountyByline({
                   </span>
                   <span
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 11,
                       color: "var(--text2)",
                     }}
@@ -155,7 +155,7 @@ export function BountyByline({
               </div>
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 10,
                   fontWeight: 400,
                   color: "color-mix(in srgb, var(--evidence) 70%, transparent)",
@@ -173,7 +173,7 @@ export function BountyByline({
           <button
             onClick={onViewProvenance}
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 500,
               color: "var(--evidence)",

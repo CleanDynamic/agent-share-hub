@@ -42,13 +42,11 @@ import { MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
 import { searchMakers } from "@/lib/profile/searchMakers";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { useLook } from "@/lib/theme/look";
 
 import { GalleryDashboardPage } from "./GalleryDashboardPage";
 import { MakersRow } from "./GalleryExtras";
 import { GalleryFeedView, type FeedListView, type FeedSectionView } from "./GalleryFeedView";
 import { feedRowView } from "./galleryModel";
-import { RefinedGalleryFeedView } from "./RefinedGalleryFeedView";
 
 /** Facets change far more slowly than the builds they describe. */
 const FACETS_STALE_MS = 5 * 60 * 1000;
@@ -77,8 +75,6 @@ interface Paging {
 
 function GalleryFeedPage() {
   const { user } = useAuth();
-  /* UI-P89: the refined look renders the fork, with the same props. */
-  const FeedView = useLook() === "refined" ? RefinedGalleryFeedView : GalleryFeedView;
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
@@ -240,7 +236,7 @@ function GalleryFeedPage() {
         description="Things people built with AI, and the exact model versions other people got them working on."
         path="/gallery"
       />
-      <FeedView
+      <GalleryFeedView
         fit="content"
         view={view}
         onViewChange={(next) => go({ view: next })}

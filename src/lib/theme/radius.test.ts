@@ -9,9 +9,8 @@
 // names sharing a value. The distinctness assertion below became an assertion
 // about that ONE pair rather than being dropped.
 //
-// UI-P81 added `r-window`, the scale's first entry that is a reference and not
-// a number (it follows `r-panel` in the current look), and the refined look's
-// own, tighter scale. Anything that needs pixels resolves the reference first.
+// UI-P81 added `r-window` and the refined look's own, tighter scale, which UI-P99
+// made the only one: 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -19,8 +18,6 @@ import { describe, expect, it } from "vitest";
 import {
   RADIUS,
   RADIUS_NAMES,
-  REFINED_RADIUS,
-  REFINED_RADIUS_NAMES,
   r,
   radiusVar,
   type RadiusName,
@@ -30,11 +27,9 @@ import { TOKEN_NAMES } from "./semantics";
 
 const SRC = join(process.cwd(), "src");
 
-/** A radius in pixels. `RADIUS["r-window"]` is `var(--r-panel)`, so a reference is followed to the step it names. */
-function pixels(name: RadiusName, table: Readonly<Partial<Record<RadiusName, string>>> = RADIUS): number {
-  const value = table[name] ?? RADIUS[name];
-  const alias = /^var\(--(r-[a-z]+)\)$/.exec(value);
-  return alias ? pixels(alias[1] as RadiusName, table) : parseInt(value, 10);
+/** A radius in pixels. */
+function pixels(name: RadiusName): number {
+  return parseInt(RADIUS[name], 10);
 }
 
 /** Every .ts/.tsx file under src/, as [repo-relative path, contents]. */
@@ -50,13 +45,13 @@ function sourceFiles(dir = SRC): Array<[string, string]> {
 describe("the radius scale", () => {
   it("is exactly the steps the spec lists, plus BG-P09's thread box and UI-P81's window", () => {
     expect(RADIUS).toEqual({
-      "r-chip": "8px",
-      "r-media": "10px",
-      "r-control": "12px",
-      "r-thread": "12px",
-      "r-card": "14px",
-      "r-panel": "16px",
-      "r-window": "var(--r-panel)",
+      "r-chip": "4px",
+      "r-media": "6px",
+      "r-control": "6px",
+      "r-thread": "6px",
+      "r-card": "8px",
+      "r-panel": "10px",
+      "r-window": "12px",
       "r-full": "999px",
     });
   });
@@ -90,30 +85,23 @@ describe("the radius scale", () => {
     expect(px).toEqual([...px].sort((a, b) => a - b));
   });
 
-  it("has one reference in it, and it is the window, which is the panel's own radius today", () => {
-    // The current look has no window of its own: a dialog is as round as a
-    // panel. An alias says that in the one place it can be read, and cannot
-    // drift the way a second `16px` could.
-    const references = RADIUS_NAMES.filter((n) => RADIUS[n].startsWith("var("));
-    expect(references).toEqual(["r-window"]);
-    expect(RADIUS["r-window"]).toBe("var(--r-panel)");
-    expect(pixels("r-window")).toBe(pixels("r-panel"));
+  it("is pixels throughout, and the window is its own step, 2px above the panel", () => {
+    for (const name of RADIUS_NAMES) expect(RADIUS[name]).toMatch(/^\d+px$/);
+    expect(pixels("r-window")).toBe(pixels("r-panel") + 2);
     expect(r.window).toBe("var(--r-window)");
   });
 
-  it("has exactly one pair sharing a value, and it is control and thread", () => {
-    // Distinctness used to be the rule. BG-P09 broke it once, on purpose: the
-    // thread box is 12px because it sits between the pictures and the frame,
-    // and a button is 12px because a button is 12px. Two roles, two names, one
-    // value today — see the note on `r-thread`. Any OTHER collision is a name
-    // for a size the scale already has, which is how six steps become sixteen,
-    // so this asserts the exception rather than dropping the rule.
+  it("ties exactly the media, the control and the thread box, as three roles", () => {
+    // Three names at 6px: the box, the button and the picture are different
+    // roles, and the day one of them moves the other two must not follow (see
+    // the note on `r-thread`). Any OTHER tie is a name for a size the scale
+    // already has, which is how six steps become sixteen.
     const byValue = new Map<string, RadiusName[]>();
     for (const name of RADIUS_NAMES) {
       byValue.set(RADIUS[name], [...(byValue.get(RADIUS[name]) ?? []), name]);
     }
     const shared = [...byValue.values()].filter((names) => names.length > 1);
-    expect(shared).toEqual([["r-control", "r-thread"]]);
+    expect(shared).toEqual([["r-media", "r-control", "r-thread"]]);
   });
 
   it("keeps --r-full for circular things, far above the rectangular steps", () => {
@@ -141,63 +129,6 @@ describe("the radius scale", () => {
     // as a step is still caught after the declaration has gone.
     expect(RADIUS_NAMES).not.toContain("radius-btn" as RadiusName);
     expect(RADIUS_NAMES).not.toContain("radius-badge" as RadiusName);
-  });
-});
-
-describe("the refined scale (UI-P81)", () => {
-  // The same names under `data-look="refined"`, at the values the refined boards
-  // draw: 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
-  // `css-parity.test.ts` proves the two refined blocks in index.css declare it.
-  it("is 4 tag, 6 control and media, 8 card, 10 surface and 12 window", () => {
-    expect(REFINED_RADIUS).toEqual({
-      "r-chip": "4px",
-      "r-media": "6px",
-      "r-control": "6px",
-      "r-thread": "6px",
-      "r-card": "8px",
-      "r-panel": "10px",
-      "r-window": "12px",
-    });
-  });
-
-  it("covers every rectangular step of the scale and leaves the circle alone", () => {
-    // A step left out would keep its current-look value under the refined look
-    // by accident, which is a 14px card among 8px ones.
-    expect([...REFINED_RADIUS_NAMES].sort()).toEqual(RADIUS_NAMES.filter((n) => n !== "r-full").sort());
-    expect(REFINED_RADIUS_NAMES as readonly string[]).not.toContain("r-full");
-  });
-
-  it("is pixels throughout, so nothing in it can follow the current look's values", () => {
-    for (const name of REFINED_RADIUS_NAMES) expect(REFINED_RADIUS[name]).toMatch(/^\d+px$/);
-  });
-
-  it("steps upward from chip to window, and never downward", () => {
-    const order: RadiusName[] = ["r-chip", "r-media", "r-control", "r-thread", "r-card", "r-panel", "r-window"];
-    const px = order.map((n) => pixels(n, REFINED_RADIUS));
-    expect(px).toEqual([...px].sort((a, b) => a - b));
-  });
-
-  it("is tighter than the current look at every step", () => {
-    for (const name of REFINED_RADIUS_NAMES) {
-      expect(pixels(name, REFINED_RADIUS), `${name} is not tighter than ${pixels(name)}px`).toBeLessThan(pixels(name));
-    }
-  });
-
-  it("parts the window from the panel, which are one radius in the current look", () => {
-    expect(pixels("r-window")).toBe(pixels("r-panel"));
-    expect(pixels("r-window", REFINED_RADIUS)).toBe(pixels("r-panel", REFINED_RADIUS) + 2);
-  });
-
-  it("ties exactly the media, the control and the thread box, as three roles", () => {
-    // Three names at 6px where the current look has one pair: see the note on
-    // REFINED_RADIUS. Any OTHER tie is a name for a size the scale already has.
-    const byValue = new Map<string, RadiusName[]>();
-    for (const name of REFINED_RADIUS_NAMES) {
-      byValue.set(REFINED_RADIUS[name], [...(byValue.get(REFINED_RADIUS[name]) ?? []), name]);
-    }
-    expect([...byValue.values()].filter((names) => names.length > 1)).toEqual([
-      ["r-media", "r-control", "r-thread"],
-    ]);
   });
 });
 

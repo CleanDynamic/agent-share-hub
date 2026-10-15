@@ -27,12 +27,6 @@ describe("Skeleton, refined", () => {
     expect(html).not.toContain("data-bg-animated");
   });
 
-  it("keeps the current look's recess and pulse under ?look=current", () => {
-    const html = markup("current", <Skeleton height={13} />);
-    expect(html).toContain("background:var(--recess)");
-    expect(html).toContain("data-bg-animated");
-  });
-
   it("names the region that holds it", () => {
     render(at("refined", <LoadingRegion what="the builds" announce><Skeleton height={13} /></LoadingRegion>));
     expect(screen.getByRole("status").getAttribute("aria-busy")).toBe("true");

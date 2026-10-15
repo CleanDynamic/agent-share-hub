@@ -16,7 +16,6 @@
 
 import type { CSSProperties, HTMLAttributes } from "react";
 
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 export interface LampDotProps extends Omit<HTMLAttributes<HTMLSpanElement>, "style" | "children"> {
@@ -29,28 +28,7 @@ export interface LampDotProps extends Omit<HTMLAttributes<HTMLSpanElement>, "sty
 }
 
 export function LampDot({ width, height = 7, dim = false, ...rest }: LampDotProps) {
-  const refined = useLook() === "refined";
-  if (refined) return <LampBar {...rest} width={width ?? 8} dim={dim} />;
-  return (
-    <span
-      {...rest}
-      aria-hidden="true"
-      data-ui="lamp-dot"
-      data-variant={dim ? "dim" : "on"}
-      style={{
-        width: width ?? 10,
-        height,
-        borderRadius: "50%",
-        /* Longhand: the value is a colour and nothing else, and a shorthand
-           holding a `var()` is the declaration jsdom's cssstyle drops whole. */
-        backgroundColor: "var(--lit)",
-        opacity: dim ? 0.45 : 1,
-        boxShadow: dim ? undefined : "var(--lamp-glow)",
-        flexShrink: 0,
-        display: "inline-block",
-      }}
-    />
-  );
+  return <LampBar {...rest} width={width ?? 8} dim={dim} />;
 }
 
 /** The refined lamp: a bar. Exported for the streak day, the figure's label and the picture lamp, which size it themselves. */

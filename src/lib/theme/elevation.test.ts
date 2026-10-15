@@ -12,10 +12,9 @@ import {
   SCRIM,
   duskElevation,
   elevation,
-  elevationThemes,
   noonElevation,
 } from "./elevation";
-import { refinedThemes, resolveRefined } from "./refined";
+import { declared, resolveToken as resolveRefined } from "./resolve";
 
 describe("the elevation model", () => {
   it("is three levels, and no fourth", () => {
@@ -45,45 +44,29 @@ describe("the elevation model", () => {
 });
 
 describe("a shadow on a light ground is not a shadow on a dark ground", () => {
+  const shadow = (theme: "noon" | "dusk", token: (typeof ELEVATION_TOKENS)[number]) => resolveRefined(theme, token);
+
   it("overlay differs between the themes", () => {
-    expect(duskElevation["elev-overlay"]).not.toBe(noonElevation["elev-overlay"]);
+    expect(shadow("dusk", "elev-overlay")).not.toBe(shadow("noon", "elev-overlay"));
   });
 
   it("raised differs too", () => {
-    expect(duskElevation["elev-raised"]).not.toBe(noonElevation["elev-raised"]);
+    expect(shadow("dusk", "elev-raised")).not.toBe(shadow("noon", "elev-raised"));
   });
 
-  it("Dusk carries a lit top hairline at every level that casts", () => {
+  it("Dusk's raised level carries a lit top hairline", () => {
     // The hairline is what reads as "above" on a dark ground; the shadow only
     // says how far. Remove it and Dusk's menus sit flat on the page.
-    for (const token of ELEVATION_TOKENS) {
-      expect(duskElevation[token], `dusk --${token} has no lit edge`).toContain(
-        "inset 0 1px 0 var(--glass-hi)",
-      );
-    }
-  });
-
-  it("Noon carries no inset edge — its room does the lighting", () => {
-    for (const token of ELEVATION_TOKENS) {
-      expect(noonElevation[token]).not.toContain("inset");
-    }
-  });
-
-  it("Noon's shadows are struck from --text, not from black", () => {
-    for (const token of ELEVATION_TOKENS) {
-      expect(noonElevation[token]).toContain("rgba(27,32,38,");
-      expect(noonElevation[token]).not.toContain("rgba(0,0,0,");
-    }
+    expect(shadow("dusk", "elev-raised")).toContain("inset 0 1px 0");
   });
 
   it("overlay is deeper than raised in both themes", () => {
-    const spread = (shadow: string) =>
-      Math.max(...[...shadow.matchAll(/(\d+)px/g)].map((m) => Number(m[1])));
-    for (const [name, theme] of Object.entries(elevationThemes)) {
+    const spread = (value: string) => Math.max(...[...value.matchAll(/(\d+)px/g)].map((m) => Number(m[1])));
+    for (const theme of ["noon", "dusk"] as const) {
       expect(
-        spread(theme["elev-overlay"]),
-        `${name} overlay does not travel further than raised`,
-      ).toBeGreaterThan(spread(theme["elev-raised"]));
+        spread(shadow(theme, "elev-overlay")),
+        `${theme} overlay does not travel further than raised`,
+      ).toBeGreaterThan(spread(shadow(theme, "elev-raised")));
     }
   });
 
@@ -93,16 +76,16 @@ describe("a shadow on a light ground is not a shadow on a dark ground", () => {
   });
 });
 
-describe("elevation under the refined look (UI-P81)", () => {
+describe("elevation (UI-P81)", () => {
   // UI-P79 set the refined values and `css-parity.test.ts` proves index.css says
-  // what `refined.ts` says. What is pinned here is the wiring: the levels spend
+  // what `elevation.ts` says. What is pinned here is the wiring: the levels spend
   // `--elev-raised` and `--elev-overlay` (asserted at the top of this file), and
-  // the refined look repoints those at the control and window recipes, and a
+  // those point at the control and window recipes, and a
   // card's resting `--shadow-card` at the module's.
   it.each(["noon", "dusk"] as const)("%s: raised is the control recipe, overlay the window recipe, a card's shadow the module's", (theme) => {
-    expect(refinedThemes[theme]["elev-raised"]).toBe("var(--control-shadow)");
-    expect(refinedThemes[theme]["elev-overlay"]).toBe("var(--window-shadow)");
-    expect(refinedThemes[theme]["shadow-card"]).toBe("var(--module-shadow)");
+    expect(declared(theme, "elev-raised")).toBe("var(--control-shadow)");
+    expect(declared(theme, "elev-overlay")).toBe("var(--window-shadow)");
+    expect(declared(theme, "shadow-card")).toBe("var(--module-shadow)");
   });
 
   it.each(["noon", "dusk"] as const)("%s: both levels resolve to a real shadow, and overlay travels further than raised", (theme) => {

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
-import { RefinedSandboxCard } from "./RefinedSandboxCard";
+import { SandboxCard } from "./SandboxCard";
 import { CARD_FIELD_ID, type SandboxCardProps } from "./SandboxCard";
 
 beforeEach(() => {
@@ -32,14 +32,14 @@ function mount(over: Partial<SandboxCardProps> = {}) {
     ...over,
   };
   render(
-    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
-      <RefinedSandboxCard {...props} />
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+      <SandboxCard {...props} />
     </MemoryRouter>,
   );
   return props;
 }
 
-describe("RefinedSandboxCard: what SandboxCard does", () => {
+describe("SandboxCard: what SandboxCard does", () => {
   it("is a dialog named Card with the cover, the three fields and Made with, and nothing when closed", () => {
     mount();
     const card = screen.getByRole("dialog", { name: "Card" });
@@ -85,7 +85,7 @@ describe("RefinedSandboxCard: what SandboxCard does", () => {
   });
 });
 
-describe("RefinedSandboxCard: the board", () => {
+describe("SandboxCard: the board", () => {
   it("is a side sheet 472 wide, inset 6, radius 12, the window recipe with the sheet shadow", () => {
     mount();
     const sheet = screen.getByTestId("sandbox-card");

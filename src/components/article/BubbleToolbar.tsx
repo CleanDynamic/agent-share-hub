@@ -161,7 +161,7 @@ export function BubbleToolbar({ editor, containerRef, onAddComment }: BubbleTool
         borderRadius: 8,
         padding: '4px 8px',
         boxShadow: 'var(--elev-raised)',
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         fontSize: 13,
         opacity: visible ? 1 : 0,
         transition: feedback("opacity"),

@@ -1,38 +1,21 @@
-/* UI-P74 — "Before you send it": what to paste and attach before a step's text goes into its chat.
+/* UI-P90 — "Before you send it" in the refined look, as `design/reference/refined/{dusk,noon}/build-map.html` draws
+   it in the reading panel.
 
-   One row per paste-in (an arrow, "Paste what step {n} gave you" over the title and the tool it came
-   from, and a link that goes to that step), one per attachment ("Attach {name}" over "File · {size}",
-   with Download). Inside an agent or a team the rows read "Uses". Left out when the step has nothing.
-   The same panel fills the reading panel of the Map and the full prompt window in reader mode. */
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `BeforeYouSend` stays the current look; this takes its props (imported, not copied) and says
+   the same rows in the same order with the same accessible names. The heading is 13/500 over a `--hairline-module`
+   rule; each row is 48 high on that rule: a 16px glyph in `--label`, the line 12.5/500 over its detail 11.5 `--label`,
+   and the link at the right 12.5/500. */
 
-import { ArrowLeft, Paperclip } from "lucide-react";
 import type { CSSProperties } from "react";
 
-import type { ReaderStep } from "@/lib/build/readerSteps";
-import { useInteractive } from "@/lib/theme/interactive";
+import { Glyph } from "@/components/brand/Glyph";
 import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
+import type { ReaderStep } from "@/lib/build/readerSteps";
 
 export const BEFORE_YOU_SEND = "Before you send it";
-
-const mono: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, lineHeight: "normal", color: t.text2 };
-const row: CSSProperties = { display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: `1px solid ${t.hairline}` };
-
-function LinkButton({ children, onClick, label }: { children: string; onClick: () => void; label: string }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      {...handlers}
-      style={{ background: "none", border: 0, padding: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, ...ring(state.focusVisible) }}
-    >
-      {children}
-    </button>
-  );
-}
 
 export interface BeforeYouSendProps {
   entry: ReaderStep;
@@ -47,18 +30,64 @@ export function hasBeforeYouSend(entry: ReaderStep): boolean {
   return inside(entry) ? entry.uses.length > 0 : entry.pasteIns.length > 0 || entry.attach.length > 0;
 }
 
-const inside = (entry: ReaderStep): boolean => entry.step.number.includes(".") || entry.step.kind === "agent" || entry.step.kind === "team";
+const text = (px: number, weight: 400 | 500, color: string): CSSProperties => ({
+  fontFamily: FIGTREE,
+  fontSize: px,
+  fontWeight: weight,
+  lineHeight: "normal",
+  color,
+});
+
+const row: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minHeight: 48,
+  borderBottom: `1px solid ${t.hairlineModule}`,
+};
+
+const lines: CSSProperties = { display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 };
+
+const inside = (entry: BeforeYouSendProps["entry"]): boolean =>
+  entry.step.number.includes(".") || entry.step.kind === "agent" || entry.step.kind === "team";
+
+function LinkButton({ children, onClick, label }: { children: string; onClick: () => void; label: string }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      {...handlers}
+      style={{
+        ...text(12.5, 500, t.text),
+        background: "none",
+        border: 0,
+        padding: 0,
+        cursor: "pointer",
+        textDecoration: state.hovered ? "underline" : "none",
+        textUnderlineOffset: 3,
+        flexShrink: 0,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
   if (!hasBeforeYouSend(entry)) return null;
   return (
-    <section data-testid="before-you-send" aria-label={BEFORE_YOU_SEND}>
-      <h3 style={{ margin: "0 0 4px", fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>{BEFORE_YOU_SEND}</h3>
+    <section data-testid="before-you-send" aria-label={BEFORE_YOU_SEND} style={{ display: "flex", flexDirection: "column" }}>
+      <h3 style={{ ...text(13, 500, t.text), margin: 0, paddingBottom: 8, borderBottom: `1px solid ${t.hairlineModule}` }}>
+        {BEFORE_YOU_SEND}
+      </h3>
       {inside(entry) ? (
         entry.uses.map((use) => (
           <div key={use} data-testid="before-row" style={row}>
-            <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>Uses</span>
-            <span style={{ fontFamily: FIGTREE, fontSize: 14, color: t.text }}>{use}</span>
+            <span style={text(12.5, 500, t.text)}>Uses</span>
+            <span style={{ ...text(12.5, 400, t.text2), minWidth: 0, overflowWrap: "anywhere" }}>{use}</span>
           </div>
         ))
       ) : (
@@ -67,10 +96,12 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
             const tool = toolOf(paste.stepId);
             return (
               <div key={paste.stepId} data-testid="before-row" style={row}>
-                <ArrowLeft size={14} strokeWidth={1.8} aria-hidden="true" color={t.text2} style={{ flexShrink: 0 }} />
-                <div style={{ flexGrow: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text }}>Paste what step {paste.number} gave you</div>
-                  <div style={mono}>{[paste.title, tool].filter(Boolean).join(" · ")}</div>
+                <span aria-hidden="true" style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+                  <Glyph name="larr" size={16} />
+                </span>
+                <div style={lines}>
+                  <span style={text(12.5, 500, t.text)}>Paste what step {paste.number} gave you</span>
+                  <span style={text(11.5, 400, t.label)}>{[paste.title, tool].filter(Boolean).join(" · ")}</span>
                 </div>
                 <LinkButton label={`Go to step ${paste.number}`} onClick={() => onSelect(paste.stepId)}>
                   {`Step ${paste.number}`}
@@ -80,13 +111,20 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
           })}
           {entry.attach.map((file) => (
             <div key={file.id} data-testid="before-row" style={row}>
-              <Paperclip size={14} strokeWidth={1.8} aria-hidden="true" color={t.text2} style={{ flexShrink: 0 }} />
-              <div style={{ flexGrow: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>Attach {file.name}</div>
-                <div style={mono}>{["File", file.size].filter(Boolean).join(" · ")}</div>
+              <span aria-hidden="true" style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+                <Glyph name="file" size={16} />
+              </span>
+              <div style={lines}>
+                <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>Attach {file.name}</span>
+                <span style={text(11.5, 400, t.label)}>{["File", file.size].filter(Boolean).join(" · ")}</span>
               </div>
               {file.download ? (
-                <a href={file.download} download={file.name} aria-label={`Download ${file.name}`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text }}>
+                <a
+                  href={file.download}
+                  download={file.name}
+                  aria-label={`Download ${file.name}`}
+                  style={{ ...text(12.5, 500, t.text), textDecoration: "none", flexShrink: 0 }}
+                >
                   Download
                 </a>
               ) : null}
@@ -97,3 +135,5 @@ export function BeforeYouSend({ entry, toolOf, onSelect }: BeforeYouSendProps) {
     </section>
   );
 }
+
+export default BeforeYouSend;

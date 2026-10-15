@@ -179,7 +179,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                 width: '100%',
                 fontSize: 13,
                 fontWeight: 400,
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 padding: '10px 14px',
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
@@ -230,7 +230,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                         : '1px solid var(--line)',
                       color: 'var(--text2)',
                       fontWeight: 500,
-                      fontFamily: 'Figtree, sans-serif',
+                      fontFamily: 'var(--font-ui)',
                       transition: feedback(),
                       textAlign: 'left',
                     }}
@@ -263,7 +263,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                   padding: 16,
                   fontSize: 12,
                   color: 'var(--text2)',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                 }}>
                   No blocks match "{blockSearch}"
                 </div>
@@ -341,7 +341,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
             borderRadius: 6,
             color: 'var(--text2)',
             fontSize: 12, fontWeight: 500,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             cursor: 'pointer',
             transition: feedback(),
             whiteSpace: 'nowrap',
@@ -372,7 +372,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
           <span style={{
             fontSize: 10, color: 'var(--text2)',
             fontWeight: 600, minWidth: 32, textAlign: 'center',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
           }}>
             {Math.round(zoom * 100)}%
           </span>
@@ -503,7 +503,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                       <span style={{
                         fontSize: 11, fontWeight: 500,
                         color: 'color-mix(in srgb, var(--cat-breakage) 80%, transparent)',
-                        fontFamily: 'Figtree, sans-serif',
+                        fontFamily: 'var(--font-ui)',
                         flex: 1,
                       }}>
                         Are you sure?
@@ -521,7 +521,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                           borderRadius: 6,
                           color: 'color-mix(in srgb, var(--cat-breakage) 90%, transparent)',
                           cursor: 'pointer',
-                          fontFamily: 'Figtree, sans-serif',
+                          fontFamily: 'var(--font-ui)',
                         }}
                       >
                         Yes
@@ -536,7 +536,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
                           borderRadius: 6,
                           color: 'var(--text2)',
                           cursor: 'pointer',
-                          fontFamily: 'Figtree, sans-serif',
+                          fontFamily: 'var(--font-ui)',
                         }}
                       >
                         No
@@ -583,7 +583,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               borderRadius: 6,
               color: 'var(--text2)',
               fontSize: 12, fontWeight: 500,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               cursor: saving ? 'not-allowed' : 'pointer',
               opacity: saving ? 0.6 : 1,
               transition: feedback(),
@@ -610,7 +610,7 @@ export function CanvasToolbar(props: CanvasToolbarProps) {
               borderRadius: 6,
               color: 'var(--text)',
               fontSize: 12, fontWeight: 600,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               cursor: submitting ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.7 : 1,
               transition: feedback(),
@@ -634,7 +634,7 @@ function menuItem(hovered: boolean): React.CSSProperties {
     padding: '8px 12px',
     fontSize: 12,
     fontWeight: 500,
-    fontFamily: 'Figtree, sans-serif',
+    fontFamily: 'var(--font-ui)',
     color: 'var(--text2)',
     background: hovered ? 'var(--recess)' : 'none',
     border: 'none',

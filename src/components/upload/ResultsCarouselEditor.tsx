@@ -185,7 +185,7 @@ export function ResultsCarouselEditor({
             border: "none",
             borderRadius: 6,
             cursor: "pointer",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 13,
             fontWeight: 500,
             color: "var(--text)",
@@ -245,7 +245,7 @@ export function ResultsCarouselEditor({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 500,
             letterSpacing: "0.04em",
@@ -279,7 +279,7 @@ export function ResultsCarouselEditor({
                 border: "none",
                 borderRadius: "6px 0 0 6px",
                 cursor: isAtCapacity ? "not-allowed" : "pointer",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 fontWeight: 500,
                 color: isAtCapacity ? "var(--text2)" : "var(--text)",
@@ -338,7 +338,7 @@ export function ResultsCarouselEditor({
           <Images size={28} color="var(--text2)" />
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               color: "var(--text2)",
             }}
@@ -366,7 +366,7 @@ export function ResultsCarouselEditor({
                   border: "0.5px solid var(--line)",
                   borderRadius: 6,
                   cursor: "pointer",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   fontWeight: 500,
                   color: "var(--text)",
@@ -461,7 +461,7 @@ export function ResultsCarouselEditor({
                           background: "transparent",
                           border: "none",
                           resize: "none",
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 16,
                           fontWeight: 400,
                           fontStyle: activeSlide.text ? "normal" : "italic",
@@ -494,7 +494,7 @@ export function ResultsCarouselEditor({
                         border: "none",
                         borderRadius: 6,
                         cursor: "pointer",
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 12,
                         fontWeight: 500,
                         color: "white",
@@ -581,7 +581,7 @@ export function ResultsCarouselEditor({
                   flex: 1,
                   background: "transparent",
                   border: "none",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   fontWeight: 400,
                   fontStyle: "italic",
@@ -592,7 +592,7 @@ export function ResultsCarouselEditor({
               />
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 10,
                   color: "var(--text2)",
                   whiteSpace: "nowrap",
@@ -716,7 +716,7 @@ export function ResultsCarouselEditor({
                   >
                     <span
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 9,
                         fontWeight: 500,
                         color: "var(--text)",

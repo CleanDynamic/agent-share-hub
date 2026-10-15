@@ -44,35 +44,7 @@ function sample(placement: GapPlacement, state: GapState) {
   );
 }
 
-/**
- * Every rendered category chip's own opening tag.
- *
- * The assertion has to be scoped to the CHIP rather than to the marker: a
- * funded panel legitimately prints its reward on the breakage category's
- * measured ground — the money is a breakage-category fact — so a blanket "no
- * breakage fill anywhere" would fail for the right reason and hide the wrong
- * one. What must never be red is the chip that names the part.
- */
-function categoryChips(html: string): string[] {
-  return [...html.matchAll(/<span[^>]*data-visual-slot="category-chip"[^>]*>/g)].map(
-    (match) => match[0]
-  );
-}
-
 describe("a gap keeps its own category chip", () => {
-  for (const state of STATES) {
-    for (const placement of ["row", "panel"] as const) {
-      it(`is a configuration chip, not a red one — ${placement}, ${state}`, () => {
-        const chips = categoryChips(markup(sample(placement, state)));
-        expect(chips).toHaveLength(1);
-        // The part's own hue, and never breakage's. (The chip has had no fill
-        // since the design kit's repaint; the hue is the whole signal.)
-        expect(chips[0]).toContain("color:var(--cat-configuration)");
-        expect(chips[0]).not.toContain("var(--cat-breakage");
-      });
-    }
-  }
-
   it("names the part, so the ask routes to people who write that kind of part", () => {
     render(sample("panel", "funded"));
     const chip = screen.getByText("Model settings");

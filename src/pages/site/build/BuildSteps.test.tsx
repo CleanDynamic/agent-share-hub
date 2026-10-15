@@ -8,9 +8,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
 
 import type { BuildStepsView } from "./buildModel";
-import { RefinedNeedPanel, RefinedStepsList } from "./RefinedBuildSteps";
+import { NeedPanel, StepsList } from "./BuildSteps";
 
-const REFINED = "/dev/kit/pages/build-steps?look=refined";
+const REFINED = "/dev/kit/pages/build-steps";
 
 function view(which: BuildStepsSample = "list", over: Partial<BuildStepsView> = {}): BuildStepsView {
   const { title, outcome, ...steps } = buildStepsFixture(which);
@@ -22,7 +22,7 @@ function view(which: BuildStepsSample = "list", over: Partial<BuildStepsView> = 
 function mountList(steps: BuildStepsView, announce = vi.fn(), phone = false) {
   render(
     <MemoryRouter initialEntries={[REFINED]}>
-      <RefinedStepsList view={steps} phone={phone} announce={announce} />
+      <StepsList view={steps} phone={phone} announce={announce} />
     </MemoryRouter>,
   );
   return announce;
@@ -32,7 +32,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("RefinedStepsList", () => {
+describe("StepsList", () => {
   it("draws the list sample's five steps under four chat heads, each led by its tool's real mark", () => {
     mountList(view("list"));
     const list = screen.getByTestId("build-steps");
@@ -116,12 +116,12 @@ describe("RefinedStepsList", () => {
   });
 });
 
-describe("RefinedNeedPanel", () => {
+describe("NeedPanel", () => {
   it("lists tools with their marks at 28, files with Download, time, and says what Copy for AI copies", () => {
     const onOpenOther = vi.fn();
     render(
       <MemoryRouter initialEntries={[REFINED]}>
-        <RefinedNeedPanel view={view("list")} onOpenOther={onOpenOther} />
+        <NeedPanel view={view("list")} onOpenOther={onOpenOther} />
       </MemoryRouter>,
     );
     const need = screen.getByTestId("build-need");

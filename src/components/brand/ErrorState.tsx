@@ -28,9 +28,7 @@
 import { useEffect, useRef, type CSSProperties, type HTMLAttributes } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE, mono } from "@/lib/theme/type";
 
 import { Button } from "./Button";
 
@@ -73,37 +71,19 @@ export function ErrorState({ line = DEFAULT_ERROR_LINE, panel, onRetry, error, s
   const phone = useIsPhone();
   useLogOnce(error, panel);
 
-  if (useLook() === "refined") {
-    /* UI-P97: one sentence and Try again (secondary). The panel's name is not drawn; it names the region for a screen
-       reader instead, so a page with two failures still says which two. */
-    return (
-      <div
-        data-ui="error-state"
-        {...rest}
-        role="status"
-        aria-live="polite"
-        aria-label={panel}
-        style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, ...style }}
-      >
-        <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", color: t.text }}>{line}</p>
-        <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onRetry}>
-          Try again
-        </Button>
-      </div>
-    );
-  }
-
+  /* UI-P97: one sentence and Try again (secondary). The panel's name is not drawn; it names the region for a screen
+     reader instead, so a page with two failures still says which two. */
   return (
     <div
       data-ui="error-state"
       {...rest}
       role="status"
       aria-live="polite"
-      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, ...style }}
+      aria-label={panel}
+      style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, ...style }}
     >
-      <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: "normal", color: t.text }}>{line}</p>
-      <span style={{ ...mono(11), lineHeight: "normal", color: t.label }}>{panel}</span>
-      <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} onClick={onRetry}>
+      <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", color: t.text }}>{line}</p>
+      <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={onRetry}>
         Try again
       </Button>
     </div>

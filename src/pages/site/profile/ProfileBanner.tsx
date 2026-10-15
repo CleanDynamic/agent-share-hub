@@ -14,13 +14,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Check, MessageSquare, Plus } from "lucide-react";
 
-import { Arc, ARC_PROFILE_BANNER, ARC_PROFILE_BANNER_MOBILE } from "@/components/brand/Arc";
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { Eyebrow } from "@/components/brand/Eyebrow";
-import { useLook } from "@/lib/theme/look";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE } from "@/lib/theme/type";
 
@@ -121,20 +118,19 @@ export interface ProfileBannerProps extends ProfileActionsProps {
 const ELLIPSIS: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBannerProps) {
-  const refined = useLook() === "refined";
   const line = handleLine(maker.handle, maker.bio);
-  const mark = (size: number, radius: number, avatar: number) => (
+  const mark = (size: number, avatar: number) => (
     <div
       data-ui="profile-square"
       style={{
         width: size,
         height: size,
-        borderRadius: refined ? 8 : radius,
+        borderRadius: 8,
         background: t.inverse,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: refined ? "none" : t.shadowSquare,
+        boxShadow: "none",
         flexShrink: 0,
       }}
     >
@@ -145,13 +141,12 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
   if (phone) {
     return (
       <section data-testid="profile-banner" style={{ position: "relative", height: 290 }}>
-        <div style={{ height: 180, borderRadius: refined ? 8 : 18, overflow: "hidden", position: "relative", border: `1px solid ${refined ? t.moduleBorder : t.glassBorder}` }}>
+        <div style={{ height: 180, borderRadius: 8, overflow: "hidden", position: "relative", border: `1px solid ${t.moduleBorder}` }}>
           <div style={FILL}>
             <Cover maker={maker} />
           </div>
-          <Arc geometry={ARC_PROFILE_BANNER_MOBILE} />
         </div>
-        <div style={{ position: "absolute", left: 14, top: 130 }}>{mark(92, 16, 70)}</div>
+        <div style={{ position: "absolute", left: 14, top: 130 }}>{mark(92, 70)}</div>
         <div style={{ position: "absolute", left: 120, right: 0, top: 190, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
           <Eyebrow>{eyebrowLine(maker.place, maker.since, true)}</Eyebrow>
           <h1 style={{ ...display(30, { mobilePageHeading: true }), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
@@ -161,69 +156,35 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
     );
   }
 
-  if (refined) {
-    /* The cover is a media well and the identity row sits on a module strip under it: no scrim gradient to read the name through. */
-    return (
-      <section
-        data-testid="profile-banner"
-        style={{ position: "relative", height: "100%", borderRadius: 8, overflow: "hidden", border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow }}
-      >
-        <div style={FILL}>
-          <Cover maker={maker} />
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "12px 16px",
-            padding: 16,
-            background: t.module,
-            borderTop: `1px solid ${t.hairlineModule}`,
-          }}
-        >
-          {mark(72, 8, 56)}
-          <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <Eyebrow>{eyebrowLine(maker.place, maker.since)}</Eyebrow>
-            <h1 style={{ ...display(32), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
-            <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, ...ELLIPSIS }}>{line}</div>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <ProfileActions {...actions} />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
+  /* The cover is a media well and the identity row sits on a module strip under it: no scrim gradient to read the name through. */
   return (
     <section
       data-testid="profile-banner"
-      style={{
-        position: "relative",
-        height: "100%",
-        borderRadius: r.panel,
-        overflow: "hidden",
-        border: `1px solid ${t.glassBorder}`,
-        boxShadow: t.shadowCard,
-      }}
+      style={{ position: "relative", height: "100%", borderRadius: 8, overflow: "hidden", border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow }}
     >
       <div style={FILL}>
         <Cover maker={maker} />
       </div>
-      <Arc geometry={ARC_PROFILE_BANNER} preserveAspectRatio="xMinYMin slice" style={{ width: 900, height: 260 }} />
-      <div style={{ ...FILL, background: `linear-gradient(0deg, ${t.bannerScrim} 0%, transparent 70%)` }} />
-      {/* Narrower than the board (UI-P39), the actions take their own line rather than cut the name short. */}
-      <div style={{ position: "absolute", left: 20, bottom: 18, right: 20, display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "9px 13px" }}>
-        {mark(104, 14, 78)}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "12px 16px",
+          padding: 16,
+          background: t.module,
+          borderTop: `1px solid ${t.hairlineModule}`,
+        }}
+      >
+        {mark(72, 56)}
         <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <Eyebrow style={{ color: t.text }}>{eyebrowLine(maker.place, maker.since)}</Eyebrow>
-          <h1 style={{ ...display(52), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
-          <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text, ...ELLIPSIS }}>{line}</div>
+          <Eyebrow>{eyebrowLine(maker.place, maker.since)}</Eyebrow>
+          <h1 style={{ ...display(32), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
+          <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, ...ELLIPSIS }}>{line}</div>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <ProfileActions {...actions} />

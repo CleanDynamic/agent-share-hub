@@ -43,19 +43,15 @@ import { ArrowLeft } from "lucide-react";
 
 import { Lockup } from "@/components/brand/Lockup";
 import { Mark } from "@/components/brand/Mark";
-import { OrbGlass } from "@/components/brand/OrbGlass";
-import { OrbSolid } from "@/components/brand/OrbSolid";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { Panel } from "@/components/brand/Panel";
 import { Segmented } from "@/components/brand/Segmented";
-import { Tagline } from "@/components/brand/Tagline";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { FrameLink } from "@/components/shell/FrameLink";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import type { ThemeChoice } from "@/contexts/ThemeContext";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -92,42 +88,6 @@ export function SignInView(props: SignInViewProps) {
 }
 
 /* ── the pieces both share ── */
-
-/**
- * An orb before its number has arrived: a circle of the orb's diameter. A count that could not
- * be read draws nothing — these are the entrance's decoration, and a retry button on a sign-in
- * page would be noise next to the form — so a failed read never leaves a circle pulsing forever.
- */
-function OrbPlaceholder({ failed }: { failed?: boolean }) {
-  return failed ? null : <Skeleton width={140} height={140} radius="50%" />;
-}
-
-function Orbs({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
-  const waiting = (reproducedToday === null || inGallery === null) && !countsFailed;
-  const row = { display: "flex", gap: 9 } as const;
-  const orbs = (
-    <>
-      {reproducedToday === null ? (
-        <OrbPlaceholder failed={countsFailed} />
-      ) : (
-        <OrbGlass size={140} label="Reproduced" sub={`${reproducedToday.toLocaleString("en-GB")} today`} />
-      )}
-      {inGallery === null ? (
-        <OrbPlaceholder failed={countsFailed} />
-      ) : (
-        <OrbSolid size={140} top="Hung" value={inGallery.toLocaleString("en-GB")} bottom="builds" />
-      )}
-    </>
-  );
-  return waiting ? (
-    <LoadingRegion what="the counts" style={row}>
-      {orbs}
-    </LoadingRegion>
-  ) : (
-    <div style={row}>{orbs}</div>
-  );
-}
-
 
 /* ── the refined look's pieces (UI-P95): the entrance without orbs or chips ── */
 
@@ -255,7 +215,6 @@ function BackLink({ onBack }: { onBack: () => void }) {
 /* ── desktop ── */
 
 function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToday, inGallery, countsFailed, themeValue, children }: SignInViewProps) {
-  const refined = useLook() === "refined";
   return (
     <div
       data-testid="signin-view"
@@ -277,12 +236,8 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         <Lockup size={70} />
-        {refined ? <RefinedTagline size={44} /> : <Tagline lines={TAGLINE} size={40} offsets={[0, 70, 24]} />}
-        {refined ? (
-          <RefinedCounts reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
-        ) : (
-          <Orbs reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
-        )}
+        <RefinedTagline size={44} />
+        <RefinedCounts reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -292,15 +247,7 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
           style={{
             width: 420,
             boxSizing: "border-box",
-            ...(refined
-              ? { padding: 16, borderRadius: 8, background: t.module, border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow }
-              : {
-                  padding: 19,
-                  borderRadius: 20,
-                  background: t.header,
-                  border: `1px solid ${t.headerBorder}`,
-                  boxShadow: `${t.shadowFloat}, ${t.panelHighlight}`,
-                }),
+            ...{ padding: 16, borderRadius: 8, background: t.module, border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow },
             display: "flex",
             flexDirection: "column",
             gap: 9,
@@ -321,7 +268,6 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
 /* ── phone ── */
 
 function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: SignInViewProps) {
-  const refined = useLook() === "refined";
   return (
     <div
       data-testid="signin-view"
@@ -339,7 +285,7 @@ function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: 
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 13, padding: "7px 0 4px" }}>
         <Lockup size={34} />
-        {refined ? <RefinedTagline size={32} /> : <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />}
+        <RefinedTagline size={32} />
       </div>
 
       <Panel surface="glass" padding="16px">

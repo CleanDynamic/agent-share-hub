@@ -115,7 +115,7 @@ function ReplyComposer({
       >
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 500,
             color: "var(--text2)",
@@ -157,7 +157,7 @@ function ReplyComposer({
           borderRadius: 8,
           padding: "8px 10px",
           color: "var(--text)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 13,
           lineHeight: 1.55,
           resize: "none",
@@ -169,7 +169,7 @@ function ReplyComposer({
           onClick={submit}
           disabled={!text.trim()}
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 600,
             padding: "4px 14px",
@@ -250,7 +250,7 @@ function RepliesList(props: {
             onExpandRepliesClick(parentId);
           }}
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 500,
             color: "var(--text2)",
@@ -358,7 +358,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
           >
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 fontStyle: "italic",
                 color: "var(--text2)",
@@ -404,7 +404,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             onClick={() => onContinuedThreadClick?.(comment.id)}
             className="flex items-center gap-1"
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 500,
               color: "var(--action)",
@@ -463,7 +463,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             )}
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 fontWeight: 600,
                 color: "var(--text)",
@@ -474,7 +474,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             </span>
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 color: "var(--text2)",
                 whiteSpace: "nowrap",
@@ -485,7 +485,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             {comment.isPostAuthor && (
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 9,
                   fontWeight: 600,
                   background: "var(--cat-breakage-fill)",
@@ -499,7 +499,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
             )}
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 color: "var(--text2)",
                 marginLeft: "auto",
@@ -537,7 +537,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                     borderRadius: 8,
                     padding: "8px 10px",
                     color: "var(--text)",
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 13,
                     lineHeight: 1.55,
                     resize: "vertical",
@@ -548,7 +548,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   <button
                     onClick={() => onEditCancel?.()}
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 11,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -566,7 +566,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                     }}
                     disabled={!editText.trim() || editText.trim() === comment.text}
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 11,
                       fontWeight: 600,
                       padding: "4px 14px",
@@ -595,7 +595,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 <div
                   ref={textRef}
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 13,
                     lineHeight: 1.55,
                     color: "var(--text)",
@@ -613,7 +613,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                   <button
                     onClick={() => setTextClamped(false)}
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -652,7 +652,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
                 size={13}
                 fill={comment.hasLiked ? "var(--cat-breakage)" : "none"}
               />
-              <span style={{ fontSize: 11, fontFamily: "Figtree, sans-serif" }}>
+              <span style={{ fontSize: 11, fontFamily: "var(--font-ui)" }}>
                 {comment.likeCount > 0 ? comment.likeCount : ""}
               </span>
             </button>
@@ -670,7 +670,7 @@ export function ThreadedComment(props: ThreadedCommentProps) {
               aria-label="Reply"
             >
               <MessageCircle size={13} />
-              <span style={{ fontSize: 11, fontFamily: "Figtree, sans-serif" }}>
+              <span style={{ fontSize: 11, fontFamily: "var(--font-ui)" }}>
                 {comment.replyCount > 0 ? comment.replyCount : ""}
               </span>
             </button>

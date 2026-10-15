@@ -9,7 +9,6 @@ import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { denseFont, denseSpace } from "@/lib/theme/density";
 import { COVER_SKIES, CoverFallback, hashSeed, skyIndex } from "./CoverFallback";
 import { Lockup } from "./Lockup";
 import { Mark } from "./Mark";
@@ -53,29 +52,6 @@ describe("Mark", () => {
 });
 
 describe("Lockup", () => {
-  /** [size, mark, gap] at every size the design uses. */
-  it.each([
-    [16, 17, 6],
-    [19, 20, 7],
-    [21, 23, 7],
-    [34, 37, 12],
-    [64, 70, 24],
-    [70, 77, 26],
-  ])("at %ipx the mark is %ipx and the gap %ipx, as drawn", (size, mark, gap) => {
-    const { container } = render(<Lockup size={size} />);
-    const row = q(container, '[data-ui="lockup"]') as HTMLElement;
-    // UI-P52 density pass: the gap goes through the table (7 → 5, 24 → 17); the
-    // mark is an SVG the kit sizes by attribute, which the pass left alone.
-    expect(row.style.gap).toBe(`${denseSpace(gap)}px`);
-    expect(q(container, "svg").getAttribute("width")).toBe(String(mark));
-    const word = row.querySelector("span") as HTMLElement;
-    expect(word.textContent).toBe("buildgallery");
-    // UI-P52 density pass: the wordmark is drawn at `size` and display() renders
-    // it through the table (21 → 18, 16 → 15) — in Sentient at every size.
-    expect(word.style.fontSize).toBe(`${denseFont(size)}px`);
-    expect(word.style.letterSpacing).toBe("-0.03em");
-    expect(word.style.lineHeight).toBe("1");
-  });
 
   it("is a plain row with no name of its own when it is not a link", () => {
     const { container } = render(<Lockup size={21} />);
@@ -91,57 +67,9 @@ describe("Lockup", () => {
     const link = getByRole("link", { name: "buildgallery home" });
     expect(link.getAttribute("href")).toBe("/");
   });
-
-  it("draws the halo only in the Dusk room", () => {
-    document.documentElement.dataset.theme = "dusk";
-    const dusk = render(<Lockup size={21} />);
-    expect(dusk.container.querySelectorAll("ellipse")).toHaveLength(2);
-    dusk.unmount();
-
-    document.documentElement.dataset.theme = "noon";
-    const noon = render(<Lockup size={21} />);
-    expect(noon.container.querySelectorAll("ellipse")).toHaveLength(1);
-    noon.unmount();
-    delete document.documentElement.dataset.theme;
-  });
 });
 
 describe("CoverFallback", () => {
-  it("draws the landscape the reference draws", () => {
-    const { container } = render(<CoverFallback seed="abc" radius="10px" sky={0} />);
-    const svg = q(container, "svg");
-    expect(svg.getAttribute("viewBox")).toBe("0 0 300 180");
-    expect(svg.getAttribute("preserveAspectRatio")).toBe("xMidYMid slice");
-
-    const stops = Array.from(container.querySelectorAll("stop"));
-    expect(stops.map((s) => [s.getAttribute("offset"), s.getAttribute("stop-color")])).toEqual([
-      ["0", "#2A2340"],
-      [".55", "#8C78C4"],
-      ["1", "#E8A283"],
-    ]);
-
-    const sun = q(container, "ellipse");
-    expect(sun.getAttribute("cx")).toBe("70");
-    expect(sun.getAttribute("cy")).toBe("112");
-    expect(sun.getAttribute("fill")).toBe("#F3C6A5");
-    expect(sun.getAttribute("opacity")).toBe(".9");
-
-    const hills = Array.from(container.querySelectorAll("path"));
-    expect(hills.map((h) => h.getAttribute("fill"))).toEqual(["#5C5480", "#372F4A", "#1F1B2B"]);
-    expect(hills[0].getAttribute("d")).toBe(
-      "M0 118 C40 98 70 108 100 94 C130 80 160 102 200 96 C240 90 270 106 300 98 L300 180 L0 180Z",
-    );
-  });
-
-  it("puts the sun where each sky says", () => {
-    const xs = [0, 1, 2, 3, 4, 5].map((sky) => {
-      const { container, unmount } = render(<CoverFallback seed="x" radius={0} sky={sky} />);
-      const cx = q(container, "ellipse").getAttribute("cx");
-      unmount();
-      return Number(cx);
-    });
-    expect(xs).toEqual([70, 120, 190, 230, 150, 210]);
-  });
 
   it("chooses the same sky for the same seed, every time", () => {
     expect(skyIndex("build-1")).toBe(skyIndex("build-1"));
@@ -155,28 +83,8 @@ describe("CoverFallback", () => {
     expect(COVER_SKIES).toHaveLength(6);
   });
 
-  it("gives every instance its own gradient id", () => {
-    const { container } = render(
-      <>
-        <CoverFallback seed="a" radius={0} />
-        <CoverFallback seed="a" radius={0} />
-      </>,
-    );
-    const ids = Array.from(container.querySelectorAll("linearGradient")).map((g) => g.id);
-    expect(ids).toHaveLength(2);
-    expect(new Set(ids).size).toBe(2);
-    for (const rect of Array.from(container.querySelectorAll("rect"))) {
-      expect(ids).toContain(rect.getAttribute("fill")?.slice(5, -1));
-    }
-  });
-
   it("is the same in both themes: no token reaches the artwork", () => {
     const { container } = render(<CoverFallback seed="a" radius={0} />);
     expect(container.innerHTML).not.toContain("var(--");
-  });
-
-  it("falls back to the hash when the forced sky is out of range", () => {
-    const { container } = render(<CoverFallback seed="a" radius={0} sky={9} />);
-    expect(q(container, "svg").getAttribute("data-sky")).toBe(String(skyIndex("a")));
   });
 });

@@ -112,3 +112,33 @@ Two database facts govern every data prompt:
 - **`src/integrations/supabase/types.ts` is generated and partly stale.** Do not hand-edit it; cast at the call site the way `src/lib/feed/getBuildFeed.ts` does.
 
 `award_xp()` is unsafe by design (a signed-in user can award themselves any amount). No prompt here may add a client path that calls it, directly or through `awardXp`.
+
+---
+
+## The refined system (UI-P99)
+
+This section was appended by UI-P99 without the rest of this file being read or reconciled: UI-P98 and UI-P99 were run with the instruction not to read `design/RULES.md`. It supersedes anything above that describes the current look (Figtree, Sentient and DM Mono; glass, orbs, arcs, the backdrop; the 8, 12, 14 and 16 radii; Noon "Birch Mist" and Dusk's aubergine). Where it and an earlier section disagree, this one wins, and the earlier section needs editing the next time someone reads the file in full.
+
+There is **one look**. The source of truth is `design/reference/refined/{dusk,noon}/<board>.html` (1440 wide, values exact, no browser strip, no mobile boards), listed in `design/reference/index.json`: `foundations`, `components`, `model-marks`, `home`, `gallery-dashboard`, `build-list`, `build-map`, `activity`, `composer-list`, `composer-map`, `prompt-window`, `composer-card`. The current-look boards are in `design/reference/archive/` and are not compared. Sample text is presentation only. Two things on the boards are placeholders: model marks drawn as a tile with an initial (the site shows the real logo with no tile, UI-P83), and em dashes already shown as "·".
+
+`REFINED_LOOK_ENABLED`, `useLook()` and the `data-look` attribute no longer exist. A page is one view, `<Name>View.tsx`, and its `<Name>Page` container.
+
+### Series rules (UI-P77 to UI-P99)
+
+- **A re-skin.** Routes, data, handlers, copy, accessible names and the order of every page's parts stay as they are. Only the look changes. The one copy change is UI-P96's em-dash sweep.
+- **Recipes.** *frame*: `--frame`, the header on it with no background or border. *surface*: one panel per page, `calc(100% - 12px)` wide, max 1428, margin `0 auto 6px`, `--surface`, 1px `--surface-border`, radius 10, `--surface-shadow`, padding `24px clamp(16px, 4.6vw, 64px) 48px`, the footer inside it. *module*: `--module`, 1px `--module-border`, radius 8, `--module-shadow`, padding 16. *tile*: `--tile`, 1px `--tile-border`, radius 6, padding 12. *well*: `--well`, 1px `--well-border`, `--well-shadow`, radius 6; maps and media add the dot grid `radial-gradient(var(--dot-grid) 1px, transparent 1px)` at 16px. *control*: `--control`, 1px `--control-border`, `--control-shadow`, radius 6; hover `--control-on`, never opacity; pressed sinks to the well. *primary*: `--action`, `--action-shadow`, `--on-action` 500; one per view, and the header's New build is secondary. *rows*: hairline-separated, min-height 40, 48 or 56. *selected*: `--selected-fill`, 1px `--selected-edge`, plus `--selected-ring` in Noon or `0 8px 20px -10px rgba(0,0,0,.6)` in Dusk; never a colour. *window*: `--window`, 1px `--window-border`, radius 12, `--window-shadow` (dialogs) or `--sheet-shadow` (side sheets), over `--scrim`, no blur. *lamp*: a bar 3px high, radius 1, `--lit`, `--lamp-glow`; never an edge colour. *dimmed*: `filter: var(--dim-filter)`, never opacity.
+- **Type and space.** Geist; Geist Mono only for ids, keys and mono pills; tabular numbers. Space 2 4 6 8 12 16 20 24 32 40 48 64 (2 for segmented tracks, 6 for tight inline pairs). Radius 4 tag, 6 control and media, 8 card, 10 surface, 12 window.
+- **Never.** Gradients other than the picture light, the shading inside raised objects in Dusk and flat chart areas; glass, blur or grain; any glow but the lamp's; serif or italic; coloured card edges; icons inside labelled buttons; fade-in on scroll; hover fades; em dashes in shown copy; emoji.
+- Primitives and the frame may use padding, gap, height and radius to the values above; this amends §3 for the whole site, no longer "under the refined look only".
+
+### The values (UI-P79 to UI-P83)
+
+- **Colour (UI-P79).** The tokens are declared once in `src/index.css`, in the `:root` / `[data-theme="noon"]` and `[data-theme="dusk"]` blocks, mirrored in `src/lib/theme/semantics.ts` (`TOKEN_NAMES`, `noon`, `dusk`), and `css-parity.test.ts` holds the three together. `contrast.test.ts` measures `text`, `text2`, `label` on `surface`, `module`, `tile`, `well`, `frame`, each `cat-*` on `module`, and the filled pairs. The table of values is the one in `design/prompts/UI-P79.md`.
+- **Type (UI-P80).** Hero 44 / 500 (mobile 32), 1.04, -0.04em. Page title 20 / 500, 1.2, -0.015em. Figure 24 / 500 (large 32), 1.1, -0.02em, tabular. Section and card title 13.5 to 14 / 500, 1.3. Body 13 / 400, 20px. Step text 13.5 / 400, 22px. Label 12.5 / 500. Meta 11.5 to 12 / 400, 1.4. Eyebrow 10.5 / 500 caps, .06em, in Geist. Mono 10.5 / 400, 18px, Geist Mono. Inputs are 16px on mobile. The families are `--font-ui`, `--font-display` and `--font-data`; `FIGTREE`, `SENTIENT` and `DM_MONO` in `src/lib/theme/type.ts` are the roles' handles and now read Geist or Geist Mono.
+- **Shape and depth (UI-P81).** Radius as above; `--r-window` is its own step. `elev-raised` is `--control-shadow`, `elev-overlay` is `--window-shadow`, `shadow-card` is `--module-shadow`. There is no glass, no backdrop, no scroll reveal.
+- **Icons (UI-P82).** 16px square-cap glyphs (`Glyph`, stroke 1.3, `more` 2); `Icon` takes a lucide icon and a glyph name; no icon inside a labelled button.
+- **Model marks (UI-P83).** The real logo from `@lobehub/icons-static-svg`, alone: no tile, no background, no border, never over 28px. `markFor({ tool, model, lab })` in `src/lib/models/marks.ts` picks the mark.
+
+### Checks
+
+`npm run audit:design` (the refined boards against their dev pages), `npm run audit:contrast`, `npm run audit:themes`, `npm run audit:perf`, `npm test` and `npm run build`.

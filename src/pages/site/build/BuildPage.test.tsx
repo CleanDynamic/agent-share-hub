@@ -171,7 +171,7 @@ describe("BuildPage (site frame)", () => {
     renderAt();
     expect(await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" })).toBeTruthy();
     expect(screen.getByTestId("build-shape-tag").textContent).toBe("agent");
-    expect(screen.getByText("0 ran it")).toBeTruthy();
+    expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^0ran it/);
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
     expect(screen.getByText("£18.40")).toBeTruthy();
     expect(screen.getByText("35 min")).toBeTruthy();
@@ -294,7 +294,7 @@ describe("BuildPage (site frame)", () => {
 
     expect(recordReproduction).toHaveBeenCalledWith({ buildId: "b", worked: true, modelUsed: "sonnet-4.5", note: "" });
     expect(recordSelfConfirmation).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByText("1 ran it")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^1ran it/));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -307,7 +307,7 @@ describe("BuildPage (site frame)", () => {
     await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
 
     const block = screen.getByTestId("build-completeness");
-    expect(block.textContent).toContain("PUBLISH 60");
+    expect(block.textContent).toContain("Publish 60");
     expect(block.textContent).toMatch(/Next: /);
 
     fireEvent.click(screen.getByRole("button", { name: "Re-confirm it still works" }));
@@ -322,7 +322,7 @@ describe("BuildPage (site frame)", () => {
     expect(recordReproduction).not.toHaveBeenCalled();
     // The clock moves; the count, and so the plaque, stays other people's.
     await waitFor(() => expect(screen.getByText(`last ${shortDate(new Date().toISOString())}`)).toBeTruthy());
-    expect(screen.getByText("0 ran it")).toBeTruthy();
+    expect(screen.getByText("ran it").parentElement?.textContent).toMatch(/^0ran it/);
     expect(screen.getByText("not yet reproduced")).toBeTruthy();
   });
 

@@ -129,7 +129,7 @@ export function VersionHistory({
                   '1px solid var(--line)',
                 borderRadius: 6, fontSize: 12,
                 color: 'var(--text)', outline: 'none',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
               }}
             />
             <button
@@ -142,7 +142,7 @@ export function VersionHistory({
                 color: 'var(--text)', fontSize: 12,
                 fontWeight: 700, cursor: 'pointer',
                 opacity: saving ? 0.6 : 1,
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
               }}
             >
               {saving ? '…' : 'Save'}
@@ -240,7 +240,7 @@ export function VersionHistory({
                       color: 'var(--action)',
                       fontSize: 11, fontWeight: 700,
                       cursor: 'pointer',
-                      fontFamily: 'Figtree, sans-serif',
+                      fontFamily: 'var(--font-ui)',
                     }}
                   >
                     Restore this version

@@ -77,78 +77,8 @@ export type ShadcnName = (typeof SHADCN_NAMES)[number];
    5.73, foreground/card 11.48 and 10.62, primary-foreground/primary 7.07 and
    6.35, destructive-foreground/destructive 6.08 and 5.76. */
 
-/** Noon — the light room. */
+/** Noon. */
 export const noonShadcn: Record<ShadcnName, string> = {
-  background: "90 9% 91%",
-  foreground: "160 15% 12%",
-  card: "100 8% 85%",
-  "card-foreground": "160 15% 12%",
-  popover: "100 8% 85%",
-  "popover-foreground": "160 15% 12%",
-  primary: "3 44% 38%",
-  "primary-foreground": "60 12% 97%",
-  secondary: "100 8% 85%",
-  "secondary-foreground": "160 15% 12%",
-  muted: "100 8% 85%",
-  "muted-foreground": "150 6% 33%",
-  accent: "100 8% 85%",
-  "accent-foreground": "160 15% 12%",
-  destructive: "0 74% 42%",
-  "destructive-foreground": "60 12% 97%",
-  border: "105 4% 80%",
-  input: "105 4% 80%",
-  ring: "160 15% 12%",
-  "sidebar-background": "90 9% 91%",
-  "sidebar-foreground": "160 15% 12%",
-  "sidebar-primary": "3 44% 38%",
-  "sidebar-primary-foreground": "60 12% 97%",
-  "sidebar-accent": "100 8% 85%",
-  "sidebar-accent-foreground": "160 15% 12%",
-  "sidebar-border": "105 4% 80%",
-  "sidebar-ring": "160 15% 12%",
-};
-
-/** Dusk — the dark room. */
-export const duskShadcn: Record<ShadcnName, string> = {
-  background: "265 26% 13%",
-  foreground: "264 31% 94%",
-  card: "258 22% 24%",
-  "card-foreground": "264 31% 94%",
-  popover: "258 22% 24%",
-  "popover-foreground": "264 31% 94%",
-  primary: "18 59% 64%",
-  "primary-foreground": "6 16% 12%",
-  secondary: "258 22% 24%",
-  "secondary-foreground": "264 31% 94%",
-  muted: "258 22% 24%",
-  "muted-foreground": "258 19% 72%",
-  accent: "258 22% 24%",
-  "accent-foreground": "264 31% 94%",
-  destructive: "0 84% 69%",
-  "destructive-foreground": "6 16% 12%",
-  border: "266 13% 24%",
-  input: "266 13% 24%",
-  ring: "39 67% 55%",
-  "sidebar-background": "265 26% 13%",
-  "sidebar-foreground": "264 31% 94%",
-  "sidebar-primary": "18 59% 64%",
-  "sidebar-primary-foreground": "6 16% 12%",
-  "sidebar-accent": "258 22% 24%",
-  "sidebar-accent-foreground": "264 31% 94%",
-  "sidebar-border": "266 13% 24%",
-  "sidebar-ring": "39 67% 55%",
-};
-
-/* UI-P79 — the refined look. The same bridge, repointed: background = frame,
-   card and popover = module, primary = action, border and input = hairline,
-   ring = focus-ring, foreground = text, muted-foreground = text2, destructive
-   = breakage with on-action on it, and secondary / muted / accent = well, the
-   token the current look's --recess meant. Declared in the refined blocks in
-   src/index.css (`data-look="refined"`); the triples are the values in
-   refined.ts, converted. */
-
-/** Noon, refined. */
-export const noonRefinedShadcn: Record<ShadcnName, string> = {
   background: "0 0% 91%",
   foreground: "0 0% 11%",
   card: "0 0% 98%",
@@ -178,8 +108,8 @@ export const noonRefinedShadcn: Record<ShadcnName, string> = {
   "sidebar-ring": "221 83% 53%",
 };
 
-/** Dusk, refined. */
-export const duskRefinedShadcn: Record<ShadcnName, string> = {
+/** Dusk. */
+export const duskShadcn: Record<ShadcnName, string> = {
   background: "240 3% 6%",
   foreground: "240 6% 93%",
   card: "240 5% 12%",
@@ -214,7 +144,3 @@ export const shadcnThemes = {
   dusk: duskShadcn,
 } as const;
 
-export const shadcnRefinedThemes = {
-  noon: noonRefinedShadcn,
-  dusk: duskRefinedShadcn,
-} as const;

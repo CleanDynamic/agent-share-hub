@@ -1,7 +1,7 @@
 // buildgallery.ai — the token accessor.
 //
-// THIS IS THE ONLY THEME MODULE A COMPONENT IMPORTS. `primitives.ts` and
-// `semantics.ts` describe the system; this describes how to spend it.
+// THIS IS THE ONLY THEME MODULE A COMPONENT IMPORTS. `semantics.ts`
+// describes the system; this describes how to spend it.
 //
 // Styling in this codebase is applied inline, because Tailwind's generated
 // utilities override hand-written classes at build time. So every member of `t`
@@ -28,7 +28,7 @@
 //
 // The shape of `t` is derived from TOKEN_NAMES, so it cannot drift from the
 // semantic layer: add a token there and it appears here, typed, or the build
-// fails. Reaching past `t` into `semantics.ts` or `primitives.ts` from a
+// fails. Reaching past `t` into `semantics.ts` from a
 // component defeats the theme switch — a resolved hex does not follow the
 // attribute. Don't.
 

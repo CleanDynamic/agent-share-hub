@@ -40,7 +40,7 @@ export function EngagementGrid({ counters }: EngagementGridProps) {
             }}
           >
             <Icon size={14} color="var(--text2)" />
-            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", fontFamily: "Figtree, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", fontFamily: "var(--font-ui)" }}>
               {v.toLocaleString()}
             </div>
             <div style={{ fontSize: 11, color: "var(--text2)", letterSpacing: "0.04em", textTransform: "uppercase" }}>

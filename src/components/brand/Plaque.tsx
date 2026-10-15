@@ -50,10 +50,8 @@ import {
   type StalenessSource,
 } from "@/lib/build/signals";
 import { markFor } from "@/lib/models/marks";
-import { useLook } from "@/lib/theme/look";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { LampDot } from "./LampDot";
 import { ModelMark } from "./ModelMark";
@@ -130,9 +128,6 @@ export const NEVER_CONFIRMED = "not confirmed by anyone yet";
 
 /** Type per size: the tag is DM Mono, the freshness line and the bare text Figtree.
     UI-P54, the density pass: the header's tag is 12 (13 before); 10 and 11 are
-    in the table's kept band, and so are the lamp dots below. */
-const TAG_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12, proof: 11 };
-const TEXT_PX: Record<PlaqueSize, number> = { card: 10, row: 11, header: 12, proof: 12 };
 
 /** The lamp dot, per size. Card and row use the default 10×7. */
 const LAMP: Record<PlaqueSize, { width: number; height: number }> = {
@@ -182,16 +177,6 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
   const state = plaqueState(build, now);
   const stale = state === "stale";
   const inverse = tone === "inverse";
-  const refined = useLook() === "refined" && !inverse;
-
-  /* On the inverse panel the tag is the reference's own 10px and the line beside
-     it 11px (the featured plate draws them that way), the lamp is the same lit
-     dot, and every word is read against `--inverse`: current in `--on-inverse`,
-     quiet in `--on-inverse-2`. */
-  const textPx = inverse ? 11 : TEXT_PX[size];
-  const tagPx = inverse ? 10 : TAG_PX[size];
-  const ink = inverse ? t.onInverse : t.text;
-  const quietInk = inverse ? t.onInverse2 : t.text2;
 
   const frame: CSSProperties = {
     display: "flex",
@@ -217,105 +202,33 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
   /* UI-P85, REFINED: the count is an evidence `Pill`, then the lamp bar 8×3 from `plaqueState()` (dimmed when stale,
      absent when nobody has reproduced it), then the freshness in 12 `--text2`; a stale claim reads in `--label`. Not
      yet reproduced is a neutral `Pill`. The hooks and the hover are the ones below. */
-  if (refined) {
-    const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal" };
-    if (state === "unreproduced") {
-      return (
-        <div {...marks} data-variant="never" style={{ ...frame, gap: 8 }}>
-          <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(0)} style={{ display: "inline-flex" }}>
-            <Pill>{NEVER_REPRODUCED}</Pill>
-          </span>
-          {trailing}
-        </div>
-      );
-    }
-    const words =
-      (wording ?? (size === "header" || size === "proof" ? "full" : "short")) === "full"
-        ? freshnessLabel(build, now)
-        : freshnessShort(build, now);
-    return (
-      <div {...marks} data-variant={stale ? "stale" : "fresh"} style={{ ...frame, gap: 8 }}>
-        <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(count)} style={{ display: "inline-flex" }}>
-          <Pill tone="evidence">{count} reproduced</Pill>
-        </span>
-        <span
-          data-plaque-freshness=""
-          style={{ ...text, display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: stale ? t.label : t.text2 }}
-        >
-          <LampDot data-plaque-lamp={stale ? "dim" : "lit"} dim={stale} width={8} />
-          {words ? <FreshnessWords words={words} model={build.last_confirmed_model} /> : NEVER_CONFIRMED}
-        </span>
-        {trailing}
-      </div>
-    );
-  }
-
-  /* UNREPRODUCED: one quiet line. No tag, no lamp, no freshness. It keeps the
-     tag's hooks (`data-plaque-reproduction`, the test id and the hover) because
-     it IS the reproduction half, said in words — and `trailing` still rides. */
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal" };
   if (state === "unreproduced") {
     return (
-      <div {...marks} data-variant="never" style={{ ...frame, fontFamily: FIGTREE, fontSize: textPx, lineHeight: "normal", color: quietInk }}>
-        <span
-          data-plaque-reproduction=""
-          data-testid="reproduction-count"
-          title={countTitle(0)}
-        >
-          {NEVER_REPRODUCED}
+      <div {...marks} data-variant="never" style={{ ...frame, gap: 8 }}>
+        <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(0)} style={{ display: "inline-flex" }}>
+          <Pill>{NEVER_REPRODUCED}</Pill>
         </span>
         {trailing}
       </div>
     );
   }
-
-  const freshness =
+  const words =
     (wording ?? (size === "header" || size === "proof" ? "full" : "short")) === "full"
       ? freshnessLabel(build, now)
       : freshnessShort(build, now);
-
   return (
-    <div {...marks} data-variant={stale ? "stale" : "fresh"} style={frame}>
-      {/* 1. REPRODUCTION. The one filled ground on the object. */}
-      <span
-        data-plaque-reproduction=""
-        data-testid="reproduction-count"
-        title={countTitle(count)}
-        style={{
-          ...tabular,
-          fontFamily: DM_MONO,
-          fontSize: tagPx,
-          lineHeight: "normal",
-          background: inverse ? t.inverseEvidenceFill : t.evidenceFill,
-          color: inverse ? t.onInverseEvidenceFill : t.onEvidenceFill,
-          padding: "2px 4px",
-          borderRadius: r.chip,
-          whiteSpace: "nowrap",
-          flexShrink: 0,
-        }}
-      >
-        {count} reproduced
+    <div {...marks} data-variant={stale ? "stale" : "fresh"} style={{ ...frame, gap: 8 }}>
+      <span data-plaque-reproduction="" data-testid="reproduction-count" title={countTitle(count)} style={{ display: "inline-flex" }}>
+        <Pill tone="evidence">{count} reproduced</Pill>
       </span>
-
-      {/* 2. FRESHNESS. A lit lamp for a current claim, a dim one for a stale
-          claim; the text is `--text` while it is current and `--text2` once it
-          is not, and it may wrap. */}
       <span
         data-plaque-freshness=""
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 5,
-          fontFamily: FIGTREE,
-          fontSize: textPx,
-          lineHeight: "normal",
-          color: stale ? quietInk : ink,
-          minWidth: 0,
-        }}
+        style={{ ...text, display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: stale ? t.label : t.text2 }}
       >
-        <PlaqueLamp dim={stale} size={size} />
-        {freshness ?? NEVER_CONFIRMED}
+        <LampDot data-plaque-lamp={stale ? "dim" : "lit"} dim={stale} width={8} />
+        {words ? <FreshnessWords words={words} model={build.last_confirmed_model} /> : NEVER_CONFIRMED}
       </span>
-
       {trailing}
     </div>
   );

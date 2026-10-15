@@ -1,5 +1,7 @@
 # The buildgallery design kit
 
+> **Since UI-P98 the refined boards are the source of truth, and since UI-P99 the only look.** `design/reference/refined/{dusk,noon}/<board>.html` (1440 wide, values exact, no browser strip, no mobile boards, listed in `reference/index.json`) describe what visitors see. The current-look boards are in `reference/archive/` and are history: the file listing and prose below describe them. Where this file and a refined board disagree, the refined board wins.
+
 This folder is the approved UI, as files a machine can read: the reference HTML for every screen, a picture of each one, the tokens, sample data, and a series of 42 prompts that build it in the app.
 
 It exists because the last attempt described the design in prose and got the old UI back. Prose is not checkable. **Everything here is checkable**: the reference is real HTML with real numbers, and `npm run audit:design` screenshots the reference and the app side by side and fails on the difference.
@@ -18,12 +20,11 @@ design/
     UI-P00.md … UI-P41.md   one prompt per file — paste one per Claude Code session
     ALL-PROMPTS.md      the whole series in one file
   reference/
-    index.json          every board: file, kind, theme, page, width, height, screenshot
-    desktop/{noon,dusk}/*.html    9 boards each, 1440 wide
-    mobile/{noon,dusk}/*.html     10 boards each, 390 wide
-    components/{noon,dusk}.html   the catalogue: every primitive, every state
-    brand/{noon,dusk}.html        the brand board (identity, palette, grammar)
-    fonts/                        Sentient 500 and 700, so the HTML renders offline
+    index.json          every refined board: file, kind, theme, page, width, height, devPage
+    refined/{dusk,noon}/*.html    12 boards each, 1440 wide: the source of truth
+    fonts/                        Geist and Geist Mono, so the HTML renders offline
+    archive/                      the current-look boards (UI-P99), as they were:
+      index.json  desktop/  mobile/  components/  brand/  fonts/
   screens/              a JPEG of each board, for looking at
   tokens/
     tokens.css          drop-in custom properties for both themes

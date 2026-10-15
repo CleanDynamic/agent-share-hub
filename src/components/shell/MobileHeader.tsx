@@ -23,9 +23,8 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Lockup } from "@/components/brand/Lockup";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { useAuth } from "@/contexts/AuthContext";
-import { GLASS_BLUR, ring } from "@/lib/theme/controls";
+import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -79,7 +78,6 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
     <header
       data-testid="mobile-header"
       data-ui="mobile-header"
-      data-look="refined"
       style={{
         position: "sticky",
         top: 0,
@@ -109,45 +107,7 @@ function RefinedMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn
 }
 
 export function MobileHeaderView(props: MobileHeaderViewProps) {
-  const refined = useLook() === "refined";
-  return refined ? <RefinedMobileHeaderView {...props} /> : <CurrentMobileHeaderView {...props} />;
-}
-
-function CurrentMobileHeaderView({ viewer, onSearchOpen, onAccountOpen, onSignIn }: MobileHeaderViewProps) {
-  return (
-    <header
-      data-testid="mobile-header"
-      data-ui="mobile-header"
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 20,
-        /* 48 and then the 1px edge, as the board draws it: 49 in all. */
-        height: 48,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 10px",
-        boxSizing: "content-box",
-        background: t.header,
-        borderBottom: `1px solid ${t.headerBorder}`,
-        backdropFilter: GLASS_BLUR,
-        WebkitBackdropFilter: GLASS_BLUR,
-      }}
-    >
-      <Lockup size={19} to={SITE_NAV.home} />
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <IconButton icon={Search} label="Search" size={38} onClick={onSearchOpen} />
-        {viewer ? (
-          <AvatarButton viewer={viewer} onClick={onAccountOpen} />
-        ) : (
-          <Button variant="secondary" size={38} onClick={onSignIn}>
-            Sign in
-          </Button>
-        )}
-      </div>
-    </header>
-  );
+  return <RefinedMobileHeaderView {...props} />;
 }
 
 const row: CSSProperties = {

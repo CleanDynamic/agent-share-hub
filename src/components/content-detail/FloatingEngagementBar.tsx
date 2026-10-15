@@ -124,7 +124,7 @@ function ActionButton({
       {count !== undefined && (
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 500,
             color: textColor,
@@ -136,7 +136,7 @@ function ActionButton({
       {label && (
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 500,
             color: textColor,

@@ -21,7 +21,6 @@ import { useRoom } from "@/components/brand/useRoom";
 import { Segmented } from "@/components/brand/Segmented";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { CATEGORIES } from "@/lib/theme/category";
-import { useLook } from "@/lib/theme/look";
 
 import { GlyphRows } from "./GlyphRows";
 import { Example, Row, Section } from "./parts";
@@ -37,7 +36,6 @@ export function ControlsSection() {
   const room = picked ?? painted;
   const [tab, setTab] = useState("anatomy");
   const [filter, setFilter] = useState("all");
-  const refined = useLook() === "refined";
   const [ticks, setTicks] = useState<[boolean, boolean]>([false, true]);
 
   return (
@@ -189,12 +187,10 @@ export function ControlsSection() {
           </Row>
         </Example>
       </Row>
-      {refined ? (
-        <>
-          {GAP_18}
-          <GlyphRows />
-        </>
-      ) : null}
+      <>
+        {GAP_18}
+        <GlyphRows />
+      </>
     </Section>
   );
 }

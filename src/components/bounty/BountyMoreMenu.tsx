@@ -73,7 +73,7 @@ export function BountyMoreMenu({
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 12,
             fontWeight: 500,
             /* Marked unsolved is a GAP, so it takes the gap hue. */

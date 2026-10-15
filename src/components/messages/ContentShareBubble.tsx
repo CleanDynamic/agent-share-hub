@@ -151,7 +151,7 @@ function BlockTypeChips({ types }: { types: { type: string; color: string }[] })
           style={{
             backgroundColor: `${colourAlpha(t.color, 0.133)}`,
             color: t.color,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           {t.type}
@@ -265,7 +265,7 @@ export function ContentShareBubble({
     return (
       <div
         className="text-[10px] mt-1 text-right"
-        style={{ color: c.color, fontFamily: "Figtree, sans-serif" }}
+        style={{ color: c.color, fontFamily: "var(--font-ui)" }}
       >
         {c.text}
       </div>
@@ -281,7 +281,7 @@ export function ContentShareBubble({
             backgroundColor: bubbleBg,
             borderRadius,
             color: "var(--text2)",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
           }}
         >
@@ -318,7 +318,7 @@ export function ContentShareBubble({
               style={{
                 backgroundColor: "color-mix(in srgb, var(--evidence) 18%, transparent)",
                 color: "var(--evidence)",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 letterSpacing: "0.04em",
               }}
             >
@@ -326,7 +326,7 @@ export function ContentShareBubble({
             </span>
             <span
               className="text-[11px] truncate"
-              style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+              style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
             >
               by @{bp.author}
             </span>
@@ -340,7 +340,7 @@ export function ContentShareBubble({
           {bp.useCase && (
             <div
               className="flex items-start gap-1.5 text-[11px] leading-snug"
-              style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+              style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
             >
               <Target className="h-3 w-3 mt-0.5 shrink-0" />
               <span className="line-clamp-2">{bp.useCase}</span>
@@ -349,7 +349,7 @@ export function ContentShareBubble({
           {bp.blockTypes.length > 0 && <BlockTypeChips types={bp.blockTypes} />}
           <div
             className="text-[10px] pt-1"
-            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
           >
             {bp.stageCount} stages · {bp.blockCount} blocks · {bp.readTime}
           </div>
@@ -368,7 +368,7 @@ export function ContentShareBubble({
             style={{
               backgroundColor: "color-mix(in srgb, var(--cat-agents) 18%, transparent)",
               color: "color-mix(in srgb, var(--cat-agents) 95%, transparent)",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               letterSpacing: "0.04em",
             }}
           >
@@ -376,7 +376,7 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
           >
             from {s.blueprintTitle}
           </span>
@@ -395,7 +395,7 @@ export function ContentShareBubble({
         </div>
         <div
           className="text-[10px]"
-          style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+          style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
         >
           {s.blockCount} blocks · {s.connectionCount} connections
         </div>
@@ -415,7 +415,7 @@ export function ContentShareBubble({
             style={{
               backgroundColor: `${colourAlpha(typeColor, 0.133)}`,
               color: typeColor,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               letterSpacing: "0.04em",
             }}
           >
@@ -423,7 +423,7 @@ export function ContentShareBubble({
           </span>
           <span
             className="text-[11px] truncate"
-            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
           >
             from {b.stageName} in {b.blueprintTitle}
           </span>
@@ -463,7 +463,7 @@ export function ContentShareBubble({
         {b.referenceCount && b.referenceCount > 0 ? (
           <div
             className="text-[10px]"
-            style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "var(--text2)", fontFamily: "var(--font-ui)" }}
           >
             Used {b.referenceCount}× in other blueprints
           </div>
@@ -498,7 +498,7 @@ export function ContentShareBubble({
             className="px-3 pt-2.5 pb-1 text-[13px] leading-snug whitespace-pre-wrap break-words"
             style={{
               color: "var(--text)",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
             }}
           >
             {senderNote}

@@ -18,9 +18,6 @@
 // VALUES ARE 0–1. Each chart takes its series already scaled to the unit
 // interval, so the drawing never decides what a number means.
 
-import { useId } from "react";
-
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { useRoom } from "./useRoom";
@@ -29,11 +26,6 @@ import { useRoom } from "./useRoom";
 const HISTOGRAM_HIGHLIGHT = "#E8A283";
 /** The band behind them. Identical in both themes. */
 const HISTOGRAM_BAND = "rgba(140,120,196,.14)";
-
-/** `useId()` is `:r0:`, which is not valid in a `url(#…)`. */
-function useSvgId(prefix: string): string {
-  return `${prefix}-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-}
 
 const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0);
 const f = (n: number) => n.toFixed(1);
@@ -71,8 +63,6 @@ const TICK_BAND = 10;
 const TICK_SHORT = 6;
 
 export function LineChart({ width, height, values, markerIndex, label, tone = t.evidence }: LineChartProps) {
-  const gradient = useSvgId("line-fill");
-  const refined = useLook() === "refined";
   const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
   const n = values.length;
   const baseline = height - TICK_BAND;
@@ -96,14 +86,7 @@ export function LineChart({ width, height, values, markerIndex, label, tone = t.
       style={{ display: "block", maxWidth: "100%", height: "auto" }}
       {...svgA11y(label)}
     >
-      {refined ? null : (
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={t.evidence} stopOpacity=".28" />
-            <stop offset="1" stopColor={t.evidence} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      )}
+      {null}
       {[1, 2, 3, 4, 5].map((k) => (
         <line
           key={k}
@@ -112,7 +95,7 @@ export function LineChart({ width, height, values, markerIndex, label, tone = t.
           x2={f((k * width) / 6)}
           y2={baseline}
           stroke={t.hairline}
-          strokeDasharray={refined ? "2 3" : undefined}
+          strokeDasharray={"2 3"}
         />
       ))}
       {Array.from({ length: 101 }, (_, k) => {
@@ -132,8 +115,8 @@ export function LineChart({ width, height, values, markerIndex, label, tone = t.
         <>
           <path
             d={`M${f(mx)},${baseline} ${after.map((i) => `L${point(i)}`).join(" ")} L${width},${baseline} Z`}
-            fill={refined ? tone : `url(#${gradient})`}
-            fillOpacity={refined ? areaAlpha : undefined}
+            fill={tone}
+            fillOpacity={areaAlpha}
           />
           {marked ? (
             <polyline
@@ -147,8 +130,8 @@ export function LineChart({ width, height, values, markerIndex, label, tone = t.
           <polyline
             points={after.map(point).join(" ")}
             fill="none"
-            stroke={refined ? tone : t.evidence}
-            strokeWidth={refined ? 1.4 : 1.8}
+            stroke={tone}
+            strokeWidth={1.4}
           />
           {marked ? (
             <line x1={f(mx)} y1={0} x2={f(mx)} y2={height} stroke={t.text} strokeWidth={1.4} strokeDasharray="3 3" />
@@ -175,8 +158,6 @@ export interface StepChartProps extends ChartBase {
 }
 
 export function StepChart({ width, height, points, label, tone = t.catAgents }: StepChartProps) {
-  const gradient = useSvgId("step-fill");
-  const refined = useLook() === "refined";
   const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
   const px = (p: StepPoint) => clamp01(p.at) * width;
   const py = (p: StepPoint) => height * (1 - clamp01(p.value));
@@ -198,14 +179,7 @@ export function StepChart({ width, height, points, label, tone = t.catAgents }: 
       style={{ display: "block" }}
       {...svgA11y(label)}
     >
-      {refined ? null : (
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={t.catAgents} stopOpacity=".4" />
-            <stop offset="1" stopColor={t.catAgents} stopOpacity=".03" />
-          </linearGradient>
-        </defs>
-      )}
+      {null}
       {[1, 2, 3, 4, 5, 6].map((k) => (
         <line
           key={k}
@@ -214,17 +188,17 @@ export function StepChart({ width, height, points, label, tone = t.catAgents }: 
           x2={f((k * width) / 7)}
           y2={height}
           stroke={t.hairline}
-          strokeDasharray={refined ? "2 3" : undefined}
+          strokeDasharray={"2 3"}
         />
       ))}
       {points.length ? (
         <>
           <path
             d={`M0 ${height} L${line.slice(1)} L${width} ${height} Z`}
-            fill={refined ? tone : `url(#${gradient})`}
-            fillOpacity={refined ? areaAlpha : undefined}
+            fill={tone}
+            fillOpacity={areaAlpha}
           />
-          <path d={line} fill="none" stroke={refined ? tone : t.catAgents} strokeWidth={refined ? 1.4 : 1.6} />
+          <path d={line} fill="none" stroke={tone} strokeWidth={1.4} />
         </>
       ) : null}
     </svg>
@@ -245,7 +219,6 @@ export interface SparklineProps {
 }
 
 export function Sparkline({ values, width = 60, height = 20, label, tone = t.evidence }: SparklineProps) {
-  const refined = useLook() === "refined";
   const n = values.length;
   const points = values
     .map((v, i) => `${f(n > 1 ? (i * width) / (n - 1) : 0)},${f(2 + (1 - clamp01(v)) * (height - 4))}`)
@@ -259,11 +232,7 @@ export function Sparkline({ values, width = 60, height = 20, label, tone = t.evi
       style={{ display: "block", flexShrink: 0 }}
       {...svgA11y(label)}
     >
-      {refined ? (
-        <polyline points={points} fill="none" stroke={tone} strokeWidth={1.2} strokeLinejoin="round" />
-      ) : (
-        <polyline points={points} fill="none" stroke={t.evidence} strokeWidth={1.4} />
-      )}
+      <polyline points={points} fill="none" stroke={tone} strokeWidth={1.2} strokeLinejoin="round" />
     </svg>
   );
 }

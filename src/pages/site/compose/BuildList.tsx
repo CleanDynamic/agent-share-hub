@@ -1,42 +1,72 @@
-/* UI-P65 — the Build panel's List: the whole build in step order.
+/* UI-P93 — the Build panel's List in the refined look, as `design/reference/refined/{dusk,noon}/composer-list.html`
+   draws it.
 
-   PURE. Steps in, intentions out. `SandboxPage` reads the steps (`buildSteps`)
-   and runs the writes (the prompts hook beside it); this file draws.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `BuildList` stays the current look; this takes its props (imported, not copied) and draws the
+   same steps in the same order with the same accessible names, menus, keys and intentions: the hint, each step under
+   its session's head, the result, then the field that adds a prompt.
 
-   WHAT IT DRAWS, top to bottom: a hint; for each step a card, with a session
-   divider before the first step of each run of steps from one session; the
-   result; and the field that adds a prompt. Agents and teams draw nested
-   (UI-P69): an agent's instructions then its prompts, with a ghost row to add
-   one; a team's agents as inner cards, with a ghost row to add another.
-
-   A CARD IS SELECTED BY CLICKING IT, and opened by double-click, Enter, "Show
-   full prompt" or its menu's "Read all of it" (`onOpenPrompt`, which UI-P67
-   implements; until it is given the three open nothing and the menu item is
-   disabled). A phone has no double-click: a tap selects, and "Show full
-   prompt" opens. The card is a focusable group rather than a button because it
-   holds buttons of its own.
-
-   THE TITLE of a step the maker has not named reads in `--text2` at weight
-   500: it is the default, not their words. */
+   THE LOOK. A session's head is the tool's real mark at 20, the name 13/500, the meta 12 `--label` and a hairline
+   filling the rest. A prompt is a module (padding 16, radius 8; the selection is the selected recipe): the number in
+   a 24 control tile, the title 14/500 (`--text2` when it is the default), a ghost 26 `more`; the text 13.5/22 clamped
+   to two lines and indented 36; then, indented 36, "Uses" with its 22-high reference chips, a suggestion as a dashed
+   28-high chip with Accept (a 20-high control) and Dismiss (text), and on the right Show full prompt and the words.
+   An agent is a module with "Agent ·" and its model's mark at 14, its run rule as a tag, and inside, on a
+   `--hairline-module` edge, its instructions as a tile and "Add a prompt to this agent" dashed and text only. The
+   add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowUp, Check, ChevronDown, MoreHorizontal, Plus } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowUp, MoreHorizontal } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+  useLayoutEffect,
+} from "react";
 
+import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { MenuButton } from "@/components/brand/MenuButton";
+import { Pill } from "@/components/brand/Pill";
 import { TOOL_CLIENTS } from "@/lib/build/making";
 import type { Step } from "@/lib/build/graph";
 import { runsLabel, stepTitle } from "@/lib/build/graph";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { CONTROL } from "@/lib/theme/refinedControl";
+import { t } from "@/lib/theme/tokens";
+import { DM_MONO } from "@/lib/theme/type";
 
-import { agentEyebrow, isClamped, madeIn, stepModel, suggestionKey, inputLabel, type ListResult, type ListSuggestion } from "./buildListModel";
+import {
+  agentEyebrow,
+  inputLabel,
+  madeIn,
+  stepModel,
+  suggestionKey,
+  type ListResult,
+  isClamped,
+  type ListSuggestion,
+} from "./buildListModel";
 import { TextButton } from "./composeControls";
 import { ManualThumb } from "./ManualThumb";
+import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import {
+  INDENT,
+  bareButton,
+  chipStyle,
+  ellipsis,
+  menuItem,
+  menuSurface,
+  moduleStyle,
+  tagStyle,
+  text,
+  tileStyle,
+  tnum,
+  wellField,
+} from "./refinedStyles";
 import type { SourceSession } from "./sourcesModel";
 
 export const LIST_COPY = {
@@ -44,8 +74,6 @@ export const LIST_COPY = {
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
 } as const;
-
-const selTint = tokenAlpha("action", 0.12);
 
 export interface BuildListProps {
   phone: boolean;
@@ -77,106 +105,6 @@ export interface BuildListProps {
   onAddAgentTo: (teamId: string) => void;
 }
 
-/* ── small pieces ── */
-
-const mono = (size: 11.5 | 12 | 11): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, color: t.text2 });
-
-function Dot({ size = 7, ringOnly = false }: { size?: number; ringOnly?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{ width: size, height: size, borderRadius: r.full, boxSizing: "border-box", flexShrink: 0, border: `1.5px solid ${t.text2}`, background: ringOnly ? "transparent" : t.text2 }}
-    />
-  );
-}
-
-function Badge({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return (
-    <span
-      style={{
-        minWidth: wide ? 34 : 24,
-        height: 24,
-        padding: wide ? "0 4px" : 0,
-        boxSizing: "border-box",
-        borderRadius: 7,
-        background: selTint,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        ...mono(12),
-        // the badge is `--text`, not the quiet mono colour
-        color: t.text,
-        fontWeight: 600,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Chip({ children, dashed, onClick }: { children: ReactNode; dashed?: boolean; onClick?: () => void }) {
-  const Tag = onClick ? "button" : "span";
-  return (
-    <Tag
-      {...(onClick ? { type: "button" as const, onClick: (event: { stopPropagation: () => void }) => { event.stopPropagation(); onClick(); } } : null)}
-      style={{
-        cursor: onClick ? "pointer" : undefined,
-        height: 24,
-        padding: "0 8px 0 6px",
-        boxSizing: "border-box",
-        borderRadius: 8,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        background: dashed ? "transparent" : tokenAlpha("action", 0.08),
-        border: dashed ? `1.5px dashed ${t.text2}` : "1.5px solid transparent",
-        ...mono(11.5),
-        color: t.text,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </Tag>
-  );
-}
-
-/** A Radix menu item, in the card menus' type. */
-function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
-  return (
-    <Menu.Item
-      disabled={disabled}
-      onSelect={onSelect}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        minHeight: phone ? 44 : 32,
-        padding: "0 10px",
-        borderRadius: r.control,
-        fontFamily: FIGTREE,
-        fontSize: 13.5,
-        color: t.text,
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "default" : "pointer",
-        outline: "none",
-      }}
-    >
-      {children}
-    </Menu.Item>
-  );
-}
-
-const menuSurface: CSSProperties = {
-  zIndex: 50,
-  minWidth: 180,
-  padding: 6,
-  borderRadius: r.panel,
-  background: t.solid,
-  border: `1px solid ${t.line}`,
-  boxShadow: t.shadowFloat,
-  color: t.text,
-};
-
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
 export function useClamped<T extends HTMLElement>(text: string) {
   const ref = useRef<T>(null);
@@ -196,65 +124,194 @@ export function useClamped<T extends HTMLElement>(text: string) {
 
 export const clamp2: CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
-/* ── dividers ── */
+/* ── small pieces ── */
 
-function Divider({ session, first }: { session: SourceSession; first: boolean }) {
+function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode; disabled?: boolean; onSelect?: () => void; phone: boolean }) {
   return (
-    <div role="separator" aria-label={`Session ${session.number} · ${session.tool}`} style={{ display: "flex", alignItems: "center", gap: 7, margin: `${first ? 4 : 16}px 0 8px` }}>
-      <Dot />
-      <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, whiteSpace: "nowrap" }}>
+    <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
+      {children}
+    </Menu.Item>
+  );
+}
+
+/** The row under a step's text, and the words at its right. */
+const footRow = (indent: number): CSSProperties => ({
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 8,
+  paddingLeft: indent,
+  minHeight: 22,
+});
+
+const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
+
+/* ── a session's head ── */
+
+function SessionHead({ session }: { session: SourceSession }) {
+  return (
+    <div
+      role="separator"
+      aria-label={`Session ${session.number} · ${session.tool}`}
+      style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, minWidth: 0 }}
+    >
+      <ToolMark tool={session.tool} size={20} />
+      <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>
         Session {session.number} · {session.tool}
       </span>
-      <span style={mono(12)}>{session.detail}</span>
-      <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline }} />
+      <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
+      <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
     </div>
   );
 }
 
 /* ── the uses row ── */
 
+function Suggestion({ label, onAccept, onDismiss }: { label: string; onAccept: () => void; onDismiss: () => void }) {
+  const accept = useInteractive<HTMLButtonElement>();
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        height: 28,
+        padding: "0 4px 0 8px",
+        boxSizing: "border-box",
+        borderRadius: 6,
+        border: `1px dashed ${t.line}`,
+        ...text(11.5, 400, t.text2),
+        whiteSpace: "nowrap",
+        maxWidth: "100%",
+      }}
+    >
+      <span style={{ ...ellipsis, minWidth: 0 }}>{label}</span>
+      <button
+        type="button"
+        {...accept.handlers}
+        onClick={(event) => {
+          event.stopPropagation();
+          onAccept();
+        }}
+        style={{
+          ...CONTROL,
+          ...(accept.state.hovered ? { background: t.controlOn } : null),
+          height: 20,
+          padding: "0 8px",
+          boxSizing: "border-box",
+          borderRadius: 4,
+          ...text(11.5, 500, t.text),
+          cursor: "pointer",
+          flexShrink: 0,
+          ...ring(accept.state.focusVisible),
+        }}
+      >
+        Accept
+      </button>
+      <TextButton
+        onClick={(event) => {
+          event.stopPropagation();
+          onDismiss();
+        }}
+        style={{ ...text(11.5, 400, t.text2), height: 20, padding: "0 4px", flexShrink: 0 }}
+      >
+        Dismiss
+      </TextButton>
+    </span>
+  );
+}
+
 function UsesRow({
   step,
   props,
+  withGoes = true,
 }: {
   step: Step;
   props: Pick<BuildListProps, "steps" | "names" | "suggestions" | "intoResult" | "onAccept" | "onDismiss" | "onSelect">;
+  withGoes?: boolean;
 }) {
   const chips = step.uses
     .map((use) => ({ use, text: inputLabel(use, props.steps, props.names) }))
     .filter((chip): chip is { use: typeof chip.use; text: string } => chip.text !== null);
   const mine = props.suggestions.filter((suggestion) => suggestion.stepId === step.id);
-  const goes = props.intoResult.has(step.id);
+  const goes = withGoes && props.intoResult.has(step.id);
   if (chips.length === 0 && mine.length === 0 && !goes) return null;
   return (
     <>
-      {chips.length > 0 || mine.length > 0 ? <span style={mono(12)}>Uses</span> : null}
-      {chips.map(({ use, text }) => (
-        <Chip key={suggestionKey(use)} onClick={use.kind === "output" ? undefined : () => props.onSelect(use.node_id)}>
-          <Dot ringOnly />
-          {text}
-        </Chip>
-      ))}
-      {mine.map((suggestion) => (
-        <Chip key={suggestionKey(suggestion.use)} dashed>
-          {suggestion.label} · {suggestion.reason}
-          <TextButton onClick={() => props.onAccept(suggestion)} style={{ fontSize: 11.5, fontWeight: 600, color: t.text }}>
-            Accept
-          </TextButton>
-          <TextButton onClick={() => props.onDismiss(suggestion)} style={{ fontSize: 11.5 }}>
-            Dismiss
-          </TextButton>
-        </Chip>
-      ))}
-      {goes ? (
-        <>
-          <span style={mono(12)}>Goes into</span>
-          <span style={{ height: 24, padding: "0 8px", borderRadius: 8, display: "inline-flex", alignItems: "center", background: t.evidenceFill, ...mono(11.5), color: t.onEvidenceFill }}>
-            Result
+      {chips.length > 0 || mine.length > 0 ? <Quiet>Uses</Quiet> : null}
+      {chips.map(({ use, text: label }) =>
+        use.kind === "output" ? (
+          <span key={suggestionKey(use)} style={chipStyle}>
+            {label}
           </span>
-        </>
-      ) : null}
+        ) : (
+          <button
+            key={suggestionKey(use)}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              props.onSelect(use.node_id);
+            }}
+            style={{ ...chipStyle, cursor: "pointer" }}
+          >
+            {label}
+          </button>
+        ),
+      )}
+      {mine.map((suggestion) => (
+        <Suggestion
+          key={suggestionKey(suggestion.use)}
+          label={`${suggestion.label} · ${suggestion.reason}`}
+          onAccept={() => props.onAccept(suggestion)}
+          onDismiss={() => props.onDismiss(suggestion)}
+        />
+      ))}
+      {goes ? <GoesInto /> : null}
     </>
+  );
+}
+
+function GoesInto() {
+  return (
+    <>
+      <Quiet>Goes into</Quiet>
+      <Pill tone="evidence">Result</Pill>
+    </>
+  );
+}
+
+/* ── a title, renamed in place ── */
+
+function RenameField({ label, draft, placeholder, phone, onDraft, onFinish }: { label: string; draft: string; placeholder: string; phone: boolean; onDraft: (value: string) => void; onFinish: (save: boolean) => void }) {
+  return (
+    <input
+      autoFocus
+      aria-label={label}
+      value={draft}
+      maxLength={80}
+      placeholder={placeholder}
+      onChange={(event) => onDraft(event.target.value)}
+      onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") onFinish(true);
+        if (event.key === "Escape") onFinish(false);
+      }}
+      onBlur={() => onFinish(true)}
+      style={{ ...wellField, flexGrow: 1, minWidth: 0, height: 28, padding: "0 8px", fontSize: phone ? 16 : 14, fontWeight: 500 }}
+    />
+  );
+}
+
+function StepTitle({ title, isDefault }: { title: string; isDefault: boolean }) {
+  return (
+    <h3
+      data-default-title={isDefault ? "true" : undefined}
+      style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, flexGrow: 1, minWidth: 0, letterSpacing: "-0.005em", ...ellipsis }}
+    >
+      {title}
+    </h3>
   );
 }
 
@@ -271,12 +328,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const open = props.onOpenPrompt ? () => props.onOpenPrompt?.(step.id) : undefined;
   const editable = step.kind === "prompt";
 
-  /* Rename starts once the menu has closed: closing returns focus to the menu's
-     button, which would blur a field opened any earlier and end the edit. */
+  /* Rename starts once the menu has closed: closing returns focus to the menu's button, which would blur a field
+     opened any earlier and end the edit. */
   const renameNext = useRef(false);
-  const startRename = () => {
-    renameNext.current = true;
-  };
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -303,65 +357,25 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
-      style={{
-        borderRadius: 14,
-        border: `1px solid ${selected ? "transparent" : t.line}`,
-        boxShadow: selected ? `0 0 0 2px ${t.text}` : "none",
-        background: t.solid,
-        marginBottom: 8,
-        outline: "none",
-        cursor: "pointer",
-      }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 8px 0 14px" }}>
-        <Badge>{step.number}</Badge>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
         {renaming ? (
-          <input
-            autoFocus
-            aria-label={`Title of prompt ${step.number}`}
-            value={draft}
-            maxLength={80}
-            placeholder={step.defaultTitle}
-            onChange={(event) => setDraft(event.target.value)}
-            onClick={(event) => event.stopPropagation()}
-            onDoubleClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-              if (event.key === "Enter") finish(true);
-              if (event.key === "Escape") finish(false);
-            }}
-            onBlur={() => finish(true)}
-            style={{ flexGrow: 1, minWidth: 0, height: 28, boxSizing: "border-box", padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 15, fontWeight: 600 }}
-          />
+          <RenameField label={`Title of prompt ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
         ) : (
-          <h3
-            data-default-title={isDefault ? "true" : undefined}
-            style={{
-              margin: 0,
-              flexGrow: 1,
-              minWidth: 0,
-              fontFamily: FIGTREE,
-              fontSize: 15,
-              fontWeight: isDefault ? 500 : 600,
-              color: isDefault ? t.text2 : t.text,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {title}
-          </h3>
+          <StepTitle title={title} isDefault={isDefault} />
         )}
         {editable ? (
           <Menu.Root>
             <Menu.Trigger asChild>
-              <IconButton icon={MoreHorizontal} label={`Prompt ${step.number} options`} size={30} onClick={(event) => event.stopPropagation()} />
+              <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Prompt ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
             </Menu.Trigger>
             <Menu.Portal>
               <Menu.Content
                 align="end"
                 sideOffset={4}
-                style={menuSurface}
+                style={menuSurface()}
                 onClick={(event) => event.stopPropagation()}
                 onCloseAutoFocus={(event) => {
                   if (!renameNext.current) return;
@@ -371,7 +385,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                   setRenaming(true);
                 }}
               >
-                <MenuRow phone={phone} onSelect={startRename}>Rename</MenuRow>
+                <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
@@ -381,28 +395,36 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
           </Menu.Root>
         ) : null}
       </div>
-      <div style={{ padding: "6px 14px 0 48px" }}>
-        <p ref={textRef} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, color: t.text, overflowWrap: "anywhere", ...clamp2 }}>
-          {step.text}
-        </p>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 10px 10px 48px" }}>
+      <p
+        ref={textRef}
+        style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
+      >
+        {step.text}
+      </p>
+      <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
-        <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 10 }}>
-          {clamped ? (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                open?.();
-              }}
-              style={{ border: "none", background: "transparent", padding: phone ? "12px 0" : 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 600, color: t.text, textDecoration: "underline", cursor: "pointer" }}
-            >
-              {LIST_COPY.showFull}
-            </button>
-          ) : null}
-          <span style={mono(12)}>{step.words} {step.words === 1 ? "word" : "words"}</span>
-        </span>
+        <span style={{ flexGrow: 1 }} />
+        {clamped ? (
+          <button
+            type="button"
+            data-hit=""
+            onClick={(event) => {
+              event.stopPropagation();
+              open?.();
+            }}
+            style={{
+              ...bareButton,
+              padding: phone ? "12px 0" : 0,
+              ...text(12, 500, t.text),
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              textDecorationColor: t.line,
+            }}
+          >
+            {LIST_COPY.showFull}
+          </button>
+        ) : null}
+        <Quiet style={tnum}>{wordsOf(step.words)}</Quiet>
       </div>
     </div>
   );
@@ -412,19 +434,19 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 
 function InnerCard({ step, eyebrow, runs, nested }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean }) {
   return (
-    <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ display: "flex", gap: 10, padding: 10, borderRadius: 12, background: t.cell, border: `1px solid ${t.hairline}` }}>
-      <Badge wide>{step.number}</Badge>
-      <div style={{ minWidth: 0, flexGrow: 1 }}>
-        {eyebrow ? <div style={mono(12)}>{eyebrow}</div> : null}
-        <div style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: step.title ? 600 : 500, color: step.title ? t.text : t.text2 }}>{stepTitle(step)}</div>
-        <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 13.5, lineHeight: 1.5, color: t.text, ...clamp2 }}>{step.text}</p>
+    <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+      {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
+        <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
+        {runs ? <span style={tagStyle}>{runs}</span> : null}
       </div>
-      {runs ? <Chip>{runs}</Chip> : null}
+      <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
     </div>
   );
 }
 
-/** A quiet "+ …" row that opens a small field, for "Add a prompt to this agent". */
+/** A dashed, text-only row that adds something inside an agent or a team. */
 function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
@@ -435,24 +457,32 @@ function GhostAdd({ label, phone, onClick }: { label: string; phone: boolean; on
         event.stopPropagation();
         onClick();
       }}
-      style={{ minHeight: phone ? 44 : 30, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1.5px dashed ${t.line}`, background: "transparent", color: t.text2, fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "left", ...ring(state.focusVisible) }}
+      style={{
+        ...bareButton,
+        minHeight: phone ? 44 : 32,
+        padding: "0 12px",
+        boxSizing: "border-box",
+        borderRadius: 6,
+        border: `1px dashed ${state.hovered ? t.text2 : t.line}`,
+        ...text(12.5, 400, t.text2),
+        ...ring(state.focusVisible),
+      }}
     >
-      <Plus size={14} aria-hidden="true" />
       {label}
     </button>
   );
 }
 
-/** The field "Add a prompt to this agent" opens: the List's add field without the tool and model chips (the agent's model applies). */
+/** The field "Add a prompt to this agent" opens: a well, Cancel and the boxed `up` (the agent's model applies). */
 function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildListProps; onDone: () => void }) {
-  const [text, setText] = useState("");
+  const [text_, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   useEffect(() => field.current?.focus(), []);
   const submit = async () => {
-    if (!text.trim() || busy) return;
+    if (!text_.trim() || busy) return;
     setBusy(true);
-    const saved = await props.onAddAgentPrompt(agent.id, text);
+    const saved = await props.onAddAgentPrompt(agent.id, text_);
     setBusy(false);
     if (saved) {
       setText("");
@@ -460,12 +490,12 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
     }
   };
   return (
-    <div data-testid="agent-prompt-field" onClick={(event) => event.stopPropagation()} style={{ borderRadius: 12, border: `1px solid ${t.line}`, background: t.field, padding: "10px 10px 8px 12px" }}>
+    <div data-testid="agent-prompt-field" onClick={(event) => event.stopPropagation()} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <textarea
         ref={field}
         aria-label={`Add a prompt to agent ${agent.number}`}
         rows={2}
-        value={text}
+        value={text_}
         placeholder={LIST_COPY.placeholder}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
@@ -477,26 +507,45 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
             void submit();
           }
         }}
-        style={{ width: "100%", boxSizing: "border-box", resize: "none", border: "none", background: "transparent", outline: "none", color: t.text, fontFamily: FIGTREE, fontSize: props.phone ? 16 : 14, lineHeight: 1.5, padding: 0 }}
+        style={{ ...wellField, resize: "none", padding: 12, fontSize: props.phone ? 16 : 13.5 }}
       />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginTop: 4 }}>
-        <TextButton onClick={onDone} target={props.phone}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+        <TextButton onClick={onDone} target={props.phone} style={text(12.5, 500, t.text2)}>
           Cancel
         </TextButton>
-        <IconButton icon={ArrowUp} label="Add prompt to this agent" size={props.phone ? 38 : 30} disabled={!text.trim() || busy} onClick={() => void submit()} />
+        <IconButton icon={ArrowUp} glyph="up" label="Add prompt to this agent" size={28} disabled={!text_.trim() || busy} onClick={() => void submit()} />
       </div>
     </div>
   );
 }
 
+/** "Agent · ", the model's mark at 14 and its name: the eyebrow's words are the current look's. */
+function ContainerEyebrow({ step, made, isTeam }: { step: Step; made: readonly string[]; isTeam: boolean }) {
+  const model = isTeam ? null : stepModel(step);
+  const lead = agentEyebrow(made, null, isTeam ? "Team" : "Agent");
+  return (
+    <span data-testid="container-eyebrow" style={{ ...text(11.5, 400, t.label), display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
+      {model ? (
+        <>
+          {`${lead} · `}
+          <ToolMark model={step.model} size={14} />
+          {model}
+        </>
+      ) : (
+        lead
+      )}
+    </span>
+  );
+}
+
 function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
   const isTeam = step.kind === "team";
-  const model = stepModel(step);
   const selected = props.selectedId === step.id;
   const made = madeIn(step, props.steps);
   const [adding, setAdding] = useState(false);
   /** One agent of a team shows its own prompts at a time. */
   const [openAgent, setOpenAgent] = useState<string | null>(null);
+  const goes = props.intoResult.has(step.id);
   return (
     <div
       role="group"
@@ -504,33 +553,34 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
       data-testid="step-card"
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ borderRadius: 14, border: `1px solid ${selected ? "transparent" : t.line}`, boxShadow: selected ? `0 0 0 2px ${t.text}` : "none", background: t.solid, marginBottom: 8, padding: "10px 14px 10px 14px", outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Badge>{step.number}</Badge>
-        <div style={{ minWidth: 0, flexGrow: 1 }}>
-          <div data-testid="container-eyebrow" style={mono(12)}>{isTeam ? agentEyebrow(made, null, "Team") : agentEyebrow(made, model)}</div>
-          <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: step.title ? 600 : 500, color: step.title ? t.text : t.text2 }}>{stepTitle(step)}</h3>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
+          <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
         </div>
-        <Chip>{runsLabel(step.runs)}</Chip>
+        <span style={tagStyle}>{runsLabel(step.runs)}</span>
       </div>
-      <div style={{ margin: "8px 0 0 12px", paddingLeft: 12, borderLeft: `2px solid ${t.line}`, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child) => {
           const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
           const open = isTeam && openAgent === child.id;
           return (
-            <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <InnerCard
                 step={child}
                 eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
                 runs={isTeam ? runsLabel(child.runs) : undefined}
               />
               {own.length > 0 ? (
-                <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                   <span>
                     <TextButton
                       target={props.phone}
                       aria-expanded={open}
+                      style={text(12.5, 500, t.text2)}
                       onClick={(event) => {
                         event.stopPropagation();
                         setOpenAgent(open ? null : child.id);
@@ -553,14 +603,21 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           <GhostAdd label="Add a prompt to this agent" phone={props.phone} onClick={() => setAdding(true)} />
         )}
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, paddingTop: 8 }}>
-        <UsesRow step={step} props={props} />
-      </div>
+      {step.uses.length > 0 || props.suggestions.some((s) => s.stepId === step.id) ? (
+        <div style={footRow(INDENT)}>
+          <UsesRow step={step} props={props} withGoes={false} />
+        </div>
+      ) : null}
+      {goes ? (
+        <div style={footRow(INDENT)}>
+          <GoesInto />
+        </div>
+      ) : null}
     </div>
   );
 }
 
-/** Work done outside AI (UI-P70, D2 option B): a step card on `--cell` with a 1px `--text2` border, so it reads as different without a new colour. */
+/** Work done outside AI (UI-P70): a module like a prompt's, its eyebrow saying so; no new colour. */
 function ManualCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
   const { phone } = props;
   const selected = props.selectedId === step.id;
@@ -587,46 +644,31 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           props.onSelect(step.id);
         }
       }}
-      style={{ borderRadius: 14, border: `1px solid ${t.text2}`, boxShadow: selected ? `0 0 0 2px ${t.text}` : "none", background: t.cell, marginBottom: 8, outline: "none", cursor: "pointer" }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 8px 0 14px" }}>
-        <Badge>{step.number}</Badge>
-        <div style={{ minWidth: 0, flexGrow: 1 }}>
-          <div data-testid="manual-eyebrow" style={mono(12)}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span data-testid="manual-eyebrow" style={text(11.5, 400, t.label)}>
             Manual step{step.tool ? ` · ${step.tool}` : ""} · added by maker
-          </div>
+          </span>
           {renaming ? (
-            <input
-              autoFocus
-              aria-label={`Title of manual step ${step.number}`}
-              value={draft}
-              maxLength={80}
-              placeholder={step.defaultTitle}
-              onChange={(event) => setDraft(event.target.value)}
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => {
-                event.stopPropagation();
-                if (event.key === "Enter") finish(true);
-                if (event.key === "Escape") finish(false);
-              }}
-              onBlur={() => finish(true)}
-              style={{ width: "100%", boxSizing: "border-box", height: 28, padding: "0 8px", borderRadius: r.control, border: `1px solid ${t.line}`, background: t.field, color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 15, fontWeight: 600 }}
-            />
+            <RenameField label={`Title of manual step ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
           ) : (
-            <h3 data-default-title={isDefault ? "true" : undefined} style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: isDefault ? 500 : 600, color: isDefault ? t.text2 : t.text, overflowWrap: "anywhere" }}>
+            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
               {stepTitle(step)}
             </h3>
           )}
         </div>
         <Menu.Root>
           <Menu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} label={`Manual step ${step.number} options`} size={30} onClick={(event) => event.stopPropagation()} />
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Manual step ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
           </Menu.Trigger>
           <Menu.Portal>
             <Menu.Content
               align="end"
               sideOffset={4}
-              style={menuSurface}
+              style={menuSurface()}
               onClick={(event) => event.stopPropagation()}
               onCloseAutoFocus={(event) => {
                 if (!renameNext.current) return;
@@ -644,14 +686,12 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           </Menu.Portal>
         </Menu.Root>
       </div>
-      <div style={{ padding: "6px 14px 0 48px" }}>
-        <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.5, color: t.text, overflowWrap: "anywhere" }}>{step.text}</p>
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, padding: "8px 10px 10px 48px" }}>
+      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
         {step.mediaId ? (
           <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <span style={mono(12)}>1 screenshot</span>
+            <Quiet>1 screenshot</Quiet>
             <ManualThumb mediaId={step.mediaId} />
           </span>
         ) : null}
@@ -674,17 +714,21 @@ function ResultCard({ result, selected, onSelect }: { result: ListResult; select
           onSelect(result.id);
         }
       }}
-      style={{ cursor: "pointer", outline: selected ? `2px solid ${t.text}` : undefined, display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, border: `1px solid ${t.line}`, background: t.solid, marginBottom: 8 }}>
-      <span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: 7, background: t.evidenceFill, color: t.onEvidenceFill, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Check size={14} strokeWidth={2} />
+      style={{ ...moduleStyle(selected), display: "flex", alignItems: "center", gap: 12, outline: "none", cursor: "pointer" }}
+    >
+      <span
+        aria-hidden="true"
+        style={{ width: 24, height: 24, borderRadius: 6, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      >
+        <Glyph name="check" size={14} />
       </span>
-      <div style={{ minWidth: 0 }}>
-        <div style={mono(12)}>Result</div>
-        <div style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>{result.title}</div>
-        <div style={mono(12)}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <Quiet>Result</Quiet>
+        <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
+        <Quiet>
           {result.holds}
           {result.from ? ` · from prompt ${result.from}` : ""}
-        </div>
+        </Quiet>
       </div>
     </div>
   );
@@ -707,31 +751,19 @@ function PickMenu({
   none: string;
   phone: boolean;
 }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <Menu.Root>
       <Menu.Trigger asChild>
-        <button
-          type="button"
-          {...handlers}
-          style={{ height: phone ? 44 : 26, padding: "0 8px", display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 8, border: `1px solid ${t.line}`, background: "transparent", color: t.text2, ...mono(11.5), cursor: "pointer", ...ring(state.focusVisible) }}
-        >
-          {label}
-          <ChevronDown size={12} aria-hidden="true" />
-        </button>
+        <MenuButton label={label} value="" style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Content align="start" sideOffset={4} style={menuSurface}>
+        <Menu.Content align="start" sideOffset={4} style={menuSurface()}>
           <Menu.RadioGroup value={value ?? ""} onValueChange={(next) => onChange(next || null)}>
             {[{ value: "", label: none }, ...options].map((option) => (
-              <Menu.RadioItem
-                key={option.value || "none"}
-                value={option.value}
-                style={{ display: "flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 32, padding: "0 10px", borderRadius: r.control, fontFamily: FIGTREE, fontSize: 13.5, color: t.text, outline: "none", cursor: "pointer" }}
-              >
-                <span style={{ width: 14 }}>
+              <Menu.RadioItem key={option.value || "none"} value={option.value} style={{ ...menuItem(true, phone), gap: 6 }}>
+                <span style={{ width: 14, display: "inline-flex" }}>
                   <Menu.ItemIndicator>
-                    <Check size={13} aria-hidden="true" />
+                    <Glyph name="check" size={14} />
                   </Menu.ItemIndicator>
                 </span>
                 {option.label}
@@ -745,7 +777,7 @@ function PickMenu({
 }
 
 function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone" | "onAddPrompt" | "focusAdd">) {
-  const [text, setText] = useState("");
+  const [value, setValue] = useState("");
   const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -756,32 +788,32 @@ function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone
   }, [focusAdd]);
 
   const submit = async () => {
-    if (!text.trim() || busy) return;
+    if (!value.trim() || busy) return;
     setBusy(true);
-    const saved = await onAddPrompt({ text, tool, model });
+    const saved = await onAddPrompt({ text: value, tool, model });
     setBusy(false);
-    if (saved) setText("");
+    if (saved) setValue("");
   };
 
   const toolLabel = TOOL_CLIENTS.find((entry) => entry.client === tool)?.label;
   return (
-    <div data-testid="add-prompt" style={{ borderRadius: 14, border: `1px solid ${t.line}`, background: t.field, padding: "12px 12px 10px 14px" }}>
+    <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
       <textarea
         ref={field}
         aria-label="Add a prompt"
         rows={2}
-        value={text}
+        value={value}
         placeholder={LIST_COPY.placeholder}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             void submit();
           }
         }}
-        style={{ width: "100%", boxSizing: "border-box", resize: "none", border: "none", background: "transparent", outline: "none", color: t.text, fontFamily: FIGTREE, fontSize: phone ? 16 : 14, lineHeight: 1.5, padding: 0 }}
+        style={{ ...wellField, resize: "none", padding: 12, fontSize: phone ? 16 : 13.5 }}
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <PickMenu
           label={`Typed here · ${toolLabel ?? "pick a tool"}`}
           value={tool}
@@ -798,9 +830,8 @@ function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone
           none="No model"
           phone={phone}
         />
-        <span style={{ marginLeft: "auto" }}>
-          <IconButton icon={ArrowUp} label="Add prompt" size={phone ? 38 : 30} disabled={!text.trim() || busy} onClick={() => void submit()} />
-        </span>
+        <span style={{ flexGrow: 1 }} />
+        <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
       </div>
     </div>
   );
@@ -808,32 +839,47 @@ function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone
 
 /* ── the list ── */
 
+/** A run of steps on the page: a session's head and the prompts that follow it, or one step that stands alone. */
+interface Run {
+  key: string;
+  head: SourceSession | null;
+  steps: Step[];
+}
+
+function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): Run[] {
+  const runs: Run[] = [];
+  for (const step of steps) {
+    const head = dividers.get(step.number) ?? null;
+    const last = runs[runs.length - 1];
+    /* Agents, teams and manual steps stand on their own unless a session's head names them. */
+    if (head || !last || !last.head || step.kind !== "prompt") runs.push({ key: step.id, head, steps: [step] });
+    else last.steps.push(step);
+  }
+  return runs;
+}
+
 export function BuildList(props: BuildListProps) {
   const { steps } = props;
   const prompts = steps.filter((step) => step.kind === "prompt");
-  let seen = false;
+  const card = (step: Step) =>
+    step.kind === "prompt" ? (
+      <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
+    ) : step.kind === "manual" ? (
+      <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : (
+      <ContainerCard key={step.id} step={step} props={props} />
+    );
   return (
-    <div data-testid="build-list">
-      <p style={{ ...mono(11.5), margin: "0 0 4px" }}>{LIST_COPY.hint}</p>
-      {steps.map((step) => {
-        const divider = props.dividers.get(step.number);
-        const first = !seen;
-        seen = true;
-        const card =
-          step.kind === "prompt" ? (
-            <StepCard step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
-          ) : step.kind === "manual" ? (
-            <ManualCard step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
-          ) : (
-            <ContainerCard step={step} props={props} />
-          );
-        return (
-          <div key={step.id}>
-            {divider ? <Divider session={divider} first={first} /> : null}
-            {card}
-          </div>
-        );
-      })}
+    /* The global field rule makes a field inherit its size on a desktop (`font-size: inherit !important`), so the
+     fields' type is set here, where they inherit it. */
+    <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
+      <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hint}</p>
+      {runsOf(steps, props.dividers).map((run) => (
+        <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          {run.head ? <SessionHead session={run.head} /> : null}
+          {run.steps.map(card)}
+        </div>
+      ))}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}

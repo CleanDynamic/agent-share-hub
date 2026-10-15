@@ -494,7 +494,7 @@ export default function MessagesPage() {
                     placeholder="Search in conversation..."
                     className="flex-1 bg-transparent outline-none placeholder:text-[var(--text2)]"
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       color: tok.text,
                     }}
@@ -556,10 +556,10 @@ export default function MessagesPage() {
               >
                 <MessageSquare size={28} style={{ color: tok.text2 }} />
               </div>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: tok.text }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: tok.text }}>
                 Select a conversation
               </p>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: tok.text2, maxWidth: 280 }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: tok.text2, maxWidth: 280 }}>
                 Pick a thread from the list, or start a new one.
               </p>
               <button

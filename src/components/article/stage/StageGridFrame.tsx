@@ -144,7 +144,7 @@ export function StageGridFrame({
               borderRadius: '50%',
               background: 'color-mix(in srgb, var(--action) 18%, transparent)',
               color: 'var(--action)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 10,
               fontWeight: 600,
               lineHeight: 1,
@@ -162,7 +162,7 @@ export function StageGridFrame({
               onKeyDown={handleKeyDown}
               placeholder="Untitled stage"
               className="flex-1 bg-transparent text-[13px] font-medium text-white/85 outline-none border-b border-white/20 py-0.5 pointer-events-auto placeholder:italic placeholder:text-white/30"
-              style={{ fontFamily: 'Figtree, sans-serif' }}
+              style={{ fontFamily: 'var(--font-ui)' }}
             />
           ) : (
             <button
@@ -170,7 +170,7 @@ export function StageGridFrame({
               onClick={() => setIsEditing(true)}
               className="flex-1 text-left truncate transition-colors pointer-events-auto hover:text-white"
               style={{
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 13,
                 fontWeight: stageName ? 600 : 500,
                 fontStyle: stageName ? 'normal' : 'italic',
@@ -185,7 +185,7 @@ export function StageGridFrame({
           <span
             className="flex-shrink-0 pointer-events-none"
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 10,
               color: 'var(--text2)',
             }}

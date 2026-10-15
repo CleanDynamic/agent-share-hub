@@ -1,45 +1,42 @@
-/* UI-P66 — the Details panel: whatever is selected, and the one place to
-   rename a step, edit its inputs and set how an agent runs.
+/* UI-P93 — the Details panel in the refined look, as `design/reference/refined/{dusk,noon}/composer-list.html` draws
+   it.
 
-   PURE. A view says what is selected and everything the panel shows of it;
-   `SandboxPage` builds the view from the steps and runs the writes. Nothing
-   here fetches, and nothing is written for the maker: a title that was not
-   typed stays the default, shown quiet.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `DetailsPanel` stays the current look; this takes its props (imported, not copied) and shows
+   the same things for each kind of selection, in the same order, with the same fields, writes and accessible names.
 
-   Text fields (a name, a link) are held as typed and handed over when the
-   maker leaves the field or presses Enter, so a write is one whole value. The
-   panel is the content of the Details bottom sheet on a phone, where radio
-   rows and remove buttons are 44 tall. */
+   THE LOOK. An eyebrow ("Prompt 3"); the title 18/500 with the ghost `pencil` (Rename); for a prompt, its tool's real
+   mark at 24 beside its two meta lines (12/18 `--text2`); the text in a well (13/21); Read all of it (secondary 26)
+   and the word count; Uses and Goes into as hairline lists (a `larr` or `rarr` lead in `--label`, the title
+   12.5/500, the meta 11.5 `--label`, a ghost 24 `x` to remove); Add an input as a 12.5/500 `--text2` text button with
+   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { ArrowLeft, ArrowRight, Download, Maximize2, Pencil, Plus, X } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Eyebrow } from "@/components/brand/Eyebrow";
+import { Glyph, type GlyphName } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
+import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
-import { MODEL_VERSIONS } from "@/lib/models/registry";
-import type { Runs, Use } from "@/lib/build/graph";
+import { SELECTED } from "@/lib/theme/refinedControl";
+import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
-import { fieldBase } from "./composeFields";
 import {
   atOnce,
-  DETAILS_ROWS,
   firstRows,
   RUNS_CHOICES,
-  type ChecklistRow,
   type GoesRow,
   type InputOption,
   type UseRow,
+  type ChecklistRow,
 } from "./detailsModel";
-
-const selTint = tokenAlpha("action", 0.12);
-
-/* ── what can be selected ── */
+import { ToolMark } from "./refinedPieces";
+import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
+import type { Runs, Use } from "@/lib/build/graph";
 
 export interface InputsView {
   uses: readonly UseRow[];
@@ -165,53 +162,65 @@ export interface DetailsPanelProps extends DetailsHandlers {
   view: DetailsView | null;
 }
 
+export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
+
+export const DETAILS_COPY = {
+  empty: "Select a prompt, session or file to see it here.",
+} as const;
+
 /* ── small pieces ── */
 
-const mono = (size: 11 | 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, color: t.text2 });
+const line = `1px solid ${t.hairlineModule}`;
 
-const eyebrow: CSSProperties = { ...mono(11), textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 };
+const quiet = (extra: CSSProperties = {}): CSSProperties => text(11.5, 400, t.label, extra);
 
-const sectionLabel: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, margin: 0 };
-
+/** A list's head: its name 12.5/500 and its count, over a hairline. */
 function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <h3 style={sectionLabel}>
-        {title}
-        {typeof count === "number" ? <span style={{ ...mono(12), fontWeight: 400, marginLeft: 6 }}>{count}</span> : null}
-      </h3>
+    <section style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
+        <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{title}</h3>
+        {typeof count === "number" ? <span style={{ ...quiet(), ...tnum }}>{count}</span> : null}
+      </div>
       {children}
     </section>
   );
 }
 
-/** A 24 square (44 on a phone) button for one icon: Remove, Rename. */
-function MiniButton({ icon: Icon, label, onClick, phone, size = 14 }: { icon: typeof X; label: string; onClick: () => void; phone: boolean; size?: number }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const box = phone ? 44 : 24;
+/** A ghost 24 that removes one thing (44 on a phone). */
+function RemoveButton({ label, phone, onClick }: { label: string; phone: boolean; onClick: () => void }) {
+  const side = phone ? 44 : 24;
+  return <IconButton icon={X} glyph="x" boxed={false} label={label} size={26} onClick={onClick} style={{ width: side, height: side, color: t.label }} />;
+}
+
+function Lead({ glyph }: { glyph: GlyphName }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      {...handlers}
-      style={{ width: box, height: box, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, borderRadius: r.control, border: 0, background: "transparent", color: t.text2, cursor: "pointer", ...ring(state.focusVisible) }}
-    >
-      <Icon size={size} strokeWidth={1.6} aria-hidden="true" />
-    </button>
+    <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+      <Glyph name={glyph} size={16} />
+    </span>
   );
 }
 
-function Mono({ children }: { children: ReactNode }) {
-  return <span style={mono(12)}>{children}</span>;
+/** A row of a hairline list: at least 48 high (44 for a plain one), a hairline under it. */
+const listRow = (minHeight = 48): CSSProperties => ({ display: "flex", alignItems: "center", gap: 12, minHeight, boxSizing: "border-box", padding: "6px 0", borderBottom: line, minWidth: 0 });
+
+function ShowMore({ hidden, phone, onClick }: { hidden: number; phone: boolean; onClick: () => void }) {
+  if (hidden <= 0) return null;
+  return (
+    <div style={{ paddingTop: 8 }}>
+      <TextButton target={phone} onClick={onClick} style={text(12.5, 500, t.text2)}>
+        Show {hidden} more
+      </TextButton>
+    </div>
+  );
 }
 
-/** A row of key and value, a 90px label column, a hairline above. */
+/** A row of key and value: a 90 label column, a hairline under it. */
 function KeyValue({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "8px 0", borderTop: `1px solid ${t.hairline}` }}>
-      <span style={mono(12)}>{label}</span>
-      <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{children}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "10px 0", borderBottom: line }}>
+      <span style={quiet()}>{label}</span>
+      <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
     </div>
   );
 }
@@ -246,7 +255,7 @@ function CommitField({
     }
     if (event.key === "Escape") setDraft(value);
   };
-  const style: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13.5, ...ring(state.focusVisible) };
+  const style: CSSProperties = { ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) };
   const common = {
     "aria-label": label,
     value: draft,
@@ -256,19 +265,38 @@ function CommitField({
     onKeyDown,
     ...handlers,
   };
-  return multiline ? <textarea rows={2} {...common} style={{ ...style, resize: "vertical" }} /> : <input type="text" {...common} style={style} />;
+  return multiline ? <textarea rows={2} {...common} style={{ ...style, resize: "vertical", lineHeight: "21px" }} /> : <input type="text" {...common} style={style} />;
 }
 
 function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={mono(12)}>{label}</span>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={quiet()}>{label}</span>
       {children}
     </label>
   );
 }
 
-/** The title, in display type, with a Pencil that edits it in place (Enter saves, Esc cancels). */
+/** The eyebrow, the title 18/500 and the ghost `pencil` that renames it in place (Enter saves, Esc cancels). */
+function Head({ eyebrow, children }: { eyebrow: ReactNode; children?: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <Eyebrow as="p" style={{ margin: 0 }}>
+        {eyebrow}
+      </Eyebrow>
+      {children}
+    </div>
+  );
+}
+
+const titleStyle = (quietTitle: boolean): CSSProperties => ({
+  ...text(18, 500, quietTitle ? t.text2 : t.text),
+  margin: 0,
+  minWidth: 0,
+  letterSpacing: "-0.015em",
+  overflowWrap: "anywhere",
+});
+
 function Title({ id, title, fallback, editable, label, phone, onRename }: { id: string; title: string | null; fallback: string; editable: boolean; label: string; phone: boolean; onRename: (id: string, title: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -277,7 +305,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
     if (save && draft.trim() !== (title ?? "")) onRename(id, draft);
   };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
       {editing ? (
         <input
           autoFocus
@@ -291,16 +319,21 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
             if (event.key === "Enter") finish(true);
             if (event.key === "Escape") finish(false);
           }}
-          style={{ ...fieldBase, padding: "6px 10px", fontSize: phone ? 16 : 18, fontWeight: 600, minHeight: phone ? 44 : 36 }}
+          style={{ ...wellField, padding: "4px 8px", fontSize: phone ? 16 : 16, fontWeight: 500, minHeight: phone ? 44 : 32 }}
         />
       ) : (
-        <h3 data-default-title={title ? undefined : "true"} style={{ ...display(22), margin: 0, minWidth: 0, overflowWrap: "anywhere", color: title ? t.text : t.text2, fontWeight: title ? undefined : 500 }}>{title ?? fallback}</h3>
+        <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
+          {title ?? fallback}
+        </h3>
       )}
       {editable && !editing ? (
-        <MiniButton
+        <IconButton
           icon={Pencil}
+          glyph="pencil"
+          boxed={false}
           label="Rename"
-          phone={phone}
+          size={26}
+          style={phone ? { width: 44, height: 44 } : undefined}
           onClick={() => {
             setDraft(title ?? "");
             setEditing(true);
@@ -311,126 +344,137 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
   );
 }
 
+/** "Read all of it", a secondary 26. */
+function ReadAll({ phone, disabled, onClick }: { phone: boolean; disabled: boolean; onClick: () => void }) {
+  return (
+    <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={disabled} onClick={onClick} style={phone ? undefined : { height: 26 }}>
+      Read all of it
+    </Button>
+  );
+}
+
 /* ── inputs: Uses, Add an input, Goes into ── */
 
-function UseList({ id, rows, options, phone, onAddUse, onRemoveUse }: { id: string; rows: readonly UseRow[]; options: readonly InputOption[] } & Pick<DetailsPanelProps, "phone"> & Pick<DetailsHandlers, "onAddUse" | "onRemoveUse">) {
-  const [all, setAll] = useState(false);
+function AddInput({ id, options, phone, onAddUse }: { id: string; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse">) {
   const [menuAll, setMenuAll] = useState(false);
-  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
   const menu = menuAll ? { visible: [...options], hidden: 0 } : firstRows(options);
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  const disabled = options.length === 0;
+  return (
+    <Menu.Root onOpenChange={(open) => !open && setMenuAll(false)}>
+      <Menu.Trigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          {...handlers}
+          style={{
+            ...bareButton,
+            height: phone ? 44 : 36,
+            ...text(12.5, 500, state.hovered && !disabled ? t.text : t.text2),
+            cursor: disabled ? "default" : "pointer",
+            filter: disabled ? t.dimFilter : undefined,
+            alignSelf: "flex-start",
+            ...ring(state.focusVisible),
+          }}
+        >
+          Add an input
+        </button>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: 360, overflowY: "auto" }}>
+          {menu.visible.map((option) => (
+            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 10px" }}>
+              <span style={text(12.5, 500, t.text)}>{option.label}</span>
+              {option.sub ? <span style={quiet()}>{option.sub}</span> : null}
+            </Menu.Item>
+          ))}
+          {menu.hidden > 0 ? (
+            <Menu.Item
+              onSelect={(event) => {
+                event.preventDefault();
+                setMenuAll(true);
+              }}
+              style={{ ...menuItem(true, phone), color: t.text2 }}
+            >
+              Show {menu.hidden} more
+            </Menu.Item>
+          ) : null}
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+function UseList({ id, rows, options, phone, onAddUse, onRemoveUse }: { id: string; rows: readonly UseRow[]; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onRemoveUse">) {
+  const [all, setAll] = useState(false);
+  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
   return (
     <Section title="Uses" count={rows.length}>
-      <div>
-        {shown.visible.map((row) => (
-          <div key={`${row.use.kind}:${row.use.node_id}`} style={{ display: "grid", gridTemplateColumns: `18px 1fr ${phone ? 44 : 24}px`, gap: 8, alignItems: "center", padding: "8px 0", borderTop: `1px solid ${t.hairline}` }}>
-            <ArrowLeft size={14} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" />
-            <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>{row.label}</span>
-              {row.sub ? <span style={mono(12)}>{row.sub}</span> : null}
-            </span>
-            <MiniButton icon={X} label={`Remove ${row.label}`} phone={phone} onClick={() => onRemoveUse(id, row.use)} />
-          </div>
-        ))}
-        {shown.hidden > 0 ? (
-          <div style={{ paddingTop: 4 }}>
-            <TextButton target={phone} onClick={() => setAll(true)}>
-              Show {shown.hidden} more
-            </TextButton>
-          </div>
-        ) : null}
-      </div>
-      <Menu.Root onOpenChange={(open) => !open && setMenuAll(false)}>
-        <Menu.Trigger asChild>
-          <Button variant="ghost" size={phone ? 44 : 30} fontSize={12} icon={Plus} disabled={options.length === 0}>
-            Add an input
-          </Button>
-        </Menu.Trigger>
-        <Menu.Portal>
-          <Menu.Content
-            align="start"
-            sideOffset={6}
-            style={{ zIndex: 50, width: 260, maxWidth: "calc(100vw - 32px)", maxHeight: 360, overflowY: "auto", padding: 6, borderRadius: r.panel, background: t.solid, border: `1px solid ${t.line}`, color: t.text }}
-          >
-            {menu.visible.map((option) => (
-              <Menu.Item
-                key={option.key}
-                onSelect={() => onAddUse(id, option.use)}
-                style={{ display: "flex", flexDirection: "column", minHeight: phone ? 44 : 34, justifyContent: "center", padding: "4px 10px", borderRadius: r.control, outline: "none", cursor: "pointer" }}
-              >
-                <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600 }}>{option.label}</span>
-                {option.sub ? <span style={mono(12)}>{option.sub}</span> : null}
-              </Menu.Item>
-            ))}
-            {menu.hidden > 0 ? (
-              <Menu.Item
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setMenuAll(true);
-                }}
-                style={{ minHeight: phone ? 44 : 34, display: "flex", alignItems: "center", padding: "4px 10px", fontFamily: FIGTREE, fontSize: 13, color: t.text2, outline: "none", cursor: "pointer" }}
-              >
-                Show {menu.hidden} more
-              </Menu.Item>
-            ) : null}
-          </Menu.Content>
-        </Menu.Portal>
-      </Menu.Root>
+      {shown.visible.map((row) => (
+        <div key={`${row.use.kind}:${row.use.node_id}`} style={listRow()}>
+          <Lead glyph="larr" />
+          <span style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+            <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
+            {row.sub ? <span style={quiet()}>{row.sub}</span> : null}
+          </span>
+          <RemoveButton label={`Remove ${row.label}`} phone={phone} onClick={() => onRemoveUse(id, row.use)} />
+        </div>
+      ))}
+      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
+      <AddInput id={id} options={options} phone={phone} onAddUse={onAddUse} />
     </Section>
   );
 }
 
-function RowList({ title, rows, phone, icon: Icon = ArrowRight, onSelect }: { title: string; rows: readonly GoesRow[]; phone: boolean; icon?: typeof ArrowRight; onSelect?: (id: string) => void }) {
+function RowList({ title, rows, phone, glyph = "rarr", onSelect }: { title: string; rows: readonly GoesRow[]; phone: boolean; glyph?: GlyphName; onSelect?: (id: string) => void }) {
   const [all, setAll] = useState(false);
   if (rows.length === 0) return null;
   const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
   return (
     <Section title={title} count={rows.length}>
-      <div>
-        {shown.visible.map((row) => (
-          <div key={row.id} style={{ display: "grid", gridTemplateColumns: "18px 1fr", gap: 8, alignItems: "center", minHeight: phone ? 44 : undefined, padding: "8px 0", borderTop: `1px solid ${t.hairline}` }}>
-            <Icon size={14} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" />
-            {onSelect && row.id !== "result" ? (
-              <TextButton onClick={() => onSelect(row.id)} style={{ textAlign: "left", fontSize: 13.5, color: t.text }}>
-                {row.label}
-              </TextButton>
-            ) : (
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text }}>{row.label}</span>
-            )}
-          </div>
-        ))}
-        {shown.hidden > 0 ? (
-          <div style={{ paddingTop: 4 }}>
-            <TextButton target={phone} onClick={() => setAll(true)}>
-              Show {shown.hidden} more
+      {shown.visible.map((row) => (
+        <div key={row.id} style={{ ...listRow(44), borderBottom: "none" }}>
+          <Lead glyph={glyph} />
+          {onSelect && row.id !== "result" ? (
+            <TextButton onClick={() => onSelect(row.id)} style={{ ...text(12.5, 500, t.text), textAlign: "left" }}>
+              {row.label}
             </TextButton>
-          </div>
-        ) : null}
-      </div>
+          ) : (
+            <span style={text(12.5, 500, t.text)}>{row.label}</span>
+          )}
+        </div>
+      ))}
+      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
     </Section>
   );
 }
 
 /* ── a prompt ── */
 
+/** The tool, from the session line: "Session 2 · Claude Code" and "Typed here · ChatGPT" both end in it. */
+const toolOf = (sessionLine: string): string => sessionLine.split(" · ").pop() ?? "";
+
 function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean } & DetailsHandlers) {
   const open = h.onOpenPrompt ? () => h.onOpenPrompt?.(view.id) : undefined;
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>Prompt {view.number}</p>
+      <Head eyebrow={`Prompt ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Mono>{view.sessionLine}</Mono>
-          {view.detailLine ? <Mono>{view.detailLine}</Mono> : null}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <ToolMark tool={toolOf(view.sessionLine)} model={view.model} size={24} />
+          <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <span style={{ ...text(12, 400, t.text2), lineHeight: "18px" }}>{view.sessionLine}</span>
+            {view.detailLine ? <span style={{ ...text(12, 400, t.text2), lineHeight: "18px" }}>{view.detailLine}</span> : null}
+          </span>
         </div>
-      </div>
+      </Head>
       {view.typed ? (
         <FieldBlock label="Model">
           <select
             aria-label="Model"
             value={view.model ?? ""}
             onChange={(event) => h.onModel(view.id, event.target.value || null)}
-            style={{ ...fieldBase, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13.5 }}
+            style={{ ...wellField, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
           >
             <option value="">No model</option>
             {MODEL_VERSIONS.map((version) => (
@@ -439,23 +483,18 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
               </option>
             ))}
           </select>
-          {!view.model ? <span style={{ ...mono(12) }}>Model is empty because there is no session to read it from.</span> : null}
+          {!view.model ? <span style={quiet()}>Model is empty because there is no session to read it from.</span> : null}
         </FieldBlock>
       ) : null}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ padding: "10px 12px", borderRadius: 10, background: t.cell, border: `1px solid ${t.hairline}` }}>
-          <p
-            style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, lineHeight: 1.5, color: t.text, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-          >
-            {view.text}
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <Button variant="secondary" size={phone ? 44 : 30} fontSize={12} icon={Maximize2} disabled={!open} onClick={() => open?.()}>
-            Read all of it
-          </Button>
-          <Mono>{view.words} words</Mono>
-        </div>
+      <div style={{ ...wellField, padding: 12 }}>
+        <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {view.text}
+        </p>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <ReadAll phone={phone} disabled={!open} onClick={() => open?.()} />
+        <span style={{ flexGrow: 1 }} />
+        <span style={{ ...quiet(), ...tnum }}>{view.words} words</span>
       </div>
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
@@ -464,8 +503,6 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
 }
 
 /* ── a manual step (UI-P70) ── */
-
-export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
 
 function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean } & DetailsHandlers) {
   const picker = useRef<HTMLInputElement>(null);
@@ -476,11 +513,10 @@ function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean
   };
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>Manual step {view.number}</p>
+      <Head eyebrow={`Manual step ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of manual step ${view.number}`} phone={phone} onRename={h.onRename} />
-        <Mono>{MANUAL_DETAILS_COPY.never}</Mono>
-      </div>
+        <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
+      </Head>
       <FieldBlock label="Tool">
         <CommitField key={`${view.id}:tool`} label="Tool" value={view.tool} max={40} phone={phone} onCommit={(value) => commit({ tool: value })} />
       </FieldBlock>
@@ -489,9 +525,9 @@ function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean
       </FieldBlock>
       <Section title="Picture" count={view.picture ? 1 : 0}>
         {view.picture ? (
-          <div style={{ display: "grid", gridTemplateColumns: `1fr ${phone ? 44 : 24}px`, gap: 8, alignItems: "center", padding: "4px 0", borderTop: `1px solid ${t.hairline}` }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{view.picture.name}</span>
-            <MiniButton icon={X} label="Remove the picture" phone={phone} onClick={() => h.onManual?.(view.id, { media_id: null })} />
+          <div style={listRow(44)}>
+            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{view.picture.name}</span>
+            <RemoveButton label="Remove the picture" phone={phone} onClick={() => h.onManual?.(view.id, { media_id: null })} />
           </div>
         ) : null}
         <input
@@ -506,8 +542,8 @@ function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean
             if (file) h.onManualPicture?.(view.id, file);
           }}
         />
-        <div>
-          <Button variant="ghost" size={phone ? 44 : 30} fontSize={12} icon={Plus} onClick={() => picker.current?.click()}>
+        <div style={{ paddingTop: 8 }}>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => picker.current?.click()}>
             {view.picture ? "Replace the picture" : "Add a picture"}
           </Button>
         </div>
@@ -525,34 +561,30 @@ function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionV
   const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>Session</p>
-        <h3 style={{ ...display(22), margin: 0, color: t.text }}>Session {view.number}</h3>
-      </div>
+      <Head eyebrow="Session">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ToolMark tool={view.tool} model={view.model} size={24} />
+          <h3 style={titleStyle(false)}>Session {view.number}</h3>
+        </div>
+      </Head>
       <div>
         <KeyValue label="Tool">{view.tool}</KeyValue>
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
         <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
       </div>
       <Section title="Prompts in the build">
-        <Mono>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</Mono>
-        {view.status === "loading" ? <p style={{ ...mono(12), margin: 0 }}>Loading this session's prompts…</p> : null}
-        {view.status === "error" ? <p style={{ ...mono(12), margin: 0 }}>This session's prompts did not load.</p> : null}
+        <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
+        {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
+        {view.status === "error" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>This session's prompts did not load.</p> : null}
         <div role="group" aria-label="Prompts in this session">
           {shown.visible.map((row) => (
-            <label key={row.ordinal} style={{ display: "grid", gridTemplateColumns: "20px minmax(0, 1fr)", gap: 8, alignItems: "center", minHeight: phone ? 44 : 30, padding: "4px 0", borderTop: `1px solid ${t.hairline}`, cursor: "pointer" }}>
-              <input type="checkbox" checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} style={{ margin: 0, width: 16, height: 16 }} />
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{row.label}</span>
+            <label key={row.ordinal} style={{ ...listRow(phone ? 44 : 40), cursor: "pointer" }}>
+              <input type="checkbox" checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} style={{ margin: 0, width: 16, height: 16, flexShrink: 0 }} />
+              <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
             </label>
           ))}
         </div>
-        {shown.hidden > 0 ? (
-          <div style={{ paddingTop: 4 }}>
-            <TextButton target={phone} onClick={() => setAll(true)}>
-              Show {shown.hidden} more
-            </TextButton>
-          </div>
-        ) : null}
+        <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
       </Section>
     </>
   );
@@ -563,22 +595,21 @@ function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionV
 function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; phone: boolean } & Pick<DetailsHandlers, "onDownload" | "onSelect">) {
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>File</p>
-        <h3 style={{ ...display(22), margin: 0, color: t.text, overflowWrap: "anywhere" }}>{view.name}</h3>
-      </div>
+      <Head eyebrow="File">
+        <h3 style={titleStyle(false)}>{view.name}</h3>
+      </Head>
       <div>
         <KeyValue label="From">{view.from}</KeyValue>
         {view.size ? <KeyValue label="Size">{view.size}</KeyValue> : null}
       </div>
       {view.canDownload ? (
         <div>
-          <Button variant="secondary" size={phone ? 44 : 30} fontSize={12} icon={Download} onClick={() => onDownload(view.id)}>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onDownload(view.id)} style={phone ? undefined : { height: 26 }}>
             Download
           </Button>
         </div>
       ) : null}
-      <RowList title="Used by" rows={view.usedBy} phone={phone} icon={ArrowRight} onSelect={onSelect} />
+      <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
     </>
   );
 }
@@ -586,16 +617,14 @@ function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; ph
 function ToolDetails({ view, phone, onFields, onSelect }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onSelect">) {
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>Tool</p>
-      </div>
+      <Head eyebrow="Tool" />
       <FieldBlock label="Service">
         <CommitField key={`${view.id}:service`} label="Service" value={view.service} phone={phone} max={80} onCommit={(value) => onFields(view.id, { service: value })} />
       </FieldBlock>
       <FieldBlock label="What it was used for">
         <CommitField key={`${view.id}:scopes`} label="What it was used for" value={view.scopes} placeholder="read, label, draft" phone={phone} max={140} onCommit={(value) => onFields(view.id, { scopes: value })} />
       </FieldBlock>
-      <RowList title="Used by" rows={view.usedBy} phone={phone} icon={ArrowRight} onSelect={onSelect} />
+      <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
     </>
   );
 }
@@ -618,14 +647,26 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
 
   return (
     <Section title="How it runs">
-      <div role="radiogroup" aria-label="How it runs" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div role="radiogroup" aria-label="How it runs" style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>
         {RUNS_CHOICES.map((entry) => {
           const chosen = entry.how === how;
           const label = entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label;
           return (
             <label
               key={entry.how}
-              style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 30, padding: "0 8px", borderRadius: r.control, background: chosen ? selTint : "transparent", cursor: "pointer", fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                minHeight: phone ? 44 : 32,
+                padding: "0 8px",
+                boxSizing: "border-box",
+                borderRadius: 6,
+                border: "1px solid transparent",
+                ...(chosen ? SELECTED : null),
+                cursor: "pointer",
+                ...text(12.5, chosen ? 500 : 400, chosen ? t.text : t.text2),
+              }}
             >
               <input type="radio" name={name} checked={chosen} onChange={() => pick(entry)} style={{ margin: 0 }} />
               {label}
@@ -634,7 +675,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
         })}
       </div>
       {field?.kind === "count" ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8 }}>
           <input
             type="number"
             aria-label={field.label}
@@ -648,13 +689,13 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
               setCount(next);
               if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
             }}
-            style={{ ...fieldBase, width: 72, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13.5 }}
+            style={{ ...wellField, width: 72, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
           />
-          <Mono>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</Mono>
+          <span style={quiet()}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
         </div>
       ) : null}
       {field?.kind === "text" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
           <input
             type="text"
             aria-label={field.label}
@@ -668,11 +709,11 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
             onKeyDown={(event) => {
               if (event.key === "Enter") (event.target as HTMLInputElement).blur();
             }}
-            style={{ ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13.5 }}
+            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
           />
-          <Mono>
+          <span style={{ ...quiet(), ...tnum }}>
             {detail.length} / {field.max}
-          </Mono>
+          </span>
         </div>
       ) : null}
     </Section>
@@ -683,12 +724,9 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
   const word = view.kind === "agent" ? "Agent" : "Team";
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>
-          {word} {view.number}
-        </p>
+      <Head eyebrow={`${word} ${view.number}`}>
         <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
-      </div>
+      </Head>
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>
@@ -703,20 +741,18 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
           {h.onInstructions ? (
             <CommitField key={`${view.id}:instructions`} label="Instructions" value={view.instructions} placeholder="What this agent is told" multiline phone={phone} onCommit={(value) => h.onInstructions?.(view.id, value)} />
           ) : (
-            <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{view.instructions}</p>
+            <p style={{ ...wellField, padding: 12, margin: 0, lineHeight: "21px", fontSize: 13, overflowWrap: "anywhere" }}>{view.instructions}</p>
           )}
         </FieldBlock>
       ) : null}
       <RunsGroup view={view} phone={phone} onRuns={h.onRuns} />
       <Section title={`Inside ${view.inside}`}>
-        <div>
-          {view.insideRows.map((row) => (
-            <div key={row.id} style={{ display: "grid", gridTemplateColumns: `1fr ${phone ? 44 : 24}px`, gap: 8, alignItems: "center", padding: "8px 0", borderTop: `1px solid ${t.hairline}` }}>
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{row.label}</span>
-              <MiniButton icon={X} label={`Remove ${row.label}`} phone={phone} onClick={() => h.onRemoveInside(row.id)} />
-            </div>
-          ))}
-        </div>
+        {view.insideRows.map((row) => (
+          <div key={row.id} style={listRow(44)}>
+            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{row.label}</span>
+            <RemoveButton label={`Remove ${row.label}`} phone={phone} onClick={() => h.onRemoveInside(row.id)} />
+          </div>
+        ))}
       </Section>
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
@@ -730,9 +766,7 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
   const picker = useRef<HTMLInputElement>(null);
   return (
     <>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <p style={eyebrow}>Result</p>
-      </div>
+      <Head eyebrow="Result" />
       <FieldBlock label="Summary">
         <CommitField key={`${view.id}:summary`} label="Summary" value={view.summary} phone={phone} multiline max={200} onCommit={(value) => onFields(view.id, { summary: value })} />
       </FieldBlock>
@@ -740,16 +774,14 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
         <CommitField key={`${view.id}:url`} label="Link" value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
       </FieldBlock>
       <Section title="Pictures" count={view.pictures.length}>
-        <div>
-          {view.pictures.map((picture) => (
-            <div key={picture.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: phone ? 44 : 30, padding: "4px 0", borderTop: `1px solid ${t.hairline}` }}>
-              <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text, overflowWrap: "anywhere" }}>{picture.name}</span>
-              <Button variant="secondary" size={phone ? 44 : 30} fontSize={12} onClick={() => onUseAsCover(picture.id)}>
-                Use as cover
-              </Button>
-            </div>
-          ))}
-        </div>
+        {view.pictures.map((picture) => (
+          <div key={picture.id} style={listRow(44)}>
+            <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{picture.name}</span>
+            <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onUseAsCover(picture.id)} style={phone ? undefined : { height: 26 }}>
+              Use as cover
+            </Button>
+          </div>
+        ))}
         <input
           ref={picker}
           type="file"
@@ -762,8 +794,8 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
             if (file) onAddPicture(view.id, file);
           }}
         />
-        <div>
-          <Button variant="ghost" size={phone ? 44 : 30} fontSize={12} icon={Plus} onClick={() => picker.current?.click()}>
+        <div style={{ paddingTop: 8 }}>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => picker.current?.click()}>
             Add a picture
           </Button>
         </div>
@@ -774,14 +806,11 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
 
 /* ── the panel ── */
 
-export const DETAILS_COPY = {
-  empty: "Select a prompt, session or file to see it here.",
-} as const;
-
+/* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
 export function DetailsPanel({ view, phone, ...h }: DetailsPanelProps) {
-  if (!view) return <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 }}>{DETAILS_COPY.empty}</p>;
+  if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
   return (
-    <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+    <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
@@ -793,5 +822,4 @@ export function DetailsPanel({ view, phone, ...h }: DetailsPanelProps) {
   );
 }
 
-export { DETAILS_ROWS };
 export default DetailsPanel;

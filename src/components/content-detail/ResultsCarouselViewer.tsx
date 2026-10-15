@@ -167,7 +167,7 @@ export function ResultsCarouselViewer({
           <span
             style={{
               fontSize: 11,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               color: "var(--text2)",
               marginLeft: 2,
             }}
@@ -189,7 +189,7 @@ export function ResultsCarouselViewer({
       data-results-carousel
       className="w-full max-w-[880px] mx-auto outline-none"
       tabIndex={0}
-      style={{ fontFamily: "Figtree, sans-serif", marginBottom: 24 }}
+      style={{ fontFamily: "var(--font-ui)", marginBottom: 24 }}
     >
       {/* Header */}
       <div

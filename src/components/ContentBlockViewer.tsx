@@ -60,7 +60,7 @@ function CopyButton({
         color: copied
           ? 'var(--cat-configuration)' : 'var(--text2)',
         fontWeight: 600,
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         transition: feedback(),
         zIndex: 5,
       }}
@@ -337,7 +337,7 @@ export function RenderBlockContent({
       lineHeight: 1.75,
       whiteSpace: 'pre-wrap',
       margin: 0,
-      fontFamily: 'Figtree, sans-serif',
+      fontFamily: 'var(--font-ui)',
     };
 
     if (isLong) {
@@ -448,7 +448,7 @@ export function RenderBlockContent({
       }}>
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'Figtree' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -488,7 +488,7 @@ export function RenderBlockContent({
         )}
         <button
           onClick={handleCopy}
-          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'Figtree' }}
+          style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--line)', background: 'var(--recess)', color: copied ? 'var(--cat-configuration)' : 'var(--text2)', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
         >
           {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -928,7 +928,7 @@ const CodeViewer = ({ block }: { block: BlockRow }) => {
           <span style={{
             fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '0.10em', color: 'var(--text2)',
-            fontFamily: 'Figtree',
+            fontFamily: 'var(--font-ui)',
           }}>
             Install
           </span>{' '}
@@ -1324,7 +1324,7 @@ function renderTypedViewer(block: BlockRow): React.JSX.Element | null {
             <p style={{
               fontSize: 14, lineHeight: 1.70,
               color: 'var(--text2)',
-              margin: 0, fontFamily: 'Figtree, sans-serif',
+              margin: 0, fontFamily: 'var(--font-ui)',
             }}>
               {tutorialText}
             </p>
@@ -1649,7 +1649,7 @@ export function ContentBlockViewer({
                                 fontWeight: 600,
                                 color: 'var(--text2)',
                                 marginBottom: 12,
-                                fontFamily: 'Figtree, sans-serif',
+                                fontFamily: 'var(--font-ui)',
                               }}>
                                 {getBlockType(effectiveType).label}
                               </div>

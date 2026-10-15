@@ -104,7 +104,7 @@ function BackButton({ onClick }: { onClick: () => void }) {
         border: '0.5px solid var(--line)',
         borderRadius: 6,
         color: 'var(--text)',
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         fontSize: 12,
         fontWeight: 500,
         cursor: 'pointer',
@@ -166,7 +166,7 @@ function BottomBar({ showMiniMap, onToggleMiniMap }: BottomBarProps) {
         style={{
           minWidth: 36,
           textAlign: 'center',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 11,
           fontWeight: 500,
           color: 'var(--text2)',

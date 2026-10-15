@@ -139,7 +139,7 @@ export function AIExportMenu({ isOpen, onClose, anchorEl, post: _post, onExport,
         boxShadow: "var(--elev-raised)",
         padding: 4,
         zIndex: 9999,
-        fontFamily: "Figtree, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "var(--font-ui)",
       }}
     >
       <div

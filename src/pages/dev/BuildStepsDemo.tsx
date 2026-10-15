@@ -6,7 +6,7 @@
    `&tab=watch|understand|broke|rebuilds` draws that tab's body under the strip.
    The first screen is the build page's sample, with each build's own title.
 
-   UI-P91: `&look=refined&part=steps` is the Map board (`refined/{dusk,noon}/build-map.html`): no frame and no first
+   UI-P91: `&part=steps` is the Map board (`refined/{dusk,noon}/build-map.html`): no frame and no first
    screen, only the surface with the tabs, The build and What you need, laid out as that board crops them. */
 
 import { useState, type ReactNode } from "react";
@@ -15,10 +15,8 @@ import { useSearchParams } from "react-router-dom";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { buildFixture, buildTabFixture, SAMPLE_TABS } from "@/dev/fixtures/build";
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
-import { useLook } from "@/lib/theme/look";
-import { BuildView } from "@/pages/site/build/BuildView";
-import { RefinedNeedPanel } from "@/pages/site/build/RefinedBuildSteps";
-import { BuildPanel, RefinedBuildView } from "@/pages/site/build/RefinedBuildView";
+import { BuildPanel, BuildView } from "@/pages/site/build/BuildView";
+import { NeedPanel } from "@/pages/site/build/BuildSteps";
 import { t } from "@/lib/theme/tokens";
 import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildModel";
 
@@ -33,9 +31,6 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const first = params.get("tab") as BuildTabKey | null;
   const [tab, setTab] = useState<BuildTabKey>(landTab(first && SAMPLE_TABS.includes(first) ? first : "anatomy", true));
 
-  /* UI-P90: `?look=refined` draws the fork, from the same fixture. */
-  const refined = useLook() === "refined";
-  const View = refined ? RefinedBuildView : BuildView;
   const { title, outcome, ...steps } = buildStepsFixture(which);
   const props = buildFixture(viewport);
   const viewer = {
@@ -45,19 +40,19 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
     onTabChange: (next: BuildTabKey) => setTab(landTab(next, true)),
     content: tab === "anatomy" ? null : SAMPLE_TABS.includes(tab) ? buildTabFixture(tab, viewport) : <EmptyState line="Nothing here yet." />,
   };
-  if (refined && viewport === "desktop" && params.get("part") === "steps") {
+  if (viewport === "desktop" && params.get("part") === "steps") {
     return (
       <BareSurface>
         <section aria-label="The build" style={{ flexGrow: 1, minWidth: 0 }}>
           <BuildPanel viewer={viewer} steps={steps} phone={false} announce={() => undefined} />
         </section>
         <div style={{ width: 300, flexShrink: 0, paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` }}>
-          <RefinedNeedPanel view={steps} onOpenOther={() => undefined} />
+          <NeedPanel view={steps} onOpenOther={() => undefined} />
         </div>
       </BareSurface>
     );
   }
-  return <View fit="content" {...props} hero={{ ...props.hero, title, outcome }} viewer={viewer} steps={steps} />;
+  return <BuildView fit="content" {...props} hero={{ ...props.hero, title, outcome }} viewer={viewer} steps={steps} />;
 }
 
 /** The Map board's crop: the frame, and the surface 6 in from every edge, padding 32 48, its two columns 32 apart. */

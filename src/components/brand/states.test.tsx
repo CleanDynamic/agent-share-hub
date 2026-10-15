@@ -3,14 +3,14 @@
 // Styles are asserted through SSR markup (jsdom's cssstyle drops var() values);
 // roles, text and behaviour on the rendered tree.
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetMotionMediaCache } from "@/lib/theme/motion";
 
 import { EmptyState } from "./EmptyState";
-import { DEFAULT_ERROR_LINE, ErrorState } from "./ErrorState";
+import { ErrorState } from "./ErrorState";
 import { LoadingRegion, Skeleton } from "./Skeleton";
 
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
@@ -43,36 +43,11 @@ afterEach(() => {
 });
 
 describe("Skeleton", () => {
-  it("is a --recess block of the size it is given, radius 8 unless told otherwise", () => {
-    const html = markup(<Skeleton width={84} height={54} />);
-    expect(html).toContain("width:84px");
-    expect(html).toContain("height:54px");
-    expect(html).toContain("border-radius:8px");
-    expect(html).toContain("background:var(--recess)");
-  });
 
   it("is a full row wide when no width is given, and takes another radius for an orb", () => {
     const html = markup(<Skeleton height={72} radius="50%" />);
     expect(html).toContain("width:100%");
     expect(html).toContain("border-radius:50%");
-  });
-
-  it("pulses in opacity for 1.4s, forever, through the one keyframe in index.css", () => {
-    const html = markup(<Skeleton height={10} />);
-    expect(html).toMatch(/animation:skeletonPulse 1400ms [^;"]+ infinite/);
-  });
-
-  it("is still under prefers-reduced-motion: no animation at all", () => {
-    stubMedia(["prefers-reduced-motion"]);
-    const html = markup(<Skeleton height={10} />);
-    expect(html).not.toContain("animation");
-    expect(html).toContain("background:var(--recess)");
-  });
-
-  it("is hidden from assistive technology, and says so for the stylesheet's reduced-motion rule too", () => {
-    const html = markup(<Skeleton height={10} />);
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain("data-bg-animated");
   });
 
   it("carries no raw colour and no blur", () => {
@@ -106,26 +81,6 @@ describe("LoadingRegion", () => {
 });
 
 describe("EmptyState", () => {
-  it("is a centred column, 9 apart, padded 20px 14px", () => {
-    // UI-P52 density pass: 12 → 9 and 28px 20px → 20px 14px.
-    const html = markup(<EmptyState line="Nothing hung yet." />);
-    expect(html).toContain("flex-direction:column");
-    expect(html).toContain("align-items:center");
-    expect(html).toContain("text-align:center");
-    expect(html).toContain("gap:9px");
-    expect(html).toContain("padding:20px 14px");
-  });
-
-  it("says one sentence in the display role drawn at 20px, in --text", () => {
-    // UI-P52 density pass: display(20) renders at 17, under Sentient's 20px
-    // floor, so the line is Figtree 600 at 17.
-    const html = markup(<EmptyState line="Nothing hung yet." />);
-    expect(html.match(/<p /g)).toHaveLength(1);
-    expect(html).toContain("font-size:17px;font-weight:600");
-    expect(html).toContain("font-family:var(--font-ui, &#x27;Figtree&#x27;");
-    expect(html).toContain("color:var(--text)");
-    expect(html).toContain("Nothing hung yet.");
-  });
 
   it("draws no illustration and no icon", () => {
     const html = markup(<EmptyState line="No solutions yet." action={{ label: "Enter the gallery", onClick: () => {} }} />);
@@ -137,20 +92,6 @@ describe("EmptyState", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("offers at most one action: a secondary button drawn 36/13 that does what it says", () => {
-    // UI-P52 density pass: the button renders the drawn 36/13 at 30/12.
-    const onClick = vi.fn();
-    const html = markup(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick }} />);
-    expect(html).toContain('data-variant="secondary"');
-    expect(html).toContain("height:30px");
-    expect(html).toContain("font-size:12px");
-
-    render(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick }} />);
-    expect(screen.getAllByRole("button")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Enter the gallery" }));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
   it("makes the action 44 tall on a phone, the touch floor", () => {
     stubMedia(["max-width: 767px"]);
     render(<EmptyState line="Nothing hung yet." action={{ label: "Enter the gallery", onClick: () => {} }} />);
@@ -159,46 +100,11 @@ describe("EmptyState", () => {
 });
 
 describe("ErrorState", () => {
-  it("says That didn't load. in Figtree 13px --text, and names the panel in DM Mono 11px --label", () => {
-    // UI-P52 density pass: the line 14 → 13; the 11px name is kept.
-    const html = markup(<ErrorState panel="The visitors’ book" onRetry={() => {}} />);
-    expect(DEFAULT_ERROR_LINE).toBe("That didn't load.");
-    expect(html).toContain("That didn&#x27;t load.");
-    expect(html).toMatch(/<p style="[^"]*font-size:13px[^"]*color:var\(--text\)/);
-    expect(html).toMatch(/<span style="[^"]*font-size:11px[^"]*color:var\(--label\)[^"]*">The visitors’ book<\/span>/);
-    expect(html).toContain("&#x27;DM Mono&#x27;");
-  });
-
-  it("is a column, 7 apart", () => {
-    // UI-P52 density pass: 10 → 7.
-    const html = markup(<ErrorState panel="The wall" onRetry={() => {}} />);
-    expect(html).toContain("flex-direction:column");
-    expect(html).toContain("gap:7px");
-  });
-
-  it("has one secondary Try again drawn 34/12 that calls the retry", () => {
-    // UI-P52 density pass: the button renders the drawn 34 at 28; 12px type is kept.
-    const onRetry = vi.fn();
-    const html = markup(<ErrorState panel="The wall" onRetry={onRetry} />);
-    expect(html).toContain('data-variant="secondary"');
-    expect(html).toContain("height:28px");
-    expect(html).toContain("font-size:12px");
-
-    render(<ErrorState panel="The wall" onRetry={onRetry} />);
-    expect(screen.getAllByRole("button")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(onRetry).toHaveBeenCalledTimes(1);
-  });
 
   it("takes a truer sentence where a panel has one", () => {
     render(<ErrorState line="You don't have access to this." panel="The wall" onRetry={() => {}} />);
     expect(screen.getByText("You don't have access to this.")).toBeInTheDocument();
     expect(screen.queryByText("That didn't load.")).toBeNull();
-  });
-
-  it("is a polite status, so a failure that arrives late is announced, with its panel's name in it", () => {
-    render(<ErrorState panel="Streak" onRetry={() => {}} />);
-    expect(screen.getByRole("status")).toHaveTextContent("Streak");
   });
 
   it("never shows the exception: not its message, not its stack", () => {

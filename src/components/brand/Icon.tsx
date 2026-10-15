@@ -13,7 +13,6 @@
 
 import type { LucideIcon, LucideProps } from "lucide-react";
 
-import { useLook } from "@/lib/theme/look";
 
 import { Glyph, type GlyphName } from "./Glyph";
 
@@ -30,14 +29,10 @@ export interface IconProps extends Omit<LucideProps, "ref" | "size" | "absoluteS
 }
 
 export function Icon({ lucide: Lucide, glyph, size, color, ...rest }: IconProps) {
-  const refined = useLook() === "refined";
-  if (refined && glyph) return <Glyph name={glyph} size={size} color={color} />;
-  if (refined) {
-    return (
-      <Lucide aria-hidden="true" size={size} color={color} {...rest} strokeWidth={REFINED_STROKE} strokeLinecap="square" />
-    );
-  }
-  return <Lucide aria-hidden="true" size={size} color={color} {...rest} />;
+  if (glyph) return <Glyph name={glyph} size={size} color={color} />;
+  return (
+    <Lucide aria-hidden="true" size={size} color={color} {...rest} strokeWidth={REFINED_STROKE} strokeLinecap="square" />
+  );
 }
 
 export default Icon;

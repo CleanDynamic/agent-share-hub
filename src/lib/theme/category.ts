@@ -20,7 +20,7 @@
 // render time from a hex. Two things are wrong with it: it cannot work at all
 // once the colour is a `var()` string, and 0.15 was never measured, so several
 // of the nine failed 4.5:1 on their own tint. `categoryFill` returns a pair that
-// was measured instead — see `primitives.ts` for the method and
+// was measured instead — see the note in `contrast.test.ts` for the method and
 // `category.test.ts` for the arithmetic, which runs on every test run.
 //
 // A FILL IS OPAQUE ON PURPOSE. Each was measured as the hue at a low alpha over

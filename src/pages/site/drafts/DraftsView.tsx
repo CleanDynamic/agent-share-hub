@@ -51,7 +51,6 @@ import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
@@ -428,7 +427,6 @@ function SessionRow({
 }) {
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
-  const refined = useLook() === "refined";
   return (
     <li
       data-testid={attached ? "session-row-attached" : "session-row"}
@@ -450,16 +448,14 @@ function SessionRow({
         background: hover ? t.rowHighlight : "transparent",
         cursor: draggable ? "grab" : "default",
         /* A dragged row is dimmed with the filter under the refined look, never with opacity; its rows are hairline-separated. */
-        ...(refined ? { filter: dragging ? "var(--dim-filter)" : undefined, borderBottom: `1px solid ${t.hairline}`, borderRadius: 0 } : { opacity: dragging ? 0.5 : 1 }),
+        ...{ filter: dragging ? "var(--dim-filter)" : undefined, borderBottom: `1px solid ${t.hairline}`, borderRadius: 0 },
         boxSizing: "border-box",
       }}
     >
       {draggable ? <GripVertical size={14} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" style={{ flexShrink: 0 }} /> : null}
-      {refined ? (
-        <span style={{ display: "inline-flex", flexShrink: 0, color: t.text }}>
-          <ModelMark tool={session.modelName ? null : session.client} model={session.modelName} size={18} />
-        </span>
-      ) : null}
+      <span style={{ display: "inline-flex", flexShrink: 0, color: t.text }}>
+        <ModelMark tool={session.modelName ? null : session.client} model={session.modelName} size={18} />
+      </span>
       <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, flexGrow: 1 }}>
         <span
           style={{
@@ -481,11 +477,10 @@ function SessionRow({
 }
 
 function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummary | null; onCancel: () => void; onConfirm: (id: string) => void }) {
-  const refined = useLook() === "refined";
   return (
     <AlertDialog.Root open={session !== null} onOpenChange={(open) => (open ? undefined : onCancel())}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay style={{ position: "fixed", inset: 0, background: refined ? t.scrim : t.sheetDim, zIndex: 60 }} />
+        <AlertDialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 60 }} />
         <AlertDialog.Content
           style={{
             position: "fixed",
@@ -495,9 +490,7 @@ function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummar
             transform: "translate(-50%, -50%)",
             width: "min(420px, calc(100vw - 32px))",
             boxSizing: "border-box",
-            ...(refined
-              ? { padding: 16, borderRadius: 12, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow }
-              : { padding: 17, borderRadius: r.panel, background: t.solid, border: `1px solid ${t.line}`, boxShadow: t.shadowFloat }),
+            ...{ padding: 16, borderRadius: 12, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow },
             display: "flex",
             flexDirection: "column",
             gap: 12,
@@ -560,7 +553,6 @@ export function DraftsView({
   const [removing, setRemoving] = useState<SessionSummary | null>(null);
   const loading = status === "loading";
   const failed = status === "error";
-  const refined = useLook() === "refined";
 
   const pick = (session: SessionSummary) => (item: MenuItem) => {
     if (item.kind === "target" || item.kind === "draft") {
@@ -599,11 +591,7 @@ export function DraftsView({
         </div>
       ) : drafts.length === 0 ? (
         /* UI-P97: under refined, the empty line is the 13 `--text` line; the start row above it is the one action. */
-        refined ? (
-          <EmptyState line="Nothing in progress." />
-        ) : (
-          <p style={{ ...display(22), margin: 0, padding: "14px 9px 17px", color: t.text }}>Nothing in progress.</p>
-        )
+        <EmptyState line="Nothing in progress." />
       ) : (
         <ul style={rows}>
           {drafts.map((draft) => (
@@ -629,13 +617,8 @@ export function DraftsView({
         </div>
       ) : (
         <>
-          {sessions.length === 0 && refined ? (
+          {sessions.length === 0 ? (
             <EmptyState line="No new sessions." action={{ label: "Connect a tool", onClick: onConnect }} />
-          ) : sessions.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, padding: "14px 9px 17px" }}>
-              <p style={{ ...display(22), margin: 0, color: t.text }}>No new sessions.</p>
-              <TextButton onClick={onConnect}>Connect a tool</TextButton>
-            </div>
           ) : (
             <ul style={rows}>
               {sessions.map((session) => (

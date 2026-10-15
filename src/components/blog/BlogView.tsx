@@ -203,7 +203,7 @@ export function BlogView({ item }: BlogViewProps) {
                 <span
                   style={{
                     color: "var(--text2)",
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 12,
                     fontWeight: 600,
                   }}
@@ -215,7 +215,7 @@ export function BlogView({ item }: BlogViewProps) {
             <div className="flex flex-col items-start leading-tight">
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   fontWeight: 500,
                   color: "var(--text)",
@@ -225,7 +225,7 @@ export function BlogView({ item }: BlogViewProps) {
               </span>
               <span
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 11,
                   fontWeight: 400,
                   color: "var(--text2)",
@@ -258,7 +258,7 @@ export function BlogView({ item }: BlogViewProps) {
         {item.subtitle && (
           <p
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 18,
               fontStyle: "italic",
               fontWeight: 400,
@@ -288,7 +288,7 @@ export function BlogView({ item }: BlogViewProps) {
                   background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
                   border: "0.5px solid color-mix(in srgb, var(--evidence) 20%, transparent)",
                   color: "color-mix(in srgb, var(--evidence) 95%, transparent)",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 11,
                   fontWeight: 500,
                 }}
@@ -356,7 +356,7 @@ export function BlogView({ item }: BlogViewProps) {
                 <span
                   style={{
                     color: "var(--text2)",
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 18,
                     fontWeight: 600,
                   }}
@@ -373,7 +373,7 @@ export function BlogView({ item }: BlogViewProps) {
                   border: 0,
                   padding: 0,
                   cursor: "pointer",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 14,
                   fontWeight: 600,
                   color: "var(--text)",
@@ -384,7 +384,7 @@ export function BlogView({ item }: BlogViewProps) {
               {authorHandle && (
                 <span
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 12,
                     fontWeight: 400,
                     color: "var(--text2)",
@@ -397,7 +397,7 @@ export function BlogView({ item }: BlogViewProps) {
               {creator.bio && (
                 <p
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 13,
                     fontWeight: 400,
                     color: "var(--text2)",
@@ -420,7 +420,7 @@ export function BlogView({ item }: BlogViewProps) {
       {/* Blog body styles — match the editor's writing surface. */}
       <style>{`
         .blog-view-prose .ProseMirror {
-          font-family: Figtree, sans-serif;
+          font-family: var(--font-ui);
           font-size: 16px;
           line-height: 1.85;
           color: var(--text);
@@ -437,7 +437,7 @@ export function BlogView({ item }: BlogViewProps) {
         .blog-view-prose .ProseMirror h1 { font-size: 28px; margin-top: 1.6em; }
         .blog-view-prose .ProseMirror h2 { font-size: 22px; margin-top: 1.4em; }
         .blog-view-prose .ProseMirror h3 {
-          font-family: Figtree, sans-serif;
+          font-family: var(--font-ui);
           font-size: 16px;
           font-weight: 600;
           color: var(--text);
@@ -507,7 +507,7 @@ function EngagementButton({
           ? "0.5px solid color-mix(in srgb, var(--action) 40%, transparent)"
           : "0.5px solid var(--line)",
         color: active ? "var(--action)" : "var(--text)",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 12,
         fontWeight: 500,
         cursor: "pointer",

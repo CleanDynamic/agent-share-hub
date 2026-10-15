@@ -2490,7 +2490,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       border: 'none', outline: 'none',
                       resize: 'none' as const, padding: 0,
                       marginBottom: 6,
-                      fontFamily: 'Figtree, sans-serif',
+                      fontFamily: 'var(--font-ui)',
                       boxSizing: 'border-box' as const,
                     }}
                   />
@@ -2615,7 +2615,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       borderRadius: 8, padding: '12px 14px',
                       fontSize: 14, color: 'var(--text2)',
                       outline: 'none', resize: 'vertical' as const,
-                      fontFamily: 'Figtree, sans-serif',
+                      fontFamily: 'var(--font-ui)',
                       lineHeight: 1.65, boxSizing: 'border-box' as const,
                     }}
                   />
@@ -3014,7 +3014,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       background: 'var(--recess)',
                       border: '1px solid var(--line)',
                       color: 'var(--text2)',
-                      fontFamily: 'Figtree',
+                      fontFamily: 'var(--font-ui)',
                     }}
                   >
                     Save draft
@@ -3029,7 +3029,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                       background: submitting
                         ? 'color-mix(in srgb, var(--action) 40%, transparent)' : 'var(--action)',
                       border: 'none', color: 'var(--text)',
-                      fontFamily: 'Figtree',
+                      fontFamily: 'var(--font-ui)',
                     }}
                   >
                     {submitting ? 'Publishing…' : 'Publish'}

@@ -1,10 +1,15 @@
+// UI-P93 — the current view's own suite, run against the refined fork under `?look=refined` (same names, handlers and
+// behaviour), then a block for what the refined board draws. Styles are read through SSR markup.
+
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
-import { ADD_ITEMS, countsLine, SandboxView, type SandboxViewProps } from "./SandboxView";
+import { SandboxView as SandboxView } from "./SandboxView";
+import { ADD_ITEMS, countsLine, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -18,7 +23,7 @@ function stubWidth(px: number) {
 function view(over: Partial<SandboxViewProps> = {}) {
   const props = { ...sandboxViewProps("bakery"), onPublish: vi.fn(), onLens: vi.fn(), ...over };
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
       <SandboxView {...props} />
     </MemoryRouter>,
   );
@@ -37,7 +42,7 @@ describe("countsLine", () => {
 });
 
 describe("the Sources rail in Map", () => {
-  it("folds Sources to a rail of 44-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
+  it("folds Sources to a rail of 40-wide buttons with counts, and Show sources puts the panel back until it is closed", () => {
     view({ lens: "map", sources: <p>the sources panel</p> });
     const rail = screen.getByTestId("sources-rail");
     expect(within(rail).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["Show sources", "Sessions", "Files", "Add a source"]);
@@ -190,5 +195,74 @@ describe("the Add menu holds exactly 7 items, all enabled (UI-P70)", () => {
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /Manual step/ }));
     expect(onAddManual).toHaveBeenCalled();
+  });
+});
+
+describe("the refined look (UI-P93)", () => {
+  const markup = (over: Partial<SandboxViewProps> = {}) =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+        <SandboxView {...sandboxViewProps("bakery")} {...over} />
+      </MemoryRouter>,
+    );
+
+  it("draws the title row under a hairline, Card and Preview as secondary 30 and Publish as the one primary 30", () => {
+    view();
+    expect(screen.getByRole("heading", { level: 1 }).getAttribute("style")).toMatch(/font-size:\s*20px/);
+    const publish = screen.getByRole("button", { name: "Publish" });
+    expect(publish.getAttribute("data-variant")).toBe("primary");
+    expect(publish.getAttribute("style")).toMatch(/height:\s*30px/);
+    expect(screen.getByRole("button", { name: "Card" }).getAttribute("data-variant")).toBe("secondary");
+    expect(screen.getByRole("link", { name: "Preview" }).getAttribute("style")).toMatch(/height:\s*30px/);
+    expect(markup()).toContain("padding-bottom:20px;border-bottom:1px solid var(--hairline)");
+  });
+
+  it("puts Sources on the surface with a hairline on its right and Details in a module", () => {
+    const html = markup();
+    expect(html).toContain("flex:1 1 216px;max-width:232px;box-sizing:border-box;padding-right:24px;border-right:1px solid var(--hairline)");
+    expect(html).toMatch(/aria-label="Details" style="background:var\(--module\)/);
+    expect(html).toContain("flex:999 1 480px");
+  });
+
+  it("opens Add from a menu button with no icon of its own but the chevron", () => {
+    view();
+    const add = screen.getByTestId("sandbox-add");
+    expect(add.getAttribute("data-ui")).toBe("menu-button");
+    expect(add.textContent).toBe("Add");
+  });
+});
+
+describe("the refined Map and Card (UI-P94)", () => {
+  const markup = (over: Partial<SandboxViewProps> = {}) =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+        <SandboxView {...sandboxViewProps("bakery")} {...over} />
+      </MemoryRouter>,
+    );
+
+  it("draws the Sources rail as a module 52 wide, its buttons 40 wide, 36 high or 44 with a count", () => {
+    view({ lens: "map", sources: <p>the sources panel</p> });
+    const rail = screen.getByTestId("sources-rail");
+    expect(rail.style.flex).toBe("0 0 52px");
+    expect(rail.style.padding).toBe("8px 0px");
+    expect(rail.style.borderRadius).toBe("8px");
+    const show = within(rail).getByRole("button", { name: "Show sources" });
+    expect([show.style.width, show.style.height]).toEqual(["40px", "36px"]);
+    const sessions = within(rail).getByRole("button", { name: "Sessions" });
+    expect(sessions.style.height).toBe("44px");
+    expect((sessions.lastElementChild as HTMLElement).style.fontSize).toBe("10.5px");
+    expect(markup({ lens: "map" })).toContain("width:28px;height:1px;background:var(--hairline-module)");
+  });
+
+  it("makes Build a module beside the rail in Map, and leaves it on the surface in List", () => {
+    expect(markup({ lens: "map" })).toMatch(/aria-label="Build" tabindex="-1" style="[^"]*background:var\(--module\)[^"]*flex:999 1 560px/);
+    expect(markup({ lens: "list" })).not.toContain("flex:999 1 560px");
+  });
+
+  it("opens the Card as the refined side sheet", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    const card = screen.getByTestId("sandbox-card");
+    expect(card.style.width).toBe("472px");
   });
 });

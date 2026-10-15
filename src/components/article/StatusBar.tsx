@@ -61,7 +61,7 @@ const itemButtonStyle = {
   border: 'none',
   background: 'transparent',
   color: 'var(--text2)',
-  fontFamily: 'Figtree, sans-serif',
+  fontFamily: 'var(--font-ui)',
   fontSize: 11,
   fontWeight: 500,
   cursor: 'pointer',

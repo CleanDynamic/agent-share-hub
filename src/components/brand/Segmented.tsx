@@ -28,10 +28,8 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { denseFont, denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -78,7 +76,6 @@ export interface SegmentedProps<V extends string = string> {
 function Segment({
   current,
   height,
-  fontSize,
   ariaLabel,
   readOnly,
   href,
@@ -88,7 +85,6 @@ function Segment({
 }: {
   current: boolean;
   height: number;
-  fontSize: number;
   ariaLabel?: string;
   readOnly?: boolean;
   href?: string;
@@ -98,39 +94,22 @@ function Segment({
 }) {
   const { state, handlers } = useInteractive<HTMLElement>();
 
-  const refined = useLook() === "refined";
-
   /* UI-P84: items are `size − 6` tall (the track is `size`), `0 12px`, radius 4, Geist 12/500. The current item is the
      control recipe at its hover fill; the others are transparent in `--text2`. */
-  const style: CSSProperties = refined
-    ? {
-        boxSizing: "border-box",
-        height: height + 2,
-        padding: "0 12px",
-        border: "1px solid transparent",
-        borderRadius: r.chip,
-        fontFamily: FIGTREE,
-        fontSize: 12,
-        fontWeight: 500,
-        cursor: readOnly ? "default" : "pointer",
-        whiteSpace: "nowrap",
-        background: "transparent",
-        color: t.text2,
-        ...(current ? { ...CONTROL, ...CONTROL_HOVER, color: t.text } : null),
-        ...ring(state.focusVisible),
-      }
-    : {
-    height: denseHeight(height),
-    padding: "0 9px",
-    border: 0,
+  const style: CSSProperties = {
+    boxSizing: "border-box",
+    height: height + 2,
+    padding: "0 12px",
+    border: "1px solid transparent",
     borderRadius: r.chip,
     fontFamily: FIGTREE,
-    fontSize: denseFont(fontSize),
+    fontSize: 12,
+    fontWeight: 500,
     cursor: readOnly ? "default" : "pointer",
     whiteSpace: "nowrap",
-    background: current ? t.text : "transparent",
-    color: current ? t.onText : t.text2,
-    fontWeight: current ? 600 : 500,
+    background: "transparent",
+    color: t.text2,
+    ...(current ? { ...CONTROL, ...CONTROL_HOVER, color: t.text } : null),
     ...ring(state.focusVisible),
   };
 
@@ -172,13 +151,11 @@ export function Segmented<V extends string = string>({
   value,
   onChange,
   size = 34,
-  fontSize = 12,
   label,
   readOnly = false,
   semantics = "buttons",
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
-  const refined = useLook() === "refined";
 
   /* The radio group's keys: right and down step on, left and up step back, both
      wrapping, and the choice moves with the focus — the pattern a screen reader
@@ -205,25 +182,16 @@ export function Segmented<V extends string = string>({
       aria-label={label}
       onKeyDown={radio ? onKeyDown : undefined}
       style={
-        refined
-          ? {
-              display: "inline-flex",
-              boxSizing: "border-box",
-              height: size,
-              gap: 2,
-              padding: 2,
-              borderRadius: r.control,
-              background: t.segTrack,
-              border: `1px solid ${t.segBorder}`,
-            }
-          : {
-              display: "inline-flex",
-              gap: 2,
-              padding: 4,
-              borderRadius: r.control,
-              background: t.glass2,
-              border: `1px solid ${t.line}`,
-            }
+        {
+          display: "inline-flex",
+          boxSizing: "border-box",
+          height: size,
+          gap: 2,
+          padding: 2,
+          borderRadius: r.control,
+          background: t.segTrack,
+          border: `1px solid ${t.segBorder}`,
+        }
       }
     >
       {items.map((item) => (
@@ -231,7 +199,6 @@ export function Segmented<V extends string = string>({
           key={item.value}
           current={item.value === value}
           height={size - 8}
-          fontSize={fontSize}
           ariaLabel={item.ariaLabel}
           readOnly={readOnly}
           href={item.href}

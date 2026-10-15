@@ -135,7 +135,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
     <div style={{ maxWidth: 660, margin: '0 auto', padding: '32px 24px' }}>
       <style>{`
         .tiptap-article-view {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           color: var(--text);
           line-height: 1.75;
           font-size: 14px;
@@ -143,7 +143,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
           outline: none;
         }
         .tiptap-article-view h1 {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: 24px;
           font-weight: 700;
           color: var(--text);
@@ -151,7 +151,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
           line-height: 1.3;
         }
         .tiptap-article-view h2 {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: 18px;
           font-weight: 600;
           color: var(--text);
@@ -159,7 +159,7 @@ export function ArticleViewer({ content, canvasDoc }: ArticleViewerProps) {
           line-height: 1.35;
         }
         .tiptap-article-view h3 {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: 15px;
           font-weight: 600;
           color: var(--text);

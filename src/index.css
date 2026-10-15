@@ -1,41 +1,5 @@
-/* BG-P03. Inter and Playfair Display are retired. The faces that replace
-   them — Figtree and DM Mono from Google Fonts, Sentient self-hosted — are
-   requested from <link> tags in index.html rather than from an @import here,
-   because an @import cannot start until this stylesheet has been fetched and
-   parsed, which puts the font request one serial hop further from the
-   document. The preconnects live there too. src/lib/theme/type.ts is how
-   components spend them.
-
-   UI-P05. Sentient is the display face (Bodoni Moda is retired). It is not on
-   Google Fonts, so the two weights the overhaul uses are served from
-   /public/fonts. Both are preloaded in index.html.
-
-   UI-P40. Each weight is subset to Latin (Basic Latin, Latin-1, Latin
-   Extended-A, punctuation, Δ) and served as WOFF2: about 22 kB a weight, from
-   about 46 kB of OTF. A character outside the range falls back to the
-   display stack. Regenerate from the full OTFs with
-   `pyftsubset <otf> --unicodes="<the range below>" --layout-features='*' --flavor=woff2`. */
-@font-face {
-  font-family: "Sentient";
-  src: url("/fonts/Sentient-Medium-latin.woff2") format("woff2");
-  unicode-range: U+0000-017F, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+0394, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Sentient";
-  src: url("/fonts/Sentient-Bold-latin.woff2") format("woff2");
-  unicode-range: U+0000-017F, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+0394, U+2000-206F, U+20AC, U+2122, U+2190-2193, U+2212, U+2215, U+FEFF, U+FFFD;
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* UI-P80 — Geist and Geist Mono, the refined look's faces. Variable files, one
-   per family, self-hosted; Geist-OFL.txt sits beside them. Nothing uses them
-   until data-look="refined" repoints the --font-* tokens below. The preload is
-   not in index.html: UI-P98 adds it when the switch goes on. */
+/* Geist and Geist Mono (UI-P80), the site's faces. Variable files, one per family, self-hosted; Geist-OFL.txt sits
+   beside them. Geist is preloaded in index.html. UI-P99 retired Figtree, Sentient and DM Mono. */
 @font-face {
   font-family: "Geist";
   src: url("/fonts/Geist-Variable.woff2") format("woff2");
@@ -51,18 +15,10 @@
   font-display: swap;
 }
 
-/* UI-P80 — the three family tokens. Current look: Figtree, Sentient and DM Mono,
-   exactly as src/lib/theme/type.ts spelled them before. Refined look: Geist,
-   Geist and Geist Mono, and the per-role sizes in the table of UI-P80
-   (`--type-<role>-<prop>`; absent means "today's value", which is the fallback
-   written into each role in type.ts). Theme-independent, so it is not in the
-   theme blocks and css-parity does not count it. */
+/* The three family tokens and the per-role sizes of the table of UI-P80 (`--type-<role>-<prop>`), as
+   src/lib/theme/type.ts spends them. Theme-independent, so they are not in the theme blocks and css-parity does not
+   count them. */
 :root {
-  --font-ui: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Sentient', Georgia, 'Times New Roman', serif;
-  --font-data: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
-}
-:root[data-look="refined"] {
   --font-ui: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-display: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-data: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -92,7 +48,7 @@
   --type-eyebrow-tracking: 0.06em;
 }
 @media (max-width: 767px) {
-  :root[data-look="refined"] { --type-hero-size: 32px; }
+  :root { --type-hero-size: 32px; }
 }
 
 @tailwind base;
@@ -186,188 +142,159 @@
 
 :root,
 :root[data-theme="noon"] {
-  --bg: #E9EBE7;
-  --recess: #D7DBD5;
-  --text: #1A2320;
-  --text2: #505A55;
-  --line: rgba(26,35,32,.15);
+  --bg: var(--frame);
+  --recess: var(--well);
+  --text: #1C1C1C;
+  --text2: #575757;
+  --line: #CFCFCF;
 
-  --glass: rgba(255,255,255,.68);
-  --glass-2: rgba(255,255,255,.58);
-  --glass-border: rgba(255,255,255,.95);
-  --glass-hi: rgba(255,255,255,.95);
+  --glass: var(--module);
+  --glass-2: var(--control);
+  --glass-border: var(--module-border);
+  --glass-hi: rgba(255,255,255,.6);
 
   /* BG-P09 — the card's two layers. The frame is one step DARKER than the
      thread box inset in it, and that step is what groups the post inside the
      record. Only the frame is blurred. */
-  --card-frame: rgba(255,255,255,.42);
-  --card-thread: rgba(255,255,255,.55);
+  --card-frame: var(--module);
+  --card-thread: var(--tile);
 
-  --action: #8C3B36;
-  --on-action: #F8F8F6;
-  --evidence: #256659;
-  --evidence-fill: #C8E3DC;
-  --lit: #D9A441;
-  --on-lit: #1A2320;
-  --focus-ring: #1A2320;
+  --action: #1C1C1C;
+  --on-action: #FFFFFF;
+  --evidence: #166F31;
+  --evidence-fill: #E1F1E5;
+  --lit: #E0A21A;
+  --on-lit: #111112;
+  --focus-ring: #2563EB;
 
-  --porthole: #4E565E;
+  --porthole: var(--paper);
   --chrome-hi: #FFFFFF;
-  --chrome-lo: #99A2AA;
+  --chrome-lo: #D6D6D6;
 
-  --cat-instruction: #9C3E12;
-  --cat-configuration: #0F6B31;
-  --cat-data: #1D4ED8;
-  --cat-artefact: #8F4309;
-  --cat-evidence: #0E635C;
-  --cat-narrative: #565B63;
-  --cat-agents: #6D28D9;
-  --cat-breakage: #B91C1C;
-  --cat-media: #BE185D;
+  --cat-instruction: #C0623A;
+  --cat-configuration: #857A14;
+  --cat-data: #2D6BE4;
+  --cat-artefact: #A3741A;
+  --cat-evidence: #23804F;
+  --cat-narrative: #5F5F5B;
+  --cat-agents: #6B52D6;
+  --cat-breakage: #C93E32;
+  --cat-media: #BE4C84;
   --cat-fallback: var(--text2);
 
-  --cat-instruction-fill: #DBD2CE;
-  --cat-configuration-fill: #CDD8D4;
-  --cat-data-fill: #CCD4E6;
-  --cat-artefact-fill: #D7CEC7;
-  --cat-evidence-fill: #C2D1D2;
-  --cat-narrative-fill: #D0D3D5;
-  --cat-agents-fill: #D2CAE6;
-  --cat-breakage-fill: #E1D6D8;
-  --cat-media-fill: #E2DEE2;
+  --cat-instruction-fill: rgba(192,98,58,.10);
+  --cat-configuration-fill: rgba(133,122,20,.10);
+  --cat-data-fill: rgba(45,107,228,.10);
+  --cat-artefact-fill: rgba(163,116,26,.10);
+  --cat-evidence-fill: rgba(35,128,79,.10);
+  --cat-narrative-fill: rgba(95,95,91,.10);
+  --cat-agents-fill: rgba(107,82,214,.10);
+  --cat-breakage-fill: rgba(201,62,50,.10);
+  --cat-media-fill: rgba(190,76,132,.10);
   --cat-fallback-fill: var(--recess);
 
   /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
      in semantics.ts; css-parity.test.ts holds the two together. */
-  --backdrop: linear-gradient(180deg, #C2CFCF 0%, #D2DADA 24%, #E1E3DE 42%, #EDD3C8 51%, #F2BEA8 55%, #E6DED9 61%, #E0E5E2 74%, #E9EBE7 100%);
-  --ambient: radial-gradient(60% 50% at 15% 15%, rgba(255,255,255,.8) 0%, rgba(255,255,255,0) 60%), radial-gradient(50% 45% at 85% 20%, rgba(241,213,203,.55) 0%, rgba(241,213,203,0) 65%);
-  --label: #505A55;
-  --on-text: #F8F8F6;
-  --hairline: rgba(26,35,32,.09);
-  --header: rgba(249,250,248,.50);
-  --header-border: rgba(255,255,255,.92);
-  --cell: rgba(255,255,255,.55);
-  --row-highlight: rgba(255,255,255,.85);
-  --solid: #F8F8F6;
-  --flat: #EEF0EC;
-  --viewer-block: #E9EBE7;
-  --tab: rgba(255,255,255,.82);
-  --field: rgba(255,255,255,.72);
-  --media-tag: rgba(248,248,246,.92);
-  --plate: rgba(247,248,249,.72);
-  --scrim: rgba(247,248,249,.35);
-  --dock: rgba(255,255,255,.55);
-  --dock-border: rgba(255,255,255,.95);
-  --dock-tile: rgba(255,255,255,.85);
-  --on-evidence-fill: #1A2320;
-  --inverse-evidence-fill: #C8E3DC;
-  --on-inverse-evidence-fill: #1A2320;
-  --lit-ink: #8F4309;
-  --ring-glow: none;
-  --bar-base: #C5CAC3;
-  --tagline-chip: #1A2320;
-  --on-tagline-chip: #F8F8F6;
-  --tagline-lamp: #D9A441;
-  --inverse: #1A2320;
-  --on-inverse: #F8F8F6;
-  --on-inverse-2: #C5CBC7;
-  --orb-glass: radial-gradient(ellipse 58% 34% at 50% 78%, #F8F8F6 0%, #F8F8F6 36%, #F0C8B8 52%, #E3A594 58%, rgba(143,167,155,.45) 68%, rgba(143,167,155,0) 80%), linear-gradient(180deg, #B4C4C3 0%, #CCD6D4 40%, #E9EBE7 58%, #CCD6D4 80%, #B4C4C3 100%);
-  --orb-glass-edge: rgba(255,255,255,.95);
-  --on-orb-glass: #1A2320;
-  --orb-solid: radial-gradient(circle at 32% 28%, #4B5752 0%, #2C3632 40%, #1A2320 75%, #0C1210 100%);
-  --on-orb-solid: #F8F8F6;
-  --on-orb-solid-2: #C5CBC7;
-  --arc-1: #8FA79B;
-  --arc-2: #E3A594;
-  --arc-3: #8C3B36;
-  --arc-haze: #F1D5CB;
-  --arc-outer: #8FA79B;
-  --shadow-float: 0 40px 90px rgba(26,35,32,.20);
-  --panel-highlight: inset 0 1px 0 rgba(255,255,255,1);
-  --glass-fill: rgba(255,255,255,.58);
-  --glass-rim: rgba(255,255,255,.55);
-  --panel-highlight-color: rgba(255,255,255,1);
-  --glass-halo: 0 0 21px -10px rgba(26,35,32,.18);
-  --ring-track: rgba(27,32,38,.10);
+  --backdrop: var(--frame);
+  --label: #666666;
+  --on-text: #FFFFFF;
+  --hairline: #E0E0E0;
+  --header: transparent;
+  --header-border: transparent;
+  --cell: var(--tile);
+  --row-highlight: var(--tile);
+  --solid: var(--module);
+  --flat: var(--surface);
+  --viewer-block: var(--well);
+  --tab: var(--control-on);
+  --field: var(--well);
+  --media-tag: rgba(255,255,255,.88);
+  --plate: rgba(250,250,250,.84);
+  --scrim: rgba(28,28,28,.32);
+  --dock: var(--surface);
+  --on-evidence-fill: var(--evidence);
+  --inverse-evidence-fill: #1F3A27;
+  --lit-ink: #8F5E00;
+  --ring-glow: 0 0 0 0 transparent;
+  --bar-base: #E0E0E0;
+  --tagline-lamp: var(--lit);
+  --inverse: var(--text);
+  --on-inverse: #FFFFFF;
+  --on-inverse-2: #BDBDBD;
+  --orb-glass: linear-gradient(var(--module), var(--module));
+  --orb-glass-edge: var(--module-border);
+  --on-orb-glass: var(--text);
+  --shadow-float: var(--window-shadow);
+  --ring-track: var(--hairline-module);
   --lamp-glow: none;
-  --picture-lamp-glow: none;
-  --picture-lamp-wash: rgba(255,255,255,.9);
-  --shadow-card: 0 14px 30px rgba(26,35,32,.11);
+  --picture-lamp-glow: var(--lamp-glow);
+  --picture-lamp-wash: rgba(245,203,76,.16);
+  --shadow-card: var(--module-shadow);
   --nav-lamp-glow: none;
-  --rank-glow: none;
-  --banner-scrim: rgba(247,248,249,.8);
-  --inset: rgba(255,255,255,.7);
-  --turn: #FFFFFF;
-  --on-evidence: #FFFFFF;
-  --secret-fill: rgba(242,109,109,.2);
-  --sheet-dim: rgba(10,8,14,.45);
-  --shadow-square: 0 14px 30px rgba(0,0,0,.35);
-  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3);
-  --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
-  --signin-edge: inset 0 0 0 1px rgba(255,255,255,.9), inset 0 0 120px rgba(203,198,228,.6), inset 0 -80px 160px rgba(239,196,168,.55);
+  --rank-glow: 0 0 0 0 transparent;
+  --inset: var(--tile);
+  --turn: rgba(0,0,0,.025);
+  --sheet-dim: rgba(28,28,28,.25);
+  --shadow-square: 0 1px 2px rgba(0,0,0,.08);
+  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.14);
 
-  /* UI-P79 — current-look aliases of the refined names (semantics.ts). Each
-     points at the token a primitive reads today, so nothing moves while
-     data-look is absent. */
-  --frame: var(--bg);
-  --surface: var(--flat);
-  --surface-border: var(--hairline);
-  --surface-shadow: var(--panel-highlight);
-  --module: var(--glass);
-  --module-border: var(--glass-border);
-  --module-shadow: var(--shadow-card);
-  --tile: var(--cell);
-  --tile-border: var(--hairline);
-  --well: var(--field);
-  --well-border: var(--line);
-  --well-shadow: none;
-  --hairline-module: var(--hairline);
-  --control: var(--glass-2);
-  --control-border: var(--line);
-  --control-shadow: none;
-  --control-on: var(--tab);
-  --seg-track: var(--glass-2);
-  --seg-border: var(--line);
-  --action-shadow: none;
-  --tag-fill: var(--glass-2);
-  --on-tag: var(--text2);
-  --pill: var(--glass-2);
-  --on-pill: var(--text);
-  --lit-mark: var(--lit);
-  --nav-mark: var(--lit);
-  --breakage: var(--cat-breakage);
-  --breakage-fill: var(--secret-fill);
-  --info: var(--cat-data);
-  --frozen: var(--cat-data);
-  --selected-edge: var(--text);
-  --selected-fill: var(--glass);
-  --selected-ring: 0 0 0 1px var(--text);
-  --window: var(--solid);
-  --window-border: var(--glass-border);
-  --window-shadow: var(--shadow-float);
-  --sheet-shadow: var(--shadow-float);
-  --dot-grid: var(--hairline);
-  --avatar-fill: var(--recess);
-  --on-avatar: var(--text);
-  --logo-ink: var(--text);
-  --bar-mid: var(--line);
-  --paper: var(--porthole);
-  --dim-filter: opacity(.45);
+  /* UI-P79 — the refined names (semantics.ts); the values are the refined boards'. */
+  --frame: #E9E9E9;
+  --surface: #F4F4F4;
+  --surface-border: #DCDCDC;
+  --surface-shadow: 0 1px 2px rgba(0,0,0,.05);
+  --module: #FAFAFA;
+  --module-border: #E1E1E1;
+  --module-shadow: 0 1px 2px rgba(0,0,0,.04);
+  --tile: #EFEFEF;
+  --tile-border: #E2E2E2;
+  --well: #ECECEC;
+  --well-border: #D9D9D9;
+  --well-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+  --hairline-module: #E7E7E7;
+  --control: #FFFFFF;
+  --control-border: #D9D9D9;
+  --control-shadow: 0 1px 2px rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.03);
+  --control-on: #FFFFFF;
+  --seg-track: #E6E6E6;
+  --seg-border: #D9D9D9;
+  --action-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25);
+  --tag-fill: #E9E9E9;
+  --on-tag: #575757;
+  --pill: #E6E6E6;
+  --on-pill: #333333;
+  --lit-mark: #F5CB4C;
+  --nav-mark: #1C1C1C;
+  --breakage: #C42E1C;
+  --breakage-fill: #F9E6E3;
+  --frozen: #3F86B5;
+  --selected-edge: #1C1C1C;
+  --selected-fill: #FFFFFF;
+  --selected-ring: 0 0 0 1px #1C1C1C;
+  --window: #FAFAFA;
+  --window-border: #DCDCDC;
+  --window-shadow: 0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3);
+  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.25);
+  --dot-grid: rgba(0,0,0,.08);
+  --avatar-fill: #E2E2E2;
+  --on-avatar: #333333;
+  --bar-mid: #C4C4C4;
+  --paper: #F1F1F1;
+  --dim-filter: contrast(.42) brightness(1.32);
 
   /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
      component reads every root token from one place. src/lib/theme/radius.ts is
      how components spend them. --r-full is for circular things ONLY; the legacy
      --radius-btn/--radius-badge above were the pill rule this replaces, and
      BG-P07 repointed them at --r-control and --r-chip. UI-P81 adds --r-window,
-     the dialog and side-sheet radius: it is the panel's here, and 12px under
-     data-look="refined", which declares its own, tighter scale further down. */
-  --r-chip: 8px;
-  --r-media: 10px;
-  --r-control: 12px;
-  --r-thread: 12px;
-  --r-card: 14px;
-  --r-panel: 16px;
-  --r-window: var(--r-panel);
+     the dialog and side-sheet radius. */
+  --r-chip: 4px;
+  --r-media: 6px;
+  --r-control: 6px;
+  --r-thread: 6px;
+  --r-card: 8px;
+  --r-panel: 10px;
+  --r-window: 12px;
   --r-full: 999px;
 
   /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
@@ -388,8 +315,8 @@
      room has a light source, so a surface above the page casts. Struck from
      --text rather than from black, so the shadow belongs to the room. `flat`
      needs no token — it is no shadow plus a --line hairline. */
-  --elev-raised: 0 1px 2px rgba(27,32,38,.08), 0 6px 16px rgba(27,32,38,.10);
-  --elev-overlay: 0 2px 6px rgba(27,32,38,.12), 0 24px 56px rgba(27,32,38,.20);
+  --elev-raised: var(--control-shadow);
+  --elev-overlay: var(--window-shadow);
 
   /* ── The shadcn bridge (BG-P28) ─────────────────────────────────────────────
      shadcn/ui's semantic names are consumed as Tailwind utilities —
@@ -416,638 +343,6 @@
      These are unlayered and the block they override sits in `@layer base`, so
      they win wherever both are present without needing !important.
      ───────────────────────────────────────────────────────────────────────── */
-  --background: 90 9% 91%;
-  --foreground: 160 15% 12%;
-  --card: 100 8% 85%;
-  --card-foreground: 160 15% 12%;
-  --popover: 100 8% 85%;
-  --popover-foreground: 160 15% 12%;
-  --primary: 3 44% 38%;
-  --primary-foreground: 60 12% 97%;
-  --secondary: 100 8% 85%;
-  --secondary-foreground: 160 15% 12%;
-  --muted: 100 8% 85%;
-  --muted-foreground: 150 6% 33%;
-  --accent: 100 8% 85%;
-  --accent-foreground: 160 15% 12%;
-  --destructive: 0 74% 42%;
-  --destructive-foreground: 60 12% 97%;
-  --border: 105 4% 80%;
-  --input: 105 4% 80%;
-  --ring: 160 15% 12%;
-  --sidebar-background: 90 9% 91%;
-  --sidebar-foreground: 160 15% 12%;
-  --sidebar-primary: 3 44% 38%;
-  --sidebar-primary-foreground: 60 12% 97%;
-  --sidebar-accent: 100 8% 85%;
-  --sidebar-accent-foreground: 160 15% 12%;
-  --sidebar-border: 105 4% 80%;
-  --sidebar-ring: 160 15% 12%;
-}
-
-:root[data-theme="dusk"] {
-  --bg: #1F1829;
-  --recess: #372F4A;
-  --text: #EEEAF4;
-  --text2: #B3ABC6;
-  --line: rgba(238,234,244,.14);
-
-  --glass: rgba(31,27,45,.66);
-  --glass-2: rgba(238,234,244,.06);
-  --glass-border: rgba(238,234,244,.12);
-  --glass-hi: rgba(238,234,244,.22);
-
-  /* BG-P09 — the card's two layers. Struck from the stone for the frame and
-     from the room's light for the box, so the box is lighter here too. */
-  --card-frame: rgba(72,63,104,.42);
-  --card-thread: rgba(238,234,244,.06);
-
-  --action: #D98C6B;
-  --on-action: #241B1A;
-  --evidence: #86BDD3;
-  --evidence-fill: rgba(134,189,211,.16);
-  --lit: #D9A441;
-  --on-lit: #241B1A;
-  --focus-ring: #D9A441;
-
-  --porthole: #141020;
-  --chrome-hi: #CBC6E4;
-  --chrome-lo: #5C5480;
-
-  --cat-instruction: #F0865A;
-  --cat-configuration: #5CCB7C;
-  --cat-data: #6AA1FF;
-  --cat-artefact: #F5B83D;
-  --cat-evidence: #86BDD3;
-  --cat-narrative: #A8A6A3;
-  --cat-agents: #A78BFA;
-  --cat-breakage: #F26D6D;
-  --cat-media: #F472B6;
-  --cat-fallback: var(--text2);
-
-  --cat-instruction-fill: #493034;
-  --cat-configuration-fill: #2B3E3B;
-  --cat-data-fill: #2E3655;
-  --cat-artefact-fill: #4A3A2F;
-  --cat-evidence-fill: #343B4D;
-  --cat-narrative-fill: #3A3743;
-  --cat-agents-fill: #372F50;
-  --cat-breakage-fill: #412836;
-  --cat-media-fill: #4A2C47;
-  --cat-fallback-fill: var(--recess);
-
-  /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
-     in semantics.ts; css-parity.test.ts holds the two together. */
-  --backdrop: radial-gradient(60% 42% at 88% 0%, rgba(140,120,196,.42) 0%, rgba(140,120,196,0) 72%), radial-gradient(40% 26% at 80% 6%, rgba(217,140,107,.22) 0%, rgba(217,140,107,0) 70%), radial-gradient(55% 45% at 10% 100%, rgba(92,84,128,.28) 0%, rgba(92,84,128,0) 70%), linear-gradient(180deg, #241C33 0%, #1F1829 45%, #1A1523 100%);
-  --ambient: radial-gradient(60% 50% at 12% 80%, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 65%);
-  --label: #A59EBA;
-  --on-text: #15121C;
-  --hairline: rgba(238,234,244,.09);
-  --header: rgba(13,10,20,.60);
-  --header-border: rgba(238,234,244,.16);
-  --cell: rgba(14,11,20,.35);
-  --row-highlight: rgba(238,234,244,.10);
-  --solid: #17131F;
-  --flat: #1B1725;
-  --viewer-block: #0C0A12;
-  --tab: rgba(238,234,244,.10);
-  --field: rgba(238,234,244,.07);
-  --media-tag: rgba(14,11,20,.78);
-  --plate: rgba(14,11,20,.62);
-  --scrim: rgba(14,11,20,.55);
-  --dock: rgba(30,24,44,.62);
-  --dock-border: rgba(238,234,244,.20);
-  --dock-tile: rgba(238,234,244,.08);
-  --on-evidence-fill: #86BDD3;
-  --inverse-evidence-fill: #C8E3DC;
-  --on-inverse-evidence-fill: #1A2320;
-  --lit-ink: #D9A441;
-  --ring-glow: 0 0 40px rgba(217,164,65,.35);
-  --bar-base: #3A3350;
-  --tagline-chip: #EEEAF4;
-  --on-tagline-chip: #1F1B2B;
-  --tagline-lamp: #9E4B2C;
-  --inverse: #F7F8F9;
-  --on-inverse: #1B2026;
-  --on-inverse-2: #565E66;
-  --orb-glass: radial-gradient(ellipse 58% 34% at 50% 78%, #0B0910 0%, #0B0910 38%, #7A3F2E 52%, #D98C6B 60%, rgba(140,120,196,.55) 70%, rgba(140,120,196,0) 82%), linear-gradient(180deg, #2E2C52 0%, #474670 40%, #8C8AA8 58%, #474670 80%, #2E2C52 100%);
-  --orb-glass-edge: rgba(238,234,244,.45);
-  --on-orb-glass: #EEEAF4;
-  --orb-solid: radial-gradient(circle at 32% 28%, #FFFFFF 0%, #ECEDF0 35%, #BFC3CA 72%, #8E949D 100%);
-  --on-orb-solid: #1B2026;
-  --on-orb-solid-2: #565E66;
-  --arc-1: #FFFFFF;
-  --arc-2: #CBC6E4;
-  --arc-3: #D98C6B;
-  --arc-haze: #8C78C4;
-  --arc-outer: #CBC6E4;
-  --shadow-float: 0 40px 100px rgba(4,3,8,.6);
-  --panel-highlight: inset 0 1px 0 rgba(238,234,244,.10);
-  --glass-fill: rgba(26,21,35,.80);
-  --glass-rim: rgba(255,255,255,.55);
-  --panel-highlight-color: rgba(238,234,244,.12);
-  --glass-halo: 0 0 21px -8px rgba(255,255,255,.22);
-  --ring-track: rgba(238,234,244,.10);
-  --lamp-glow: 0 0 10px rgba(217,164,65,.6);
-  --picture-lamp-glow: 0 0 14px rgba(217,164,65,.65);
-  --picture-lamp-wash: rgba(217,164,65,.22);
-  --shadow-card: 0 18px 40px rgba(4,3,8,.35);
-  --nav-lamp-glow: 0 0 12px rgba(217,164,65,.8);
-  --rank-glow: 0 0 20px rgba(217,164,65,.5);
-  --banner-scrim: rgba(14,11,20,.75);
-  --inset: rgba(14,11,20,.4);
-  --turn: rgba(238,234,244,.05);
-  --on-evidence: #15121C;
-  --secret-fill: rgba(242,109,109,.2);
-  --sheet-dim: rgba(10,8,14,.45);
-  --shadow-square: 0 14px 30px rgba(0,0,0,.35);
-  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.25), 0 18px 44px rgba(0,0,0,.3);
-  --shadow-sheet: 0 -20px 50px rgba(0,0,0,.35);
-  --signin-edge: inset 0 0 0 1px rgba(203,198,228,.25), inset 0 0 26px rgba(203,198,228,.45), inset 0 0 120px rgba(217,140,107,.45), inset 0 -80px 180px rgba(140,120,196,.45);
-
-  /* UI-P79 — current-look aliases of the refined names (semantics.ts). Each
-     points at the token a primitive reads today, so nothing moves while
-     data-look is absent. */
-  --frame: var(--bg);
-  --surface: var(--flat);
-  --surface-border: var(--hairline);
-  --surface-shadow: var(--panel-highlight);
-  --module: var(--glass);
-  --module-border: var(--glass-border);
-  --module-shadow: var(--shadow-card);
-  --tile: var(--cell);
-  --tile-border: var(--hairline);
-  --well: var(--field);
-  --well-border: var(--line);
-  --well-shadow: none;
-  --hairline-module: var(--hairline);
-  --control: var(--glass-2);
-  --control-border: var(--line);
-  --control-shadow: none;
-  --control-on: var(--tab);
-  --seg-track: var(--glass-2);
-  --seg-border: var(--line);
-  --action-shadow: none;
-  --tag-fill: var(--glass-2);
-  --on-tag: var(--text2);
-  --pill: var(--glass-2);
-  --on-pill: var(--text);
-  --lit-mark: var(--lit);
-  --nav-mark: var(--lit);
-  --breakage: var(--cat-breakage);
-  --breakage-fill: var(--secret-fill);
-  --info: var(--cat-data);
-  --frozen: var(--cat-data);
-  --selected-edge: var(--text);
-  --selected-fill: var(--glass);
-  --selected-ring: 0 0 0 1px var(--text);
-  --window: var(--solid);
-  --window-border: var(--glass-border);
-  --window-shadow: var(--shadow-float);
-  --sheet-shadow: var(--shadow-float);
-  --dot-grid: var(--hairline);
-  --avatar-fill: var(--recess);
-  --on-avatar: var(--text);
-  --logo-ink: var(--text);
-  --bar-mid: var(--line);
-  --paper: var(--porthole);
-  --dim-filter: opacity(.45);
-
-  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
-     component reads every root token from one place. src/lib/theme/radius.ts is
-     how components spend them. --r-full is for circular things ONLY; the legacy
-     --radius-btn/--radius-badge above were the pill rule this replaces, and
-     BG-P07 repointed them at --r-control and --r-chip. UI-P81 adds --r-window,
-     the dialog and side-sheet radius: it is the panel's here, and 12px under
-     data-look="refined", which declares its own, tighter scale further down. */
-  --r-chip: 8px;
-  --r-media: 10px;
-  --r-control: 12px;
-  --r-thread: 12px;
-  --r-card: 14px;
-  --r-panel: 16px;
-  --r-window: var(--r-panel);
-  --r-full: 999px;
-
-  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
-     Theme-independent and declared in both blocks so a component reads every
-     root token from one place, exactly as the radius scale above does. The TS
-     module is the source of truth — it is what a style object spends; these
-     exist for the handful of rules that live in CSS because they cannot be
-     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
-     reset). motion.test.ts holds the two sides to each other, so a duration
-     cannot be changed here without being changed there. */
-  --motion-fast: 150ms;
-  --motion-base: 200ms;
-  --motion-reveal: 450ms;
-  --motion-theme: 180ms;
-  --motion-ease: cubic-bezier(.2,.6,.35,1);
-
-  /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
-     level pairs a deeper shadow with an inset --glass-hi top hairline: the
-     surface's own edge catching the horizon. The hairline says "above", the
-     shadow says "how far". */
-  --elev-raised: inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44);
-  --elev-overlay: inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62);
-
-  /* The shadcn bridge, Dusk half. See the note in the Noon block. */
-  --background: 265 26% 13%;
-  --foreground: 264 31% 94%;
-  --card: 258 22% 24%;
-  --card-foreground: 264 31% 94%;
-  --popover: 258 22% 24%;
-  --popover-foreground: 264 31% 94%;
-  --primary: 18 59% 64%;
-  --primary-foreground: 6 16% 12%;
-  --secondary: 258 22% 24%;
-  --secondary-foreground: 264 31% 94%;
-  --muted: 258 22% 24%;
-  --muted-foreground: 258 19% 72%;
-  --accent: 258 22% 24%;
-  --accent-foreground: 264 31% 94%;
-  --destructive: 0 84% 69%;
-  --destructive-foreground: 6 16% 12%;
-  --border: 266 13% 24%;
-  --input: 266 13% 24%;
-  --ring: 39 67% 55%;
-  --sidebar-background: 265 26% 13%;
-  --sidebar-foreground: 264 31% 94%;
-  --sidebar-primary: 18 59% 64%;
-  --sidebar-primary-foreground: 6 16% 12%;
-  --sidebar-accent: 258 22% 24%;
-  --sidebar-accent-foreground: 264 31% 94%;
-  --sidebar-border: 266 13% 24%;
-  --sidebar-ring: 39 67% 55%;
-}
-
-/* ── The refined look (UI-P79) ─────────────────────────────────────────────────
-   Every colour, shadow and edge the refined look needs, in both themes. The
-   values are in src/lib/theme/refined.ts (from design/prompts/UI-P79.md);
-   css-parity.test.ts holds this to it. These blocks apply only when
-   <html data-look="refined"> is set (src/lib/theme/look.ts), which is off until
-   UI-P98 and on for `/dev/*?look=refined`. With the attribute absent the
-   current look is untouched. Glows, arcs, orbs and glass resolve to flat values.
-   ─────────────────────────────────────────────────────────────────────────── */
-
-:root[data-theme="dusk"][data-look="refined"] {
-  --frame: #0F0F10;
-  --surface: #19191B;
-  --surface-border: #232326;
-  --surface-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-  --module: #1E1E21;
-  --module-border: #29292D;
-  --module-shadow: none;
-  --tile: #232327;
-  --tile-border: #2E2E33;
-  --well: #141416;
-  --well-border: #27272B;
-  --well-shadow: inset 0 1px 1px rgba(0,0,0,.35);
-  --hairline: #26262A;
-  --hairline-module: #2A2A2E;
-  --line: #34343A;
-  --text: #EDEDEF;
-  --text2: #A0A0A6;
-  --label: #8E8E94;
-  --control: #27272B;
-  --control-border: #323237;
-  --control-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.35);
-  --control-on: #2F2F34;
-  --seg-track: #141416;
-  --seg-border: #27272B;
-  --action: #EDEDEF;
-  --on-action: #121214;
-  --action-shadow: inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45);
-  --tag-fill: #26262A;
-  --on-tag: #A0A0A6;
-  --pill: #303035;
-  --on-pill: #CFCFD3;
-  --lit: #F5CB4C;
-  --lit-mark: #F5CB4C;
-  --lamp-glow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25);
-  --nav-mark: #F5CB4C;
-  --nav-lamp-glow: 0 0 8px rgba(245,203,76,.55);
-  --lit-ink: #E8C468;
-  --evidence: #86D193;
-  --evidence-fill: rgba(134,209,147,.12);
-  --breakage: #E5807F;
-  --breakage-fill: rgba(229,128,127,.12);
-  --info: #82A9E8;
-  --frozen: #8FB8D0;
-  --selected-edge: #8E8E95;
-  --selected-fill: #222226;
-  --selected-ring: 0 0 0 1px #8E8E95;
-  --scrim: rgba(10,10,11,.72);
-  --window: #1E1E21;
-  --window-border: #2E2E33;
-  --window-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75);
-  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.7);
-  --dot-grid: rgba(255,255,255,.055);
-  --avatar-fill: #2C2C30;
-  --on-avatar: #CFCFD3;
-  --logo-ink: #EDEDEF;
-  --bar-base: #3A3A3F;
-  --bar-mid: #55555B;
-  --paper: #0C0C0D;
-  --dim-filter: brightness(.48) saturate(.5);
-  --focus-ring: #8EB4F0;
-  --cat-instruction: #E39A78;
-  --cat-instruction-fill: rgba(227,154,120,.12);
-  --cat-configuration: #C9C27A;
-  --cat-configuration-fill: rgba(201,194,122,.12);
-  --cat-data: #82A9E8;
-  --cat-data-fill: rgba(130,169,232,.12);
-  --cat-artefact: #D9B36C;
-  --cat-artefact-fill: rgba(217,179,108,.12);
-  --cat-evidence: #86D193;
-  --cat-evidence-fill: rgba(134,209,147,.12);
-  --cat-narrative: #A0A0A6;
-  --cat-narrative-fill: rgba(160,160,166,.12);
-  --cat-agents: #A996E8;
-  --cat-agents-fill: rgba(169,150,232,.12);
-  --cat-breakage: #E5807F;
-  --cat-breakage-fill: rgba(229,128,127,.12);
-  --cat-media: #E08FB4;
-  --cat-media-fill: rgba(224,143,180,.12);
-  --bg: var(--frame);
-  --backdrop: var(--frame);
-  --ambient: linear-gradient(transparent, transparent);
-  --recess: var(--well);
-  --glass: var(--module);
-  --glass-2: var(--control);
-  --glass-border: var(--module-border);
-  --glass-hi: rgba(255,255,255,.04);
-  --glass-fill: var(--module);
-  --glass-rim: transparent;
-  --glass-halo: 0 0 0 0 transparent;
-  --panel-highlight: var(--surface-shadow);
-  --panel-highlight-color: rgba(255,255,255,.035);
-  --card-frame: var(--module);
-  --card-thread: var(--tile);
-  --on-evidence: #121214;
-  --on-evidence-fill: var(--evidence);
-  --on-lit: #111112;
-  --porthole: var(--paper);
-  --chrome-hi: #45454C;
-  --chrome-lo: #222225;
-  --on-text: #121214;
-  --header: transparent;
-  --header-border: transparent;
-  --cell: var(--tile);
-  --row-highlight: var(--tile);
-  --solid: var(--module);
-  --flat: var(--surface);
-  --viewer-block: var(--well);
-  --tab: var(--control-on);
-  --field: var(--well);
-  --media-tag: rgba(15,15,16,.78);
-  --plate: rgba(15,15,16,.62);
-  --dock: var(--surface);
-  --dock-border: var(--surface-border);
-  --dock-tile: var(--control);
-  --inverse: var(--text);
-  --on-inverse: #121214;
-  --on-inverse-2: #55555B;
-  --inverse-evidence-fill: #DDF2E1;
-  --on-inverse-evidence-fill: #14301C;
-  --ring-glow: 0 0 0 0 transparent;
-  --rank-glow: 0 0 0 0 transparent;
-  --tagline-chip: var(--control);
-  --on-tagline-chip: var(--text);
-  --tagline-lamp: var(--lit);
-  --orb-glass: linear-gradient(var(--module), var(--module));
-  --orb-glass-edge: var(--module-border);
-  --on-orb-glass: var(--text);
-  --orb-solid: linear-gradient(var(--module), var(--module));
-  --on-orb-solid: var(--text);
-  --on-orb-solid-2: var(--text2);
-  --arc-1: transparent;
-  --arc-2: transparent;
-  --arc-3: transparent;
-  --arc-haze: transparent;
-  --arc-outer: transparent;
-  --shadow-float: var(--window-shadow);
-  --shadow-card: var(--module-shadow);
-  --shadow-square: 0 1px 2px rgba(0,0,0,.45);
-  --shadow-dock: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.5);
-  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.5);
-  --ring-track: var(--hairline-module);
-  --picture-lamp-glow: var(--lamp-glow);
-  --picture-lamp-wash: rgba(245,203,76,.10);
-  --banner-scrim: rgba(15,15,16,.75);
-  --inset: var(--tile);
-  --turn: rgba(255,255,255,.03);
-  --secret-fill: var(--breakage-fill);
-  --sheet-dim: rgba(10,10,11,.5);
-  --signin-edge: inset 0 0 0 1px var(--module-border);
-  --elev-raised: var(--control-shadow);
-  --elev-overlay: var(--window-shadow);
-
-  /* UI-P81 — the refined radius scale (REFINED_RADIUS in radius.ts): 4 tag, 6
-     control and media, 8 card, 10 surface, 12 window. --r-full stays 999px, for
-     circular things only, so it is not repeated here. */
-  --r-chip: 4px;
-  --r-media: 6px;
-  --r-control: 6px;
-  --r-thread: 6px;
-  --r-card: 8px;
-  --r-panel: 10px;
-  --r-window: 12px;
-
-  /* The shadcn bridge, repointed (shadcn.ts). */
-  --background: 240 3% 6%;
-  --foreground: 240 6% 93%;
-  --card: 240 5% 12%;
-  --card-foreground: 240 6% 93%;
-  --popover: 240 5% 12%;
-  --popover-foreground: 240 6% 93%;
-  --primary: 240 6% 93%;
-  --primary-foreground: 240 5% 7%;
-  --secondary: 240 5% 8%;
-  --secondary-foreground: 240 6% 93%;
-  --muted: 240 5% 8%;
-  --muted-foreground: 240 3% 64%;
-  --accent: 240 5% 8%;
-  --accent-foreground: 240 6% 93%;
-  --destructive: 1 66% 70%;
-  --destructive-foreground: 240 5% 7%;
-  --border: 240 5% 16%;
-  --input: 240 5% 16%;
-  --ring: 217 77% 75%;
-  --sidebar-background: 240 3% 6%;
-  --sidebar-foreground: 240 6% 93%;
-  --sidebar-primary: 240 6% 93%;
-  --sidebar-primary-foreground: 240 5% 7%;
-  --sidebar-accent: 240 5% 8%;
-  --sidebar-accent-foreground: 240 6% 93%;
-  --sidebar-border: 240 5% 16%;
-  --sidebar-ring: 217 77% 75%;
-}
-
-:root[data-theme="noon"][data-look="refined"] {
-  --frame: #E9E9E9;
-  --surface: #F4F4F4;
-  --surface-border: #DCDCDC;
-  --surface-shadow: 0 1px 2px rgba(0,0,0,.05);
-  --module: #FAFAFA;
-  --module-border: #E1E1E1;
-  --module-shadow: 0 1px 2px rgba(0,0,0,.04);
-  --tile: #EFEFEF;
-  --tile-border: #E2E2E2;
-  --well: #ECECEC;
-  --well-border: #D9D9D9;
-  --well-shadow: inset 0 1px 2px rgba(0,0,0,.05);
-  --hairline: #E0E0E0;
-  --hairline-module: #E7E7E7;
-  --line: #CFCFCF;
-  --text: #1C1C1C;
-  --text2: #575757;
-  --label: #666666;
-  --control: #FFFFFF;
-  --control-border: #D9D9D9;
-  --control-shadow: 0 1px 2px rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.03);
-  --control-on: #FFFFFF;
-  --seg-track: #E6E6E6;
-  --seg-border: #D9D9D9;
-  --action: #1C1C1C;
-  --on-action: #FFFFFF;
-  --action-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 2px rgba(0,0,0,.25);
-  --tag-fill: #E9E9E9;
-  --on-tag: #575757;
-  --pill: #E6E6E6;
-  --on-pill: #333333;
-  --lit: #E0A21A;
-  --lit-mark: #F5CB4C;
-  --lamp-glow: none;
-  --nav-mark: #1C1C1C;
-  --nav-lamp-glow: none;
-  --lit-ink: #8F5E00;
-  --evidence: #166F31;
-  --evidence-fill: #E1F1E5;
-  --breakage: #C42E1C;
-  --breakage-fill: #F9E6E3;
-  --info: #2563EB;
-  --frozen: #3F86B5;
-  --selected-edge: #1C1C1C;
-  --selected-fill: #FFFFFF;
-  --selected-ring: 0 0 0 1px #1C1C1C;
-  --scrim: rgba(28,28,28,.32);
-  --window: #FAFAFA;
-  --window-border: #DCDCDC;
-  --window-shadow: 0 2px 6px rgba(0,0,0,.08), 0 32px 64px -16px rgba(0,0,0,.3);
-  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.25);
-  --dot-grid: rgba(0,0,0,.08);
-  --avatar-fill: #E2E2E2;
-  --on-avatar: #333333;
-  --logo-ink: #1C1C1C;
-  --bar-base: #E0E0E0;
-  --bar-mid: #C4C4C4;
-  --paper: #F1F1F1;
-  --dim-filter: contrast(.42) brightness(1.32);
-  --focus-ring: #2563EB;
-  --cat-instruction: #C0623A;
-  --cat-instruction-fill: rgba(192,98,58,.10);
-  --cat-configuration: #857A14;
-  --cat-configuration-fill: rgba(133,122,20,.10);
-  --cat-data: #2D6BE4;
-  --cat-data-fill: rgba(45,107,228,.10);
-  --cat-artefact: #A3741A;
-  --cat-artefact-fill: rgba(163,116,26,.10);
-  --cat-evidence: #23804F;
-  --cat-evidence-fill: rgba(35,128,79,.10);
-  --cat-narrative: #5F5F5B;
-  --cat-narrative-fill: rgba(95,95,91,.10);
-  --cat-agents: #6B52D6;
-  --cat-agents-fill: rgba(107,82,214,.10);
-  --cat-breakage: #C93E32;
-  --cat-breakage-fill: rgba(201,62,50,.10);
-  --cat-media: #BE4C84;
-  --cat-media-fill: rgba(190,76,132,.10);
-  --bg: var(--frame);
-  --backdrop: var(--frame);
-  --ambient: linear-gradient(transparent, transparent);
-  --recess: var(--well);
-  --glass: var(--module);
-  --glass-2: var(--control);
-  --glass-border: var(--module-border);
-  --glass-hi: rgba(255,255,255,.6);
-  --glass-fill: var(--module);
-  --glass-rim: transparent;
-  --glass-halo: 0 0 0 0 transparent;
-  --panel-highlight: var(--surface-shadow);
-  --panel-highlight-color: transparent;
-  --card-frame: var(--module);
-  --card-thread: var(--tile);
-  --on-evidence: #FFFFFF;
-  --on-evidence-fill: var(--evidence);
-  --on-lit: #111112;
-  --porthole: var(--paper);
-  --chrome-hi: #FFFFFF;
-  --chrome-lo: #D6D6D6;
-  --on-text: #FFFFFF;
-  --header: transparent;
-  --header-border: transparent;
-  --cell: var(--tile);
-  --row-highlight: var(--tile);
-  --solid: var(--module);
-  --flat: var(--surface);
-  --viewer-block: var(--well);
-  --tab: var(--control-on);
-  --field: var(--well);
-  --media-tag: rgba(255,255,255,.88);
-  --plate: rgba(250,250,250,.84);
-  --dock: var(--surface);
-  --dock-border: var(--surface-border);
-  --dock-tile: var(--control);
-  --inverse: var(--text);
-  --on-inverse: #FFFFFF;
-  --on-inverse-2: #BDBDBD;
-  --inverse-evidence-fill: #1F3A27;
-  --on-inverse-evidence-fill: #DDF2E1;
-  --ring-glow: 0 0 0 0 transparent;
-  --rank-glow: 0 0 0 0 transparent;
-  --tagline-chip: var(--control);
-  --on-tagline-chip: var(--text);
-  --tagline-lamp: var(--lit);
-  --orb-glass: linear-gradient(var(--module), var(--module));
-  --orb-glass-edge: var(--module-border);
-  --on-orb-glass: var(--text);
-  --orb-solid: linear-gradient(var(--module), var(--module));
-  --on-orb-solid: var(--text);
-  --on-orb-solid-2: var(--text2);
-  --arc-1: transparent;
-  --arc-2: transparent;
-  --arc-3: transparent;
-  --arc-haze: transparent;
-  --arc-outer: transparent;
-  --shadow-float: var(--window-shadow);
-  --shadow-card: var(--module-shadow);
-  --shadow-square: 0 1px 2px rgba(0,0,0,.08);
-  --shadow-dock: 0 12px 32px rgba(0,0,0,.12);
-  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.14);
-  --ring-track: var(--hairline-module);
-  --picture-lamp-glow: var(--lamp-glow);
-  --picture-lamp-wash: rgba(245,203,76,.16);
-  --banner-scrim: rgba(244,244,244,.85);
-  --inset: var(--tile);
-  --turn: rgba(0,0,0,.025);
-  --secret-fill: var(--breakage-fill);
-  --sheet-dim: rgba(28,28,28,.25);
-  --signin-edge: inset 0 0 0 1px var(--module-border);
-  --elev-raised: var(--control-shadow);
-  --elev-overlay: var(--window-shadow);
-
-  /* UI-P81 — the refined radius scale (REFINED_RADIUS in radius.ts): 4 tag, 6
-     control and media, 8 card, 10 surface, 12 window. --r-full stays 999px, for
-     circular things only, so it is not repeated here. */
-  --r-chip: 4px;
-  --r-media: 6px;
-  --r-control: 6px;
-  --r-thread: 6px;
-  --r-card: 8px;
-  --r-panel: 10px;
-  --r-window: 12px;
-
-  /* The shadcn bridge, repointed (shadcn.ts). */
   --background: 0 0% 91%;
   --foreground: 0 0% 11%;
   --card: 0 0% 98%;
@@ -1075,7 +370,220 @@
   --sidebar-accent-foreground: 0 0% 11%;
   --sidebar-border: 0 0% 88%;
   --sidebar-ring: 221 83% 53%;
+
 }
+
+:root[data-theme="dusk"] {
+  --bg: var(--frame);
+  --recess: var(--well);
+  --text: #EDEDEF;
+  --text2: #A0A0A6;
+  --line: #34343A;
+
+  --glass: var(--module);
+  --glass-2: var(--control);
+  --glass-border: var(--module-border);
+  --glass-hi: rgba(255,255,255,.04);
+
+  /* BG-P09 — the card's two layers. Struck from the stone for the frame and
+     from the room's light for the box, so the box is lighter here too. */
+  --card-frame: var(--module);
+  --card-thread: var(--tile);
+
+  --action: #EDEDEF;
+  --on-action: #121214;
+  --evidence: #86D193;
+  --evidence-fill: rgba(134,209,147,.12);
+  --lit: #F5CB4C;
+  --on-lit: #111112;
+  --focus-ring: #8EB4F0;
+
+  --porthole: var(--paper);
+  --chrome-hi: #45454C;
+  --chrome-lo: #222225;
+
+  --cat-instruction: #E39A78;
+  --cat-configuration: #C9C27A;
+  --cat-data: #82A9E8;
+  --cat-artefact: #D9B36C;
+  --cat-evidence: #86D193;
+  --cat-narrative: #A0A0A6;
+  --cat-agents: #A996E8;
+  --cat-breakage: #E5807F;
+  --cat-media: #E08FB4;
+  --cat-fallback: var(--text2);
+
+  --cat-instruction-fill: rgba(227,154,120,.12);
+  --cat-configuration-fill: rgba(201,194,122,.12);
+  --cat-data-fill: rgba(130,169,232,.12);
+  --cat-artefact-fill: rgba(217,179,108,.12);
+  --cat-evidence-fill: rgba(134,209,147,.12);
+  --cat-narrative-fill: rgba(160,160,166,.12);
+  --cat-agents-fill: rgba(169,150,232,.12);
+  --cat-breakage-fill: rgba(229,128,127,.12);
+  --cat-media-fill: rgba(224,143,180,.12);
+  --cat-fallback-fill: var(--recess);
+
+  /* UI-P03 — the design kit's tokens, from design/tokens/tokens.css. Mirrored
+     in semantics.ts; css-parity.test.ts holds the two together. */
+  --backdrop: var(--frame);
+  --label: #8E8E94;
+  --on-text: #121214;
+  --hairline: #26262A;
+  --header: transparent;
+  --header-border: transparent;
+  --cell: var(--tile);
+  --row-highlight: var(--tile);
+  --solid: var(--module);
+  --flat: var(--surface);
+  --viewer-block: var(--well);
+  --tab: var(--control-on);
+  --field: var(--well);
+  --media-tag: rgba(15,15,16,.78);
+  --plate: rgba(15,15,16,.62);
+  --scrim: rgba(10,10,11,.72);
+  --dock: var(--surface);
+  --on-evidence-fill: var(--evidence);
+  --inverse-evidence-fill: #DDF2E1;
+  --lit-ink: #E8C468;
+  --ring-glow: 0 0 0 0 transparent;
+  --bar-base: #3A3A3F;
+  --tagline-lamp: var(--lit);
+  --inverse: var(--text);
+  --on-inverse: #121214;
+  --on-inverse-2: #55555B;
+  --orb-glass: linear-gradient(var(--module), var(--module));
+  --orb-glass-edge: var(--module-border);
+  --on-orb-glass: var(--text);
+  --shadow-float: var(--window-shadow);
+  --ring-track: var(--hairline-module);
+  --lamp-glow: 0 0 6px rgba(245,203,76,.7), 0 0 14px rgba(245,203,76,.25);
+  --picture-lamp-glow: var(--lamp-glow);
+  --picture-lamp-wash: rgba(245,203,76,.10);
+  --shadow-card: var(--module-shadow);
+  --nav-lamp-glow: 0 0 8px rgba(245,203,76,.55);
+  --rank-glow: 0 0 0 0 transparent;
+  --inset: var(--tile);
+  --turn: rgba(255,255,255,.03);
+  --sheet-dim: rgba(10,10,11,.5);
+  --shadow-square: 0 1px 2px rgba(0,0,0,.45);
+  --shadow-sheet: 0 -16px 48px rgba(0,0,0,.5);
+
+  /* UI-P79 — the refined names (semantics.ts); the values are the refined boards'. */
+  --frame: #0F0F10;
+  --surface: #19191B;
+  --surface-border: #232326;
+  --surface-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  --module: #1E1E21;
+  --module-border: #29292D;
+  --module-shadow: none;
+  --tile: #232327;
+  --tile-border: #2E2E33;
+  --well: #141416;
+  --well-border: #27272B;
+  --well-shadow: inset 0 1px 1px rgba(0,0,0,.35);
+  --hairline-module: #2A2A2E;
+  --control: #27272B;
+  --control-border: #323237;
+  --control-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 1px 2px rgba(0,0,0,.35);
+  --control-on: #2F2F34;
+  --seg-track: #141416;
+  --seg-border: #27272B;
+  --action-shadow: inset 0 -1px 0 rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.45);
+  --tag-fill: #26262A;
+  --on-tag: #A0A0A6;
+  --pill: #303035;
+  --on-pill: #CFCFD3;
+  --lit-mark: #F5CB4C;
+  --nav-mark: #F5CB4C;
+  --breakage: #E5807F;
+  --breakage-fill: rgba(229,128,127,.12);
+  --frozen: #8FB8D0;
+  --selected-edge: #8E8E95;
+  --selected-fill: #222226;
+  --selected-ring: 0 0 0 1px #8E8E95;
+  --window: #1E1E21;
+  --window-border: #2E2E33;
+  --window-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 2px 6px rgba(0,0,0,.4), 0 32px 64px -16px rgba(0,0,0,.75);
+  --sheet-shadow: -24px 0 64px -16px rgba(0,0,0,.7);
+  --dot-grid: rgba(255,255,255,.055);
+  --avatar-fill: #2C2C30;
+  --on-avatar: #CFCFD3;
+  --bar-mid: #55555B;
+  --paper: #0C0C0D;
+  --dim-filter: brightness(.48) saturate(.5);
+
+  /* BG-P04 — the radius scale. Theme-independent, declared in both blocks so a
+     component reads every root token from one place. src/lib/theme/radius.ts is
+     how components spend them. --r-full is for circular things ONLY; the legacy
+     --radius-btn/--radius-badge above were the pill rule this replaces, and
+     BG-P07 repointed them at --r-control and --r-chip. UI-P81 adds --r-window,
+     the dialog and side-sheet radius. */
+  --r-chip: 4px;
+  --r-media: 6px;
+  --r-control: 6px;
+  --r-thread: 6px;
+  --r-card: 8px;
+  --r-panel: 10px;
+  --r-window: 12px;
+  --r-full: 999px;
+
+  /* BG-P32 — the motion vocabulary, mirrored from src/lib/theme/motion.ts.
+     Theme-independent and declared in both blocks so a component reads every
+     root token from one place, exactly as the radius scale above does. The TS
+     module is the source of truth — it is what a style object spends; these
+     exist for the handful of rules that live in CSS because they cannot be
+     expressed inline (a pseudo-element, the cross-fade, the reduced-motion
+     reset). motion.test.ts holds the two sides to each other, so a duration
+     cannot be changed here without being changed there. */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-reveal: 450ms;
+  --motion-theme: 180ms;
+  --motion-ease: cubic-bezier(.2,.6,.35,1);
+
+  /* BG-P04 — elevation. On a dark ground a shadow alone barely reads, so each
+     level pairs a deeper shadow with an inset --glass-hi top hairline: the
+     surface's own edge catching the horizon. The hairline says "above", the
+     shadow says "how far". */
+  --elev-raised: var(--control-shadow);
+  --elev-overlay: var(--window-shadow);
+
+  /* The shadcn bridge, Dusk half. See the note in the Noon block. */
+  --background: 240 3% 6%;
+  --foreground: 240 6% 93%;
+  --card: 240 5% 12%;
+  --card-foreground: 240 6% 93%;
+  --popover: 240 5% 12%;
+  --popover-foreground: 240 6% 93%;
+  --primary: 240 6% 93%;
+  --primary-foreground: 240 5% 7%;
+  --secondary: 240 5% 8%;
+  --secondary-foreground: 240 6% 93%;
+  --muted: 240 5% 8%;
+  --muted-foreground: 240 3% 64%;
+  --accent: 240 5% 8%;
+  --accent-foreground: 240 6% 93%;
+  --destructive: 1 66% 70%;
+  --destructive-foreground: 240 5% 7%;
+  --border: 240 5% 16%;
+  --input: 240 5% 16%;
+  --ring: 217 77% 75%;
+  --sidebar-background: 240 3% 6%;
+  --sidebar-foreground: 240 6% 93%;
+  --sidebar-primary: 240 6% 93%;
+  --sidebar-primary-foreground: 240 5% 7%;
+  --sidebar-accent: 240 5% 8%;
+  --sidebar-accent-foreground: 240 6% 93%;
+  --sidebar-border: 240 5% 16%;
+  --sidebar-ring: 217 77% 75%;
+
+}
+
+
+
+
+
 
 /* ── The theme cross-fade (BG-P02) ────────────────────────────────────────────
    ThemeProvider puts data-theme-changing on the root element for exactly the
@@ -1138,7 +646,7 @@ body,
 }
 
 body {
-  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -1224,34 +732,34 @@ body {
    ─────────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background: 90 9% 91%;
-    --foreground: 160 15% 12%;
-    --card: 100 8% 85%;
-    --card-foreground: 160 15% 12%;
-    --popover: 100 8% 85%;
-    --popover-foreground: 160 15% 12%;
-    --primary: 3 44% 38%;
-    --primary-foreground: 60 12% 97%;
-    --secondary: 100 8% 85%;
-    --secondary-foreground: 160 15% 12%;
-    --muted: 100 8% 85%;
-    --muted-foreground: 150 6% 33%;
-    --accent: 100 8% 85%;
-    --accent-foreground: 160 15% 12%;
-    --destructive: 0 74% 42%;
-    --destructive-foreground: 60 12% 97%;
-    --border: 105 4% 80%;
-    --input: 105 4% 80%;
-    --ring: 160 15% 12%;
+    --background: 0 0% 91%;
+    --foreground: 0 0% 11%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 11%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 11%;
+    --primary: 0 0% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 11%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 34%;
+    --accent: 0 0% 93%;
+    --accent-foreground: 0 0% 11%;
+    --destructive: 6 75% 44%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 221 83% 53%;
     --radius: var(--r-control);
-    --sidebar-background: 90 9% 91%;
-    --sidebar-foreground: 160 15% 12%;
-    --sidebar-primary: 3 44% 38%;
-    --sidebar-primary-foreground: 60 12% 97%;
-    --sidebar-accent: 100 8% 85%;
-    --sidebar-accent-foreground: 160 15% 12%;
-    --sidebar-border: 105 4% 80%;
-    --sidebar-ring: 160 15% 12%;
+    --sidebar-background: 0 0% 91%;
+    --sidebar-foreground: 0 0% 11%;
+    --sidebar-primary: 0 0% 11%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 11%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 221 83% 53%;
   }
 }
 
@@ -1278,7 +786,7 @@ body {
     background-color: var(--bg);
     min-height: 100vh;
     color: var(--text);
-    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-ui);
     font-size: 16px;
     font-weight: 400;
     line-height: 1.55;
@@ -1287,10 +795,9 @@ body {
     overflow-x: hidden;
   }
 
-  /* BG-P03. DM Mono leads the data face's stack; JetBrains Mono stays behind
-     it as the fallback this codebase already assumed. */
+  /* Geist Mono leads the data face's stack. */
   code, pre {
-    font-family: 'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+    font-family: var(--font-data);
   }
 
   /* Prevent iOS auto-zoom on input focus */
@@ -1786,8 +1293,7 @@ input[type="search"] { border-radius: var(--r-control); }
   outline-offset: -4px;
 }
 
-/* UI-P97 — the refined look's focus, motion and phone rules. Each is scoped to :root[data-look="refined"], so with the
-   switch off (or `?look=current` on /dev) nothing below applies.
+/* UI-P97 — focus, motion and phone rules.
 
    FOCUS. Every focusable thing shows the one ring: 2px `--focus-ring`, 2px off. It is drawn from the stylesheet and with
    `!important` because the refined views set `outline: none` inline on rows that are links, map boxes and cards, which
@@ -1797,7 +1303,7 @@ input[type="search"] { border-radius: var(--r-control); }
    sign-in fields) turns that ring off on purpose and draws it on the well, which tracks the same :focus-visible.
    `tabindex="-1"` is a programmatic focus target (a section scrolled to, the opened map), never a Tab stop, so it
    stays unringed. */
-:root[data-look="refined"] :where(
+:root :where(
     a[href],
     button,
     summary,
@@ -1815,16 +1321,16 @@ input[type="search"] { border-radius: var(--r-control); }
   outline: 2px solid var(--focus-ring) !important;
   outline-offset: 2px !important;
 }
-:root[data-look="refined"] [data-ring-inset]:focus-visible {
+:root [data-ring-inset]:focus-visible {
   outline-offset: -4px !important;
 }
 
 /* MOTION. Nothing in the refined look animates except the theme change: no hover fade, no pulse, no reveal, no
    enter or exit. The theme change is `[data-theme-changing]`, which has its own rule above, so these stand down
    while it is set. Whatever a dependency adds (a Radix dialog's enter keyframes) is covered by the same rule. */
-:root[data-look="refined"]:not([data-theme-changing]) *,
-:root[data-look="refined"]:not([data-theme-changing]) *::before,
-:root[data-look="refined"]:not([data-theme-changing]) *::after {
+:root:not([data-theme-changing]) *,
+:root:not([data-theme-changing]) *::before,
+:root:not([data-theme-changing]) *::after {
   transition: none !important;
   animation: none !important;
 }
@@ -1833,68 +1339,11 @@ input[type="search"] { border-radius: var(--r-control); }
    out the inputs that draw no text (a checkbox, a radio, a range, a file picker). Touch targets need no rule here: the
    UI-P38 rule above already grows the hit area of every primitive and of anything marked `data-hit`, and draws nothing. */
 @media (max-width: 767px) {
-  :root[data-look="refined"] :is(
+  :root :is(
       input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="hidden"]),
       textarea,
       select
     ) {
     font-size: 16px !important;
   }
-}
-
-/* UI-P09b — liquid glass, on page-level panels only. THE ONE CLASS THIS STYLESHEET ADDS FOR STYLING: RULES.md §3
-   forbids new classes, and this is the single amendment, because a refracted edge needs two pseudo-elements and an
-   inline style cannot express one. Every colour in it is a custom property, so the tokens still govern it.
-
-   Three layers inside one stacking context. ::after (z -1) blurs and refracts what is behind the panel; ::before (z 0)
-   is the tint body text sits on and the rim light; the panel's own children (z 1) sit above both. THE
-   `.bg-glass > *` RULE IS NOT OPTIONAL: the tint is positioned, so without it the tint paints over the panel's
-   own text.
-
-   The blur is 16px, the one radius the codebase uses (glass.test.ts); the saturate is 1.2 where GLASS_BLUR's is 1.15.
-   The filter is #bg-glass-distortion, mounted once by GlassFilter in SiteFrame, and it is the only
-   feDisplacementMap in the app.
-
-   UI-P81: EVERY RULE BELOW IS SCOPED TO :root:not([data-look="refined"]). The refined look has no glass, so a
-   .bg-glass element under it is an ordinary box. Panel does not set the class there (surface="glass" paints the
-   module recipe); the scope is the backstop for anything that does, and for the @media and @supports overrides,
-   which would otherwise outlive the rules they override. glass.test.ts holds every selector to it. */
-:root:not([data-look="refined"]) .bg-glass { position: relative; isolation: isolate; }
-:root:not([data-look="refined"]) .bg-glass > * { position: relative; z-index: 1; }
-:root:not([data-look="refined"]) .bg-glass::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit;
-  pointer-events: none; background: var(--glass-fill);
-  border: 1px solid var(--glass-border);
-  box-shadow: inset 0 1px 0 var(--panel-highlight-color),
-              inset 0 0 20px -12px var(--glass-rim);
-}
-:root:not([data-look="refined"]) .bg-glass::after {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  pointer-events: none; isolation: isolate;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  filter: url(#bg-glass-distortion);
-  -webkit-filter: url(#bg-glass-distortion);
-}
-
-/* Guards. Phone: keep the blur and the fill, drop the displacement — phone GPUs and mobile Safari pay for it on every
-   scroll frame, and at phone width the refraction is a few pixels wide. In CSS, not JS. */
-@media (max-width: 767px) {
-  :root:not([data-look="refined"]) .bg-glass::after { filter: none; -webkit-filter: none; }
-}
-
-/* Reduced transparency: no filter, no backdrop-filter, and a fill near-opaque in both themes. */
-@media (prefers-reduced-transparency: reduce) {
-  :root, :root[data-theme="noon"] { --glass-fill: rgba(255,255,255,.96); }
-  :root[data-theme="dusk"] { --glass-fill: rgba(26,21,35,.96); }
-  :root:not([data-look="refined"]) .bg-glass::after {
-    filter: none; -webkit-filter: none;
-    backdrop-filter: none; -webkit-backdrop-filter: none;
-  }
-}
-
-/* No backdrop-filter at all: the fill alone, and no filter either (a filter with nothing behind it to bend is cost
-   for no picture). */
-@supports not (backdrop-filter: blur(2px)) {
-  :root:not([data-look="refined"]) .bg-glass::after { filter: none; -webkit-filter: none; }
 }

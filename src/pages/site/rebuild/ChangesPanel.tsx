@@ -21,7 +21,6 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel, PanelHead } from "@/components/brand/Panel";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -53,7 +52,6 @@ function ModelsValue({ value }: { value: string }) {
 }
 
 export function ChangeList({ groups, phone = false }: { groups: readonly ChangeGroupView[]; phone?: boolean }) {
-  const refined = useLook() === "refined";
   return (
     <div data-testid="change-list">
       {groups.map((group) => (
@@ -105,7 +103,7 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                     ...(phone ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
                   }}
                 >
-                  {refined && row.name === "Made with" ? <ModelsValue value={row.value} /> : row.value}
+                  {row.name === "Made with" ? <ModelsValue value={row.value} /> : row.value}
                 </span>
               </li>
             ))}

@@ -48,7 +48,7 @@ export function ProvenanceOverview({
           <Users size={14} color="var(--evidence)" />
           <h3
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 600,
               color: "var(--text)",
@@ -64,7 +64,7 @@ export function ProvenanceOverview({
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
             background: "none",
@@ -103,7 +103,7 @@ export function ProvenanceOverview({
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   fontWeight: 600,
                   color: "var(--text)",
@@ -113,7 +113,7 @@ export function ProvenanceOverview({
               </div>
               <div
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 11,
                   color: "var(--text2)",
                 }}
@@ -123,7 +123,7 @@ export function ProvenanceOverview({
               <div
                 style={{
                   marginTop: 4,
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 10,
                   color: "var(--evidence)",
                   fontWeight: 600,
@@ -134,7 +134,7 @@ export function ProvenanceOverview({
               <div
                 style={{
                   marginTop: 2,
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 10,
                   color: "var(--text2)",
                 }}
@@ -175,7 +175,7 @@ export function ProvenanceOverview({
                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <span
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 600,
                       color: "var(--text)",
@@ -187,7 +187,7 @@ export function ProvenanceOverview({
                 </div>
                 <div
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 11,
                     color: "var(--text2)",
                   }}
@@ -197,7 +197,7 @@ export function ProvenanceOverview({
                 <div
                   style={{
                     marginTop: 4,
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 10,
                     color: "var(--evidence)",
                     fontWeight: 600,
@@ -208,7 +208,7 @@ export function ProvenanceOverview({
                 <div
                   style={{
                     marginTop: 2,
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 10,
                     color: "var(--text2)",
                   }}
@@ -226,7 +226,7 @@ export function ProvenanceOverview({
           marginTop: 12,
           paddingTop: 12,
           borderTop: "0.5px solid var(--line)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 10,
           color: "var(--text2)",
           fontStyle: "italic",

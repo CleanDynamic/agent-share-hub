@@ -13,16 +13,14 @@
 
 import { useId, useState, type CSSProperties } from "react";
 
-import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { Panel } from "@/components/brand/Panel";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { move } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { Field } from "./composeControls";
 import { fieldBase, useRing } from "./composeFields";
@@ -187,7 +185,6 @@ function RefinedDisclosure({ open, controls, phone, onClick }: { open: boolean; 
 }
 
 export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetailsProps) {
-  const refined = useLook() === "refined";
   const [open, setOpen] = useState(false);
   const id = useId();
   const gapRing = useRing<HTMLInputElement>();
@@ -195,25 +192,7 @@ export function MoreDetails({ phone, details, onDetail, onGapSwitch }: MoreDetai
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {refined ? (
-        <RefinedDisclosure open={open} controls={open ? `${id}-panel` : undefined} phone={phone} onClick={() => setOpen((value) => !value)} />
-      ) : (
-      <Button
-        variant="ghost"
-        size={phone ? 44 : 38}
-        fontSize={14}
-        aria-expanded={open}
-        aria-controls={open ? `${id}-panel` : undefined}
-        onClick={() => setOpen((value) => !value)}
-        style={{ alignSelf: "flex-start", padding: "0 8px", marginLeft: -8, color: t.text, gap: 0 }}
-      >
-        <span aria-hidden="true" style={{ fontFamily: DM_MONO, color: t.text2, width: 16 }}>
-          {open ? "−" : "+"}
-        </span>
-        More details
-        <span style={{ color: t.text2, whiteSpace: "pre" }}> (optional)</span>
-      </Button>
-      )}
+      <RefinedDisclosure open={open} controls={open ? `${id}-panel` : undefined} phone={phone} onClick={() => setOpen((value) => !value)} />
 
       {open ? (
         <div id={`${id}-panel`}>

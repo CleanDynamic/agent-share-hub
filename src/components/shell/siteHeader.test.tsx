@@ -135,7 +135,7 @@ describe("SiteHeaderView", () => {
 /* UI-P87 — the refined header. Names and order are the current header's; styles are read from SSR markup, where the
    var() values survive (jsdom's cssstyle drops them). */
 describe("SiteHeaderView under the refined look", () => {
-  const REFINED = "/dev/kit/pages/home?look=refined";
+  const REFINED = "/dev/kit/pages/home";
   const base = (props: Partial<SiteHeaderViewProps> = {}): SiteHeaderViewProps => ({
     current: "home",
     unread: 3,
@@ -171,7 +171,6 @@ describe("SiteHeaderView under the refined look", () => {
     expect(screen.getByRole("link", { name: "Activity, 3 unread" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Theme: Dusk" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Account" })).toBeTruthy();
-    expect(screen.getByTestId("site-header").getAttribute("data-look")).toBe("refined");
   });
 
   it("sits on the frame: 48 high, 0 20px, gap 8, no background and no border", () => {
@@ -212,6 +211,5 @@ describe("SiteHeaderView under the refined look", () => {
 
   it("is the current header with the switch off", () => {
     header();
-    expect(screen.getByTestId("site-header").getAttribute("data-look")).toBeNull();
   });
 });

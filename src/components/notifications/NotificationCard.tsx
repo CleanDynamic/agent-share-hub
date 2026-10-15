@@ -107,7 +107,7 @@ function Avatar({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 12,
           fontWeight: 600,
           flexShrink: 0,
@@ -425,7 +425,7 @@ export function NotificationCard({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 13,
             fontWeight: 500,
             color: tok.text,
@@ -440,7 +440,7 @@ export function NotificationCard({
           <div
             style={{
               marginTop: 4,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               color: tok.text2,
               lineHeight: 1.5,
@@ -494,7 +494,7 @@ export function NotificationCard({
             background: isFollowBack ? tokenAlpha("action", 0.14) : "transparent",
             border: `0.5px solid ${isFollowBack ? tokenAlpha("action", 0.4) : tok.line}`,
             color: isFollowBack ? tok.text : tok.text2,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 600,
             padding: "4px 9px",

@@ -402,24 +402,19 @@ describe("where the radius tokens do not produce the shape the spec describes", 
     }
   });
 
-  it("KNOWN: the switch track renders as a capsule despite --r-control", () => {
-    // The track is 20px (24 before the UI-P52 density pass) and --r-control is
-    // 12px, so the spec's "not a pill" and the spec's token cannot both be
-    // honoured. The token is.
-    expect(px("r-control") * 2).toBe(24);
+  it("the switch track is a soft rectangle: --r-control is 6px on a 20px track", () => {
+    // It was a capsule under the old 12px control radius (UI-P99 retired it).
+    expect(px("r-control")).toBe(6);
     expect(CONTROL_SIZE.switchTrack).toBe(20);
-    expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(true);
+    expect(fullyRounds(px("r-control"), CONTROL_SIZE.switchTrack)).toBe(false);
   });
 
-  it("KNOWN: the checkbox renders as a circle despite --r-chip", () => {
-    // The box is 15px (16 before the UI-P52 density pass) and --r-chip is 8px,
-    // so a checkbox is the same shape as a radio and only the tick
-    // distinguishes them. Round means pick one and square means pick any;
-    // losing that is a real affordance defect, and the fix is a bigger box
-    // rather than a smaller radius.
-    expect(px("r-chip") * 2).toBe(16);
+  it("the checkbox is a square with soft corners: --r-chip is 4px on a 15px box", () => {
+    // It was the same shape as a radio under the old 8px chip radius, and only
+    // the tick told them apart.
+    expect(px("r-chip")).toBe(4);
     expect(CONTROL_SIZE.checkbox).toBe(15);
-    expect(fullyRounds(px("r-chip"), CONTROL_SIZE.checkbox)).toBe(true);
+    expect(fullyRounds(px("r-chip"), CONTROL_SIZE.checkbox)).toBe(false);
   });
 
   it("shows the same token reads correctly on the box it was sized for", () => {

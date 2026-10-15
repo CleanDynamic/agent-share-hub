@@ -43,7 +43,6 @@ import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { hoverIsFine, prefersReducedMotion } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { feedback } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -113,9 +112,8 @@ export interface BuildCardProps {
 
 /* UI-P86, refined: the cover hangs in a framed work. It is unlit: the card's lamp is the picture lamp above it, and one
    fact gets one lamp. */
-function CoverBox({ refined, height, children }: { refined: boolean; height: number; children: ReactNode }) {
-  if (refined) return <FramedWork height={height}>{children}</FramedWork>;
-  return <div style={{ position: "relative", height, borderRadius: r.media, overflow: "hidden" }}>{children}</div>;
+function CoverBox({ height, children }: { height: number; children: ReactNode }) {
+  return <FramedWork height={height}>{children}</FramedWork>;
 }
 
 const CARD_BASE: CSSProperties = {
@@ -156,7 +154,6 @@ export function BuildCard({
   const [hover, setHover] = useState(false);
   const lifted = hover && hoverIsFine() && !prefersReducedMotion();
   const chips = categories.filter((category) => category !== "breakage");
-  const refined = useLook() === "refined";
 
   return (
     <div data-ui="build-card" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -181,7 +178,7 @@ export function BuildCard({
         }}
       >
         {media ?? (
-          <CoverBox refined={refined} height={coverHeight}>
+          <CoverBox height={coverHeight}>
             {cover}
             {shape ? (
               <span
@@ -295,7 +292,6 @@ export interface CardCreditProps {
  * it has neither half.
  */
 export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
-  const refined = useLook() === "refined";
   const source = (rebuiltFrom ?? "").trim();
   const who = (by ?? "").trim();
   if (!source && !who) return null;
@@ -320,7 +316,7 @@ export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
     >
       {source ? (
         <>
-          Rebuilt from <i style={{ color: t.text, fontStyle: refined ? "normal" : undefined }}>{source}</i>
+          Rebuilt from <i style={{ color: t.text, fontStyle: "normal" }}>{source}</i>
           {who ? ` by ${who}` : null}
         </>
       ) : (

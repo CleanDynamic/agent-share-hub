@@ -163,7 +163,7 @@ function ToolbarButton({
           color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -204,7 +204,7 @@ function DropdownItem({
         display: 'flex',
         alignItems: 'center',
         padding: '0 8px',
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         fontSize: 12,
         cursor: 'pointer',
         textAlign: 'left',
@@ -251,7 +251,7 @@ function ToolbarDropdown({
     transition: feedback(),
     fontSize: 13,
     fontWeight: 400,
-    fontFamily: 'Figtree, sans-serif',
+    fontFamily: 'var(--font-ui)',
     border: 'none',
     background: 'transparent',
     ...(isHovered ? styles.iconButtonHover : styles.iconButton),
@@ -307,7 +307,7 @@ function ToolbarDropdown({
           color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -365,7 +365,7 @@ function ColorSwatch({ color, label, shortcut, onClick }: ColorSwatchProps) {
           color: 'var(--text)',
           borderRadius: 8,
           padding: '6px 8px',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -477,7 +477,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
           border: '1px solid var(--line)',
           borderRadius: 10,
           boxShadow: '0 8px 24px var(--text)',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           color: 'var(--text)',
         }}
       >
@@ -563,7 +563,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
             background: 'transparent',
             color: 'var(--text2)',
             fontSize: 11,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             cursor: 'pointer',
             marginBottom: 6,
             textAlign: 'left',
@@ -600,7 +600,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               color: 'var(--text)',
               padding: '0 8px',
               fontSize: 11,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               outline: 'none',
             }}
           />
@@ -615,7 +615,7 @@ function ColorPickerPopover({ mode, triggerColor, triggerLabel, onApply }: Color
               background: 'var(--recess)',
               color: 'var(--text)',
               fontSize: 11,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               cursor: 'pointer',
             }}
           >
@@ -985,7 +985,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   border: '1px solid var(--line)',
                   borderRadius: 'var(--r-panel)',
                   boxShadow: 'var(--elev-raised)',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   color: 'var(--text)',
                 }}
               >
@@ -1010,7 +1010,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 <button
                   type="button"
                   onClick={insertImage}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
                 >
                   Insert
                 </button>
@@ -1040,7 +1040,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                   background: 'var(--cat-data)',
                   border: '1px solid var(--line)',
                   borderRadius: 10,
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   color: 'var(--text)',
                 }}
               >
@@ -1058,7 +1058,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
                 <button
                   type="button"
                   onClick={insertVideo}
-                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'Figtree, sans-serif', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 28, borderRadius: 6, border: '1px solid var(--line)', background: 'var(--recess)', color: 'var(--text)', fontSize: 12, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
                 >
                   Insert
                 </button>

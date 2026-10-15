@@ -1,40 +1,14 @@
-/* UI-P40 — the blur budget: exactly four chrome surfaces may blur — the desktop
- * header, the mobile header, the dock, and the build page's title plate and
- * action dock — and every one of them at the one value. UI-P09b adds ONE more
- * kind of surface to the budget: page-level panels, which blur through the
- * `.bg-glass` class in src/index.css and nowhere else (Panel sets no blur of its
- * own). The files that draw them are BUDGET below; a blur anywhere else fails.
- * Before UI-P40 there were some two hundred declarations across a hundred and
- * fourteen files.
+/* There is no glass (UI-P99). The refined look has none, and since the current look went, nothing blurs: no
+ * `.bg-glass` rule, no displacement filter, no `backdrop-filter` in the stylesheet, and no blur in the source outside
+ * the one file recorded in EXEMPT.
  *
  * BG-P31 — §Glass's static half: exactly one blur value in the whole codebase.
  *
- * WHY THIS IS A SOURCE SCAN AND NOT A BROWSER TEST. The count of blurred
- * surfaces and their nesting are properties of a RENDERED tree and are asserted
- * where they can be seen — `e2e/audit/glass-budget.spec.ts`, over sixteen
- * routes in both rooms. "One blur value" is not: a second value can sit in a
- * component no route in the sweep opens, be perfectly invisible to a browser
- * assertion, and still be a second value the moment somebody navigates to the
- * guild page. The rule is about the codebase, so the test reads the codebase.
+ * WHY THIS IS A SOURCE SCAN AND NOT A BROWSER TEST. A blur can sit in a component no audited route opens and be
+ * invisible to a browser assertion. The rule is about the codebase, so the test reads the codebase.
  *
- * WHY ONE VALUE MATTERS AT ALL, since a blur radius is not a correctness bug.
- * Two reasons, and neither is tidiness. A blur radius is the most expensive
- * number in a compositing pass, so a codebase with eleven of them has eleven
- * different costs nobody has measured and no single number to reason about.
- * And glass in this system CARRIES LIGHT AND NEVER MEANING — the moment a
- * surface blurs at 4px and its neighbour at 40px, the difference starts saying
- * something, and what it says is an accident.
- *
- * WHAT THIS PROMPT FOUND. Ninety-nine declarations at eleven different values —
- * 2, 4, 8, 12, 14, 16, 18, 20, 24, 28, 40 and 60px — of which the rendered
- * sweep could see exactly one, because the other ten live on surfaces none of
- * the sixteen audited routes opens. All ninety-nine are now `blur(16px)`.
- *
- * RAISING A VALUE IS NOT THE FORBIDDEN FIX. BG-P31's constraint is that the
- * blur must never be REDUCED BELOW 16px to save cost — "a screen needing more
- * glass needs fewer glass elements, not a smaller blur". Normalising 4px up and
- * 60px down to the one value the spec names is the spec being applied, not the
- * cost lever being pulled.
+ * RAISING A VALUE IS NOT THE FORBIDDEN FIX. BG-P31's constraint is that the blur must never be REDUCED BELOW 16px to
+ * save cost; the one value the spec names is 16px.
  */
 
 import { describe, expect, it } from "vitest";
@@ -42,18 +16,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 import { GLASS_BLUR } from "./controls";
-import { resolveRefined } from "./refined";
 import { dusk, noon } from "./semantics";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 const EXTS = [".ts", ".tsx", ".css"];
 const IS_TEST = /\.(test|spec)\.tsx?$/;
-
-/** The scope UI-P81 puts in front of every .bg-glass selector: liquid glass exists in the current look only. */
-const CURRENT_LOOK_ONLY_PLAIN = ':root:not([data-look="refined"]) ';
-/** The same, escaped for a RegExp. */
-const CURRENT_LOOK_ONLY = String.raw`:root:not\(\[data-look="refined"\]\) `;
 
 /**
  * Files allowed to declare a different blur, with the reason. A RATCHET: it may
@@ -107,16 +75,6 @@ function declarations(): Found[] {
   return found;
 }
 
-/** The files that draw the four blurred surfaces (UI-P40). */
-const BUDGET: Record<string, string> = {
-  "src/components/shell/SiteHeader.tsx": "the desktop header",
-  "src/components/shell/MobileHeader.tsx": "the mobile header",
-  "src/components/shell/Dock.tsx": "the dock",
-  "src/components/brand/HeroPlate.tsx": "the build page's title plate",
-  "src/pages/site/build/BuildView.tsx": "the build page's action dock",
-  "src/index.css": "page-level panels, through the one .bg-glass class (UI-P09b)",
-};
-
 /** Every backdrop blur in a file, whatever its value is spelled as: a literal,
  * a constant such as GLASS_BLUR, or a Tailwind `backdrop-blur` class. */
 const ANY_BLUR = /(?:-webkit-)?backdrop-filter\s*:\s*(?!none)[^;}"'\n]+|[Bb]ackdropFilter\s*:\s*(?!["'`]none)[^,}\n]+|\bbackdrop-blur\b[\w-[\]]*/g;
@@ -133,20 +91,12 @@ function blurredFiles(): Found[] {
   return found;
 }
 
-describe("§Glass — the blur budget (UI-P40)", () => {
+describe("§Glass — nothing blurs", () => {
   const all = blurredFiles();
 
-  it("blurs only in the files that draw the four chrome surfaces and the page-level panels", () => {
-    const offenders = all
-      .filter((d) => !BUDGET[d.file] && !EXEMPT[d.file])
-      .map((d) => `${d.file}: ${d.declaration}`);
+  it("blurs only in the files recorded in EXEMPT", () => {
+    const offenders = all.filter((d) => !EXEMPT[d.file]).map((d) => `${d.file}: ${d.declaration}`);
     expect(offenders, offenders.join("\n")).toEqual([]);
-  });
-
-  it("still finds every budgeted surface, so a green run is not an empty scan", () => {
-    for (const file of Object.keys(BUDGET)) {
-      expect(all.some((d) => d.file === file), `${file} declares no blur`).toBe(true);
-    }
   });
 });
 
@@ -186,98 +136,38 @@ describe("§Glass — one blur value", () => {
   });
 });
 
-describe("§Glass — liquid glass (UI-P09b)", () => {
+describe("§Glass — the liquid-glass machinery is gone (UI-P99)", () => {
   const sources = walk(SRC)
     .filter((full) => !IS_TEST.test(full))
     .map((full) => ({ file: relative(ROOT, full).split(sep).join("/"), text: code(readFileSync(full, "utf8")) }));
 
-  it("uses feDisplacementMap in exactly one file, the one filter mounted by GlassFilter", () => {
-    const files = sources.filter((s) => /feDisplacementMap/.test(s.text)).map((s) => s.file);
-    expect(files).toEqual(["src/components/brand/GlassFilter.tsx"]);
+  it("has no feDisplacementMap and no reference to the distortion filter", () => {
+    expect(sources.filter((s) => /feDisplacementMap|bg-glass-distortion/.test(s.text)).map((s) => s.file)).toEqual([]);
   });
 
-  it("points at that filter from exactly one stylesheet rule, and nothing else references it", () => {
-    const files = sources.filter((s) => /bg-glass-distortion/.test(s.text)).map((s) => s.file).sort();
-    expect(files).toEqual(["src/components/brand/GlassFilter.tsx", "src/index.css"]);
+  it("has no .bg-glass class, in a stylesheet or a component", () => {
+    expect(sources.filter((s) => /(?<![\w-])bg-glass(?![\w-])/.test(s.text)).map((s) => s.file)).toEqual([]);
+  });
+
+  it("has no blur in the stylesheet", () => {
     const css = sources.find((s) => s.file === "src/index.css")!.text;
-    expect(css.match(/(?<!-webkit-)filter:\s*url\(#bg-glass-distortion\)/g)).toHaveLength(1);
-  });
-
-  it("spends the .bg-glass class in Panel and nowhere else", () => {
-    const files = sources.filter((s) => /(?<![\w-])bg-glass(?![\w-])/.test(s.text)).map((s) => s.file).sort();
-    expect(files).toEqual(["src/components/brand/Panel.tsx", "src/index.css"]);
-  });
-
-  it("drops the displacement below 768px and under reduced transparency, and the blur too in the latter", () => {
-    const css = readFileSync(join(SRC, "index.css"), "utf8");
-    // UI-P81 scoped every .bg-glass selector to the current look, the guards included. The phone guard's pattern
-    // names its selector, so it grew by the scope; the other two match through it as before. What each guard drops,
-    // and where, is unchanged.
-    expect(css).toMatch(
-      new RegExp(String.raw`@media \(max-width: 767px\) \{\s*${CURRENT_LOOK_ONLY}\.bg-glass::after \{ filter: none; -webkit-filter: none; \}`),
-    );
-    expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)[\s\S]*?backdrop-filter: none/);
-    expect(css).toMatch(/@supports not \(backdrop-filter: blur\(2px\)\)[\s\S]*?filter: none/);
+    expect(css).not.toMatch(/backdrop-filter|blur\(/);
   });
 });
 
-describe("§Glass — the refined look has none (UI-P81)", () => {
-  const css = readFileSync(join(SRC, "index.css"), "utf8");
-  /** Every rule prelude (the text before a `{`) in the stylesheet that names the .bg-glass class. */
-  const glassRules = [...code(css).matchAll(/([^{};]+)\{/g)]
-    .map((m) => m[1].trim())
-    .filter((prelude) => /(^|[\s,>+~])\.bg-glass(?![\w-])/.test(prelude));
-
-  it("finds the liquid-glass rules, so a green run is not an empty scan", () => {
-    // base, `> *`, ::before, ::after, and the three overrides of ::after: phone, reduced transparency, no backdrop-filter.
-    expect(glassRules.length).toBeGreaterThanOrEqual(7);
-  });
-
-  it("scopes every .bg-glass selector to :root:not([data-look=\"refined\"]), the overrides included", () => {
-    const unscoped = glassRules.filter((prelude) => !prelude.startsWith(`${CURRENT_LOOK_ONLY_PLAIN}.bg-glass`));
-    expect(unscoped, unscoped.join("\n")).toEqual([]);
-  });
-
-  it("keeps every blur and the distortion filter in the stylesheet inside those scoped rules", () => {
-    // Innermost rules only (`prelude { body }` with no braces in the body), so a rule inside an @media is read as
-    // itself and not as the @media. A stylesheet that matches `[data-look="refined"]` selects none of these.
-    const rules = [...code(css).matchAll(/([^{};]+)\{([^{}]*)\}/g)].map((m) => ({ prelude: m[1].trim(), body: m[2] }));
-    const carriers = rules.filter(({ body }) => /url\(#bg-glass-distortion\)|blur\(/.test(body));
-    expect(carriers.length, "no rule carries a blur: the scan is empty").toBeGreaterThan(0);
-    for (const { prelude, body } of carriers) {
-      expect(prelude.startsWith(`${CURRENT_LOOK_ONLY_PLAIN}.bg-glass`), `"${prelude}" blurs: ${body.trim().slice(0, 80)}`).toBe(true);
-    }
-  });
-});
-
-describe("§Glass — the refined look is opaque (UI-P79)", () => {
+describe("§Glass — the surfaces are opaque (UI-P79)", () => {
   const alpha = (colour: string) => {
     if (/^#[0-9a-f]{6}$/i.test(colour)) return 1;
     const m = /^rgba\(([^)]*)\)$/.exec(colour.replace(/\s/g, ""));
     return m ? Number(m[1].split(",")[3] ?? 1) : NaN;
   };
 
-  it.each(["noon", "dusk"] as const)("%s: glass, glass-fill and module are opaque, and the backdrop is a flat colour", (theme) => {
-    for (const name of ["glass", "glass-fill", "module", "backdrop"]) {
-      const value = resolveRefined(theme, name);
-      expect(alpha(value), `--${name} resolves to ${value}`).toBe(1);
-    }
-  });
-
-  it("keeps the current look as it was: glass is still translucent while data-look is absent", () => {
-    expect(alpha(noon.glass)).toBeLessThan(1);
-    expect(alpha(dusk.glass)).toBeLessThan(1);
-    expect(noon.backdrop).toMatch(/gradient/);
-    expect(dusk.backdrop).toMatch(/gradient/);
-  });
-
-  it("declares no blur in the refined blocks, which hold custom properties only", () => {
-    const css = readFileSync(join(SRC, "index.css"), "utf8");
-    for (const theme of ["dusk", "noon"]) {
-      const start = css.indexOf(`:root[data-theme="${theme}"][data-look="refined"] {`);
-      const body = css.slice(start, css.indexOf("\n}\n", start));
-      expect(start).toBeGreaterThan(-1);
-      expect(body).not.toMatch(/backdrop-filter|blur\(/);
+  it.each([
+    ["noon", noon],
+    ["dusk", dusk],
+  ] as const)("%s: the module and the surface are opaque", (_theme, table) => {
+    for (const name of ["module", "surface", "frame"] as const) {
+      expect(alpha(table[name]), `--${name} is ${table[name]}`).toBe(1);
     }
   });
 });

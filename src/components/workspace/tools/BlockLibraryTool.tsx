@@ -131,7 +131,7 @@ export function BlockLibraryTool({
             border: 'none',
             outline: 'none',
             color: 'var(--text)',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 12,
             fontWeight: 400,
           }}
@@ -165,7 +165,7 @@ export function BlockLibraryTool({
                 border: 'none',
                 background: active ? 'color-mix(in srgb, var(--action) 12%, transparent)' : 'var(--recess)',
                 color: active ? 'var(--action)' : 'var(--text2)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 10,
                 fontWeight: 500,
                 cursor: 'pointer',
@@ -208,7 +208,7 @@ export function BlockLibraryTool({
               padding: '20px 8px',
               textAlign: 'center',
               color: 'var(--text2)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
             }}
           >
@@ -225,7 +225,7 @@ export function BlockLibraryTool({
           padding: '6px 10px',
           borderTop: PANEL_DIVIDER,
           color: 'var(--text2)',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 10,
           fontWeight: 400,
           display: 'flex',
@@ -297,7 +297,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
         />
         <span
           style={{
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 11,
             fontWeight: 500,
             color: 'var(--text)',
@@ -311,7 +311,7 @@ function BlockCard({ block, onClick, onDragStart, onDoubleClick }: BlockCardProp
       </div>
       <div
         style={{
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 10,
           fontWeight: 400,
           color: 'var(--text2)',

@@ -160,7 +160,7 @@ function ReblogComposePanel({
                   border: 'none', outline: 'none',
                   fontSize: 14, color: 'var(--text2)',
                   lineHeight: 1.65, resize: 'none',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   boxSizing: 'border-box',
                 }}
               />
@@ -231,7 +231,7 @@ function ReblogComposePanel({
                 padding: '10px 12px', fontSize: 13,
                 color: 'var(--text2)',
                 lineHeight: 1.65, resize: 'none',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 boxSizing: 'border-box',
               }}
             />
@@ -313,7 +313,7 @@ function ReblogComposePanel({
                     border: 'none', outline: 'none',
                     fontSize: 13, color: 'var(--text2)',
                     resize: 'none', lineHeight: 1.6,
-                    fontFamily: 'Figtree, sans-serif',
+                    fontFamily: 'var(--font-ui)',
                     boxSizing: 'border-box',
                   }}
                 />

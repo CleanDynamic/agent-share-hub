@@ -130,7 +130,7 @@ export function MediaPopup({
             style={{
               fontSize: 13,
               color: 'var(--text2)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontStyle: 'italic',
               margin: 0,
               textAlign: 'center',

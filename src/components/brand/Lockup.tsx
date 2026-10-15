@@ -20,13 +20,10 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
-import { denseSpace } from "@/lib/theme/density";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { display, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { Mark } from "./Mark";
-import { useRoom } from "./useRoom";
 
 export interface LockupProps {
   /** The type size in px, as the reference drew it; rendered through the density table. */
@@ -65,40 +62,7 @@ function RefinedLockup({ size, color = t.text, to, markSize = Math.round(size * 
 }
 
 export function Lockup(props: LockupProps) {
-  const refined = useLook() === "refined";
-  return refined ? <RefinedLockup {...props} /> : <CurrentLockup {...props} />;
-}
-
-function CurrentLockup({ size, color = t.text, to }: LockupProps) {
-  const halo = useRoom() === "dusk";
-
-  const row: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: denseSpace(Math.trunc(size * 0.38)),
-    color,
-    ...(to ? { textDecoration: "none" } : null),
-  };
-
-  const content = (
-    <>
-      <Mark size={Math.trunc(size * 1.1)} halo={halo} />
-      <span style={display(size, { lockup: true })}>buildgallery</span>
-    </>
-  );
-
-  if (to) {
-    return (
-      <Link data-ui="lockup" to={to} aria-label="buildgallery home" style={row}>
-        {content}
-      </Link>
-    );
-  }
-  return (
-    <div data-ui="lockup" style={row}>
-      {content}
-    </div>
-  );
+  return <RefinedLockup {...props} />;
 }
 
 export default Lockup;

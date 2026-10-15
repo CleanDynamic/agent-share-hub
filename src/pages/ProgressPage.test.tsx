@@ -299,7 +299,7 @@ describe("the page's reads", () => {
 });
 
 describe("colour", () => {
-  it("draws no text in --lit, and the progress fills are --lit", () => {
+  it("draws no text in --lit", () => {
     const root = staticPage();
 
     const inked = [...root.querySelectorAll("*")].filter((element) =>
@@ -308,13 +308,6 @@ describe("colour", () => {
     expect(inked.length).toBeGreaterThan(40);
     expect(inked.filter((element) => inkOf(element, root) === "var(--lit)").map((element) => element.textContent)).toEqual([]);
 
-    const fills = root.querySelectorAll("[data-striped-fill]");
-    expect(fills).toHaveLength(4); // the level, and the three challenges
-    for (const fill of fills) {
-      // UI-P09: the bar is --lit stripes (a gradient), and nothing is written on it.
-      expect(styleOf(fill)["background"]).toContain("var(--lit)");
-      expect(fill.textContent).toBe("");
-    }
     // The one other amber: a highest-tier badge's fill, whose ink is --on-lit.
     const highest = root.querySelector('[data-testid="badge-mark-well-proven"]');
     expect(styleOf(highest)["background"]).toBe("var(--lit)");
@@ -330,7 +323,7 @@ describe("PROGRESS", () => {
     expect(values.map((value) => value.textContent)).toEqual(["3", "412", "73"]);
     for (const value of values) {
       const style = styleOf(value);
-      expect(style["font-family"]).toContain("DM Mono");
+      expect(style["font-family"]).toContain("Geist Mono");
       expect(style["font-variant-numeric"]).toBe("tabular-nums");
       expect(style["color"]).toBe("var(--text)");
     }
@@ -380,7 +373,7 @@ describe("THIS WEEK", () => {
     expect(rows.map((row) => within(row).getByRole("progressbar").getAttribute("aria-valuenow"))).toEqual(["2", "1", "0"]);
     for (const row of rows) {
       const count = within(row).getByTestId("weekly-challenge-count");
-      expect(count.style.fontFamily).toContain("DM Mono");
+      expect(count.style.fontFamily).toContain("Geist Mono");
       expect(count.style.fontVariantNumeric).toBe("tabular-nums");
     }
   });

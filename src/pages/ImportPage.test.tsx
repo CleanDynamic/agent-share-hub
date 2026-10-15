@@ -263,7 +263,7 @@ describe("/import", () => {
       const numeral = screen.getByTestId(`import-step-${ordinal}`);
       expect(numeral).toHaveTextContent(String(ordinal));
       const style = numeral.getAttribute("style") ?? "";
-      expect(style).toContain("DM Mono");
+      expect(style).toContain("Geist Mono");
       expect(style).toContain("border-radius: var(--r-full)");
     }
   });

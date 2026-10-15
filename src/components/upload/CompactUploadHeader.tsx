@@ -72,7 +72,7 @@ export function CompactUploadHeader({
         {/* Type chip row */}
         <div className="flex items-center gap-2" style={{ height: "24px" }}>
           <span style={{
-            fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 600,
+            fontFamily: "var(--font-ui)", fontSize: "11px", fontWeight: 600,
             letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
             padding: "3px 10px", borderRadius: 'var(--r-chip)',
           }}>
@@ -80,7 +80,7 @@ export function CompactUploadHeader({
           </span>
           {mode && (
             <span style={{
-              fontFamily: "Figtree, sans-serif", fontSize: "11px",
+              fontFamily: "var(--font-ui)", fontSize: "11px",
               fontWeight: 500, color: "var(--text2)",
             }}>{mode}</span>
           )}
@@ -117,13 +117,13 @@ export function CompactUploadHeader({
               height: "44px", padding: "8px 12px",
               background: "transparent", border: "none",
               borderBottom: "0.5px solid var(--line)",
-              fontFamily: "Figtree, sans-serif", fontSize: "22px",
+              fontFamily: "var(--font-ui)", fontSize: "22px",
               fontWeight: 700, color: "var(--text)",
             }}
           />
           <style>{`
             .compact-upload-title::placeholder {
-              font-family: Figtree, sans-serif; font-size: 22px;
+              font-family: var(--font-ui); font-size: 22px;
               font-weight: 500; color: var(--text2);
             }
           `}</style>
@@ -143,18 +143,18 @@ export function CompactUploadHeader({
                 minHeight: "40px", maxHeight: "80px",
                 padding: "8px 12px", paddingBottom: "20px",
                 background: "transparent", border: "none",
-                fontFamily: "Figtree, sans-serif", fontSize: "13px",
+                fontFamily: "var(--font-ui)", fontSize: "13px",
                 fontWeight: 400, color: "var(--text)",
               }}
             />
             <style>{`
               .compact-upload-desc::placeholder {
-                font-family: Figtree, sans-serif; font-size: 13px;
+                font-family: var(--font-ui); font-size: 13px;
                 font-weight: 400; color: var(--text2);
               }
             `}</style>
             <span className="absolute bottom-1 right-3" style={{
-              fontFamily: "Figtree, sans-serif", fontSize: "10px",
+              fontFamily: "var(--font-ui)", fontSize: "10px",
               fontWeight: 400, color: "var(--text2)",
             }}>
               {description.length} / {maxDescriptionLength}
@@ -195,21 +195,21 @@ export function CompactUploadHeader({
         >
           <div className="flex items-center gap-2 cursor-pointer" onClick={scrollToTop}>
             <span style={{
-              fontFamily: "Figtree, sans-serif", fontSize: "9px", fontWeight: 600,
+              fontFamily: "var(--font-ui)", fontSize: "9px", fontWeight: 600,
               letterSpacing: "0.06em", color: typeStyle.color, background: typeStyle.bg,
               padding: "2px 8px", borderRadius: 'var(--r-chip)',
             }}>
               {typeStyle.label}
             </span>
             <span className="truncate max-w-[400px]" style={{
-              fontFamily: "Figtree, sans-serif", fontSize: "12px",
+              fontFamily: "var(--font-ui)", fontSize: "12px",
               fontWeight: 500, color: "var(--text)",
             }}>
               {title || "Untitled"}
             </span>
           </div>
           <button onClick={scrollToTop} className="outline-none" style={{
-            fontFamily: "Figtree, sans-serif", fontSize: "11px", fontWeight: 500,
+            fontFamily: "var(--font-ui)", fontSize: "11px", fontWeight: 500,
             color: "color-mix(in srgb, var(--evidence) 85%, transparent)", background: "transparent",
             border: "none", cursor: "pointer",
           }}>

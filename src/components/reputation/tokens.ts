@@ -70,6 +70,6 @@ export const tokens = {
 } as const
 
 export const fontSans =
-  "'Figtree', system-ui, sans-serif"
+  "var(--font-ui)"
 export const fontMono =
   "var(--font-jetbrains-mono), 'JetBrains Mono Fallback', monospace"

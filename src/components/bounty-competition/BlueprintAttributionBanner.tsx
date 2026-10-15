@@ -97,7 +97,7 @@ export function BlueprintAttributionBanner({
         background: "color-mix(in srgb, var(--evidence) 8%, transparent)",
         border: "1px solid color-mix(in srgb, var(--evidence) 25%, transparent)",
         textDecoration: "none",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 11,
         fontWeight: 500,
         color: "var(--evidence)",

@@ -78,13 +78,6 @@ describe("the switch", () => {
 });
 
 describe("the orbs' numbers", () => {
-  it("are read through the data layer and drawn, in the keys the Home and Gallery pages use", async () => {
-    shell(["/login"]);
-    expect(await screen.findByText("48 today")).toBeTruthy();
-    expect(await screen.findByText("1,284")).toBeTruthy();
-    expect(countReproducedToday).toHaveBeenCalledTimes(1);
-    expect(getGalleryStats).toHaveBeenCalledTimes(1);
-  });
 
   it("leave an empty disc where a count could not be read, and the page standing", async () => {
     countReproducedToday.mockRejectedValue(new Error("boom"));

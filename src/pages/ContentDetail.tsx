@@ -2380,7 +2380,7 @@ function SpawnedFromMetaBanner({ parentId }: { parentId: string }) {
         borderRadius: 8,
         padding: "8px 12px",
         marginBottom: 16,
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 12,
         color: "var(--text)",
         cursor: "pointer",

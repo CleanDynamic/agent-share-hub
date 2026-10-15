@@ -24,10 +24,9 @@
 // picture is under 50px high, as the boards draw it. `data-sky` is still the
 // seed's sky, so the build keeps its identity in the markup.
 
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { hashSeed } from "./hash";
@@ -45,15 +44,6 @@ export const COVER_SKIES: readonly SkyPalette[] = [
   ["#15251E", "#3E6B55", "#9FD1A8", "#E3F2DA", "#2E5242", "#1F3A2F", "#12211B"],
   ["#2B1A26", "#8C4A6A", "#F0A0B8", "#FBE0E8", "#5E3450", "#3F2438", "#1F1420"],
 ];
-
-/** Where the sun sits, per sky. */
-const SUN_X = [70, 120, 190, 230, 150, 210] as const;
-
-const HILLS = [
-  "M0 118 C40 98 70 108 100 94 C130 80 160 102 200 96 C240 90 270 106 300 98 L300 180 L0 180Z",
-  "M0 140 C50 126 90 138 140 128 C190 118 230 138 300 126 L300 180 L0 180Z",
-  "M0 162 C60 152 120 164 180 156 C230 150 270 160 300 154 L300 180 L0 180Z",
-] as const;
 
 /** The sky a seed lands on, 0 to 5. */
 export function skyIndex(seed: string): number {
@@ -121,46 +111,12 @@ function RefinedCoverFallback({ radius, index }: { radius: string | number; inde
 }
 
 export function CoverFallback(props: CoverFallbackProps) {
-  const refined = useLook() === "refined";
   const { seed, radius, sky } = props;
   const i =
     sky !== undefined && Number.isInteger(sky) && sky >= 0 && sky < COVER_SKIES.length
       ? sky
       : skyIndex(seed);
-  if (refined) return <RefinedCoverFallback radius={radius} index={i} />;
-  return <LandscapeCoverFallback radius={radius} index={i} />;
-}
-
-function LandscapeCoverFallback({ radius, index: i }: { radius: string | number; index: number }) {
-  const gradientId = `sky-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const [top, middle, horizon, sun, far, mid, near] = COVER_SKIES[i];
-
-  return (
-    <svg
-      data-ui="cover-fallback"
-      data-sky={i}
-      width="100%"
-      height="100%"
-      viewBox="0 0 300 180"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      focusable="false"
-      style={{ display: "block", borderRadius: radius, flexShrink: 0 }}
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={top} />
-          <stop offset=".55" stopColor={middle} />
-          <stop offset="1" stopColor={horizon} />
-        </linearGradient>
-      </defs>
-      <rect width="300" height="180" fill={`url(#${gradientId})`} />
-      <ellipse cx={SUN_X[i]} cy="112" rx="24" ry="24" fill={sun} opacity=".9" />
-      <path d={HILLS[0]} fill={far} />
-      <path d={HILLS[1]} fill={mid} />
-      <path d={HILLS[2]} fill={near} />
-    </svg>
-  );
+  return <RefinedCoverFallback radius={radius} index={i} />;
 }
 
 export default CoverFallback;

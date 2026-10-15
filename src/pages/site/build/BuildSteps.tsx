@@ -1,58 +1,79 @@
-/* UI-P73 — The build, and What you need: the steps a reader can repeat.
+/* UI-P90 — The build and What you need in the refined look, as `design/reference/refined/{dusk,noon}/build-list.html`
+   draws them.
 
-   PURE. Props in, markup out (`BuildStepsView` in buildModel.ts). Drawn by
-   `BuildView` in place of the anatomy, the part viewer and the timeline when
-   the page is given steps; boards B1-PageList, B3-PageTeam and B4-PageOne.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `StepsList` and `NeedPanel` stay the current look; these take their props (imported, not
+   copied), keep their state in the same hook (`useStepsList`), and say the same words in the same order with the same
+   accessible names. `BuildView` draws them.
 
-   Every step is a card with its number, title, text (four lines, then "Read
-   all of it") and Copy. A session's first step is headed "New chat in {tool}";
-   a paste-in is a chip that scrolls to the step it comes from and rings it for
-   1.2s. Inside an agent or a team the word is "Uses", never "Paste in". The
-   words are CONCEPT §8's and are not reworded here. */
+   THE BUILD. A toolbar (List / Map, the counts, the hint), then the session groups: each led by a head (the tool's
+   real mark at 20 where the current look has a dot, the "New chat in …" heading 13/500, its meta 12 `--label` and a
+   hairline filling the rest) and its step modules. A step is a module: the number in a 24 control tile (Geist Mono
+   11), the title 14/500, Copy (secondary 26, no icon); the text 13.5/22 indented 36, four lines then "Read all of it";
+   the paste-ins as a tile indented 36. The result is a module under its own head.
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowLeft, Check, Copy, Download, Paperclip } from "lucide-react";
+   WHAT YOU NEED. No module: the column on the surface. Sections are an eyebrow over a hairline and rows 48 high; a
+   Tools and models row leads with its mark at 28; a file has Download (secondary 26). */
+
+import {
+  Suspense,
+  lazy,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 import { Button } from "@/components/brand/Button";
-import { Panel } from "@/components/brand/Panel";
+import { Eyebrow } from "@/components/brand/Eyebrow";
+import { Glyph } from "@/components/brand/Glyph";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import type { Step } from "@/lib/build/graph";
-import { modelLabel } from "@/lib/models/registry";
-import { stepList, type NeedGroup, type NeedRow, type ReaderFile, type ReaderResult, type ReaderStep } from "@/lib/build/readerSteps";
-import { prefersReducedMotion, scrollBehavior } from "@/lib/theme/motion";
+import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
+import { markFor } from "@/lib/models/marks";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { tokenAlpha, t } from "@/lib/theme/tokens";
+import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
+import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { BeforeYouSend, hasBeforeYouSend } from "./BeforeYouSend";
+import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
+import { modelLabel } from "@/lib/models/registry";
+import { stepList } from "@/lib/build/readerSteps";
+import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
 
-/** The Map is loaded when a reader first chooses it, and not before (UI-P74). */
-const ReaderMap = lazy(() => import("./ReaderMap"));
-
 /** How long the step a chip or an address named stays ringed. */
-const RING_MS = 1200;
+export const RING_MS = 1200;
+
 /** How long Copy says it worked. */
-const COPIED_MS = 1500;
+export const COPIED_MS = 1500;
+
 /** At most this many rows in a What you need group, then "Show {n} more". */
 export const NEED_ROWS = 6;
-/** A text past this many words (or lines) is clamped to four lines, so it offers the whole of it. */
-const LONG_WORDS = 40;
 
-const mono = (size: 11 | 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
+/** A text past this many words (or lines) is clamped to four lines, so it offers the whole of it. */
+export const LONG_WORDS = 40;
+
+export const mono = (size: 11 | 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, lineHeight: "normal", color: t.text2 });
 
 export const stepDomId = (id: string) => `step-${id}`;
+
 export const needDomId = (id: string) => `need-${id}`;
 
 export const isInstructions = (entry: ReaderStep) => entry.step.id.endsWith(":instructions");
+
 export const isContainer = (entry: ReaderStep) => entry.step.kind === "agent" || entry.step.kind === "team";
+
 export const isLong = (step: Step) => step.words > LONG_WORDS || step.text.split("\n").length > 4;
 
 /** The text "Copy the team" puts on the clipboard: each agent, numbered, with its instructions whole. */
-function teamText(entry: ReaderStep): string {
+export function teamText(entry: ReaderStep): string {
   const parts: string[] = [];
   const visit = (list: readonly ReaderStep[]) => {
     for (const child of list) {
@@ -67,8 +88,6 @@ function teamText(entry: ReaderStep): string {
 /** The words a copy puts on the clipboard for a step. */
 export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.text);
 
-/* ── small parts ── */
-
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -81,396 +100,7 @@ export function useConfirmed(): [boolean, () => void] {
   return [on, confirm];
 }
 
-/** The step's number, in the grey square. */
-function Badge({ children, wide }: { children: ReactNode; wide?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        flexShrink: 0,
-        minWidth: 24,
-        height: 24,
-        padding: wide ? "0 6px" : 0,
-        boxSizing: "border-box",
-        borderRadius: 8,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: t.cell,
-        border: `1px solid ${t.hairline}`,
-        fontFamily: DM_MONO,
-        fontSize: 12,
-        fontWeight: 500,
-        color: t.text,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-/** A small label chip: DM Mono 11.5 on the action tint, as the full prompt window draws its chips. */
-const chipStyle = (phone: boolean): CSSProperties => ({
-  minHeight: phone ? 44 : 26,
-  padding: "0 8px",
-  boxSizing: "border-box",
-  borderRadius: 8,
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 6,
-  background: tokenAlpha("action", 0.12),
-  color: t.text,
-  border: 0,
-  fontFamily: DM_MONO,
-  fontSize: 11.5,
-  whiteSpace: "nowrap",
-});
-
-function Chip({ children }: { children: ReactNode }) {
-  return <span style={{ ...chipStyle(false), minHeight: 24, background: t.cell, border: `1px solid ${t.hairline}` }}>{children}</span>;
-}
-
-/** A link to a file's download, drawn as the extra-small "Download". */
-function DownloadLink({ file, label = "Download" }: { file: ReaderFile; label?: string }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  if (!file.download) return null;
-  return (
-    <a
-      href={file.download}
-      download={file.name}
-      aria-label={`${label} ${file.name}`}
-      {...handlers}
-      style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 600, color: t.text, textDecoration: "none", ...ring(state.focusVisible) }}
-    >
-      {label}
-    </a>
-  );
-}
-
-/** A paste-in: a link that goes to the step it comes from. */
-function PasteChip({ text, title, phone, onGo }: { text: string; title: string; phone: boolean; onGo: () => void }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button type="button" onClick={onGo} {...handlers} style={{ ...chipStyle(phone), cursor: "pointer", ...ring(state.focusVisible) }}>
-      <ArrowLeft size={12} strokeWidth={1.8} aria-hidden="true" />
-      <span style={{ fontFamily: FIGTREE, fontSize: 12 }}>{text}</span>
-      <span style={{ color: t.text2 }}>{title}</span>
-    </button>
-  );
-}
-
-function CopyButton({ label = "Copy", what, text, onCopy, announce, phone }: { label?: string; what: string; text: string; onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }) {
-  const [copied, confirm] = useConfirmed();
-  return (
-    <Button
-      variant="secondary"
-      size={phone ? 44 : 30}
-      fontSize={13}
-      icon={copied ? Check : Copy}
-      aria-label={`${label} ${what}`}
-      onClick={async () => {
-        if (await onCopy(text)) {
-          confirm();
-          announce("Copied");
-        }
-      }}
-    >
-      {label}
-    </Button>
-  );
-}
-
-/** The text at 15/1.55, four lines, then "Read all of it" and the word count (a short text shows its count only when it is the build's one step). */
-function StepText({ step, onRead, size = 15, alone = false }: { step: Step; onRead: () => void; size?: 14 | 15; alone?: boolean }) {
-  const long = isLong(step);
-  if (!step.text) return null;
-  return (
-    <>
-      <p
-        data-testid="step-text"
-        style={{
-          margin: 0,
-          fontFamily: FIGTREE,
-          fontSize: size,
-          lineHeight: 1.55,
-          color: t.text,
-          whiteSpace: "pre-wrap",
-          overflowWrap: "anywhere",
-          ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
-        }}
-      >
-        {step.text}
-      </p>
-      {long ? (
-        <div style={{ display: "flex", gap: 9, alignItems: "baseline", marginTop: 4 }}>
-          <ReadAll onRead={onRead} />
-          <span style={mono(12)}>{step.words} words</span>
-        </div>
-      ) : alone ? (
-        <div style={{ ...mono(12), marginTop: 4 }}>{step.words} words</div>
-      ) : null}
-    </>
-  );
-}
-
-function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; label?: string }) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
-  return (
-    <button
-      type="button"
-      onClick={onRead}
-      {...handlers}
-      style={{ background: "none", border: 0, padding: 0, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, color: t.text, cursor: "pointer", ...ring(state.focusVisible) }}
-    >
-      {label}
-    </button>
-  );
-}
-
-/** "Paste in" and its chips, then "attach {name}" with its Download. Outside an agent or a team only. */
-function Inputs({ entry, phone, go }: { entry: ReaderStep; phone: boolean; go: (id: string) => void }) {
-  if (entry.pasteIns.length === 0 && entry.attach.length === 0) return null;
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 9 }}>
-      <span style={mono(12)}>Paste in</span>
-      {entry.pasteIns.map((paste) => (
-        <PasteChip key={paste.stepId} text={paste.text} title={paste.title} phone={phone} onGo={() => go(paste.stepId)} />
-      ))}
-      {entry.attach.map((file) => (
-        <span key={file.id} style={{ ...chipStyle(phone), cursor: "default" }}>
-          <Paperclip size={12} strokeWidth={1.8} aria-hidden="true" />
-          <span style={{ fontFamily: FIGTREE, fontSize: 12 }}>attach {file.name}</span>
-          <DownloadLink file={file} />
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/* ── the heads ── */
-
-function Head({ children, detail, id }: { children: ReactNode; detail?: ReactNode; id?: string }) {
-  return (
-    <div id={id} style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "18px 0 8px" }}>
-      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: t.text, flexShrink: 0, alignSelf: "center" }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text, whiteSpace: "nowrap" }}>{children}</span>
-      {detail ? <span style={{ ...mono(12), whiteSpace: "nowrap" }}>{detail}</span> : null}
-      <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, alignSelf: "center", minWidth: 12 }} />
-    </div>
-  );
-}
-
-const cardStyle = (ringed: boolean): CSSProperties => ({
-  borderRadius: 14,
-  border: `1px solid ${ringed ? t.action : t.line}`,
-  boxShadow: ringed ? `0 0 0 3px ${tokenAlpha("action", 0.25)}` : undefined,
-  background: t.solid,
-  padding: "14px 16px",
-  marginBottom: 8,
-  boxSizing: "border-box",
-  transition: prefersReducedMotion() ? undefined : "box-shadow 200ms, border-color 200ms",
-});
-
-/* ── the cards ── */
-
-interface Ctx {
-  view: BuildStepsView;
-  phone: boolean;
-  announce: (text: string) => void;
-  ringed: string | null;
-  go: (id: string) => void;
-  read: (id: string) => void;
-  /** "See the team in Map": the Map with that team opened. Absent on a phone, which has no Map. */
-  seeMap?: (id: string) => void;
-}
-
-function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
-  const { step } = entry;
-  const { view, phone, announce } = ctx;
-  const copy = <CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />;
-
-  if (entry.manual) {
-    return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...cardStyle(ctx.ringed === step.id), background: t.cell, border: `1px solid ${ctx.ringed === step.id ? t.action : t.text2}` }}>
-        <Title entry={entry} right={null} />
-        <div style={{ ...mono(12), marginTop: 6 }}>{entry.manual.headline}</div>
-        <p style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: 15, lineHeight: 1.55, color: t.text }}>{entry.manual.line}</p>
-        {entry.manual.mediaId ? (
-          <div style={{ marginTop: 9 }}>
-            <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
-          </div>
-        ) : null}
-      </article>
-    );
-  }
-
-  return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={cardStyle(ctx.ringed === step.id)}>
-      <Title entry={entry} right={copy} />
-      <div style={{ marginTop: 6 }}>
-        <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
-      </div>
-      <Inputs entry={entry} phone={phone} go={ctx.go} />
-      {entry.chat?.kind === "same" ? <div style={{ ...mono(12), marginTop: 9 }}>{entry.chat.text}</div> : null}
-    </article>
-  );
-}
-
-function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-      <Badge>{entry.step.number}</Badge>
-      <h3
-        style={{
-          margin: 0,
-          flexGrow: 1,
-          minWidth: 0,
-          fontFamily: FIGTREE,
-          fontSize: 17,
-          fontWeight: 600,
-          lineHeight: "normal",
-          color: entry.isDefaultTitle ? t.text2 : t.text,
-        }}
-      >
-        {entry.title}
-      </h3>
-      {right}
-    </div>
-  );
-}
-
-/** One agent or one prompt inside a team or an agent: the smaller card, with its "Uses" and where it goes. */
-function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
-  const { step } = entry;
-  const { view, phone, announce } = ctx;
-  const instructions = isInstructions(entry);
-  const repeats = entry.runs && step.runs && step.runs.how !== "once";
-  const nested = entry.children.filter((child) => !isInstructions(child));
-  return (
-    <>
-      <article
-        id={stepDomId(step.id)}
-        data-testid="inner-card"
-        data-step={step.number}
-        style={{
-          borderRadius: 12,
-          border: `1px solid ${ctx.ringed === step.id ? t.action : t.hairline}`,
-          background: t.cell,
-          padding: "12px 14px",
-          marginBottom: 8,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Badge wide>{step.number}</Badge>
-          <h4 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: entry.isDefaultTitle ? t.text2 : t.text }}>{entry.title}</h4>
-          {!instructions && step.model ? <span style={mono(12)}>{modelOf(step)}</span> : null}
-          {repeats ? <Chip>{entry.runs}</Chip> : null}
-          <span style={{ flexGrow: 1 }} />
-          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <StepText step={step} size={15} onRead={() => ctx.read(step.id)} />
-        </div>
-        {entry.uses.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 9 }}>
-            <span style={mono(12)}>Uses</span>
-            {entry.uses.map((use) => {
-              const file = entry.attach.find((candidate) => candidate.name === use);
-              const tool = entry.tools.find((candidate) => use === `${candidate.name} · tool`);
-              return (
-                <Chip key={use}>
-                  {tool ? tool.name : use}
-                  {tool ? <span style={mono(11)}>tool</span> : null}
-                  {file ? <DownloadLink file={file} /> : null}
-                </Chip>
-              );
-            })}
-          </div>
-        ) : null}
-        {entry.goesInto.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 9 }}>
-            <span style={mono(12)}>Goes into</span>
-            {entry.goesInto.map((target) => (
-              <Chip key={target}>{target}</Chip>
-            ))}
-          </div>
-        ) : null}
-      </article>
-      {nested.map((child) => (
-        <InnerCard key={child.step.id} entry={child} ctx={ctx} />
-      ))}
-    </>
-  );
-}
-
 export const modelOf = (step: Step): string => (step.model ? modelLabel(step.model) || step.model : "");
-
-/** An agent or a team: its card, with its sub-steps inside it. */
-function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
-  const { step } = entry;
-  const { view, phone, announce } = ctx;
-  const team = step.kind === "team";
-  const agents = entry.children.filter((child) => child.step.kind === "agent").length;
-  const line = [team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent", entry.madeIn].filter(Boolean).join(" · ");
-  return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={cardStyle(ctx.ringed === step.id)}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <Badge>{step.number}</Badge>
-        <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, color: entry.isDefaultTitle ? t.text2 : t.text }}>{entry.title}</h3>
-        {entry.runs ? <Chip>{entry.runs}</Chip> : null}
-        <span style={{ flexGrow: 1 }} />
-        <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
-      </div>
-      <div style={{ ...mono(12), margin: "6px 0 9px 34px" }}>{line}</div>
-      <div style={{ marginLeft: 34, paddingLeft: 12, borderLeft: `2px solid ${t.hairline}` }}>
-        {entry.children.map((child) => (
-          <InnerCard key={child.step.id} entry={child} ctx={ctx} />
-        ))}
-      </div>
-      {ctx.seeMap ? (
-        <div style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "6px 0 0 34px" }}>
-          <ReadAll label={`See the ${team ? "team" : "agent"} in Map`} onRead={() => ctx.seeMap?.(step.id)} />
-          <span style={mono(12)}>shows who passes work to whom</span>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
-  const { view } = ctx;
-  const name = result.url ? (
-    <a href={result.url} target="_blank" rel="noopener noreferrer" style={{ color: t.text, textDecorationColor: t.hairline }}>
-      {result.title}
-    </a>
-  ) : (
-    result.title
-  );
-  return (
-    <article data-testid="result-card" style={cardStyle(false)}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span
-          aria-hidden="true"
-          style={{ width: 24, height: 24, borderRadius: 8, background: t.evidenceFill, color: t.evidence, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-        >
-          <Check size={14} strokeWidth={2} />
-        </span>
-        <span style={mono(12)}>Result</span>
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 9, alignItems: "baseline", marginTop: 6, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>{name}</span>
-        {result.from ? <span style={mono(12)}>from step {result.from}</span> : null}
-      </div>
-      {result.mediaId ? (
-        <div style={{ marginTop: 9 }}>
-          <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} />
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-/* ── The build ── */
 
 /** The names the full prompt window shows on its Uses chips. */
 export function namesIn(steps: readonly ReaderStep[]): Record<string, string> {
@@ -561,31 +191,552 @@ export function useStepsList(view: BuildStepsView, phone: boolean) {
   return { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap: phone || !view.mapAvailable ? undefined : seeMap, toolOf, flat, map };
 }
 
+/** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
+export interface NeedPanelProps {
+  view: BuildStepsView;
+  onOpenOther: (id: string) => void;
+}
+
+/** The Map is loaded when a reader first chooses it, and not before (UI-P74). UI-P91: its refined fork. */
+const ReaderMap = lazy(() => import("./ReaderMap"));
+
+/* ── type ── */
+
+const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+  fontFamily: FIGTREE,
+  fontSize: px,
+  fontWeight: weight,
+  lineHeight: "normal",
+  color,
+  ...extra,
+});
+
+const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
+
+/** The indent that lines text up under a step's title: the 24 tile and its 12 gap. */
+const INDENT = 36;
+
+const bareButton: CSSProperties = {
+  appearance: "none",
+  background: "none",
+  border: 0,
+  margin: 0,
+  padding: 0,
+  color: "inherit",
+  font: "inherit",
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+/* ── recipes ── */
+
+const moduleStyle = (ringed: boolean): CSSProperties => ({
+  background: t.module,
+  border: `1px solid ${t.moduleBorder}`,
+  borderRadius: 8,
+  boxShadow: t.moduleShadow,
+  padding: 16,
+  boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
+  gap: 12,
+  minWidth: 0,
+  /* A step a chip or an address named is the selected recipe for 1.2s: an edge and a ring, never a colour. */
+  ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
+});
+
+const tileStyle: CSSProperties = {
+  background: t.tile,
+  border: `1px solid ${t.tileBorder}`,
+  borderRadius: 6,
+  boxSizing: "border-box",
+  minWidth: 0,
+};
+
+/** A reference: 22 high, the tile's fill, radius 4, 11.5. */
+const chipStyle: CSSProperties = {
+  ...tileStyle,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  height: 22,
+  padding: "0 8px",
+  borderRadius: 4,
+  ...text(11.5, 400, t.text),
+  whiteSpace: "nowrap",
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+function Chip({ children }: { children: ReactNode }) {
+  return <span style={chipStyle}>{children}</span>;
+}
+
+/** The step's number in a 24 control tile, Geist Mono 11. */
+function NumberTile({ children, wide }: { children: ReactNode; wide?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        ...CONTROL,
+        flexShrink: 0,
+        minWidth: 24,
+        height: 24,
+        padding: wide ? "0 6px" : 0,
+        boxSizing: "border-box",
+        borderRadius: 6,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: DM_MONO,
+        fontSize: 11,
+        lineHeight: "normal",
+        color: t.text,
+        ...tnum,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** A secondary 26 that is a link: Download. */
+function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <a
+      href={href}
+      download={name}
+      data-hit=""
+      aria-label={`${label} ${name}`}
+      {...handlers}
+      style={{
+        ...controlPaint(state),
+        height: 26,
+        boxSizing: "border-box",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 12px",
+        borderRadius: 6,
+        ...text(12.5, 500, t.text),
+        whiteSpace: "nowrap",
+        textDecoration: "none",
+        flexShrink: 0,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+
+function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone }: { label?: string; what: string; text: string; onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }) {
+  const [, confirm] = useConfirmed();
+  return (
+    <Button
+      variant="secondary"
+      size={phone ? 44 : 28}
+      fontSize={12}
+      aria-label={`${label} ${what}`}
+      style={phone ? undefined : { height: 26 }}
+      onClick={async () => {
+        if (await onCopy(words)) {
+          confirm();
+          announce("Copied");
+        }
+      }}
+    >
+      {label}
+    </Button>
+  );
+}
+
+/** An underlined text button: "Read all of it", "See the team in Map". */
+function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; label?: string }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      data-hit=""
+      onClick={onRead}
+      {...handlers}
+      style={{
+        ...bareButton,
+        height: 24,
+        ...text(12.5, 500, t.text),
+        textDecoration: "underline",
+        textUnderlineOffset: 3,
+        textDecorationColor: state.hovered ? t.text2 : t.line,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+/** The text at 13.5/22 indented 36: four lines, then "Read all of it" and the word count. */
+function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step; onRead: () => void; alone?: boolean; indent?: number }) {
+  const long = isLong(step);
+  if (!step.text) return null;
+  return (
+    <>
+      <p
+        data-testid="step-text"
+        style={{
+          ...text(13.5, 400, t.text),
+          margin: 0,
+          paddingLeft: indent,
+          lineHeight: "22px",
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
+        }}
+      >
+        {step.text}
+      </p>
+      {long ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
+          <ReadAll onRead={onRead} />
+          <span style={text(11.5, 400, t.label, tnum)}>{step.words} words</span>
+        </div>
+      ) : alone ? (
+        <div style={{ ...text(11.5, 400, t.label, tnum), paddingLeft: indent }}>{step.words} words</div>
+      ) : null}
+    </>
+  );
+}
+
+/* ── the paste-ins ── */
+
+/** A paste-in: the what-line and the reference chip, one control that goes to the step it comes from. */
+function PasteRow({ text: what, title, phone, onGo }: { text: string; title: string; phone: boolean; onGo: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
+  return (
+    <button
+      type="button"
+      onClick={onGo}
+      {...handlers}
+      style={{
+        ...bareButton,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        minHeight: phone ? 44 : 32,
+        minWidth: 0,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <span style={text(12.5, 400, t.text2)}>{what}</span>
+      <span style={{ ...chipStyle, background: state.hovered ? t.controlOn : t.tile }}>{title}</span>
+    </button>
+  );
+}
+
+/** "Paste in" and its rows, then "attach" with its Download. Outside an agent or a team only. */
+function Inputs({ entry, phone, go }: { entry: ReaderStep; phone: boolean; go: (id: string) => void }) {
+  if (entry.pasteIns.length === 0 && entry.attach.length === 0) return null;
+  return (
+    <div style={{ ...tileStyle, marginLeft: INDENT, padding: "8px 12px", display: "flex", flexDirection: "column" }}>
+      <Eyebrow style={{ padding: "4px 0" }}>Paste in</Eyebrow>
+      {entry.pasteIns.map((paste) => (
+        <PasteRow key={paste.stepId} text={paste.text} title={paste.title} phone={phone} onGo={() => go(paste.stepId)} />
+      ))}
+      {entry.attach.map((file) => (
+        <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+          <span style={text(12.5, 400, t.text2)}>attach</span>
+          <Chip>{file.name}</Chip>
+          <span style={{ flexGrow: 1 }} />
+          <AttachDownload file={file} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AttachDownload({ file }: { file: ReaderFile }) {
+  return file.download ? <DownloadButton href={file.download} name={file.name} /> : null;
+}
+
+/* ── the heads ── */
+
+/** A group's head: the tool's mark (or a 6px square where there is none), the heading, its meta and a hairline. */
+function Head({ children, detail, tool, model }: { children: ReactNode; detail?: ReactNode; tool?: string | null; model?: string | null }) {
+  const marked = markFor({ tool, model }) !== null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8, minWidth: 0 }}>
+      {marked ? (
+        <span style={{ display: "inline-flex", color: t.text }}>
+          <ModelMark tool={tool} model={model} size={20} />
+        </span>
+      ) : (
+        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 1, background: t.label, flexShrink: 0 }} />
+      )}
+      <span style={{ ...text(13, 500, t.text), whiteSpace: "nowrap", flexShrink: 0 }}>{children}</span>
+      {detail ? (
+        <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{detail}</span>
+      ) : null}
+      <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
+    </div>
+  );
+}
+
+/* ── the modules ── */
+
+interface Ctx {
+  view: StepsListProps["view"];
+  phone: boolean;
+  announce: (text: string) => void;
+  ringed: string | null;
+  go: (id: string) => void;
+  read: (id: string) => void;
+  seeMap?: (id: string) => void;
+}
+
+function Title({ entry, right }: { entry: ReaderStep; right: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      <NumberTile>{entry.step.number}</NumberTile>
+      <h3
+        style={{
+          ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text),
+          margin: 0,
+          flexGrow: 1,
+          minWidth: 0,
+          letterSpacing: "-0.005em",
+          overflowWrap: "anywhere",
+        }}
+      >
+        {entry.title}
+      </h3>
+      {right}
+    </div>
+  );
+}
+
+function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
+  const { step } = entry;
+  const { view, phone, announce } = ctx;
+  const ringed = ctx.ringed === step.id;
+
+  if (entry.manual) {
+    /* Done by hand: nothing to copy. The tile's fill tells it from a prompt. */
+    return (
+      <article
+        id={stepDomId(step.id)}
+        data-testid="step-card"
+        data-step={step.number}
+        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder }}
+      >
+        <Title entry={entry} right={null} />
+        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{entry.manual.headline}</div>
+        <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
+        {entry.manual.mediaId ? (
+          <div style={{ paddingLeft: INDENT }}>
+            <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
+          </div>
+        ) : null}
+      </article>
+    );
+  }
+
+  return (
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
+      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
+      <Inputs entry={entry} phone={phone} go={ctx.go} />
+      {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
+    </article>
+  );
+}
+
+/** One agent or one prompt inside a team or an agent: a tile, with its "Uses" and where it goes. */
+function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
+  const { step } = entry;
+  const { view, phone, announce } = ctx;
+  const instructions = isInstructions(entry);
+  const repeats = entry.runs && step.runs && step.runs.how !== "once";
+  const nested = entry.children.filter((child) => !isInstructions(child));
+  const ringed = ctx.ringed === step.id;
+  return (
+    <>
+      <article
+        id={stepDomId(step.id)}
+        data-testid="inner-card"
+        data-step={step.number}
+        style={{
+          ...tileStyle,
+          padding: 12,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+          <NumberTile wide>{step.number}</NumberTile>
+          <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
+          {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
+          {repeats ? <Chip>{entry.runs}</Chip> : null}
+          <span style={{ flexGrow: 1 }} />
+          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
+        </div>
+        <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
+        {entry.uses.length > 0 ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <Eyebrow>Uses</Eyebrow>
+            {entry.uses.map((use) => {
+              const file = entry.attach.find((candidate) => candidate.name === use);
+              const tool = entry.tools.find((candidate) => use === `${candidate.name} · tool`);
+              return (
+                <span key={use} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Chip>
+                    {tool ? tool.name : use}
+                    {tool ? <span style={text(11, 400, t.label)}>tool</span> : null}
+                  </Chip>
+                  {file?.download ? <DownloadButton href={file.download} name={file.name} /> : null}
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
+        {entry.goesInto.length > 0 ? (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+            <Eyebrow>Goes into</Eyebrow>
+            {entry.goesInto.map((target) => (
+              <Chip key={target}>{target}</Chip>
+            ))}
+          </div>
+        ) : null}
+      </article>
+      {nested.map((child) => (
+        <InnerCard key={child.step.id} entry={child} ctx={ctx} />
+      ))}
+    </>
+  );
+}
+
+/** An agent or a team: its module, with its sub-steps inside it. */
+function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
+  const { step } = entry;
+  const { view, phone, announce } = ctx;
+  const team = step.kind === "team";
+  const agents = entry.children.filter((child) => child.step.kind === "agent").length;
+  const line = [team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent", entry.madeIn].filter(Boolean).join(" · ");
+  return (
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ctx.ringed === step.id)}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
+        {entry.runs ? <Chip>{entry.runs}</Chip> : null}
+        <span style={{ flexGrow: 1 }} />
+        <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
+      </div>
+      <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
+      <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
+        {entry.children.map((child) => (
+          <InnerCard key={child.step.id} entry={child} ctx={ctx} />
+        ))}
+      </div>
+      {ctx.seeMap ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: INDENT }}>
+          <ReadAll label={`See the ${team ? "team" : "agent"} in Map`} onRead={() => ctx.seeMap?.(step.id)} />
+          <span style={text(11.5, 400, t.label)}>shows who passes work to whom</span>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
+  const { view } = ctx;
+  const name = result.url ? (
+    <a href={result.url} target="_blank" rel="noopener noreferrer" data-hit="" style={{ ...text(14, 500, t.text), textDecoration: "none", overflowWrap: "anywhere" }}>
+      {result.title}
+    </a>
+  ) : (
+    <span style={{ ...text(14, 500, t.text), overflowWrap: "anywhere" }}>{result.title}</span>
+  );
+  return (
+    <article data-testid="result-card" style={moduleStyle(false)}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 6,
+            background: t.evidenceFill,
+            color: t.evidence,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Glyph name="check" size={14} />
+        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span style={text(11.5, 400, t.label)}>Result</span>
+          {name}
+        </div>
+        {result.from ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>from step {result.from}</span> : null}
+      </div>
+      {result.mediaId ? <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} /> : null}
+    </article>
+  );
+}
+
+/* ── The build ── */
+
+/** A group on the page: a head and what follows it until the next head. */
+interface Group {
+  key: string;
+  head: ReactNode;
+  entries: ReaderStep[];
+}
+
+function groupsOf(steps: readonly ReaderStep[]): Group[] {
+  const groups: Group[] = [];
+  for (const entry of steps) {
+    const chat = entry.chat?.kind === "new" ? entry.chat : null;
+    if (chat) {
+      groups.push({
+        key: `chat:${entry.step.id}`,
+        head: (
+          <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
+            {chat.headline}
+          </Head>
+        ),
+        entries: [],
+      });
+    }
+    if (isContainer(entry)) {
+      groups.push({
+        key: `made:${entry.step.id}`,
+        head: <Head detail={entry.runsByItself}>{entry.step.kind === "team" ? "The team these made" : "The agent these made"}</Head>,
+        entries: [entry],
+      });
+      continue;
+    }
+    if (groups.length === 0) groups.push({ key: `steps:${entry.step.id}`, head: null, entries: [] });
+    groups[groups.length - 1].entries.push(entry);
+  }
+  return groups;
+}
+
+const column = (gap: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap, minWidth: 0 });
+
 export function StepsList({ view, phone, announce }: StepsListProps) {
   const { steps, results } = view;
   const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
 
-  const rows = steps.map((entry) => {
-    const chat = entry.chat?.kind === "new" ? entry.chat : null;
-    return (
-      <div key={entry.step.id}>
-        {chat ? <Head detail={chat.detail}>{chat.headline}</Head> : null}
-        {isContainer(entry) ? (
-          <>
-            <Head detail={entry.runsByItself}>{entry.step.kind === "team" ? "The team these made" : "The agent these made"}</Head>
-            <ContainerCard entry={entry} ctx={ctx} />
-          </>
-        ) : (
-          <StepCard entry={entry} ctx={ctx} />
-        )}
-      </div>
-    );
-  });
-
   return (
-    <div data-testid="build-steps">
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "12px 0 0" }}>
+    <div data-testid="build-steps" style={column(16)}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
         {view.mapAvailable && !phone ? (
           <Segmented<"list" | "map">
             label="How to look at the build"
@@ -598,28 +749,39 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
               if (next === "list") setStart(null);
               setLens(next);
             }}
-            size={30}
+            size={28}
             fontSize={12}
           />
         ) : null}
-        <span style={mono(12)}>{view.counts}</span>
+        <span style={text(12, 400, t.text2, tnum)}>{view.counts}</span>
         {phone ? null : (
-          <span style={{ ...mono(11.5), marginLeft: "auto", textAlign: "right" }}>{map ? "click a box to read it · Esc clears" : headNote(steps)}</span>
+          <>
+            <span style={{ flexGrow: 1 }} />
+            <span style={{ ...text(12, 400, t.label), textAlign: "right" }}>{map ? "click a box to read it · Esc clears" : headNote(steps)}</span>
+          </>
         )}
       </div>
       {map ? (
-        <Suspense fallback={<div role="status" style={{ ...mono(12), padding: "24px 0" }}>Drawing the map…</div>}>
+        <Suspense fallback={<div role="status" style={{ ...text(12, 400, t.text2), padding: "24px 0" }}>Drawing the map…</div>}>
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
         </Suspense>
-      ) : null}
-      {map ? null : rows}
+      ) : (
+        groupsOf(steps).map((group) => (
+          <div key={group.key} style={column(8)}>
+            {group.head}
+            {group.entries.map((entry) =>
+              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
+            )}
+          </div>
+        ))
+      )}
       {map || results.length === 0 ? null : (
-        <>
+        <div style={column(8)}>
           <Head>Result</Head>
           {results.map((result) => (
             <ResultCard key={result.id} result={result} ctx={ctx} />
           ))}
-        </>
+        </div>
       )}
       <FullPromptWindow
         steps={raw}
@@ -644,40 +806,37 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
   const shown = all ? group.rows : group.rows.slice(0, NEED_ROWS);
   const more = group.rows.length - shown.length;
   return (
-    <section aria-label={group.label} style={{ marginTop: 14 }}>
-      <div style={{ ...mono(11), textTransform: "uppercase", letterSpacing: "0.08em" }}>{group.label}</div>
-      <div style={{ marginTop: 6 }}>
-        {shown.map((row, index) => (
-          <div
-            key={`${row.title}:${index}`}
-            id={row.id ? needDomId(row.id) : undefined}
-            data-testid="need-row"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, padding: "9px 0", borderTop: `1px solid ${t.hairline}` }}
-          >
-            <div style={{ minWidth: 0 }}>
-              {row.id ? (
-                <button
-                  type="button"
-                  onClick={() => onOpen(row)}
-                  style={{ background: "none", border: 0, padding: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text, cursor: "pointer", textAlign: "left" }}
-                >
-                  {row.title}
-                </button>
-              ) : (
-                <div style={{ fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text, overflowWrap: "anywhere" }}>{row.title}</div>
-              )}
-              {row.detail ? <div style={{ ...mono(12), marginTop: 2 }}>{row.detail}</div> : null}
-            </div>
-            {group.key === "files" && row.download ? <FileDownload row={row} /> : null}
-          </div>
-        ))}
-      </div>
-      {more > 0 ? (
-        <button
-          type="button"
-          onClick={() => setAll(true)}
-          style={{ background: "none", border: 0, padding: "6px 0 0", fontFamily: FIGTREE, fontSize: 12, color: t.action, cursor: "pointer" }}
+    <section aria-label={group.label} style={{ display: "flex", flexDirection: "column" }}>
+      <Eyebrow as="div" style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
+        {group.label}
+      </Eyebrow>
+      {shown.map((row, index) => (
+        <div
+          key={`${row.title}:${index}`}
+          id={row.id ? needDomId(row.id) : undefined}
+          data-testid="need-row"
+          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, padding: "6px 0", boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` }}
         >
+          {group.key === "tools" && markFor({ tool: row.title, model: row.title }) !== null ? (
+            <span style={{ display: "inline-flex", color: t.text }}>
+              <ModelMark tool={row.title} model={row.title} size={28} />
+            </span>
+          ) : null}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+            {row.id ? (
+              <button type="button" onClick={() => onOpen(row)} style={{ ...bareButton, ...text(13, 500, t.text) }}>
+                {row.title}
+              </button>
+            ) : (
+              <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
+            )}
+            {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
+          </div>
+          {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}
+        </div>
+      ))}
+      {more > 0 ? (
+        <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12.5, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           Show {more} more
         </button>
       ) : null}
@@ -685,56 +844,24 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
   );
 }
 
-function FileDownload({ row }: { row: NeedRow }) {
-  const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  return (
-    <a
-      href={row.download ?? undefined}
-      download={row.title}
-      aria-label={`Download ${row.title}`}
-      {...handlers}
-      style={{
-        width: 28,
-        height: 28,
-        flexShrink: 0,
-        borderRadius: 8,
-        border: `1px solid ${t.line}`,
-        background: t.glass2,
-        color: t.text,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        ...ring(state.focusVisible),
-      }}
-    >
-      <Download size={14} strokeWidth={1.8} aria-hidden="true" />
-    </a>
-  );
-}
-
 /** The column to the right of The build: tools and models, files, how it runs, time and other parts. */
-export interface NeedPanelProps {
-  view: BuildStepsView;
-  onOpenOther: (id: string) => void;
-}
-
 export function NeedPanel({ view, onOpenOther }: NeedPanelProps) {
   const total = view.steps.length;
   const single = total === 1 && !view.steps.some(isContainer);
   return (
-    <Panel padding="16px 16px">
-      <div data-testid="build-need">
-        <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 17, fontWeight: 600, lineHeight: "normal", color: t.text }}>What you need</h2>
-        <div style={{ ...mono(12), marginTop: 3 }}>to repeat this build</div>
-        {view.need.map((group) => (
-          <NeedGroupBlock key={group.key} group={group} onOpen={(row) => row.id && onOpenOther(row.id)} />
-        ))}
-        <p style={{ ...mono(12), margin: "16px 0 0", paddingTop: 12, borderTop: `1px solid ${t.hairline}`, lineHeight: 1.5 }}>
-          {single
-            ? "One prompt, so there is no map. Map appears once a build has two sessions or an agent."
-            : `Copy for AI copies all ${total} ${total === 1 ? "step" : "steps"} in order, with each new chat and paste-in written out.`}
-        </p>
+    <div data-testid="build-need" style={column(16)}>
+      <div style={column(4)}>
+        <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>What you need</h2>
+        <p style={{ ...text(12, 400, t.text2), margin: 0 }}>to repeat this build</p>
       </div>
-    </Panel>
+      {view.need.map((group) => (
+        <NeedGroupBlock key={group.key} group={group} onOpen={(row) => row.id && onOpenOther(row.id)} />
+      ))}
+      <p style={{ ...text(12, 400, t.text2), margin: 0, lineHeight: "18px" }}>
+        {single
+          ? "One prompt, so there is no map. Map appears once a build has two sessions or an agent."
+          : `Copy for AI copies all ${total} ${total === 1 ? "step" : "steps"} in order, with each new chat and paste-in written out.`}
+      </p>
+    </div>
   );
 }

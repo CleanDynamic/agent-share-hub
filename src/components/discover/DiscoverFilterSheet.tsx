@@ -74,7 +74,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         fontSize: 10,
         fontWeight: 600,
         textTransform: 'uppercase',
@@ -103,7 +103,7 @@ function Chip({
       onClick={onClick}
       className="flex items-center"
       style={{
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         fontSize: 11,
         fontWeight: 500,
         padding: '3px 8px',
@@ -181,7 +181,7 @@ function TagInput({
             key={tag}
             className="flex items-center"
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               fontWeight: 500,
               padding: '2px 6px',
@@ -223,7 +223,7 @@ function TagInput({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 12,
               color: 'var(--text)',
             }}
@@ -255,7 +255,7 @@ function TagInput({
                 display: 'block',
                 width: '100%',
                 textAlign: 'left',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 12,
                 color: 'var(--text)',
                 background: 'transparent',
@@ -325,7 +325,7 @@ function ExpandableChipList({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               color: 'var(--text)',
             }}
@@ -343,7 +343,7 @@ function ExpandableChipList({
             onClick={() => setExpanded(true)}
             className="flex items-center"
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               fontWeight: 500,
               color: 'var(--text2)',
@@ -365,7 +365,7 @@ function ExpandableChipList({
             }}
             className="flex items-center"
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               fontWeight: 500,
               color: 'var(--text2)',
@@ -468,7 +468,7 @@ export function DiscoverFilterSheet({
         >
           <span
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 14,
               fontWeight: 600,
               color: 'var(--text)',
@@ -507,7 +507,7 @@ export function DiscoverFilterSheet({
                 </div>
                 <span
                   style={{
-                    fontFamily: 'Figtree, sans-serif',
+                    fontFamily: 'var(--font-ui)',
                     fontSize: 10,
                     color: 'var(--text2)',
                     marginTop: 2,
@@ -553,7 +553,7 @@ export function DiscoverFilterSheet({
               </div>
               <span
                 style={{
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: 10,
                   color: 'var(--text2)',
                   marginTop: 2,
@@ -737,7 +737,7 @@ export function DiscoverFilterSheet({
           <button
             onClick={onReset}
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 13,
               fontWeight: 500,
               color: 'var(--text2)',
@@ -753,7 +753,7 @@ export function DiscoverFilterSheet({
           <button
             onClick={onApply}
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 13,
               fontWeight: 600,
               color: 'white',

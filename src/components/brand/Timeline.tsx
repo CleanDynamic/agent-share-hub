@@ -26,13 +26,10 @@
 // step up: the time 11px, the kind 10px, the text 14px.
 
 import type { EventKind } from "@/lib/build";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { Eyebrow } from "./Eyebrow";
-
-import { useRoom } from "./useRoom";
 
 export interface TimelineEvent {
   kind: EventKind;
@@ -121,67 +118,8 @@ function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "labe
   );
 }
 
-export function Timeline({ events, label = "Events", size = "desktop" }: TimelineProps) {
-  const refined = useLook() === "refined";
-  const dusk = useRoom() === "dusk";
-  const phone = size === "phone";
-  if (refined) return <RefinedTimeline events={events} label={label} />;
-
-  return (
-    <div data-ui="timeline" style={{ position: "relative" }}>
-      <span
-        aria-hidden="true"
-        style={{ position: "absolute", left: 5, top: 6, bottom: 16, width: 1, background: t.line }}
-      />
-      <ol aria-label={label} style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {events.map((event, i) => (
-          <li
-            key={i}
-            data-event-kind={event.kind}
-            style={{
-              display: "grid",
-              gridTemplateColumns: phone ? "16px 48px minmax(0, 1fr)" : "16px 44px minmax(0, 1fr)",
-              /* UI-P54, the density pass: 10 and 14 before; the tracks, the
-                 dots and the rail's position are not in the table. */
-              gap: 7,
-              alignItems: "start",
-              position: "relative",
-              paddingBottom: 10,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 11,
-                height: 11,
-                borderRadius: "50%",
-                backgroundColor: DOT[event.kind],
-                marginTop: 3,
-                boxShadow: dusk ? `0 0 10px ${DOT[event.kind]}` : undefined,
-              }}
-            />
-            <span style={{ fontFamily: DM_MONO, fontSize: phone ? 11 : 10, color: t.label, marginTop: phone ? 0 : 2 }}>
-              {event.at}
-            </span>
-            <div>
-              <div
-                style={{
-                  fontFamily: DM_MONO,
-                  fontSize: 10,
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
-                  color: INK[event.kind],
-                }}
-              >
-                {event.kind}
-              </div>
-              <div style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 12, color: t.text, marginTop: 2 }}>{event.text}</div>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
+export function Timeline({ events, label = "Events" }: TimelineProps) {
+  return <RefinedTimeline events={events} label={label} />;
 }
 
 export default Timeline;

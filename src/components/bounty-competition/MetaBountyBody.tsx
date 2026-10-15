@@ -22,7 +22,7 @@ export function MetaBountyBody({ meta, viewerId, onPledged }: Props) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <h2
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 16,
           fontWeight: 700,
           color: "var(--text)",
@@ -98,7 +98,7 @@ function SubBountyRow({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.05em",
@@ -125,7 +125,7 @@ function SubBountyRow({
           </div>
           <h3
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 14,
               fontWeight: 600,
               color: "var(--text)",
@@ -137,7 +137,7 @@ function SubBountyRow({
           {sub.description && (
             <p
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 12,
                 color: "var(--text2)",
                 margin: 0,
@@ -157,7 +157,7 @@ function SubBountyRow({
               border: "1px solid color-mix(in srgb, var(--cat-configuration) 30%, transparent)",
               borderRadius: 8,
               padding: "8px 14px",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
@@ -178,7 +178,7 @@ function SubBountyRow({
               border: "none",
               borderRadius: 8,
               padding: "8px 16px",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
@@ -195,7 +195,7 @@ function SubBountyRow({
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             color: "var(--text2)",
             marginBottom: 4,
@@ -322,7 +322,7 @@ function PledgeModal({
         >
           <h3
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 16,
               fontWeight: 700,
               color: "var(--text)",
@@ -349,7 +349,7 @@ function PledgeModal({
         <div style={{ marginBottom: 14 }}>
           <label
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 600,
               color: "var(--text2)",
@@ -371,7 +371,7 @@ function PledgeModal({
                 background: "var(--recess)",
                 border: "1px solid var(--line)",
                 borderRadius: 8,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 color: "var(--text)",
               }}
@@ -385,7 +385,7 @@ function PledgeModal({
                 background: "var(--recess)",
                 border: "1px solid var(--line)",
                 borderRadius: 8,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 color: "var(--text)",
               }}
@@ -404,7 +404,7 @@ function PledgeModal({
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 13,
             color: "var(--text2)",
             marginBottom: 20,
@@ -431,7 +431,7 @@ function PledgeModal({
             color: "white",
             border: "none",
             borderRadius: 8,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 14,
             fontWeight: 600,
             cursor: submitting ? "not-allowed" : "pointer",

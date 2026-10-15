@@ -26,7 +26,7 @@
 // 1280 column's edges, so they stay.
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
+import { Bell, Moon, Search, Sun } from "lucide-react";
 import { memo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -40,12 +40,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { countDraftBuilds } from "@/lib/build/sessions";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { GLASS_BLUR, MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
+import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { BottomSheet } from "./BottomSheet";
 import { FrameLink } from "./FrameLink";
@@ -78,15 +77,6 @@ export interface SiteHeaderViewProps {
   searchInitial?: string;
 }
 
-const linkBase: CSSProperties = {
-  position: "relative",
-  height: 52,
-  display: "flex",
-  alignItems: "center",
-  fontFamily: FIGTREE,
-  fontSize: 13,
-};
-
 /* THE HEADER BETWEEN THE BOARDS (UI-P39). The reference draws 1280 and nothing
    else, so below it the header gives ground in steps and drops nothing:
    ≥1260 is the reference's gaps; 960–1259 tightens them; below 960 tightens
@@ -108,39 +98,6 @@ const visuallyHidden: CSSProperties = {
   clip: "rect(0 0 0 0)",
   whiteSpace: "nowrap",
 };
-
-const badge: CSSProperties = {
-  position: "absolute",
-  top: -4,
-  right: -4,
-  minWidth: 16,
-  height: 16,
-  borderRadius: 8,
-  background: t.action,
-  color: t.onAction,
-  fontFamily: DM_MONO,
-  fontSize: 10,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  boxSizing: "border-box",
-  padding: "0 3px",
-};
-
-const draftsBadge: CSSProperties = {
-  marginLeft: 4,
-  padding: "0 4px",
-  borderRadius: 6,
-  background: t.cell,
-  color: t.text2,
-  fontFamily: DM_MONO,
-  fontSize: 11,
-  lineHeight: "15px",
-};
-
-function Lamp({ width, place }: { width: number; place: CSSProperties }) {
-  return <span aria-hidden="true" style={{ position: "absolute", width, height: 6, borderRadius: "50%", background: t.lit, boxShadow: t.navLampGlow, ...place }} />;
-}
 
 function AccountMenu({ viewer, onSignOut, avatarSize = 34 }: { viewer: FrameViewer; onSignOut: () => void; avatarSize?: number }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
@@ -278,7 +235,6 @@ function RefinedSiteHeaderView({
     <header
       data-testid="site-header"
       data-ui="site-header"
-      data-look="refined"
       style={{
         width: "100%",
         maxWidth: 1440,
@@ -412,155 +368,7 @@ function RefinedSiteHeaderView({
 }
 
 export function SiteHeaderView(props: SiteHeaderViewProps) {
-  const refined = useLook() === "refined";
-  return refined ? <RefinedSiteHeaderView {...props} /> : <CurrentSiteHeaderView {...props} />;
-}
-
-function CurrentSiteHeaderView({
-  current,
-  activityCurrent = false,
-  unread,
-  drafts = 0,
-  viewer,
-  theme,
-  onToggleTheme,
-  onSignIn,
-  onSignOut,
-  onNewBuild,
-  newBuildSecondary = false,
-  onSearch,
-  searchInitial,
-}: SiteHeaderViewProps) {
-  const wide = useMinWidth(1328);
-  const full = useMinWidth(FULL_MIN);
-  const compact = !useMinWidth(MID_MIN);
-  const searchFull = useMinWidth(SEARCH_FULL_MIN);
-  const searchField = useMinWidth(SEARCH_FIELD_MIN);
-  const newLabel = useMinWidth(NEW_LABEL_MIN);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const signedIn = viewer !== null;
-  const gap = full ? 20 : compact ? 6 : 10;
-  const linkPad = full ? "0 10px" : compact ? "0 6px" : "0 7px";
-  const unreadLabel = unread > 9 ? "9+" : String(unread);
-
-  return (
-    <header
-      data-testid="site-header"
-      data-ui="site-header"
-      style={{
-        position: "relative",
-        /* 52 and then the 1px edge, as the board draws it: 53 in all. */
-        height: 52,
-        boxSizing: "content-box",
-        background: t.header,
-        borderBottom: `1px solid ${t.headerBorder}`,
-        backdropFilter: GLASS_BLUR,
-        WebkitBackdropFilter: GLASS_BLUR,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1280,
-          margin: "0 auto",
-          height: 52,
-          display: "flex",
-          alignItems: "center",
-          gap,
-          padding: wide ? 0 : compact ? "0 16px" : "0 24px",
-          boxSizing: "border-box",
-        }}
-      >
-        <Lockup size={21} to={SITE_NAV.home} />
-
-        <nav aria-label="Primary" style={{ display: "flex", alignItems: "center" }}>
-          {PRIMARY_LINKS.filter((link) => !link.authOnly || signedIn).map((link) => {
-            const isCurrent = link.key === current;
-            return (
-              <FrameLink
-                key={link.key}
-                to={link.href}
-                aria-current={isCurrent ? "page" : undefined}
-                style={{ ...linkBase, padding: linkPad, fontWeight: isCurrent ? 600 : 500, color: isCurrent ? t.text : t.text2 }}
-              >
-                {link.label}
-                {link.key === "drafts" && drafts > 0 && (
-                  <span data-testid="drafts-count" style={draftsBadge}>{drafts}</span>
-                )}
-                {isCurrent && <Lamp width={26} place={{ left: "50%", marginLeft: -13, bottom: -1 }} />}
-              </FrameLink>
-            );
-          })}
-        </nav>
-
-        <span style={{ flexGrow: 1 }} />
-
-        {searchField ? (
-          <HeaderSearch onSubmit={onSearch ?? (() => undefined)} initialValue={searchInitial} width={searchFull ? 280 : 200} />
-        ) : (
-          <IconButton icon={Search} label="Search" size={38} onClick={() => setSearchOpen(true)} />
-        )}
-
-        <Button variant={newBuildSecondary ? "secondary" : "primary"} size={38} icon={Plus} onClick={onNewBuild} style={newLabel ? undefined : { width: 31, padding: 0 }}>
-          {newLabel ? "New build" : <span style={visuallyHidden}>New build</span>}
-        </Button>
-
-        {signedIn && (
-          <FrameLink
-            to={SITE_NAV.activity}
-            aria-label={unread > 0 ? `Activity, ${unread} unread` : "Activity"}
-            aria-current={activityCurrent ? "page" : undefined}
-            style={{
-              position: "relative",
-              width: 31,
-              height: 31,
-              borderRadius: r.control,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: t.text,
-              background: activityCurrent ? t.tab : "transparent",
-              border: `1px solid ${t.line}`,
-              boxSizing: "border-box",
-            }}
-          >
-            <Bell size={17} strokeWidth={1.6} aria-hidden="true" />
-            {unread > 0 && <span aria-hidden="true" style={badge}>{unreadLabel}</span>}
-          </FrameLink>
-        )}
-
-        <IconButton
-          size={38}
-          icon={theme === "dusk" ? Moon : Sun}
-          label={theme === "dusk" ? "Theme: Dusk" : "Theme: Noon"}
-          onClick={onToggleTheme}
-        />
-
-        {viewer ? (
-          <AccountMenu viewer={viewer} onSignOut={onSignOut} />
-        ) : (
-          <Button variant="secondary" size={38} onClick={onSignIn}>
-            Sign in
-          </Button>
-        )}
-      </div>
-
-      {searchField ? null : (
-        <BottomSheet open={searchOpen} onOpenChange={setSearchOpen} title="Search">
-          <HeaderSearch
-            variant="sheet"
-            autoFocus
-            initialValue={searchInitial}
-            onSubmit={(query) => {
-              const used = onSearch?.(query);
-              if (used) setSearchOpen(false);
-              return used;
-            }}
-          />
-        </BottomSheet>
-      )}
-    </header>
-  );
+  return <RefinedSiteHeaderView {...props} />;
 }
 
 /** The container: the route, the reader, the theme and the unread count, around the pure view. */

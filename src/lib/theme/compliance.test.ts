@@ -53,7 +53,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { resolveRefined } from "./refined";
+import { resolveToken as resolveRefined } from "./resolve";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -82,15 +82,13 @@ const CATEGORIES: Category[] = [
   {
     why:
       "THE THEME LAYER ITSELF — tier one of two, and the one place a value is " +
-      "allowed to be a value. primitives.ts names the raw colours and is " +
-      "referenced by nothing but semantics.ts; elevation.ts holds the two " +
-      "per-theme shadows; refined.ts holds the refined look's values " +
-      "(UI-P79); index.css declares the token blocks those generate. A sweep that emptied these would have nowhere left to put " +
+      "allowed to be a value. semantics.ts holds the colours (the refined look's, " +
+      "since UI-P99 the only ones); elevation.ts holds the two per-theme " +
+      "shadows; index.css declares the token blocks those generate. A sweep that emptied these would have nowhere left to put " +
       "the palette. css-parity.test.ts holds index.css to the modules.",
     match: (p) =>
-      p === "src/lib/theme/primitives.ts" ||
+      p === "src/lib/theme/semantics.ts" ||
       p === "src/lib/theme/elevation.ts" ||
-      p === "src/lib/theme/refined.ts" ||
       p === "src/index.css",
   },
   {
@@ -137,25 +135,14 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "here, it is not a brand wedge.",
   },
   "src/components/brand/Avatar.tsx": {
-    max: 7,
+    max: 6,
     why:
-      "THE SIX AVATAR HUES AND THEIR INITIALS' INK — artwork, identical in both " +
+      "THE SIX AVATAR HUES — artwork, identical in both " +
       "themes, so not tokens: a person keeps their colour in either room, and " +
       "design/tokens/token-map.md names the arrangement (fixed values on " +
-      "artwork live as named constants in the component that owns them). Six " +
-      "hues plus the one near-white ink. THE CAP IS 7 BECAUSE THAT IS ALL THERE " +
+      "artwork live as named constants in the component that owns them). " +
+      "THE CAP IS 6 BECAUSE THAT IS ALL THERE " +
       "IS: a seventh hue is a design decision, not a mechanical one.",
-  },
-  "src/components/brand/orb.ts": {
-    max: 2,
-    why:
-      "THE ORBS' TWO NEUTRAL SHADOWS — the white inner light (18%) along the glass " +
-      "orb's upper edge and the black drop shadow (25%) every orb casts. Both are " +
-      "identical in Noon and Dusk and sit on artwork, so they are not tokens: " +
-      "design/tokens/token-map.md names exactly these two as named constants in " +
-      "the component that owns them. Everything theme-dependent on an orb — the " +
-      "ground, the edge, every ink — is a token. THE CAP IS 2 BECAUSE THAT IS " +
-      "ALL THERE IS.",
   },
   "src/components/bounty/MissingWindow.tsx": {
     max: 2,
@@ -536,26 +523,14 @@ describe("colour compliance across src/", () => {
   });
 });
 
-describe("the refined look's surfaces (UI-P79)", () => {
-  /* The current rules above hold for data-look absent, and they are scans of
-     src/, which refined.ts joins as theme-layer. These are the refined half:
-     no translucent glass, no gradient backdrop. */
+describe("the surfaces (UI-P79)", () => {
+  /* No translucent glass, no gradient backdrop: the module, the surface and the frame resolve to a flat colour. */
   const opaque = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
 
-  it.each(["noon", "dusk"] as const)("%s: glass, glass-fill and module are opaque; backdrop is flat", (theme) => {
-    for (const name of ["glass", "glass-fill", "module", "backdrop"]) {
+  it.each(["noon", "dusk"] as const)("%s: module, surface and frame are opaque", (theme) => {
+    for (const name of ["glass", "module", "surface", "frame"]) {
       const value = resolveRefined(theme, name);
       expect(opaque(value), `--${name} resolves to ${value}`).toBe(true);
-    }
-  });
-
-  it("repoints the glow, arc and orb tokens at flat values", () => {
-    for (const theme of ["noon", "dusk"] as const) {
-      for (const name of ["arc-1", "arc-2", "arc-3", "arc-haze", "arc-outer"]) {
-        expect(resolveRefined(theme, name)).toBe("transparent");
-      }
-      expect(resolveRefined(theme, "ambient")).toBe("linear-gradient(transparent, transparent)");
-      expect(resolveRefined(theme, "orb-glass")).toBe("linear-gradient(var(--module), var(--module))");
     }
   });
 });

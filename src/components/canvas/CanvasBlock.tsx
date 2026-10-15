@@ -306,7 +306,7 @@ export function CanvasBlock({
               fontSize: 12,
               color: 'var(--text2)',
               lineHeight: 1.5,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
             }}

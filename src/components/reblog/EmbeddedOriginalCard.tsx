@@ -56,7 +56,7 @@ function PostTypePill({ postType }: { postType: EmbeddedOriginalCardPost["postTy
   return (
     <span
       style={{
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: "9px",
         fontWeight: 600,
         letterSpacing: "0.06em",
@@ -107,7 +107,7 @@ function MetaRow({
       style={{
         marginTop: "6px",
         height: "16px",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: "10px",
         fontWeight: 400,
         color: "var(--text2)",
@@ -209,7 +209,7 @@ export function EmbeddedOriginalCard({
             />
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "12px",
                 fontWeight: 600,
                 color: "var(--text)",
@@ -222,7 +222,7 @@ export function EmbeddedOriginalCard({
             </span>
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "11px",
                 fontWeight: 400,
                 color: "var(--text2)",
@@ -239,7 +239,7 @@ export function EmbeddedOriginalCard({
           <div
             style={{
               marginTop: "6px",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: titleSize,
               fontWeight: 600,
               color: "var(--text)",
@@ -258,7 +258,7 @@ export function EmbeddedOriginalCard({
             <div
               style={{
                 marginTop: "2px",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "11px",
                 fontWeight: 400,
                 color: "var(--text2)",

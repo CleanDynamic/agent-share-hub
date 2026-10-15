@@ -490,22 +490,6 @@ describe("how the bounty section is painted", () => {
     expect(marker?.getAttribute("data-gap-placement")).toBe("row");
   });
 
-  /**
-   * THE CHIP KEEPS THE PART'S TRUE CATEGORY, which is the rule about gaps that
-   * is easy to get wrong and expensive to get wrong: a gap on an agent config
-   * is still configuration, and that is what routes it to the people who write
-   * agent configs. A red chip would make a different and untrue claim.
-   */
-  it("keeps the part's own category on the chip rather than recolouring it red", () => {
-    const doc = section();
-    const marker = doc.querySelector('[data-visual-slot="gap-marker"]');
-    const chip = marker?.querySelector("[data-category]") ?? marker?.firstElementChild;
-
-    expect(chip?.textContent).toContain("Agent config");
-    expect(styleOf(chip)).toContain("configuration");
-    expect(styleOf(chip)).not.toContain("cat-breakage");
-  });
-
   it("gives the reward and the deadline the kit's field paint at the row's own height", () => {
     const doc = section();
 

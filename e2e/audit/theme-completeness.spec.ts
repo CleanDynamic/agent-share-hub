@@ -71,6 +71,10 @@ function paletteOf(theme: Record<string, string>) {
     exact.add(n);
     rgbOnly.add(n.split(",").slice(0, 3).join(","));
   }
+  /* Black is the initial `fill` of every `<svg>` root, painted by nothing (the glyph's own paths set theirs). It is
+     the same in both rooms, so it can never be "the other room's only". Before UI-P99 the current look's shadow
+     tokens carried it in both palettes; the refined ones carry it in Noon alone. */
+  rgbOnly.add("0,0,0");
   return { exact, rgbOnly };
 }
 
@@ -92,9 +96,9 @@ test("BG-P30 — the leak detector fires on a planted single-room colour", async
     await openRoute(page, ROUTES[0], "noon");
     await page.evaluate(() => {
       const plant = document.createElement("p");
-      plant.id = "planted-dusk-salmon";
-      plant.textContent = "Dusk's salmon, on the Noon ground";
-      plant.style.color = "#D98C6B";
+      plant.id = "planted-dusk-ink";
+      plant.textContent = "Dusk's ink, on the Noon ground";
+      plant.style.color = "#EDEDEF";
       document.body.appendChild(plant);
     });
     const colours = await page.evaluate(collectColours);
@@ -102,9 +106,9 @@ test("BG-P30 — the leak detector fires on a planted single-room colour", async
       .map((c) => normalise(c.value))
       .filter((n): n is string => n !== null)
       .map((n) => n.split(",").slice(0, 3).join(","));
-    expect(planted).toContain("217,140,107");
-    expect(PALETTE.dusk.rgbOnly.has("217,140,107")).toBe(true);
-    expect(PALETTE.noon.rgbOnly.has("217,140,107")).toBe(false);
+    expect(planted).toContain("237,237,239");
+    expect(PALETTE.dusk.rgbOnly.has("237,237,239")).toBe(true);
+    expect(PALETTE.noon.rgbOnly.has("237,237,239")).toBe(false);
   } finally {
     await context.close();
   }

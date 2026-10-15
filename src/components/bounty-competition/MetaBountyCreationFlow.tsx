@@ -212,7 +212,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "var(--text)",
@@ -223,7 +223,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   color: "var(--text2)",
                   margin: "0 0 20px 0",
@@ -238,7 +238,7 @@ export function MetaBountyCreationFlow({
               <div style={{ marginBottom: 16 }}>
                 <label
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "var(--text2)",
@@ -259,7 +259,7 @@ export function MetaBountyCreationFlow({
                     background: "var(--recess)",
                     border: "1px solid var(--line)",
                     borderRadius: 8,
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 14,
                     color: "var(--text)",
                   }}
@@ -269,7 +269,7 @@ export function MetaBountyCreationFlow({
               <div style={{ marginBottom: 16 }}>
                 <label
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "var(--text2)",
@@ -292,7 +292,7 @@ export function MetaBountyCreationFlow({
                     background: "var(--recess)",
                     border: "1px solid var(--line)",
                     borderRadius: 8,
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 14,
                     color: "var(--text)",
                     resize: "vertical",
@@ -304,7 +304,7 @@ export function MetaBountyCreationFlow({
               <div>
                 <label
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 12,
                     fontWeight: 500,
                     color: "var(--text2)",
@@ -332,7 +332,7 @@ export function MetaBountyCreationFlow({
                               : "var(--recess)"
                           }`,
                           borderRadius: 100,
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 12,
                           fontWeight: 500,
                           color: isSelected
@@ -355,7 +355,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "var(--text)",
@@ -366,7 +366,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   color: "var(--text2)",
                   margin: "0 0 20px 0",
@@ -397,7 +397,7 @@ export function MetaBountyCreationFlow({
                     >
                       <span
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 11,
                           fontWeight: 600,
                           color: "var(--text)",
@@ -444,7 +444,7 @@ export function MetaBountyCreationFlow({
                         background: "var(--recess)",
                         border: "1px solid var(--line)",
                         borderRadius: 6,
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 13,
                         color: "var(--text)",
                         marginBottom: 10,
@@ -466,7 +466,7 @@ export function MetaBountyCreationFlow({
                         background: "var(--recess)",
                         border: "1px solid var(--line)",
                         borderRadius: 6,
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 13,
                         color: "var(--text)",
                         resize: "none",
@@ -475,7 +475,7 @@ export function MetaBountyCreationFlow({
                     />
                     <div
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 10,
                         color: "var(--text2)",
                         textAlign: "right",
@@ -502,7 +502,7 @@ export function MetaBountyCreationFlow({
                             background: "var(--recess)",
                             border: "1px solid var(--line)",
                             borderRadius: 6,
-                            fontFamily: "Figtree, sans-serif",
+                            fontFamily: "var(--font-ui)",
                             fontSize: 13,
                             color: "var(--text)",
                           }}
@@ -521,7 +521,7 @@ export function MetaBountyCreationFlow({
                           background: "var(--recess)",
                           border: "1px solid var(--line)",
                           borderRadius: 6,
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 13,
                           color: "var(--text)",
                           cursor: "pointer",
@@ -547,7 +547,7 @@ export function MetaBountyCreationFlow({
                       background: "var(--recess)",
                       border: "1px dashed var(--line)",
                       borderRadius: 8,
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 13,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -567,7 +567,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "var(--text)",
@@ -578,7 +578,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   color: "var(--text2)",
                   margin: "0 0 20px 0",
@@ -591,7 +591,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -614,7 +614,7 @@ export function MetaBountyCreationFlow({
                       background: "var(--recess)",
                       border: "1px solid var(--line)",
                       borderRadius: 8,
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 14,
                       color: "var(--text)",
                     }}
@@ -624,7 +624,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -654,7 +654,7 @@ export function MetaBountyCreationFlow({
                       background: "var(--recess)",
                       border: "1px solid var(--line)",
                       borderRadius: 8,
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 14,
                       color: "var(--text)",
                     }}
@@ -664,7 +664,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -691,7 +691,7 @@ export function MetaBountyCreationFlow({
                       background: "var(--recess)",
                       border: "1px solid var(--line)",
                       borderRadius: 8,
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 14,
                       color: "var(--text)",
                     }}
@@ -708,7 +708,7 @@ export function MetaBountyCreationFlow({
                 >
                   <label
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 13,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -754,7 +754,7 @@ export function MetaBountyCreationFlow({
                 <div>
                   <label
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       fontWeight: 500,
                       color: "var(--text2)",
@@ -776,7 +776,7 @@ export function MetaBountyCreationFlow({
                       background: "var(--recess)",
                       border: "1px solid var(--line)",
                       borderRadius: 8,
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 14,
                       color: "var(--text)",
                       colorScheme: "dark",
@@ -792,7 +792,7 @@ export function MetaBountyCreationFlow({
             <div>
               <h2
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 20,
                   fontWeight: 700,
                   color: "var(--text)",
@@ -803,7 +803,7 @@ export function MetaBountyCreationFlow({
               </h2>
               <p
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   color: "var(--text2)",
                   margin: "0 0 20px 0",
@@ -823,7 +823,7 @@ export function MetaBountyCreationFlow({
                 >
                   <h3
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 14,
                       fontWeight: 600,
                       color: "var(--text)",
@@ -834,7 +834,7 @@ export function MetaBountyCreationFlow({
                   </h3>
                   <p
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 12,
                       color: "var(--text2)",
                       margin: 0,
@@ -859,7 +859,7 @@ export function MetaBountyCreationFlow({
                             padding: "3px 8px",
                             background: "color-mix(in srgb, var(--action) 15%, transparent)",
                             borderRadius: 4,
-                            fontFamily: "Figtree, sans-serif",
+                            fontFamily: "var(--font-ui)",
                             fontSize: 10,
                             fontWeight: 500,
                             color: "var(--action)",
@@ -882,7 +882,7 @@ export function MetaBountyCreationFlow({
                 >
                   <div
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 11,
                       fontWeight: 600,
                       color: "var(--text2)",
@@ -907,7 +907,7 @@ export function MetaBountyCreationFlow({
                       >
                         <span
                           style={{
-                            fontFamily: "Figtree, sans-serif",
+                            fontFamily: "var(--font-ui)",
                             fontSize: 13,
                             color: "var(--text)",
                           }}
@@ -916,7 +916,7 @@ export function MetaBountyCreationFlow({
                         </span>
                         <span
                           style={{
-                            fontFamily: "Figtree, sans-serif",
+                            fontFamily: "var(--font-ui)",
                             fontSize: 12,
                             fontWeight: 500,
                             color: "var(--text2)",
@@ -939,7 +939,7 @@ export function MetaBountyCreationFlow({
                   >
                     <span
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 13,
                         fontWeight: 600,
                         color: "var(--text)",
@@ -949,7 +949,7 @@ export function MetaBountyCreationFlow({
                     </span>
                     <span
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 16,
                         fontWeight: 700,
                         color: "var(--action)",
@@ -970,7 +970,7 @@ export function MetaBountyCreationFlow({
                 >
                   <div
                     style={{
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                       fontSize: 11,
                       fontWeight: 600,
                       color: "var(--text2)",
@@ -991,7 +991,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 10,
                           color: "var(--text2)",
                           marginBottom: 2,
@@ -1001,7 +1001,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 13,
                           color: "var(--text)",
                         }}
@@ -1012,7 +1012,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 10,
                           color: "var(--text2)",
                           marginBottom: 2,
@@ -1022,7 +1022,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 13,
                           color: "var(--text)",
                         }}
@@ -1033,7 +1033,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 10,
                           color: "var(--text2)",
                           marginBottom: 2,
@@ -1043,7 +1043,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 13,
                           color: "var(--text)",
                         }}
@@ -1056,7 +1056,7 @@ export function MetaBountyCreationFlow({
                     <div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 10,
                           color: "var(--text2)",
                           marginBottom: 2,
@@ -1066,7 +1066,7 @@ export function MetaBountyCreationFlow({
                       </div>
                       <div
                         style={{
-                          fontFamily: "Figtree, sans-serif",
+                          fontFamily: "var(--font-ui)",
                           fontSize: 13,
                           color: "var(--text)",
                         }}
@@ -1103,7 +1103,7 @@ export function MetaBountyCreationFlow({
               background: "transparent",
               border: "1px solid var(--line)",
               borderRadius: 8,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 500,
               color:
@@ -1127,7 +1127,7 @@ export function MetaBountyCreationFlow({
                   : "var(--action)",
                 border: "none",
                 borderRadius: 8,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 13,
                 fontWeight: 600,
                 color: "white",
@@ -1147,7 +1147,7 @@ export function MetaBountyCreationFlow({
                   : "var(--action)",
                 border: "none",
                 borderRadius: 8,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 fontWeight: 600,
                 color: "white",

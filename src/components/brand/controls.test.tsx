@@ -12,8 +12,6 @@ import { Plus } from "lucide-react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
-import { denseFont, denseHeight } from "@/lib/theme/density";
-
 import { Avatar, AVATAR_HUES, avatarHue, initialsOf } from "./Avatar";
 import { Button } from "./Button";
 import { CategoryChip } from "./CategoryChip";
@@ -30,88 +28,12 @@ import { UnderlineTabs } from "./UnderlineTabs";
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
 
 describe("Button", () => {
-  it("is drawn 36/13 by default and renders 30/12, with the reference's padding, radius and gap", () => {
-    // UI-P52 density pass: the drawn 36/13, 0 14px and 7 render through the
-    // table as 30/12, 0 10px and 5.
-    const html = markup(<Button>Go</Button>);
-    expect(html).toContain("height:30px");
-    expect(html).toContain("font-size:12px");
-    expect(html).toContain("padding:0 10px");
-    expect(html).toContain("border-radius:var(--r-control)");
-    expect(html).toContain("gap:5px");
-    expect(html).toContain("white-space:nowrap");
-    expect(html).toContain('type="button"');
-  });
-
-  it("paints primary in --action on --on-action with a 1px --action border, weight 600", () => {
-    const html = markup(<Button variant="primary">Go</Button>);
-    expect(html).toContain("background:var(--action)");
-    expect(html).toContain("color:var(--on-action)");
-    expect(html).toContain("border:1px solid var(--action)");
-    expect(html).toContain("font-weight:600");
-  });
-
-  it("paints secondary on glass-2 with a --line hairline, weight 500", () => {
-    const html = markup(<Button variant="secondary">Go</Button>);
-    expect(html).toContain("background:var(--glass-2)");
-    expect(html).toContain("color:var(--text)");
-    expect(html).toContain("border:1px solid var(--line)");
-    expect(html).toContain("font-weight:500");
-  });
 
   it("paints ghost on nothing, in --text2, with a transparent border", () => {
     const html = markup(<Button variant="ghost">Go</Button>);
     expect(html).toContain("background:transparent");
     expect(html).toContain("color:var(--text2)");
     expect(html).toContain("border:1px solid transparent");
-  });
-
-  it.each([
-    [28, 11],
-    [30, 12],
-    [32, 12],
-    [34, 12],
-    [36, 13],
-    [38, 13],
-    [42, 14],
-    [44, 13],
-    [46, 15],
-    [48, 14],
-    [48, 15],
-  ] as const)("renders the drawn %i/%i pair through the density table", (size, fontSize) => {
-    // UI-P52 density pass: callers keep the drawn pair; the button maps it.
-    const html = markup(<Button size={size} fontSize={fontSize}>Go</Button>);
-    expect(html).toContain(`height:${denseHeight(size)}px`);
-    expect(html).toContain(`font-size:${denseFont(fontSize)}px`);
-  });
-
-  it("keeps a button drawn 44px or taller at 44 on a phone, the touch target", () => {
-    // UI-P52 density pass: below 768px a control that was 44 tall keeps 44, and
-    // one drawn shorter tightens as it does on a desktop.
-    const original = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: query === "(max-width: 767px)",
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    })) as unknown as typeof window.matchMedia;
-    try {
-      const { container, rerender } = render(<Button size={48}>Go</Button>);
-      expect(container.querySelector("button")!.style.height).toBe("44px");
-      rerender(<Button size={36}>Go</Button>);
-      expect(container.querySelector("button")!.style.height).toBe("30px");
-    } finally {
-      window.matchMedia = original;
-    }
-  });
-
-  it("draws its icon at 15px and stroke 1.8, before the label", () => {
-    const { container } = render(<Button icon={Plus}>Add</Button>);
-    const svg = container.querySelector("svg")!;
-    expect(svg.getAttribute("width")).toBe("15");
-    expect(svg.getAttribute("stroke-width")).toBe("1.8");
-    expect(svg.getAttribute("aria-hidden")).toBe("true");
-    expect(container.querySelector("button")!.firstElementChild).toBe(svg);
   });
 
   it("is a block-level full-width flex when fullWidth", () => {
@@ -140,30 +62,6 @@ describe("Button", () => {
   });
 });
 
-describe("IconButton", () => {
-  it("is square, named by its label, 16px at stroke 1.6", () => {
-    const { container } = render(<IconButton icon={Plus} label="Add" size={38} />);
-    const button = screen.getByRole("button", { name: "Add" });
-    expect(button.getAttribute("aria-label")).toBe("Add");
-    const svg = container.querySelector("svg")!;
-    expect(svg.getAttribute("width")).toBe("16");
-    expect(svg.getAttribute("stroke-width")).toBe("1.6");
-    const html = markup(<IconButton icon={Plus} label="Add" size={38} />);
-    // UI-P52 density pass: drawn at 38, rendered at 31.
-    expect(html).toContain("width:31px");
-    expect(html).toContain("height:31px");
-    expect(html).toContain("border-radius:var(--r-control)");
-    expect(html).toContain("background:var(--glass-2)");
-    expect(html).toContain("border:1px solid var(--line)");
-    expect(html).toContain("color:var(--text2)");
-  });
-
-  it.each([30, 34, 38] as const)("is %ipx square as drawn, through the density table", (size) => {
-    const html = markup(<IconButton icon={Plus} label="Add" size={size} />);
-    expect(html).toContain(`width:${denseHeight(size)}px;height:${denseHeight(size)}px`);
-  });
-});
-
 describe("Segmented", () => {
   const items = [
     { value: "a", label: "Alpha" },
@@ -183,33 +81,6 @@ describe("Segmented", () => {
     render(<Segmented label="Letters" items={items} value="a" onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Gamma" }));
     expect(onChange).toHaveBeenCalledWith("c");
-  });
-
-  it("draws the track and the items to the reference", () => {
-    const html = markup(<Segmented label="L" items={items} value="a" onChange={() => {}} size={36} fontSize={12} />);
-    expect(html).toContain("display:inline-flex;gap:2px;padding:4px");
-    expect(html).toContain("border-radius:var(--r-control)");
-    expect(html).toContain("background:var(--glass-2)");
-    expect(html).toContain("border:1px solid var(--line)");
-    // UI-P52 density pass: an item is size − 8 through the table (28 → 23),
-    // padded 0 9px (0 12px); the track's 4px and 2px are under the table's floor.
-    expect(html).toContain("height:23px");
-    expect(html).toContain("padding:0 9px");
-    expect(html).toContain("border-radius:var(--r-chip)");
-    // current: --text on --on-text, 600. Others: transparent --text2, 500.
-    expect(html).toContain("background:var(--text);color:var(--on-text);font-weight:600");
-    expect(html).toContain("background:transparent;color:var(--text2);font-weight:500");
-  });
-
-  it.each([
-    [30, 22],
-    [32, 24],
-    [34, 26],
-    [36, 28],
-    [38, 30],
-  ] as const)("a %ipx track has %ipx items as drawn, through the density table", (size, item) => {
-    const html = markup(<Segmented label="L" items={items} value="a" onChange={() => {}} size={size} />);
-    expect(html).toContain(`height:${denseHeight(item)}px`);
   });
 
   it("defaults to 12px type", () => {
@@ -247,20 +118,6 @@ describe("Segmented", () => {
       );
       fireEvent.click(screen.getByRole("link", { name: "Join free" }));
       expect(onChange).not.toHaveBeenCalled();
-    });
-
-    it("is drawn as the buttons are: same track, same item height, the current one filled", () => {
-      const html = renderToStaticMarkup(
-        <MemoryRouter>
-          <Segmented label="Account" items={pages} value="in" size={32} fontSize={12} />
-        </MemoryRouter>,
-      );
-      // UI-P52 density pass: a 32px track's 24px items render at 20, padded 0 9px.
-      expect(html).toContain("height:20px");
-      expect(html).toContain("padding:0 9px");
-      expect(html).toContain("background:var(--text);color:var(--on-text);font-weight:600");
-      expect(html).toContain("background:transparent;color:var(--text2);font-weight:500");
-      expect(html).toContain("text-decoration:none");
     });
   });
 
@@ -366,48 +223,9 @@ describe("UnderlineTabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Three" }));
     expect(onChange).toHaveBeenCalledWith("three");
   });
-
-  it("draws the row, the current tab and the others to the reference", () => {
-    const html = markup(<UnderlineTabs label="S" tabs={tabs} value="one" onChange={() => {}} />);
-    // UI-P52 density pass: 24 → 17 between tabs, 10 / 12 → 7 / 9 under them,
-    // and the default drawn 14px renders at 13.
-    expect(html).toContain("display:flex;gap:17px;align-items:flex-end;border-bottom:1px solid var(--line)");
-    expect(html).toContain("border-bottom:2px solid var(--action)");
-    expect(html).toContain("padding-bottom:7px");
-    expect(html).toContain("padding-bottom:9px");
-    expect(html).toContain("font-size:13px");
-    expect(html).toContain("font-weight:600");
-    expect(html).toContain("color:var(--text);");
-    expect(html).toContain("color:var(--text2)");
-  });
-
-  it.each([12, 13, 14] as const)("sets %ipx type as drawn, through the density table", (fontSize) => {
-    const html = markup(<UnderlineTabs label="S" tabs={tabs} value="one" onChange={() => {}} fontSize={fontSize} />);
-    expect(html).toContain(`font-size:${denseFont(fontSize)}px`);
-  });
 });
 
 describe("FilterChip", () => {
-  it("is 30px, radius 10, Figtree 12/500, glass when off and the inverse when on", () => {
-    // UI-P52 density pass: 36 → 30, 0 12px → 0 9px, 13 → 12; the radius is not in the table.
-    const off = markup(<FilterChip label="Proven" />);
-    expect(off).toContain("height:30px");
-    expect(off).toContain("padding:0 9px");
-    expect(off).toContain("border-radius:var(--r-media)");
-    expect(off).toContain("font-size:12px;font-weight:500");
-    expect(off).toContain("background:var(--glass-2);color:var(--text);border:1px solid var(--line)");
-    const on = markup(<FilterChip label="All" on />);
-    expect(on).toContain("background:var(--text);color:var(--on-text);border:1px solid var(--text)");
-  });
-
-  it("carries its count in DM Mono 10px at 70%, and says whether it is on", () => {
-    const { container } = render(<FilterChip label="Proven" count={512} on />);
-    expect(screen.getByRole("button", { name: /Proven/ }).getAttribute("aria-pressed")).toBe("true");
-    const count = container.querySelector("span")!;
-    expect(count.textContent).toBe("512");
-    expect(count.style.fontSize).toBe("10px");
-    expect(count.style.opacity).toBe("0.7");
-  });
 
   it("clicks", () => {
     const onClick = vi.fn();
@@ -417,38 +235,7 @@ describe("FilterChip", () => {
   });
 });
 
-describe("Eyebrow", () => {
-  it("is DM Mono 11px upper case at .09em in --label, on one line", () => {
-    const html = markup(<Eyebrow>Maker</Eyebrow>);
-    expect(html).toContain("font-size:11px");
-    expect(html).toContain("text-transform:uppercase");
-    expect(html).toContain("letter-spacing:0.09em");
-    expect(html).toContain("color:var(--label)");
-    expect(html).toContain("white-space:nowrap");
-    expect(html).toContain("DM Mono");
-  });
-
-  it("is 10px inside a panel", () => {
-    expect(markup(<Eyebrow size={10}>Maker</Eyebrow>)).toContain("font-size:10px");
-  });
-});
-
 describe("Avatar", () => {
-  it.each([
-    [22, 8],
-    [28, 10],
-    [34, 12],
-    [78, 29],
-    [110, 41],
-  ] as const)("a %ipx avatar sets %ipx initials, as drawn, through the density table", (size, font) => {
-    // UI-P52 density pass: 22 → 18 with 8 → 10 initials, 34 → 28; 78 and 110 are over the band.
-    const html = markup(<Avatar size={size} userId="u" name="Ada Lovelace" />);
-    expect(html).toContain(`width:${denseHeight(size)}px;height:${denseHeight(size)}px`);
-    expect(html).toContain(`font-size:${denseFont(font)}px`);
-    expect(html).toContain("border-radius:var(--r-full)");
-    expect(html).toContain("font-weight:600");
-    expect(html).toContain("color:#F7F8F9");
-  });
 
   it("takes the same hue for the same user, from the six", () => {
     expect(avatarHue("user-1")).toBe(avatarHue("user-1"));
@@ -484,13 +271,11 @@ describe("Avatar", () => {
   });
 });
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // UI-P84 — the refined branch. The look is chosen the way a dev page chooses it: `?look=refined` on a `/dev/*` route.
 // ---------------------------------------------------------------------------------------------------------------------
 
-const REFINED = "/dev/kit/components?look=refined";
-const CURRENT = "/dev/kit/components?look=current";
+const REFINED = "/dev/kit/components";
 const at = (url: string, node: React.ReactElement) => (
   <MemoryRouter initialEntries={[url]}>{node}</MemoryRouter>
 );
@@ -526,13 +311,6 @@ describe("refined controls (UI-P84)", () => {
     const ghost = refined(<Button variant="ghost">Go</Button>);
     expect(ghost).toContain("background:transparent");
     expect(ghost).toContain("color:var(--text2)");
-  });
-
-  it("Button leaves the current look as it was", () => {
-    const html = markup(at(CURRENT, <Button icon={Plus}>Go</Button>));
-    expect(html).toContain("<svg");
-    expect(html).toContain("background:var(--action)");
-    expect(html).not.toContain("box-shadow:var(--action-shadow)");
   });
 
   it("IconButton is boxed by default at 26, 28 or 30 and ghost with boxed={false}", () => {

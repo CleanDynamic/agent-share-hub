@@ -219,7 +219,7 @@ export function CanvasTOC({
             color: 'var(--text2)',
             cursor: 'pointer', fontSize: 11,
             fontWeight: 700,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             writingMode: open ? 'horizontal-tb' : 'vertical-rl',
             letterSpacing: open ? 0 : '0.12em',
             textTransform: 'uppercase',
@@ -291,7 +291,7 @@ export function CanvasTOC({
                       borderRadius: 6, fontSize: 11,
                       color: 'var(--text2)',
                       cursor: 'pointer',
-                      fontFamily: 'Figtree, sans-serif',
+                      fontFamily: 'var(--font-ui)',
                     }}
                   >
                     + Add stage
@@ -323,7 +323,7 @@ export function CanvasTOC({
                         fontSize: 12,
                         color: 'var(--text)', outline: 'none',
                         boxSizing: 'border-box',
-                        fontFamily: 'Figtree, sans-serif',
+                        fontFamily: 'var(--font-ui)',
                       }}
                     />
                     <div style={{
@@ -448,7 +448,7 @@ export function CanvasTOC({
                 fontSize: 11,
                 color: 'var(--text)',
                 outline: 'none',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 minWidth: 0,
               }}
             />
@@ -621,7 +621,7 @@ export function CanvasTOC({
                 fontSize: 11,
                 color: 'var(--text)',
                 outline: 'none',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 minWidth: 0,
               }}
             />
