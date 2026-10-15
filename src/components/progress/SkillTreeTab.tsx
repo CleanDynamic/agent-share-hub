@@ -59,7 +59,7 @@ export default function SkillTreeTab({
       const perksForTrack = allPerks.filter((p) => p.track === id).slice(0, 3).map((p) => p.name);
       return {
         id, name: meta.name, color: meta.color, philosophy: meta.philosophy,
-        perks: perksForTrack.length ? perksForTrack : ["—"],
+        perks: perksForTrack.length ? perksForTrack : ["–"],
       };
     });
     return (

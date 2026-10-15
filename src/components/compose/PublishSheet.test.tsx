@@ -233,7 +233,7 @@ describe("the publish sheet", () => {
 
     const sheet = await openSheet();
     const nudge = within(sheet).getByRole("button", {
-      name: /Add a picture — posts with one get seen\./i,
+      name: /Add a picture\. Posts with one get seen\./i,
     });
 
     fireEvent.click(nudge);

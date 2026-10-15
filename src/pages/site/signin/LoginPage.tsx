@@ -54,7 +54,7 @@ export function LoginPage() {
       if (result.outcome !== "signed-in") {
         setError(
           result.outcome === "email-not-confirmed"
-            ? "Please verify your email before signing in — check your inbox."
+            ? "Please verify your email before signing in. Check your inbox."
             : "Wrong email or password",
         );
         setIsSubmitting(false);
@@ -82,7 +82,7 @@ export function LoginPage() {
 
   return (
     <>
-      <SeoHead title="Sign in — buildgallery" description="Sign in to your buildgallery account." path="/login" noIndex />
+      <SeoHead title="Sign in · buildgallery" description="Sign in to your buildgallery account." path="/login" noIndex />
       <SignInShell mode="login">
         <LoginForm
           emailOrUsername={emailOrUsername}

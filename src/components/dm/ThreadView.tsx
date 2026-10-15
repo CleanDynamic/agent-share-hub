@@ -877,7 +877,7 @@ export function ThreadView({ threadId, otherUser, onBack, enquiryRef, hideHeader
       return (
         <div key={msg.id} className="flex justify-center my-3">
           <span className="text-[11px] text-muted-foreground bg-background/60 px-3 py-1 rounded-full">
-            {msg.body || msg.text_content || "—"}
+            {msg.body || msg.text_content || "–"}
           </span>
         </div>
       );

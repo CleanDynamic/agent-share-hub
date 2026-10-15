@@ -198,7 +198,7 @@ export async function resolveSolutionNode({
 }): Promise<MatchedSolutionNode> {
   if (!PUBLISHED_STATUSES.includes(rebuild.status as (typeof PUBLISHED_STATUSES)[number])) {
     throw new Error(
-      "That rebuild is still a draft. Publish it first — a solution has to be something the creator can open and read.",
+      "That rebuild is still a draft. Publish it first. A solution has to be something the creator can open and read.",
     );
   }
 
@@ -220,7 +220,7 @@ export async function resolveSolutionNode({
   const matched = matchSolutionNode(source, rebuiltRecord, bounty.gap_node_id as string);
   if (!matched) {
     throw new Error(
-      "The gap has no counterpart in that rebuild — it looks like the node was removed rather than filled.",
+      "The gap has no counterpart in that rebuild. It looks like the node was removed rather than filled.",
     );
   }
 

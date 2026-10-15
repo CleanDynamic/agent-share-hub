@@ -115,7 +115,7 @@ export function GalleryDashboardPage() {
   return (
     <>
       <SeoHead
-        title="Gallery dashboard — buildgallery"
+        title="Gallery dashboard · buildgallery"
         description="How the builds in the gallery were made: the AI models, sessions, prompts and what people did with them."
         path="/gallery"
       />

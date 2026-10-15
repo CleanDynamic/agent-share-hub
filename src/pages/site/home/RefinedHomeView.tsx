@@ -267,7 +267,8 @@ const KIND_INK: Record<HomeFeedRow["kind"], string> = {
 };
 
 function KindPill({ kind }: { kind: HomeFeedRow["kind"] }) {
-  return <Pill style={{ color: KIND_INK[kind] }}>{KIND_LABEL[kind]}</Pill>;
+  /* The kind's ink is read at 10.5, so the pill takes the lighter tag fill: on `--pill` three of the inks sit just under 4.5. */
+  return <Pill style={{ color: KIND_INK[kind], background: t.tagFill }}>{KIND_LABEL[kind]}</Pill>;
 }
 
 const DESKTOP_COLUMNS = "96px 24px minmax(0, 1fr) 56px 32px";
@@ -483,7 +484,7 @@ function Book({
       ) : (
         <CardHead
           title="The visitors’ book"
-          subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
+          subtitle="Builds, rebuilds, reproduction notes and asks · newest first"
           headingLevel={2}
           action={<Segmented<HomeFilter> label="Show" size={28} fontSize={12} value={filter} onChange={setFilter} items={HOME_FILTERS} />}
         />

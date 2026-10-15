@@ -383,7 +383,7 @@ export async function setPostMedia(
   if (ids.length > MAX_POST_MEDIA) {
     throw new PostMediaError(
       "too_many",
-      `a post shows at most ${MAX_POST_MEDIA} pictures — ${ids.length} were given`
+      `a post shows at most ${MAX_POST_MEDIA} pictures · ${ids.length} were given`
     );
   }
 
@@ -429,7 +429,7 @@ export async function addPostMedia(
   if (current.length >= MAX_POST_MEDIA) {
     throw new PostMediaError(
       "full",
-      `this post already shows ${MAX_POST_MEDIA} pictures — remove one first`
+      `this post already shows ${MAX_POST_MEDIA} pictures · remove one first`
     );
   }
 
@@ -524,7 +524,7 @@ export async function setPostMediaText(
   if (characters > POST_TEXT_MAX) {
     throw new PostMediaError(
       "text_too_long",
-      `an entry's text is at most ${POST_TEXT_MAX} characters — ${characters} were given`
+      `an entry's text is at most ${POST_TEXT_MAX} characters · ${characters} were given`
     );
   }
 
@@ -532,7 +532,7 @@ export async function setPostMediaText(
   if (!current.some((row) => row.id === mediaId)) {
     throw new PostMediaError(
       "not_in_post",
-      "only a picture that is part of the post can carry text — add it to the post first"
+      "only a picture that is part of the post can carry text · add it to the post first"
     );
   }
 

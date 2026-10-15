@@ -235,7 +235,7 @@ export function VisibilityControl({ value, onChange, label }: VisibilityControlP
             type="button"
             role="radio"
             aria-checked={active}
-            title={`${meta.label} — ${meta.meaning}`}
+            title={`${meta.label} · ${meta.meaning}`}
             onClick={() => {
               if (!active) onChange(state);
             }}

@@ -267,7 +267,7 @@ export default function GuildDemo() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <SectionLabel>Directory — below Level 10 (create locked)</SectionLabel>
+          <SectionLabel>Directory · below Level 10 (create locked)</SectionLabel>
           <GuildDirectory
             guilds={directoryGuilds.slice(0, 2)}
             canCreate={false}

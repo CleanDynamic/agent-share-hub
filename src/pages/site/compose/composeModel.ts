@@ -92,7 +92,7 @@ export type SaveState = "idle" | "saved" | "saving" | "error";
 export const SAVE_WORDS: Record<Exclude<SaveState, "idle">, string> = {
   saved: "saved just now",
   saving: "saving…",
-  error: "not saved — ",
+  error: "not saved · ",
 };
 
 /** The saving state, from the hook's three facts. An error outranks a save in flight. */

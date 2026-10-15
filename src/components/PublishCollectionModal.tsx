@@ -319,7 +319,7 @@ function SyncForm({
       onSuccess?.();
       onClose();
 
-      toast({ title: `Synced — ${newItems.length} new item${newItems.length !== 1 ? "s" : ""} added ✓` });
+      toast({ title: `Synced · ${newItems.length} new item${newItems.length !== 1 ? "s" : ""} added ✓` });
     } catch {
       toast({ title: "Sync failed", variant: "destructive" });
     } finally {

@@ -287,7 +287,7 @@ export function mediaAlt(
   const caption = textField(node, "caption") ?? textField(node, "note");
   if (caption) return caption;
 
-  return node ? `${title} — ${nodeTypeLabel(node.type)}` : title;
+  return node ? `${title} · ${nodeTypeLabel(node.type)}` : title;
 }
 
 /** A card row, and the width of the slot it lands in. */

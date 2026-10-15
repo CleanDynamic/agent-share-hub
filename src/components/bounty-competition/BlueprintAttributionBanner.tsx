@@ -19,7 +19,7 @@ interface PromotedFromBounty {
 }
 
 function formatTimeToSolve(start: string | null, end: string | null): string {
-  if (!start || !end) return "—";
+  if (!start || !end) return "–";
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (!Number.isFinite(ms) || ms <= 0) return "less than a day";
   const days = Math.round(ms / 86_400_000);

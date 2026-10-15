@@ -767,7 +767,7 @@ export function FeedErrorState({
       testId="feed-error"
       body={
         <>
-          The request for this tab failed. Nothing is lost — the feed only reads,
+          The request for this tab failed. Nothing is lost. The feed only reads,
           and a retry asks again.
           {said ? (
             <>

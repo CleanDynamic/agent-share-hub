@@ -782,7 +782,7 @@ export function SampleTable({
                         {String(value)}
                       </span>
                     ) : (
-                      <span style={{ color: t.text2 }}>—</span>
+                      <span style={{ color: t.text2 }}>–</span>
                     )}
                   </td>
                 );
@@ -793,7 +793,7 @@ export function SampleTable({
       </TableScroll>
       <Caption>
         {records.length > cap
-          ? `Sample of ${formatNumber(records.length)} — showing the first ${shown.length}`
+          ? `Sample of ${formatNumber(records.length)} · showing the first ${shown.length}`
           : `Sample of ${formatNumber(records.length)}`}
       </Caption>
     </Stack>

@@ -55,7 +55,7 @@ import {
  */
 const HEADING = "What this rebuild changes";
 const NOTE_LABEL =
-  "What did you change, and why? (optional — the list above is shown either way)";
+  "What did you change, and why? (optional · the list above is shown either way)";
 const NOTE_PLACEHOLDER = "Optional.";
 const NOTHING_YET = "Nothing yet. This list fills in as you change things.";
 const NO_DIFF =

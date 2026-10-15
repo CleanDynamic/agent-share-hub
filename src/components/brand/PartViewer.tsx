@@ -95,7 +95,7 @@ export function PartViewer<V extends string = string>({
   tools = true,
 }: PartViewerProps<V>) {
   const phone = variant === "phone";
-  const n = number === null ? "—" : String(number).padStart(2, "0");
+  const n = number === null ? "–" : String(number).padStart(2, "0");
   const current = tabs.find((x) => x.value === tab);
 
   return (

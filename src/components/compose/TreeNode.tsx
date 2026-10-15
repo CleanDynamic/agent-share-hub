@@ -137,7 +137,7 @@ function BountyPill({ bounty }: { bounty: Bounty }) {
     <span
       data-testid="bounty-node-pill"
       data-bounty-status={bounty.status}
-      title={`This gap has a bounty on it — ${bounty.status}, ${priced}.`}
+      title={`This gap has a bounty on it · ${bounty.status}, ${priced}.`}
       style={{
         ...dataType,
         flexShrink: 0,

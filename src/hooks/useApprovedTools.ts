@@ -14,7 +14,7 @@ export interface ApprovedTool {
 const ANY_TOOL: ApprovedTool = {
   name: "Any Tool",
   slug: "any-tool",
-  description: "Universal compatibility — works with any AI tool",
+  description: "Universal compatibility · works with any AI tool",
   website_url: null,
   category: "api",
   is_official: true,

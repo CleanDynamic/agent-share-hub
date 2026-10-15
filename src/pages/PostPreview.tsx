@@ -145,7 +145,7 @@ export default function PostPreviewPage() {
 
   return (
     <div className="py-0 px-0">
-      <SeoHead title="Preview — buildgallery.ai" description="Preview your draft post." path={`/upload/preview/${draftId}`} noIndex />
+      <SeoHead title="Preview · buildgallery.ai" description="Preview your draft post." path={`/upload/preview/${draftId}`} noIndex />
 
       {/* Sticky top bar */}
       <div className="sticky top-0 z-30 h-[52px] flex items-center justify-between px-4 sm:px-6 border-b border-border bg-card">
@@ -268,7 +268,7 @@ export default function PostPreviewPage() {
             </Button>
           ) : (
             <Button className="ns-btn-primary w-full rounded-full opacity-70 cursor-default" size="lg">
-              <Lock className="h-4 w-4 mr-2" /> Unlock — £{Number((draft as any).price_gbp ?? 0).toFixed(2)}
+              <Lock className="h-4 w-4 mr-2" /> Unlock · £{Number((draft as any).price_gbp ?? 0).toFixed(2)}
             </Button>
           )}
           <p className="text-xs text-muted-foreground text-center mt-2">Action buttons are live once published.</p>
@@ -309,7 +309,7 @@ export default function PostPreviewPage() {
               {blocks.map((block: any) => (
                 <div key={block.id} className="relative rounded-xl border border-border bg-card p-4">
                   <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 z-10">
-                    Preview — visible after unlock when live
+                    Preview · visible after unlock when live
                   </span>
                   <div className="text-sm text-foreground whitespace-pre-wrap">
                     {block.text_content || (block.file_name && <span className="text-muted-foreground italic">File: {block.file_name}</span>) || <span className="text-muted-foreground italic">Empty block</span>}

@@ -756,7 +756,7 @@ const ContentDetail = () => {
     return (
       <>
         <SeoHead
-          title={`${item.title} — buildgallery`}
+          title={`${item.title} · buildgallery`}
           description={
             (item as any).use_case ||
             (item as any).description ||
@@ -822,7 +822,7 @@ const ContentDetail = () => {
       boxSizing: 'border-box',
     }}>
       <SeoHead
-        title={`${item.title} — buildgallery.ai`}
+        title={`${item.title} · buildgallery.ai`}
         description={item.description || `${item.content_type} for ${(item.ai_tools ?? []).join(", ") || "any AI tool"}`}
         path={`/content/${item.id}`}
         jsonLd={jsonLd}
@@ -914,7 +914,7 @@ const ContentDetail = () => {
                     <span className="text-[11px] text-muted-foreground">⏱ Closes in {daysLeft} day{daysLeft !== 1 ? "s" : ""}</span>
                   )}
                   {isExpired && status === "open" && (
-                    <span className="text-[11px] text-muted-foreground">⏱ Expired — still accepting responses</span>
+                    <span className="text-[11px] text-muted-foreground">⏱ Expired · still accepting responses</span>
                   )}
                 </div>
                 {isLoggedIn && !isPoster && (
@@ -1567,7 +1567,7 @@ const ContentDetail = () => {
                     const winner = (bountyResponses ?? []).find((r: any) => r.id === (item as any).bounty_solved_response_id);
                     return (
                       <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
-                        <span>✓ Solved — {winner?.profiles?.display_name || winner?.profiles?.username || "Someone"}'s Blueprint was marked as the solution by the poster.</span>
+                        <span>✓ Solved · {winner?.profiles?.display_name || winner?.profiles?.username || "Someone"}'s Blueprint was marked as the solution by the poster.</span>
                       </div>
                     );
                   })()}

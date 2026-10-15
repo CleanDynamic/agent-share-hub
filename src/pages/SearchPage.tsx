@@ -150,7 +150,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <SeoHead title={q ? `"${q}" — Search | buildgallery.ai` : "Search | buildgallery.ai"} description="Search posts, projects, and creators on buildgallery.ai" path="/search" />
+      <SeoHead title={q ? `"${q}" · Search | buildgallery.ai` : "Search | buildgallery.ai"} description="Search posts, projects, and creators on buildgallery.ai" path="/search" />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Search input */}
         <div className="relative mb-6">

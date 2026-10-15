@@ -519,7 +519,7 @@ describe("the rebuild section itself", () => {
   it("labels the note as optional, and says the list is shown either way", () => {
     renderSection(2);
     expect(screen.getByTestId("rebuild-note")).toHaveAccessibleName(
-      "What did you change, and why? (optional — the list above is shown either way)"
+      "What did you change, and why? (optional · the list above is shown either way)"
     );
   });
 });

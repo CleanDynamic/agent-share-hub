@@ -363,7 +363,7 @@ const MessagesPage = () => {
 
   // Browser tab title with unread count
   useEffect(() => {
-    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — buildgallery.ai` : "Messages — buildgallery.ai";
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages · buildgallery.ai` : "Messages · buildgallery.ai";
     document.title = title;
     return () => { document.title = "buildgallery.ai"; };
   }, [totalUnread]);
@@ -936,7 +936,7 @@ const MessagesPage = () => {
 
   return (
     <div className={`flex flex-col ${mobileShowThread && showThreadView && isMobileView ? 'h-screen' : 'h-[calc(100vh-56px)]'} lg:h-screen`}>
-      <SeoHead title="Messages — buildgallery.ai" description="Your messages" path="/messages" />
+      <SeoHead title="Messages · buildgallery.ai" description="Your messages" path="/messages" />
 
       {/* Desktop: two columns */}
       <div className="hidden lg:flex flex-1 overflow-hidden">

@@ -67,7 +67,7 @@ export function AuthEmailErrorCard({
         }}
       >
         It may have expired or been used already. Send a new link and we&apos;ll
-        email another one straight away — your account is still there.
+        email another one straight away. Your account is still there.
       </p>
 
       <div style={{ width: "100%", marginTop: "12px" }}>

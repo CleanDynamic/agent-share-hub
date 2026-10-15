@@ -674,7 +674,7 @@ export default function ContentDetail() {
               toast({ title: "AI-PDF downloaded" });
             } else {
               downloadBlob(res.content ?? "", "text/html;charset=utf-8", "-ai.html");
-              toast({ title: "AI-PDF queued", description: "Renderer not yet available — HTML draft downloaded." });
+              toast({ title: "AI-PDF queued", description: "Renderer not yet available. HTML draft downloaded." });
             }
             break;
           }
@@ -2161,7 +2161,7 @@ export default function ContentDetail() {
         };
         return (
           <SeoHead
-            title={`${shellPost.title} — buildgallery`}
+            title={`${shellPost.title} · buildgallery`}
             description={shellPost.description || shellPost.title}
             path={`/b/${shellPost.slug}`}
             image={shellPost.coverUrl}

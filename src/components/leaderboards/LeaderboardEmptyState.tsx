@@ -52,7 +52,7 @@ export default function LeaderboardEmptyState() {
           lineHeight: 1.5,
         }}
       >
-        Keep earning — your standing is being tracked and will appear here.
+        Keep earning. Your standing is being tracked and will appear here.
       </p>
     </section>
   )

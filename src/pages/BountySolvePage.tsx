@@ -263,7 +263,7 @@ export default function BountySolvePage() {
     rewardType: "fixed",
     rewardAmount: ((bounty as any)?.bounty_reward as number) ?? 0,
     rewardCurrency: "USD",
-    deadline: ((bounty as any)?.bounty_deadline as string) || "—",
+    deadline: ((bounty as any)?.bounty_deadline as string) || "–",
     acceptanceCriteria:
       ((bounty as any)?.bounty_acceptance_criteria as string) ||
       slot.missingDescription ||
@@ -274,7 +274,7 @@ export default function BountySolvePage() {
   return (
     <>
       <SeoHead
-        title={`Solve · ${(bounty as any).title} — buildgallery`}
+        title={`Solve · ${(bounty as any).title} · buildgallery`}
         description={`Submit a solution for ${slot.kind}: ${slot.name}`}
         path={`/b/${slug}/solve/${slotId}`}
         ogType="article"
@@ -406,7 +406,7 @@ function StageSolveEditor({ payload, onChange }: SolverEditorProps) {
   return (
     <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ ...eyebrow, color: tok.text2 }}>
-        Stage solution — add blocks in order
+        Stage solution · add blocks in order
       </div>
 
       {blocks.length === 0 && (

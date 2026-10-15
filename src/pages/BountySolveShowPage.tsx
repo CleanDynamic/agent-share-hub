@@ -120,7 +120,7 @@ export default function BountySolveShowPage() {
   return (
     <>
       <Helmet>
-        <title>Solve · {buildTitle} — buildgallery</title>
+        <title>Solve · {buildTitle} · buildgallery</title>
         <meta name="description" content={`Solve this gap: ${breadcrumbPart}`} />
       </Helmet>
 

@@ -52,7 +52,7 @@ export default function DepthRevealModal({ open, pendingBadges, onClose }: Depth
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">A deeper layer just opened</DialogTitle>
           <DialogDescription>
-            You've reached Level 5. New ways to progress — skill tracks, daily challenges, and a lineage view — are now visible across the app.
+            You've reached Level 5. New ways to progress. Skill tracks, daily challenges, and a lineage view. Are now visible across the app.
           </DialogDescription>
         </DialogHeader>
 

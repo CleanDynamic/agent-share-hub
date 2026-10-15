@@ -235,7 +235,7 @@ function OtherProfileView({ profile, currentUserId }: { profile: any; currentUse
     return t;
   }, [collections, profile.bounties_solved]);
 
-  const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " — " : ""}${contentItems?.length ?? 0} posts on buildgallery.ai.`;
+  const seoDesc = `${(profile.bio || "").slice(0, 155)}${profile.bio ? " · " : ""}${contentItems?.length ?? 0} posts on buildgallery.ai.`;
 
   return (
     <div className="w-full">

@@ -179,7 +179,7 @@ export async function uploadMedia({
     throw buildLayerError(
       "uploadMedia",
       new Error(
-        `${file.name || "file"} is ${megabytes(file.size)}MB — the limit is ${megabytes(MEDIA_MAX_BYTES)}MB`
+        `${file.name || "file"} is ${megabytes(file.size)}MB · the limit is ${megabytes(MEDIA_MAX_BYTES)}MB`
       )
     );
   }

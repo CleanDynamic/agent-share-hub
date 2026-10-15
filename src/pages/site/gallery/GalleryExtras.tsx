@@ -62,7 +62,7 @@ export function Shortfall({ build, viewerId }: { build: GalleryBuild; viewerId: 
       data-testid="gallery-shortfall"
       style={{ fontFamily: DM_MONO, fontSize: 12, lineHeight: 1.45, margin: 0, padding: "6px 6px 0", color: t.text2 }}
     >
-      Only you can see this — to earn its place in the gallery, {sentence(outstanding)}.
+      Only you can see this · to earn its place in the gallery, {sentence(outstanding)}.
     </p>
   );
 }

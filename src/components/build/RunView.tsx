@@ -114,7 +114,7 @@ function sequenceText(build: Build, prerequisites: Prerequisite[], steps: Step[]
   if (prerequisites.length > 0) {
     const lines = ["Before you start"];
     for (const item of prerequisites) {
-      lines.push(`- ${item.node.title}${item.requirement ? ` — ${item.requirement}` : ""}`);
+      lines.push(`- ${item.node.title}${item.requirement ? ` · ${item.requirement}` : ""}`);
     }
     blocks.push(lines.join("\n"));
   }
@@ -228,7 +228,7 @@ function Checklist({ prerequisites }: { prerequisites: Prerequisite[] }) {
             <span style={{ ...bodyType, ...measure, color: t.text, minWidth: 0 }}>
               {node.title}
               {requirement ? (
-                <span style={{ color: t.text2 }}> — {requirement}</span>
+                <span style={{ color: t.text2 }}> · {requirement}</span>
               ) : null}
             </span>
           </li>

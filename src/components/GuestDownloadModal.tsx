@@ -69,7 +69,7 @@ export function GuestDownloadModal({ open, onOpenChange, contentId, onDownload }
         <div className="flex items-center justify-center bg-accent/50 border-b border-border" style={{ minHeight: 100 }}>
           <div className="w-full max-w-[320px] h-[100px] rounded-lg border border-dashed border-border flex items-center justify-center">
             <p className="text-xs text-muted-foreground text-center px-4">
-              Ad placeholder — will be replaced with live ad network code before launch.
+              Ad placeholder. Will be replaced with live ad network code before launch.
             </p>
           </div>
         </div>

@@ -852,7 +852,7 @@ function DesktopHome(props: HomeViewProps) {
           <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
             <PanelHead
               title="The visitors’ book"
-              subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
+              subtitle="Builds, rebuilds, reproduction notes and asks · newest first"
               headingLevel={2}
               right={
                 <Segmented<HomeFilter> label="Show" size={30} fontSize={11} value={filter} onChange={setFilter} items={HOME_FILTERS} />

@@ -92,7 +92,7 @@ function ShowMore({ hidden, phone, onClick }: { hidden: number; phone: boolean; 
 /** A row of key and value: a 90 label column, a hairline under it. */
 function KeyValue({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "10px 0", borderBottom: line }}>
+    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "12px 0", borderBottom: line }}>
       <span style={quiet()}>{label}</span>
       <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
     </div>
@@ -129,7 +129,7 @@ function CommitField({
     }
     if (event.key === "Escape") setDraft(value);
   };
-  const style: CSSProperties = { ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) };
+  const style: CSSProperties = { ...wellField, padding: "8px 12px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) };
   const common = {
     "aria-label": label,
     value: draft,
@@ -257,7 +257,7 @@ function AddInput({ id, options, phone, onAddUse }: { id: string; options: reado
       <Menu.Portal>
         <Menu.Content align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: 360, overflowY: "auto" }}>
           {menu.visible.map((option) => (
-            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 10px" }}>
+            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 12px" }}>
               <span style={text(12.5, 500, t.text)}>{option.label}</span>
               {option.sub ? <span style={quiet()}>{option.sub}</span> : null}
             </Menu.Item>
@@ -583,7 +583,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
             onKeyDown={(event) => {
               if (event.key === "Enter") (event.target as HTMLInputElement).blur();
             }}
-            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+            style={{ ...wellField, padding: "8px 12px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
           />
           <span style={{ ...quiet(), ...tnum }}>
             {detail.length} / {field.max}

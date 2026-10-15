@@ -367,7 +367,7 @@ function ReproNoteStrip({ item }: { item: ReproNoteFeedItem }) {
           <PlaqueLamp dim={!item.worked} />
         </span>
         <p style={{ ...bodyText, margin: 0, color: t.text2 }}>
-          {who} ran {item.title} — {verb}
+          {who} ran {item.title} · {verb}
           {item.model ? (
             <>
               {" on "}

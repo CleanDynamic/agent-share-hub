@@ -463,7 +463,7 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
       );
     } else if (size < DISPLAY_MIN_PX) {
       found.push(
-        `${role}: Sentient at ${size}px is below the ${DISPLAY_MIN_PX}px display floor — ` +
+        `${role}: Sentient at ${size}px is below the ${DISPLAY_MIN_PX}px display floor · ` +
           `the face loses its shape at this size, worst on Dusk. Use Figtree, or size up.`,
       );
     }
@@ -476,7 +476,7 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
     weight < BODY_MIN_WEIGHT
   ) {
     found.push(
-      `${role}: Figtree at ${size}px weight ${weight} is under the weight floor — ` +
+      `${role}: Figtree at ${size}px weight ${weight} is under the weight floor · ` +
         `below ${BODY_WEIGHT_FLOOR_PX}px the weight must be at least ${BODY_MIN_WEIGHT}.`,
     );
   }

@@ -340,7 +340,7 @@ export function FindReplaceBar({
         {blockMatches.length > 0 ? (
           <button
             type="button"
-            title="Matches in canvas blocks — click to jump"
+            title="Matches in canvas blocks · click to jump"
             onClick={() => {
               const first = blockMatches[0];
               if (first) setSelection({ kind: 'block', ids: [first.blockId] });

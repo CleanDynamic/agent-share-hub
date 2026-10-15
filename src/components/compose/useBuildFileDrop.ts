@@ -161,12 +161,12 @@ export function plainLanguageRefusal(
     case "UNSUPPORTED_VERSION": {
       const version = declaredVersion(raw);
       return version
-        ? `This file says it's version ${version} — this site reads version ${PORTABLE_FORMAT_VERSION}.`
+        ? `This file says it's version ${version} · this site reads version ${PORTABLE_FORMAT_VERSION}.`
         : `This file is written to a version of the format this site doesn't read. This site reads version ${PORTABLE_FORMAT_VERSION}.`;
     }
     case "NOT_JSON":
     case "NOT_AN_OBJECT":
-      return "This doesn't look like a Build File — is it the file the AI gave you?";
+      return "This doesn't look like a Build File. Is it the file the AI gave you?";
     case "FILE_EMPTY":
       return "That file is empty. Is it the one the AI gave you?";
     case "FILE_TOO_LARGE":
@@ -177,11 +177,11 @@ export function plainLanguageRefusal(
     case "WRONG_FILE_KIND":
       return "That isn't a file this can open. Drop the .md, .json or .txt the AI gave you.";
     case "TOO_MANY_FILES":
-      return "Drop one file at a time — the Build File the AI wrote for this build.";
+      return "Drop one file at a time. The Build File the AI wrote for this build.";
     case "FILE_UNREADABLE":
       return "That file couldn't be read off your machine. Try dropping it again.";
     default:
-      return "This doesn't look like a Build File — is it the file the AI gave you?";
+      return "This doesn't look like a Build File. Is it the file the AI gave you?";
   }
 }
 

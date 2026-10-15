@@ -124,7 +124,7 @@ export default function StreakMilestoneModal({
             color: COLORS.textMuted,
           }}
         >
-          {milestone} days of showing up. Momentum like this is rare — keep going.
+          {milestone} days of showing up. Momentum like this is rare. Keep going.
         </p>
 
         <div className="flex flex-col gap-[7px]" style={{ marginTop: 16 }}>

@@ -154,7 +154,7 @@ function ListTable({ field, rows }: { field: FieldDef; rows: unknown[] }) {
                   >
                     {isPresent(record[member.key])
                       ? renderScalar(member, record[member.key])
-                      : <span style={{ color: t.text2 }}>—</span>}
+                      : <span style={{ color: t.text2 }}>–</span>}
                   </td>
                 ))}
               </tr>

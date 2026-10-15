@@ -99,7 +99,7 @@ export default function TrackCard({
           {track}
         </span>
         <span className="text-xs" style={{ color: colors.textMuted }}>
-          {locked ? "Locked — reach Level 10 to unlock" : `${track} track`}
+          {locked ? "Locked · reach Level 10 to unlock" : `${track} track`}
         </span>
       </div>
 

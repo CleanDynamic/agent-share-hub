@@ -128,7 +128,7 @@ export default function Onboarding() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <SeoHead title="Onboarding — buildgallery.ai" description="Set up your buildgallery.ai profile." path="/onboarding" noIndex />
+      <SeoHead title="Onboarding · buildgallery.ai" description="Set up your buildgallery.ai profile." path="/onboarding" noIndex />
       <div className="w-full max-w-lg p-6 sm:p-8" style={panelStyle}>
         {/* Where the reader is, in words. */}
         <p style={{ ...eyebrow, color: t.text2, marginBottom: "24px" }}>

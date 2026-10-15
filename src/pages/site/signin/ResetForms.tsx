@@ -194,7 +194,7 @@ export function ResetSent({ email }: { email: string }) {
       <h2 style={{ ...cardTitle, margin: 0, color: t.text }}>Check your inbox</h2>
       <p style={{ ...LEDE, marginTop: 6 }}>
         If an account exists with <span style={{ color: t.text }}>{email}</span>, we sent a reset link. Open it and you can set a new
-        password — it works once and expires after an hour.
+        password. It works once and expires after an hour.
       </p>
       <BackToSignIn marginTop={12} />
     </Centred>
@@ -207,7 +207,7 @@ export function ResetLinkError({ onRequestNew }: { onRequestNew: () => void }) {
       <AlertCircle aria-hidden="true" style={{ width: 56, height: 56, color: t.catBreakage, strokeWidth: 1.5 }} />
       <h2 style={{ ...cardTitle, margin: "14px 0 0", color: t.text }}>This reset link doesn&apos;t work</h2>
       <p style={{ ...LEDE, marginTop: 6 }}>
-        It may have expired or already been used. Request a new one and we&apos;ll email a fresh link — your password has not changed.
+        It may have expired or already been used. Request a new one and we&apos;ll email a fresh link. Your password has not changed.
       </p>
       <div style={{ width: "100%", marginTop: 12 }}>
         <PrimaryAction type="button" onClick={onRequestNew}>

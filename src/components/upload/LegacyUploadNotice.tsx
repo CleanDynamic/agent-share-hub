@@ -66,14 +66,14 @@ export function LegacyUploadNotice({ bounty = false }: { bounty?: boolean }) {
         </p>
         <p style={{ fontSize: 13, fontWeight: 400, color: "var(--text2)" }}>
           Blueprints are now built in the build workspace. This editor still
-          saves and publishes — finish anything you have in progress here.
+          saves and publishes. Finish anything you have in progress here.
         </p>
         {/* NS-P54. Only on the two bounty routes: the blueprint and blog
             editors still create, and telling their creators about a retirement
             that is not theirs would be noise. */}
         {bounty && (
           <p style={{ fontSize: 13, fontWeight: 400, color: "var(--text2)" }}>
-            Bounties are now part of publishing a build — mark a part unsolved
+            Bounties are now part of publishing a build. Mark a part unsolved
             in the composer.
           </p>
         )}

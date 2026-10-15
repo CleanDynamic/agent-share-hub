@@ -84,7 +84,7 @@ export default function FreezeIndicator({
           }}
         >
           Freeze passes keep your streak alive on a missed day. You get{" "}
-          {total} a month — {available} left.
+          {total} a month · {available} left.
         </div>
       )}
     </div>

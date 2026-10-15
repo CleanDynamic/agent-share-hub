@@ -236,7 +236,7 @@ function satisfiedBy(
       const node = satisfyingNode(key, placed);
       if (!node) return null;
       const label = typesByKey.get(node.type)?.label ?? node.type;
-      return truncate(node.title ? `${label} — ${node.title}` : label);
+      return truncate(node.title ? `${label} · ${node.title}` : label);
     }
   }
 }

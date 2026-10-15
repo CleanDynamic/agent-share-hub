@@ -823,7 +823,7 @@ export function planConversion({ item, blocks }: ConversionSource): ConversionPl
     "The build starts as a draft. Nothing is published until you publish it.",
   ];
   if (text(item.difficulty)) {
-    notes.push(`Difficulty ("${text(item.difficulty)}") is not carried across — a build record has no such field.`);
+    notes.push(`Difficulty ("${text(item.difficulty)}") is not carried across. A build record has no such field.`);
   }
 
   return {

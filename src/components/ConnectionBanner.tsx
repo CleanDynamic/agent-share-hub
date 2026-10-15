@@ -38,7 +38,7 @@ export function ConnectionBanner() {
       }}
     >
       <p style={{ color: t.catBreakage }}>
-        Connection issue — some content may not load. Refresh to try again.
+        Connection issue. Some content may not load. Refresh to try again.
       </p>
       <button
         onClick={() => setDismissed(true)}

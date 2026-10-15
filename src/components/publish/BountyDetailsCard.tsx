@@ -262,7 +262,7 @@ export function BountyDetailsCard({
               </HelperText>
             ) : (
               <HelperText amber>
-                Funds aren't held in escrow — payment is off-platform between you
+                Funds aren't held in escrow. Payment is off-platform between you
                 and the solver.
               </HelperText>
             )}
@@ -342,7 +342,7 @@ export function BountyDetailsCard({
                 updateValue({ acceptanceCriteria: e.target.value });
               }
             }}
-            placeholder="Describe what 'done' looks like for a solver. Be specific — vague criteria attract weaker solutions. (min 50 chars)"
+            placeholder="Describe what 'done' looks like for a solver. Be specific. Vague criteria attract weaker solutions. (min 50 chars)"
             className="w-full outline-none resize-none"
             style={{
               minHeight: 100,
@@ -364,7 +364,7 @@ export function BountyDetailsCard({
             <HelperText error>{errors.acceptanceCriteria}</HelperText>
           ) : (
             <HelperText>
-              Be specific — vague criteria attract weaker solutions.
+              Be specific. Vague criteria attract weaker solutions.
             </HelperText>
           )}
           <span

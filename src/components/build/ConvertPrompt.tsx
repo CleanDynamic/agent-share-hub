@@ -318,7 +318,7 @@ export default function ConvertPrompt() {
     return (
       <Frame contentItemId={contentItemId} title={plan.header.title}>
         <Helmet>
-          <title>Converted — buildgallery</title>
+          <title>Converted · buildgallery</title>
         </Helmet>
         <h1 style={{ ...cardTitle, margin: 0, color: t.text }}>
           {converted ? "Converted" : "You have already converted this post"}
@@ -344,7 +344,7 @@ export default function ConvertPrompt() {
   return (
     <Frame contentItemId={contentItemId} title={plan.header.title}>
       <Helmet>
-        <title>Convert to a build record — buildgallery</title>
+        <title>Convert to a build record · buildgallery</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 

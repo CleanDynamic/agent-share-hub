@@ -1419,6 +1419,22 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
 input[type="search"] { border-radius: var(--r-control); }
 
+/* UI-P96 — under the refined look every keyboard-focusable thing wears the one ring, even where a fork set `outline:
+   none` inline (a card that is a button, a well field), and a search field's box wears it for the input inside. */
+:root[data-look="refined"] :is([tabindex="0"], [role="button"], textarea):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+}
+/* Tailwind's `outline-none` is a 2px transparent outline, which a contrast probe (and a reader) takes for a ring that
+   is not there. A field that hands its ring to the box around it has no outline of its own. */
+:root[data-look="refined"] input[class*="focus-visible:!outline-none"]:focus-visible {
+  outline-style: none !important;
+}
+:root[data-look="refined"] [data-ui="search-field"]:has(input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* Publish-page focus ring — accessible keyboard focus */
 .publish-focus:focus-visible {
   outline: 2px solid rgba(232,87,26,0.30) !important;

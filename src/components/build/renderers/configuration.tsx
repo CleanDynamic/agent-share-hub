@@ -164,11 +164,11 @@ export function ConfigCard(props: NodeProps) {
       const value = num(payload, field.key);
       return {
         label: field.label,
-        value: (typeof value === "number" ? formatNumber(value) : "—") as ReactNode,
+        value: (typeof value === "number" ? formatNumber(value) : "–") as ReactNode,
       };
     }
     if (field.format === "timestamp") {
-      return { label: field.label, value: (formatDate(str(payload, field.key)) ?? "—") as ReactNode };
+      return { label: field.label, value: (formatDate(str(payload, field.key)) ?? "–") as ReactNode };
     }
     if (field.type === "enum") {
       return { label: field.label, value: <Chip>{str(payload, field.key)}</Chip> as ReactNode };

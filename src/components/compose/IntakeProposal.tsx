@@ -548,7 +548,7 @@ function SecretsBanner({ secrets }: { secrets: SecretWarning[] }) {
       </span>
       <p style={{ ...bodyText, margin: 0, color: t.text }}>
         Looks like a key or password travelled in this file. Check these before
-        you publish — clear them in the fields after import.
+        you publish. Clear them in the fields after import.
       </p>
       <ul
         style={{
@@ -688,7 +688,7 @@ export function IntakeProposal({
         </p>
         <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
           Anything marked <span style={{ color: t.action }}>Guess</span> was inferred
-          rather than read — hover it for the reason.{" "}
+          rather than read. Hover it for the reason.{" "}
           {arrivalNote ??
             "Everything you keep lands in the tray, unplaced, for you to arrange."}
         </p>

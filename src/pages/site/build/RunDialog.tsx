@@ -123,7 +123,7 @@ export function RunDialog({ open, onOpenChange, creator, suggestions, initialMod
             </div>
             <Dialog.Description style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: t.text2 }}>
               {creator
-                ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
+                ? "This moves the date on the freshness line. It does not touch the count. That stays other people."
                 : "What you say here is what the next reader sees. Both answers are worth having."}
             </Dialog.Description>
 

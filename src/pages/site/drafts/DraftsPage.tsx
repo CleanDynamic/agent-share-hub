@@ -113,7 +113,7 @@ export function DraftsPage() {
 
   return (
     <>
-      <SeoHead title="Drafts — buildgallery" description="Builds in progress, and the sessions waiting to join one." path="/drafts" noIndex />
+      <SeoHead title="Drafts · buildgallery" description="Builds in progress, and the sessions waiting to join one." path="/drafts" noIndex />
       <DraftsView
         now={Date.now()}
         status={status}

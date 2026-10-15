@@ -15,7 +15,7 @@ export default function StreakInlineNote() {
         margin: 0,
       }}
     >
-      Any action keeps it going. Life happens — you get 3 free passes a month.
+      Any action keeps it going. Life happens. You get 3 free passes a month.
     </p>
   )
 }

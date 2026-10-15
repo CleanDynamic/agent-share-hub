@@ -146,7 +146,7 @@ export default function LearningPathDetail() {
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
       <SeoHead
-        title={`${path.title} — buildgallery.ai`}
+        title={`${path.title} · buildgallery.ai`}
         description={path.description}
         path={`/path/${id}`}
       />

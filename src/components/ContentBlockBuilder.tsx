@@ -537,7 +537,7 @@ const FilePicker = ({ file, fileName, fileSize, onFileChange }: {
       ) : (
         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
           <Paperclip className="h-5 w-5 text-muted-foreground mb-1" />
-          <span className="text-xs text-muted-foreground">.txt, .md, .json, .pdf — max 10 MB</span>
+          <span className="text-xs text-muted-foreground">.txt, .md, .json, .pdf · max 10 MB</span>
           <input type="file" accept={ACCEPTED_FILE_TYPES} onChange={handleChange} className="hidden" />
         </label>
       )}
@@ -568,7 +568,7 @@ const ImagePicker = ({ imageFile, imagePreview, imageDescription, onImageChange,
       ) : (
         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
           <ImageIcon className="h-5 w-5 text-muted-foreground mb-1" />
-          <span className="text-xs text-muted-foreground">.jpg, .png, .webp — max 5 MB</span>
+          <span className="text-xs text-muted-foreground">.jpg, .png, .webp · max 5 MB</span>
           <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={handleChange} className="hidden" />
         </label>
       )}
@@ -691,7 +691,7 @@ const LargeFileBlockEditor = ({
         <Input
           value={description}
           onChange={(e) => { if (e.target.value.length <= 120) onDescChange(e.target.value); }}
-          placeholder="e.g. The complete n8n workflow JSON — 2.3MB"
+          placeholder="e.g. The complete n8n workflow JSON · 2.3MB"
           className="bg-background border-border rounded-lg text-sm mt-1"
           maxLength={120}
         />
@@ -730,7 +730,7 @@ const BLOCK_TYPE_OPTIONS = [
 
 const NEW_BLOCK_TYPES = [
   { value: 'tutorial_step', label: 'Tutorial Step', emoji: '🎬', desc: 'A guided step with media + instructions' },
-  { value: 'section_heading', label: 'Section Heading', emoji: '§', desc: 'A named section — creates a TOC entry' },
+  { value: 'section_heading', label: 'Section Heading', emoji: '§', desc: 'A named section · creates a TOC entry' },
   { value: 'prompt',       label: 'Prompt',       emoji: '💬', desc: 'A copyable prompt' },
   { value: 'agent_config', label: 'Agent Config',  emoji: '🤖', desc: 'System prompt + settings' },
   { value: 'workflow',     label: 'Workflow',      emoji: '🔄', desc: 'Step-by-step process' },
@@ -1247,7 +1247,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
 
   return (
     <div>
-      <FieldLabel>Trigger — what starts this workflow?</FieldLabel>
+      <FieldLabel>Trigger. What starts this workflow?</FieldLabel>
       <input value={block.workflowTrigger}
         onChange={e => update(index, { workflowTrigger: e.target.value })}
         placeholder="e.g. New email arrives in Gmail, User submits form..."
@@ -1378,7 +1378,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
         </button>
       </div>
 
-      <FieldLabel>Output — what does this workflow produce?</FieldLabel>
+      <FieldLabel>Output. What does this workflow produce?</FieldLabel>
       <input value={block.workflowOutput}
         onChange={e => update(index, { workflowOutput: e.target.value })}
         placeholder="e.g. Drafted reply email sent to Gmail drafts..."
@@ -1502,7 +1502,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         boxSizing: 'border-box',
       }} />
 
-    <FieldLabel>After — the actual output</FieldLabel>
+    <FieldLabel>After · the actual output</FieldLabel>
     <div style={{ position: 'relative' }}>
       <textarea value={block.resultAfter}
         onChange={e => update(index, { resultAfter: e.target.value })}
@@ -1527,7 +1527,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         }}>Copy</button>
     </div>
 
-    <FieldLabel>Verdict — what does this result tell us?</FieldLabel>
+    <FieldLabel>Verdict. What does this result tell us?</FieldLabel>
     <textarea value={block.resultVerdict}
       onChange={e => update(index, { resultVerdict: e.target.value })}
       placeholder="This worked because... / This failed because..."

@@ -103,7 +103,7 @@ const emptySlot = (): BlueprintSlot => ({
 
 function computeProjectDifficulty(slots: AnySlot[]): string {
   const diffs = slots.map((s) => s.difficulty).filter(Boolean);
-  if (diffs.length === 0) return "—";
+  if (diffs.length === 0) return "–";
   if (diffs.some((d) => d === "Advanced")) return "Advanced";
   if (diffs.every((d) => d === "Beginner")) return "Beginner";
   return "Intermediate";
@@ -474,7 +474,7 @@ function LinkedBlueprintSlotCard({
               <Badge className="bg-secondary/15 text-secondary border-secondary/30 text-[10px]">Free</Badge>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1.5">Pricing set on original post — manage there.</p>
+          <p className="text-[10px] text-muted-foreground mt-1.5">Pricing set on original post. Manage there.</p>
         </div>
       </div>
     </div>
@@ -781,7 +781,7 @@ export function ProjectUploadForm() {
         ) : (
           <label className="flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/40 transition-colors">
             <ImagePlus className="h-6 w-6 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">.jpg, .png, .webp — max 5MB</span>
+            <span className="text-xs text-muted-foreground">.jpg, .png, .webp · max 5MB</span>
             <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={handleCoverChange} />
           </label>
         )}

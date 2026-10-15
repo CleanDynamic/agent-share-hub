@@ -301,7 +301,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
               data-testid="stale-prompt"
               style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}
             >
-              no one has confirmed this in four months — is it still working?
+              no one has confirmed this in four months. Is it still working?
             </p>
           ) : null}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -433,7 +433,7 @@ export function ReproductionAction({ build, onRecorded }: ReproductionActionProp
           </SheetTitle>
           <SheetDescription style={{ ...bodyType, ...measure, margin: 0, color: t.text2 }}>
             {isCreator
-              ? "This moves the date on the freshness line. It does not touch the count — that stays other people."
+              ? "This moves the date on the freshness line. It does not touch the count. That stays other people."
               : "What you say here is what the next reader sees. Both answers are worth having."}
           </SheetDescription>
 

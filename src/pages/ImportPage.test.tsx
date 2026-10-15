@@ -138,8 +138,8 @@ async function drop(file: File) {
   await Promise.resolve();
 }
 
-const EXTRACTOR_BODY = "# buildgallery Build File — Extractor v1\n\nRules — these are strict\n";
-const COMPILER_BODY = "# buildgallery Build File — Compiler v1\n\nEach source file becomes one PHASE.\n";
+const EXTRACTOR_BODY = "# buildgallery Build File · Extractor v1\n\nRules · these are strict\n";
+const COMPILER_BODY = "# buildgallery Build File · Compiler v1\n\nEach source file becomes one PHASE.\n";
 
 let written: string[] = [];
 
@@ -361,7 +361,7 @@ describe("/import", () => {
 
     const refusal = await screen.findByTestId("import-error");
     expect(refusal).toHaveTextContent(
-      "This file says it's version 2 — this site reads version 1"
+      "This file says it's version 2 · this site reads version 1"
     );
     expect(screen.getByTestId("import-error-extractor")).toBeInTheDocument();
   });
@@ -372,7 +372,7 @@ describe("/import", () => {
     await drop(fileOf("just some notes I made in a text file"));
 
     expect(await screen.findByTestId("import-error")).toHaveTextContent(
-      "This doesn't look like a Build File — is it the file the AI gave you?"
+      "This doesn't look like a Build File. Is it the file the AI gave you?"
     );
   });
 

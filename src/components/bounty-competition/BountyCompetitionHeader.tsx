@@ -160,7 +160,7 @@ function RewardDisplay({
       return <div style={{ ...baseStyle, color: "var(--evidence)", fontSize: 22 }}>Community recognition</div>;
     case "none":
     default:
-      return <div style={{ ...baseStyle, color: "var(--text2)", fontSize: 18, fontWeight: 500 }}>No reward — knowledge is the prize</div>;
+      return <div style={{ ...baseStyle, color: "var(--text2)", fontSize: 18, fontWeight: 500 }}>No reward · knowledge is the prize</div>;
   }
 }
 

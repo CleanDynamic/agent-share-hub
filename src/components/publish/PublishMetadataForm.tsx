@@ -254,7 +254,7 @@ function validate(
     const criteria = v.bountyAcceptanceCriteria.trim();
     if (criteria.length < 50) {
       bountyErrors.acceptanceCriteria =
-        "At least 50 characters — describe what 'done' looks like";
+        "At least 50 characters · describe what 'done' looks like";
     }
     if (ctx.missingItemCount === 0) {
       bountyErrors.missingItems =
@@ -708,7 +708,7 @@ export function PublishMetadataForm({
                 </span>
                 {missingItemCount === 0 && (
                   <span style={{ opacity: 0.8 }}>
-                    — open the editor and mark at least one
+                    · open the editor and mark at least one
                   </span>
                 )}
               </div>
@@ -895,7 +895,7 @@ export function PublishMetadataForm({
               }}
             >
               {slugBlockingPublish
-                ? "That slug is taken — pick another"
+                ? "That slug is taken · pick another"
                 : "Fill all required fields to publish"}
             </div>
           )}
@@ -1039,7 +1039,7 @@ function BlogAutoDetectedCard({
             className="text-[11px] font-medium"
             style={{ color: "var(--text2)" }}
           >
-            No inline references yet — use @ in the editor to link blueprints, stages, or blocks.
+            No inline references yet. Use @ in the editor to link blueprints, stages, or blocks.
           </span>
         )}
       </div>

@@ -177,7 +177,7 @@ export interface NodeMatching {
 
 /** What the gate says when a fork has been published untouched. */
 export const NO_CHANGES_REASON =
-  "A rebuild has to change something. Adjust a part, add one, or remove one — then publish.";
+  "A rebuild has to change something. Adjust a part, add one, or remove one. Then publish.";
 
 /** Longest a value may run inside a change line before it is clipped. */
 const LINE_VALUE_MAX = 60;

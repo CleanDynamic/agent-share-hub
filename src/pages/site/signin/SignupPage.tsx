@@ -96,7 +96,7 @@ export function SignupPage() {
       } else {
         setUsernameValidation({
           state: "invalid",
-          message: suggestion ? `Taken — try "${suggestion}"` : "That username is taken",
+          message: suggestion ? `Taken. Try "${suggestion}"` : "That username is taken",
         });
       }
     }, 400);
@@ -147,7 +147,7 @@ export function SignupPage() {
       if (result.outcome !== "created") {
         if (result.outcome === "already-registered") {
           setEmailValidation({ state: "invalid", message: "An account with this email already exists" });
-          setError("That email is already registered — try signing in instead.");
+          setError("That email is already registered. Try signing in instead.");
         } else {
           setError(result.message);
         }

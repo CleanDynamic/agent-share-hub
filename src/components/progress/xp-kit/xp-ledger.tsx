@@ -233,7 +233,7 @@ export default function XpLedger({ entries, onLoadMore, diminishing }: XpLedgerP
                           {`+${row.baseXp}`}
                         </span>
                         <span
-                          title="Diminishing returns — repeated actions earn less each day"
+                          title="Diminishing returns · repeated actions earn less each day"
                           style={{ display: "flex", cursor: "help", color: tokens.textFaint }}
                         >
                           <Info size={12} />

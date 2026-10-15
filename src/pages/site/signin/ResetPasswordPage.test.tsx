@@ -63,7 +63,7 @@ describe("the request form", () => {
 
   it("is the title and the way back, and has no Sign in · Join free switch", async () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Reset your password — buildgallery"));
+    await waitFor(() => expect(document.title).toBe("Reset your password · buildgallery"));
     expect(screen.queryByRole("link", { name: "Join free" })).toBeNull();
     expect(screen.getAllByRole("link", { name: "Back to sign in" })[0].getAttribute("href")).toBe("/login");
   });

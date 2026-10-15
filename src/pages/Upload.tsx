@@ -1637,7 +1637,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const, height: '100%', overflowY: 'auto' as const, paddingTop: 0, paddingBottom: 80, paddingLeft: 0, paddingRight: 0 }}>
-      <SeoHead title="Upload — buildgallery.ai" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
+      <SeoHead title="Upload · buildgallery.ai" description="Share your AI assistants, blueprints and workflows with the community." path="/upload" />
       <ShellHeader onBack={() => navigate(-1)} />
       <div>
         {/* Draft banner */}
@@ -1647,7 +1647,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             style={{ background: 'color-mix(in srgb, var(--lit) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--lit) 30%, transparent)', borderRadius: 10, padding: '10px 16px' }}
           >
             <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--lit)' }}>
-              Editing draft — <span style={{ fontWeight: 600 }}>{draftMeta.name}</span>
+              Editing draft · <span style={{ fontWeight: 600 }}>{draftMeta.name}</span>
               <span className="opacity-70 ml-2">· {lastAutosaveRef.current
                 ? `Autosaved ${formatDistanceToNow(lastAutosaveRef.current, { addSuffix: true })}`
                 : `Last saved ${formatDistanceToNow(new Date(draftMeta.savedAt), { addSuffix: true })}`}</span>
@@ -1676,9 +1676,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
               accent: 'var(--action)',
               description: 'Share step-by-step AI agent processes and workflows on a visual canvas.',
               bullets: [
-                'Build — construct and document a new process',
-                'Technique — share a specific method or approach',
-                'Discovery — document findings and experiments',
+                'Build · construct and document a new process',
+                'Technique · share a specific method or approach',
+                'Discovery · document findings and experiments',
               ],
               onClick: () => {
                 setUploadType('single');
@@ -1886,7 +1886,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
                 >
                   <ImagePlus style={{ width: 22, height: 22, color: 'var(--text2)' }} />
-                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp · max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -1956,9 +1956,9 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                     <SelectTrigger className="bg-card border-border rounded-xl"><SelectValue placeholder="Select a type" /></SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-card border-border">
-                    <SelectItem value="Failure Library">Failure Library — Something that went wrong and why</SelectItem>
-                    <SelectItem value="Open Question">Open Question — A problem you haven't solved yet</SelectItem>
-                    <SelectItem value="Challenge">Challenge — A task you want the community to attempt</SelectItem>
+                    <SelectItem value="Failure Library">Failure Library · Something that went wrong and why</SelectItem>
+                    <SelectItem value="Open Question">Open Question · A problem you haven't solved yet</SelectItem>
+                    <SelectItem value="Challenge">Challenge · A task you want the community to attempt</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -2016,7 +2016,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--line)'; (e.currentTarget as HTMLLabelElement).style.background = 'transparent'; }}
                 >
                   <ImagePlus style={{ width: 22, height: 22, color: 'var(--text2)' }} />
-                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp — max 3MB)</span>
+                  <span style={{ fontSize: 12, color: 'var(--text2)' }}>Click to upload cover image (.jpg, .png, .webp · max 3MB)</span>
                   <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -2185,7 +2185,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
             <div className="border border-border rounded-xl p-5 bg-card space-y-5">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Optional · free by default</p>
               </div>
               <div className="space-y-4">
                 {(["free", "paid"] as const).map((type) => (
@@ -2719,7 +2719,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
-                  Tags — optional
+                  Tags · optional
                 </div>
                 <Input
                   value={tagInput}
@@ -2778,7 +2778,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                 <div className="border border-border rounded-xl p-5 bg-card space-y-5">
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Monetisation</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Optional — free by default</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Optional · free by default</p>
                   </div>
                   <div className="space-y-4">
                     {!isBlogType && (["free", "paid"] as const).map((type) => (
@@ -2833,7 +2833,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
-                  Co-authors — optional
+                  Co-authors · optional
                 </div>
                 <CollabInvitePicker invitees={collabInvitees} onChange={setCollabInvitees} />
               </div>
@@ -2885,7 +2885,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
-                  Remixing — optional
+                  Remixing · optional
                 </div>
                 <RemixSettingsRow
                   isRemixable={isRemixable}
@@ -2902,7 +2902,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
-                  Dependencies — optional
+                  Dependencies · optional
                 </div>
                 <DependencyPicker dependencies={dependencies} onChange={setDependencies} />
               </div>
@@ -2916,7 +2916,7 @@ const Upload = ({ mode = 'blueprint' }: UploadProps = {}) => {
                   letterSpacing: '0.10em',
                   marginBottom: 12,
                 }}>
-                  Import from GitHub — optional
+                  Import from GitHub · optional
                 </div>
                 {!showGithubImport ? (
                   <button type="button" onClick={() => setShowGithubImport(true)}

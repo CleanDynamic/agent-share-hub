@@ -12,7 +12,7 @@ export const POST_TYPES = [
   {
     value: 'build',
     label: 'Build',
-    description: 'Something you made — a tool, agent, workflow, or system',
+    description: 'Something you made · a tool, agent, workflow, or system',
     color: 'var(--cat-artefact)',
     bg: 'var(--cat-artefact-fill)',
     border: 'var(--cat-artefact)',
@@ -30,7 +30,7 @@ export const POST_TYPES = [
   {
     value: 'discovery',
     label: 'Discovery',
-    description: 'Something you found — a behaviour, result, or tool',
+    description: 'Something you found · a behaviour, result, or tool',
     color: 'var(--cat-evidence)',
     bg: 'var(--cat-evidence-fill)',
     border: 'var(--cat-evidence)',

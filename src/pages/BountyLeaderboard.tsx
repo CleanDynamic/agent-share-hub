@@ -104,7 +104,7 @@ export default function BountyLeaderboardPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
-      <SeoHead title={`${bountyTitle} — Leaderboard`} description="Top solvers for this bounty" path={`/b/${slug}/leaderboard`} />
+      <SeoHead title={`${bountyTitle} · Leaderboard`} description="Top solvers for this bounty" path={`/b/${slug}/leaderboard`} />
       <div style={{ marginBottom: 16 }}>
         <button
           onClick={() => navigate(`/b/${slug}`)}
@@ -122,7 +122,7 @@ export default function BountyLeaderboardPage() {
         </button>
       </div>
       <h1 style={{ ...type.sectionHead, color: tok.text, margin: "0 0 16px" }}>
-        Leaderboard — {bountyTitle}
+        Leaderboard · {bountyTitle}
       </h1>
       {loading && contributors.length === 0 ? (
         <div style={{ color: tok.text2, fontFamily: FIGTREE }}>Loading…</div>

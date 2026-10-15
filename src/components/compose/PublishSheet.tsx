@@ -85,7 +85,7 @@ import { feedback } from "@/lib/theme/motion";
  * JSX should have to delete a named constant to lose one of them.
  */
 const CARD_LABEL = "This is your post.";
-const COVER_NUDGE = "Add a picture — posts with one get seen.";
+const COVER_NUDGE = "Add a picture. Posts with one get seen.";
 const CHECKLIST_LABEL = "What is left";
 const NOTHING_LEFT = "Nothing left. This one is ready.";
 const KEEP_EDITING = "You can keep editing after publishing.";

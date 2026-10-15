@@ -143,7 +143,7 @@ const RETURNING_LEAD = "You have a published rebuild that solves this gap.";
 const SUBMIT_REBUILD_LABEL = "Submit your rebuild as the solution";
 const NOTE_LABEL = "Anything the creator should know? (optional)";
 const NOTE_HELP =
-  "How you got there, what you would check first — the part that does not fit in the fields.";
+  "How you got there, what you would check first. The part that does not fit in the fields.";
 const SIGNED_OUT = "Sign in to offer a solution.";
 const EMPTY_SOLUTIONS = "Nobody has answered this yet. You would be the first.";
 /** The consequence, named before the author commits to it. */

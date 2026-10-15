@@ -617,7 +617,7 @@ function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () 
 
 function ModelsCell({ row }: { row: Pick<DashboardRow, "modelsUsed"> }) {
   const names = modelNamesOf(row);
-  if (names.length === 0) return <span style={mono(12, { color: t.text2 })}>—</span>;
+  if (names.length === 0) return <span style={mono(12, { color: t.text2 })}>–</span>;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
       <span
@@ -740,7 +740,7 @@ function BuildRow({
             </span>
           </>
         ) : (
-          <span style={mono(12, { color: t.text2 })}>—</span>
+          <span style={mono(12, { color: t.text2 })}>–</span>
         )}
       </div>
       <div role="cell">
@@ -854,7 +854,7 @@ function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]
                       {isNew ? <NewBadge /> : null}
                     </div>
                     <div role="cell" style={figtree(13, { color: t.text2 })}>
-                      {row.lab ?? "—"}
+                      {row.lab ?? "–"}
                     </div>
                     <div role="cell" style={numberCell}>
                       {formatCount(row.builds)}
@@ -882,7 +882,7 @@ function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]
                         </>
                       ) : (
                         <>
-                          <span style={mono(12, { color: t.text2 })}>—</span>
+                          <span style={mono(12, { color: t.text2 })}>–</span>
                           <span style={figtree(12, { color: t.text2, ...ellipsis })}>Not used in any build yet</span>
                         </>
                       )}
@@ -965,7 +965,7 @@ function MakersTable({ rows }: { rows: readonly DashboardRow[] }) {
                       {formatCount(row.engagement.total)}
                     </div>
                     <div role="cell" style={mono(12, { color: row.lastPublishedAt ? t.text : t.text2 })}>
-                      {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "—"}
+                      {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "–"}
                     </div>
                   </div>
                 );

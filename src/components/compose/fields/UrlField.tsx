@@ -129,7 +129,7 @@ export function UrlField({
             color: ORANGE,
           }}
         >
-          Needs a scheme — https://example.com, not example.com
+          Needs a scheme · https://example.com, not example.com
         </p>
       )}
     </FieldShell>

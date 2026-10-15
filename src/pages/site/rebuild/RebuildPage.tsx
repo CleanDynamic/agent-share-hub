@@ -261,7 +261,7 @@ export function RebuildPage() {
   return (
     <>
       <SeoHead
-        title={`Rebuilding ${source.title} — buildgallery`}
+        title={`Rebuilding ${source.title} · buildgallery`}
         description={`A rebuild of ${source.title}: what it changed, and whether it can hang.`}
         path={`/rebuild/${slug}`}
         noIndex

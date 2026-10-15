@@ -82,7 +82,7 @@ export default function LibraryPage() {
   return (
     <div data-testid="library-root">
       <SeoHead
-        title={visiting ? `${ownerName}'s collections — buildgallery` : "Library — buildgallery"}
+        title={visiting ? `${ownerName}'s collections · buildgallery` : "Library · buildgallery"}
         description="Builds kept for later, and the collections they are kept in."
         path={visiting ? `/library/${handle}` : "/library"}
         noIndex

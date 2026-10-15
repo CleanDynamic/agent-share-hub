@@ -29,7 +29,7 @@ import { changesEyebrow, type ChangeGroupView, type ChangeRowKind } from "./rebu
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 
 const SYMBOL: Record<ChangeRowKind, { glyph: string; colour: string }> = {
-  added: { glyph: "+", colour: t.catConfiguration },
+  added: { glyph: "+", colour: t.evidence },
   changed: { glyph: "~", colour: t.litInk },
   removed: { glyph: "−", colour: t.catBreakage },
 };
@@ -138,7 +138,7 @@ export function ChangesPanel({ groups, phone = false, fill = false, placeholder,
         <PanelHead
           headingLevel={2}
           title="What changed"
-          subtitle={phone ? "Computed from the source — not editable" : "Computed from the source — you cannot edit this list"}
+          subtitle={phone ? "Computed from the source · not editable" : "Computed from the source · you cannot edit this list"}
           right={!phone && groups ? <Eyebrow>{changesEyebrow(groups)}</Eyebrow> : undefined}
         />
         {about}

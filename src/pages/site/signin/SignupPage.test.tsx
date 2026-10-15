@@ -134,7 +134,7 @@ describe("the username", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    expect(screen.getByText('Taken — try "ada_l417"')).toBeTruthy();
+    expect(screen.getByText('Taken. Try "ada_l417"')).toBeTruthy();
 
     checkUsernameAvailability.mockResolvedValueOnce({ available: false });
     type("username", "ada_la");
@@ -316,7 +316,7 @@ describe("creating the account", () => {
     await act(async () => {});
 
     expect(screen.getByText("An account with this email already exists")).toBeTruthy();
-    expect(screen.getByText("That email is already registered — try signing in instead.")).toBeTruthy();
+    expect(screen.getByText("That email is already registered. Try signing in instead.")).toBeTruthy();
     expect(screen.getByPlaceholderText("you@example.com").getAttribute("aria-invalid")).toBe("true");
     // Closed again, until the email is changed.
     expect(create()).toBeDisabled();

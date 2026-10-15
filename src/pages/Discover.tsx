@@ -146,9 +146,9 @@ const Discover = () => {
   // Tab counts.
   const { data: counts } = useDiscoverCounts();
   const tabCounts = {
-    blueprints: counts?.blueprints ?? "—",
-    stages: counts?.stages ?? "—",
-    blocks: counts?.blocks ?? "—",
+    blueprints: counts?.blueprints ?? "–",
+    stages: counts?.stages ?? "–",
+    blocks: counts?.blocks ?? "–",
   };
 
   // Filter sheet option queries.

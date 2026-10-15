@@ -38,7 +38,7 @@ describe("buildCsv", () => {
   it("writes one line per row: title, maker, models, figures, last activity", () => {
     const [, line] = buildCsv([rows[1]]).split("\r\n");
     expect(line).toBe(
-      'Pull request reviewer for small teams,kofi,Opus 5.5; Sonnet 5.5; DeepSeek V4 Pro,4,24,102,52,Oct 4 — Reproduced on Opus 5.5',
+      'Pull request reviewer for small teams,kofi,Opus 5.5; Sonnet 5.5; DeepSeek V4 Pro,4,24,102,52,Oct 4 · Reproduced on Opus 5.5',
     );
   });
 
@@ -151,7 +151,7 @@ describe("cells and the footer", () => {
 
   it("dates in UTC as Oct 5, and a dash for none", () => {
     expect(shortDate("2026-10-05T23:30:00Z")).toBe("Oct 5");
-    expect(shortDate("")).toBe("—");
+    expect(shortDate("")).toBe("–");
   });
 
   it("scales the sparkline by the row's highest week, never less than 2", () => {

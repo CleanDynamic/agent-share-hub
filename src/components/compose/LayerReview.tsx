@@ -230,7 +230,7 @@ function LayerPanel({
   // written from a record that has since moved is the one thing here a
   // creator could approve without realising what they were approving.
   const chip = panel.edited
-    ? { text: "Edited by you — kept and shown", colour: TEAL }
+    ? { text: "Edited by you · kept and shown", colour: TEAL }
     : panel.error
       ? { text: "Could not be written", colour: GAP_RED }
       : panel.stale

@@ -95,7 +95,7 @@ export function AuthCallbackCard({
           <p style={bodyStyle}>
             Something went wrong with{" "}
             {provider ? providerNames[provider] : "the provider"}. Go back and
-            try again, or sign in with a different provider — nothing was
+            try again, or sign in with a different provider. Nothing was
             created.
           </p>
           <div style={{ width: "100%", marginTop: "12px" }}>

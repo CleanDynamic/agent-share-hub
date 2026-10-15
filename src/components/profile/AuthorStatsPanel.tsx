@@ -333,7 +333,7 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
       <div className={`grid ${gridCols} gap-6`}>
         <StatCell
           label="Total Views"
-          value={totalViews === 0 ? "—" : formatNumber(totalViews)}
+          value={totalViews === 0 ? "–" : formatNumber(totalViews)}
           subtitle={
             totalViews === 0
               ? "No views yet"
@@ -343,7 +343,7 @@ export function AuthorStatsPanel({ stats }: AuthorStatsPanelProps) {
 
         <StatCell
           label="Referenced by Others"
-          value={referencesReceived === 0 ? "—" : formatNumber(referencesReceived)}
+          value={referencesReceived === 0 ? "–" : formatNumber(referencesReceived)}
           subtitle={
             referencesReceived === 0
               ? "Be the first to reference your work"

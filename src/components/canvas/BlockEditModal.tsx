@@ -44,7 +44,7 @@ export function BlockEditModal({ block, open, onClose, onChange }: BlockEditModa
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold text-foreground/80">
             Edit {BLOCK_TYPE_LABELS[block.type] ?? block.type}
-            {block.subheading ? ` — ${block.subheading}` : ''}
+            {block.subheading ? ` · ${block.subheading}` : ''}
           </DialogTitle>
         </DialogHeader>
 

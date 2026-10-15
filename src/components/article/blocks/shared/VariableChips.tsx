@@ -17,7 +17,7 @@ const DOT_COLOR: Record<VariableInfo['status'], string> = {
 };
 
 const TOOLTIP: Record<VariableInfo['status'], string> = {
-  resolved: 'Resolved — value available',
+  resolved: 'Resolved · value available',
   no_output: 'Block exists but has no output yet',
   missing: 'No block with this name found',
 };

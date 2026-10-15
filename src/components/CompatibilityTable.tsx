@@ -117,7 +117,7 @@ export function CompatibilityTable({ contentId, creatorId }: { contentId: string
             {entries.map((e) => (
               <tr key={e.id} className="border-b border-border last:border-0">
                 <td className="px-3 py-2 text-foreground">{e.tool_name}</td>
-                <td className="px-3 py-2 text-muted-foreground">{e.tool_version || "—"}</td>
+                <td className="px-3 py-2 text-muted-foreground">{e.tool_version || "–"}</td>
                 <td className="px-3 py-2">
                   <span className="inline-flex items-center gap-1">
                     {statusIcon(e.status)} {statusLabel(e.status)}
@@ -126,7 +126,7 @@ export function CompatibilityTable({ contentId, creatorId }: { contentId: string
                 <td className="px-3 py-2 text-muted-foreground">
                   {new Date(e.verified_at).toLocaleDateString()}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{e.notes || "—"}</td>
+                <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate">{e.notes || "–"}</td>
               </tr>
             ))}
           </tbody>

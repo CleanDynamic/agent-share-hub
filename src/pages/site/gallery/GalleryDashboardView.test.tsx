@@ -204,7 +204,7 @@ describe("GalleryDashboardView", () => {
     const last = rows[rows.length - 1];
     expect(within(last).getAllByRole("cell")[0].textContent).toBe("mystery-1");
     expect(within(last).queryByRole("button")).toBeNull();
-    expect(within(last).getAllByRole("cell")[1].textContent).toBe("—");
+    expect(within(last).getAllByRole("cell")[1].textContent).toBe("–");
   });
 
   it("lists makers by engagement with a profile link", () => {

@@ -18,7 +18,7 @@ export default function ConnectPage() {
   return (
     <>
       <SeoHead
-        title="Connect a tool — buildgallery"
+        title="Connect a tool · buildgallery"
         description="Add the buildgallery connector to Claude, Claude Code, ChatGPT or Cursor, then send a conversation to your Drafts page."
         path="/connect"
       />

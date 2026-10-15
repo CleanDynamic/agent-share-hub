@@ -156,7 +156,7 @@ export default function LibraryPage() {
 
   return (
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
-      <SeoHead title="Your Library — buildgallery.ai" description="Your personal content library on buildgallery.ai." path="/library" noIndex />
+      <SeoHead title="Your Library · buildgallery.ai" description="Your personal content library on buildgallery.ai." path="/library" noIndex />
       <div className="mx-auto max-w-5xl">
         {/* Controls */}
         <LibraryControls
@@ -268,7 +268,7 @@ export default function LibraryPage() {
                   color: "var(--text2)",
                 }}
               >
-                {folderLabel} — {filtered.length} {filtered.length === 1 ? "item" : "items"}
+                {folderLabel} · {filtered.length} {filtered.length === 1 ? "item" : "items"}
               </p>
               {activeFolder && activeFolder !== "root" && activeFolderObj && filtered.length >= 2 && (
                 <button

@@ -226,7 +226,7 @@ describe("what a card's picture is called", () => {
       ],
     });
 
-    expect(mediaAlt(uncaptioned, media())).toBe("A build — Comparison table");
+    expect(mediaAlt(uncaptioned, media())).toBe("A build · Comparison table");
   });
 
   it("is never empty, even for a build with no title and no node", () => {

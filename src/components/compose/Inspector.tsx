@@ -382,7 +382,7 @@ export function Inspector({ buildId, compose, onDelete }: InspectorProps) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <label htmlFor="inspector-note" style={{ ...labelText }}>
-          note — the only free prose on this node
+          note · the only free prose on this node
         </label>
         <textarea
           id="inspector-note"

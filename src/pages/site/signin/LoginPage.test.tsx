@@ -56,7 +56,7 @@ describe("the gate", () => {
 
   it("is the page's entrance: the title, no index, the lockup and the sentence", async () => {
     open();
-    await waitFor(() => expect(document.title).toBe("Sign in — buildgallery"));
+    await waitFor(() => expect(document.title).toBe("Sign in · buildgallery"));
     expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toContain("noindex");
     expect(screen.getByText("buildgallery", { exact: true })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
@@ -152,7 +152,7 @@ describe("the refusals", () => {
     open();
     fill();
     submit();
-    expect(await screen.findByText("Please verify your email before signing in — check your inbox.")).toBeTruthy();
+    expect(await screen.findByText("Please verify your email before signing in. Check your inbox.")).toBeTruthy();
   });
 
   it("says something went wrong when the request throws, and lets the reader try again", async () => {

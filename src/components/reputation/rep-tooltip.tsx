@@ -44,7 +44,7 @@ export default function RepTooltip() {
         <strong style={{ color: tokens.teal, fontWeight: 600 }}>
           Reputation
         </strong>{" "}
-        measures how valued your work is — saves, remixes, accepted solutions
+        measures how valued your work is. Saves, remixes, accepted solutions
         and votes from established members.{" "}
         <strong style={{ color: tokens.orange, fontWeight: 600 }}>XP</strong>{" "}
         measures activity. They&apos;re different on purpose.

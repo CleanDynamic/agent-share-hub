@@ -109,7 +109,7 @@ function ReblogComposePanel({
         {/* Main comment — tweet style */}
         <textarea
           {...form.register('description')}
-          placeholder="Add your take on this... (optional — leave blank to repost)"
+          placeholder="Add your take on this... (optional · leave blank to repost)"
           rows={4}
           style={{
             width: '100%', background: 'transparent',

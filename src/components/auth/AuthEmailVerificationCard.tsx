@@ -92,7 +92,7 @@ export function AuthEmailVerificationCard({
       >
         We sent a verification link to{" "}
         <span style={{ color: t.text }}>{email}</span>. Open it and your account
-        is active — you can close this page.
+        is active. You can close this page.
       </p>
 
       {/* Resend Section */}
@@ -129,7 +129,7 @@ export function AuthEmailVerificationCard({
               textAlign: "center",
             }}
           >
-            Sent again — it should arrive in a minute.
+            Sent again. It should arrive in a minute.
           </p>
         ) : resendState === "cooldown" ? (
           <p

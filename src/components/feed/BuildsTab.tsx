@@ -160,7 +160,7 @@ export function BuildsTab({ onlyFollowing = false, empty }: BuildsTabProps) {
           data-testid="feed-builds-end"
           style={{ ...dataText, color: t.text2, textAlign: "center", padding: "16px 0" }}
         >
-          That is everything published so far — the gallery has the rest.
+          That is everything published so far. The gallery has the rest.
         </p>
       ) : null}
     </div>

@@ -53,7 +53,7 @@ export default function EligibilityNotice({
 
       <div style={{ flex: 1, minWidth: 0, paddingRight: 18 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: tokens.text }}>
-          You&apos;re all set — XP starts soon
+          You&apos;re all set · XP starts soon
         </div>
         <p style={{ margin: "4px 0 0", fontSize: 13, lineHeight: 1.5, color: tokens.textMuted }}>
           Verify your email and your XP switches on after your first 48 hours. Everything you do now

@@ -146,7 +146,7 @@ function EmptyPlaceholder() {
       className="text-[11px] font-medium"
       style={{ color: "var(--text2)" }}
     >
-      —
+      –
     </span>
   );
 }
@@ -192,7 +192,7 @@ export function AutoDetectedCard({
           className="text-[12px]"
           style={{ color: "var(--text2)", fontFamily: "Figtree, sans-serif" }}
         >
-          Nothing detected yet — add some content in the editor first.
+          Nothing detected yet. Add some content in the editor first.
         </p>
         <button
           onClick={onEditClick}

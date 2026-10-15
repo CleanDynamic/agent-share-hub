@@ -691,7 +691,7 @@ const REQUIREMENTS: Record<RequirementKey, Requirement> = {
       present.categories.has("instruction") || present.categories.has("artefact"),
   },
   evidence: {
-    copy: "add one piece of evidence — a result, a screenshot or an eval run",
+    copy: "add one piece of evidence · a result, a screenshot or an eval run",
     met: (_build, present) => present.categories.has("evidence"),
   },
   made_for: {

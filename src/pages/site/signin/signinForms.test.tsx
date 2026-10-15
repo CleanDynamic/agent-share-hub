@@ -567,8 +567,8 @@ describe("SignupForm", () => {
   });
 
   it("puts the form's one error under the terms, announced politely", () => {
-    show(<SignupForm {...signup({ error: "That email is already registered — try signing in instead." })} />);
-    const message = screen.getByText("That email is already registered — try signing in instead.");
+    show(<SignupForm {...signup({ error: "That email is already registered. Try signing in instead." })} />);
+    const message = screen.getByText("That email is already registered. Try signing in instead.");
     expect(message.getAttribute("aria-live")).toBe("polite");
     expect(message.previousElementSibling!.matches('label[for="terms"]')).toBe(true);
   });
@@ -656,7 +656,7 @@ describe("the reset and link states", () => {
     show(<ResetSent email="ada@example.com" />);
     expect(screen.getByRole("heading", { level: 2, name: "Check your inbox" })).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
-    expect(screen.getByText(/it works once and expires after an hour/)).toBeTruthy();
+    expect(screen.getByText(/It works once and expires after an hour/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Back to sign in" }).getAttribute("href")).toBe("/login");
   });
 
@@ -664,7 +664,7 @@ describe("the reset and link states", () => {
     const onRequestNew = vi.fn();
     show(<ResetLinkError onRequestNew={onRequestNew} />);
     expect(screen.getByRole("heading", { level: 2, name: "This reset link doesn't work" })).toBeTruthy();
-    expect(screen.getByText(/your password has not changed/)).toBeTruthy();
+    expect(screen.getByText(/Your password has not changed/)).toBeTruthy();
     const request = screen.getByRole("button", { name: "Request a new one" });
     expect(request.getAttribute("type")).toBe("button");
     fireEvent.click(request);

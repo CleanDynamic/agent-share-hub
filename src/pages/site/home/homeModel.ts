@@ -145,7 +145,7 @@ export function whoLine(item: FeedItem): string {
     const who = handleOf(item.handle) ?? "Someone";
     const model = (item.model ?? "").trim();
     const note = item.note.trim();
-    return `${who} ran ${item.title}${model ? ` on ${model}` : ""}${note ? ` — “${note}”` : ""}`;
+    return `${who} ran ${item.title}${model ? ` on ${model}` : ""}${note ? ` · “${note}”` : ""}`;
   }
 
   const part = (item.gapTitle ?? "").trim();

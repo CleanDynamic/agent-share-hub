@@ -387,7 +387,7 @@ export default function Connect() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: t.bg, color: t.text }}>
       <SeoHead
-        title="Connect your AI tool — buildgallery"
+        title="Connect your AI tool · buildgallery"
         description="Add the buildgallery connector to Claude, Claude Code, ChatGPT or Cursor, then send a conversation to your upload page to review."
         path="/connect"
       />

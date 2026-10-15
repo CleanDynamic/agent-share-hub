@@ -234,7 +234,7 @@ export function WhatToExpectBuilder({ blocks, onChange, maxBlocks = 3, label, he
                   ) : (
                     <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl bg-card cursor-pointer hover:border-primary/40 transition-colors">
                       <ImageIcon className="h-5 w-5 text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground">.jpg, .png, .webp — max 5 MB</span>
+                      <span className="text-xs text-muted-foreground">.jpg, .png, .webp · max 5 MB</span>
                       <input type="file" accept={ACCEPTED_IMAGE_TYPES} className="hidden" onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;

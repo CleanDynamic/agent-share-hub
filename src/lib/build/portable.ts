@@ -533,7 +533,7 @@ export function toMarkdown(portable: PortableBuild): string {
       const requirement = node.payload.requirement;
       lines.push(
         `- [ ] **${node.title}**${
-          typeof requirement === "string" && requirement.trim() ? ` — ${inline(requirement)}` : ""
+          typeof requirement === "string" && requirement.trim() ? ` · ${inline(requirement)}` : ""
         }`
       );
       const why = node.payload.why;
@@ -563,7 +563,7 @@ export function toMarkdown(portable: PortableBuild): string {
       const text = EVENT_TEXT_KEYS.map((key) => event.payload[key]).find(
         (value) => typeof value === "string" && value.trim()
       );
-      const phase = event.phase_title ? `${event.phase_title} — ` : "";
+      const phase = event.phase_title ? `${event.phase_title} · ` : "";
       const summary = typeof text === "string" ? `: ${truncate(inline(text), EVENT_SUMMARY_MAX)}` : "";
       lines.push(`${event.ordinal}. ${phase}${event.kind}${summary}`);
     }

@@ -197,7 +197,7 @@ export default function PublishMetadata() {
       if (fingerprint !== lastSavedRef.current) {
         e.preventDefault();
         // Modern browsers ignore custom strings but require returnValue.
-        e.returnValue = "You have unsaved changes — are you sure you want to leave?";
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
         return e.returnValue;
       }
     };

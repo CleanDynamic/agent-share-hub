@@ -83,7 +83,7 @@ export class LegacyBountyValidationError extends Error {
 
 /** The sentence every frozen writer answers with, in one place. */
 export const BOUNTY_RETIRED_MESSAGE =
-  "Bounties are now part of publishing a build — mark a part unsolved in the composer.";
+  "Bounties are now part of publishing a build. Mark a part unsolved in the composer.";
 
 /**
  * The legacy bounty creation gate. Called as the FIRST statement of every

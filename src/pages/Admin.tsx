@@ -286,7 +286,7 @@ const Admin = () => {
 
   return (
     <div className="py-10 px-6">
-      <SeoHead title="Admin — buildgallery.ai" description="Admin panel." path="/admin" noIndex />
+      <SeoHead title="Admin · buildgallery.ai" description="Admin panel." path="/admin" noIndex />
       <div className="mx-auto max-w-5xl">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
@@ -489,7 +489,7 @@ const Admin = () => {
                               const ci = pendingProjContent?.find((x: any) => x.id === cid);
                               return (
                                 <p key={c.id} className="text-[10px] text-muted-foreground">
-                                  {i + 1}. {ci?.title ?? "Unknown"} — {ci?.content_type ?? ""} ({ci?.monetisation_type ?? "free"})
+                                  {i + 1}. {ci?.title ?? "Unknown"} · {ci?.content_type ?? ""} ({ci?.monetisation_type ?? "free"})
                                 </p>
                               );
                             })}
@@ -545,7 +545,7 @@ const Admin = () => {
                           <td className="py-2.5 px-3 text-muted-foreground">@{creator?.username || "unknown"}</td>
                           <td className="py-2.5 px-3 text-muted-foreground">{(proj.project_components ?? []).length}</td>
                           <td className="py-2.5 px-3 text-muted-foreground">{proj.view_count}</td>
-                          <td className="py-2.5 px-3 text-muted-foreground">{proj.approved_at ? new Date(proj.approved_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2.5 px-3 text-muted-foreground">{proj.approved_at ? new Date(proj.approved_at).toLocaleDateString() : "–"}</td>
                           <td className="py-2.5 px-3">
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -774,7 +774,7 @@ function CuratorsTab() {
     onSuccess: (_d, app) => {
       queryClient.invalidateQueries({ queryKey: ["admin_curator_apps_pending"] });
       queryClient.invalidateQueries({ queryKey: ["admin_active_curators"] });
-      toast({ title: `Approved — ${app.profiles?.display_name || app.profiles?.username} is now a Curator.` });
+      toast({ title: `Approved · ${app.profiles?.display_name || app.profiles?.username} is now a Curator.` });
     },
   });
 
@@ -861,7 +861,7 @@ function CuratorsTab() {
                   <td className="py-2.5 px-3 text-foreground font-medium">{c.profiles?.display_name || c.profiles?.username} <span className="text-xs text-muted-foreground">@{c.profiles?.username}</span></td>
                   <td className="py-2.5 px-3 text-muted-foreground">{c.profiles?.follower_count ?? 0}</td>
                   <td className="py-2.5 px-3 text-muted-foreground">{recCounts?.[c.id] ?? 0}</td>
-                  <td className="py-2.5 px-3 text-muted-foreground">{c.approved_at ? new Date(c.approved_at).toLocaleDateString() : "—"}</td>
+                  <td className="py-2.5 px-3 text-muted-foreground">{c.approved_at ? new Date(c.approved_at).toLocaleDateString() : "–"}</td>
                   <td className="py-2.5 px-3">
                     <Button size="sm" variant="outline" className="text-xs h-7 border-destructive text-destructive hover:bg-destructive/10" onClick={() => deactivateMutation.mutate(c)} disabled={deactivateMutation.isPending}>Deactivate</Button>
                   </td>

@@ -190,7 +190,7 @@ export function LearningPathUploadForm() {
 
       {/* Step builder */}
       <div className="space-y-3">
-        <Label>Steps ({steps.length}/20) — minimum 3</Label>
+        <Label>Steps ({steps.length}/20) · minimum 3</Label>
 
         {steps.map((step, idx) => (
           <div key={step.contentId} className="border border-border rounded-xl p-3 bg-card">

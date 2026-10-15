@@ -200,7 +200,7 @@ describe("what changed", () => {
 
   it("reads a list's move as counts, a short value as itself, and prose in words", () => {
     expect(fieldValue({ key: "rules", label: "Rules", before: '["a","b"]', after: '["a","b","c"]' })).toBe("2 → 3 rules");
-    expect(fieldValue({ key: "model", label: "Model", before: "sonnet-4.5", after: null })).toBe("sonnet-4.5 → —");
+    expect(fieldValue({ key: "model", label: "Model", before: "sonnet-4.5", after: null })).toBe("sonnet-4.5 → –");
     expect(fieldValue({ key: "text", label: "Text", before: "one two three four five six seven eight nine", after: "one two" })).toBe(
       "Text: 9 → 2 w",
     );

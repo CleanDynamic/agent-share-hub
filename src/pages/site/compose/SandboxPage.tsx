@@ -437,7 +437,7 @@ export function SandboxPage() {
 
   return (
     <>
-      <SeoHead title="Compose — buildgallery" description="Write your build." path="/compose" noIndex />
+      <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
       <input
         ref={picker}
         type="file"

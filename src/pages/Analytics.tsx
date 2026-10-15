@@ -49,7 +49,7 @@ export default function Analytics() {
   return (
     <>
       <SeoHead
-        title="Your Progress — buildgallery.ai"
+        title="Your Progress · buildgallery.ai"
         description="Your level and XP, your builds' numbers, this week's challenges and your badges."
         path="/analytics"
       />

@@ -118,7 +118,7 @@ export function VerifyEmailPage() {
   return (
     <>
       <SeoHead
-        title="Verify your email — buildgallery"
+        title="Verify your email · buildgallery"
         description="Verify your buildgallery account email."
         path="/verify-email"
         noIndex

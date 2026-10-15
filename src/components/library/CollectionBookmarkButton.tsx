@@ -216,7 +216,7 @@ export function CollectionBookmarkButton({
       onTouchEnd={cancelLongPress}
       onTouchCancel={cancelLongPress}
       onTouchMove={cancelLongPress}
-      aria-label={isSaved ? "Saved — right-click for collections" : "Save"}
+      aria-label={isSaved ? "Saved · right-click for collections" : "Save"}
       title={isSaved ? "Saved (right-click for collections)" : "Save"}
       className={className}
       style={{

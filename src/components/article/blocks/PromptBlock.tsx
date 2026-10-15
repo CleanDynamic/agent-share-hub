@@ -248,7 +248,7 @@ export function PromptBlockNode({ id, data, selected }: NodeProps) {
         result: result.payload,
       });
       setStatus('success');
-      toast.success(`Copied to clipboard — opened ${result.providerName}`);
+      toast.success(`Copied to clipboard · opened ${result.providerName}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Run failed';
       eventBus.emit('block:run:error', { blockId, error: err });

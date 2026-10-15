@@ -67,7 +67,7 @@ export default function RecentPage() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead title="Recently Uploaded — buildgallery.ai" description="The latest content from the buildgallery.ai community" path="/recent" />
+      <SeoHead title="Recently Uploaded · buildgallery.ai" description="The latest content from the buildgallery.ai community" path="/recent" />
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <div className="mb-6">

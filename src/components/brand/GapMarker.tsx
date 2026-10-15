@@ -55,7 +55,7 @@ export type GapPlacement = "card" | "row" | "panel";
 export type GapState = "unsolved" | "funded" | "solved";
 
 /** The invitation. A constant because it is the design, not a string. */
-export const GAP_INVITATION = "This part is unsolved — the build works without it.";
+export const GAP_INVITATION = "This part is unsolved. The build works without it.";
 
 /**
  * And what the same sentence becomes once somebody has answered it.
@@ -65,7 +65,7 @@ export const GAP_INVITATION = "This part is unsolved — the build works without
  * changes is the tense, which is the whole point of a gap reading as an
  * invitation — it was answered, rather than fixed.
  */
-export const GAP_SOLVED = "This part was unsolved — somebody answered it.";
+export const GAP_SOLVED = "This part was unsolved. Somebody answered it.";
 
 /** What the row says, per state. Never an apology, never a defect. */
 const ROW_WORD: Record<GapState, string> = {

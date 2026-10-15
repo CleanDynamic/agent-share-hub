@@ -17,7 +17,7 @@ function interpret(level: number, rep: number): string {
 
   if (diff > 12) return "Quality-first creator"
   if (diff < -12) return "High activity, building quality"
-  return "Balanced — activity and quality in step"
+  return "Balanced · activity and quality in step"
 }
 
 export default function RepVsXpCard({ level, rep }: RepVsXpCardProps) {

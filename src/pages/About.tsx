@@ -18,9 +18,9 @@ const About = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">About buildgallery.ai</h1>
 
           <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>
-            buildgallery.ai is the community hub for people who want to use AI — not just talk about it.
+            buildgallery.ai is the community hub for people who want to use AI. Not just talk about it.
             Like Football Manager tactics forums, we let experts share the AI setups they have already
-            built so that anyone — technical or not — can download and use them immediately.
+            built so that anyone. Technical or not. Can download and use them immediately.
           </p>
 
           <p className="text-sm text-muted-foreground leading-relaxed" style={measure}>

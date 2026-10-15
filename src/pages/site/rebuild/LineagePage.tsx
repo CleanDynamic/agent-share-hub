@@ -149,7 +149,7 @@ export function LineagePage() {
   return (
     <>
       <SeoHead
-        title={`The family of ${build.title} — buildgallery`}
+        title={`The family of ${build.title} · buildgallery`}
         description={`Every published rebuild of ${build.title}, and what each one changed.`}
         path={`/b2/${build.slug}/lineage`}
         noIndex={build.status === "draft"}

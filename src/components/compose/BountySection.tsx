@@ -62,7 +62,7 @@ const UNPRICED =
 const SKIP_LABEL = "Publish without bounties";
 const SKIP_HELP = "Nothing is filed. The parts stay marked unsolved on the page.";
 const NO_PROBLEM =
-  "No problem statement yet. A stranger can only solve what you describe — add one in the inspector.";
+  "No problem statement yet. A stranger can only solve what you describe. Add one in the inspector.";
 const REWARD_LABEL = "Reward";
 const REWARD_HELP = "Optional.";
 const DEADLINE_LABEL = "Closes";
@@ -166,7 +166,7 @@ export function bountyFailureSentence(failedTitles: string[], attempted: number)
         ? "The bounty"
         : "None of the bounties"
       : `${failedTitles.length} of the ${attempted} bounties`;
-  return `Your build is live. ${count} could not be filed — ${list}. Nothing else was affected, and you can try again.`;
+  return `Your build is live. ${count} could not be filed · ${list}. Nothing else was affected, and you can try again.`;
 }
 
 /** What it says when every one of them landed. */
@@ -503,7 +503,7 @@ function GapRow({
         >
           <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
             <span style={{ ...labelText, color: t.text2 }}>
-              {`${REWARD_LABEL} — ${REWARD_HELP}`}
+              {`${REWARD_LABEL} · ${REWARD_HELP}`}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ ...dataText, color: t.text2 }} aria-hidden>

@@ -35,7 +35,7 @@ export function MessageComposeModal({
         <DialogHeader>
           <DialogTitle>Message {recipientLabel}</DialogTitle>
           <DialogDescription>
-            Optional — write a quick first message, or skip to open the empty thread.
+            Optional. Write a quick first message, or skip to open the empty thread.
           </DialogDescription>
         </DialogHeader>
         <Textarea

@@ -116,7 +116,7 @@ function renderCompose() {
 const MISSING_COPY = [
   "add the one line that says what this does for someone",
   "add the prompt, configuration or artefact someone would run",
-  "add one piece of evidence — a result, a screenshot or an eval run",
+  "add one piece of evidence · a result, a screenshot or an eval run",
   "say who this is for",
   "list the models and tools this was made with",
   "add what it costs to run",
@@ -189,7 +189,7 @@ describe("CompletenessPanel", () => {
   it("creates and selects a node for a row nothing in the tree satisfies", async () => {
     const wanted: [string, string][] = [
       ["add the prompt, configuration or artefact someone would run", "prompt"],
-      ["add one piece of evidence — a result, a screenshot or an eval run", "result"],
+      ["add one piece of evidence · a result, a screenshot or an eval run", "result"],
       ["add what someone needs in place before they start", "prerequisite"],
     ];
 

@@ -19,14 +19,14 @@ export default function RemixButton({
   const [hover, setHover] = useState(false)
 
   return (
-    <Tooltip label="Build on this — the author gets credit and a share of XP">
+    <Tooltip label="Build on this · the author gets credit and a share of XP">
       <button
         type="button"
         onClick={onRemix}
         disabled={disabled}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        aria-label="Remix — build on this"
+        aria-label="Remix · build on this"
         className="inline-flex items-center justify-center gap-2 font-medium"
         style={{
           padding: compact ? 9 : '9px 16px',

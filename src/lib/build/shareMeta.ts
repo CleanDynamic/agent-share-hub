@@ -47,5 +47,5 @@ export function shareDescription({ outcome, makerName, reproductionCount }: Shar
 /** "<title> — buildgallery". */
 export function shareTitle(title: string | null | undefined): string {
   const text = (title ?? "").trim() || "Untitled build";
-  return `${text} — buildgallery`;
+  return `${text} · buildgallery`;
 }

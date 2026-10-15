@@ -257,7 +257,7 @@ function CopyDocumentButton({
         {state === "copied"
           ? "Copied"
           : state === "failed"
-            ? "Could not copy — use the download"
+            ? "Could not copy · use the download"
             : ""}
       </span>
     </span>
@@ -448,7 +448,7 @@ function DropTarget({
         {/* The formats and the cap in mono, because they are the file's facts
             rather than an instruction. */}
         <span style={{ ...dataText, color: t.text2 }}>
-          {`or click to choose one — ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
+          {`or click to choose one · ${BUILD_FILE_EXTENSIONS.join(", ")}, up to 2 MB`}
         </span>
       </button>
 
@@ -528,7 +528,7 @@ export default function ImportPage() {
       }}
     >
       <Helmet>
-        <title>Import a build — buildgallery</title>
+        <title>Import a build · buildgallery</title>
         <meta
           name="description"
           content="Paste one document into the chat where you built your thing. The AI writes it up as a Build File, and you drop that file here."
@@ -566,8 +566,7 @@ export default function ImportPage() {
             description={
               <>
                 The chat where you built the thing already knows what you did.
-                Give it the document below and it writes your build up for you —
-                the prompts you sent, the settings you landed on, what worked and
+                Give it the document below and it writes your build up for you. The prompts you sent, the settings you landed on, what worked and
                 what broke. You bring the file back here.
               </>
             }
@@ -597,7 +596,7 @@ export default function ImportPage() {
           >
             <Step ordinal={1} title="Copy the Extractor">
               <p style={{ ...bodyText, ...measure, margin: 0, color: t.text2 }}>
-                Paste it into the chat where you built your thing — ChatGPT,
+                Paste it into the chat where you built your thing · ChatGPT,
                 Claude, Lovable, Cursor, any of them.
               </p>
               <div

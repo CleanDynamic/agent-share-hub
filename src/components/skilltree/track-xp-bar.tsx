@@ -84,7 +84,7 @@ export default function TrackXpBar({
                   ? trackColor
                   : "var(--recess)",
               }}
-              title={`Tier ${i + 1} — ${fmt(t)} XP`}
+              title={`Tier ${i + 1} · ${fmt(t)} XP`}
             />
           )
         })}

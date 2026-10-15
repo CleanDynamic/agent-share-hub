@@ -158,7 +158,7 @@ describe("RunView", () => {
 
     const text = writeText.mock.calls[0][0] as string;
     expect(text).toContain("Inbox triage agent");
-    expect(text).toContain("Before you start\n- A Google Workspace account — Gmail API access");
+    expect(text).toContain("Before you start\n- A Google Workspace account · Gmail API access");
     expect(text).toContain(
       "1. Triage agent configuration\nSystem prompt: You triage a professional inbox."
     );

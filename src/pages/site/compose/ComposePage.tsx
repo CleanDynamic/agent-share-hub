@@ -378,7 +378,7 @@ export function ComposePage() {
   const { viewProps } = useComposePage();
   return (
     <>
-      <SeoHead title="Compose — buildgallery" description="Write your build." path="/compose" noIndex />
+      <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
       <ComposeView {...viewProps} />
     </>
   );

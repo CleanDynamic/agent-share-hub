@@ -135,7 +135,7 @@ function PackageBanner({ project, paidCount, totalPrice, hasPackage, onUnlock, u
         <div className="flex items-start gap-3">
           <Lock className="h-6 w-6 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-base font-semibold text-foreground">Unlock everything — £{pkgPrice.toFixed(2)}</p>
+            <p className="text-base font-semibold text-foreground">Unlock everything · £{pkgPrice.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground mt-1">
               Get instant access to all {paidCount} paid blueprint{paidCount !== 1 ? "s" : ""}.
               {saving > 0 && <> Save <span className="text-[var(--evidence)] font-medium">£{saving.toFixed(2)}</span> vs buying individually.</>}
@@ -324,7 +324,7 @@ const ProjectDetail = () => {
 
   return (
     <div className="py-6 sm:py-10 px-4 sm:px-6">
-      <SeoHead title={`${project.title} — buildgallery.ai`} description={project.description} path={`/project/${project.id}`} />
+      <SeoHead title={`${project.title} · buildgallery.ai`} description={project.description} path={`/project/${project.id}`} />
       <div className="mx-auto max-w-4xl">
         {/* 1. Back button */}
         <button onClick={() => navigate(-1)} className="inline-flex items-center text-[13px] text-muted-foreground hover:text-foreground mb-3 transition-colors cursor-pointer">
@@ -496,7 +496,7 @@ const ProjectDetail = () => {
                                   <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
                                   <p className="text-sm text-muted-foreground mb-3">This blueprint requires payment to unlock.</p>
                                   <Button size="sm" className="ns-btn-primary" onClick={() => handlePaywall(content.id)}>
-                                    Unlock — £{Number(content.price_gbp ?? 0).toFixed(2)}
+                                    Unlock · £{Number(content.price_gbp ?? 0).toFixed(2)}
                                   </Button>
                                 </div>
                               ) : null}

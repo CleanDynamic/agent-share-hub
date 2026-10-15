@@ -283,7 +283,7 @@ export function BreakageView({
                       onClick={() => onOpenReplay(entry.start as number)}
                       style={{ ...spanStyle, marginLeft: "auto" }}
                     >
-                      {span} — watch it
+                      {span} · watch it
                     </button>
                   ) : (
                     <span

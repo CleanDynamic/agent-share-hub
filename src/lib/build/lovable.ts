@@ -238,7 +238,7 @@ export async function readArchive(file: File): Promise<string> {
   if (manifest) return readEntry(buffer, view, manifest);
 
   throw new Error(
-    "there is no session history in this archive. Lovable's own download is source code only — " +
+    "there is no session history in this archive. Lovable's own download is source code only · " +
       "use a chat-history exporter to capture the session itself.",
   );
 }

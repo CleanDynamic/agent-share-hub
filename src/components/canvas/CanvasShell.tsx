@@ -681,7 +681,7 @@ export function CanvasShell(props: CanvasShellProps) {
       }
     }
     setGrammarToast(
-      `Grammar check complete — ${corrections} correction${corrections === 1 ? '' : 's'} made across ${blocksChanged} block${blocksChanged === 1 ? '' : 's'}.`
+      `Grammar check complete · ${corrections} correction${corrections === 1 ? '' : 's'} made across ${blocksChanged} block${blocksChanged === 1 ? '' : 's'}.`
     );
   }, [doc]);
 

@@ -156,7 +156,7 @@ export default function MyUploads() {
 
   return (
     <div className="py-8 sm:py-12 px-4 sm:px-6">
-      <SeoHead title="My Uploads — buildgallery.ai" description="Manage your uploaded content." path="/my-uploads" noIndex />
+      <SeoHead title="My Uploads · buildgallery.ai" description="Manage your uploaded content." path="/my-uploads" noIndex />
       <div className="mx-auto max-w-5xl">
         {/* Drafts indicator */}
         {/* Unfinished drafts are a NOTE, not a warning. The amber-on-amber
@@ -250,7 +250,7 @@ export default function MyUploads() {
                                 <span style={{ ...dataText, ...tabular, fontSize: 10, color: t.text2 }}>({rc})</span>
                               </div>
                             ) : (
-                              <span style={{ ...dataText, ...tabular, fontSize: 10, color: t.text2 }}>—</span>
+                              <span style={{ ...dataText, ...tabular, fontSize: 10, color: t.text2 }}>–</span>
                             )}
                           </TableCell>
                           <TableCell className="text-right" style={{ ...dataText, ...tabular, fontSize: 13, color: t.text2 }}>{(item as any).view_count ?? 0}</TableCell>

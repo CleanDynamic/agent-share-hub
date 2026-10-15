@@ -18,7 +18,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 /** The window's ink and its dashed edge. */
 const WINDOW_INK = "#F7F8F9";
 /** The scrim under it, so the ink reads on any sky. */
-const WINDOW_SCRIM = "rgba(14,11,20,.55)";
+const WINDOW_SCRIM = "rgba(21,17,29,.83)";
 
 export interface MissingWindowProps {
   /** What is missing: "Duplicate detector". */

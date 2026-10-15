@@ -50,7 +50,7 @@ describe("shareDescription and shareTitle", () => {
   });
 
   it("names the page after the build", () => {
-    expect(shareTitle("Inbox triage agent")).toBe("Inbox triage agent — buildgallery");
-    expect(shareTitle("  ")).toBe("Untitled build — buildgallery");
+    expect(shareTitle("Inbox triage agent")).toBe("Inbox triage agent · buildgallery");
+    expect(shareTitle("  ")).toBe("Untitled build · buildgallery");
   });
 });

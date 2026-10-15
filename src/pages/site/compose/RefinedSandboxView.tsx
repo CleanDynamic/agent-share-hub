@@ -62,7 +62,7 @@ const addItem = (enabled: boolean): CSSProperties => ({
   justifyContent: "center",
   gap: 2,
   minHeight: 44,
-  padding: "6px 10px",
+  padding: "6px 12px",
 });
 
 function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {

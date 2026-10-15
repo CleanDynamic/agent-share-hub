@@ -123,7 +123,7 @@ export function AppCardBody({ build, srcByPath }: CardBodyProps) {
       <div data-card-branch="embed" style={bodyFrame}>
         <iframe
           src={url}
-          title={`${build.title ?? "Build"} — live preview`}
+          title={`${build.title ?? "Build"} · live preview`}
           loading="lazy"
           sandbox="allow-scripts allow-same-origin"
           referrerPolicy="no-referrer"

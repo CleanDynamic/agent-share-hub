@@ -157,7 +157,7 @@ describe("TrayPanel", () => {
       });
 
       expect(screen.getByTestId("tray-arrival")).toHaveTextContent(
-        "2 items arrived — drag the keepers into your build"
+        "2 items arrived · drag the keepers into your build"
       );
     });
 

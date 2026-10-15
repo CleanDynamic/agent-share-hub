@@ -156,7 +156,7 @@ export function BlockReferenceNode({ node, selected }: ReactNodeViewProps) {
         data-block-reference=""
         data-block-id={blockId}
         contentEditable={false}
-        title={stageName ? `${liveName} — ${stageName}` : liveName}
+        title={stageName ? `${liveName} · ${stageName}` : liveName}
         onClick={handleClick}
         style={{
           display: 'inline-flex',

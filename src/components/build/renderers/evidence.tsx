@@ -299,7 +299,7 @@ export function ComparisonTableRenderer(props: NodeProps) {
                             : {}),
                         }}
                       >
-                        {cells[columnIndex] || <span style={{ color: t.text2 }}>—</span>}
+                        {cells[columnIndex] || <span style={{ color: t.text2 }}>–</span>}
                       </td>
                     ))}
                   </tr>

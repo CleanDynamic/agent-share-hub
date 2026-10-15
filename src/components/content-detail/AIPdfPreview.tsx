@@ -246,7 +246,7 @@ export function AIPdfPreview({
             {post.resultsGallery.map((slide, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
                 <div style={s.blockSubheader}>
-                  ▸ Slide {i + 1}: {slide.kind} — {slide.mediaUrl || slide.textPreview}
+                  ▸ Slide {i + 1}: {slide.kind} · {slide.mediaUrl || slide.textPreview}
                 </div>
                 {slide.caption ? <div style={s.blockContent}>Caption: {slide.caption}</div> : null}
               </div>

@@ -212,7 +212,7 @@ describe("the thread editor", () => {
     expect(screen.getByTestId("cover-strip")).toBeInTheDocument();
     expect(dropTarget()).toBeInTheDocument();
     expect(
-      screen.getByText("Show what you made — drop a screenshot or video, or browse")
+      screen.getByText("Show what you made · drop a screenshot or video, or browse")
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -392,7 +392,7 @@ describe("the thread editor", () => {
   it("shows a refusal from the data layer as its own sentence", async () => {
     uploadMedia.mockResolvedValueOnce(mediaRow("media-9"));
     addPostMedia.mockRejectedValueOnce(
-      new PostMediaError("full", "this post already shows 4 pictures — remove one first")
+      new PostMediaError("full", "this post already shows 4 pictures · remove one first")
     );
     renderStrip();
 

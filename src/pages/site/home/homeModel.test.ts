@@ -90,13 +90,13 @@ describe("whoLine", () => {
     expect(whoLine(item)).toBe("@maya rebuilt Call notes →");
   });
 
-  it("gives a note its reproducer, model and words — and leaves out what was not said", () => {
+  it("gives a note its reproducer, model and words · and leaves out what was not said", () => {
     const base = { item_kind: "repro_note" as const, repro_user_username: "ada", title: "Research digest" };
     expect(whoLine(toFeedItem(row({ ...base, repro_model: "haiku-4.5", repro_note: "worked first try" })))).toBe(
-      "@ada ran Research digest on haiku-4.5 — “worked first try”",
+      "@ada ran Research digest on haiku-4.5 · “worked first try”",
     );
     expect(whoLine(toFeedItem(row({ ...base, repro_model: null, repro_note: "fine" })))).toBe(
-      "@ada ran Research digest — “fine”",
+      "@ada ran Research digest · “fine”",
     );
   });
 
@@ -201,7 +201,7 @@ describe("since you were last here", () => {
     expect(readHomeSeen()).toBeNull();
   });
 
-  it("highlights only a row newer than the previous visit — never on a first visit", () => {
+  it("highlights only a row newer than the previous visit · never on a first visit", () => {
     expect(isNewerThanSeen("2026-09-30T11:58:00Z", Date.parse("2026-09-30T11:00:00Z"))).toBe(true);
     expect(isNewerThanSeen("2026-09-30T10:00:00Z", Date.parse("2026-09-30T11:00:00Z"))).toBe(false);
     expect(isNewerThanSeen("2026-09-30T11:58:00Z", null)).toBe(false);

@@ -101,7 +101,7 @@ export function LayerStaleNotice({ build, tree }: LayerStaleNoticeProps) {
           </p>
           <p style={{ ...bodyText, margin: 0, fontSize: 12, color: TEXT_MUTED }}>
             This replaces what is on your build page now. You read the new words
-            before anyone else does — nothing is shown until you approve it.
+            before anyone else does. Nothing is shown until you approve it.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button

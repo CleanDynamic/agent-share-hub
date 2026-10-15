@@ -23,7 +23,7 @@ export default function FounderMark({
     label ??
     (typeof memberNumber === "number"
       ? `Founder · #${memberNumber}`
-      : "Founding member — first 100")
+      : "Founding member · first 100")
   return (
     <span
       className="inline-flex items-center gap-2 self-start"

@@ -277,7 +277,7 @@ function joinedDraftMessage(title: string, counts: MaterialiseCounts): string {
     .join(" and ");
   return (
     `Added to “${title}”: ${added}` +
-    (counts.nodes > 0 ? " — drag from the tray into the build to place them." : ".")
+    (counts.nodes > 0 ? ". Drag from the tray into the build to place them." : ".")
   );
 }
 
@@ -538,7 +538,7 @@ export default function ComposeNew() {
         // Nothing has been read yet, so there is no character count to show.
         characterCount: 0,
         description:
-          "Reading the manifests, the README and one entrypoint file — not the " +
+          "Reading the manifests, the README and one entrypoint file · not the " +
           "whole repository. Nothing is saved until you have looked at what it found.",
       });
 
@@ -661,15 +661,15 @@ export default function ComposeNew() {
             : counts.events === 0
               // A repository has no sequence, so naming an empty one would read
               // as something having gone missing.
-              ? `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray — ` +
+              ? `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray · ` +
                 `drag them into the build to place them.`
               : `${counts.nodes} ${counts.nodes === 1 ? "item is" : "items are"} in your tray and ` +
-                `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence — ` +
+                `${counts.events} ${counts.events === 1 ? "prompt is" : "prompts are"} in the sequence · ` +
                 `drag from the tray into the build to place them.`,
       });
     } catch (cause) {
       setWriting(false);
-      setError(`That could not be saved: ${messageOf(cause)} Nothing was lost — try again.`);
+      setError(`That could not be saved: ${messageOf(cause)} Nothing was lost. Try again.`);
     }
   }, [goToWorkspace, selection, stage]);
 
@@ -825,7 +825,7 @@ export default function ComposeNew() {
           <p style={{ ...bodyText, margin: 0, color: TEXT_SECONDARY }}>
             {stage.sourceLabel} is valid JSON, but nothing in it looks like a
             Lovable session export or like a chat transcript. Rather than guess
-            and read it wrongly, this asks once — the answer is used for this
+            and read it wrongly, this asks once. The answer is used for this
             file and not remembered.
           </p>
         </div>
@@ -883,7 +883,7 @@ export default function ComposeNew() {
             fontFamily: FONT_STACK,
           }}
         >
-          Neither — go back
+          Neither · go back
         </button>
       </Shell>
     );
@@ -945,7 +945,7 @@ export default function ComposeNew() {
           If you built this in a chat, bring the chat. It gets split into the
           prompts you sent and the code and settings that came back, and all of
           it lands in your tray for you to arrange. If what you have is a public
-          repository, bring that instead — it is read for its stack, its
+          repository, bring that instead. It is read for its stack, its
           prerequisites and what it says it does.
         </p>
       </div>
@@ -1054,7 +1054,7 @@ export default function ComposeNew() {
         </div>
 
         <span style={{ ...bodyText, fontSize: 12, color: TEXT_MUTED }}>
-          Public GitHub repositories only. Nothing is cloned — the manifests, the
+          Public GitHub repositories only. Nothing is cloned. The manifests, the
           README and one entrypoint file are read, and everything found is a
           suggestion you confirm.
         </span>
@@ -1134,7 +1134,7 @@ export default function ComposeNew() {
           {drop.isDragging
             ? "Let go to read it."
             : `The file the AI wrote up for you (${BUILD_FILE_EXTENSIONS.join(", ")}). ` +
-              "It arrives already structured — you see what it found before anything is saved."}
+              "It arrives already structured. You see what it found before anything is saved."}
         </span>
 
         <input

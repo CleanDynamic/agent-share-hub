@@ -225,6 +225,8 @@ const hasSwitch = (mode: AuthMode) => mode === "login" || mode === "signup";
 
 /** A link home that goes one step back when there is a step to go back to. */
 function BackLink({ onBack }: { onBack: () => void }) {
+  /* A labelled link carries no icon under the refined look: the word is the link. */
+  const refined = useLook() === "refined";
   const back = (event: MouseEvent<HTMLAnchorElement>) => {
     // A new tab or window gets the address; a plain click gets the history.
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -246,7 +248,7 @@ function BackLink({ onBack }: { onBack: () => void }) {
         color: t.text2,
       }}
     >
-      <ArrowLeft size={15} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
+      {refined ? null : <ArrowLeft size={15} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />}
       Back
     </FrameLink>
   );

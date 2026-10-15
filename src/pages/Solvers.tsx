@@ -89,7 +89,7 @@ export default function Solvers() {
       style={phone ? { paddingTop: SPACE_COMPACT.sm } : { padding: SPACE_COMPACT.md }}
     >
       <Helmet>
-        <title>Solvers — buildgallery</title>
+        <title>Solvers · buildgallery</title>
       </Helmet>
 
       <PageHeader

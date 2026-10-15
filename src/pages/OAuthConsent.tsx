@@ -224,7 +224,7 @@ export default function OAuthConsent() {
      else and expires for the person it does mean something to. */
   const head = (
     <SeoHead
-      title="Authorize an application — buildgallery"
+      title="Authorize an application · buildgallery"
       description="Approve or deny an application asking for access to your buildgallery account."
       path="/oauth/consent"
       noIndex

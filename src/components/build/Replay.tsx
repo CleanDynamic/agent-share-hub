@@ -584,7 +584,7 @@ export function Replay({
           <div
             role="toolbar"
             aria-orientation="horizontal"
-            aria-label="Event scrubber — left and right step, space plays"
+            aria-label="Event scrubber · left and right step, space plays"
             onKeyDown={onKeyDown}
             style={{ display: "flex", gap: 2, minWidth: 320 }}
           >

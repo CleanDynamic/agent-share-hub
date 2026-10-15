@@ -72,7 +72,7 @@ export default function TrackUndecidedState({
           maxWidth: 280,
         }}
       >
-        You haven&apos;t picked a specialisation yet — choose one whenever
+        You haven&apos;t picked a specialisation yet. Choose one whenever
         you&apos;re ready.
       </p>
 

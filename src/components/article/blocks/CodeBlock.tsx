@@ -174,7 +174,7 @@ export function CodeBlockNode({ id, data, selected }: NodeProps) {
   const handleRun = React.useCallback(async () => {
     if (!block) return;
     if (!runnable) {
-      toast.error(`Cannot run ${languageLabel} — JavaScript or Python only.`);
+      toast.error(`Cannot run ${languageLabel}. JavaScript or Python only.`);
       return;
     }
     if (!code.trim()) {

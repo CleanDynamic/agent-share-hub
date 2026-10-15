@@ -72,6 +72,9 @@ const REFINED_TONE: Record<EventKind, string> = {
   deploy: t.evidence,
 };
 
+/** The kind's name is text, so it is never the category colour where that sits under 4.5 on the surface. */
+const REFINED_INK: Record<EventKind, string> = { ...REFINED_TONE, prompt: t.text2 };
+
 function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "label">) {
   return (
     <div data-ui="timeline" style={{ position: "relative" }}>
@@ -107,7 +110,7 @@ function RefinedTimeline({ events, label }: Pick<TimelineProps, "events" | "labe
               {event.at}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-              <Eyebrow as="span" style={{ color: REFINED_TONE[event.kind] }}>
+              <Eyebrow as="span" style={{ color: REFINED_INK[event.kind] }}>
                 {event.kind}
               </Eyebrow>
               <span style={{ fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 500, lineHeight: "normal", color: t.text }}>

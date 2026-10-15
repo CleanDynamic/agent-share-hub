@@ -311,7 +311,7 @@ export default function BountyUpload() {
             </div>
             <div style={{ fontSize: 11, color: 'var(--text2)' }}>
               {deadline === 0
-                ? 'No deadline — stays open until you close it'
+                ? 'No deadline · stays open until you close it'
                 : `Closes in ${deadline} days`}
             </div>
           </div>

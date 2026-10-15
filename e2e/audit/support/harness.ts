@@ -882,6 +882,20 @@ export const DEGRADED: Record<string, string> = {
     "so outside BG-P30; see the note above ROUTES.",
 };
 
+/* UI-P96 — `AUDIT_LOOK=refined` sweeps the refined dev pages instead of the live routes, because the live routes stay
+   on the current look until UI-P98. The dev page takes its room from `?theme=`, so `openRoute` adds it. */
+export const AUDIT_REFINED = process.env.AUDIT_LOOK === "refined";
+
+const REFINED_DEV_PAGES = [
+  "frame", "home", "gallery-dashboard", "gallery-feed", "build", "build-steps", "activity", "sandbox",
+  "rebuild", "lineage", "profile", "drafts", "bounty-board", "signin",
+] as const;
+
+/** The routes a sweep visits: the live ones, or under `AUDIT_LOOK=refined` the refined dev pages. */
+export const SWEEP_ROUTES: AuditRoute[] = AUDIT_REFINED
+  ? REFINED_DEV_PAGES.map((page) => ({ id: `dev-${page}`, path: `/dev/kit/pages/${page}?look=refined` }))
+  : ROUTES;
+
 /** Open one audit route in one theme, with the network stubbed, and settle it. */
 export async function openRoute(
   page: Page,
@@ -896,7 +910,8 @@ export async function openRoute(
   await withTheme(page, theme);
   if (route.auth) await withSession(page);
   await installStub(page);
-  await page.goto(route.path, { waitUntil: options.waitUntil ?? "load" });
+  const path = route.path.includes("look=refined") ? `${route.path}&theme=${theme}` : route.path;
+  await page.goto(path, { waitUntil: options.waitUntil ?? "load" });
   // The reveal animations are 450ms and the feed's skeletons resolve on the
   // next tick; a measurement taken before that reads a surface mid-fade.
   await page.waitForTimeout(1500);

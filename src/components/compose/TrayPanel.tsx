@@ -262,7 +262,7 @@ export function TrayPanel({
             color: t.text,
           }}
         >
-          {`${arrived} ${arrived === 1 ? "item" : "items"} arrived — drag the keepers into your build`}
+          {`${arrived} ${arrived === 1 ? "item" : "items"} arrived · drag the keepers into your build`}
         </p>
       ) : null}
 

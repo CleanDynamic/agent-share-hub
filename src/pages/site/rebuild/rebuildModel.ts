@@ -307,7 +307,7 @@ export function fieldValue(field: FieldChange): string {
   if (before !== null || after !== null) return `${before ?? 0} → ${after ?? 0} ${field.label.toLowerCase()}`;
   const a = flat(field.before);
   const b = flat(field.after);
-  if ((a ?? "").length <= SHORT && (b ?? "").length <= SHORT) return `${a ?? "—"} → ${b ?? "—"}`;
+  if ((a ?? "").length <= SHORT && (b ?? "").length <= SHORT) return `${a ?? "–"} → ${b ?? "–"}`;
   return `${field.label}: ${words(field.before).toLocaleString("en-GB")} → ${words(field.after).toLocaleString("en-GB")} w`;
 }
 
@@ -377,12 +377,12 @@ export function changeGroups(source: BuildRecord, draft: BuildRecord, changes: C
     if (id === "outcome") {
       return {
         group: "header",
-        row: { key, kind: field?.before ? "changed" : "added", name: "What it does", value: field ? `${flat(field.before) ?? "—"} → ${flat(field.after) ?? "—"}` : text },
+        row: { key, kind: field?.before ? "changed" : "added", name: "What it does", value: field ? `${flat(field.before) ?? "–"} → ${flat(field.after) ?? "–"}` : text },
       };
     }
     return {
       group: "header",
-      row: { key, kind: "changed", name: field?.label ?? "Title", value: field ? `${flat(field.before) ?? "—"} → ${flat(field.after) ?? "—"}` : text },
+      row: { key, kind: "changed", name: field?.label ?? "Title", value: field ? `${flat(field.before) ?? "–"} → ${flat(field.after) ?? "–"}` : text },
     };
   };
 

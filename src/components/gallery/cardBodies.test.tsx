@@ -366,7 +366,7 @@ describe("the floor under every body", () => {
       SIGNED
     );
 
-    expect(body.querySelector("img")?.getAttribute("alt")).toBe("A build — Screenshot");
+    expect(body.querySelector("img")?.getAttribute("alt")).toBe("A build · Screenshot");
   });
 
   it("treats an unsigned media row as no media rather than a broken image", () => {

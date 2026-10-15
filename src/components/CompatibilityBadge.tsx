@@ -44,7 +44,7 @@ export function CompatibilityBadge({ contentId, creatorId, compatibilityStatus, 
   if (variant === "card") {
     if (status === "outdated") {
       return (
-        <span title="Compatibility unverified — over 90 days since last update.">
+        <span title="Compatibility unverified. Over 90 days since last update.">
           <AlertTriangle className="h-3 w-3 text-amber-400" />
         </span>
       );
@@ -73,7 +73,7 @@ export function CompatibilityBadge({ contentId, creatorId, compatibilityStatus, 
       <div className="flex items-center justify-between gap-3 p-3 rounded-lg border" style={{ backgroundColor: "color-mix(in srgb, var(--lit) 12%, transparent)", borderColor: "var(--lit)" }}>
         <p className="text-xs flex items-center gap-1.5" style={{ color: "var(--lit)" }}>
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-          Last verified over 90 days ago — AI tools change fast. Check before using.
+          Last verified over 90 days ago. AI tools change fast. Check before using.
         </p>
         {isCreator && (
           <Button size="sm" variant="outline" className="shrink-0 text-xs h-7 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={handleVerify}>

@@ -724,7 +724,7 @@ export function TopToolbar({ editor, onInsertBlock, mode = 'blueprint', onOpenRe
   };
 
   const soon = (label: string) => () => {
-    import('sonner').then(({ toast }) => toast(`${label} — coming soon`));
+    import('sonner').then(({ toast }) => toast(`${label} · coming soon`));
   };
 
   const run = (fn: (chain: ReturnType<NonNullable<typeof editor>['chain']>) => void) => () => {

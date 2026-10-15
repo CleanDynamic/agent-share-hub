@@ -173,7 +173,7 @@ function SessionRow({
         </SelectButton>
       </div>
       {open ? (
-        <div style={{ marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
+        <div style={{ marginLeft: 24, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
           {session.prompts.map((prompt) => (
             <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
               <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{prompt.number}</span>

@@ -50,8 +50,8 @@ export function PromoteToBlueprintDialog({
             <li className="flex gap-2">
               <span className="text-[var(--evidence)] select-none">•</span>
               <span>
-                All bounty content — article body, accepted solutions merged
-                in, results, and references — copies over.
+                All bounty content. Article body, accepted solutions merged
+                in, results, and references. Copies over.
               </span>
             </li>
             <li className="flex gap-2">

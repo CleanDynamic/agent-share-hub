@@ -836,7 +836,7 @@ const Browse = () => {
   return (
     <div style={{ paddingTop: 28, paddingBottom: 40, paddingLeft: 24, paddingRight: 24 }}>
       <SeoHead
-        title="Discover AI Blueprints — buildgallery.ai"
+        title="Discover AI Blueprints · buildgallery.ai"
         description="Find ready-made AI setups for any task. Filter by type, difficulty, and the AI tools you already use. Free to download."
         path="/browse"
       />
@@ -1247,7 +1247,7 @@ function EmptyState({ search, hasFilters, onClear }: { search: string; hasFilter
         </>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground text-center max-w-md">Nothing here yet — be the first to share something.</p>
+          <p className="text-sm text-muted-foreground text-center max-w-md">Nothing here yet. Be the first to share something.</p>
           <Button size="sm" asChild><Link to="/upload">Upload your work</Link></Button>
         </>
       )}

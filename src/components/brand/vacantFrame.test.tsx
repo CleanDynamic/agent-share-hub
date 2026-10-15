@@ -132,7 +132,7 @@ describe("MissingWindow", () => {
 
   it("is a 1.5px dashed near-white frame on a dark scrim — fixed, because it sits on artwork", () => {
     expect(html).toContain("border:1.5px dashed #F7F8F9");
-    expect(html).toContain("background:rgba(14,11,20,.55)");
+    expect(html).toContain("background:rgba(21,17,29,.83)");
     expect(html).toContain("color:#F7F8F9");
   });
 

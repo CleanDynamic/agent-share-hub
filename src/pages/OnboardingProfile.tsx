@@ -162,7 +162,7 @@ export default function OnboardingProfile() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4">
       <SeoHead
-        title="Complete your profile — buildgallery"
+        title="Complete your profile · buildgallery"
         description="Finish setting up your buildgallery account."
         path="/onboarding/profile"
         noIndex

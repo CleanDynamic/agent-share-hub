@@ -282,7 +282,7 @@ describe("toMarkdown", () => {
     const steps = markdown.indexOf("## Steps");
     expect(prerequisites).toBeGreaterThan(-1);
     expect(steps).toBeGreaterThan(prerequisites);
-    expect(markdown).toContain("- [ ] **A Google Workspace account** — Gmail API access");
+    expect(markdown).toContain("- [ ] **A Google Workspace account** · Gmail API access");
     // Hoisted out of the step sequence, not repeated in it.
     expect(markdown).not.toContain("## 5. A Google Workspace account");
   });
@@ -303,7 +303,7 @@ describe("toMarkdown", () => {
 
   it("closes with the event sequence and carries no identifiers", () => {
     expect(markdown).toContain("## How it was built");
-    expect(markdown).toContain("1. Reading the inbox — note: Started from the actual problem");
+    expect(markdown).toContain("1. Reading the inbox · note: Started from the actual problem");
     expect(markdown).not.toContain("out of the public record");
     expect(UUID_ANYWHERE.test(markdown)).toBe(false);
   });

@@ -79,7 +79,7 @@ const nodeTitle: CSSProperties = {
   textOverflow: "ellipsis",
 };
 
-const countLabel = (n: number) => (n > 0 ? n.toLocaleString("en-GB") : "—");
+const countLabel = (n: number) => (n > 0 ? n.toLocaleString("en-GB") : "–");
 
 function nodeLabel(node: FamilyNodeView): string {
   const reproduced = node.reproduced > 0 ? `${node.reproduced.toLocaleString("en-GB")} reproduced` : "not yet reproduced";

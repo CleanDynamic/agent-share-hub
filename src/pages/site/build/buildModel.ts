@@ -301,7 +301,7 @@ export function formatFirstResult(minutes: number | null | undefined): string | 
 }
 
 /** What the wall label prints when a fact is missing. */
-export const MISSING = "—";
+export const MISSING = "–";
 
 const listText = (values: readonly (string | null)[] | null | undefined): string | null => {
   const kept = (values ?? []).map((value) => (value ?? "").trim()).filter(Boolean);

@@ -170,6 +170,7 @@ function useDropTarget(onDropSession: (sessionId: string) => void) {
 function StartRow({ phone, onDropSession }: { phone: boolean; onDropSession: (id: string) => void }) {
   const { over, handlers } = useDropTarget(onDropSession);
   const { state, handlers: focus } = useInteractive<HTMLAnchorElement>();
+  const refined = useLook() === "refined";
   return (
     <Link
       to="/compose/new"
@@ -193,7 +194,7 @@ function StartRow({ phone, onDropSession }: { phone: boolean; onDropSession: (id
         ...ring(state.focusVisible),
       }}
     >
-      <Plus size={16} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} />
+      {refined ? null : <Plus size={16} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} />}
       <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600 }}>Start a new build</span>
       <span style={{ marginLeft: "auto", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textAlign: "right" }}>
         {over ? "Drop to start a build from it" : phone ? null : "or drop a session here"}

@@ -151,7 +151,7 @@ export default function MessagesPage() {
 
   // Browser tab title
   useEffect(() => {
-    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages — buildgallery.ai` : "Messages — buildgallery.ai";
+    const title = totalUnread > 0 ? `(${totalUnread > 9 ? "9+" : totalUnread}) Messages · buildgallery.ai` : "Messages · buildgallery.ai";
     document.title = title;
     return () => { document.title = "buildgallery.ai"; };
   }, [totalUnread]);

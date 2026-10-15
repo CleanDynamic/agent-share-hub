@@ -173,7 +173,7 @@ export function pillText(model: string | null, lab: Lab | null): string {
 /** "Oct 5": UTC, so the reader's zone cannot move a date. An empty timestamp is a dash. */
 export function shortDate(iso: string): string {
   const at = Date.parse(iso);
-  if (Number.isNaN(at)) return "—";
+  if (Number.isNaN(at)) return "–";
   return new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
@@ -226,7 +226,7 @@ export function buildCsv(rows: readonly DashboardRow[]): string {
       row.promptCount,
       row.aiTurnCount,
       row.engagement.total,
-      row.lastActivity.at ? `${shortDate(row.lastActivity.at)} — ${row.lastActivity.what}` : "",
+      row.lastActivity.at ? `${shortDate(row.lastActivity.at)} · ${row.lastActivity.what}` : "",
     ]
       .map(csvCell)
       .join(","),

@@ -37,7 +37,7 @@
  */
 
 import { expect, test } from "@playwright/test";
-import { DEGRADED, ROUTES, THEMES, openRoute, type Theme } from "./support/harness";
+import { DEGRADED, SWEEP_ROUTES, THEMES, openRoute, type Theme } from "./support/harness";
 import { collectContrast, collectFocus } from "./support/probe";
 import { writeCsv, writeText } from "./support/report";
 import { TOKEN_NAMES } from "../../src/lib/theme/semantics";
@@ -73,7 +73,7 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
   const accepted: string[] = [];
   const coverage: Array<{ route: string; theme: string; pairs: number; nodes: number }> = [];
 
-  for (const route of ROUTES) {
+  for (const route of SWEEP_ROUTES) {
     for (const theme of THEMES) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await context.newPage();
@@ -190,7 +190,7 @@ test("BG-P30 — every rendered pair on fifteen routes, in both rooms", async ({
   const summary = [
     "BG-P30 contrast sweep",
     "",
-    `routes      ${ROUTES.length} × ${THEMES.length} rooms = ${coverage.length} page visits`,
+    `routes      ${SWEEP_ROUTES.length} × ${THEMES.length} rooms = ${coverage.length} page visits`,
     `pairs       ${rows.length} distinct pairings measured`,
     `failures    ${failures.length} unaccepted`,
     `accepted    ${accepted.length} survivors with a recorded justification`,

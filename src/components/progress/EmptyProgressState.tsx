@@ -33,7 +33,7 @@ export function EmptyProgressState() {
         Your story starts here
       </div>
       <div style={{ fontSize: 13, color: "var(--text2)", maxWidth: 360 }}>
-        Save a blueprint, leave a thoughtful comment, or publish your first post — your engagement grid lights up as you go.
+        Save a blueprint, leave a thoughtful comment, or publish your first post. Your engagement grid lights up as you go.
       </div>
     </div>
   );

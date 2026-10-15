@@ -61,7 +61,7 @@ function reproductionTitle(count: number): string {
 function rebuildTitle(count: number): string {
   if (count === 0) return "Nobody has published a rebuild of this creator's work yet.";
   const times = count === 1 ? "once" : `${count} times`;
-  return `Somebody took this creator's work as a starting point and published the result — ${times}.`;
+  return `Somebody took this creator's work as a starting point and published the result · ${times}.`;
 }
 
 export function EarnedNumbers({

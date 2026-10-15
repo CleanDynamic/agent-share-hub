@@ -137,7 +137,7 @@ function NavRow({
     >
       {lead}
       <span style={{ flexGrow: 1, minWidth: 0, ...ellipsis }}>{label}</span>
-      {count !== undefined ? <span style={text(11.5, 400, t.label, tnum)}>{formatCount(count)}</span> : null}
+      {count !== undefined ? <span style={text(11.5, 400, on ? t.text2 : t.label, tnum)}>{formatCount(count)}</span> : null}
     </button>
   );
 }
@@ -330,7 +330,7 @@ const bodyRow = (columns: string, filled: boolean): CSSProperties => ({
 const headCell: CSSProperties = text(11.5, 500, t.label);
 const rightCell: CSSProperties = { textAlign: "right" };
 const numberCell: CSSProperties = text(12.5, 400, t.text, { ...tnum, textAlign: "right" });
-const NONE = <span style={text(12, 400, t.label)}>—</span>;
+const NONE = <span style={text(12, 400, t.label)}>–</span>;
 
 function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () => void }) {
   return (
@@ -537,8 +537,8 @@ function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]
                     )}
                     {isNew ? <Pill tone="evidence">new</Pill> : null}
                   </div>
-                  <div role="cell" style={text(12.5, 400, t.text2, ellipsis)}>
-                    {row.lab ?? "—"}
+                  <div role="cell" style={text(12.5, 400, row.lab ? t.text2 : t.label, ellipsis)}>
+                    {row.lab ?? "–"}
                   </div>
                   <div role="cell" style={numberCell}>
                     {formatCount(row.builds)}
@@ -629,7 +629,7 @@ function MakersTable({ rows }: { rows: readonly DashboardRow[] }) {
                     {formatCount(row.engagement.total)}
                   </div>
                   <div role="cell" style={text(12, 500, row.lastPublishedAt ? t.text : t.label, tnum)}>
-                    {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "—"}
+                    {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "–"}
                   </div>
                 </div>
               );

@@ -57,7 +57,7 @@ export default function TrackPicker({
             marginTop: 6,
           }}
         >
-          This shapes what you unlock next — and you can change it later.
+          This shapes what you unlock next. And you can change it later.
         </p>
       </div>
 

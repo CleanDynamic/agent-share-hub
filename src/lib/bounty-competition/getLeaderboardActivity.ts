@@ -62,7 +62,7 @@ export async function getLeaderboardActivity(
         id: `sub-${r.id}`,
         type: "submitted",
         handle,
-        slotName: r.slot_id ? `#${String(r.slot_id).slice(0, 6)}` : "—",
+        slotName: r.slot_id ? `#${String(r.slot_id).slice(0, 6)}` : "–",
         timeAgo: timeAgo(r.submitted_at),
       });
     }

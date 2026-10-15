@@ -71,7 +71,7 @@ export default function StreakSavedToast({
           }}
         >
           You missed yesterday, so we used a freeze pass. {freezesLeft} left this
-          month — no need to do anything.
+          month. No need to do anything.
         </p>
       </div>
 

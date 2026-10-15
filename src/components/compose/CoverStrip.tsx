@@ -93,7 +93,7 @@ import { body, data as dataType, eyebrow, label as labelType } from "@/lib/theme
  * top of the page; a later refactor that reflows the JSX should have to delete
  * a named constant to lose it rather than quietly reword a string in place.
  */
-const DROP_HEADLINE = "Show what you made — drop a screenshot or video, or browse";
+const DROP_HEADLINE = "Show what you made · drop a screenshot or video, or browse";
 const DROP_SUBLINE = "This becomes the first picture of your post, everywhere on buildgallery.";
 const ADD_HEADLINE = "Add another picture or video";
 /**
@@ -148,7 +148,7 @@ export function coverRejection(file: File): string | null {
 
   const kind = mediaKindFor(file.type);
   if (!kind || !COVER_KINDS.includes(kind)) {
-    return `${name} is ${file.type || "an unrecognised type"}. A cover is a picture or a video — png, jpg, webp, gif, avif, mp4, webm or mov.`;
+    return `${name} is ${file.type || "an unrecognised type"}. A cover is a picture or a video. Png, jpg, webp, gif, avif, mp4, webm or mov.`;
   }
 
   return null;

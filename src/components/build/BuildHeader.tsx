@@ -486,7 +486,7 @@ export function BuildHeader({
                   {/* BG-P05: the dash is the prerequisite's category, resolved
                       through the theme, not the registry row's stored colour. */}
                   <span style={{ color: categoryColour(typesByKey.get(node.type)?.category ?? "") }}>
-                    —
+                    –
                   </span>
                   <span>
                     {node.title}

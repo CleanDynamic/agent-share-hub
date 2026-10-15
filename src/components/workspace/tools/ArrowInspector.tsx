@@ -24,7 +24,7 @@ const TYPES: Array<{
     value: 'feeds_into',
     label: 'Feeds into',
     swatch: 'var(--evidence)',
-    description: 'Default — carries data downstream.',
+    description: 'Default. Carries data downstream.',
   },
   {
     value: 'alternative_to',

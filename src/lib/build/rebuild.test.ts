@@ -748,7 +748,7 @@ describe("rebuildReadiness", () => {
     expect(readiness.ready).toBe(false);
     expect(readiness.blocking.map((item) => item.key)).toEqual(["evidence"]);
     expect(readiness.reason).toBe(
-      "To publish, add one piece of evidence — a result, a screenshot or an eval run."
+      "To publish, add one piece of evidence · a result, a screenshot or an eval run."
     );
   });
 });

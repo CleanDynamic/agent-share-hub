@@ -21,7 +21,7 @@ export function toggleStageMissing(stageId: string): boolean | null {
   const next = !stage.is_missing;
   useDocumentStore.getState().updateStage(stageId, { is_missing: next });
   if (next) {
-    toast('Marked as missing — solvers will see this slot.', toastOpts);
+    toast('Marked as missing. Solvers will see this slot.', toastOpts);
   } else {
     toast('No longer missing', toastOpts);
   }
@@ -38,7 +38,7 @@ export function toggleBlockMissing(blockId: string): boolean | null {
   const next = !block.is_missing;
   useDocumentStore.getState().updateBlock(blockId, { is_missing: next });
   if (next) {
-    toast('Marked as missing — solvers will see this slot.', toastOpts);
+    toast('Marked as missing. Solvers will see this slot.', toastOpts);
   } else {
     toast('No longer missing', toastOpts);
   }

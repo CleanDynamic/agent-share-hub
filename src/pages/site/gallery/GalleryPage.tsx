@@ -236,7 +236,7 @@ function GalleryFeedPage() {
   return (
     <>
       <SeoHead
-        title="Gallery — buildgallery"
+        title="Gallery · buildgallery"
         description="Things people built with AI, and the exact model versions other people got them working on."
         path="/gallery"
       />

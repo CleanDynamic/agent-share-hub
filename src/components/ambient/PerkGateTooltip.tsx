@@ -82,8 +82,8 @@ export default function PerkGateTooltip({
           Unlocks at{" "}
           <span style={{ color: xpColor, fontWeight: 600 }}>Level {unlockLevel}</span>
           {levelsAway > 0
-            ? ` — ${levelsAway} level${levelsAway === 1 ? "" : "s"} away`
-            : " — ready to claim"}
+            ? ` · ${levelsAway} level${levelsAway === 1 ? "" : "s"} away`
+            : " · ready to claim"}
           {typeof xpRemaining === "number" && xpRemaining > 0 && (
             <>
               {" · "}

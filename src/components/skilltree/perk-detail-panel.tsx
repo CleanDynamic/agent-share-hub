@@ -161,7 +161,7 @@ export default function PerkDetailPanel({
             style={{ marginBottom: 8 }}
           >
             <span style={{ fontSize: 12, color: tokens.textDim }}>
-              Reach Tier {perk.tier} —{" "}
+              Reach Tier {perk.tier} ·{" "}
               <span style={{ fontFamily: mono, color: perk.trackColor }}>
                 {fmt(remaining)}
               </span>{" "}

@@ -145,7 +145,7 @@ export function ArticleEditor({
   const refPickerRangeRef = useRef<{ from: number; to: number } | null>(null);
 
   const { data: refCountsData } = useReferenceCounts(refPickerOpen);
-  const refCounts = refCountsData ?? { blueprints: '—', stages: '—', blocks: '—' };
+  const refCounts = refCountsData ?? { blueprints: '–', stages: '–', blocks: '–' };
   const { results: refResults, isLoading: refLoading } = useReferenceResults(
     refPickerOpen,
     refPickerType,
@@ -1044,7 +1044,7 @@ export function ArticleEditor({
                 padding: '2px 8px',
               }}
             >
-              0 missing items — mark at least one to publish
+              0 missing items · mark at least one to publish
             </span>
           )}
           <button

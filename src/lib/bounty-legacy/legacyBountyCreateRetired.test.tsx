@@ -107,7 +107,7 @@ beforeEach(() => {
   db.inserts.length = 0;
 });
 
-describe("frozen — the gate itself", () => {
+describe("frozen · the gate itself", () => {
   it("throws BOUNTY_RETIRED, naming where bounties live now", () => {
     let thrown: unknown;
     try {
@@ -118,11 +118,11 @@ describe("frozen — the gate itself", () => {
     expect(thrown).toBeInstanceOf(LegacyBountyValidationError);
     expect((thrown as LegacyBountyValidationError).code).toBe("BOUNTY_RETIRED");
     expect((thrown as LegacyBountyValidationError).message).toBe(BOUNTY_RETIRED_MESSAGE);
-    expect(BOUNTY_RETIRED_MESSAGE).toMatch(/mark a part unsolved in the composer/);
+    expect(BOUNTY_RETIRED_MESSAGE).toMatch(/Mark a part unsolved in the composer/);
   });
 });
 
-describe("frozen — /bounty/new", () => {
+describe("frozen · /bounty/new", () => {
   function renderRoute() {
     return render(
       <MemoryRouter initialEntries={["/bounty/new"]}>
@@ -182,7 +182,7 @@ describe("frozen — /bounty/new", () => {
   });
 });
 
-describe("frozen — /upload/bounty with no draft", () => {
+describe("frozen · /upload/bounty with no draft", () => {
   it("mints no draft row and points at the composer instead", async () => {
     render(
       <MemoryRouter initialEntries={["/upload/bounty"]}>
@@ -210,7 +210,7 @@ describe("frozen — /upload/bounty with no draft", () => {
 });
 
 // The other half of the freeze, and the one that would be silently lost.
-describe("live — a bounty draft already in progress still opens its editor", () => {
+describe("live · a bounty draft already in progress still opens its editor", () => {
   it("mounts the shared editor in bounty mode for /upload/bounty?id=", async () => {
     render(
       <MemoryRouter initialEntries={["/upload/bounty?id=draft-9"]}>
@@ -238,7 +238,7 @@ describe("live — a bounty draft already in progress still opens its editor", (
 // one — and both are frozen at their first statement. The claim is that they
 // REFUSE rather than fail: no query of any kind is built, so there is no
 // half-written row and no orphaned header behind the error.
-describe("frozen — the superseded bounty-competition helpers", () => {
+describe("frozen · the superseded bounty-competition helpers", () => {
   it("createMetaBounty throws BOUNTY_RETIRED and writes nothing", async () => {
     const { createMetaBounty } = await import(
       "@/lib/bounty-competition/createMetaBounty"
@@ -274,7 +274,7 @@ describe("frozen — the superseded bounty-competition helpers", () => {
   });
 });
 
-describe("retired affordance — the upload picker's Bounty card", () => {
+describe("retired affordance · the upload picker's Bounty card", () => {
   it("lands on /compose/new rather than the legacy bounty editor", async () => {
     function Opener() {
       const { openUploadTypePicker } = useUploadPicker();

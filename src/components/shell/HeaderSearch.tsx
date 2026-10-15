@@ -36,6 +36,10 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 const INPUT_CLASS =
   "placeholder:text-[color:var(--text2)] !bg-transparent !border-0 focus-visible:!outline-none focus-visible:!border-0";
 
+/* UI-P96, refined: Tailwind's `outline-none` is a 2px transparent outline, which reads as a ring that is not there. The
+   field's inline `outline: none` is enough on the input, and the box around it wears the ring (index.css). */
+const REFINED_INPUT_CLASS = "placeholder:text-[color:var(--text2)] !bg-transparent !border-0 focus-visible:!border-0";
+
 /** True when the key press belongs to something the reader is typing into. */
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -116,7 +120,7 @@ export function HeaderSearch({
           hint="/"
           width={width ?? 240}
           placeholder={width !== undefined && width < 240 ? "Search builds" : "Search builds, makers, tools"}
-          className={INPUT_CLASS}
+          className={REFINED_INPUT_CLASS}
           maxLength={SEARCH_MAX}
           value={value}
           autoFocus={autoFocus}

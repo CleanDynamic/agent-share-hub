@@ -181,10 +181,10 @@ describe("BreakageView", () => {
   it("links into the replay at the step it broke", () => {
     const onOpenReplay = vi.fn();
     renderView({ onOpenReplay });
-    fireEvent.click(screen.getByRole("button", { name: "steps 6–9 — watch it" }));
+    fireEvent.click(screen.getByRole("button", { name: "steps 6–9 · watch it" }));
     expect(onOpenReplay).toHaveBeenCalledWith(6);
 
-    fireEvent.click(screen.getByRole("button", { name: "step 11 — watch it" }));
+    fireEvent.click(screen.getByRole("button", { name: "step 11 · watch it" }));
     expect(onOpenReplay).toHaveBeenCalledWith(11);
   });
 
