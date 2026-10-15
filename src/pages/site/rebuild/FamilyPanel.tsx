@@ -43,7 +43,9 @@ import { Segmented, type SegmentedItem } from "@/components/brand/Segmented";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
+import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, display } from "@/lib/theme/type";
 
@@ -130,7 +132,13 @@ function NodeTarget({
 }
 
 /** The edge a node stands in: the viewer's draft is dashed `--action`; a chosen node or the page's own build is solid `--action`. */
-function edge(node: FamilyNodeView, selected: boolean, width: number): CSSProperties {
+function edge(node: FamilyNodeView, selected: boolean, width: number, refined = false): CSSProperties {
+  if (refined) {
+    /* Selected: fill, 1px edge and ring, never a colour. The viewer's draft keeps its dash. */
+    if (node.draft) return { borderWidth: 1, borderStyle: "dashed", borderColor: t.selectedEdge };
+    if (selected || node.current) return { ...SELECTED };
+    return { borderWidth: width, borderStyle: "solid", borderColor: t.moduleBorder };
+  }
   if (node.draft) return { borderWidth: 1.5, borderStyle: "dashed", borderColor: t.action };
   if (selected || node.current) return { borderWidth: 1.5, borderStyle: "solid", borderColor: t.action };
   return { borderWidth: width, borderStyle: "solid", borderColor: t.glassBorder };
@@ -151,6 +159,7 @@ function TreeNode({
   onSelect?: (id: string) => void;
   selected: boolean;
 }) {
+  const refined = useLook() === "refined";
   return (
     <NodeTarget
       node={node}
@@ -163,9 +172,9 @@ function TreeNode({
         width: NODE_WIDTH,
         padding: 4,
         borderRadius: r.control,
-        background: t.glass,
-        ...edge(node, selected, 1),
-        boxShadow: t.shadowCard,
+        background: refined ? t.module : t.glass,
+        ...edge(node, selected, 1, refined),
+        ...(refined && (selected || node.current) ? null : { boxShadow: refined ? t.moduleShadow : t.shadowCard }),
         boxSizing: "border-box",
         display: "block",
       }}
@@ -245,12 +254,13 @@ export function FamilyList({
   selectedId?: string | null;
   onSelect?: (id: string) => void;
 }) {
+  const refined = useLook() === "refined";
   return (
     <ol data-testid="family-list" aria-label="The family, oldest first" style={{ listStyle: "none", margin: phone ? "6px 0 0" : "9px 0 0", padding: 0 }}>
       {familyRows(root).map(({ node, depth }) => {
         const selected = node.id === selectedId;
         return (
-          <li key={node.id} data-depth={depth} style={{ position: "relative" }}>
+          <li key={node.id} data-depth={depth} style={{ position: "relative", ...(refined ? { borderBottom: `1px solid ${t.hairline}` } : null) }}>
             {depth > 0 ? (
               <span
                 aria-hidden="true"
@@ -282,7 +292,7 @@ export function FamilyList({
                 paddingRight: 0,
                 border: 0,
                 borderRadius: r.control,
-                background: selected ? t.rowHighlight : "transparent",
+                background: selected ? (refined ? t.selectedFill : t.rowHighlight) : "transparent",
                 boxSizing: "border-box",
               }}
             >
@@ -294,7 +304,7 @@ export function FamilyList({
                   overflow: "hidden",
                   flexShrink: 0,
                   boxSizing: "border-box",
-                  ...(node.draft ? { borderWidth: 1.5, borderStyle: "dashed", borderColor: t.action } : {}),
+                  ...(node.draft ? { borderWidth: refined ? 1 : 1.5, borderStyle: "dashed", borderColor: refined ? t.selectedEdge : t.action } : {}),
                 }}
               >
                 <CoverFallback seed={node.seed} sky={node.sky} radius={0} />

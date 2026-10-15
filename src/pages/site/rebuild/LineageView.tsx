@@ -19,6 +19,7 @@ import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
 import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -97,6 +98,7 @@ function SelectionPanel({
   fill: boolean;
   alone?: ReactNode;
 }) {
+  const refined = useLook() === "refined";
   /* A family of one has nothing to compare: the list says nothing has changed. Otherwise the panel asks for a pick. */
   if (!selection) {
     return alone ? (
@@ -106,15 +108,17 @@ function SelectionPanel({
     );
   }
 
+  /* No italics under the refined look: the title stays upright in the line's own ink. */
+  const upright = refined ? ({ fontStyle: "normal" } as const) : undefined;
   const about = (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 9, flexWrap: "wrap", marginTop: 4 }}>
       <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text }}>
         {selection.parentTitle ? (
           <>
-            <i>{selection.title}</i> against <i>{selection.parentTitle}</i>
+            <i style={upright}>{selection.title}</i> against <i style={upright}>{selection.parentTitle}</i>
           </>
         ) : (
-          <i>{selection.title}</i>
+          <i style={upright}>{selection.title}</i>
         )}
       </span>
       <OpenLink to={selection.to} title={selection.title} phone={phone} />

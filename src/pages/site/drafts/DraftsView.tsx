@@ -34,6 +34,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/brand/Button";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BottomSheet } from "@/components/shell/BottomSheet";
@@ -49,6 +50,7 @@ import type { DraftListItem } from "@/lib/build/drafts";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { MENU_ITEM_CLASS, ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
@@ -425,6 +427,7 @@ function SessionRow({
 }) {
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
+  const refined = useLook() === "refined";
   return (
     <li
       data-testid={attached ? "session-row-attached" : "session-row"}
@@ -445,11 +448,17 @@ function SessionRow({
         borderRadius: r.control,
         background: hover ? t.rowHighlight : "transparent",
         cursor: draggable ? "grab" : "default",
-        opacity: dragging ? 0.5 : 1,
+        /* A dragged row is dimmed with the filter under the refined look, never with opacity; its rows are hairline-separated. */
+        ...(refined ? { filter: dragging ? "var(--dim-filter)" : undefined, borderBottom: `1px solid ${t.hairline}`, borderRadius: 0 } : { opacity: dragging ? 0.5 : 1 }),
         boxSizing: "border-box",
       }}
     >
       {draggable ? <GripVertical size={14} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" style={{ flexShrink: 0 }} /> : null}
+      {refined ? (
+        <span style={{ display: "inline-flex", flexShrink: 0, color: t.text }}>
+          <ModelMark tool={session.modelName ? null : session.client} model={session.modelName} size={18} />
+        </span>
+      ) : null}
       <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, flexGrow: 1 }}>
         <span
           style={{
@@ -471,10 +480,11 @@ function SessionRow({
 }
 
 function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummary | null; onCancel: () => void; onConfirm: (id: string) => void }) {
+  const refined = useLook() === "refined";
   return (
     <AlertDialog.Root open={session !== null} onOpenChange={(open) => (open ? undefined : onCancel())}>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay style={{ position: "fixed", inset: 0, background: t.sheetDim, zIndex: 60 }} />
+        <AlertDialog.Overlay style={{ position: "fixed", inset: 0, background: refined ? t.scrim : t.sheetDim, zIndex: 60 }} />
         <AlertDialog.Content
           style={{
             position: "fixed",
@@ -484,11 +494,9 @@ function RemoveDialog({ session, onCancel, onConfirm }: { session: SessionSummar
             transform: "translate(-50%, -50%)",
             width: "min(420px, calc(100vw - 32px))",
             boxSizing: "border-box",
-            padding: 17,
-            borderRadius: r.panel,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowFloat,
+            ...(refined
+              ? { padding: 16, borderRadius: 12, background: t.window, border: `1px solid ${t.windowBorder}`, boxShadow: t.windowShadow }
+              : { padding: 17, borderRadius: r.panel, background: t.solid, border: `1px solid ${t.line}`, boxShadow: t.shadowFloat }),
             display: "flex",
             flexDirection: "column",
             gap: 12,

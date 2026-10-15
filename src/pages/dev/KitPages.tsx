@@ -120,8 +120,12 @@ const CHROME: Record<string, Partial<DevChromeOptions>> = {
 
 /* UI-P87: the pages with a refined view. `frame` is the empty frame: the refined header, surface, breadcrumb, footer
    and phone chrome around the grid placeholder, lit as the Home board lights them. UI-P88 adds Home, UI-P89 the Gallery dashboard and its feed,
-   UI-P90 the Build page (its first screen and The build), UI-P92 Activity, UI-P93 the composer (List, Sources and Details). */
-const REFINED_READY = new Set(["frame", "home", "gallery-dashboard", "gallery-feed", "build", "build-steps", "activity", "sandbox"]);
+   UI-P90 the Build page (its first screen and The build), UI-P92 Activity, UI-P93 the composer (List, Sources and Details). UI-P95 re-skins the rest through the tokens and primitives, without forks:
+   Rebuild, lineage, Profile, Drafts, the Bounties board and Sign in. */
+const REFINED_READY = new Set([
+  "frame", "home", "gallery-dashboard", "gallery-feed", "build", "build-steps", "activity", "sandbox",
+  "rebuild", "lineage", "profile", "drafts", "bounty-board", "signin",
+]);
 
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 

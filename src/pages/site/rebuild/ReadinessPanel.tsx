@@ -34,6 +34,7 @@ import { Panel } from "@/components/brand/Panel";
 import { rebuildCreditLine } from "@/components/build/rebuildCredit";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
@@ -61,12 +62,17 @@ export interface ReadinessPanelProps {
 }
 
 export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView; phone?: boolean }) {
+  const refined = useLook() === "refined";
   const line =
     rebuildCreditLine({ source_title_at_fork: credit.title, source_handle_at_fork: credit.handle }) ?? `Rebuilt from ${credit.title}`;
   return (
     <div
       data-testid="rebuild-credit-box"
-      style={{ marginTop: 10, padding: "9px 10px", borderRadius: r.control, background: t.inset, border: `1px solid ${t.line}` }}
+      style={
+        refined
+          ? { marginTop: 12, padding: 12, borderRadius: 6, background: t.tile, border: `1px solid ${t.tileBorder}` }
+          : { marginTop: 10, padding: "9px 10px", borderRadius: r.control, background: t.inset, border: `1px solid ${t.line}` }
+      }
     >
       <Eyebrow size={10}>The credit it will carry</Eyebrow>
       <p
@@ -75,7 +81,7 @@ export function CreditBox({ credit, phone = false }: { credit: RebuildCreditView
         title={line}
         style={{ margin: "4px 0 0", fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text }}
       >
-        Rebuilt from <i>{credit.title}</i>
+        Rebuilt from <i style={refined ? { fontStyle: "normal" } : undefined}>{credit.title}</i>
         {credit.handle ? ` by @${credit.handle}` : null}
       </p>
       {credit.delta ? (
@@ -119,7 +125,31 @@ export function ReadinessPanel({
 }: ReadinessPanelProps) {
   const nextId = `rebuild-next-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const blocked = !readiness.ready;
-  const orb = (
+  const refined = useLook() === "refined";
+  /* Under the refined look the readiness is a tile with the figure in it, not a ring orb. */
+  const orb = refined ? (
+    <div
+      data-ui="readiness-tile"
+      role="img"
+      aria-label={`${readiness.pct}% ready. ${readiness.headline}.`}
+      style={{
+        flexShrink: 0,
+        width: phone ? 88 : 96,
+        boxSizing: "border-box",
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 2,
+        background: t.tile,
+        border: `1px solid ${t.tileBorder}`,
+        borderRadius: 6,
+      }}
+    >
+      <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 24, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{`${readiness.pct}%`}</span>
+      <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "normal", color: t.label }}>ready</span>
+    </div>
+  ) : (
     <OrbRing
       size={phone ? 112 : 120}
       percent={readiness.pct}
