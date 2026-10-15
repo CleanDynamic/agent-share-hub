@@ -1,8 +1,8 @@
 /* UI-P78 — the look switch.
 
    REFINED_LOOK_ENABLED switches the whole site to the refined look (UI-P79 to
-   UI-P97 build it, beside the current one). It is off. UI-P98 turns it on.
-   With it off the current screens run exactly as before.
+   UI-P97 build it, beside the current one). It is on since UI-P98; rollback is
+   `false`. With it off the current screens run exactly as before.
 
    On `/dev/*` the URL decides instead, so every refined board can be checked
    while the switch is off: `?look=refined` or `?look=current`. Anywhere else
@@ -18,7 +18,7 @@
 import { useContext } from "react";
 import { UNSAFE_LocationContext } from "react-router-dom";
 
-export const REFINED_LOOK_ENABLED = false as const;
+export const REFINED_LOOK_ENABLED = true as const;
 
 export type Look = "current" | "refined";
 

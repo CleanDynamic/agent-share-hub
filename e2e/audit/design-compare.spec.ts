@@ -128,7 +128,7 @@ for (const board of BOARDS) {
     test(title, async ({ browser }, testInfo) => {
       const stripped = board.kind === "desktop" ? BROWSER_STRIP : 0;
       const area = { x: 0, y: 0, width: board.width, height: board.height - stripped };
-      const appUrl = `/dev/kit/pages/${board.page}?theme=${board.theme}&viewport=${board.kind}`;
+      const appUrl = `/dev/kit/pages/${board.page}?theme=${board.theme}&viewport=${board.kind}&look=current`;
 
       // The app first: if the page is not built there is nothing to compare, and
       // the reference screenshot would be wasted work.
@@ -180,7 +180,7 @@ for (const board of BOARDS) {
     test(title, async ({ browser }, testInfo) => {
       const area = { x: 0, y: 0, width: board.width, height: board.height };
       const state = REFINED_STATE[board.page] ?? { query: "" };
-      const appUrl = `${board.devPage}?theme=${board.theme}&viewport=desktop&look=refined${state.query}`;
+      const appUrl = `${board.devPage}?theme=${board.theme}&viewport=desktop${state.query}`;
 
       const appContext = await browser.newContext({
         viewport: { width: area.width, height: area.height },
@@ -223,7 +223,7 @@ for (const board of BOARDS) {
     });
   } else if (board.kind === "components") {
     test(title, async ({ browser }, testInfo) => {
-      const appUrl = `/dev/kit/components?theme=${board.theme}`;
+      const appUrl = `/dev/kit/components?theme=${board.theme}&look=current`;
       const viewport = { width: board.width, height: 900 };
       const baseURL = testInfo.project.use.baseURL;
 

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { REFINED_LOOK_ENABLED, resolveLook } from "./look";
 
 describe("the look switch (UI-P78)", () => {
-  it("is off until UI-P98", () => {
-    expect(REFINED_LOOK_ENABLED).toBe(false);
+  it("is on since UI-P98", () => {
+    expect(REFINED_LOOK_ENABLED).toBe(true);
   });
 
   it("switch off: current, on any route", () => {

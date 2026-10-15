@@ -1,5 +1,7 @@
 # buildgallery UI overhaul — Noon & Dusk handoff
 
+> **Since UI-P98 the refined boards are the source of truth.** `design/reference/refined/{dusk,noon}/<board>.html` (1440 wide, values exact, no browser strip, no mobile boards) describe what visitors see; `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` is on. The current-look boards below stay in the repository, and one line away (`false`), until UI-P99 retires them. Where this file and a refined board disagree, the refined board wins.
+
 This file is the written half of the "buildgallery — Noon & Dusk" artifact. The other half is the canvas: two brand boards, eighteen desktop page mockups (nine screens × two themes) and twenty mobile-web mockups (ten screens × two themes). Read both. The mockups show what it should look like; this file says what each piece is made of in the codebase, what already exists, what is new, and what must be decided before a line is written.
 
 Repository: `CleanDynamic/agent-share-hub` (React 18, Vite, React Router, TanStack Query, Tailwind plus inline styles, Supabase via Lovable Cloud, Vitest, Playwright). Live preview: `agent-share-hub.lovable.app`.

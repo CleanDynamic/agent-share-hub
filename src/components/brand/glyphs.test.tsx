@@ -1,14 +1,13 @@
 // UI-P82 — the glyph set and the Icon switch.
 //
 // Attributes are read off the rendered tree. The look is chosen the way a dev page chooses it: `?look=refined` on a
-// `/dev/*` route (UI-P78); with no router the switch decides, so that one test reads `REFINED_LOOK_ENABLED`.
+// `/dev/*` route (UI-P78); with no router the unit-test setup pins the current look (UI-P98).
 
 import { render } from "@testing-library/react";
 import { Bell, Search, Sparkles } from "lucide-react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { REFINED_LOOK_ENABLED } from "@/lib/theme/look";
 
 import { Glyph } from "./Glyph";
 import { Icon } from "./Icon";
@@ -116,15 +115,10 @@ describe("Icon", () => {
     expect(svg.querySelector(`path[d="${GLYPHS.search}"]`)).toBeNull();
   });
 
-  it("follows the real switch with no router at all, since there is no URL to read", () => {
+  it("keeps the current look with no router at all (the unit-test setup pins it; the switch itself is tested in look.test.ts)", () => {
     const svg = svgOf(render(<Icon lucide={Bell} glyph="bell" />).container);
-    if (REFINED_LOOK_ENABLED) {
-      expect(svg).toHaveAttribute("viewBox", "0 0 16 16");
-      expect(svg.querySelector("path")).toHaveAttribute("d", GLYPHS.bell);
-    } else {
-      expect(svg).toHaveClass("lucide-bell");
-      expect(svg).toHaveAttribute("width", "24");
-    }
+    expect(svg).toHaveClass("lucide-bell");
+    expect(svg).toHaveAttribute("width", "24");
   });
 
   it("leaves `aria-hidden` to the caller when the caller sets it", () => {

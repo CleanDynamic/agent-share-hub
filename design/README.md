@@ -1,5 +1,7 @@
 # The buildgallery design kit
 
+> **Since UI-P98 the refined boards are the source of truth.** `design/reference/refined/{dusk,noon}/<board>.html` (1440 wide, values exact, no browser strip, no mobile boards) describe what visitors see; `REFINED_LOOK_ENABLED` in `src/lib/theme/look.ts` is on. The current-look boards below stay in the repository, and one line away (`false`), until UI-P99 retires them. Where this file and a refined board disagree, the refined board wins.
+
 This folder is the approved UI, as files a machine can read: the reference HTML for every screen, a picture of each one, the tokens, sample data, and a series of 42 prompts that build it in the app.
 
 It exists because the last attempt described the design in prose and got the old UI back. Prose is not checkable. **Everything here is checkable**: the reference is real HTML with real numbers, and `npm run audit:design` screenshots the reference and the app side by side and fails on the difference.
