@@ -1106,7 +1106,7 @@ export function CanvasShell(props: CanvasShellProps) {
           borderRadius: 8,
           padding: '8px 16px',
           zIndex: 150,
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           boxShadow: 'var(--elev-raised)',
         }}>
           {grammarToast}

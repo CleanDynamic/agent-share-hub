@@ -142,7 +142,7 @@ function AnchorIndicator({
     background: "var(--recess)",
   };
   const textStyle: React.CSSProperties = {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 11,
     fontWeight: 500,
     color: "var(--text)",
@@ -307,7 +307,7 @@ function RolePill({ role }: { role: "author" | "trusted_solver" }) {
   return (
     <span
       style={{
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 9,
         fontWeight: 600,
         background: c.bg,
@@ -344,7 +344,7 @@ function ReactionButton({
         background: "var(--recess)",
         border: "1px solid var(--line)",
         color: "var(--text2)",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 11,
         cursor: "pointer",
       }}
@@ -428,17 +428,17 @@ function CommentCard({
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
               {comment.author.displayName}
             </span>
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, color: "var(--text2)" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--text2)" }}>
               @{comment.author.handle}
             </span>
             {comment.author.role && <RolePill role={comment.author.role} />}
           </div>
           <p
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               color: "var(--text)",
               lineHeight: 1.5,
@@ -464,7 +464,7 @@ function CommentCard({
               <button
                 onClick={() => setShowReplyInput(!showReplyInput)}
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 11,
                   fontWeight: 500,
                   color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
@@ -477,7 +477,7 @@ function CommentCard({
                 Reply
               </button>
             )}
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, color: "var(--text2)" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, color: "var(--text2)" }}>
               {formatTimestamp(comment.timestamp)}
             </span>
             <button
@@ -508,7 +508,7 @@ function CommentCard({
                   border: "1px solid var(--line)",
                   borderRadius: 6,
                   color: "var(--text)",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   resize: "vertical",
                 }}
@@ -520,7 +520,7 @@ function CommentCard({
                 <button
                   onClick={() => setShowReplyInput(false)}
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 11,
                     fontWeight: 500,
                     color: "var(--text2)",
@@ -535,7 +535,7 @@ function CommentCard({
                 <button
                   onClick={submitReply}
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: 11,
                     fontWeight: 500,
                     color: "var(--text)",
@@ -569,7 +569,7 @@ function CommentCard({
             <button
               onClick={() => setShowAllReplies(true)}
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 fontWeight: 500,
                 color: "color-mix(in srgb, var(--evidence) 85%, transparent)",
@@ -601,10 +601,10 @@ function EmptyState({ anchorType }: { anchorType: AnchorType }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>
       <MessageCircleOff size={48} style={{ color: "var(--text2)", marginBottom: 16 }} />
-      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 500, color: "var(--text2)", margin: "0 0 4px" }}>
+      <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 500, color: "var(--text2)", margin: "0 0 4px" }}>
         No comments yet on this {labels[anchorType]}
       </p>
-      <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, color: "var(--text2)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--text2)", margin: 0 }}>
         Be the first to comment
       </p>
     </div>
@@ -669,7 +669,7 @@ function Composer({
           border: "1px solid var(--line)",
           borderRadius: 6,
           color: "var(--text)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 13,
           lineHeight: 1.5,
           resize: "vertical",
@@ -684,7 +684,7 @@ function Composer({
           onClick={submit}
           disabled={!text.trim()}
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 500,
             color: "var(--text)",
@@ -720,7 +720,7 @@ function SortDropdown({
       <button
         onClick={() => setOpen(!open)}
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 11,
           fontWeight: 500,
           color: "var(--text2)",
@@ -762,7 +762,7 @@ function SortDropdown({
                 display: "block",
                 width: "100%",
                 textAlign: "left",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 fontWeight: value === opt ? 500 : 400,
                 color: value === opt ? "var(--text)" : "var(--text2)",
@@ -789,7 +789,7 @@ const menuItemStyle: React.CSSProperties = {
   display: "block",
   width: "100%",
   textAlign: "left",
-  fontFamily: "Figtree, sans-serif",
+  fontFamily: "var(--font-ui)",
   fontSize: 12,
   color: "var(--text)",
   background: "transparent",

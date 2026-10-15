@@ -424,7 +424,7 @@ export function PublishMetadataForm({
             color: "var(--text2)",
             fontSize: "13px",
             fontWeight: 500,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           <ArrowLeft size={14} />
@@ -437,7 +437,7 @@ export function PublishMetadataForm({
             color: "var(--text)",
             fontSize: "18px",
             fontWeight: 600,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           {headerTitle}
@@ -451,7 +451,7 @@ export function PublishMetadataForm({
             fontSize: "11px",
             fontWeight: 500,
             letterSpacing: "0.04em",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           {theme.label}
@@ -479,7 +479,7 @@ export function PublishMetadataForm({
             border: "1px solid var(--line)",
             color: "var(--text)",
             fontSize: "12px",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           Fill required fields to publish ({validation.requiredFieldsCompleted} of{" "}
@@ -512,7 +512,7 @@ export function PublishMetadataForm({
                       : "0.5px solid var(--line)",
                     color: "var(--text)",
                     fontSize: "14px",
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                   }}
                 />
                 <div className="flex justify-between">
@@ -522,7 +522,7 @@ export function PublishMetadataForm({
                         ? "color-mix(in srgb, var(--cat-breakage) 85%, transparent)"
                         : "var(--text2)",
                       fontSize: "11px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   >
                     {validation.errors.useCase
@@ -533,7 +533,7 @@ export function PublishMetadataForm({
                     style={{
                       color: "var(--text2)",
                       fontSize: "11px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   >
                     {state.useCase.length}/140
@@ -609,7 +609,7 @@ export function PublishMetadataForm({
                 style={{
                   color: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)",
                   fontSize: "11px",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                 }}
               >
                 {validation.errors.tags}
@@ -638,7 +638,7 @@ export function PublishMetadataForm({
                       border: "0.5px solid var(--line)",
                       color: "var(--text)",
                       fontSize: "14px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   />
                 </FieldGroup>
@@ -654,7 +654,7 @@ export function PublishMetadataForm({
                       border: "0.5px solid var(--line)",
                       color: "var(--text)",
                       fontSize: "14px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   />
                 </FieldGroup>
@@ -695,7 +695,7 @@ export function PublishMetadataForm({
                 id="bounty-missing-line"
                 className="mt-3 flex items-center gap-2"
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 12,
                   fontWeight: 500,
                   color: missingItemCount === 0 ? "color-mix(in srgb, var(--cat-breakage) 85%, transparent)" : "var(--lit)",
@@ -776,7 +776,7 @@ export function PublishMetadataForm({
                     style={{
                       color: "var(--text2)",
                       fontSize: "14px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   >
                     /
@@ -799,7 +799,7 @@ export function PublishMetadataForm({
                         : "0.5px solid var(--line)",
                       color: "var(--text)",
                       fontSize: "14px",
-                      fontFamily: "Figtree, sans-serif",
+                      fontFamily: "var(--font-ui)",
                     }}
                   />
 
@@ -817,7 +817,7 @@ export function PublishMetadataForm({
                   style={{
                     color: "var(--text2)",
                     fontSize: "11px",
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                   }}
                 >
                   {slugPreview}
@@ -844,7 +844,7 @@ export function PublishMetadataForm({
               color: "var(--text2)",
               fontSize: "13px",
               fontWeight: 500,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               border: "0.5px solid var(--line)",
             }}
           >
@@ -857,7 +857,7 @@ export function PublishMetadataForm({
               color: "var(--text2)",
               fontSize: "13px",
               fontWeight: 500,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               border: "0.5px solid var(--line)",
             }}
           >
@@ -875,7 +875,7 @@ export function PublishMetadataForm({
               color: "white",
               fontSize: "13px",
               fontWeight: 600,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               opacity: canPublish && !isPublishing ? 1 : 0.4,
               cursor: canPublish && !isPublishing ? "pointer" : "not-allowed",
             }}
@@ -891,7 +891,7 @@ export function PublishMetadataForm({
                 border: "1px solid var(--line)",
                 color: "var(--text)",
                 fontSize: "12px",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
               }}
             >
               {slugBlockingPublish
@@ -1105,7 +1105,7 @@ function FieldGroup({
           color: "var(--text2)",
           fontSize: "12px",
           fontWeight: 500,
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
         }}
       >
         {label}
@@ -1116,7 +1116,7 @@ function FieldGroup({
           style={{
             color: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)",
             fontSize: "11px",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           {error}
@@ -1145,7 +1145,7 @@ function SlugBadge({
             color: "var(--text2)",
             fontSize: "11px",
             fontWeight: 500,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           Checking…
@@ -1166,7 +1166,7 @@ function SlugBadge({
             color: "var(--lit)",
             fontSize: "11px",
             fontWeight: 500,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         >
           Taken
@@ -1186,7 +1186,7 @@ function SlugBadge({
           color: "var(--evidence)",
           fontSize: "11px",
           fontWeight: 500,
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
         }}
       >
         Available
@@ -1229,7 +1229,7 @@ function Section({
             color: "var(--text2)",
             fontSize: "11px",
             fontWeight: 600,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
           aria-label={`Section ${number}: ${title}`}
         >
@@ -1241,7 +1241,7 @@ function Section({
             color: "var(--text)",
             fontSize: "14px",
             fontWeight: 600,
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             margin: 0,
           }}
         >
@@ -1257,7 +1257,7 @@ function Section({
               fontWeight: 600,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
             }}
           >
             Required
@@ -1278,7 +1278,7 @@ function Section({
                 border: "1px solid var(--line)",
                 color: "var(--text)",
                 fontSize: "12px",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 maxWidth: "280px",
                 whiteSpace: "normal",
               }}
@@ -1322,7 +1322,7 @@ function ChipButton({
         color: active ? accent : "var(--text2)",
         fontSize: "12px",
         fontWeight: 500,
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
       }}
     >
       {Icon && (

@@ -139,33 +139,6 @@ describe("depth is alignment and a guide, never nested boxes", () => {
 });
 
 describe("a row names its part", () => {
-  it("wears the category's own hue, and no fill", () => {
-    const doc = staticDoc(anatomy());
-    const chip = Array.from(doc.querySelectorAll("span")).find(
-      (span) => span.textContent === "Prompt",
-    );
-    expect(styleOf(chip)).not.toContain("background");
-    expect(styleOf(chip)).toContain("color:var(--cat-instruction)");
-    expect(styleOf(chip)).toContain("border-radius:var(--r-chip)");
-  });
-
-  it("leaves a gap its own category and spends the breakage hue on the edge", () => {
-    const gap = [node("g1", "agent_config", "The missing retry policy", { is_gap: true })];
-    const doc = staticDoc(anatomy(gap));
-
-    const chip = Array.from(doc.querySelectorAll("span")).find(
-      (span) => span.textContent === "Agent config",
-    );
-    // The chip routes the gap to people who write agent configs. Recolouring
-    // it red would lose that, which is the whole reason the edge carries it.
-    expect(styleOf(chip)).toContain("color:var(--cat-configuration)");
-    expect(styleOf(chip)).not.toContain("cat-breakage");
-
-    const card = doc.querySelector('[data-node-id="g1"]');
-    expect(styleOf(card)).toContain("var(--cat-breakage)");
-    // Dashed: where something goes, not what something is.
-    expect(styleOf(card)).toContain("dashed");
-  });
 
   it("gives a node title the body face at 600, never the display face", () => {
     const doc = staticDoc(anatomy());

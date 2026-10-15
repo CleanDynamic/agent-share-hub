@@ -56,7 +56,7 @@ export const tokens = {
   glass: {
   },
   fontSans:
-    "'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    "var(--font-ui)",
   fontMono:
     "var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace",
 } as const

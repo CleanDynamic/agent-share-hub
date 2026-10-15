@@ -32,8 +32,6 @@ import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
-import { OrbRing } from "@/components/brand/OrbRing";
-import { useLook } from "@/lib/theme/look";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { MarkTile } from "@/components/brand/RankRung";
 import { Segmented } from "@/components/brand/Segmented";
@@ -197,8 +195,6 @@ function LevelPanel({
   onTrack?: (track: TrackId) => void;
   phone: boolean;
 }) {
-  const orb = phone ? 118 : 150;
-  const refined = useLook() === "refined";
   const editable = isOwn && Boolean(onTrack);
 
   if (failure) {
@@ -216,11 +212,7 @@ function LevelPanel({
   const track = level.track;
   const trackItems = TRACK_ITEMS.map((item) => ({ value: item.value, label: item.label }));
 
-  const orbNode = refined ? (
-    <LevelTile level={level} phone={phone} />
-  ) : (
-    <OrbRing size={orb} percent={level.percent} value={level.level} caption={RING_CAPTION} label={ringLabel(level)} />
-  );
+  const orbNode = <LevelTile level={level} phone={phone} />;
 
   if (phone) {
     const name = trackLabel(track);

@@ -12,26 +12,11 @@
 // them are decoration.
 //
 // DEFINED PER THEME, BECAUSE A SHADOW ON A LIGHT GROUND AND A SHADOW ON A DARK
-// GROUND ARE NOT THE SAME OBJECT. On Noon, depth is a true shadow: the
-// luminous grey room has a light source, and a surface above the page casts.
-// On Dusk, a shadow alone does not read — black on lavender stone at dusk is
-// barely a change — so each level pairs a deeper shadow with an inset `--glass-hi`
-// top hairline, which is the lit edge of the surface catching the horizon. That
-// hairline is what says "above", and the shadow only says "how far"
-// (`dark-mode-design`).
-//
-// So the shadows themselves are tokens — `--elev-raised`, `--elev-overlay` —
-// declared in both theme blocks and flipped by the same one attribute as every
-// colour. `flat` needs no token: it is the absence of a shadow plus a hairline
-// in `--line`, which already flips.
-//
-// UNDER THE REFINED LOOK (UI-P81) THE LEVELS KEEP THEIR NAMES AND CHANGE THEIR
-// SHADOWS, WITHOUT A BRANCH HERE. `raised` and `overlay` spend the variables
-// `--elev-raised` and `--elev-overlay`, never the values in the tables below, so
-// when `data-look="refined"` points them at `--control-shadow` and
-// `--window-shadow` (and a card's resting `--shadow-card` at `--module-shadow`)
-// every surface that spreads a level follows. The tables below are the current
-// look's; the refined values live in `refined.ts`.
+// GROUND ARE NOT THE SAME OBJECT. The shadows themselves are tokens, `--elev-raised`
+// and `--elev-overlay`, declared in both theme blocks and flipped by the same one
+// attribute as every colour: `raised` is the control's shadow (`--control-shadow`)
+// and `overlay` the window's (`--window-shadow`). `flat` needs no token: it is the
+// absence of a shadow plus a hairline in `--line`, which already flips.
 //
 // AN ELEVATION THAT CHANGES ON HOVER IS A PSEUDO-ELEMENT, NEVER AN ANIMATED
 // BOX-SHADOW. `box-shadow` cannot be composited: animating it re-rasterises the
@@ -68,28 +53,16 @@ export const ELEVATION_TOKENS = ["elev-raised", "elev-overlay"] as const;
 
 export type ElevationTokenName = (typeof ELEVATION_TOKENS)[number];
 
-/**
- * Noon — a true shadow. Two layers each: a tight contact shadow that
- * anchors the surface to the page, and a wider ambient one that gives it its
- * height. Struck from `--text` (#1B2026) rather than from black, so the shadow
- * belongs to the cool grey room rather than sitting on top of it.
- */
+/** Noon: the control's shadow for `raised`, the window's for `overlay`. */
 export const noonElevation: Record<ElevationTokenName, string> = {
-  "elev-raised": "0 1px 2px rgba(27,32,38,.08), 0 6px 16px rgba(27,32,38,.10)",
-  "elev-overlay": "0 2px 6px rgba(27,32,38,.12), 0 24px 56px rgba(27,32,38,.20)",
+  "elev-raised": "var(--control-shadow)",
+  "elev-overlay": "var(--window-shadow)",
 };
 
-/**
- * Dusk — a lit top edge and a deeper shadow.
- *
- * The `inset 0 1px 0 var(--glass-hi)` is doing the work a shadow cannot do on a
- * dark ground: it is the surface's own edge catching the violet-to-salmon
- * horizon, and it is what reads as "above". The shadows are darker and wider
- * than Noon's because they have to travel further to register at all.
- */
+/** Dusk: the same references. */
 export const duskElevation: Record<ElevationTokenName, string> = {
-  "elev-raised": "inset 0 1px 0 var(--glass-hi), 0 2px 4px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.44)",
-  "elev-overlay": "inset 0 1px 0 var(--glass-hi), 0 4px 10px rgba(0,0,0,.48), 0 32px 72px rgba(0,0,0,.62)",
+  "elev-raised": "var(--control-shadow)",
+  "elev-overlay": "var(--window-shadow)",
 };
 
 export const elevationThemes = {

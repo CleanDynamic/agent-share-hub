@@ -190,7 +190,7 @@ describe("the replay", () => {
     // One over the scrubber, one heading the list of its events.
     expect(headings.length).toBeGreaterThanOrEqual(2);
     for (const heading of headings) {
-      expect(styleOf(heading)).toContain("DM Mono");
+      expect(styleOf(heading)).toContain("Geist Mono");
       expect(styleOf(heading)).toContain("text-transform:uppercase");
     }
   });
@@ -259,18 +259,6 @@ function breakage() {
 }
 
 describe("where it broke reads as resolved, not as an alarm", () => {
-  it("spends the breakage hue on the category chip and nowhere else", () => {
-    const doc = staticDoc(breakage());
-    // The chip carries no fill since the design kit's repaint; it is found by
-    // its own marker, and the hue is the whole of what it spends.
-    const chip = Array.from(doc.querySelectorAll("span")).find(
-      (span) => span.getAttribute("data-chip-variant") === "category",
-    );
-
-    expect(chip).toBeTruthy();
-    expect(styleOf(chip)).toContain("color:var(--cat-breakage)");
-    expect(styleOf(chip)).toContain("border-radius:var(--r-chip)");
-  });
 
   it("keeps the prose in the ordinary text ramp", () => {
     const doc = staticDoc(breakage());
@@ -309,7 +297,7 @@ describe("the rebuilds list", () => {
       span.textContent?.startsWith("@nightowl"),
     );
 
-    expect(styleOf(who)).toContain("DM Mono");
+    expect(styleOf(who)).toContain("Geist Mono");
     expect(styleOf(who)).toContain("color:var(--text2)");
     expect(styleOf(who)).toContain("font-variant-numeric:tabular-nums");
   });

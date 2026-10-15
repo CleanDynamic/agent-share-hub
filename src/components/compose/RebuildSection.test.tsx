@@ -410,7 +410,7 @@ describe("the rebuild section itself", () => {
     );
 
     for (const row of Array.from(doc.querySelectorAll("[data-change-kind]"))) {
-      expect(styleOf(row)).toContain("DM Mono");
+      expect(styleOf(row)).toContain("Geist Mono");
       expect(styleOf(row)).toContain("color:var(--text)");
     }
   });

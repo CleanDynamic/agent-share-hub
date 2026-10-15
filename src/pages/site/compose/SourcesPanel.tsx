@@ -1,37 +1,31 @@
-/* UI-P64 — Sources: the left panel of the new composer.
+/* UI-P93 — Sources in the refined look, as `design/reference/refined/{dusk,noon}/composer-list.html` draws them.
 
-   PURE. Rows in, selections and adds out. `SandboxPage` reads the build's
-   sessions, steps and files and the creator's library and hands them over
-   already shaped (`sourcesModel.ts`); this file draws them. The old composer's
-   `SessionsPanel` is untouched and still serves it.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `SourcesPanel` stays the current look; this takes its props (imported, not copied) and lists
+   the same groups in the same order with the same accessible names: Sessions in this build (each a toggle and the
+   row itself), Files in this build, Not in a build (each with Add session), then the drop zone.
 
-   WHAT IT LISTS, in this order, each group left out when it is empty:
-   Sessions in this build (with the prompts they gave it nested under them),
-   Files in this build, and Not in a build (the library's sessions that no build
-   has yet, each with one Add button). An empty build shows the S1 lines instead.
+   THE LOOK. Title 13.5/500 with the in-build count; each group a 6px square (hollow for Not in a build), its label
+   12/500 `--text2` and its count; rows separated by `--hairline`. A session row leads with the `chev` glyph and the
+   tool's real mark at 20; a file row with the `file` glyph; a waiting session with its mark, its name in `--text2`
+   and the boxed 26 plus. The drop zone is 56 high, 1px dashed `--line`, radius 6. A selected row is the selected
+   recipe, never a colour. */
 
-   AT MOST SIX ROWS PER GROUP, then one "Show {n} more" in place (CONCEPT §7).
-   There is no filled button here. On a phone this is the content of the
-   "Sources" bottom sheet, with rows at least 44 tall.
-
-   THE DROP ZONE is the mouse's shortcut and the phone's button: without a fine
-   pointer it is a button with the same words that opens the file picker, which
-   the page owns (`onPick`). */
-
-import { ChevronDown, ChevronRight, FileText, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
-import { IconButton } from "@/components/brand/IconButton";
 import { ErrorState } from "@/components/brand/ErrorState";
+import { Glyph } from "@/components/brand/Glyph";
+import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { t } from "@/lib/theme/tokens";
+import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
+import { ToolMark } from "./refinedPieces";
+import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
 import type { SourceFile, SourceLibraryItem, SourceSession } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
@@ -69,25 +63,29 @@ export interface SourcesPanelProps {
 
 /* ── pieces ── */
 
-const mono = (size: 11.5 | 12): CSSProperties => ({ fontFamily: DM_MONO, fontSize: size, color: t.text2 });
+const rowLine: CSSProperties = { borderTop: `1px solid ${t.hairline}` };
+
+/** A selected row: the selected recipe's fill and edge, drawn inside the row so the hairlines do not move. */
+const selectedRow = (selected: boolean): CSSProperties =>
+  selected ? { background: t.selectedFill, boxShadow: `inset 0 0 0 1px ${t.selectedEdge}`, borderRadius: 6 } : {};
 
 function GroupHead({ name, count, hollow }: { name: string; count: number; hollow?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 8 }}>
       <span
         aria-hidden="true"
         style={{
-          width: 7,
-          height: 7,
-          borderRadius: r.full,
+          width: 6,
+          height: 6,
           boxSizing: "border-box",
+          borderRadius: 1,
           background: hollow ? "transparent" : t.text2,
-          border: hollow ? `1.5px solid ${t.text2}` : "none",
+          border: hollow ? `1px solid ${t.text2}` : "none",
           flexShrink: 0,
         }}
       />
-      <h3 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 600, color: t.text }}>{name}</h3>
-      <span style={{ ...mono(11.5), marginLeft: "auto" }}>{count}</span>
+      <h3 style={{ ...text(12, 500, t.text2), margin: 0, flexGrow: 1, minWidth: 0 }}>{name}</h3>
+      <span style={{ ...text(11.5, 400, t.label), ...tnum }}>{count}</span>
     </div>
   );
 }
@@ -101,8 +99,8 @@ function Capped<T>({ rows, render, phone }: { rows: readonly T[]; render: (row: 
     <>
       {shown.map(render)}
       {hidden > 0 ? (
-        <div>
-          <TextButton onClick={() => setAll(true)} target={phone}>
+        <div style={{ ...rowLine, paddingTop: 8 }}>
+          <TextButton onClick={() => setAll(true)} target={phone} style={text(12.5, 500, t.text2)}>
             Show {hidden} more
           </TextButton>
         </div>
@@ -111,19 +109,17 @@ function Capped<T>({ rows, render, phone }: { rows: readonly T[]; render: (row: 
   );
 }
 
-function RowButton({
+function SelectButton({
   selected,
   onClick,
   minHeight,
   children,
-  label,
   style,
 }: {
   selected: boolean;
   onClick: () => void;
   minHeight: number;
   children: ReactNode;
-  label?: string;
   style?: CSSProperties;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
@@ -132,23 +128,20 @@ function RowButton({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      aria-label={label}
       {...handlers}
       style={{
+        ...bareButton,
         display: "flex",
         alignItems: "center",
-        gap: 7,
-        width: "100%",
+        gap: 8,
+        flexGrow: 1,
+        minWidth: 0,
         minHeight,
         boxSizing: "border-box",
         padding: "0 6px",
-        border: "none",
-        borderRadius: r.control,
-        background: selected ? tokenAlpha("action", 0.12) : state.hovered ? t.glass2 : "transparent",
-        color: t.text,
-        fontFamily: FIGTREE,
-        textAlign: "left",
-        cursor: "pointer",
+        borderRadius: 6,
+        ...(state.hovered && !selected ? { background: t.controlOn } : null),
+        ...selectedRow(selected),
         ...ring(state.focusVisible),
         ...style,
       }}
@@ -171,11 +164,10 @@ function SessionRow({
 }) {
   const [open, setOpen] = useState(false);
   const hasPrompts = session.prompts.length > 0;
-  const row = phone ? 44 : 40;
   const toggle = useInteractive<HTMLButtonElement>();
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+    <div style={{ ...rowLine, padding: "6px 0" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
         <button
           type="button"
           aria-expanded={open}
@@ -184,50 +176,41 @@ function SessionRow({
           onClick={() => setOpen((value) => !value)}
           {...toggle.handlers}
           style={{
-            width: phone ? 44 : 24,
-            height: phone ? 44 : 24,
+            ...bareButton,
+            width: phone ? 44 : 20,
+            height: phone ? 44 : 32,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "none",
-            background: "transparent",
-            color: t.text2,
-            borderRadius: 6,
+            color: t.label,
+            borderRadius: 4,
             cursor: hasPrompts ? "pointer" : "default",
-            opacity: hasPrompts ? 1 : 0.4,
+            filter: hasPrompts ? undefined : t.dimFilter,
             flexShrink: 0,
             ...ring(toggle.state.focusVisible),
           }}
         >
-          {open ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
+          <span style={{ display: "inline-flex", transform: open ? "rotate(90deg)" : undefined }}>
+            <Glyph name="chev" size={16} />
+          </span>
         </button>
-        <RowButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={row} style={{ minWidth: 0 }}>
-          <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <SelectButton selected={selectedId === session.key} onClick={() => onSelect(session.key)} minHeight={phone ? 44 : 40} style={{ alignItems: "flex-start", padding: "6px" }}>
+          <ToolMark tool={session.tool} size={20} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>
               Session {session.number} · {session.tool}
             </span>
-            <span style={mono(12)}>{session.detail}</span>
+            <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>
           </span>
-        </RowButton>
+        </SelectButton>
       </div>
       {open ? (
-        <div style={{ marginLeft: 16, display: "flex", flexDirection: "column" }}>
+        <div style={{ marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4 }}>
           {session.prompts.map((prompt) => (
-            <RowButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 26}>
-              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: r.full, background: t.text2, flexShrink: 0 }} />
-              <span style={mono(12)}>{prompt.number}</span>
-              <span
-                style={{
-                  fontSize: 13,
-                  color: prompt.isDefault ? t.text2 : t.text,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {prompt.title}
-              </span>
-            </RowButton>
+            <SelectButton key={prompt.id} selected={selectedId === prompt.id} onClick={() => onSelect(prompt.id)} minHeight={phone ? 44 : 30}>
+              <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum }}>{prompt.number}</span>
+              <span style={{ ...text(12.5, prompt.isDefault ? 400 : 500, prompt.isDefault ? t.text2 : t.text), ...ellipsis }}>{prompt.title}</span>
+            </SelectButton>
           ))}
         </div>
       ) : null}
@@ -237,13 +220,13 @@ function SessionRow({
 
 function FileRow({ file, phone }: { file: SourceFile; phone: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: phone ? 44 : 36, padding: "0 6px" }}>
-      <FileText size={14} strokeWidth={1.6} color="var(--text2)" aria-hidden="true" style={{ flexShrink: 0 }} />
-      <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {file.name}
-        </span>
-        <span style={mono(12)}>{file.note}</span>
+    <div style={{ ...rowLine, display: "flex", alignItems: "flex-start", gap: 8, minHeight: phone ? 44 : undefined, padding: "12px 0", boxSizing: "border-box" }}>
+      <span style={{ display: "inline-flex", color: t.label, flexShrink: 0 }}>
+        <Glyph name="file" size={16} />
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <span style={{ ...text(13, 500, t.text), ...ellipsis }}>{file.name}</span>
+        <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{file.note}</span>
       </span>
     </div>
   );
@@ -251,14 +234,13 @@ function FileRow({ file, phone }: { file: SourceFile; phone: boolean }) {
 
 function LibraryRow({ item, phone, onAdd }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string) => void }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 7, minHeight: phone ? 44 : 36, padding: "0 0 0 6px" }}>
-      <span style={{ display: "flex", flexDirection: "column", minWidth: 0, flexGrow: 1 }}>
-        <span style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {item.label}
-        </span>
-        <span style={mono(12)}>{item.line}</span>
+    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+      <ToolMark tool={item.label} size={20} />
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flexGrow: 1 }}>
+        <span style={{ ...text(13, 400, t.text2), ...ellipsis }}>{item.label}</span>
+        <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{item.line}</span>
       </span>
-      <IconButton icon={Plus} label="Add session" size={30} disabled={item.adding} onClick={() => onAdd(item.id)} />
+      <IconButton icon={Plus} glyph="plus" label="Add session" size={26} disabled={item.adding} onClick={() => onAdd(item.id)} />
     </div>
   );
 }
@@ -269,20 +251,22 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<SourcesPanelProps, "fine" 
   const base: CSSProperties = {
     boxSizing: "border-box",
     width: "100%",
-    borderRadius: r.media,
-    border: `1.5px dashed ${over ? t.evidence : t.line}`,
-    background: over ? t.rowHighlight : t.recess,
-    padding: 16,
+    minHeight: 56,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 12px",
+    borderRadius: 6,
+    border: `1px dashed ${over ? t.text2 : t.line}`,
+    background: over ? t.well : "transparent",
     textAlign: "center",
-    fontFamily: FIGTREE,
-    fontSize: 13.5,
-    color: t.text2,
+    ...text(12.5, 400, t.text2),
   };
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
 
   if (!fine) {
     return (
-      <button type="button" data-testid="sources-drop" onClick={onPick} {...handlers} style={{ ...base, minHeight: 44, cursor: "pointer", ...ring(state.focusVisible) }}>
+      <button type="button" data-testid="sources-drop" onClick={onPick} {...handlers} style={{ ...base, cursor: "pointer", ...ring(state.focusVisible) }}>
         {SOURCES_COPY.drop}
       </button>
     );
@@ -319,19 +303,20 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<SourcesPanelProps, "fine" 
 
 /* ── the panel ── */
 
+const group: CSSProperties = { display: "flex", flexDirection: "column", minWidth: 0 };
+
 export function SourcesPanel(props: SourcesPanelProps) {
   const { phone, fine, status, sessions, files, library } = props;
   const inBuild = sessions.length + files.length;
   const empty = sessions.length === 0 && files.length === 0;
-  const line: CSSProperties = { margin: 0, fontFamily: FIGTREE, fontSize: 13.5, color: t.text2 };
 
   if (status === "loading") {
     return (
       <LoadingRegion what="your sources" announce>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-          <Skeleton width={140} height={14} />
-          <Skeleton height={36} radius={r.control} />
-          <Skeleton height={36} radius={r.control} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Skeleton width={120} height={13} />
+          <Skeleton height={40} radius={6} />
+          <Skeleton height={40} radius={6} />
         </div>
       </LoadingRegion>
     );
@@ -339,25 +324,25 @@ export function SourcesPanel(props: SourcesPanelProps) {
   if (status === "error") return <ErrorState line="Your sources didn't load." panel="Sources" onRetry={props.onRetry} />;
 
   return (
-    <div data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: phone ? "flex-end" : "space-between", alignItems: "baseline", gap: 9 }}>
+    <div data-testid="sources-panel" style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
+      <div style={{ display: "flex", justifyContent: phone ? "flex-end" : "space-between", alignItems: "baseline", gap: 8 }}>
         {/* On a phone the bottom sheet's own title is "Sources". */}
-        {phone ? null : <h2 style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>Sources</h2>}
-        <span style={mono(12)}>{inBuild} in build</span>
+        {phone ? null : <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>Sources</h2>}
+        <span style={{ ...text(11.5, 400, t.label), ...tnum }}>{inBuild} in build</span>
       </div>
 
       {empty ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <p style={line}>{SOURCES_COPY.noSessions}</p>
-          <Link to={props.connectHref} style={{ fontFamily: FIGTREE, fontSize: 13.5, color: t.text2, textDecoration: "underline" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
+          <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
             {SOURCES_COPY.connect}
           </Link>
-          <p style={{ ...line, marginTop: 4 }}>{SOURCES_COPY.noFiles}</p>
+          <p style={{ ...text(13, 400, t.text), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
         </div>
       ) : null}
 
       {sessions.length > 0 ? (
-        <section aria-label={SOURCES_COPY.inBuild} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <section aria-label={SOURCES_COPY.inBuild} style={group}>
           <GroupHead name={SOURCES_COPY.inBuild} count={sessions.length} />
           <Capped
             rows={sessions}
@@ -368,14 +353,14 @@ export function SourcesPanel(props: SourcesPanelProps) {
       ) : null}
 
       {files.length > 0 ? (
-        <section aria-label={SOURCES_COPY.files} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <section aria-label={SOURCES_COPY.files} style={group}>
           <GroupHead name={SOURCES_COPY.files} count={files.length} />
           <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} />} />
         </section>
       ) : null}
 
       {library.length > 0 ? (
-        <section aria-label={SOURCES_COPY.notInBuild} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <section aria-label={SOURCES_COPY.notInBuild} style={group}>
           <GroupHead name={SOURCES_COPY.notInBuild} count={library.length} hollow />
           <Capped rows={library} phone={phone} render={(item) => <LibraryRow key={item.id} item={item} phone={phone} onAdd={props.onAddSession} />} />
         </section>

@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { LampDot } from "./LampDot";
 import { PictureLamp } from "./PictureLamp";
-import { Plaque, PlaqueLamp, plaqueState, type PlaqueBuild, type PlaqueSize, type PlaqueState } from "./Plaque";
+import { Plaque, plaqueState, type PlaqueBuild, type PlaqueSize, type PlaqueState } from "./Plaque";
 import { STALE_AFTER_DAYS } from "@/lib/build/signals";
 
 const DAY = 86_400_000;
@@ -68,79 +68,15 @@ describe("plaqueState", () => {
 });
 
 describe("LampDot", () => {
-  it("is a 10×7 oval of --lit, lit, with the lamp glow", () => {
-    const html = renderToStaticMarkup(<LampDot />);
-    expect(html).toContain("width:10px");
-    expect(html).toContain("height:7px");
-    expect(html).toContain("border-radius:50%");
-    expect(html).toContain("background-color:var(--lit)");
-    expect(html).toContain("opacity:1");
-    expect(html).toContain("box-shadow:var(--lamp-glow)");
-    expect(html).toContain('data-variant="on"');
-  });
-
-  it("dims to 45% when stale, with no glow", () => {
-    const html = renderToStaticMarkup(<LampDot dim />);
-    expect(html).toContain("opacity:0.45");
-    expect(html).not.toContain("box-shadow");
-    expect(html).toContain('data-variant="dim"');
-  });
-
-  it.each([
-    [12, 8],
-    [20, 12],
-    [22, 14],
-  ])("draws at %i×%i", (width, height) => {
-    const html = renderToStaticMarkup(<LampDot width={width} height={height} />);
-    expect(html).toContain(`width:${width}px`);
-    expect(html).toContain(`height:${height}px`);
-  });
 
   it("is decoration: hidden from a screen reader, and amber is never its text", () => {
     const html = renderToStaticMarkup(<LampDot />);
     expect(html).toContain('aria-hidden="true"');
     expect(html).not.toMatch(/(^|;)color:/);
   });
-
-  it("is what PlaqueLamp draws, and keeps its own hook", () => {
-    const { container } = render(<PlaqueLamp dim size="header" />);
-    const lamp = container.querySelector("[data-plaque-lamp]") as HTMLElement;
-    expect(lamp.getAttribute("data-plaque-lamp")).toBe("dim");
-    expect(lamp.style.opacity).toBe("0.45");
-    expect(lamp.style.width).toBe("12px");
-    expect(lamp.getAttribute("data-ui")).toBe("lamp-dot");
-  });
 });
 
 describe("PictureLamp", () => {
-  it("is an 18px centred row with a 30×8 --lit lamp and a wash, when healthy", () => {
-    const html = renderToStaticMarkup(<PictureLamp state="healthy" />);
-    expect(html).toContain('data-variant="on"');
-    expect(html).toContain("height:18px");
-    expect(html).toContain("justify-content:center");
-    // the lamp
-    expect(html).toContain("width:30px;height:8px");
-    expect(html).toContain("border-radius:50%");
-    expect(html).toContain("background-color:var(--lit)");
-    expect(html).toContain("margin-top:3px");
-    expect(html).toContain("box-shadow:var(--picture-lamp-glow)");
-    // the wash
-    expect(html).toContain("left:50%");
-    expect(html).toContain("top:10px");
-    expect(html).toContain("width:220px;height:110px;margin-left:-110px");
-    expect(html).toContain(
-      "radial-gradient(ellipse 50% 60% at 50% 0%, var(--picture-lamp-wash) 0%, transparent 100%)",
-    );
-    expect(html).toContain("pointer-events:none");
-    expect(html).not.toContain("opacity:0.45");
-  });
-
-  it("dims the lamp and the wash to 45% when stale, and drops the glow", () => {
-    const html = renderToStaticMarkup(<PictureLamp state="stale" />);
-    expect(html).toContain('data-variant="dim"');
-    expect(html.match(/opacity:0\.45/g)).toHaveLength(2); // the wash and the lamp
-    expect(html).not.toContain("picture-lamp-glow");
-  });
 
   it("is an empty 18px spacer when unreproduced, so a row of cards stays aligned", () => {
     const html = renderToStaticMarkup(<PictureLamp state="unreproduced" />);
@@ -163,33 +99,6 @@ describe("PictureLamp", () => {
 });
 
 describe("Plaque — healthy", () => {
-  it("is a wrapping, centred flex row at gap 5, tag then freshness", () => {
-    // UI-P52 density pass: gap 7 → 5.
-    const html = plaqueHtml(BY_STATE.healthy);
-    expect(html).toContain("display:flex;align-items:center;flex-wrap:wrap;gap:5px");
-    expect(html).toContain('data-plaque-state="healthy"');
-    expect(html).toContain('data-variant="fresh"');
-  });
-
-  it("puts '41 reproduced' on --evidence-fill in --on-evidence-fill, DM Mono, 2px 4px, radius 8, no wrap", () => {
-    // UI-P52 density pass: the tag's padding is 2px 4px (2px 6px before).
-    const html = plaqueHtml(BY_STATE.healthy);
-    expect(html).toContain("background:var(--evidence-fill)");
-    expect(html).toContain("color:var(--on-evidence-fill)");
-    expect(html).toContain("padding:2px 4px");
-    expect(html).toContain("border-radius:var(--r-chip)");
-    expect(html).toContain("white-space:nowrap");
-    expect(html).toContain("DM Mono");
-    expect(html).toContain("41 reproduced");
-  });
-
-  it("lights the lamp and sets the claim in --text", () => {
-    const html = plaqueHtml(BY_STATE.healthy);
-    expect(html).toContain('data-plaque-lamp="lit"');
-    expect(html).toContain("gap:5px");
-    expect(html).toContain("color:var(--text);");
-    expect(html).toContain("box-shadow:var(--lamp-glow)");
-  });
 
   it("is the only filled ground on the object (the lamp aside)", () => {
     const html = plaqueHtml(BY_STATE.healthy);
@@ -204,16 +113,6 @@ describe("Plaque — healthy", () => {
 });
 
 describe("Plaque — stale", () => {
-  it("keeps the tag, dims the lamp and sets the claim in --text2", () => {
-    const html = plaqueHtml(BY_STATE.stale);
-    expect(html).toContain('data-plaque-state="stale"');
-    expect(html).toContain('data-variant="stale"');
-    expect(html).toContain("41 reproduced");
-    expect(html).toContain('data-plaque-lamp="dim"');
-    expect(html).toContain("opacity:0.45");
-    expect(html).toContain("color:var(--text2);");
-    expect(html).not.toContain("box-shadow");
-  });
 
   it("states a fact and never a failure", () => {
     const text = renderPlaque(BY_STATE.stale).textContent ?? "";
@@ -229,18 +128,6 @@ describe("Plaque — stale", () => {
 });
 
 describe("Plaque — unreproduced", () => {
-  it("is one line, 'not yet reproduced', in --text2 — no tag, no lamp, no freshness", () => {
-    const html = plaqueHtml(BY_STATE.unreproduced);
-    expect(html).toContain('data-plaque-state="unreproduced"');
-    expect(html).toContain('data-variant="never"');
-    expect(html).toContain("not yet reproduced");
-    expect(html).toContain("color:var(--text2)");
-    expect(html).toContain("Figtree");
-    expect(html).not.toContain("evidence-fill");
-    expect(html).not.toContain("data-plaque-lamp");
-    expect(html).not.toContain("data-plaque-freshness");
-    expect(html).not.toContain("not confirmed by anyone yet");
-  });
 
   it("says nothing about freshness even when the creator has confirmed it", () => {
     const text = renderPlaque(build({ reproduction_count: 0 })).textContent;
@@ -260,22 +147,6 @@ describe("Plaque — unreproduced", () => {
 });
 
 describe("Plaque — the three sizes", () => {
-  it.each([
-    ["card", "10px", "10px"],
-    ["row", "11px", "11px"],
-    // UI-P52 density pass: the header's tag is 12px (13 before); 10–12 are kept.
-    ["header", "12px", "12px"],
-  ] as const)("%s sets the tag at %s and the claim at %s", (size, tag, text) => {
-    const html = plaqueHtml(BY_STATE.healthy, size);
-    expect(html).toContain(`font-size:${tag}`);
-    expect(html).toContain(`font-size:${text}`);
-  });
-
-  it("sets the unreproduced line at the same size as the claim", () => {
-    expect(plaqueHtml(BY_STATE.unreproduced, "card")).toContain("font-size:10px");
-    expect(plaqueHtml(BY_STATE.unreproduced, "row")).toContain("font-size:11px");
-    expect(plaqueHtml(BY_STATE.unreproduced, "header")).toContain("font-size:12px");
-  });
 
   it("says it short on a card and a row, and in full on the header", () => {
     expect(renderPlaque(BY_STATE.healthy, "card").textContent).toContain("3 days ago, on Sonnet 4.5");
@@ -284,13 +155,6 @@ describe("Plaque — the three sizes", () => {
     expect(renderPlaque(BY_STATE.healthy, "header").textContent).toContain(
       "last confirmed working 3 days ago, on Sonnet 4.5",
     );
-  });
-
-  it("never inflates the count: the numeral is the size of its neighbours at every size", () => {
-    for (const size of SIZES) {
-      const container = renderPlaque(BY_STATE.healthy, size);
-      expect(container.querySelector("[data-plaque-reproduction] span")).toBeNull();
-    }
   });
 
   it("lets the claim wrap rather than clip it", () => {
@@ -338,10 +202,9 @@ describe("Plaque — every state, every size", () => {
   });
 });
 
-
 describe("refined plaque and lamps (UI-P85)", () => {
   const refined = (node: React.ReactElement) =>
-    renderToStaticMarkup(<MemoryRouter initialEntries={["/dev/kit/components?look=refined"]}>{node}</MemoryRouter>);
+    renderToStaticMarkup(<MemoryRouter initialEntries={["/dev/kit/components"]}>{node}</MemoryRouter>);
 
   it("LampDot is a 3px bar, radius 1, --lit with --lamp-glow; dimmed is the filter, never an opacity", () => {
     const lit = refined(<LampDot />);

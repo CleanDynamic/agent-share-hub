@@ -16,9 +16,7 @@ import { DASHBOARD_FIXTURE_ALIASES, DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROW
 import type { DashboardActive, DashboardReport, DashboardSort, DashboardTab } from "@/lib/build/galleryParams";
 import type { Lab } from "@/lib/models/registry";
 import { LABS } from "@/lib/models/registry";
-import { useLook } from "@/lib/theme/look";
 import { GalleryDashboardView } from "@/pages/site/gallery/GalleryDashboardView";
-import { RefinedGalleryDashboardView } from "@/pages/site/gallery/RefinedGalleryDashboardView";
 import { dashboardCounts, filterDashboardRows } from "@/pages/site/gallery/dashboardModel";
 
 import GalleryFeedDemo from "./GalleryFeedDemo";
@@ -28,8 +26,6 @@ const noop = () => undefined;
 
 export default function GalleryDashboardDemo(props: DesignPageProps) {
   const { fit = "board", state = "populated", viewport } = props;
-  /* UI-P89: `?look=refined` draws the fork, from the same fixture. */
-  const View = useLook() === "refined" ? RefinedGalleryDashboardView : GalleryDashboardView;
   const [tab, setTab] = useState<DashboardTab>("builds");
   const [model, setModel] = useState<string | null>(null);
   const [lab, setLab] = useState<Lab | null>(null);
@@ -53,7 +49,7 @@ export default function GalleryDashboardDemo(props: DesignPageProps) {
   if (viewport === "mobile") return <GalleryFeedDemo {...props} />;
 
   return (
-    <View
+    <GalleryDashboardView
       fit={fit}
       tab={tab}
       onTabChange={setTab}

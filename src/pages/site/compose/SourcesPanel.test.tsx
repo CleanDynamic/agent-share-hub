@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxSourcesProps } from "@/dev/fixtures/sandbox";
 
-import { RefinedSourcesPanel as SourcesPanel } from "./RefinedSourcesPanel";
+import { SourcesPanel as SourcesPanel } from "./SourcesPanel";
 import type { SourcesPanelProps } from "./SourcesPanel";
 import type { SourceFile, SourceLibraryItem, SourceSession } from "./sourcesModel";
 
@@ -26,7 +26,7 @@ const many = <T,>(n: number, make: (at: number) => T): T[] => Array.from({ lengt
 function panel(over: Partial<SourcesPanelProps> = {}) {
   const props: SourcesPanelProps = { ...sandboxSourcesProps("bakery"), onSelect: vi.fn(), onAddSession: vi.fn(), onDropFiles: vi.fn(), onPick: vi.fn(), ...over };
   render(
-    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
       <SourcesPanel {...props} />
     </MemoryRouter>,
   );
@@ -110,7 +110,7 @@ describe("Sources' rows", () => {
 describe("the refined look (UI-P93)", () => {
   const markup = () =>
     renderToStaticMarkup(
-      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
         <SourcesPanel {...sandboxSourcesProps("bakery")} />
       </MemoryRouter>,
     );

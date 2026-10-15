@@ -1,54 +1,55 @@
-/* UI-P27 — Home, as the reference draws it (design/reference/{desktop,mobile}/{noon,dusk}/home.html).
+/* UI-P88 — Home in the refined look, as `design/reference/refined/{dusk,noon}/home.html` draws it.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   `Link`. `HomePage` supplies the data; the dev compare page supplies the sample
-   data; both render this. The viewport is read here (the app's 768px breakpoint)
-   so the two behave the same.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `HomeView` stays the current look; this is the same page with the same props (imported from
+   it, not copied), the same data, handlers, copy, accessible names and order of parts. `HomePage` and the dev page
+   choose between the two with `useLook()`.
 
-   DESKTOP: a `minmax(0, 1fr) 420px` grid, gap 9, filling the 820px board — the
-   hero over the visitors' book on the left; the orbs, the week's challenges, the
-   streak and where next on the right. PHONE: one column in the order the mobile
-   board draws it, without where next.
+   DESKTOP: the frame draws the breadcrumb; this is a wrapping row, gap 48 — the main column (`flex: 999 1 640px`,
+   gap 40: the hero, then the visitors' book) and the aside (`flex: 1 1 300px`, max 340, a hairline on its left, gap
+   24: the run counts as two figures, the week's challenges, the streak, where next). There is no card on the page:
+   the frame's one surface is the ground, and parts are told apart by hairlines.
 
-   EVERY COLOUR IS A TOKEN. The reference's amber text (`--lit`) is `--lit-ink`
-   here, as RULES §7 lists. Nothing in this file draws a number from the sample
-   data: counts, rows and weeks all arrive as props.
+   PHONE: one column in today's order — scope and the lit line, the hero, the run counts, the challenges, the book,
+   the streak — and, as today, no where next.
 
-   DENSER SINCE UI-P57: every size this file sets itself is the tightened board's
-   (`design/prompts/README-density.md`) — the grid and columns 9 apart, book rows
-   6px 9px round a 44px-tall thumbnail, challenge rows 7 apart in 12px type,
-   where-next rows 5 apart round a 28px picture. Heights over 64 (the hero's 340,
-   the orbs' 180, the challenges' 230, the orbs themselves) are the table's to
-   keep. The brand pieces (Panel, PanelHead, Segmented, Button, IconButton,
-   Avatar, Tagline, the orbs, display()) take the drawn size and map it. */
+   THE WALL. The hero's picture is a 400×232 well with the dot grid, a rail 16 from its top and six framed works at
+   the board's positions. The centre one is lit, with the picture light's cone over it, while any build was lit today
+   (`litToday`), so the wall is lit from data and not as decoration. The orbs are not drawn under refined.
+
+   LIT IN THE BOOK. A row's thumbnail is lit when it is the row newer than the previous visit, the same record that
+   gives it the tile fill. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowRight, Flame, Maximize2 } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 
+import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { CardHead } from "@/components/brand/CardHead";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
+import { Figure } from "@/components/brand/Figure";
 import { FilterChip } from "@/components/brand/FilterChip";
+import { FramedWork, PICTURE_LIGHT_CONE } from "@/components/brand/FramedWork";
 import { IconButton } from "@/components/brand/IconButton";
-import { LampDot } from "@/components/brand/LampDot";
-import { OrbGlass } from "@/components/brand/OrbGlass";
-import { OrbSolid } from "@/components/brand/OrbSolid";
-import { Panel, PanelHead } from "@/components/brand/Panel";
+import { LampBar } from "@/components/brand/LampDot";
+import { Mark } from "@/components/brand/Mark";
+import { Pill } from "@/components/brand/Pill";
 import { Plaque } from "@/components/brand/Plaque";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { StreakDay, StreakWeek } from "@/components/brand/StreakDay";
 import { StripedBar } from "@/components/brand/StripedBar";
-import { Tagline } from "@/components/brand/Tagline";
+import { Well } from "@/components/brand/Tile";
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { Sparkline } from "@/components/brand/charts";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
-import { r } from "@/lib/theme/radius";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import {
   HOME_FILTERS,
@@ -64,8 +65,7 @@ import {
   type HomeStreak,
   type HomeWhereNextRow,
 } from "./homeModel";
-
-/* ── the view's props ── */
+import { type PageFit } from "@/components/shell/siteFrameFit";
 
 export type HomeScope = "following" | "everyone";
 
@@ -119,71 +119,233 @@ const TAGLINE = ["Every AI build,", "hung with", "its proof."] as const;
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
 
-/* ── small shared pieces ── */
+/* ── type ── */
 
-/* `line-height: normal` on every run of text, as the reference draws it: the
-   app's body sets a looser leading, and these rows are measured in pixels. */
-const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
-  fontFamily: DM_MONO,
+const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+  fontFamily: FIGTREE,
   fontSize: px,
+  fontWeight: weight,
   lineHeight: "normal",
+  color,
   ...extra,
 });
 
-/** The thumbnail: the signed cover, or the fallback landscape for the build. */
-function Thumb({ cover, width, height, radius }: { cover: HomeCover; width: number | string; height: number | string; radius: number }) {
+const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
+
+/** A part of the aside: its rows, and a hairline under it when another follows. */
+const asidePart = (gap: number, below: number | null): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap,
+  minWidth: 0,
+  ...(below === null ? null : { paddingBottom: below, borderBottom: `1px solid ${t.hairline}` }),
+});
+
+/** The picture in a frame: the signed cover, or the refined fallback sketch. */
+function Picture({ cover }: { cover: HomeCover }) {
+  return cover.src ? (
+    <img
+      src={cover.src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+    />
+  ) : (
+    <CoverFallback seed={cover.seed} radius={2} sky={cover.sky} />
+  );
+}
+
+/* ── the hero ── */
+
+function ScopeControl({ scope, onChange }: { scope: HomeScope; onChange: (scope: HomeScope) => void }) {
   return (
-    <div style={{ width, height, borderRadius: radius, overflow: "hidden", flexShrink: 0 }}>
-      {cover.src ? (
-        <img
-          src={cover.src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ) : (
-        <CoverFallback seed={cover.seed} radius={radius} sky={cover.sky} />
-      )}
+    <Segmented<HomeScope>
+      label="Whose builds"
+      size={28}
+      fontSize={12}
+      value={scope}
+      onChange={onChange}
+      items={[
+        { value: "following", label: "Following" },
+        { value: "everyone", label: "Everyone" },
+      ]}
+    />
+  );
+}
+
+/** The lit count: a plain line with a 10×3 lamp bar before it, not a badge. */
+function LitLine({ litToday, phone }: { litToday: number | null; phone: boolean }) {
+  if (litToday === null) return null;
+  return (
+    <span
+      data-testid="home-lit-badge"
+      style={{ ...text(12, 400, t.text2), ...tnum, display: "inline-flex", alignItems: "center", gap: 8 }}
+    >
+      <LampBar width={10} />
+      {`${litToday.toLocaleString("en-GB")} ${phone ? "lit today" : "builds lit today"}`}
+    </span>
+  );
+}
+
+/** The tagline: one sentence for assistive technology, three indented lines on screen, the mark after "hung with". */
+function Tagline({ phone }: { phone: boolean }) {
+  /* UI-P97: a phone's hero is the mobile hero size, 32 (`--type-hero-size` at 767 and below). */
+  const size = phone ? 32 : 44;
+  return (
+    <h1
+      style={{
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: FIGTREE,
+        fontSize: size,
+        fontWeight: 500,
+        letterSpacing: "-0.04em",
+        lineHeight: 1.04,
+        color: t.text,
+      }}
+    >
+      <VisuallyHidden>{TAGLINE.join(" ")}</VisuallyHidden>
+      <span aria-hidden="true">{TAGLINE[0]}</span>
+      <span aria-hidden="true" style={{ paddingLeft: 48, display: "inline-flex", alignItems: "center", gap: 12 }}>
+        {TAGLINE[1]}
+        <Mark size={phone ? 26 : 30} />
+      </span>
+      <span aria-hidden="true" style={{ paddingLeft: 24 }}>
+        {TAGLINE[2]}
+      </span>
+    </h1>
+  );
+}
+
+/** The six works on the wall, where the board hangs them. The second is the one under the light. */
+const WALL: readonly { left: number; top: number; width: number; height: number }[] = [
+  { left: 24, top: 56, width: 92, height: 60 },
+  { left: 140, top: 40, width: 118, height: 80 },
+  { left: 278, top: 60, width: 92, height: 58 },
+  { left: 52, top: 144, width: 70, height: 54 },
+  { left: 156, top: 148, width: 100, height: 56 },
+  { left: 282, top: 140, width: 68, height: 66 },
+];
+const LIT_WORK = 1;
+const WALL_WIDTH = 400;
+/** A distance across the wall, as a share of its inside (the width less its 1px edges): at full width it is the board's
+    px, and on a narrower phone the works keep their places. */
+const across = (px: number) => `${(px / (WALL_WIDTH - 2)) * 100}%`;
+
+/** The hero's wall: brand artwork, never a build. Lit while any build was lit today. */
+function Wall({ lit }: { lit: boolean }) {
+  const room = useResolvedTheme();
+  return (
+    <Well
+      dots
+      style={{ position: "relative", width: WALL_WIDTH, maxWidth: "100%", height: 232, flexShrink: 0, overflow: "hidden" }}
+    >
+      <span aria-hidden="true" data-testid="home-wall" data-lit={lit ? "" : undefined} style={{ position: "absolute", inset: 0 }}>
+        <span style={{ position: "absolute", left: 12, right: 12, top: 16, height: 1, background: t.line }} />
+        {lit ? (
+          <span
+            style={{
+              position: "absolute",
+              left: across(132),
+              top: 32,
+              width: across(134),
+              height: 110,
+              clipPath: "polygon(40% 0, 60% 0, 100% 100%, 0 100%)",
+              background: PICTURE_LIGHT_CONE[room],
+            }}
+          />
+        ) : null}
+        {WALL.map((work, index) => (
+          <span key={index} style={{ position: "absolute", left: across(work.left), top: work.top, width: across(work.width) }}>
+            <FramedWork lit={lit && index === LIT_WORK} height={work.height}>
+              <CoverFallback seed={`home-wall-${index}`} radius={2} />
+            </FramedWork>
+          </span>
+        ))}
+      </span>
+    </Well>
+  );
+}
+
+function Hero({
+  scope,
+  onScopeChange,
+  litToday,
+  phone,
+  onNavigate,
+}: Pick<HomeViewProps, "scope" | "onScopeChange" | "litToday" | "onNavigate"> & { phone: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <ScopeControl scope={scope} onChange={onScopeChange} />
+        <span style={{ flexGrow: 1 }} />
+        <LitLine litToday={litToday} phone={phone} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 32 }}>
+        <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+          <Tagline phone={phone} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <Button size={32} fontSize={13} onClick={() => onNavigate(GALLERY)}>
+              Enter the gallery
+            </Button>
+            {phone ? null : (
+              <Button variant="secondary" size={32} fontSize={13} onClick={() => onNavigate(HOW_PROOF_WORKS)}>
+                How proof works
+              </Button>
+            )}
+          </div>
+        </div>
+        <Wall lit={(litToday ?? 0) > 0} />
+      </div>
     </div>
   );
 }
 
-/** The kind's colour: amber ink for a build, the agents hue for a rebuild, evidence for a note, breakage for an ask. */
+/* ── the visitors' book ── */
+
+/** The kind's ink, on the pill's own fill: amber ink for a build, the agents hue, evidence, breakage. */
 const KIND_INK: Record<HomeFeedRow["kind"], string> = {
   build: t.litInk,
   rebuild: t.catAgents,
   repro_note: t.evidence,
-  bounty: t.catBreakage,
+  bounty: t.breakage,
 };
 
-const kindLabelStyle = (kind: HomeFeedRow["kind"]): CSSProperties => ({
-  ...mono(10, { letterSpacing: ".07em", color: KIND_INK[kind] }),
-});
-
-const whoStyle: CSSProperties = {
-  fontFamily: FIGTREE,
-  fontSize: 12,
-  lineHeight: "normal",
-  color: t.text2,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-function actorAvatar(row: HomeFeedRow, size: number) {
-  return <Avatar size={size} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />;
+function KindPill({ kind }: { kind: HomeFeedRow["kind"] }) {
+  return <Pill style={{ color: KIND_INK[kind] }}>{KIND_LABEL[kind]}</Pill>;
 }
 
+const DESKTOP_COLUMNS = "96px 24px minmax(0, 1fr) 56px 32px";
+
+/** A row of the book: hairline-separated; the newest since the last visit takes the tile fill instead. */
 const rowFrame = (highlight: boolean): CSSProperties => ({
-  borderRadius: 14,
-  background: highlight ? t.rowHighlight : "transparent",
+  minHeight: 60,
+  boxSizing: "border-box",
   borderBottom: `1px solid ${highlight ? "transparent" : t.hairline}`,
   textDecoration: "none",
   color: "inherit",
+  ...(highlight ? { background: t.tile, borderRadius: 6, margin: "0 -12px", padding: "0 12px" } : null),
 });
 
-/* ── the visitors' book ── */
+function Thumb({ row, highlight, width, height }: { row: HomeFeedRow; highlight: boolean; width: number; height: number }) {
+  return (
+    <FramedWork lit={highlight} width={width} height={height}>
+      <Picture cover={row.cover} />
+    </FramedWork>
+  );
+}
+
+function TitleLine({ row, now }: { row: HomeFeedRow; now: number }) {
+  return (
+    <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 8, rowGap: 4, minWidth: 0 }}>
+      <span style={text(13, 500, t.text, { whiteSpace: "nowrap" })}>{row.title}</span>
+      <Plaque build={row.plaque} size="row" now={now} />
+    </span>
+  );
+}
 
 function DesktopRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolean; now: number }) {
   return (
@@ -195,21 +357,21 @@ function DesktopRow({ row, highlight, now }: { row: HomeFeedRow; highlight: bool
       style={{
         ...rowFrame(highlight),
         display: "grid",
-        gridTemplateColumns: "92px 30px minmax(0, 1fr) 84px 32px",
-        gap: 9,
+        gridTemplateColumns: DESKTOP_COLUMNS,
         alignItems: "center",
-        padding: "6px 9px",
+        gap: 12,
       }}
     >
-      <span style={kindLabelStyle(row.kind)}>{KIND_LABEL[row.kind]}</span>
-      {actorAvatar(row, 28)}
-      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-        <span style={whoStyle}>{row.who}</span>
-        <span style={{ ...display(20), lineHeight: 1, color: t.text }}>{row.title}</span>
-        <Plaque build={row.plaque} size="card" now={now} />
+      <span>
+        <KindPill kind={row.kind} />
+      </span>
+      <Avatar size={24} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, padding: "8px 0" }}>
+        <span style={text(12.5, 400, t.text2, ellipsis)}>{row.who}</span>
+        <TitleLine row={row} now={now} />
       </div>
-      <Thumb cover={row.cover} width={84} height={44} radius={10} />
-      <span style={mono(10, { color: t.label, textAlign: "right" })}>{shortAgo(row.at, now)}</span>
+      <Thumb row={row} highlight={highlight} width={56} height={36} />
+      <span style={text(11.5, 400, t.label, { ...tnum, textAlign: "right" })}>{shortAgo(row.at, now)}</span>
     </FrameLink>
   );
 }
@@ -225,31 +387,27 @@ function PhoneRow({ row, highlight, now }: { row: HomeFeedRow; highlight: boolea
         ...rowFrame(highlight),
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) 72px",
-        gap: 9,
         alignItems: "center",
-        padding: 9,
+        gap: 12,
+        paddingTop: 12,
+        paddingBottom: 12,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {actorAvatar(row, 22)}
-          <span style={kindLabelStyle(row.kind)}>{KIND_LABEL[row.kind]}</span>
-          <span style={mono(10, { color: t.label })}>· {shortAgo(row.at, now)}</span>
+          <Avatar size={24} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
+          <KindPill kind={row.kind} />
+          <span style={text(11.5, 400, t.label, tnum)}>· {shortAgo(row.at, now)}</span>
         </div>
-        <span style={whoStyle}>{row.who}</span>
-        <span style={{ ...display(20), lineHeight: 1.05, color: t.text }}>{row.title}</span>
-        <Plaque build={row.plaque} size="card" now={now} />
+        <span style={text(12.5, 400, t.text2, ellipsis)}>{row.who}</span>
+        <TitleLine row={row} now={now} />
       </div>
-      <Thumb cover={row.cover} width={72} height={72} radius={10} />
+      <Thumb row={row} highlight={highlight} width={72} height={52} />
     </FrameLink>
   );
 }
 
-/** A book row's height on the board: its padding, its content and its hairline. A loading row is as tall, so the page does not move. */
-const DESKTOP_ROW_HEIGHT = 74;
-const PHONE_ROW_HEIGHT = 130;
-
-/** A row of the visitors' book before it has arrived: the same grid and padding, bones where the content goes. */
+/** A book row before it has arrived: the same grid and height, bones where the content goes. */
 function RowSkeleton({ phone }: { phone: boolean }) {
   if (phone) {
     return (
@@ -258,47 +416,32 @@ function RowSkeleton({ phone }: { phone: boolean }) {
           ...rowFrame(false),
           display: "grid",
           gridTemplateColumns: "minmax(0, 1fr) 72px",
-          gap: 9,
           alignItems: "center",
-          padding: 9,
-          boxSizing: "border-box",
-          height: PHONE_ROW_HEIGHT,
+          gap: 12,
+          padding: "12px 0",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Skeleton width={18} height={18} radius="50%" />
-            <Skeleton width={64} height={10} />
+            <Skeleton width={24} height={24} radius="50%" />
+            <Skeleton width={56} height={18} radius={4} />
           </div>
           <Skeleton width="55%" height={12} />
-          <Skeleton width="80%" height={16} />
-          <Skeleton width="60%" height={14} />
+          <Skeleton width="80%" height={14} />
         </div>
-        <Skeleton width={72} height={72} radius={10} />
+        <Skeleton width={72} height={52} radius={4} />
       </div>
     );
   }
   return (
-    <div
-      style={{
-        ...rowFrame(false),
-        display: "grid",
-        gridTemplateColumns: "92px 30px minmax(0, 1fr) 84px 32px",
-        gap: 9,
-        alignItems: "center",
-        padding: "6px 9px",
-        boxSizing: "border-box",
-        height: DESKTOP_ROW_HEIGHT,
-      }}
-    >
-      <Skeleton width={56} height={10} />
-      <Skeleton width={23} height={23} radius="50%" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+    <div style={{ ...rowFrame(false), display: "grid", gridTemplateColumns: DESKTOP_COLUMNS, alignItems: "center", gap: 12, height: 60 }}>
+      <Skeleton width={56} height={18} radius={4} />
+      <Skeleton width={24} height={24} radius="50%" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
         <Skeleton width="38%" height={12} />
-        <Skeleton width="62%" height={16} />
-        <Skeleton width="46%" height={14} />
+        <Skeleton width="62%" height={14} />
       </div>
-      <Skeleton width={84} height={44} radius={10} />
+      <Skeleton width={56} height={36} radius={4} />
       <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
     </div>
   );
@@ -320,10 +463,11 @@ function BookBody({
   onNavigate: (to: string) => void;
 }) {
   const Row = phone ? PhoneRow : DesktopRow;
+  const list: CSSProperties = { display: "flex", flexDirection: "column", borderTop: `1px solid ${t.hairline}` };
 
   if (feed.status === "loading") {
     return (
-      <LoadingRegion what="the visitors’ book" data-testid="home-feed-loading" style={{ display: "flex", flexDirection: "column" }}>
+      <LoadingRegion what="the visitors’ book" data-testid="home-feed-loading" style={list}>
         {Array.from({ length: phone ? 4 : 5 }, (_, i) => (
           <RowSkeleton key={i} phone={phone} />
         ))}
@@ -344,25 +488,19 @@ function BookBody({
 
   return (
     <>
-      <div data-testid="home-feed" style={{ display: "flex", flexDirection: "column" }}>
+      <div data-testid="home-feed" style={list}>
         {visible.map((row) => (
           <Row key={row.key} row={row} highlight={row.key === highlightKey} now={now} />
         ))}
       </div>
       {visible.length === 0 ? (
-        <p style={{ margin: "10px 9px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
+        <p style={text(12, 400, t.text2, { margin: "12px 0 0" })}>
           None of these among the latest.{feed.hasMore ? " Show more to look further back." : ""}
         </p>
       ) : null}
       {feed.hasMore ? (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 7 }}>
-          <Button
-            variant="secondary"
-            size={phone ? 44 : 34}
-            fontSize={phone ? 13 : 12}
-            disabled={feed.loadingMore}
-            onClick={feed.onMore}
-          >
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} disabled={feed.loadingMore} onClick={feed.onMore}>
             {feed.loadingMore ? "Loading…" : "Show more"}
           </Button>
         </div>
@@ -371,143 +509,97 @@ function BookBody({
   );
 }
 
-/* ── the hero ── */
-
-const LIT_BADGE_TEXT = (n: number, phone: boolean) => `${n.toLocaleString("en-GB")} ${phone ? "lit today" : "builds lit today"}`;
-
-function ScopeControl({
-  scope,
-  onChange,
-  size,
-  fontSize,
-}: {
-  scope: HomeScope;
-  onChange: (scope: HomeScope) => void;
-  size: 34 | 36;
-  fontSize: 12 | 13;
-}) {
+function Book({
+  feed,
+  seenAt,
+  now,
+  phone,
+  onNavigate,
+}: Pick<HomeViewProps, "feed" | "seenAt" | "now" | "onNavigate"> & { phone: boolean }) {
+  const [filter, setFilter] = useState<HomeFilter>("all");
   return (
-    <Segmented<HomeScope>
-      label="Whose builds"
-      size={size}
-      fontSize={fontSize}
-      value={scope}
-      onChange={onChange}
-      items={[
-        { value: "following", label: "Following" },
-        { value: "everyone", label: "Everyone" },
-      ]}
-    />
-  );
-}
-
-function LitBadge({ litToday, phone }: { litToday: number | null; phone: boolean }) {
-  if (litToday === null) return null;
-  return (
-    <div
-      data-testid="home-lit-badge"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: phone ? 5 : 6,
-        padding: phone ? "5px 7px" : "4px 7px",
-        borderRadius: r.control,
-        background: phone ? t.glass2 : t.mediaTag,
-        border: phone ? `1px solid ${t.line}` : undefined,
-        ...mono(11, { color: t.text }),
-      }}
-    >
-      <LampDot />
-      {LIT_BADGE_TEXT(litToday, phone)}
-    </div>
-  );
-}
-
-/** The hero's artwork: fixed brand artwork (sky 0), never a build, and a scrim for the type. */
-function HeroArt({ scrim }: { scrim: string }) {
-  return (
-    <>
-      <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
-        <CoverFallback seed="home-hero" radius={0} sky={0} />
+    <section style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {phone ? (
+        <>
+          <CardHead title="The visitors’ book" subtitle="Newest first" headingLevel={2} />
+          <ScrollRow gap={6} label="Show">
+            {HOME_FILTERS.map((item) => (
+              <FilterChip key={item.value} label={item.label} on={filter === item.value} onClick={() => setFilter(item.value)} />
+            ))}
+          </ScrollRow>
+        </>
+      ) : (
+        <CardHead
+          title="The visitors’ book"
+          subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
+          headingLevel={2}
+          action={<Segmented<HomeFilter> label="Show" size={28} fontSize={12} value={filter} onChange={setFilter} items={HOME_FILTERS} />}
+        />
+      )}
+      <div style={{ marginTop: 8 }}>
+        <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone={phone} onNavigate={onNavigate} />
       </div>
-      <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: scrim }} />
-    </>
+    </section>
   );
 }
 
-/* ── the orbs ── */
+/* ── the run counts ── */
 
-/** An orb before its number has arrived: a circle of the orb's diameter. */
-function OrbSkeleton({ size }: { size: number }) {
-  return <Skeleton width={size} height={size} radius="50%" />;
-}
+const runsUnit = (n: number) => (n === 1 ? "run" : "runs");
 
-const runs = (n: number) => `${n.toLocaleString("en-GB")} ${n === 1 ? "run" : "runs"}`;
-
-/**
- * The two orbs in their row, in whichever of their states they are in: the numbers,
- * a circle each while a number is on its way, or — when a count could not be read —
- * the panel's failure in their place (the page passes `failure` only then). On a phone the orbs sit straight on the page, so
- * a failure there needs a surface (`framed`).
- */
-function OrbsRow({
-  size,
+function RunCounts({
   reproducedToday,
   runsThisWeek,
   failure,
-  framed = false,
-  style,
 }: {
-  size: number;
   reproducedToday: number | null;
   runsThisWeek: number | null;
   failure?: PanelFailure;
-  framed?: boolean;
-  style?: CSSProperties;
 }) {
-  const row: CSSProperties = { display: "flex", justifyContent: "center", gap: 9, alignItems: "center", ...style };
-
+  const part = asidePart(0, 24);
   if (failure) {
-    const error = <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />;
-    return framed ? (
-      <Panel surface="glass" padding="14px 16px">{error}</Panel>
-    ) : (
-      /* In the panel's own padding: the failure reads from the panel's top-left, as every other panel's does. */
-      <div style={{ ...row, justifyContent: "flex-start", alignItems: "flex-start", padding: "2px 4px" }}>{error}</div>
+    return (
+      <div style={part}>
+        <ErrorState panel="Run counts" onRetry={failure.onRetry} error={failure.error} data-testid="home-orbs-error" />
+      </div>
     );
   }
 
-  const orbs = (
+  const grid: CSSProperties = { ...part, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 };
+  const bone = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <Skeleton width="70%" height={12} />
+      <Skeleton width={48} height={26} />
+    </div>
+  );
+  const figures = (
     <>
       {reproducedToday === null ? (
-        <OrbSkeleton size={size} />
+        bone
       ) : (
-        <OrbGlass size={size} label="Reproduced today" sub={runs(reproducedToday)} />
+        <Figure lamp label="Reproduced today" value={reproducedToday.toLocaleString("en-GB")} unit={runsUnit(reproducedToday)} />
       )}
-      {runsThisWeek === null ? (
-        <OrbSkeleton size={size} />
-      ) : (
-        <OrbSolid size={size} top="This week" value={runsThisWeek.toLocaleString("en-GB")} bottom="runs reported" />
-      )}
+      {runsThisWeek === null ? bone : <Figure label="This week" value={runsThisWeek.toLocaleString("en-GB")} unit="runs reported" />}
     </>
   );
   if (reproducedToday === null || runsThisWeek === null) {
     return (
-      <LoadingRegion what="the run counts" style={row}>
-        {orbs}
+      <LoadingRegion what="the run counts" style={grid}>
+        {figures}
       </LoadingRegion>
     );
   }
-  return <div style={row}>{orbs}</div>;
+  return (
+    <div data-testid="home-run-counts" style={grid}>
+      {figures}
+    </div>
+  );
 }
 
 /* ── challenges ── */
 
-const MEANING_INK: Record<HomeChallengeRow["meaning"], string> = {
-  run: t.lit,
-  solve: t.action,
-  reconfirm: t.evidence,
-};
+/** Done is evidence; under way is the lamp's colour, whatever the challenge measures. */
+const barTone = (row: HomeChallengeRow) => (row.done >= row.target ? t.evidence : t.lit);
 
 function countText(row: HomeChallengeRow, phone: boolean): string {
   if (phone) return `${row.done}/${row.target}`;
@@ -516,55 +608,32 @@ function countText(row: HomeChallengeRow, phone: boolean): string {
   return `${row.done} / ${row.target}${tail}`;
 }
 
+const challengeRow = (first: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  padding: "12px 0",
+  borderTop: first ? undefined : `1px solid ${t.hairline}`,
+});
+
 function ChallengeList({ rows, phone }: { rows: readonly HomeChallengeRow[]; phone: boolean }) {
   return (
     <div data-testid="home-challenges">
-      {rows.map((row) => (
-        <div
-          key={row.slug}
-          data-testid="weekly-challenge"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 5,
-            padding: phone ? "8px 0" : "7px 0",
-            borderBottom: `1px solid ${t.hairline}`,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 7 }}>
-            <span style={{ fontFamily: FIGTREE, fontSize: phone ? 13 : 12, lineHeight: "normal", color: t.text }}>{row.title}</span>
-            <span style={mono(11, { color: t.text2, whiteSpace: "nowrap" })}>{countText(row, phone)}</span>
+      {rows.map((row, index) => (
+        <div key={row.slug} data-testid="weekly-challenge" style={challengeRow(index === 0)}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={text(12.5, 500, t.text, { flexGrow: 1, minWidth: 0 })}>{row.title}</span>
+            <span style={text(11.5, 400, t.label, { ...tnum, whiteSpace: "nowrap" })}>{countText(row, phone)}</span>
           </div>
           <StripedBar
             value={(row.done / Math.max(1, row.target)) * 100}
-            colour={MEANING_INK[row.meaning]}
-            height={9}
+            colour={barTone(row)}
+            height={4}
             label={row.title}
             valueText={`${row.done} of ${row.target}`}
           />
         </div>
       ))}
-    </div>
-  );
-}
-
-/** A challenge before it has arrived: the row's own padding and hairline round a line of text and a 9px bar. */
-function ChallengeRowSkeleton({ phone }: { phone: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 5,
-        padding: phone ? "8px 0" : "7px 0",
-        borderBottom: `1px solid ${t.hairline}`,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 7, height: phone ? 16 : 15 }}>
-        <Skeleton width="58%" height={phone ? 13 : 12} />
-        <Skeleton width={phone ? 28 : 72} height={11} />
-      </div>
-      <Skeleton height={9} radius={5} />
     </div>
   );
 }
@@ -591,7 +660,13 @@ function ChallengesBody({
     return (
       <LoadingRegion what="this week’s challenges" data-testid="home-challenges-loading">
         {[0, 1, 2].map((i) => (
-          <ChallengeRowSkeleton key={i} phone={phone} />
+          <div key={i} style={challengeRow(i === 0)}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, height: 15 }}>
+              <Skeleton width="58%" height={12} />
+              <Skeleton width={phone ? 28 : 72} height={11} />
+            </div>
+            <Skeleton height={4} radius={1} />
+          </div>
         ))}
       </LoadingRegion>
     );
@@ -602,7 +677,7 @@ function ChallengesBody({
         panel="This week’s challenges"
         onRetry={challenges.onRetry}
         error={challenges.error}
-        style={{ paddingTop: 10 }}
+        style={{ paddingTop: 8 }}
         data-testid="home-challenges-error"
       />
     );
@@ -610,113 +685,66 @@ function ChallengesBody({
   return <ChallengeList rows={challenges.data} phone={phone} />;
 }
 
-function ChallengesPanel({
+function Challenges({
   challenges,
   thisWeekHref,
   phone,
   onNavigate,
-}: {
-  challenges: HomeViewProps["challenges"];
-  thisWeekHref?: string;
-  phone: boolean;
-  onNavigate: (to: string) => void;
-}) {
+}: Pick<HomeViewProps, "challenges" | "thisWeekHref" | "onNavigate"> & { phone: boolean }) {
   const expand =
     !phone && thisWeekHref && challenges.status !== "signed-out" ? (
-      <IconButton icon={Maximize2} label="Open this week" size={34} onClick={() => onNavigate(thisWeekHref)} />
+      <IconButton icon={Maximize2} glyph="chev" label="Open this week" size={28} onClick={() => onNavigate(thisWeekHref)} />
     ) : undefined;
-
   return (
-    <Panel surface="glass" padding={phone ? "14px 16px 6px" : "14px 16px"} style={phone ? undefined : { flex: 1 }}>
-      <PanelHead title="This week’s challenges" subtitle="Resets Monday 00:00 UTC" headingLevel={2} right={expand} />
+    <section style={asidePart(8, 12)}>
+      <CardHead title="This week’s challenges" subtitle="Resets Monday 00:00 UTC" headingLevel={2} action={expand} />
       <ChallengesBody challenges={challenges} phone={phone} onNavigate={onNavigate} />
-    </Panel>
+    </section>
   );
 }
 
 /* ── the streak ── */
 
-function DayMark({ state }: { state: HomeStreak["week"][number] }) {
-  if (state === "active") return <LampDot width={20} height={12} />;
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        width: 20,
-        height: 12,
-        borderRadius: r.full,
-        boxSizing: "border-box",
-        border: state === "frozen" ? `1.5px solid ${t.evidence}` : `1.5px dashed ${t.line}`,
-      }}
-    />
-  );
-}
+function Streak({ streak, last, onNavigate }: { streak: HomeViewProps["streak"]; last: boolean; onNavigate: (to: string) => void }) {
+  const part = asidePart(16, last ? null : 24);
 
-/** The head's mark, and the week below it, before the streak has arrived: the populated panel's own rows, as bones. */
-function StreakSkeleton() {
-  return (
-    <LoadingRegion what="your streak" data-testid="home-streak-loading">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <PanelHead title="Streak" subtitle={"\u00a0"} headingLevel={2} />
-        <Skeleton width={22} height={22} radius="50%" />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 9 }}>
-        {DAY_LETTERS.map((_, index) => (
-          <div key={index} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <Skeleton width={20} height={12} radius={r.full} />
-            <Skeleton width={8} height={11} radius={3} />
-          </div>
-        ))}
-      </div>
-    </LoadingRegion>
-  );
-}
-
-function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; onNavigate: (to: string) => void }) {
   if (streak.status === "ready" && streak.data.count > 0) {
     const { count, frozenUsed, week } = streak.data;
     return (
-      <Panel surface="glass" padding="14px 16px">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <PanelHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
-          <span style={{ color: t.litInk, display: "flex" }}>
-            <Flame size={22} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
-          </span>
-        </div>
-        <ul
-          data-testid="home-streak-week"
-          style={{ display: "flex", justifyContent: "space-between", margin: "9px 0 0", padding: 0, listStyle: "none" }}
-        >
+      <section style={part}>
+        <CardHead title={`${count}-day streak`} subtitle={frozenLabel(frozenUsed)} headingLevel={2} />
+        <StreakWeek data-testid="home-streak-week">
           {week.map((state, index) => (
-            <li
-              key={index}
-              aria-label={`${DAY_NAMES[index]}: ${state === "active" ? "lit" : state === "frozen" ? "frozen" : "not lit"}`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
-            >
-              <DayMark state={state} />
-              <span aria-hidden="true" style={mono(10, { color: t.label })}>
-                {DAY_LETTERS[index]}
-              </span>
-            </li>
+            <StreakDay key={index} state={state} dayName={DAY_NAMES[index]} letter={DAY_LETTERS[index]} />
           ))}
-        </ul>
-      </Panel>
+        </StreakWeek>
+      </section>
     );
   }
 
   if (streak.status === "loading") {
     return (
-      <Panel surface="glass" padding="14px 16px">
-        <StreakSkeleton />
-      </Panel>
+      <section style={part}>
+        <LoadingRegion what="your streak" data-testid="home-streak-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <CardHead title="Streak" subtitle={" "} headingLevel={2} />
+          <div style={{ display: "flex", gap: 6 }}>
+            {DAY_LETTERS.map((_, index) => (
+              <div key={index} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                <Skeleton width="100%" height={32} radius={6} />
+                <Skeleton width={8} height={11} radius={2} />
+              </div>
+            ))}
+          </div>
+        </LoadingRegion>
+      </section>
     );
   }
 
   return (
-    <Panel surface="glass" padding="14px 16px">
-      <PanelHead title="Streak" headingLevel={2} />
+    <section style={part}>
+      <CardHead title="Streak" headingLevel={2} />
       {streak.status === "error" ? (
-        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} style={{ paddingTop: 10 }} data-testid="home-streak-error" />
+        <ErrorState panel="Streak" onRetry={streak.onRetry} error={streak.error} data-testid="home-streak-error" />
       ) : (
         <EmptyState
           line="Run a build today to start a streak."
@@ -724,218 +752,133 @@ function StreakPanel({ streak, onNavigate }: { streak: HomeViewProps["streak"]; 
           data-testid="home-streak-empty"
         />
       )}
-    </Panel>
+    </section>
   );
 }
 
 /* ── where next ── */
 
-/** A suggestion before it has arrived: the row's padding and hairline round a 28px picture, two lines and a sparkline. */
-function WhereNextRowSkeleton() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        padding: "5px 0",
-        borderBottom: `1px solid ${t.hairline}`,
-      }}
-    >
-      <Skeleton width={28} height={28} radius={8} />
-      <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-        <Skeleton width="62%" height={13} />
-        <Skeleton width="40%" height={10} />
-      </div>
-      <Skeleton width={54} height={18} radius={6} />
-    </div>
-  );
-}
+const nextRow = (first: boolean): CSSProperties => ({
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minHeight: 52,
+  boxSizing: "border-box",
+  borderTop: first ? undefined : `1px solid ${t.hairline}`,
+  textDecoration: "none",
+  color: "inherit",
+});
 
-function WhereNextPanel({ whereNext, onNavigate }: { whereNext: HomeViewProps["whereNext"]; onNavigate: (to: string) => void }) {
+function WhereNext({ whereNext, onNavigate }: Pick<HomeViewProps, "whereNext" | "onNavigate">) {
+  let body: ReactNode;
+  if (whereNext.status === "loading") {
+    body = (
+      <LoadingRegion what="suggestions" data-testid="home-where-next-loading">
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={nextRow(i === 0)}>
+            <div style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+              <Skeleton width="62%" height={13} />
+              <Skeleton width="40%" height={10} />
+            </div>
+            <Skeleton width={56} height={16} radius={2} />
+          </div>
+        ))}
+      </LoadingRegion>
+    );
+  } else if (whereNext.status === "error") {
+    body = <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} data-testid="home-where-next-error" />;
+  } else if (whereNext.status === "signed-out" || whereNext.data.length === 0) {
+    body = (
+      <EmptyState
+        line="Run a build this week and suggestions appear here."
+        action={
+          whereNext.status === "signed-out"
+            ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) }
+            : { label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }
+        }
+        data-testid="home-where-next-empty"
+      />
+    );
+  } else {
+    body = (
+      <div data-testid="home-where-next">
+        {whereNext.data.map((row, index) => (
+          <FrameLink key={row.id} to={row.href} data-testid="home-where-next-row" style={nextRow(index === 0)}>
+            <span style={{ flexGrow: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={text(12.5, 500, t.text, ellipsis)}>{row.title}</span>
+              <span style={text(10.5, 500, t.label, { ...ellipsis, letterSpacing: ".04em" })}>{row.reason}</span>
+            </span>
+            <Sparkline values={row.spark} width={56} height={16} tone={t.text2} />
+          </FrameLink>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
-      <PanelHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
-      {whereNext.status === "loading" ? (
-        <LoadingRegion what="suggestions" data-testid="home-where-next-loading" style={{ marginTop: 4 }}>
-          {[0, 1, 2].map((i) => (
-            <WhereNextRowSkeleton key={i} />
-          ))}
-        </LoadingRegion>
-      ) : whereNext.status === "error" ? (
-        <ErrorState panel="Where next" onRetry={whereNext.onRetry} error={whereNext.error} style={{ paddingTop: 10 }} data-testid="home-where-next-error" />
-      ) : whereNext.status === "signed-out" || whereNext.data.length === 0 ? (
-        <EmptyState
-          line="Run a build this week and suggestions appear here."
-          action={
-            whereNext.status === "signed-out"
-              ? { label: "Sign in", onClick: () => onNavigate(SIGN_IN) }
-              : { label: "Enter the gallery", onClick: () => onNavigate(GALLERY) }
-          }
-          data-testid="home-where-next-empty"
-        />
-      ) : (
-        <div data-testid="home-where-next" style={{ marginTop: 4 }}>
-          {whereNext.data.map((row) => (
-            <FrameLink
-              key={row.id}
-              to={row.href}
-              data-testid="home-where-next-row"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "5px 0",
-                borderBottom: `1px solid ${t.hairline}`,
-                color: "inherit",
-              }}
-            >
-              <Thumb cover={row.cover} width={28} height={28} radius={8} />
-              <div style={{ flexGrow: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {row.title}
-                </div>
-                <div style={mono(10, { color: t.label })}>{row.reason}</div>
-              </div>
-              <Sparkline values={row.spark} width={54} height={18} />
-            </FrameLink>
-          ))}
-        </div>
-      )}
-    </Panel>
+    <section style={asidePart(8, null)}>
+      <CardHead title="Where next" subtitle="From what you ran this week" headingLevel={2} />
+      {body}
+    </section>
   );
 }
 
 /* ── the two layouts ── */
 
 function DesktopHome(props: HomeViewProps) {
-  const { fit = "content", now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
-  const [filter, setFilter] = useState<HomeFilter>("all");
-  /* UI-P39: below 1024 the right track stacks under the left, its panels already in the phone's order. */
-  const stacked = useWidthTier() === "stacked";
-
+  const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
     <div
       data-testid="home-view"
       data-viewport="desktop"
-      style={{
-        display: "grid",
-        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
-        gridTemplateRows: fit === "board" && !stacked ? "minmax(0, 1fr)" : undefined,
-        gap: 9,
-        ...boardHeight(fit),
-      }}
+      style={trackRow(stacked, 48)}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
-        <div style={{ height: 340, flexShrink: 0 }}>
-          <Panel surface="glass" padding="22px 24px" style={{ height: "100%" }}>
-            <HeroArt scrim={`linear-gradient(90deg, ${t.scrim} 0%, transparent 60%)`} />
-            <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <ScopeControl scope={scope} onChange={onScopeChange} size={34} fontSize={12} />
-                <LitBadge litToday={litToday} phone={false} />
-              </div>
-              <Tagline lines={TAGLINE} size={46} offsets={[0, 90, 30]} />
-              <div style={{ display: "flex", gap: 6 }}>
-                <Button size={36} fontSize={13} icon={ArrowRight} onClick={() => onNavigate(GALLERY)}>
-                  Enter the gallery
-                </Button>
-                <Button variant="secondary" size={36} fontSize={13} onClick={() => onNavigate(HOW_PROOF_WORKS)}>
-                  How proof works
-                </Button>
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        <div style={{ flexGrow: 1, minHeight: 0, display: "flex" }}>
-          <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
-            <PanelHead
-              title="The visitors’ book"
-              subtitle="Builds, rebuilds, reproduction notes and asks — newest first"
-              headingLevel={2}
-              right={
-                <Segmented<HomeFilter> label="Show" size={30} fontSize={11} value={filter} onChange={setFilter} items={HOME_FILTERS} />
-              }
-            />
-            <div style={{ marginTop: 7 }}>
-              <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone={false} onNavigate={onNavigate} />
-            </div>
-          </Panel>
-        </div>
+      <div style={mainStyle(stacked, { flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 40 })}>
+        <Hero scope={scope} onScopeChange={onScopeChange} litToday={litToday} phone={false} onNavigate={onNavigate} />
+        <Book feed={feed} seenAt={seenAt} now={now} phone={false} onNavigate={onNavigate} />
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0 }}>
-        <div style={{ height: 180, flexShrink: 0 }}>
-          <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
-            <OrbsRow size={150} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} style={{ height: "100%" }} />
-          </Panel>
-        </div>
-
-        <div style={{ height: 230, flexShrink: 0, display: "flex" }}>
-          <ChallengesPanel challenges={challenges} thisWeekHref={thisWeekHref} phone={false} onNavigate={onNavigate} />
-        </div>
-
-        <StreakPanel streak={streak} onNavigate={onNavigate} />
-
-        <div style={{ flexGrow: 1, minHeight: 0, display: "flex" }}>
-          <WhereNextPanel whereNext={whereNext} onNavigate={onNavigate} />
-        </div>
-      </div>
+      <aside
+        style={asideStyle(stacked, {
+          flex: "1 0 300px",
+          maxWidth: 340,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          paddingLeft: 32,
+          borderLeft: `1px solid ${t.hairline}`,
+        })}
+      >
+        <RunCounts reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} />
+        <Challenges challenges={challenges} thisWeekHref={thisWeekHref} phone={false} onNavigate={onNavigate} />
+        <Streak streak={streak} last={false} onNavigate={onNavigate} />
+        <WhereNext whereNext={whereNext} onNavigate={onNavigate} />
+      </aside>
     </div>
   );
 }
 
 function PhoneHome(props: HomeViewProps) {
   const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, streak, onNavigate } = props;
-  const [filter, setFilter] = useState<HomeFilter>("all");
-
   return (
-    <div data-testid="home-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <ScopeControl scope={scope} onChange={onScopeChange} size={36} fontSize={13} />
-        <LitBadge litToday={litToday} phone />
-      </div>
-
-      <Panel surface="glass" padding="16px" style={{ height: 270 }}>
-        <HeroArt scrim={`linear-gradient(180deg, transparent 30%, ${t.scrim} 100%)`} />
-        <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-          <Tagline lines={TAGLINE} size={30} offsets={[0, 44, 14]} />
-          <div style={{ display: "flex", gap: 6 }}>
-            <Button size={42} fontSize={14} icon={ArrowRight} onClick={() => onNavigate(GALLERY)}>
-              Enter the gallery
-            </Button>
-          </div>
-        </div>
-      </Panel>
-
-      <OrbsRow size={162} reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} framed style={{ padding: "4px 0" }} />
-
-      <ChallengesPanel challenges={challenges} phone onNavigate={onNavigate} />
-
-      <Panel surface="glass" padding="14px 12px">
-        <PanelHead title="The visitors’ book" subtitle="Newest first" headingLevel={2} />
-        <div style={{ margin: "7px -4px 0" }}>
-          <ScrollRow gap={6} label="Show">
-            {HOME_FILTERS.map((item) => (
-              <FilterChip key={item.value} label={item.label} on={filter === item.value} onClick={() => setFilter(item.value)} />
-            ))}
-          </ScrollRow>
-        </div>
-        <div style={{ marginTop: 6 }}>
-          <BookBody feed={feed} filter={filter} seenAt={seenAt} now={now} phone onNavigate={onNavigate} />
-        </div>
-      </Panel>
-
-      <StreakPanel streak={streak} onNavigate={onNavigate} />
+    <div
+      data-testid="home-view"
+      data-viewport="mobile"
+      style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 0 }}
+    >
+      <Hero scope={scope} onScopeChange={onScopeChange} litToday={litToday} phone onNavigate={onNavigate} />
+      <RunCounts reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} />
+      <Challenges challenges={challenges} phone onNavigate={onNavigate} />
+      <Book feed={feed} seenAt={seenAt} now={now} phone onNavigate={onNavigate} />
+      <Streak streak={streak} last onNavigate={onNavigate} />
     </div>
   );
 }
 
 export function HomeView(props: HomeViewProps) {
   const phone = useIsPhone();
-  const fit = useTierFit(props.fit);
-  return phone ? <PhoneHome {...props} /> : <DesktopHome {...props} fit={fit} />;
+  return phone ? <PhoneHome {...props} /> : <DesktopHome {...props} />;
 }
 
 export default HomeView;

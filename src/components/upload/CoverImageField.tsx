@@ -300,7 +300,7 @@ export function CoverImageField({
             <ImagePlus size={32} color="var(--text2)" />
             <div
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "13px",
                 fontWeight: 400,
                 color: "var(--text2)",
@@ -315,7 +315,7 @@ export function CoverImageField({
                 openPicker();
               }}
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "12px",
                 fontWeight: 500,
                 color: "var(--text)",
@@ -407,7 +407,7 @@ export function CoverImageField({
                 type="button"
                 onClick={cancelReframe}
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: "12px",
                   fontWeight: 500,
                   color: "var(--text)",
@@ -424,7 +424,7 @@ export function CoverImageField({
                 type="button"
                 onClick={saveReframe}
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: "12px",
                   fontWeight: 600,
                   color: "var(--text)",
@@ -475,7 +475,7 @@ export function CoverImageField({
           role="alert"
           style={{
             marginTop: "6px",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: "12px",
             fontWeight: 500,
             color: "var(--cat-breakage)",

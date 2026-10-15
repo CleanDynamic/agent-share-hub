@@ -194,7 +194,7 @@ export default function Search() {
               flex: 1, background: 'transparent',
               border: 'none', outline: 'none',
               fontSize: 14, color: 'var(--text)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
             }}
           />
           {inputVal && (

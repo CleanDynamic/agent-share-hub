@@ -69,7 +69,7 @@ export function OriginalSolutionDialog({
         >
           <div
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 600,
               color: "var(--text)",
@@ -111,7 +111,7 @@ function Pane({ title, json }: { title: string; json: string }) {
       <div
         style={{
           padding: "8px 12px",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 11,
           fontWeight: 600,
           color: "color-mix(in srgb, var(--evidence) 85%, transparent)",

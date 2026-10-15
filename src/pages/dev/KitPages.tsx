@@ -39,13 +39,11 @@ export interface DesignPageProps {
 /** `:page` (the `page` field of `design/reference/index.json`) → a lazy entry that renders the view with fixtures. */
 const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> | undefined> = {
   /* UI-P13 — a throwaway for the page backdrop; not a board, so not in index.json. */
-  backdrop: lazy(() => import("./BackdropDemo")),
   /* UI-P16 — the empty frame: backdrop, empty slots, the 820px grid placeholder. */
   frame: lazy(() => import("./FrameDemo")),
   /* UI-P27 — Home. */
   home: lazy(() => import("./HomeDemo")),
   /* UI-P28 — Gallery. */
-  gallery: lazy(() => import("./GalleryDemo")),
   /* UI-P49 — the Gallery feed (no board is compared). */
   "gallery-feed": lazy(() => import("./GalleryFeedDemo")),
   /* UI-P50 — the Gallery dashboard (no board is compared). */
@@ -96,7 +94,6 @@ const TRAILS: Record<string, readonly Crumb[]> = {
   /* UI-P57: the Home board draws Home alone. */
   home: [{ label: "Home" }],
   /* UI-P56: the Gallery board draws Home / Gallery, not the default trail's sample build. */
-  gallery: [{ label: "Home", href: "/" }, { label: "Gallery" }],
   "gallery-feed": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   "gallery-dashboard": [{ label: "Home", href: "/" }, { label: "Gallery" }],
   profile: [{ label: "Home", href: "/" }, { label: fixtures.viewer.name }],
@@ -118,15 +115,6 @@ const CHROME: Record<string, Partial<DevChromeOptions>> = {
   sandbox: { current: "drafts", dockCurrent: null },
 };
 
-/* UI-P87: the pages with a refined view. `frame` is the empty frame: the refined header, surface, breadcrumb, footer
-   and phone chrome around the grid placeholder, lit as the Home board lights them. UI-P88 adds Home, UI-P89 the Gallery dashboard and its feed,
-   UI-P90 the Build page (its first screen and The build), UI-P92 Activity, UI-P93 the composer (List, Sources and Details). UI-P95 re-skins the rest through the tokens and primitives, without forks:
-   Rebuild, lineage, Profile, Drafts, the Bounties board and Sign in. */
-const REFINED_READY = new Set([
-  "frame", "home", "gallery-dashboard", "gallery-feed", "build", "build-steps", "activity", "sandbox",
-  "rebuild", "lineage", "profile", "drafts", "bounty-board", "signin",
-]);
-
 const WIDTH: Record<DesignViewport, number> = { desktop: 1440, mobile: 390 };
 
 export default function KitPages() {
@@ -137,10 +125,6 @@ export default function KitPages() {
   const View = Object.prototype.hasOwnProperty.call(VIEWS, page) ? VIEWS[page] : undefined;
 
   if (!View) return <div data-design-ready="false">Not built yet</div>;
-  /* UI-P77: `?look=refined` asks for the refined view. None exists until UI-P78 and the page forks after it, so say so and the compare harness skips the board. */
-  if (new URLSearchParams(window.location.search).get("look") === "refined" && !REFINED_READY.has(page)) {
-    return <div data-design-ready="false">No refined view yet</div>;
-  }
 
   return (
     <div

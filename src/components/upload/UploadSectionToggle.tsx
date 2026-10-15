@@ -65,7 +65,7 @@ export function UploadSectionToggle({
         <div className="flex items-center gap-2 min-w-0">
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: "13px",
               fontWeight: 500,
               color: "var(--text)",
@@ -88,7 +88,7 @@ export function UploadSectionToggle({
             <span
               className="truncate"
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: "12px",
                 fontWeight: 400,
                 color: "var(--text2)",

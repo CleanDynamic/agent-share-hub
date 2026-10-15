@@ -647,6 +647,8 @@ export const collectColours = () => {
     const s = getComputedStyle(el);
     if (s.display === "none" || s.visibility !== "visible") continue;
     for (const prop of props) {
+      // `fill` and `stroke` paint nothing on an HTML element; its computed `fill` is the initial black (UI-P99).
+      if ((prop === "fill" || prop === "stroke") && !(el instanceof SVGElement)) continue;
       const value = (s[prop] as string) || "";
       if (!value || value === "none" || value === "rgba(0, 0, 0, 0)") continue;
       // Ignore a property that is merely inheriting the element's own colour.

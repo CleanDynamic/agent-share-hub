@@ -120,12 +120,11 @@ const PAGES = [
 
 test.describe("the four pages draw in the bare frame", () => {
   for (const entrance of PAGES) {
-    test(`${entrance.name}: the backdrop, the card and the sentence, and no header, footer or dock`, async ({ page }) => {
+    test(`${entrance.name}: the card and the sentence, and no header, footer or dock`, async ({ page }) => {
       await open(page, entrance.path);
 
       const frame = page.getByTestId("site-frame");
       await expect(frame).toHaveAttribute("data-variant", "bare");
-      await expect(frame.locator('[data-ui="page-backdrop"]')).toHaveAttribute("data-tone", "signin");
       await expect(entrance.ready(page)).toBeVisible();
       await expect(page.getByTestId("signin-card")).toBeVisible();
       await expect(page.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeAttached();
@@ -137,15 +136,10 @@ test.describe("the four pages draw in the bare frame", () => {
     });
   }
 
-  test("the orbs say the two numbers on a desktop, and are not drawn on a phone", async ({ page }) => {
+  test("no orbs are drawn, on a desktop or a phone", async ({ page }) => {
     await open(page, "/login");
-    if (isPhone(page)) {
-      await expect(page.locator('[data-ui="orb-glass"]')).toHaveCount(0);
-      await expect(page.locator('[data-ui="orb-solid"]')).toHaveCount(0);
-    } else {
-      await expect(page.locator('[data-ui="orb-glass"]')).toContainText("48 today");
-      await expect(page.locator('[data-ui="orb-solid"]')).toContainText("1,284");
-    }
+    await expect(page.locator('[data-ui="orb-glass"]')).toHaveCount(0);
+    await expect(page.locator('[data-ui="orb-solid"]')).toHaveCount(0);
   });
 
   test("the theme control is a radio group on the page, and flips the room", async ({ page }) => {

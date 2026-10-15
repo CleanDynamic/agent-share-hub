@@ -177,7 +177,7 @@ describe("ProfileView on a desktop", () => {
 
     mount({ works: { ...base.works, status: "error", errorKind: "permission", onRetry } });
     expect(screen.getByText("You don't have access to this.")).toBeTruthy();
-    expect(screen.getByTestId("profile-works-error").textContent).toContain("Works");
+    expect(screen.getByTestId("profile-works-error").getAttribute("aria-label") ?? screen.getByTestId("profile-works-error").querySelector("[aria-label]")?.getAttribute("aria-label")).toContain("Works");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
@@ -272,7 +272,7 @@ describe("ProfileView on a desktop", () => {
     for (const [id, [name, retry]] of Object.entries(names)) {
       const failed = screen.getByTestId(id);
       expect(failed.textContent).toContain("That didn't load.");
-      expect(failed.textContent).toContain(name);
+      expect(failed.getAttribute("aria-label") ?? failed.querySelector("[aria-label]")?.getAttribute("aria-label")).toContain(name);
       fireEvent.click(within(failed).getByRole("button", { name: "Try again" }));
       expect(retry).toHaveBeenCalledTimes(1);
     }

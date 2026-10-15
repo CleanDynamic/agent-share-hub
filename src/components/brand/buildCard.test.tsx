@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { BuildCard, CardCredit, COVER_HEIGHT, type BuildCardProps } from "./BuildCard";
+import { BuildCard, CardCredit, type BuildCardProps } from "./BuildCard";
 import type { PlaqueBuild } from "./Plaque";
 
 const DAY = 86_400_000;
@@ -71,16 +71,6 @@ describe("BuildCard", () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it("sits the cover in a clipped box of the context's height, radius 10, with the tag at top 6 left 6", () => {
-    expect(markup()).toContain("height:92px;border-radius:var(--r-media);overflow:hidden");
-    expect(markup({ coverHeight: COVER_HEIGHT.catalogue })).toContain("height:112px");
-    const html = markup();
-    expect(html).toContain("top:6px;left:6px;background:var(--media-tag);color:var(--text)");
-    // UI-P52 density pass: the tag's padding is 2px 4px; positions and cover heights are not in the table.
-    expect(html).toContain("padding:2px 4px");
-    expect(COVER_HEIGHT).toEqual({ catalogue: 112, wall: 92, works: 86, mobile: 96 });
-  });
-
   it("sets the title drawn at 19 (18 or 17 on mobile) on one line with an ellipsis", () => {
     // UI-P52 density pass: display() renders the drawn size through the table
     // (19 → 16, 17 → 16), and under 20px a display role is Figtree 600.
@@ -104,7 +94,7 @@ describe("BuildCard", () => {
 
   it("says the open ask in 10px mono --cat-breakage", () => {
     const html = markup({ openAsk: "2 parts unsolved · £400" });
-    expect(html).toMatch(/DM Mono.*font-size:10px;line-height:normal;color:var\(--cat-breakage\)/);
+    expect(html).toMatch(/Geist Mono.*font-size:10px;line-height:normal;color:var\(--cat-breakage\)/);
     expect(html).toContain("2 parts unsolved · £400");
   });
 
@@ -148,14 +138,6 @@ describe("CardCredit", () => {
     expect(html).toContain("font-size:11px");
     expect(html).toContain("color:var(--text2)");
     expect(html).not.toContain("<i");
-  });
-
-  it("says 'Rebuilt from Inbox sorter by @maya' with the source in italic --text", () => {
-    const html = renderToStaticMarkup(<CardCredit rebuiltFrom="Inbox sorter" by="@maya" />);
-    expect(html).toContain("Rebuilt from ");
-    expect(html).toContain('<i style="color:var(--text)">Inbox sorter</i>');
-    expect(html).toContain(" by @maya");
-    expect(html).toContain('title="Rebuilt from Inbox sorter by @maya"');
   });
 
   it("says nothing with neither half", () => {

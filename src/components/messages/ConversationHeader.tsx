@@ -126,7 +126,7 @@ function PinnedContextStrip({
           <Pin size={11} style={{ color: accent, flexShrink: 0 }} />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 600,
               letterSpacing: "0.04em",
@@ -162,7 +162,7 @@ function PinnedContextStrip({
               <p
                 className="truncate"
                 style={{
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 13,
                   fontWeight: 600,
                   color: "var(--text)",
@@ -175,7 +175,7 @@ function PinnedContextStrip({
                   {pinned.rewardLabel && (
                     <span
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 11,
                         fontWeight: 600,
                         color: accent,
@@ -187,7 +187,7 @@ function PinnedContextStrip({
                   {pinned.statusLabel && (
                     <span
                       style={{
-                        fontFamily: "Figtree, sans-serif",
+                        fontFamily: "var(--font-ui)",
                         fontSize: 10,
                         fontWeight: 500,
                         color: "var(--text2)",
@@ -210,7 +210,7 @@ function PinnedContextStrip({
                 borderRadius: "var(--r-control)",
                 border: `0.5px solid ${accentBorder}`,
                 color: accent,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 fontWeight: 600,
                 whiteSpace: "nowrap",
@@ -285,7 +285,7 @@ export function ConversationHeader({
             <span
               className="truncate"
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 fontWeight: 700,
                 color: "var(--text)",
@@ -314,7 +314,7 @@ export function ConversationHeader({
             <p
               className="truncate"
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 fontWeight: 400,
                 color: "var(--text2)",

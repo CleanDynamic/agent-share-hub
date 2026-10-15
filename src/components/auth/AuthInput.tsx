@@ -98,7 +98,7 @@ export function AuthInput({
   const placeholderStyle = `
     .auth-input::placeholder {
       color: var(--text2);
-      font-family: Figtree, sans-serif;
+      font-family: var(--font-ui);
       font-size: 14px;
       font-weight: 400;
     }

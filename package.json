@@ -14,7 +14,6 @@
     "audit": "playwright test --config=playwright.audit.config.ts",
     "audit:contrast": "playwright test --config=playwright.audit.config.ts contrast-sweep",
     "audit:themes": "playwright test --config=playwright.audit.config.ts theme-completeness",
-    "audit:glass": "playwright test --config=playwright.audit.config.ts glass-budget",
     "audit:perf": "playwright test --config=playwright.audit.config.ts performance",
     "audit:design": "playwright test --config=playwright.audit.config.ts design-compare"
   },

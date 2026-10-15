@@ -141,7 +141,7 @@ describe("ThemeSegmented", () => {
 
 /* UI-P87 — the refined breadcrumb and footer. Names, items and order are the current ones; styles from SSR markup. */
 describe("breadcrumb and footer under the refined look", () => {
-  const REFINED = "/dev/kit/pages/home?look=refined";
+  const REFINED = "/dev/kit/pages/home";
 
   it("the breadcrumb is Geist 12.5, 8 apart, '/' in --label, the current page --text at 500", () => {
     const html = renderToStaticMarkup(
@@ -176,7 +176,6 @@ describe("breadcrumb and footer under the refined look", () => {
     expect(screen.getByRole("button", { name: "Connect a tool" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "Theme" })).toBeTruthy();
     expect(screen.getByText("© buildgallery")).toBeTruthy();
-    expect(screen.getByTestId("site-footer").getAttribute("data-look")).toBe("refined");
   });
 
   it("the footer sits under a 1px --hairline with the gutter, links at 12.5 --text2 8px 20px apart, Theme at 26", () => {

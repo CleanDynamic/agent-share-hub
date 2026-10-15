@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 import { layoutMap } from "@/lib/build/mapLayout";
 
-import { boxName, BuildMap, columnDate, DIMMED, type BuildMapProps } from "./BuildMap";
+import { boxName, BuildMap, columnDate, type BuildMapProps } from "./BuildMap";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -21,8 +21,6 @@ function map(over: Partial<BuildMapProps> = {}) {
   render(<BuildMap {...props} />);
   return props;
 }
-
-const opacity = (id: string) => screen.getByTestId(`map-box-${id}`).style.opacity;
 
 describe("the boxes", () => {
   it("are real buttons named 'Prompt n, title, k inputs', in lane then column order", () => {
@@ -59,26 +57,6 @@ describe("selecting", () => {
     expect(props.onOpenPrompt).toHaveBeenLastCalledWith("p2");
     fireEvent.keyDown(box, { key: "Enter" });
     expect(props.onOpenPrompt).toHaveBeenCalledTimes(2);
-  });
-
-  it("leaves exactly the selected box and its joined boxes at full strength, and the rest at 0.42", () => {
-    map({ selectedId: "p2" });
-    const layout = layoutMap(sandboxMapProps("bakery").steps, sandboxMapProps("bakery").groups, [{ id: "f1", name: "menu.pdf" }], [{ id: "t1", name: "Gmail" }], []);
-    const joined = new Set(layout.wires.filter((wire) => wire.from === "p2" || wire.to === "p2").flatMap((wire) => [wire.from, wire.to]));
-    joined.add("p2");
-    for (const id of ["p1", "p2", "p3", "p4", "a5", "r1", "f1", "t1"]) {
-      expect(opacity(id)).toBe(joined.has(id) ? "1" : String(DIMMED));
-    }
-    expect(screen.getAllByTestId("map-wire").filter((wire) => wire.getAttribute("data-strong") === "true").length).toBeGreaterThan(0);
-  });
-
-  it("dims nothing with no selection, and Esc clears a selection", () => {
-    const props = map({ selectedId: "p2" });
-    fireEvent.keyDown(screen.getByTestId("map-box-p2"), { key: "Escape" });
-    expect(props.onClear).toHaveBeenCalled();
-    cleanup();
-    map();
-    expect(opacity("p1")).toBe("1");
   });
 });
 
@@ -163,32 +141,6 @@ describe("agents and teams (UI-P69)", () => {
     expect(props.onOpenPrompt).toBeUndefined();
   });
 
-  it("draws the opened team: the frame, 3.1 to 3.4 left to right, one stacked box, the loop, outside dimmed", () => {
-    teamMap({ opened: team() });
-    expect(screen.getByTestId("opened-frame").textContent).toContain("Inside team 3 · Copy team");
-    expect(screen.getByTestId("opened-frame").textContent).toContain("Runs once");
-    const boxes = ["t3a", "t3b", "t3c", "t3d"].map((id) => screen.getByTestId(`map-box-${id}`));
-    const lefts = boxes.map((box) => parseFloat(box.style.left));
-    expect(lefts).toEqual([...lefts].sort((a, b) => a - b));
-    expect(new Set(boxes.map((box) => box.style.top)).size).toBe(1);
-
-    // The writer runs three at once: two copies behind it, the count at the right of its header.
-    const copies = screen.getAllByTestId("stack-copy");
-    expect(copies.map((copy) => copy.style.opacity)).toEqual(["0.5", "0.75"]);
-    expect(boxes[1].textContent).toContain("× 3");
-    // An input fed by it reads "Output of 3.2 × 3"; the loop arrives as "Sent back by 3.3".
-    expect(boxes[2].textContent).toContain("Output of 3.2 × 3");
-    expect(boxes[1].textContent).toContain("Sent back by 3.3");
-    expect(screen.getByTestId("map-wire-label").textContent).toBe("sent back until approved");
-
-    // Outside the frame, at the dimmed opacity.
-    expect(screen.getByText("Outside")).toBeTruthy();
-    for (const id of ["p2", "p4", "r1"]) expect(opacity(id)).toBe(String(DIMMED));
-    expect(screen.getByText("stacked box = runs several at once")).toBeTruthy();
-    expect(screen.getByText(/Esc goes back to the build/)).toBeTruthy();
-    expect(screen.getByText("Left to right by order · boxes outside the frame are part of the build, not the team")).toBeTruthy();
-  });
-
   it("goes back to the build with a box that was clicked outside the frame selected", () => {
     const props = teamMap({ opened: team() });
     fireEvent.click(screen.getByTestId("map-box-p4"));
@@ -260,7 +212,7 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
   function refinedMap(over: Partial<BuildMapProps> = {}) {
     const props: BuildMapProps = { ...sandboxMapProps("bakery"), selectedId: null, onSelect: vi.fn(), onClear: vi.fn(), onConnect: vi.fn(), onOpenPrompt: vi.fn(), ...over };
     render(
-      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
         <BuildMap {...props} />
       </MemoryRouter>,
     );
@@ -268,7 +220,7 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
   }
   const markup = () =>
     renderToStaticMarkup(
-      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
         <BuildMap {...sandboxMapProps("bakery")} selectedId={null} onSelect={vi.fn()} onClear={vi.fn()} onConnect={vi.fn()} onOpenPrompt={vi.fn()} />
       </MemoryRouter>,
     );

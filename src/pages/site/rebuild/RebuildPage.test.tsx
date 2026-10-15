@@ -218,7 +218,7 @@ describe("RebuildPage (site frame)", () => {
     renderAt("/rebuild/invoice-triage");
     const failed = await screen.findByTestId("rebuild-error");
     expect(failed.textContent).toContain("That didn't load.");
-    expect(failed.textContent).toContain("Your draft");
+    expect(failed.getAttribute("aria-label") ?? failed.querySelector("[aria-label]")?.getAttribute("aria-label")).toContain("Your draft");
     expect(screen.queryByText(/permission denied/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(startRebuild).toHaveBeenCalledTimes(2));

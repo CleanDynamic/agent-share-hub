@@ -9,10 +9,8 @@
 import type { ButtonHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
 
-import { denseHeight } from "@/lib/theme/density";
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { controlPaint } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -57,45 +55,8 @@ export function IconButton({
     { onMouseEnter, onMouseLeave, onFocus, onBlur, onPointerDown, onPointerUp, onPointerCancel },
     { disabled },
   );
-  const refined = useLook() === "refined";
 
-  if (refined) {
-    const side = size > 30 ? 30 : size;
-    return (
-      <button
-        data-ui="icon-button"
-        type={type}
-        aria-label={label}
-        disabled={disabled}
-        {...rest}
-        {...handlers}
-        style={{
-          boxSizing: "border-box",
-          width: side,
-          height: side,
-          borderRadius: r.control,
-          ...(boxed
-            ? controlPaint(state)
-            : { background: "transparent", border: "1px solid transparent" }),
-          color: !boxed && state.hovered ? t.text : t.text2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 0,
-          cursor: disabled ? "not-allowed" : "pointer",
-          opacity: disabled ? 0.5 : undefined,
-          flexShrink: 0,
-          ...ring(state.focusVisible),
-          ...style,
-        }}
-      >
-        <AnyIcon lucide={Icon} glyph={glyph} size={16} />
-      </button>
-    );
-  }
-
-  const box = denseHeight(size);
-
+  const side = size > 30 ? 30 : size;
   return (
     <button
       data-ui="icon-button"
@@ -105,12 +66,14 @@ export function IconButton({
       {...rest}
       {...handlers}
       style={{
-        width: box,
-        height: box,
+        boxSizing: "border-box",
+        width: side,
+        height: side,
         borderRadius: r.control,
-        background: t.glass2,
-        border: `1px solid ${state.hovered ? t.text2 : t.line}`,
-        color: t.text2,
+        ...(boxed
+          ? controlPaint(state)
+          : { background: "transparent", border: "1px solid transparent" }),
+        color: !boxed && state.hovered ? t.text : t.text2,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -122,7 +85,7 @@ export function IconButton({
         ...style,
       }}
     >
-      <Icon size={16} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
+      <AnyIcon lucide={Icon} glyph={glyph} size={16} />
     </button>
   );
 }

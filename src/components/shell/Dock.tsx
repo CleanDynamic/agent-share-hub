@@ -14,17 +14,15 @@
 // is `fixed` everywhere except the catalogue, which draws it inside a strip.
 
 import { Bell, Home, Image as ImageIcon, Plus, Target, type LucideIcon } from "lucide-react";
-import { memo, type CSSProperties } from "react";
+import { memo } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { GlyphName } from "@/components/brand/Glyph";
 import { Icon as AnyIcon } from "@/components/brand/Icon";
 import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
-import { GLASS_BLUR } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { FrameLink } from "./FrameLink";
 import { isActivityPath, SITE_NAV, sectionForPath } from "./siteNav";
@@ -58,7 +56,6 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
     <nav
       data-testid="dock"
       data-ui="dock"
-      data-look="refined"
       aria-label="Primary"
       style={{
         position: placement,
@@ -144,112 +141,7 @@ function RefinedDockView({ current, unread, placement = "fixed" }: DockViewProps
 }
 
 export function DockView(props: DockViewProps) {
-  const refined = useLook() === "refined";
-  return refined ? <RefinedDockView {...props} /> : <CurrentDockView {...props} />;
-}
-
-function CurrentDockView({ current, unread, placement = "fixed" }: DockViewProps) {
-  return (
-    <nav
-      data-testid="dock"
-      data-ui="dock"
-      aria-label="Primary"
-      style={{
-        position: placement,
-        left: "50%",
-        transform: "translateX(-50%)",
-        bottom: "calc(16px + env(safe-area-inset-bottom))",
-        zIndex: 30,
-        display: "flex",
-        gap: 4,
-        padding: 5,
-        borderRadius: 22,
-        background: t.dock,
-        border: `1px solid ${t.dockBorder}`,
-        boxShadow: t.shadowDock,
-        backdropFilter: GLASS_BLUR,
-        WebkitBackdropFilter: GLASS_BLUR,
-      }}
-    >
-      {TILES.map(({ name, label, href, icon: Icon }) => {
-        const isCurrent = name === current;
-        const isNew = name === "new";
-        const paint: CSSProperties = isNew
-          ? { background: t.action, color: t.onAction }
-          : isCurrent
-            ? { background: t.text, color: t.onText }
-            : { background: "transparent", color: t.text };
-        const badged = name === "activity" && unread > 0;
-        return (
-          <FrameLink
-            key={name}
-            to={href}
-            data-testid={`dock-tile-${name}`}
-            aria-current={isCurrent ? "page" : undefined}
-            aria-label={badged ? `Activity, ${unread} unread` : label}
-            style={{
-              position: "relative",
-              width: 62,
-              height: 44,
-              borderRadius: 15,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 3,
-              fontFamily: FIGTREE,
-              fontSize: 10,
-              fontWeight: 600,
-              ...paint,
-            }}
-          >
-            {isCurrent && (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: -11,
-                  left: "50%",
-                  marginLeft: -10,
-                  width: 20,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: t.lit,
-                  boxShadow: t.navLampGlow,
-                }}
-              />
-            )}
-            {badged && (
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  top: 5,
-                  right: 9,
-                  minWidth: 15,
-                  height: 15,
-                  borderRadius: 8,
-                  background: t.action,
-                  color: t.onAction,
-                  fontFamily: DM_MONO,
-                  fontSize: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxSizing: "border-box",
-                  padding: "0 3px",
-                }}
-              >
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
-            <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
-            <span aria-hidden="true">{label}</span>
-          </FrameLink>
-        );
-      })}
-    </nav>
-  );
+  return <RefinedDockView {...props} />;
 }
 
 /** The container: the current tile from the route, the unread count from the notifications hook. */

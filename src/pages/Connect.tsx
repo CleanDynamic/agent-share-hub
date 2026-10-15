@@ -55,7 +55,6 @@ import { Button } from "@/components/ui/button";
 import { elevation } from "@/lib/theme/elevation";
 import { focusRing } from "@/lib/theme/focus";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { fade } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
@@ -318,7 +317,6 @@ function HelpLink({ href, children }: { href: string; children: ReactNode }) {
  */
 function ClientPanel({ id, name, tool, children }: { id: string; name: string; tool: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const refined = useLook() === "refined";
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const buttonId = `connect-${id}-toggle`;
   const stepsId = `connect-${id}-steps`;
@@ -357,7 +355,7 @@ function ClientPanel({ id, name, tool, children }: { id: string; name: string; t
           <span aria-hidden style={{ ...dataText, color: t.text2 }}>
             {open ? "▾" : "▸"}
           </span>
-          {refined ? <ModelMark tool={tool} size={20} /> : null}
+          <ModelMark tool={tool} size={20} />
           <span>{name}</span>
         </button>
       </h3>

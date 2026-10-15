@@ -4,18 +4,18 @@
 // TypeScript says — a value edited in one place and not the other is the whole
 // failure mode of mirroring a token set into a stylesheet.
 //
-// Five groups now share those blocks: the colour tokens (BG-P01), the radius
+// Five groups share those blocks: the colour tokens (BG-P01), the radius
 // scale (BG-P04), the elevation shadows (BG-P04), the shadcn bridge (BG-P28)
 // and the motion vocabulary (BG-P32). Radius and motion are theme-independent
-// and therefore identical in both; the other three are not.
+// and therefore identical in both; the other three are not. The values are the
+// refined look's, the only ones since UI-P99.
 
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { TOKEN_NAMES, noon, dusk } from "./semantics";
-import { RADIUS, RADIUS_NAMES, REFINED_RADIUS, REFINED_RADIUS_NAMES } from "./radius";
+import { RADIUS, RADIUS_NAMES } from "./radius";
 import { ELEVATION_TOKENS, duskElevation, noonElevation } from "./elevation";
-import { SHADCN_NAMES, duskShadcn, noonShadcn, duskRefinedShadcn, noonRefinedShadcn } from "./shadcn";
-import { REFINED_NAMES, REFINED_NEW_NAMES, duskRefined, noonRefined } from "./refined";
+import { SHADCN_NAMES, duskShadcn, noonShadcn } from "./shadcn";
 import { MOTION_NAMES, MOTION_TOKENS } from "./motion";
 
 const css = readFileSync("src/index.css", "utf-8");
@@ -92,11 +92,10 @@ describe("index.css mirrors shadcn.ts", () => {
     for (const n of SHADCN_NAMES) expect([n, got[n]]).toEqual([n, noonShadcn[n]]);
     // --radius is not a colour and is not part of the bridge, but it lives in
     // this block and is live: tailwind.config.ts spends it as `rounded-lg`,
-    // with `rounded-md`/`rounded-sm` as calc() steps off it. 0.75rem was 12px,
-    // which is --r-control exactly, so pointing it at the scale moves no
-    // measurement and stops the number being a fourth opinion.
+    // with `rounded-md`/`rounded-sm` as calc() steps off it. It points at the
+    // scale, so the number is not a fourth opinion.
     expect(got["radius"]).toBe("var(--r-control)");
-    expect(RADIUS["r-control"]).toBe("12px");
+    expect(RADIUS["r-control"]).toBe("6px");
   });
 
   it("gives the two rooms different values", () => {
@@ -137,68 +136,13 @@ describe("index.css mirrors elevation.ts", () => {
     for (const n of ELEVATION_TOKENS) expect([n, got[n]]).toEqual([n, duskElevation[n]]);
   });
 
-  it("declares a DIFFERENT shadow in each block", () => {
+  it("points at shadows that differ by theme", () => {
     // The point of putting these in the theme blocks at all: a shadow on a
-    // light ground and a shadow on a dark ground are not the same object.
+    // light ground and a shadow on a dark ground are not the same object. The
+    // two levels are references now, so it is the shadows they name that differ.
     const light = parse(':root,\n:root[data-theme="noon"]');
     const dark = parse(':root[data-theme="dusk"]');
-    for (const n of ELEVATION_TOKENS) expect(dark[n]).not.toBe(light[n]);
-  });
-});
-
-describe("index.css mirrors refined.ts (UI-P79)", () => {
-  const dusk_ = parse(':root[data-theme="dusk"][data-look="refined"]');
-  const noon_ = parse(':root[data-theme="noon"][data-look="refined"]');
-  // UI-P81 adds the refined radius scale to the same two blocks: seven radius
-  // names, which the current blocks already declare (so none is a new name).
-  const expected = [...REFINED_NAMES, ...SHADCN_NAMES, ...REFINED_RADIUS_NAMES].sort();
-
-  it("holds both refined blocks to the same set of names", () => {
-    expect(Object.keys(dusk_).sort()).toEqual(Object.keys(noon_).sort());
-    expect(Object.keys(noon_).sort()).toEqual(expected);
-  });
-
-  it("declares the refined radius scale (UI-P81), and leaves --r-full to the theme blocks", () => {
-    for (const n of REFINED_RADIUS_NAMES) {
-      expect([n, dusk_[n]]).toEqual([n, REFINED_RADIUS[n]]);
-      expect([n, noon_[n]]).toEqual([n, REFINED_RADIUS[n]]);
-    }
-    expect(dusk_["r-full"]).toBeUndefined();
-    expect(noon_["r-full"]).toBeUndefined();
-  });
-
-  it("declares every refined value, as written", () => {
-    for (const n of REFINED_NAMES) {
-      expect([n, dusk_[n]]).toEqual([n, duskRefined[n]]);
-      expect([n, noon_[n]]).toEqual([n, noonRefined[n]]);
-    }
-  });
-
-  it("declares the shadcn bridge, repointed", () => {
-    for (const n of SHADCN_NAMES) {
-      expect([n, dusk_[n]]).toEqual([n, duskRefinedShadcn[n]]);
-      expect([n, noon_[n]]).toEqual([n, noonRefinedShadcn[n]]);
-    }
-  });
-
-  it("repoints only names the theme blocks already declare, plus the new ones", () => {
-    const declared = new Set<string>(DECLARED);
-    const stray = REFINED_NAMES.filter((n) => !declared.has(n));
-    expect(stray).toEqual([]);
-  });
-
-  it("aliases every new name in the current look, so the switch off changes nothing", () => {
-    const light = parse(':root,\n:root[data-theme="noon"]');
-    const dark = parse(':root[data-theme="dusk"]');
-    for (const n of REFINED_NEW_NAMES) {
-      expect(light[n], `--${n} in the noon block`).toBeDefined();
-      expect([n, dark[n]]).toEqual([n, light[n]]);
-    }
-  });
-
-  it("keeps the refined blocks after the theme blocks and out of the bare :root", () => {
-    const at = (sel: string) => css.indexOf(sel);
-    expect(at(':root[data-theme="dusk"][data-look="refined"]')).toBeGreaterThan(at(':root[data-theme="dusk"] {'));
-    expect(at(':root[data-theme="noon"][data-look="refined"]')).toBeGreaterThan(at(':root[data-theme="dusk"][data-look="refined"]'));
+    expect(dark["control-shadow"]).not.toBe(light["control-shadow"]);
+    expect(dark["window-shadow"]).not.toBe(light["window-shadow"]);
   });
 });

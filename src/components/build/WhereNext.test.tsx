@@ -146,7 +146,7 @@ describe("WhereNext", () => {
       "More from Sam Ilori",
     ]);
     for (const heading of headings) {
-      expect(heading.style.fontFamily).toContain("DM Mono");
+      expect(heading.style.fontFamily).toContain("Geist Mono");
       expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
       expect(heading.style.textTransform).toBe("uppercase");
     }

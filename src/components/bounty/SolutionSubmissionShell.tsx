@@ -87,14 +87,14 @@ export function SolutionSubmissionShell({
         <Target size={14} style={{ color: "var(--cat-breakage)", flexShrink: 0 }} />
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex items-center gap-1 truncate">
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--cat-breakage)" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--cat-breakage)" }}>
               Solving:
             </span>
-            <span className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+            <span className="truncate" style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
               {bounty.title}
             </span>
           </div>
-          <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)" }}>
+          <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 400, color: "var(--text2)" }}>
             {slotLabel} · Open · {bountyMeta.solutionCount} solution{bountyMeta.solutionCount !== 1 ? "s" : ""} submitted
           </span>
         </div>
@@ -102,7 +102,7 @@ export function SolutionSubmissionShell({
           href={`/b/${bounty.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "var(--cat-breakage)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
+          style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 500, color: "var(--cat-breakage)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}
         >
           View full bounty →
         </a>
@@ -130,7 +130,7 @@ export function SolutionSubmissionShell({
         >
           <div className="flex items-center cursor-pointer" onClick={onToggleAcceptance} style={{ gap: 8 }}>
             <CheckCircle size={12} style={{ color: "var(--cat-breakage)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--cat-breakage)", flex: 1 }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--cat-breakage)", flex: 1 }}>
               Acceptance criteria
             </span>
             {isAcceptanceExpanded ? (
@@ -141,17 +141,17 @@ export function SolutionSubmissionShell({
           </div>
 
           {!isAcceptanceExpanded && (
-            <p className="truncate" style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 400, color: "var(--text2)", marginTop: 6, marginBottom: 0 }}>
+            <p className="truncate" style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 400, color: "var(--text2)", marginTop: 6, marginBottom: 0 }}>
               {criteriaPreview}
             </p>
           )}
 
           {isAcceptanceExpanded && (
             <>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "var(--text)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 400, color: "var(--text)", lineHeight: 1.6, marginTop: 12, marginBottom: 12 }}>
                 {bountyMeta.acceptanceCriteria}
               </p>
-              <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 400, color: "var(--text2)", margin: 0 }}>
                 Reward: ${bountyMeta.rewardAmount} {bountyMeta.rewardCurrency} · Deadline {bountyMeta.deadline}
               </p>
             </>
@@ -160,7 +160,7 @@ export function SolutionSubmissionShell({
 
         {/* TITLE */}
         <div style={{ height: 32, padding: "0 0 8px 0" }}>
-          <h2 style={{ fontFamily: "Figtree, sans-serif", fontSize: 18, fontWeight: 600, color: "var(--text)", margin: 0 }}>
+          <h2 style={{ fontFamily: "var(--font-ui)", fontSize: 18, fontWeight: 600, color: "var(--text)", margin: 0 }}>
             {solutionTitle}
           </h2>
         </div>
@@ -180,14 +180,14 @@ export function SolutionSubmissionShell({
               resize: "vertical",
               background: "transparent",
               border: "none",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 400,
               fontStyle: "italic",
               color: "var(--text)",
             }}
           />
-          <div className="flex justify-end" style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 400, color: "var(--text2)", marginTop: 4 }}>
+          <div className="flex justify-end" style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 400, color: "var(--text2)", marginTop: 4 }}>
             {solverNote.length} / 500
           </div>
         </div>
@@ -203,7 +203,7 @@ export function SolutionSubmissionShell({
         >
           {children ?? (
             <div className="flex items-center justify-center" style={{ height: 380 }}>
-              <span style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontStyle: "italic", color: "var(--text2)" }}>
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontStyle: "italic", color: "var(--text2)" }}>
                 Editor mounts here in solve mode
               </span>
             </div>
@@ -225,13 +225,13 @@ export function SolutionSubmissionShell({
           <div className="flex items-center gap-3">
             <button
               onClick={onSaveDraft}
-              style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
             >
               Save draft
             </button>
             <button
               onClick={() => setShowDiscardModal(true)}
-              style={{ fontFamily: "Figtree, sans-serif", fontSize: 11, fontWeight: 500, color: "color-mix(in srgb, var(--cat-breakage) 65%, transparent)", background: "transparent", border: "none", cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-ui)", fontSize: 11, fontWeight: 500, color: "color-mix(in srgb, var(--cat-breakage) 65%, transparent)", background: "transparent", border: "none", cursor: "pointer" }}
             >
               Discard
             </button>
@@ -241,7 +241,7 @@ export function SolutionSubmissionShell({
             onClick={onSubmit}
             disabled={!canSubmit || isSubmitting}
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               fontWeight: 600,
               padding: "8px 18px",
@@ -262,16 +262,16 @@ export function SolutionSubmissionShell({
       {showDiscardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--porthole) 62%, transparent)" }}>
           <div style={{ width: 380, background: "var(--recess)", borderRadius: 12, border: "0.5px solid var(--line)", padding: 24 }}>
-            <h3 style={{ fontFamily: "Figtree, sans-serif", fontSize: 14, fontWeight: 600, color: "var(--text)", margin: "0 0 8px 0" }}>
+            <h3 style={{ fontFamily: "var(--font-ui)", fontSize: 14, fontWeight: 600, color: "var(--text)", margin: "0 0 8px 0" }}>
               Discard solution draft?
             </h3>
-            <p style={{ fontFamily: "Figtree, sans-serif", fontSize: 13, fontWeight: 400, color: "var(--text2)", margin: "0 0 20px 0" }}>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: 13, fontWeight: 400, color: "var(--text2)", margin: "0 0 20px 0" }}>
               Your draft will be permanently deleted.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDiscardModal(false)}
-                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
+                style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "0.5px solid var(--line)", background: "transparent", color: "var(--text)", cursor: "pointer" }}
               >
                 Cancel
               </button>
@@ -280,7 +280,7 @@ export function SolutionSubmissionShell({
                   setShowDiscardModal(false);
                   onDiscard();
                 }}
-                style={{ fontFamily: "Figtree, sans-serif", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)", color: "var(--text)", cursor: "pointer" }}
+                style={{ fontFamily: "var(--font-ui)", fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: "none", background: "color-mix(in srgb, var(--cat-breakage) 85%, transparent)", color: "var(--text)", cursor: "pointer" }}
               >
                 Discard
               </button>

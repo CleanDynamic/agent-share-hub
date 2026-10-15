@@ -11,11 +11,10 @@ import type { ButtonHTMLAttributes, CSSProperties } from "react";
 
 import { useInteractive } from "@/lib/theme/interactive";
 import { ring } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { controlPaint, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 export interface FilterChipProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "aria-pressed"> {
@@ -39,28 +38,17 @@ export function FilterChip({
   ...rest
 }: FilterChipProps) {
   const { state, handlers } = useInteractive<HTMLButtonElement>({ onFocus, onBlur });
-  const refined = useLook() === "refined";
 
   /* UI-P84: the control recipe at 36 high and radius 6; on is the selected recipe, not an inversion. */
-  const paint: CSSProperties = refined
-    ? {
-        boxSizing: "border-box",
-        height: 36,
-        padding: "0 12px",
-        borderRadius: r.control,
-        ...(on ? SELECTED : controlPaint(state)),
-        color: t.text,
-        gap: 6,
-      }
-    : {
-        height: 30,
-        padding: "0 9px",
-        borderRadius: r.media,
-        background: on ? t.text : t.glass2,
-        color: on ? t.onText : t.text,
-        border: `1px solid ${on ? t.text : t.line}`,
-        gap: 5,
-      };
+  const paint: CSSProperties = {
+    boxSizing: "border-box",
+    height: 36,
+    padding: "0 12px",
+    borderRadius: r.control,
+    ...(on ? SELECTED : controlPaint(state)),
+    color: t.text,
+    gap: 6,
+  };
 
   return (
     <button
@@ -89,9 +77,7 @@ export function FilterChip({
       {count !== undefined ? (
         <span
           style={
-            refined
-              ? { fontSize: 11.5, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }
-              : { fontFamily: DM_MONO, fontSize: 10, opacity: 0.7 }
+            { fontSize: 11.5, fontWeight: 400, color: t.label, fontVariantNumeric: "tabular-nums" }
           }
         >
           {count}

@@ -154,7 +154,7 @@ describe("WorkspaceBar — mode and context", () => {
       const view = renderBar({ mode });
       const badge = screen.getByTestId("workspace-mode");
       expect(badge).toHaveTextContent(text);
-      expect(badge.getAttribute("style")).toContain("DM Mono");
+      expect(badge.getAttribute("style")).toContain("Geist Mono");
       expect(screen.getByTestId("workspace-bar")).toHaveAttribute(
         "data-workspace-mode",
         mode,

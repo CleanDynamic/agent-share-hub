@@ -41,9 +41,6 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
-import { GlassFilter } from "@/components/brand/GlassFilter";
-import { PageBackdrop } from "@/components/brand/PageBackdrop";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -53,9 +50,9 @@ import { MobileHeader } from "./MobileHeader";
 import { ConnectorDialogProvider } from "@/components/connect/ConnectorDialog";
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
-import { BOARD_FOOTER_GAP, type PageFit } from "./siteFrameFit";
+import { type PageFit } from "./siteFrameFit";
 import { CrumbTitleProvider } from "./useBreadcrumb";
-import { useIsPhone, useMinWidth } from "./useMinWidth";
+import { useIsPhone } from "./useMinWidth";
 
 export { boardHeight, BOARD_GRID_HEIGHT, type PageFit } from "./siteFrameFit";
 
@@ -148,12 +145,9 @@ export function SiteFrameView({
   mobileHeader,
   dock,
   children,
-  fit = "content",
 }: SiteFrameViewProps) {
   const narrow = useIsPhone();
-  const wide = useMinWidth(SITE_COLUMN_FULL);
   const phone = (viewport ?? (narrow ? "mobile" : "desktop")) === "mobile";
-  const refined = useLook() === "refined";
 
   const root: CSSProperties = {
     position: "relative",
@@ -165,8 +159,6 @@ export function SiteFrameView({
   if (variant === "bare") {
     return (
       <div data-testid="site-frame" data-variant="bare" style={root}>
-        <PageBackdrop viewport={phone ? "mobile" : "desktop"} tone="signin" />
-        <GlassFilter />
         <SkipLink phone={phone} />
         <main id="main" style={{ position: "relative", zIndex: 1 }}>
           {children}
@@ -175,61 +167,17 @@ export function SiteFrameView({
     );
   }
 
-  if (refined) {
-    const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
-    return (
-      <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} data-look="refined" style={refinedRoot}>
-        <PageBackdrop viewport={phone ? "mobile" : "desktop"} />
-        <GlassFilter />
-        <SkipLink phone={phone} />
-        <div
-          data-slot={phone ? "mobile-header" : "header"}
-          style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48, background: t.frame }}
-        >
-          {phone ? mobileHeader : header}
-        </div>
-        <div data-ui="surface" style={SURFACE}>
-          <main
-            id="main"
-            style={{
-              position: "relative",
-              zIndex: 1,
-              display: "flex",
-              flexDirection: "column",
-              gap: phone ? 16 : 24,
-              padding: phone
-                ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
-                : "24px clamp(16px, 4.6vw, 64px) 48px",
-              boxSizing: "border-box",
-              minWidth: 0,
-            }}
-          >
-            {phone ? null : <div data-slot="breadcrumb">{breadcrumb}</div>}
-            {children}
-          </main>
-          {phone ? null : (
-            <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
-              {footer}
-            </div>
-          )}
-        </div>
-        {phone ? <div data-slot="dock">{dock}</div> : null}
+  const refinedRoot: CSSProperties = { ...root, display: "flex", flexDirection: "column", background: t.frame };
+  return (
+    <div data-testid="site-frame" data-variant="site" data-viewport={phone ? "mobile" : "desktop"} style={refinedRoot}>
+      <SkipLink phone={phone} />
+      <div
+        data-slot={phone ? "mobile-header" : "header"}
+        style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48, background: t.frame }}
+      >
+        {phone ? mobileHeader : header}
       </div>
-    );
-  }
-
-  if (phone) {
-    return (
-      <div data-testid="site-frame" data-variant="site" data-viewport="mobile" style={root}>
-        <PageBackdrop viewport="mobile" />
-        <GlassFilter />
-        <SkipLink phone={phone} />
-        <div
-          data-slot="mobile-header"
-          style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 48 }}
-        >
-          {mobileHeader}
-        </div>
+      <div data-ui="surface" style={SURFACE}>
         <main
           id="main"
           style={{
@@ -237,45 +185,24 @@ export function SiteFrameView({
             zIndex: 1,
             display: "flex",
             flexDirection: "column",
-            gap: 9,
-            padding: "10px 10px calc(79px + env(safe-area-inset-bottom))",
+            gap: phone ? 16 : 24,
+            padding: phone
+              ? "16px 16px calc(80px + env(safe-area-inset-bottom))"
+              : "24px clamp(16px, 4.6vw, 64px) 48px",
             boxSizing: "border-box",
+            minWidth: 0,
           }}
         >
+          {phone ? null : <div data-slot="breadcrumb">{breadcrumb}</div>}
           {children}
         </main>
-        <div data-slot="dock">{dock}</div>
+        {phone ? null : (
+          <div data-slot="footer" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
+            {footer}
+          </div>
+        )}
       </div>
-    );
-  }
-
-  return (
-    <div data-testid="site-frame" data-variant="site" data-viewport="desktop" style={root}>
-      <PageBackdrop viewport="desktop" />
-      <GlassFilter />
-      <SkipLink phone={phone} />
-      <div data-slot="header" style={{ position: "sticky", top: 0, zIndex: 20, minHeight: 52 }}>
-        {header}
-      </div>
-      <main
-        id="main"
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: SITE_COLUMN,
-          margin: "0 auto",
-          padding: `6px ${wide ? 0 : "24px"} ${fit === "board" ? BOARD_FOOTER_GAP : 33}px`,
-          boxSizing: "border-box",
-        }}
-      >
-        <div data-slot="breadcrumb" style={{ minHeight: 33 }}>
-          {breadcrumb}
-        </div>
-        {children}
-      </main>
-      <div data-slot="footer" style={{ position: "relative", zIndex: 1, minHeight: 88 }}>
-        {footer}
-      </div>
+      {phone ? <div data-slot="dock">{dock}</div> : null}
     </div>
   );
 }

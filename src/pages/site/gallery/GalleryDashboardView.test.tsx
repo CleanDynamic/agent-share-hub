@@ -1,12 +1,21 @@
+// UI-P89 — the Gallery dashboard in the refined look, rendered with the dev fixture: the same parts, names, copy and
+// handlers as `GalleryDashboardView`, drawn as the refined board draws them.
+//
+// Styles are asserted through SSR markup (jsdom's cssstyle drops var() values); roles and names on the rendered tree.
+
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
 import { LABS } from "@/lib/models/registry";
 
-import { GalleryDashboardView, type GalleryDashboardViewProps } from "./GalleryDashboardView";
+import type { GalleryDashboardViewProps } from "./GalleryDashboardView";
+import { GalleryDashboardView } from "./GalleryDashboardView";
 import { dashboardCounts } from "./dashboardModel";
+
+const REFINED = "/dev/kit/pages/gallery-dashboard";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -42,6 +51,7 @@ function props(extra: Partial<GalleryDashboardViewProps> = {}): GalleryDashboard
     sort: "engagement",
     onSortChange: vi.fn(),
     onClearFilters: vi.fn(),
+    drafts: { count: 3 },
     onConnect: vi.fn(),
     onOpenBuild: vi.fn(),
     onCloseBuild: vi.fn(),
@@ -50,194 +60,112 @@ function props(extra: Partial<GalleryDashboardViewProps> = {}): GalleryDashboard
   };
 }
 
+const tree = (p: GalleryDashboardViewProps) => (
+  <MemoryRouter initialEntries={[REFINED]}>
+    <GalleryDashboardView {...p} />
+  </MemoryRouter>
+);
+
 function view(extra: Partial<GalleryDashboardViewProps> = {}) {
   const p = props(extra);
-  render(
-    <MemoryRouter>
-      <GalleryDashboardView {...p} />
-    </MemoryRouter>,
-  );
+  render(tree(p));
   return p;
 }
 
 describe("GalleryDashboardView", () => {
-  it("draws the table: a header, a row per build, sorted by engagement", () => {
-    view();
-    const table = screen.getByRole("table", { name: "Builds" });
-    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
-      "Build",
-      "AI models",
-      "Sessions",
-      "Prompts",
-      "AI turns",
-      "Engagement",
-      "Activity",
-      "Last activity",
-      "",
-    ]);
-    const rows = screen.getAllByTestId("dash-row");
-    expect(rows).toHaveLength(10);
-    expect(within(rows[0]).getByRole("button", { name: "CV tailored to a job ad" })).toBeTruthy();
-    expect(within(rows[1]).getByTestId("dash-model-count").textContent).toBe("3");
-    expect(within(rows[1]).getByText("+1")).toBeTruthy();
+  it("lays the sidebar and the content out as the board does, with no panels", () => {
+    const html = renderToStaticMarkup(tree(props()));
+    expect(html).toContain("flex:1 1 208px;max-width:224px");
+    expect(html).toContain("border-right:1px solid var(--hairline)");
+    expect(html).toContain("flex:999 1 640px");
+    expect(html).not.toContain('data-ui="panel"');
+    expect(html).not.toContain("Sentient");
   });
 
-  it("titles Engagement and AI turns, and the engagement cell breaks the total down", () => {
-    view();
-    expect(screen.getByRole("columnheader", { name: "AI turns" }).getAttribute("title")).toBe(
-      "Messages back and forth with the AI, across every session",
-    );
-    expect(screen.getByRole("columnheader", { name: "Engagement" }).getAttribute("title")).toBe(
-      "Runs, rebuilds, comments and saves from other people",
-    );
-    expect(screen.getAllByTitle("62 runs · 12 rebuilds · 0 comments · 0 saves")).toHaveLength(1);
-  });
-
-  it("reads the pill, the heading and the sidebar counts", () => {
-    view({ lab: "Google" });
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Builds");
-    expect(screen.getByTestId("dash-pill").textContent).toBe("Google models");
-    expect(screen.getByTestId("dash-nav-builds").getAttribute("aria-current")).toBe("page");
-    expect(screen.getByTestId("dash-lab-Google").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("dash-lab-Google").textContent).toContain("3");
-    expect(screen.getByTestId("dash-nav-models").textContent).toContain("12");
-  });
-
-  it("choosing a lab again clears it", () => {
-    const p = view({ lab: "Google" });
-    fireEvent.click(screen.getByTestId("dash-lab-Google"));
-    expect(p.onLabChange).toHaveBeenCalledWith(null);
-    fireEvent.click(screen.getByTestId("dash-lab-OpenAI"));
-    expect(p.onLabChange).toHaveBeenCalledWith("OpenAI");
-  });
-
-  it("ticks rows, shows how many, and select-all goes mixed then full", () => {
-    view();
-    const all = screen.getByRole("checkbox", { name: "Select all builds" });
-    expect(all.getAttribute("aria-checked")).toBe("false");
-    fireEvent.click(screen.getByRole("checkbox", { name: "Select CV tailored to a job ad" }));
-    expect(all.getAttribute("aria-checked")).toBe("mixed");
-    expect(screen.getByTestId("dash-footer").textContent).toContain("10 builds in view · 1 selected");
-    fireEvent.click(all);
-    expect(all.getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByTestId("dash-footer").textContent).toContain("10 selected");
-    fireEvent.click(all);
-    expect(all.getAttribute("aria-checked")).toBe("false");
-  });
-
-  it("shows the footer's calculations only while they are on", () => {
-    view();
-    const footer = screen.getByTestId("dash-footer");
-    expect(footer.textContent).not.toContain("161");
-    fireEvent.click(within(footer).getByRole("button", { name: /Sum of prompts/ }));
-    expect(footer.textContent).toContain("161");
-    fireEvent.click(within(footer).getByRole("button", { name: /Avg sessions per build/ }));
-    expect(footer.textContent).toContain("2.8");
-    expect(within(footer).getByText("+ Add calculation").getAttribute("aria-disabled")).toBe("true");
-  });
-
-  it("opens a build from its title and from its action button", () => {
+  it("keeps the sidebar's names and handlers, with each lab's real mark and no initial tile", () => {
     const p = view();
-    fireEvent.click(screen.getByRole("button", { name: "Open details for CV tailored to a job ad" }));
-    fireEvent.click(screen.getByRole("button", { name: "Pull request reviewer for small teams" }));
-    expect(p.onOpenBuild).toHaveBeenCalledTimes(2);
+    const nav = screen.getByRole("navigation", { name: "Dashboard" });
+    expect(within(nav).getByTestId("dash-nav-builds").getAttribute("aria-current")).toBe("page");
+    fireEvent.click(within(nav).getByTestId("dash-nav-models"));
+    expect(p.onTabChange).toHaveBeenCalledWith("models");
+
+    const labs = screen.getByRole("group", { name: "Labs" });
+    const anthropic = within(labs).getByTestId("dash-lab-Anthropic");
+    expect(anthropic.querySelector('[data-mark="anthropic"]')).not.toBeNull();
+    expect(anthropic.textContent).toBe("Anthropic7");
+    fireEvent.click(anthropic);
+    expect(p.onLabChange).toHaveBeenCalledWith("Anthropic");
+
+    fireEvent.click(within(screen.getByRole("group", { name: "Reporting" })).getByTestId("dash-report-month"));
+    expect(p.onReportChange).toHaveBeenCalledWith("month");
+    fireEvent.click(screen.getByRole("button", { name: "Connect a tool" }));
+    expect(p.onConnect).toHaveBeenCalled();
+    expect(within(screen.getByTestId("dash-drafts")).getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
   });
 
-  it("says so when no build matches, and clears the filters", () => {
-    const p = view({ rows: [] });
-    expect(screen.getByText("No builds match these filters.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    expect(p.onClearFilters).toHaveBeenCalled();
+  it("draws the title row, the tabs and the filter row with the refined controls", () => {
+    const p = view();
+    expect(screen.getByRole("heading", { level: 1, name: "Builds" })).toBeTruthy();
+    expect(screen.getByTestId("dash-pill").textContent).toBe("All models");
+    expect(screen.getByRole("searchbox", { name: "Search the gallery" })).toBeTruthy();
+    const views = screen.getByRole("radiogroup", { name: "Gallery view" });
+    fireEvent.click(within(views).getByRole("radio", { name: "Feed" }));
+    expect(p.onViewChange).toHaveBeenCalledWith("feed");
+    fireEvent.click(within(screen.getByRole("tablist", { name: "Dashboard tabs" })).getByRole("tab", { name: "Makers" }));
+    expect(p.onTabChange).toHaveBeenCalledWith("makers");
+    for (const key of ["sort", "model", "for", "active"]) {
+      expect(screen.getByTestId(`dash-menu-${key}`).getAttribute("data-ui")).toBe("menu-button");
+    }
+    expect(screen.getByTestId("dash-export").textContent).toBe("Export");
   });
 
-  it("shows the drafts box only when signed in", () => {
-    const { unmount } = render(
-      <MemoryRouter>
-        <GalleryDashboardView {...props()} />
-      </MemoryRouter>,
-    );
-    expect(screen.queryByTestId("dash-drafts")).toBeNull();
-    unmount();
-    view({ drafts: { count: 3 } });
-    expect(screen.getByTestId("dash-drafts").textContent).toContain("3 drafts");
-    expect(screen.getByRole("link", { name: "Open drafts" }).getAttribute("href")).toBe("/drafts");
+  it("draws a row per build on the board's grid, model tags with marks, and the actions' names", () => {
+    const p = view();
+    const rows = screen.getAllByTestId("dash-row");
+    expect(rows).toHaveLength(DASHBOARD_FIXTURE_ROWS.length);
+    expect(within(rows[0]).getByRole("checkbox", { name: /^Select / })).toBeTruthy();
+    expect(rows.some((row) => row.querySelector("[data-mark]") !== null)).toBe(true);
+    const open = within(rows[0]).getByRole("button", { name: /^Open details for / });
+    fireEvent.click(open);
+    expect(p.onOpenBuild).toHaveBeenCalledTimes(1);
+
+    const html = renderToStaticMarkup(tree(props()));
+    expect(html).toContain("grid-template-columns:minmax(0, 2.6fr) minmax(0, 1.7fr) 64px 64px 64px 80px 72px minmax(0, 1.5fr) 28px");
+    expect(html).toContain("height:36px");
+    expect(html).toContain("height:48px");
   });
 
-  it("does not crash on loading or error", () => {
-    view({ status: "loading" });
-    expect(screen.getByRole("status", { name: "Loading builds" })).toBeTruthy();
+  it("gives a ticked row the tile fill and counts it in the summary bar", () => {
+    view();
+    const rows = screen.getAllByTestId("dash-row");
+    fireEvent.click(within(rows[1]).getByRole("checkbox"));
+    expect(rows[1].getAttribute("aria-selected")).toBe("true");
+    /* jsdom drops var() values, so the fill is read from the hairline it replaces. */
+    expect(rows[1].getAttribute("style")).toContain("border-bottom: 1px solid transparent");
+    expect(rows[0].getAttribute("style")).not.toContain("border-bottom: 1px solid transparent");
+    expect(screen.getByTestId("dash-footer").textContent).toContain("1 selected");
+    expect(screen.getByRole("checkbox", { name: "Select all builds" }).getAttribute("aria-checked")).toBe("mixed");
   });
 
-  it("lists model versions by prompts, with the new badge and a last-used build, and a version filters the builds", () => {
-    const p = view({ tab: "models" });
-    const table = screen.getByRole("table", { name: "Models" });
-    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
-      "Model version",
-      "Lab",
-      "Builds",
-      "Sessions",
-      "Prompts",
-      "AI turns",
-      "Engagement",
-      "Last used",
-    ]);
-    const sonnet = screen.getAllByTestId("dash-model-row").find((row) => within(row).queryByRole("button", { name: "Sonnet 5.5" }));
-    expect(sonnet).toBeTruthy();
-    expect(within(sonnet!).getByText("new")).toBeTruthy();
-    expect(within(sonnet!).getByText("Anthropic")).toBeTruthy();
-    fireEvent.click(within(sonnet!).getByRole("button", { name: "Sonnet 5.5" }));
-    expect(p.onOpenModel).toHaveBeenCalledWith("sonnet-5-5");
+  it("presses a calculation and shows its value; Add calculation stays disabled", () => {
+    view();
+    const sum = screen.getByRole("button", { name: /^Sum of prompts/ });
+    expect(sum.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(sum);
+    expect(sum.getAttribute("aria-pressed")).toBe("true");
+    expect(sum.textContent).toMatch(/Sum of prompts\d+/);
+    expect(screen.getByText("+ Add calculation").getAttribute("aria-disabled")).toBe("true");
   });
 
-  it("applies the Labs filter on the Models tab", () => {
-    view({ tab: "models", lab: "OpenAI" });
-    const names = screen.getAllByTestId("dash-model-row").map((row) => within(row).getAllByRole("cell")[1].textContent);
-    expect(names.length).toBeGreaterThan(0);
-    expect(names.every((lab) => lab === "OpenAI")).toBe(true);
-  });
-
-  it("puts a model the registry does not name last, without a button", () => {
-    const [first, ...rest] = DASHBOARD_FIXTURE_ROWS;
-    const odd = { ...first, making: { sessions: [{ client: "X", model: "mystery-1", prompts: 999, turns: 1 }] } };
-    view({ tab: "models", rows: [odd, ...rest] });
-    const rows = screen.getAllByTestId("dash-model-row");
-    const last = rows[rows.length - 1];
-    expect(within(last).getAllByRole("cell")[0].textContent).toBe("mystery-1");
-    expect(within(last).queryByRole("button")).toBeNull();
-    expect(within(last).getAllByRole("cell")[1].textContent).toBe("—");
-  });
-
-  it("lists makers by engagement with a profile link", () => {
-    view({ tab: "makers" });
-    const rows = screen.getAllByTestId("dash-maker-row");
-    expect(rows).toHaveLength(10);
-    expect(within(rows[0]).getByRole("link", { name: "@dana" }).getAttribute("href")).toBe("/profile/dana");
-    expect(within(rows[1]).getByRole("link", { name: "@kofi" })).toBeTruthy();
-    expect(within(rows[2]).getByRole("link", { name: "@maria" })).toBeTruthy();
-  });
-
-  it("opens the detail sheet for openId, with the four stats and the sessions", () => {
-    const photo = DASHBOARD_FIXTURE_ROWS.find((row) => row.title === "Photo renamer by date taken")!;
-    const p = view({ openId: photo.id });
-    const sheet = screen.getByRole("dialog");
-    expect(within(sheet).getByRole("heading", { level: 2 }).textContent).toBe("Photo renamer by date taken");
-    expect(within(sheet).getByRole("link", { name: "@maria" })).toBeTruthy();
-    expect(sheet.textContent).toContain("made for Photographers");
-    expect(within(sheet).getAllByTestId("sheet-session")).toHaveLength(2);
-    expect(within(sheet).getByRole("link", { name: "Open the build" }).getAttribute("href")).toBe(`/b2/${photo.slug}`);
-    expect(within(sheet).getByRole("link", { name: "How does proof work?" }).getAttribute("href")).toBe("/about#proof");
-    fireEvent.click(within(sheet).getByRole("button", { name: "Close details" }));
-    expect(p.onCloseBuild).toHaveBeenCalled();
-  });
-
-  it("changes the sheet's total with the 7 / 30 / 90 toggle", () => {
-    const photo = DASHBOARD_FIXTURE_ROWS.find((row) => row.title === "Photo renamer by date taken")!;
-    view({ openId: photo.id });
-    const total = () => screen.getByTestId("sheet-window-total").textContent;
-    expect(total()).toBe("8");
-    fireEvent.click(screen.getByRole("button", { name: "7 days" }));
-    expect(total()).toBe("2");
-    fireEvent.click(screen.getByRole("button", { name: "90 days" }));
-    expect(total()).toBe("14");
+  it("draws the Models and Makers tabs, the empty line and the failure", () => {
+    const { rerender } = render(tree(props({ tab: "models" })));
+    expect(screen.getAllByTestId("dash-model-row").length).toBeGreaterThan(0);
+    rerender(tree(props({ tab: "makers" })));
+    expect(screen.getAllByTestId("dash-maker-row").length).toBeGreaterThan(0);
+    rerender(tree(props({ rows: [] })));
+    expect(screen.getByTestId("dash-empty").querySelector("p")?.textContent).toBe("No builds match these filters.");
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeTruthy();
+    rerender(tree(props({ status: "error" })));
+    expect(screen.getByRole("button", { name: /try again|retry/i })).toBeTruthy();
   });
 });

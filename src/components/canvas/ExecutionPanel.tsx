@@ -275,7 +275,7 @@ export function ExecutionPanel({
               lineHeight: 1.70,
               whiteSpace: 'pre-wrap',
               margin: 0,
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
             }}>
               {output}
             </pre>

@@ -47,7 +47,7 @@ export type ShellHeaderProps = {
   toggleSlot?: ReactNode;
 };
 
-const FONT = "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const FONT = "var(--font-ui)";
 const ORANGE = "var(--action)";
 const ORANGE_GRADIENT = "var(--action)";
 

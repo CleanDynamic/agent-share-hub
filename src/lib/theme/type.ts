@@ -21,11 +21,11 @@
 // the size without the weight, the family without the line-height — is how a
 // scale stops being one.
 //
-// THREE FACES, THREE JOBS. Sentient (500, self-hosted from /fonts) is display
-// and nothing else: every heading. Figtree is body and UI. DM Mono is data:
-// model names, cost, timestamps, change summaries, part labels, counts and
-// eyebrows. Mono never sets long-form prose, and no role here mixes the jobs.
-// Bodoni Moda, the display face before UI-P05, is retired.
+// TWO FACES, THREE JOBS. Geist (self-hosted from /fonts) is body, UI and display:
+// every heading. Geist Mono is data: model names, cost, timestamps, change
+// summaries, part labels, counts and eyebrows. Mono never sets long-form prose.
+// The names FIGTREE, SENTIENT and DM_MONO stay as the three roles' handles, from
+// before UI-P99 retired Figtree, Sentient and DM Mono; each now reads Geist or Geist Mono.
 //
 // TWO FLOORS, ENFORCED BELOW RATHER THAN DOCUMENTED. Sentient is never emitted
 // under 20px, and Figtree is never emitted under weight 400 at sizes below
@@ -51,19 +51,15 @@ import type { CSSProperties } from "react";
 
 import { denseFont } from "./density";
 
-/* ── Two looks, one table (UI-P80) ─────────────────────────────────────────
-   Every family and every size that differs under the refined look is read
-   through a custom property whose FALLBACK is today's value:
+/* ── The family and size tokens (UI-P80) ───────────────────────────────────
+   Every family and every size is read through a custom property declared on
+   `:root` in src/index.css, with a fallback carrying the same value:
 
      --font-ui / --font-display / --font-data     the three families
-     --type-<role>-{size,weight,leading,tracking,font}   a role's own overrides
+     --type-<role>-{size,weight,leading,tracking,font}   a role's own value
 
-   With `data-look` absent none of them is declared except the three families
-   (src/index.css, `:root`, set to Figtree, Sentient and DM Mono), so every role
-   renders exactly what it did before. `:root[data-look="refined"]` in the same
-   file redeclares them with the refined table: Geist, Geist and Geist Mono.
-   `fallbackOf` is how the floors below, and the tests, read the current-look
-   value out of a `var(--x, value)`. */
+   `fallbackOf` is how the floors below, and the tests, read the value out of a
+   `var(--x, value)`. */
 
 /** `var(--x, fallback)` → `fallback`, through nested vars. Anything else comes back unchanged. */
 export function fallbackOf(value: string): string {
@@ -83,19 +79,17 @@ const roleVar = (role: string, prop: "size" | "weight" | "leading" | "tracking" 
    Each stack falls back within its own job, so a face that fails to load
    degrades to something doing the same work rather than to the body face. */
 
-/** Body and UI. Geist under the refined look (UI-P80); the `*_STACK` constants are today's stacks, the fallbacks. */
+/** Body and UI: Geist. The `*_STACK` constants are the fallbacks written into each `var()`. */
 export const FIGTREE_STACK =
-  "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  "'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 export const FIGTREE = `var(--font-ui, ${FIGTREE_STACK})`;
 
-/** Display, 20px and up (15px only for the lockup wordmark). Loaded by the
- *  `@font-face` rules in src/index.css, weights 500 and 700. */
-export const SENTIENT_STACK = "'Sentient', Georgia, 'Times New Roman', serif";
+/** Display: Geist, loaded by the `@font-face` rules in src/index.css. */
+export const SENTIENT_STACK = "'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 export const SENTIENT = `var(--font-display, ${SENTIENT_STACK})`;
 
 /** Data. */
-export const DM_MONO_STACK =
-  "'DM Mono', ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace";
+export const DM_MONO_STACK = "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 export const DM_MONO = `var(--font-data, ${DM_MONO_STACK})`;
 
 /* ── The scale ─────────────────────────────────────────────────────────────
@@ -435,9 +429,8 @@ export function minPx(rawFontSize: string): number | null {
   return plain ? Number(plain[1]) : null;
 }
 
-/** True when the stack leads with the named family. */
-const leadsWith = (fontFamily: string, family: string) =>
-  fallbackOf(fontFamily).trim().startsWith(`'${family}'`);
+/** True when the style spends the family token for the job: the display face, or the UI face. */
+const spends = (fontFamily: string, job: "display" | "ui") => fontFamily.trim().startsWith(`var(--font-${job}`);
 
 /**
  * Check one style object against both floors. Returns the violations it finds
@@ -455,7 +448,7 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
   const size = typeof style.fontSize === "string" ? minPx(style.fontSize) : null;
   const weight = Number(rawWeight ?? BODY_MIN_WEIGHT);
 
-  if (leadsWith(family, "Sentient")) {
+  if (spends(family, "display")) {
     if (size === null) {
       found.push(
         `${role}: Sentient at a size this check cannot resolve (${String(style.fontSize)}); ` +
@@ -470,7 +463,7 @@ export function floorViolations(role: string, style: CSSProperties): string[] {
   }
 
   if (
-    leadsWith(family, "Figtree") &&
+    spends(family, "ui") &&
     size !== null &&
     size < BODY_WEIGHT_FLOOR_PX &&
     weight < BODY_MIN_WEIGHT

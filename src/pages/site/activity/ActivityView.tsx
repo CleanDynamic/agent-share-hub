@@ -1,68 +1,47 @@
-/* UI-P35 — Activity, as the reference draws it (design/reference/{desktop,mobile}/{noon,dusk}/activity.html).
+/* UI-P92 — Activity in the refined look, as `design/reference/refined/{dusk,noon}/activity.html` draws it.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   links. `ActivityPage` supplies the data; the dev compare page supplies the
-   sample data; both render this. The viewport is read here (the app's 768px
-   breakpoint) so the two behave the same.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `ActivityView` stays the current look; this is the same page with the same props (imported from
+   it, not copied), the same data, handlers, copy, accessible names and order of parts. `ActivityPage` and the dev page
+   choose between the two with `useLook()`.
 
-   DESKTOP: a `minmax(0, 1fr) 400px` grid, gap 9, filling the 820px board — the
-   list on the left; the orbs (180), the runs chart (190) and the "Show me"
-   filter (the rest) on the right. PHONE: the heading, the kind chips, and one
-   panel per day; no orbs, chart or filter panel (the chips are the filter).
+   DESKTOP: the frame draws the breadcrumb; this is a wrapping row, gap 48 — the list (`flex: 999 1 560px`, gap 32:
+   the head, then one hairlined group per day) and the aside (`flex: 1 1 300px`, max 340, a hairline on its left, gap
+   24: the people this week beside Listening, the runs chart, Show me). No panels: the frame's one surface is the
+   ground, and parts are told apart by hairlines.
 
-   ONE KIND, ONE ICON, ONE INK. Each kind's icon and colour (KIND below) is spent
-   on its badge and its filter dot and nowhere else. The reference's amber
-   (`--lit`) on the solved and published badges is `--lit-ink` here, as RULES §7
-   lists.
+   PHONE: today's order — the heading with Mark all read, the kind chips, then the days — in refined rows.
 
-   CONTENT-BOX WHERE THE REFERENCE IS. The boards are content-box and the app is
-   border-box, so the row's min-height and the badge's 16px are content-box here,
-   as GalleryView and BuildView do it.
+   ONE KIND, ONE INK. Each kind's tone is spent on its badge (an 8×8 square on the avatar's shoulder) and its square in
+   Show me, and nowhere else. Unread is the lamp bar before the row and the line in `--text`, never a fill.
 
-   DENSER SINCE UI-P57: every size this file sets itself is the tightened board's
-   (`design/prompts/README-density.md`) — the grid and the right column 9 apart,
-   desktop rows 52 of content in 4px 9px, phone rows 9px 7px (68 tall with the
-   hairline), the badge 16, the thumbnail 76 x 38, filter rows 26 in 12px type.
-   The orb (140) and the chart (360 x 120) are over 64 and keep their size. The
-   brand pieces (Panel, Button, Avatar, Segmented, display()) map their own. */
+   THE ROW IS ONE LINK, as today: the build's title is drawn as the board draws its link (500, `--text`) inside it, not
+   as a second link nested in the first. */
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import {
-  Check,
-  Heart,
-  Image as ImageIcon,
-  MessageSquare,
-  RefreshCw,
-  Target,
-  Trophy,
-  User,
-  type LucideIcon,
-} from "lucide-react";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { CardHead } from "@/components/brand/CardHead";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { Figure } from "@/components/brand/Figure";
 import { FilterChip } from "@/components/brand/FilterChip";
-import { LampDot } from "@/components/brand/LampDot";
-import { OrbGlass } from "@/components/brand/OrbGlass";
-import { OrbSolid } from "@/components/brand/OrbSolid";
-import { PageHeading } from "@/components/brand/PageHeading";
-import { Panel, PanelHead } from "@/components/brand/Panel";
+import { FramedWork } from "@/components/brand/FramedWork";
+import { LampBar } from "@/components/brand/LampDot";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { LineChart } from "@/components/brand/charts";
+import { useRoom } from "@/components/brand/useRoom";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { BOARD_GRID_HEIGHT, boardHeight, type PageFit } from "@/components/shell/siteFrameFit";
-import { sideTrack, useIsPhone, useTierFit, useWidthTier } from "@/components/shell/useMinWidth";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { shortAgo } from "@/pages/site/home/homeModel";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
+import { CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import {
   ACTIVITY_KINDS,
@@ -72,13 +51,12 @@ import {
   toggleKind,
   unreadHeading,
   unreadLine,
-  type ActivityGroup,
   type ActivityKind,
   type ActivityRow,
   type KindCounts,
+  type ActivityGroup,
 } from "./activityModel";
-
-/* ── the view's props ── */
+import { type PageFit } from "@/components/shell/siteFrameFit";
 
 /** What a panel that loads on its own shows. */
 export type ActivityLoad<T> =
@@ -134,42 +112,45 @@ export interface ActivityViewProps {
   onMarkAllRead: () => void;
 }
 
-const GALLERY = "/gallery";
-
 /* ── the kinds ── */
 
-const KIND: Record<ActivityKind, { icon: LucideIcon; ink: string }> = {
-  reproduced: { icon: Check, ink: t.evidence },
-  rebuilt: { icon: RefreshCw, ink: t.catAgents },
-  solution: { icon: Target, ink: t.action },
-  solved: { icon: Trophy, ink: t.litInk },
-  published: { icon: ImageIcon, ink: t.litInk },
-  comment: { icon: MessageSquare, ink: t.text2 },
-  reply: { icon: MessageSquare, ink: t.text2 },
-  like: { icon: Heart, ink: t.text2 },
-  follow: { icon: User, ink: t.text2 },
+const TONE: Record<ActivityKind, string> = {
+  reproduced: t.evidence,
+  rebuilt: t.catAgents,
+  solution: t.action,
+  solved: t.litInk,
+  published: t.litInk,
+  comment: t.text2,
+  reply: t.text2,
+  like: t.text2,
+  follow: t.text2,
 };
 
 const NONE: ReadonlySet<ActivityKind> = new Set();
 
-/* ── small shared pieces ── */
+/* ── type ── */
 
-const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
-  fontFamily: DM_MONO,
+const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+  fontFamily: FIGTREE,
   fontSize: px,
+  fontWeight: weight,
   lineHeight: "normal",
+  color,
   ...extra,
 });
 
-const whoStyle: CSSProperties = {
-  fontFamily: FIGTREE,
-  fontSize: 12,
-  lineHeight: "normal",
-  color: t.text2,
-  overflowWrap: "anywhere",
-};
+const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
 
-const detailStyle: CSSProperties = mono(11, { color: t.label, marginTop: 3, overflowWrap: "anywhere" });
+/** A part of the aside: its rows, and a hairline under it when another follows. */
+const asidePart = (gap: number, last: boolean): CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  gap,
+  minWidth: 0,
+  ...(last ? null : { paddingBottom: 24, borderBottom: `1px solid ${t.hairline}` }),
+});
+
+/* ── small shared pieces ── */
 
 /** A mark-read that did not save: the rows are unread again, and this says so where they are. */
 function WriteFailed({ failure }: { failure: PanelFailure }) {
@@ -179,114 +160,41 @@ function WriteFailed({ failure }: { failure: PanelFailure }) {
       panel="Activity"
       onRetry={failure.onRetry}
       error={failure.error}
-      style={{ paddingTop: 10 }}
       data-testid="activity-write-error"
     />
   );
 }
 
-/** A day's heading before its rows have arrived: the eyebrow's own line. */
-function DayHeadingSkeleton() {
-  return <Skeleton width={84} height={13} />;
-}
-
-/** An activity row before it has arrived: the desktop row's grid and 52px of content in its own padding. */
-function DesktopRowSkeleton() {
+/** The actor, with the kind's square on their shoulder. Hidden from assistive tech: the row's words name both. */
+function Who({ row }: { row: ActivityRow }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "14px 38px minmax(0, 1fr) 76px 40px",
-        gap: 9,
-        alignItems: "center",
-        minHeight: 52,
-        padding: "4px 9px",
-        boxSizing: "content-box",
-        borderRadius: 14,
-      }}
-    >
-      <Skeleton width={10} height={7} radius={r.full} />
-      <Skeleton width={28} height={28} radius="50%" />
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <Skeleton width="62%" height={17} />
-        <Skeleton width="38%" height={11} />
-      </div>
-      <Skeleton width={76} height={38} radius={9} />
-      <Skeleton width={26} height={10} style={{ justifySelf: "end" }} />
-    </div>
-  );
-}
-
-/** The phone's row before it has arrived: 68px with its hairline, as the row measures (77 before UI-P57). */
-function PhoneRowSkeleton() {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "38px minmax(0, 1fr) auto",
-        gap: 9,
-        alignItems: "center",
-        padding: "9px 7px",
-        borderRadius: 14,
-        borderBottom: `1px solid ${t.hairline}`,
-        boxSizing: "border-box",
-        height: 68,
-      }}
-    >
-      <Skeleton width={30} height={30} radius="50%" />
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <Skeleton width="48%" height={13} />
-        <Skeleton width="66%" height={19} />
-        <Skeleton width="36%" height={11} />
-      </div>
-      <Skeleton width={24} height={10} />
-    </div>
-  );
-}
-
-/** Today's three rows and yesterday's four, as the board draws them. */
-const DESKTOP_LOADING_DAYS = [3, 4] as const;
-const PHONE_LOADING_ROWS = 3;
-
-/** The actor, with the kind's badge on their shoulder. Hidden from assistive tech: the row's words name both. */
-function Who({ row, size }: { row: ActivityRow; size: 34 | 36 }) {
-  const kind = row.kind ? KIND[row.kind] : null;
-  const Icon = kind?.icon;
-  return (
-    <div aria-hidden="true" style={{ position: "relative" }}>
-      <Avatar size={size} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
-      {kind && Icon ? (
+    <span aria-hidden="true" style={{ position: "relative", display: "inline-flex" }}>
+      <Avatar size={28} userId={row.actor.id} name={row.actor.name} hue={row.actor.hue} src={row.actor.avatarUrl} />
+      {row.kind ? (
         <span
           data-testid="activity-badge"
           data-kind={row.kind}
           style={{
             position: "absolute",
-            right: -4,
-            bottom: -4,
-            width: 16,
-            height: 16,
-            boxSizing: "content-box",
-            borderRadius: 7,
-            background: t.solid,
-            border: `1px solid ${t.glassBorder}`,
-            color: kind.ink,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            right: -2,
+            bottom: -2,
+            width: 8,
+            height: 8,
+            borderRadius: 2,
+            background: TONE[row.kind],
+            boxShadow: `0 0 0 2px ${t.surface}`,
           }}
-        >
-          <Icon size={12} strokeWidth={2} aria-hidden="true" style={{ flexShrink: 0 }} />
-        </span>
+        />
       ) : null}
-    </div>
+    </span>
   );
 }
 
-/** The build's thumbnail: its signed cover, or the fallback landscape; an empty track when there is no build. */
+/** The build's thumbnail, framed: its signed cover, or the fallback sketch; an empty track when there is no build. */
 function Thumb({ row }: { row: ActivityRow }) {
-  if (!row.cover) return <div />;
+  if (!row.cover) return <span />;
   return (
-    <div style={{ width: 76, height: 38, borderRadius: 9, overflow: "hidden" }}>
+    <FramedWork width={48} height={32}>
       {row.cover.src ? (
         <img
           src={row.cover.src}
@@ -296,17 +204,32 @@ function Thumb({ row }: { row: ActivityRow }) {
           style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
-        <CoverFallback seed={row.cover.seed} radius={9} sky={row.cover.sky} />
+        <CoverFallback seed={row.cover.seed} radius={2} sky={row.cover.sky} />
       )}
-    </div>
+    </FramedWork>
   );
 }
 
 function When({ row, now, style }: { row: ActivityRow; now: number; style?: CSSProperties }) {
   return (
-    <time dateTime={row.at} style={mono(10, { color: t.label, ...style })}>
+    <time dateTime={row.at} style={text(11.5, 400, t.label, { ...tnum, ...style })}>
       {shortAgo(row.at, now)}
     </time>
+  );
+}
+
+/** Who did what, then the build's title as the board draws its link. */
+function Line({ row }: { row: ActivityRow }) {
+  return (
+    <span style={text(13, 400, row.unread ? t.text : t.text2, { overflowWrap: "anywhere" })}>
+      {row.who}
+      {row.title ? (
+        <>
+          {" "}
+          <span style={{ fontWeight: 500, color: t.text }}>{row.title}</span>
+        </>
+      ) : null}
+    </span>
   );
 }
 
@@ -327,7 +250,7 @@ function RowFrame({
     "data-kind": row.kind ?? "other",
     "data-unread": row.unread ? "true" : undefined,
   };
-  const paint: CSSProperties = { ...style, background: row.unread ? t.rowHighlight : "transparent", color: "inherit" };
+  const paint: CSSProperties = { ...style, color: "inherit" };
   if (!row.href) {
     return (
       <div {...marks} style={paint}>
@@ -336,7 +259,7 @@ function RowFrame({
     );
   }
   return (
-    <FrameLink {...marks} to={row.href} onClick={() => onOpen(row)} style={paint} hoverStyle={{ background: t.rowHighlight }}>
+    <FrameLink {...marks} to={row.href} onClick={() => onOpen(row)} style={paint}>
       {children}
     </FrameLink>
   );
@@ -344,31 +267,37 @@ function RowFrame({
 
 /* ── the list ── */
 
+const DESKTOP_COLUMNS = "8px 28px minmax(0, 1fr) 48px 32px";
+
+const desktopRow: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: DESKTOP_COLUMNS,
+  alignItems: "center",
+  gap: 12,
+  minHeight: 56,
+  boxSizing: "border-box",
+  borderBottom: `1px solid ${t.hairline}`,
+};
+
+const phoneRow: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "28px minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: 12,
+  minHeight: 56,
+  padding: "12px 0",
+  boxSizing: "border-box",
+  borderBottom: `1px solid ${t.hairline}`,
+};
+
 function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
   return (
-    <RowFrame
-      row={row}
-      onOpen={onOpen}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "14px 38px minmax(0, 1fr) 76px 40px",
-        gap: 9,
-        alignItems: "center",
-        minHeight: 52,
-        padding: "4px 9px",
-        boxSizing: "content-box",
-        borderRadius: 14,
-      }}
-    >
-      {row.unread ? <LampDot /> : <span />}
-      <Who row={row} size={34} />
-      <div style={{ minWidth: 0 }}>
-        {/* The board keeps the title span and the detail line when they are empty: they set a follow row's height. */}
-        <div style={whoStyle}>
-          {row.who}{" "}
-          <span style={{ ...display(17), letterSpacing: "normal", lineHeight: "normal", color: t.text }}>{row.title}</span>
-        </div>
-        <div style={detailStyle}>{row.detail}</div>
+    <RowFrame row={row} onOpen={onOpen} style={desktopRow}>
+      {row.unread ? <LampBar /> : <span style={{ width: 8 }} />}
+      <Who row={row} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0, padding: "8px 0" }}>
+        <Line row={row} />
+        {row.detail ? <span style={text(12.5, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
       </div>
       <Thumb row={row} />
       <When row={row} now={now} style={{ textAlign: "right" }} />
@@ -378,47 +307,63 @@ function DesktopRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpe
 
 function PhoneRow({ row, now, onOpen }: { row: ActivityRow; now: number; onOpen: (row: ActivityRow) => void }) {
   return (
-    <RowFrame
-      row={row}
-      onOpen={onOpen}
-      style={{
-        display: "grid",
-        gridTemplateColumns: "38px minmax(0, 1fr) auto",
-        gap: 9,
-        alignItems: "center",
-        padding: "9px 7px",
-        borderRadius: 14,
-        borderBottom: `1px solid ${t.hairline}`,
-      }}
-    >
-      <Who row={row} size={36} />
-      <div style={{ minWidth: 0 }}>
-        <div style={whoStyle}>{row.who}</div>
-        {row.title ? (
-          <div style={{ ...display(19), letterSpacing: "-0.01em", lineHeight: 1.1, color: t.text }}>{row.title}</div>
-        ) : null}
-        {row.detail ? <div style={detailStyle}>{row.detail}</div> : null}
+    <RowFrame row={row} onOpen={onOpen} style={phoneRow}>
+      <Who row={row} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <Line row={row} />
+        {row.detail ? <span style={text(12, 400, t.text2, { overflowWrap: "anywhere" })}>{row.detail}</span> : null}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         <When row={row} now={now} />
-        {row.unread ? <LampDot /> : null}
+        {row.unread ? <LampBar /> : null}
       </div>
     </RowFrame>
   );
 }
 
-/** A day's eyebrow, as the heading of its rows. */
-function DayHeading({ day }: { day: string }) {
+/** A day's eyebrow over a hairline, as the heading of its rows. */
+function DayHeading({ day }: { day: ReactNode }) {
   return (
-    <Eyebrow as="h2" style={{ margin: 0 }}>
+    <Eyebrow as="h2" style={{ margin: 0, paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
       {day}
     </Eyebrow>
   );
 }
 
+function RowSkeleton({ phone }: { phone: boolean }) {
+  if (phone) {
+    return (
+      <div style={phoneRow}>
+        <Skeleton width={28} height={28} radius="50%" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <Skeleton width="66%" height={13} />
+          <Skeleton width="40%" height={11} />
+        </div>
+        <Skeleton width={20} height={10} />
+      </div>
+    );
+  }
+  return (
+    <div style={desktopRow}>
+      <span />
+      <Skeleton width={28} height={28} radius="50%" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <Skeleton width="62%" height={13} />
+        <Skeleton width="38%" height={11} />
+      </div>
+      <Skeleton width={48} height={32} radius={4} />
+      <Skeleton width={22} height={10} style={{ justifySelf: "end" }} />
+    </div>
+  );
+}
+
+/** Today's three rows and yesterday's four, as the board draws them; the phone shows the first three. */
+const LOADING_DAYS = [3, 4] as const;
+const PHONE_LOADING_ROWS = 3;
+
 function NoneOfThese({ hasMore }: { hasMore: boolean }) {
   return (
-    <p style={{ margin: "10px 4px 0", fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2 }}>
+    <p style={text(12, 400, t.text2, { margin: 0 })}>
       None of these among the latest.{hasMore ? " Show more to look further back." : ""}
     </p>
   );
@@ -427,35 +372,41 @@ function NoneOfThese({ hasMore }: { hasMore: boolean }) {
 function MoreButton({ list, phone }: { list: ActivityListProps; phone: boolean }) {
   if (!list.hasMore) return null;
   return (
-    <div style={{ display: "flex", justifyContent: "center", marginTop: phone ? 0 : 7 }}>
-      <Button variant="secondary" size={phone ? 44 : 34} fontSize={phone ? 13 : 12} disabled={list.loadingMore} onClick={list.onMore}>
+    <div style={{ display: "flex", justifyContent: "center" }}>
+      <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} disabled={list.loadingMore} onClick={list.onMore}>
         {list.loadingMore ? "Loading…" : "Show more"}
       </Button>
     </div>
   );
 }
 
-function DesktopList({
+function ActivityList({
   list,
   chosen,
   now,
+  phone,
   onOpen,
 }: {
   list: ActivityListProps;
   chosen: ReadonlySet<ActivityKind>;
   now: number;
+  phone: boolean;
   onOpen: (row: ActivityRow) => void;
 }) {
+  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: phone ? 24 : 32, minWidth: 0 };
+  const day: CSSProperties = { display: "flex", flexDirection: "column" };
+
   if (list.status === "loading") {
+    const days = phone ? [PHONE_LOADING_ROWS] : LOADING_DAYS;
     return (
-      <LoadingRegion what="your activity" data-testid="activity-loading">
-        {DESKTOP_LOADING_DAYS.map((rows, day) => (
-          <div key={day}>
-            <div style={{ padding: "10px 4px 4px" }}>
-              <DayHeadingSkeleton />
+      <LoadingRegion what="your activity" data-testid="activity-loading" style={column}>
+        {days.map((rows, index) => (
+          <div key={index} style={day}>
+            <div style={{ paddingBottom: 8, borderBottom: `1px solid ${t.hairline}` }}>
+              <Skeleton width={72} height={11} />
             </div>
             {Array.from({ length: rows }, (_, i) => (
-              <DesktopRowSkeleton key={i} />
+              <RowSkeleton key={i} phone={phone} />
             ))}
           </div>
         ))}
@@ -463,132 +414,151 @@ function DesktopList({
     );
   }
   if (list.status === "error") {
-    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} style={{ paddingTop: 10 }} data-testid="activity-error" />;
+    return <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} data-testid="activity-error" />;
   }
   if (list.groups.length === 0) return <EmptyState line="All caught up." data-testid="activity-empty" />;
 
+  const Row = phone ? PhoneRow : DesktopRow;
   const groups = filterGroups(list.groups, chosen);
   return (
-    <div data-testid="activity-list">
+    <div data-testid="activity-list" style={column}>
       {groups.map((group) => (
-        <div key={group.day} data-testid="activity-day">
-          <div style={{ padding: "10px 4px 4px" }}>
-            <DayHeading day={group.day} />
-          </div>
+        <section key={group.day} data-testid="activity-day" style={day}>
+          <DayHeading day={group.day} />
           <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {group.rows.map((row) => (
               <li key={row.id}>
-                <DesktopRow row={row} now={now} onOpen={onOpen} />
+                <Row row={row} now={now} onOpen={onOpen} />
               </li>
             ))}
           </ol>
-        </div>
+        </section>
       ))}
       {groups.length === 0 ? <NoneOfThese hasMore={list.hasMore} /> : null}
-      <MoreButton list={list} phone={false} />
+      <MoreButton list={list} phone={phone} />
     </div>
   );
 }
 
-function PhoneList({
-  list,
-  chosen,
-  now,
-  onOpen,
-}: {
-  list: ActivityListProps;
-  chosen: ReadonlySet<ActivityKind>;
-  now: number;
-  onOpen: (row: ActivityRow) => void;
-}) {
-  if (list.status === "loading") {
-    return (
-      <Panel padding="14px 8px">
-        <LoadingRegion what="your activity" data-testid="activity-loading">
-          <DayHeadingSkeleton />
-          <div style={{ marginTop: 4 }}>
-            {Array.from({ length: PHONE_LOADING_ROWS }, (_, i) => (
-              <PhoneRowSkeleton key={i} />
-            ))}
-          </div>
-        </LoadingRegion>
-      </Panel>
-    );
-  }
-  if (list.status === "error") {
-    return (
-      <Panel padding="14px 16px">
-        <ErrorState panel="Your activity" onRetry={list.onRetry} error={list.error} data-testid="activity-error" />
-      </Panel>
-    );
-  }
-  if (list.groups.length === 0) {
-    return (
-      <Panel padding="0 16px">
-        <EmptyState line="All caught up." data-testid="activity-empty" />
-      </Panel>
-    );
-  }
+/* ── the aside ── */
 
-  const groups = filterGroups(list.groups, chosen);
-  return (
-    <>
-      {groups.map((group) => (
-        <Panel key={group.day} padding="14px 8px">
-          <div data-testid="activity-day">
-            <DayHeading day={group.day} />
-            <ol style={{ listStyle: "none", margin: "4px 0 0", padding: 0 }}>
-              {group.rows.map((row) => (
-                <li key={row.id}>
-                  <PhoneRow row={row} now={now} onOpen={onOpen} />
-                </li>
-              ))}
-            </ol>
-          </div>
-        </Panel>
-      ))}
-      {groups.length === 0 ? (
-        <Panel padding="0 16px 14px">
-          <NoneOfThese hasMore={list.hasMore} />
-        </Panel>
-      ) : null}
-      <MoreButton list={list} phone />
-    </>
-  );
-}
-
-/* ── the right column ── */
-
-function Orbs({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; live: boolean }) {
-  const row: CSSProperties = { display: "flex", gap: 9, justifyContent: "center", alignItems: "center", height: "100%" };
+function People({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | null; peopleError?: PanelFailure; live: boolean }) {
+  const grid: CSSProperties = { ...asidePart(0, false), display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 16 };
   const people =
     peopleThisWeek !== null ? (
-      <OrbSolid
-        size={140}
-        top="This week"
-        value={peopleThisWeek.toLocaleString("en-GB")}
-        bottom={peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}
-      />
-    ) : peopleError ? (
-      <div style={{ width: 140, display: "flex", justifyContent: "center" }}>
-        <ErrorState panel="People this week" onRetry={peopleError.onRetry} error={peopleError.error} data-testid="activity-orbs-error" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+        <span style={text(12, 400, t.text2)}>This week</span>
+        <Figure value={peopleThisWeek.toLocaleString("en-GB")} />
+        <span style={text(12, 400, t.text2)}>{peopleThisWeek === 1 ? "person ran your builds" : "people ran your builds"}</span>
       </div>
+    ) : peopleError ? (
+      <ErrorState panel="People this week" onRetry={peopleError.onRetry} error={peopleError.error} data-testid="activity-orbs-error" />
     ) : (
-      <Skeleton width={140} height={140} radius="50%" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <Skeleton width="60%" height={12} />
+        <Skeleton width={40} height={26} />
+        <Skeleton width="90%" height={12} />
+      </div>
     );
+  const listening = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <span style={text(12, 400, t.text2, { display: "inline-flex", alignItems: "center", gap: 8 })}>
+        {live ? <LampBar /> : null}
+        {live ? "Listening" : "Reconnecting"}
+      </span>
+      <span style={text(13, 500, t.text)}>{live ? "live" : "offline"}</span>
+    </div>
+  );
   const content = (
     <>
       {people}
-      <OrbGlass size={140} label={live ? "Listening" : "Reconnecting"} sub={live ? "live" : "offline"} />
+      {listening}
     </>
   );
   return peopleThisWeek === null && !peopleError ? (
-    <LoadingRegion what="the people who ran your builds" data-testid="activity-orbs" style={row}>
+    <LoadingRegion what="the people who ran your builds" data-testid="activity-orbs" style={grid}>
       {content}
     </LoadingRegion>
   ) : (
-    <div data-testid="activity-orbs" style={row}>
+    <section aria-label="People this week" data-testid="activity-orbs" style={grid}>
       {content}
+    </section>
+  );
+}
+
+/** The chart's drawing box; it stretches to the aside's width, the strokes keep their weight. */
+const CHART_W = 300;
+const CHART_H = 120;
+const GRID_YS = [24, 60, 96] as const;
+const LINE_TOP = 12;
+const LINE_BOTTOM = 12;
+
+const f = (n: number) => Math.round(n * 10) / 10;
+
+/** Runs per day as the board draws them: the line in `--evidence` over a flat area, the rebuild as a dashed `--lit-ink` line with a ringed dot. */
+function RunsLine({ runs }: { runs: ActivityRuns }) {
+  const areaAlpha = useRoom() === "dusk" ? 0.07 : 0.08;
+  const { values, markerIndex, label } = runs;
+  const n = values.length;
+  const x = (i: number) => (n > 1 ? (i * CHART_W) / (n - 1) : 0);
+  const y = (v: number) => CHART_H - LINE_BOTTOM - Math.min(Math.max(v, 0), 1) * (CHART_H - LINE_TOP - LINE_BOTTOM);
+  const points = values.map((v, i) => `${f(x(i))},${f(y(v))}`).join(" ");
+  const marked = markerIndex !== null && Number.isFinite(markerIndex) && n > 0;
+  const marker = marked ? Math.min(Math.max(Math.round(markerIndex), 0), n - 1) : 0;
+  const mx = x(marker);
+  const my = n > 0 ? y(values[marker]) : 0;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <svg
+        data-ui="chart-line"
+        role="img"
+        aria-label={label}
+        width="100%"
+        height={CHART_H}
+        viewBox={`0 0 ${CHART_W} ${CHART_H}`}
+        preserveAspectRatio="none"
+        style={{ display: "block", overflow: "visible" }}
+      >
+        {GRID_YS.map((gy) => (
+          <line key={gy} x1={0} x2={CHART_W} y1={gy} y2={gy} stroke={t.hairline} strokeWidth={1} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
+        ))}
+        {n > 0 ? (
+          <>
+            <polygon points={`${points} ${CHART_W},${CHART_H} 0,${CHART_H}`} fill={t.evidence} fillOpacity={areaAlpha} />
+            <polyline points={points} fill="none" stroke={t.evidence} strokeWidth={1.4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </>
+        ) : null}
+        {marked ? (
+          <line
+            data-testid="activity-runs-marker"
+            x1={f(mx)}
+            x2={f(mx)}
+            y1={0}
+            y2={CHART_H}
+            stroke={t.litInk}
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            vectorEffect="non-scaling-stroke"
+          />
+        ) : null}
+      </svg>
+      {marked ? (
+        <span
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: `calc(${f((mx / CHART_W) * 100)}% - 4px)`,
+            top: f(my - 4),
+            width: 8,
+            height: 8,
+            boxSizing: "border-box",
+            borderRadius: "50%",
+            background: t.surface,
+            border: `1.5px solid ${t.litInk}`,
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -596,20 +566,20 @@ function Orbs({ peopleThisWeek, peopleError, live }: { peopleThisWeek: number | 
 function RunsChart({ runs }: { runs: ActivityLoad<ActivityRuns> }) {
   const marker = runs.status === "ready" ? runs.data.markerIndex : null;
   return (
-    <>
-      <PanelHead title="Runs of your builds" subtitle={chartSubtitle(marker)} titleSize={13} headingLevel={2} />
-      <div data-testid="activity-runs" style={{ marginTop: 7 }}>
+    <section style={asidePart(16, false)}>
+      <CardHead title="Runs of your builds" subtitle={chartSubtitle(marker)} headingLevel={2} />
+      <div data-testid="activity-runs">
         {runs.status === "loading" ? (
           <LoadingRegion what="the runs chart" data-testid="activity-runs-loading">
-            <Skeleton width={360} height={120} style={{ maxWidth: "100%" }} />
+            <Skeleton width="100%" height={CHART_H} />
           </LoadingRegion>
         ) : runs.status === "error" ? (
           <ErrorState panel="Runs of your builds" onRetry={runs.onRetry} error={runs.error} data-testid="activity-runs-error" />
         ) : (
-          <LineChart width={360} height={120} values={runs.data.values} markerIndex={runs.data.markerIndex} label={runs.data.label} />
+          <RunsLine runs={runs.data} />
         )}
       </div>
-    </>
+    </section>
   );
 }
 
@@ -637,30 +607,28 @@ function KindToggle({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 7,
-        width: "100%",
-        height: 26,
-        boxSizing: "content-box",
-        margin: 0,
-        padding: 0,
-        borderWidth: "0 0 1px 0",
-        borderStyle: "solid",
-        borderColor: t.hairline,
-        background: on ? t.tab : state.hovered ? t.rowHighlight : "transparent",
-        color: t.text,
+        gap: 8,
+        height: 32,
+        boxSizing: "border-box",
+        margin: "0 -8px",
+        padding: "0 8px",
+        borderRadius: 6,
+        border: "1px solid transparent",
+        background: "transparent",
+        ...(state.hovered ? CONTROL_HOVER : null),
+        ...(on ? SELECTED : null),
+        ...text(12.5, on ? 500 : 400, on ? t.text : t.text2),
         cursor: "pointer",
         textAlign: "left",
         ...ring(state.focusVisible),
       }}
     >
-      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: KIND[kind].ink, flexShrink: 0 }} />
-      <span style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", fontWeight: on ? 600 : 400, color: t.text, flexGrow: 1 }}>
-        {kind}
-      </span>
+      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: TONE[kind], flexShrink: 0 }} />
+      <span style={{ flexGrow: 1 }}>{kind}</span>
       {count === null ? (
         <Skeleton width={16} height={11} />
       ) : count === undefined ? null : (
-        <span style={mono(11, { color: t.label })}>{count.toLocaleString("en-GB")}</span>
+        <span style={text(12, 400, t.label, tnum)}>{count.toLocaleString("en-GB")}</span>
       )}
     </button>
   );
@@ -678,9 +646,9 @@ function ShowMe({
   onToggle: (kind: ActivityKind) => void;
 }) {
   return (
-    <>
-      <PanelHead title="Show me" titleSize={14} headingLevel={2} />
-      <div role="group" aria-label="Show me" style={{ marginTop: 4 }}>
+    <section style={asidePart(8, true)}>
+      <CardHead title="Show me" headingLevel={2} />
+      <div role="group" aria-label="Show me" style={{ display: "flex", flexDirection: "column" }}>
         {ACTIVITY_KINDS.map((kind) => (
           <KindToggle
             key={kind}
@@ -691,82 +659,67 @@ function ShowMe({
           />
         ))}
       </div>
-    </>
+    </section>
   );
 }
 
 /* ── the two layouts ── */
 
-/** The orbs' and the chart's share of the board, so the filter panel keeps its height when the list grows past it. */
-const SHOW_ME_MIN = BOARD_GRID_HEIGHT - 180 - 190 - 12 * 2;
-
 function DesktopActivity(props: ActivityViewProps) {
-  const { fit = "content", now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
+  const { now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
-  /* UI-P39: below 1024 the right track stacks under the list. */
-  const stacked = useWidthTier() === "stacked";
-  const board = fit === "board" && !stacked;
+  const stacked = !useMinWidth(BETWEEN.stack);
 
   return (
     <div
       data-testid="activity-view"
       data-viewport="desktop"
-      style={{
-        display: "grid",
-        gridTemplateColumns: stacked ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(400)}`,
-        gridTemplateRows: board ? "minmax(0, 1fr)" : undefined,
-        gap: 9,
-        lineHeight: "normal",
-        ...boardHeight(fit),
-      }}
+      style={trackRow(stacked, 48)}
     >
-      <div style={{ display: "flex", minHeight: 0, minWidth: 0 }}>
-        <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
-          <PanelHead
-            title="Activity"
-            subtitle={unread === null ? " " : unreadLine(unread, live)}
-            headingLevel={1}
-            right={
-              <Button
-                variant="ghost"
-                size={30}
-                fontSize={12}
-                icon={Check}
-                data-testid="activity-mark-all"
-                disabled={!unread}
-                onClick={onMarkAllRead}
-              >
-                Mark all read
-              </Button>
-            }
-          />
-          {writeError ? <WriteFailed failure={writeError} /> : null}
-          <DesktopList list={list} chosen={chosen} now={now} onOpen={onOpen} />
-        </Panel>
-      </div>
+      <section aria-labelledby="activity-heading" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0 }}>
+            <h1 id="activity-heading" style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
+              Activity
+            </h1>
+            <p style={text(12, 400, t.text2, { margin: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 15 })}>
+              {unread === null ? null : (
+                <>
+                  {unreadLine(unread, live)}
+                  {live ? <LampBar /> : null}
+                </>
+              )}
+            </p>
+          </div>
+          <Button variant="secondary" size={28} fontSize={12} data-testid="activity-mark-all" disabled={!unread} onClick={onMarkAllRead}>
+            Mark all read
+          </Button>
+        </div>
+        {writeError ? <WriteFailed failure={writeError} /> : null}
+        <ActivityList list={list} chosen={chosen} now={now} phone={false} onOpen={onOpen} />
+      </section>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 9, minHeight: 0, minWidth: 0, alignSelf: board ? undefined : "start" }}>
-        <div style={{ height: 180, flexShrink: 0 }}>
-          <Panel surface="glass" padding="12px" style={{ height: "100%" }}>
-            <Orbs peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
-          </Panel>
-        </div>
-        <div style={{ height: 190, flexShrink: 0 }}>
-          <Panel surface="glass" padding="14px 16px" style={{ height: "100%" }}>
-            <RunsChart runs={runs} />
-          </Panel>
-        </div>
-        <div style={{ display: "flex", flexGrow: 1, minHeight: board || stacked ? 0 : SHOW_ME_MIN }}>
-          <Panel surface="glass" padding="14px 16px" style={{ flex: 1 }}>
-            <ShowMe
-              kindCounts={kindCounts}
-              listStatus={list.status}
-              chosen={chosen}
-              onToggle={(kind) => setChosen((current) => toggleKind(current, kind))}
-            />
-          </Panel>
-        </div>
-      </div>
+      <aside
+        style={asideStyle(stacked, {
+          flex: "1 0 300px",
+          maxWidth: 340,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          paddingLeft: 32,
+          borderLeft: `1px solid ${t.hairline}`,
+        })}
+      >
+        <People peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
+        <RunsChart runs={runs} />
+        <ShowMe
+          kindCounts={kindCounts}
+          listStatus={list.status}
+          chosen={chosen}
+          onToggle={(kind) => setChosen((current) => toggleKind(current, kind))}
+        />
+      </aside>
     </div>
   );
 }
@@ -776,11 +729,20 @@ function PhoneActivity(props: ActivityViewProps) {
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
 
   return (
-    <div data-testid="activity-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal" }}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 9 }}>
-        <PageHeading eyebrow="Activity" title={unread === null ? "Activity" : unreadHeading(unread)} size={34} />
+    <div
+      data-testid="activity-view"
+      data-viewport="mobile"
+      style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <Eyebrow>Activity</Eyebrow>
+          <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
+            {unread === null ? "Activity" : unreadHeading(unread)}
+          </h1>
+        </div>
         {unread ? (
-          <Button variant="ghost" size={44} fontSize={13} icon={Check} data-testid="activity-mark-all" onClick={onMarkAllRead}>
+          <Button variant="secondary" size={44} fontSize={13} data-testid="activity-mark-all" onClick={onMarkAllRead}>
             Mark all read
           </Button>
         ) : null}
@@ -799,20 +761,15 @@ function PhoneActivity(props: ActivityViewProps) {
         ))}
       </ScrollRow>
 
-      {writeError ? (
-        <Panel padding="14px 16px">
-          <WriteFailed failure={writeError} />
-        </Panel>
-      ) : null}
-      <PhoneList list={list} chosen={chosen} now={now} onOpen={onOpen} />
+      {writeError ? <WriteFailed failure={writeError} /> : null}
+      <ActivityList list={list} chosen={chosen} now={now} phone onOpen={onOpen} />
     </div>
   );
 }
 
 export function ActivityView(props: ActivityViewProps) {
   const phone = useIsPhone();
-  const fit = useTierFit(props.fit);
-  return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} fit={fit} />;
+  return phone ? <PhoneActivity {...props} /> : <DesktopActivity {...props} />;
 }
 
 export default ActivityView;

@@ -28,10 +28,9 @@ import { ModelTag } from "@/components/brand/ModelTag";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import { fieldBase } from "./composeFields";
@@ -75,27 +74,6 @@ function RefinedChip({ chip }: { chip: MadeWithChip }) {
         </span>
       ) : (
         <ModelTag {...marks}>{chip.label}</ModelTag>
-      )}
-    </span>
-  );
-}
-
-function Chip({ chip }: { chip: MadeWithChip }) {
-  const out = chip.kind === "model" && !chip.on;
-  return (
-    <span
-      data-testid="made-with-chip"
-      data-on={chip.on ? "true" : "false"}
-      style={{ fontFamily: DM_MONO, fontSize: 12, color: t.text, background: t.cell, borderRadius: r.chip, padding: "2px 6px", whiteSpace: "nowrap" }}
-    >
-      {out ? (
-        <>
-          {chip.tool ? `${chip.tool} · ` : null}
-          <s style={{ color: t.text2 }}>{chip.model}</s>
-          <span style={VISUALLY_HIDDEN}> (left out)</span>
-        </>
-      ) : (
-        chip.label
       )}
     </span>
   );
@@ -213,8 +191,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
 }
 
 export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: MadeWithLineProps) {
-  const refined = useLook() === "refined";
-  const Tag = refined ? RefinedChip : Chip;
+  const Tag = RefinedChip;
   const [open, setOpen] = useState(false);
   /** The chips as they were when Change opened, so an entry unticked keeps its toggle until Done. */
   const [opened, setOpened] = useState<readonly MadeWithChip[]>([]);
@@ -236,7 +213,7 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
 
   return (
     <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: refined ? 8 : "4px 6px", fontFamily: FIGTREE, fontSize: refined ? 12.5 : 13, color: t.text2 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
         <span>Made with</span>
         {fromSessions.map((chip) => (
           <Tag key={chip.key} chip={chip} />
@@ -252,7 +229,7 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
             target={phone}
             aria-expanded={open}
             onClick={flip}
-            style={refined ? { fontSize: 12.5, color: t.text, textUnderlineOffset: 3, textDecorationColor: t.line } : undefined}
+            style={{ fontSize: 12.5, color: t.text, textUnderlineOffset: 3, textDecorationColor: t.line }}
           >
             {open ? "Done" : "Change"}
           </TextButton>

@@ -37,9 +37,4 @@ describe("SignInView · refined look", () => {
     at("refined");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Every AI build, hung with its proof.");
   });
-
-  it("still draws the orbs under the current look", () => {
-    const { container } = at("current");
-    expect(container.querySelector('[data-ui="orb-glass"]')).not.toBeNull();
-  });
 });

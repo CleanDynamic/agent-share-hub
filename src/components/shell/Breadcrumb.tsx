@@ -14,27 +14,23 @@
 
 import { memo, type CSSProperties } from "react";
 
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { FIGTREE } from "@/lib/theme/type";
 
 import type { Crumb } from "./breadcrumbTrail";
 import { FrameLink } from "./FrameLink";
 import { useBreadcrumb } from "./useBreadcrumb";
 
 export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
-  const refined = useLook() === "refined";
-  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: refined ? 12.5 : 12 };
-  const currentWeight = refined ? 500 : 600;
+  const text: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5 };
+  const currentWeight = 500;
   return (
     <nav
       data-testid="breadcrumb"
       data-ui="breadcrumb"
       aria-label="Breadcrumb"
       style={
-        refined
-          ? { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }
-          : { display: "flex", alignItems: "center", gap: 6, height: 33, minWidth: 0 }
+        { display: "flex", alignItems: "center", gap: 8, minWidth: 0 }
       }
     >
       {trail.map((crumb, index) => {
@@ -77,7 +73,7 @@ export function BreadcrumbView({ trail }: { trail: readonly Crumb[] }) {
               </FrameLink>
             )}
             {!last && (
-              <span aria-hidden="true" style={{ fontFamily: refined ? FIGTREE : DM_MONO, fontSize: refined ? 12.5 : 12, color: t.label }}>
+              <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 12.5, color: t.label }}>
                 /
               </span>
             )}

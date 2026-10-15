@@ -3,7 +3,7 @@
    The compare target for `design/reference/components/{noon,dusk}.html`. It
    starts empty: UI-P06 to UI-P15 each add the sections they build, one
    `<section data-catalogue="<name>">` per section of the reference, using the
-   reference's own names (Identity, Controls, Proof, Panels, Orbs, Tagline,
+   reference's own names (Identity, Controls, Proof, Panels,
    Build cards, Charts, Frame). `design-compare.spec.ts` screenshots every
    section present on both sides, so the attribute value is load-bearing: it is
    the join key.
@@ -21,11 +21,9 @@ import { CompositionsSection } from "./catalogue/CompositionsSection";
 import { ControlsSection } from "./catalogue/ControlsSection";
 import { FrameSection } from "./catalogue/FrameSection";
 import { IdentitySection } from "./catalogue/IdentitySection";
-import { OrbsSection } from "./catalogue/OrbsSection";
 import { PanelsSection } from "./catalogue/PanelsSection";
 import { ModelMarksSection } from "./catalogue/ModelMarksSection";
 import { ProofSection } from "./catalogue/ProofSection";
-import { TaglineSection } from "./catalogue/TaglineSection";
 
 export default function KitComponents() {
   const theme = useDesignTheme();
@@ -38,7 +36,7 @@ export default function KitComponents() {
         width: 1440,
         minHeight: "100vh",
         boxSizing: "border-box",
-        background: `${t.ambient}, ${t.backdrop}`,
+        background: t.frame,
         color: t.text,
         fontFamily: FIGTREE,
       }}
@@ -55,8 +53,6 @@ export default function KitComponents() {
       <ControlsSection />
       <ProofSection />
       <PanelsSection />
-      <OrbsSection />
-      <TaglineSection />
       <BuildCardsSection />
       <ChartsSection />
       <CompositionsSection />

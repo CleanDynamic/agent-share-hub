@@ -22,7 +22,6 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SearchField } from "@/components/brand/SearchField";
 import { normaliseQuery, SEARCH_MAX } from "@/lib/build/search";
 import { ring } from "@/lib/theme/controls";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
@@ -80,7 +79,6 @@ export function HeaderSearch({
 }: HeaderSearchProps) {
   const [value, setValue] = useState(initialValue);
   const field = useRef<HTMLInputElement | null>(null);
-  const refined = useLook() === "refined";
   const [focused, setFocused] = useState(false);
   const [focusVisible, setFocusVisible] = useState(false);
 
@@ -107,7 +105,7 @@ export function HeaderSearch({
 
   /* UI-P87, refined: the bar's field is the refined `SearchField`, 240×30 with the "/" key, on the well recipe. The
      form, its name, the shortcut and the submit are the same. The sheet's 44px field stays: it is a touch target. */
-  if (refined && !sheet) {
+  if (!sheet) {
     return (
       <form role="search" aria-label="Search builds" onSubmit={submit} style={{ margin: 0, display: "flex" }}>
         <SearchField

@@ -49,7 +49,7 @@ function CollapsibleSection({
           color: 'var(--text2)', fontSize: 12,
           fontWeight: 500,
           letterSpacing: '0.04em',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           textTransform: 'none' as const,
         }}
       >
@@ -166,7 +166,7 @@ export function CanvasHeader({
         <h1 style={{ ...type.cardTitle,   color: 'var(--text)', margin: '0 0 12px 0',  }}>
           {title || 'Untitled'}
         </h1>
-        <p style={{ fontSize: 14, fontWeight: 400, color: 'var(--text2)', lineHeight: 1.70, margin: 0, fontFamily: 'Figtree, sans-serif' }}>
+        <p style={{ fontSize: 14, fontWeight: 400, color: 'var(--text2)', lineHeight: 1.70, margin: 0, fontFamily: 'var(--font-ui)' }}>
           {description}
         </p>
       </div>
@@ -257,7 +257,7 @@ export function CanvasHeader({
           maxLength={120}
           style={{
             width: '100%',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 15, fontWeight: 400,
             color: 'var(--text)',
             background: 'var(--recess)',
@@ -299,12 +299,12 @@ export function CanvasHeader({
             resize: 'none',
             padding: '12px 16px',
             minHeight: 60,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             boxSizing: 'border-box' as const,
             transition: feedback("border-color"),
           }}
         />
-        <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', textAlign: 'right', fontFamily: 'Figtree, sans-serif', marginTop: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text2)', textAlign: 'right', fontFamily: 'var(--font-ui)', marginTop: 4 }}>
           {description.length} / 500
         </div>
       </CollapsibleSection>
@@ -364,7 +364,7 @@ function EvidenceEditor({
               background: mediaType === t.value ? 'color-mix(in srgb, var(--action) 10%, transparent)' : 'transparent',
               border: `1px solid ${mediaType === t.value ? 'color-mix(in srgb, var(--action) 30%, transparent)' : 'var(--recess)'}`,
               color: mediaType === t.value ? 'var(--action)' : 'var(--text2)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               transition: feedback(),
             }}
           >
@@ -469,7 +469,7 @@ function EvidenceEditor({
           lineHeight: 1.60, background: 'transparent',
           border: 'none', outline: 'none',
           resize: 'none', padding: 0,
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           boxSizing: 'border-box',
         }}
       />

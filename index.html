@@ -7,71 +7,10 @@
     <meta name="description" content="A gallery of AI builds with the proof attached: who ran them, whether they worked, and when.">
     <meta name="author" content="buildgallery.ai" />
 
-    <!-- UI-P05: SENTIENT REPLACES BODONI MODA AS THE DISPLAY FACE. Sentient is
-         not on Google Fonts, so it is self-hosted: two Latin-subset .woff2
-         files in /public/fonts (500 and 700, UI-P40), declared by the @font-face rules in
-         src/index.css and both preloaded below so the first heading does not wait on
-         the stylesheet. Bodoni Moda is gone from the request, and from every
-         role in src/lib/theme/type.ts. The measurements further down were taken
-         when Bodoni was still in the request and are kept as the record of why
-         the remaining two families are requested the way they are.
-
-         BG-P03 typefaces. Figtree (body/UI), Sentient (display, self-hosted),
-         DM Mono (data). Figtree and DM Mono live here rather than as an @import in src/index.css so
-         the request starts with the document instead of waiting on the CSS
-         bundle to parse — an @import is a serial hop before paint. The
-         preconnects warm both hosts (the css2 response is served from
-         googleapis, the woff2 files from gstatic) so the font fetch does not
-         pay for DNS + TLS twice.
-
-         Weights are the ones the type scale emits, and no more: Figtree
-         400..500..600, DM Mono 400 and 500 (and Bodoni Moda 400..500 roman,
-         before UI-P05).
-         Ranges where the family is variable, discrete weights where it is
-         not, so Google serves one file per family instead of one per weight.
-         Latin only — the product is English and nothing in the repo renders
-         another script; the browser picks the subset it needs from the
-         unicode-range rules either way.
-
-         BG-P31 DROPPED BODONI'S ITALIC, AND MEASURED EVERYTHING ELSE.
-         Bytes of latin woff2 before paint, fetched and weighed rather than
-         estimated:
-
-           before this series   Inter + Playfair Display   493,720 B, 11 files
-           after BG-P03         the three families          79,972 B,  5 files
-           after this change    the three families          63,400 B,  4 files
-
-         Inter was asked for at SEVEN discrete weights — 48,432 B each, seven
-         times — and Playfair at four styles. The three families that replaced
-         them are variable where the family allows it, so the request is one
-         file per family rather than one per weight. That is where 84% of the
-         saving came from, before this prompt touched anything.
-
-         THE ITALIC WAS THE LAST UNUSED FILE. `ital,wght@0,400..500;1,400`
-         served a 16,572 B roman plus a 25,804 B italic, and NOTHING IN THE
-         PRODUCT SET IT: every site that spends BODONI was scanned and not one
-         carries `fontStyle: "italic"` — the one italic nearby is on Figtree,
-         in a blog description. Dropping the axis leaves a single 25,804 B
-         roman file: 16,572 B less, 20.7% off the font budget, for a face
-         nobody rendered. Across all unicode subsets the request falls from
-         184,148 B to 134,872 B.
-
-         No further subsetting is warranted. At 63,400 B the three families
-         together cost an eighth of what two did, and the remaining files are
-         one per family per weight with nothing left to drop. Self-hosting
-         would buy a connection, not bytes, and the preconnects above already
-         pay for that.
-
-         The faces are read through src/lib/theme/type.ts. Change the scale
-         there and the weights here together. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400..600&display=swap"
-    />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/Sentient-Medium-latin.woff2" crossorigin />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/Sentient-Bold-latin.woff2" crossorigin />
+    <!-- Typefaces: Geist (UI and display) and Geist Mono (data), self-hosted as variable .woff2 files in /public/fonts
+         and declared by the @font-face rules in src/index.css. Geist is preloaded so the first heading does not wait
+         on the stylesheet. UI-P99 retired Figtree, Sentient and DM Mono, and with them the request to Google Fonts.
+         The faces are read through src/lib/theme/type.ts. -->
     <link rel="preload" as="font" type="font/woff2" href="/fonts/Geist-Variable.woff2" crossorigin />
 
     <!-- BG-P02 theme boot: sets <html data-theme> before the bundle, so nobody

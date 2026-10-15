@@ -31,7 +31,7 @@ function open(openId: string, over: Partial<FullPromptWindowProps> = {}) {
     ...over,
   };
   render(
-    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox?look=refined"]}>
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
       <FullPromptWindow {...props} />
     </MemoryRouter>,
   );
@@ -92,7 +92,6 @@ describe("the refined window as the board draws it", () => {
   it("is the window recipe, 760 wide, radius 12, padding 20px 24px", () => {
     open("p3");
     const dialog = screen.getByTestId("full-prompt-window");
-    expect(dialog.getAttribute("data-look")).toBe("refined");
     expect(dialog.style.width).toBe("760px");
     expect(dialog.style.borderRadius).toBe("12px");
     expect(dialog.style.padding).toBe("20px 24px");

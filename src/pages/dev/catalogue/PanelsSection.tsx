@@ -18,7 +18,6 @@ import { StripedBar } from "@/components/brand/StripedBar";
 import { Tile, Well } from "@/components/brand/Tile";
 import { Timeline } from "@/components/brand/Timeline";
 import { WallLabel } from "@/components/brand/WallLabel";
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { Example, Row, Section } from "./parts";
@@ -153,7 +152,6 @@ function RefinedLampObjects() {
 }
 
 export function PanelsSection() {
-  const refined = useLook() === "refined";
   return (
     <Section
       name="Panels"
@@ -242,14 +240,12 @@ export function PanelsSection() {
           </div>
         </Example>
       </Row>
-      {refined ? (
-        <>
-          <div style={{ height: 18 }} />
-          <RefinedBlocks />
-          <div style={{ height: 18 }} />
-          <RefinedLampObjects />
-        </>
-      ) : null}
+      <>
+        <div style={{ height: 18 }} />
+        <RefinedBlocks />
+        <div style={{ height: 18 }} />
+        <RefinedLampObjects />
+      </>
     </Section>
   );
 }

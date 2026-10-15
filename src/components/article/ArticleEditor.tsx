@@ -761,7 +761,7 @@ export function ArticleEditor({
           box-sizing: border-box;
         }
         .tiptap-article .ProseMirror {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: ${isBlog ? 16 : 15}px;
           line-height: ${isBlog ? 1.85 : 1.5};
           color: var(--text);
@@ -795,7 +795,7 @@ export function ArticleEditor({
           line-height: 1.35;
         }
         .tiptap-article h3 {
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: 18px;
           font-weight: 600;
           color: var(--text);
@@ -861,7 +861,7 @@ export function ArticleEditor({
           pointer-events: none;
           height: 0;
           font-style: italic;
-          font-family: 'Figtree', sans-serif;
+          font-family: var(--font-ui);
           font-size: 15px;
           font-weight: 400;
         }
@@ -1012,7 +1012,7 @@ export function ArticleEditor({
           <Target size={14} color="var(--cat-breakage)" strokeWidth={1.8} />
           <span style={{
             flex: 1,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 12,
             fontWeight: 400,
             color: 'var(--text2)',
@@ -1023,7 +1023,7 @@ export function ArticleEditor({
             <span
               title="Items currently marked as missing"
               style={{
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 11,
                 fontWeight: 500,
                 color: 'var(--cat-breakage)',
@@ -1037,7 +1037,7 @@ export function ArticleEditor({
           ) : (
             <span
               style={{
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 11,
                 fontWeight: 500,
                 color: 'var(--text2)',
@@ -1059,7 +1059,7 @@ export function ArticleEditor({
               border: 'none',
               padding: 0,
               cursor: 'pointer',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               fontWeight: 500,
               color: 'var(--cat-breakage)',
@@ -1107,7 +1107,7 @@ export function ArticleEditor({
                 maxWidth: 520,
                 pointerEvents: 'none',
                 textAlign: 'center',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 13,
                 fontWeight: 400,
                 color: 'var(--text2)',
@@ -1196,7 +1196,7 @@ export function ArticleEditor({
                      of that pair that was measured with it (5.65:1 / 6.35:1).
                      --text on it is 2.73:1. */
                   color: 'var(--on-action)',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: 'pointer',
@@ -1221,7 +1221,7 @@ export function ArticleEditor({
                 border: '0.5px solid var(--line)',
                 background: 'transparent',
                 color: 'var(--text2)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: saving ? 'not-allowed' : 'pointer',
@@ -1248,7 +1248,7 @@ export function ArticleEditor({
                 background: 'color-mix(in srgb, var(--action) 14%, transparent)',
                 color: 'var(--text)',
                 boxShadow: 'var(--elev-raised)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: (publishing || bountyPublishBlocked) ? 'not-allowed' : 'pointer',
@@ -1309,7 +1309,7 @@ export function ArticleEditor({
               padding: '24px 26px',
               maxWidth: 420, width: '90%',
               boxShadow: 'var(--elev-overlay)',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
             }}
           >
             <h3 style={{
@@ -1349,7 +1349,7 @@ export function ArticleEditor({
                 background: 'var(--recess)',
                 border: '1px solid var(--line)',
                 color: 'var(--text)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 13,
                 outline: 'none',
                 marginBottom: 18,
@@ -1366,7 +1366,7 @@ export function ArticleEditor({
                   border: '1px solid var(--line)',
                   color: 'var(--text2)',
                   cursor: 'pointer',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                 }}
               >
                 Cancel
@@ -1383,7 +1383,7 @@ export function ArticleEditor({
                   color: 'var(--text)',
                   cursor: saving ? 'not-allowed' : 'pointer',
                   opacity: saving ? 0.65 : 1,
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                 }}
               >
                 {saving ? 'Saving…' : 'Save Draft'}

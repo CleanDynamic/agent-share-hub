@@ -403,7 +403,7 @@ function NavTool() {
                 border: 'none',
                 background: 'transparent',
                 color: 'var(--text2)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 13,
                 cursor: 'pointer',
                 textAlign: 'left',

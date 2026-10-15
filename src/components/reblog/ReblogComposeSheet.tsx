@@ -103,7 +103,7 @@ function Avatar({
       {showInitials ? (
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: size * 0.42,
             fontWeight: 600,
             color: "var(--text)",
@@ -163,7 +163,7 @@ function PostButton({
         background: "var(--cat-configuration)",
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 13,
         fontWeight: 600,
         color: "var(--text)",
@@ -205,7 +205,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 600,
             color: "var(--text)",
@@ -215,7 +215,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         </span>
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 400,
             color: "var(--text2)",
@@ -226,7 +226,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
 
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.06em",
@@ -247,7 +247,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
           <div className="flex items-center gap-2">
             <span
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 10,
                 fontWeight: 400,
                 color: "var(--text2)",
@@ -270,7 +270,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
         ) : (
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 10,
               fontWeight: 400,
               color: "var(--text2)",
@@ -283,7 +283,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
 
       <p
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 13,
           fontWeight: 600,
           color: "var(--text)",
@@ -302,7 +302,7 @@ function EmbeddedOriginalCard({ post }: { post: OriginalPost }) {
       {post.description && (
         <p
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 400,
             color: "var(--text2)",
@@ -571,7 +571,7 @@ function Header({
       <button
         onClick={onClose}
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 13,
           fontWeight: 500,
           color: "var(--text2)",
@@ -592,7 +592,7 @@ function Header({
         />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 14,
             fontWeight: 600,
             color: "var(--text)",
@@ -648,7 +648,7 @@ function ComposeBody({
         />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 13,
             fontWeight: 600,
             color: "var(--text)",
@@ -658,7 +658,7 @@ function ComposeBody({
         </span>
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
             fontWeight: 400,
             color: "var(--text2)",
@@ -680,7 +680,7 @@ function ComposeBody({
           placeholder={excerptContext ? "Add your take on this quote…" : "Add your take…"}
           rows={3}
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 14,
             fontWeight: 400,
             color: "var(--text)",
@@ -708,7 +708,7 @@ function ComposeBody({
         <div
           style={{
             textAlign: "right",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 500,
             color: counterColour,
@@ -725,7 +725,7 @@ function ComposeBody({
             onClick={onAttachImage}
             className="flex items-center gap-1.5"
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               fontWeight: 500,
               color: "var(--text2)",
@@ -750,7 +750,7 @@ function ComposeBody({
             onClick={onAttachVideo}
             className="flex items-center gap-1.5"
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 12,
               fontWeight: 500,
               color: "var(--text2)",
@@ -891,7 +891,7 @@ function ActionBar({
         <Globe size={12} style={{ color: "var(--text2)" }} />
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 11,
             fontWeight: 500,
             color: "var(--text2)",

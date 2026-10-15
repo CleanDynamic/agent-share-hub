@@ -1,9 +1,15 @@
+// UI-P93 — the current view's own suite, run against the refined fork under `?look=refined` (same names, handlers and
+// behaviour), then a block for what the refined board draws. Styles are read through SSR markup.
+
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxDetailsProps, type SandboxDetails } from "@/dev/fixtures/sandbox";
 
-import { DetailsPanel, type DetailsPanelProps } from "./DetailsPanel";
+import type { DetailsPanelProps } from "./DetailsPanel";
+import { DetailsPanel as DetailsPanel } from "./DetailsPanel";
 
 beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
@@ -29,7 +35,11 @@ function panel(kind: SandboxDetails, which: "fox" | "bakery" = "bakery", over: P
     onUseAsCover: vi.fn(),
     ...over,
   };
-  render(<DetailsPanel {...props} />);
+  render(
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+      <DetailsPanel {...props} />
+    </MemoryRouter>,
+  );
   return props;
 }
 
@@ -283,5 +293,32 @@ describe("a manual step (UI-P70)", () => {
     expect(screen.getByRole("button", { name: "Add a picture" })).toBeTruthy();
     expect(screen.queryByLabelText("Model")).toBeNull();
     expect(screen.queryByRole("button", { name: "Read all of it" })).toBeNull();
+  });
+});
+
+describe("the refined look (UI-P93)", () => {
+  const markup = () =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+        <DetailsPanel {...sandboxDetailsProps("prompt", "bakery")} />
+      </MemoryRouter>,
+    );
+
+  it("draws the title 18/500 with a ghost Rename, the tool's real mark at 24, and the text in a well", () => {
+    panel("prompt");
+    const title = screen.getByRole("heading", { name: "Fix the mobile layout" });
+    expect(title.getAttribute("style")).toMatch(/font-size:\s*18px/);
+    expect(screen.getByRole("button", { name: "Rename" }).getAttribute("style")).toMatch(/transparent/);
+    expect(screen.getByTestId("details-panel").querySelector("[data-mark]")).toBeTruthy();
+    expect(markup()).toContain("background:var(--well);border:1px solid var(--well-border)");
+  });
+
+  it("leads Uses with larr and Goes into with rarr, and Add an input is text with no icon", () => {
+    panel("prompt");
+    const add = screen.getByRole("button", { name: "Add an input" });
+    expect(add.querySelector("svg")).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove Output of 2" })).toBeTruthy();
+    const html = markup();
+    expect(html.match(/data-glyph="larr"|M13 8H3.5/g)?.length ?? 0).toBeGreaterThan(0);
   });
 });

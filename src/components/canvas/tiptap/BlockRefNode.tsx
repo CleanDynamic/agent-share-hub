@@ -75,7 +75,7 @@ export function BlockRefNode({ node }: ReactNodeViewProps) {
           border: '1px solid var(--line)',
           borderRadius: 4,
           padding: '1px 8px',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 12,
           fontWeight: 500,
           lineHeight: 1.4,

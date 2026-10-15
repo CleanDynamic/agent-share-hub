@@ -11,7 +11,6 @@
 // own surface, and it is dimmed with the lamp. It paints nothing a reader needs:
 // the state is also said in words by the plaque under the picture.
 
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { LampBar } from "./LampDot";
@@ -52,8 +51,7 @@ function RefinedPictureLamp({ state }: PictureLampProps) {
 }
 
 export function PictureLamp({ state }: PictureLampProps) {
-  const refined = useLook() === "refined";
-  if (refined && state !== "unreproduced") return <RefinedPictureLamp state={state} />;
+  if (state !== "unreproduced") return <RefinedPictureLamp state={state} />;
   if (state === "unreproduced") {
     return <div data-ui="picture-lamp" data-variant="off" aria-hidden="true" style={{ height: 18 }} />;
   }

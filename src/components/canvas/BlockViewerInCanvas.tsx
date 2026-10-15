@@ -176,7 +176,7 @@ export function BlockViewerInCanvas({
                 width: '100%', height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--text2)',
-                fontSize: 11, fontFamily: 'Figtree, sans-serif',
+                fontSize: 11, fontFamily: 'var(--font-ui)',
               }}>
                 Video
               </div>
@@ -297,7 +297,7 @@ export function BlockViewerInCanvas({
               ? 'var(--cat-configuration)'
               : 'var(--text2)',
             cursor: 'pointer',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontWeight: 600,
             transition: feedback(),
             zIndex: 2,
@@ -390,7 +390,7 @@ export function BlockViewerInCanvas({
           fontSize: 15, fontWeight: 400,
           color: 'var(--text2)',
           lineHeight: 1.75, margin: 0,
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           paddingRight: 52,
         }}>
           {block.textContent}

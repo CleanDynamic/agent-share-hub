@@ -13,10 +13,9 @@ import { CoverFallback } from "./CoverFallback";
 import { FRAME_ARTWORK, FramedWork, PictureLight, ResultWindow } from "./FramedWork";
 import { StreakDay, StreakWeek } from "./StreakDay";
 
-const REFINED_URL = "/dev/kit/components?look=refined";
+const REFINED_URL = "/dev/kit/components";
 const underRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED_URL]}>{node}</MemoryRouter>;
 const refined = (node: React.ReactElement) => renderToStaticMarkup(underRefined(node));
-const current = (node: React.ReactElement) => renderToStaticMarkup(<MemoryRouter>{node}</MemoryRouter>);
 
 afterEach(() => document.documentElement.removeAttribute("data-theme"));
 
@@ -68,10 +67,6 @@ describe("CoverFallback under the refined look", () => {
     expect(html).toContain("background:var(--paper)");
     expect(html).not.toContain("<svg");
   });
-
-  it("is the landscape under the current look", () => {
-    expect(current(<CoverFallback seed="b1" radius={2} />)).toContain("<svg");
-  });
 });
 
 describe("BuildCard's cover under the refined look", () => {
@@ -80,11 +75,6 @@ describe("BuildCard's cover under the refined look", () => {
     const html = refined(<BuildCard to="/b2/x" title="Inbox sorter" cover={<CoverFallback seed="x" radius={2} />} build={build} />);
     expect(html).toContain('data-ui="framed-work"');
     expect(html).not.toContain("data-lit");
-  });
-
-  it("is not framed under the current look", () => {
-    const html = current(<BuildCard to="/b2/x" title="Inbox sorter" cover={<CoverFallback seed="x" radius={2} />} build={build} />);
-    expect(html).not.toContain('data-ui="framed-work"');
   });
 });
 

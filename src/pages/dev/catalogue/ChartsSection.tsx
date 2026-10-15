@@ -4,7 +4,6 @@
 
 import { ActivityGrid, type ActivityDay } from "@/components/brand/ActivityGrid";
 import { Histogram, LineChart, MiniBars, Sparkline, StepChart } from "@/components/brand/charts";
-import { useLook } from "@/lib/theme/look";
 
 import { Example, Row, Section } from "./parts";
 
@@ -38,7 +37,6 @@ const DAYS: ActivityDay[] = WEEKS.flatMap((week) =>
 );
 
 export function ChartsSection() {
-  const refined = useLook() === "refined";
   return (
     <Section name="Charts" note="hand-drawn SVG, no chart library">
       <Row style={{ alignItems: "flex-end" }}>
@@ -60,11 +58,9 @@ export function ChartsSection() {
         <Example caption="activity grid · amber is light, outlined = frozen day">
           <ActivityGrid days={DAYS} />
         </Example>
-        {refined ? (
-          <Example caption="mini bars · 3 wide, 2 apart">
-            <MiniBars values={SPARK.slice(0, 14)} />
-          </Example>
-        ) : null}
+        <Example caption="mini bars · 3 wide, 2 apart">
+          <MiniBars values={SPARK.slice(0, 14)} />
+        </Example>
       </Row>
     </Section>
   );

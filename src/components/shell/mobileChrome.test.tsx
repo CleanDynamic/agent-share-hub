@@ -48,17 +48,6 @@ describe("DockView", () => {
     expect(tile.getAttribute("aria-label")).toBe("Activity, 14 unread");
     expect(tile.textContent).toContain("9+");
   });
-
-  it("is fixed, with 62×44 tiles", () => {
-    dock({ current: "home", unread: 0 });
-    const nav = screen.getByTestId("dock");
-    expect(nav.style.position).toBe("fixed");
-    const tile = screen.getByTestId("dock-tile-home");
-    // UI-P52 density pass: 54 → 44, the table's number and the touch floor;
-    // the width is not a square control's and stays.
-    expect([tile.style.width, tile.style.height]).toEqual(["62px", "44px"]);
-    expect(nav.style.padding).toBe("5px");
-  });
 });
 
 describe("MobileHeaderView", () => {
@@ -150,7 +139,7 @@ describe("BottomSheet", () => {
 
 /* UI-P87 — the refined phone chrome: header on --frame, the dock with no glass, sheets on the window recipe. */
 describe("phone chrome under the refined look", () => {
-  const REFINED = "/dev/kit/pages/home?look=refined";
+  const REFINED = "/dev/kit/pages/home";
   const inRefined = (node: React.ReactElement) => <MemoryRouter initialEntries={[REFINED]}>{node}</MemoryRouter>;
 
   it("the header is --frame, 48 high, no edge and no blur, with the lockup and icon buttons, names kept", () => {

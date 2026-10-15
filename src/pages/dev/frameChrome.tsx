@@ -16,7 +16,6 @@ import { SiteHeaderView } from "@/components/shell/SiteHeader";
 import type { PrimarySection } from "@/components/shell/siteNav";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import { fixtures } from "@/dev/designFixtures";
-import { useLook } from "@/lib/theme/look";
 
 import type { Crumb } from "@/components/shell/breadcrumbTrail";
 
@@ -51,8 +50,7 @@ const noop = () => undefined;
 
 /** The footer's static theme control, at the size the look draws it: 26 under the refined look (UI-P87), 32 otherwise. */
 function DevThemeControl({ theme }: { theme: "noon" | "dusk" }) {
-  const refined = useLook() === "refined";
-  return <ThemeSegmented size={refined ? 26 : 32} fontSize={refined ? 12 : 11} value={theme} onChange={noop} />;
+  return <ThemeSegmented size={26} fontSize={12} value={theme} onChange={noop} />;
 }
 
 /** The sample build's title, for the trails that end in a record. */

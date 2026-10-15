@@ -84,7 +84,7 @@ const s = {
     minHeight: "297mm",
     background: "var(--chrome-hi)",
     color: "#000",
-    fontFamily: "'Figtree', -apple-system, sans-serif",
+    fontFamily: "var(--font-ui)",
     padding: "20mm",
     boxSizing: "border-box" as const,
   },

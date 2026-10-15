@@ -1,45 +1,29 @@
-/* UI-P49 — Gallery, the feed: one build per row, organised by the exact model
-   version people reproduced it on.
+/* UI-P89 — the Gallery feed in the refined look. No board draws it.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   `Link`. `GalleryPage` supplies live data; the dev compare page
-   (/dev/kit/pages/gallery-feed) supplies the fixture. The viewport is read here
-   (the 768px breakpoint) so both agree.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `GalleryFeedView` stays the current look; this is the same page with the same props (imported
+   from it, not copied), the same menus (`menusFor`), handlers, copy, accessible names and order of parts. Only the
+   controls change to the refined ones from UI-P84 to UI-P86: `Segmented`, the search field on the well recipe,
+   `MenuButton`s that open the same menus, `FilterChip`s and sheets on a phone, and the build card's own refined look.
+   `GalleryPage` and the dev page choose between the two with `useLook()`.
 
-   DESKTOP: one column, max-width 680, centred, gap 12 — the heading row (the
-   title and the count line, the Feed | Dashboard switch), the controls (search,
-   Model, Made for, Sort), the active filters, then the list: one, or with a
-   model two sections, `reproducedOn` then `notYet`, each paging on its own.
-   PHONE: the heading at 36 with no switch, the search full width, three chips
-   in a scroll row that open bottom sheets, then the same list.
-
-   THE ADDRESS IS THE STATE, and it is not held here: every control is a
-   callback the page answers by writing the address. The view owns only what is
-   in flight: the search text before its 300ms debounce, and which sheet is open.
-
-   EVERY COLOUR IS A TOKEN. The cards are `GalleryCard layout="row"`.
-
-   DENSER SINCE UI-P56. No board draws the feed, so every size this file sets
-   itself is its old value through the density table
-   (`design/prompts/README-density.md`): the column 12 apart, the controls 6, the
-   field 33 tall (44 on a phone, the touch target), menu rows 31 at 13px (44 at
-   15px in a phone's sheet). The brand pieces it renders (Button, Segmented,
-   display()) take the drawn size and map it themselves. */
+   THE SEARCH FIELD, THE MENU'S PANEL AND ITS OPTIONS are exported: the refined dashboard (`GalleryDashboardView`)
+   uses the same three. */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Check, ChevronDown, Search, X } from "lucide-react";
 
 import { Button } from "@/components/brand/Button";
+import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
+import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
-import type { PlaqueBuild } from "@/components/brand/Plaque";
+import { Glyph } from "@/components/brand/Glyph";
+import { MenuButton } from "@/components/brand/MenuButton";
+import { SearchField } from "@/components/brand/SearchField";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import type { PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import {
   DropdownMenu,
@@ -47,18 +31,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { GalleryFeedCounts, GalleryFeedRow, GalleryFeedSort } from "@/lib/build/gallery";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
-import { LABS, MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { Shortfall } from "./GalleryExtras";
-import { FEED_SORT_ITEMS, feedCountLine, formatCount, sortItemLabel, sortLabel } from "./galleryModel";
-
-/* ── the view's props ── */
+import { formatCount, FEED_SORT_ITEMS, feedCountLine, sortItemLabel, sortLabel } from "./galleryModel";
+import type { PlaqueBuild } from "@/components/brand/Plaque";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import type { PageFit } from "@/components/shell/siteFrameFit";
+import type { GalleryFeedCounts, GalleryFeedRow, GalleryFeedSort } from "@/lib/build/gallery";
+import { LABS, MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
+import { r } from "@/lib/theme/radius";
 
 /** One row: the build, and the record its plaque reads (its own figures, or one model's). */
 export interface FeedRowView {
@@ -127,7 +112,7 @@ export interface GalleryFeedViewProps {
   autoFocusSearch?: boolean;
 }
 
-const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
+export const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: DM_MONO,
   fontSize: px,
   lineHeight: "normal",
@@ -147,9 +132,8 @@ export const bareInput = (node: HTMLInputElement | null) => {
   node.style.setProperty("background", "transparent", "important");
   node.style.setProperty("border-width", "0", "important");
 };
-export const PLACEHOLDER = "Search builds, makers, models";
 
-/* ── the menus' options, shared by the dropdowns and the sheets ── */
+export const PLACEHOLDER = "Search builds, makers, models";
 
 export interface MenuOption {
   key: string;
@@ -225,51 +209,12 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
   ];
 }
 
-/** The "new" badge: DM Mono 11, `--lit` fill, `--on-lit` text. */
-function NewBadge() {
-  return (
-    <span
-      data-testid="model-new"
-      style={mono(11, { padding: "0 4px", borderRadius: 6, background: t.lit, color: t.onLit, flexShrink: 0 })}
-    >
-      new
-    </span>
-  );
-}
-
-function OptionBody({ option }: { option: MenuOption }) {
-  return (
-    <>
-      <span
-        style={{
-          flexGrow: 1,
-          minWidth: 0,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          fontWeight: option.selected ? 600 : 500,
-          color: option.selected ? t.text : undefined,
-        }}
-      >
-        {option.label}
-      </span>
-      {option.isNew ? <NewBadge /> : null}
-      {option.selected ? <Check size={14} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} /> : null}
-      {option.count !== undefined ? (
-        <span style={mono(12, { color: t.label, flexShrink: 0, minWidth: 24, textAlign: "right" })}>{formatCount(option.count)}</span>
-      ) : null}
-    </>
-  );
-}
-
 export const groupHeading: CSSProperties = mono(11, {
   color: t.label,
   textTransform: "uppercase",
   letterSpacing: ".08em",
   padding: "7px 7px 4px",
 });
-
-/* ── desktop: the dropdowns ── */
 
 export const menuContent: CSSProperties = {
   width: 260,
@@ -298,12 +243,174 @@ export const menuItem: CSSProperties = {
   outline: "none",
 };
 
-function MenuTriggerLabel({ menu }: { menu: FeedMenu }) {
+export function countLineOf(props: GalleryFeedViewProps): string | null {
+  const { list, model, sort, status } = props;
+  if (status !== "ready") return null;
+  if (list.kind === "all") return feedCountLine(sort, list.list.total, null);
+  const reproduced = list.reproducedOn.total;
+  const rest = list.notYet.total;
+  if (reproduced === null || rest === null || !model) return null;
+  return feedCountLine(sort, reproduced + rest, { name: model.name, reproduced });
+}
+
+const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+  fontFamily: FIGTREE,
+  fontSize: px,
+  fontWeight: weight,
+  lineHeight: "normal",
+  color,
+  ...extra,
+});
+
+const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
+
+/* ── the search ── */
+
+/* index.css gives every <input> a fill, a border and a focus outline, all `!important`; the field is a transparent
+   input inside the drawn well, so those are switched off with Tailwind's important utilities, as the header's is. */
+const INPUT_CLASS =
+  "placeholder:text-[color:var(--label)] !bg-transparent !border-0 focus-visible:!outline-none focus-visible:!border-0";
+
+/**
+ * The gallery's search on the refined `SearchField` (the well, 28 high, no key hint). The same form, name, label,
+ * placeholder and 300ms debounce as the current field.
+ */
+export function RefinedSearchField({
+  query,
+  onSearch,
+  phone,
+  autoFocus = false,
+  width,
+}: {
+  query: string | null;
+  onSearch: (query: string | null) => void;
+  phone: boolean;
+  autoFocus?: boolean;
+  /** A fixed width (the dashboard's 240); absent, the field fills its row. */
+  width?: number;
+}) {
+  const [value, setValue] = useState(query ?? "");
+  /** The last value this field sent, so the address echoing it back does not rewrite what is being typed. */
+  const sent = useRef<string | null>(query);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (query !== sent.current) {
+      sent.current = query;
+      setValue(query ?? "");
+    }
+  }, [query]);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const send = (next: string) => {
+    const tidy = next.trim() === "" ? null : next.trim();
+    sent.current = tidy;
+    onSearch(tidy);
+  };
+
+  return (
+    <form
+      role="search"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (timer.current) clearTimeout(timer.current);
+        send(value);
+      }}
+      style={{
+        margin: 0,
+        display: "flex",
+        minWidth: 0,
+        flex: width !== undefined ? "0 1 auto" : phone ? "1 1 auto" : "1 1 200px",
+      }}
+    >
+      <SearchField
+        label="Search the gallery"
+        name="q"
+        placeholder={PLACEHOLDER}
+        className={INPUT_CLASS}
+        autoFocus={autoFocus}
+        value={value}
+        width={width ?? "100%"}
+        style={{ height: phone ? 44 : 28 }}
+        onChange={(event) => {
+          const next = event.target.value;
+          setValue(next);
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => send(next), SEARCH_DEBOUNCE_MS);
+        }}
+      />
+    </form>
+  );
+}
+
+/* ── the menus ── */
+
+/** A menu's panel: the window recipe. */
+export const refinedMenuContent: CSSProperties = {
+  width: 260,
+  maxHeight: "min(70vh, 520px)",
+  overflowY: "auto",
+  padding: 4,
+  boxSizing: "border-box",
+  borderRadius: 12,
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
+  boxShadow: t.windowShadow,
+  color: t.text,
+  zIndex: 50,
+};
+
+/** One option: 32 high, radius 6, Geist 12.5. */
+export const refinedMenuItem: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  height: 32,
+  padding: "0 8px",
+  borderRadius: 6,
+  fontFamily: FIGTREE,
+  fontSize: 12.5,
+  cursor: "pointer",
+  outline: "none",
+};
+
+export function RefinedGroupHeading({ children }: { children: ReactNode }) {
+  return <Eyebrow style={{ padding: "8px 8px 4px" }}>{children}</Eyebrow>;
+}
+
+/** An option's body: the label, "new" as a mono tag, a check when chosen, the note or count in `--label`. */
+export function RefinedOptionBody({ label, selected, note, isNew }: { label: string; selected: boolean; note?: string; isNew?: boolean }) {
   return (
     <>
-      <span style={{ color: t.text2, fontWeight: 500 }}>{menu.label}</span>
-      <span style={{ fontWeight: 600, color: t.text }}>{menu.value}</span>
-      <ChevronDown size={12} strokeWidth={1.8} aria-hidden="true" />
+      <span
+        style={{
+          flexGrow: 1,
+          minWidth: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          fontWeight: 500,
+          color: selected ? t.text : t.text2,
+        }}
+      >
+        {label}
+      </span>
+      {isNew ? (
+        <span
+          data-testid="model-new"
+          style={{ fontFamily: DM_MONO, fontSize: 10.5, lineHeight: "18px", padding: "0 6px", borderRadius: 4, background: t.pill, color: t.litInk }}
+        >
+          new
+        </span>
+      ) : null}
+      {selected ? <Glyph name="check" size={14} /> : null}
+      {note !== undefined ? <span style={text(11.5, 400, t.label, { ...tnum, flexShrink: 0, minWidth: 24, textAlign: "right" })}>{note}</span> : null}
     </>
   );
 }
@@ -312,24 +419,27 @@ function DesktopMenu({ menu }: { menu: FeedMenu }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size={42} fontSize={14} data-testid={`feed-menu-${menu.key}`}>
-          <MenuTriggerLabel menu={menu} />
-        </Button>
+        <MenuButton label={menu.label} value={menu.value} data-testid={`feed-menu-${menu.key}`} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} style={menuContent} aria-label={menu.label}>
+      <DropdownMenuContent align="start" sideOffset={6} style={refinedMenuContent} aria-label={menu.label}>
         {menu.groups.map((group, index) => (
           <div key={group.heading ?? index} role="group" aria-label={group.heading}>
-            {group.heading ? <div style={groupHeading}>{group.heading}</div> : null}
+            {group.heading ? <RefinedGroupHeading>{group.heading}</RefinedGroupHeading> : null}
             {group.options.map((option) => (
               <DropdownMenuItem
                 key={option.key}
                 role="menuitemradio"
                 aria-checked={option.selected}
                 className={MENU_ITEM_CLASS}
-                style={menuItem}
+                style={refinedMenuItem}
                 onSelect={option.onSelect}
               >
-                <OptionBody option={option} />
+                <RefinedOptionBody
+                  label={option.label}
+                  selected={option.selected}
+                  isNew={option.isNew}
+                  note={option.count !== undefined ? formatCount(option.count) : undefined}
+                />
               </DropdownMenuItem>
             ))}
           </div>
@@ -339,15 +449,13 @@ function DesktopMenu({ menu }: { menu: FeedMenu }) {
   );
 }
 
-/* ── phone: the sheets ── */
-
 function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <BottomSheet open={open} onOpenChange={onOpenChange} title={menu.label}>
       <div role="group" aria-label={menu.label} style={{ display: "flex", flexDirection: "column" }}>
         {menu.groups.map((group, index) => (
           <div key={group.heading ?? index} style={{ display: "flex", flexDirection: "column" }}>
-            {group.heading ? <div style={groupHeading}>{group.heading}</div> : null}
+            {group.heading ? <RefinedGroupHeading>{group.heading}</RefinedGroupHeading> : null}
             {group.options.map((option) => (
               <button
                 key={option.key}
@@ -360,8 +468,8 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
                   onOpenChange(false);
                 }}
                 style={{
-                  ...menuItem,
-                  /* 48 drawn: the table's 39, held at 44 on a phone, the touch target. */
+                  ...refinedMenuItem,
+                  /* The touch target. */
                   height: 44,
                   width: "100%",
                   border: 0,
@@ -370,113 +478,18 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
                   fontSize: 15,
                 }}
               >
-                <OptionBody option={option} />
+                <RefinedOptionBody
+                  label={option.label}
+                  selected={option.selected}
+                  isNew={option.isNew}
+                  note={option.count !== undefined ? formatCount(option.count) : undefined}
+                />
               </button>
             ))}
           </div>
         ))}
       </div>
     </BottomSheet>
-  );
-}
-
-/* ── the search ── */
-
-export function SearchField({
-  query,
-  onSearch,
-  phone,
-  autoFocus = false,
-  size,
-}: {
-  query: string | null;
-  onSearch: (query: string | null) => void;
-  phone: boolean;
-  autoFocus?: boolean;
-  /** UI-P50: the dashboard's field is a fixed size (220 × 30 since UI-P56) instead of filling its row. */
-  size?: { width: number; height: number };
-}) {
-  const [text, setText] = useState(query ?? "");
-  /** The last value this field sent, so the address echoing it back does not rewrite what is being typed. */
-  const sent = useRef<string | null>(query);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (query !== sent.current) {
-      sent.current = query;
-      setText(query ?? "");
-    }
-  }, [query]);
-
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-
-  const send = (value: string) => {
-    const next = value.trim() === "" ? null : value.trim();
-    sent.current = next;
-    onSearch(next);
-  };
-
-  return (
-    <form
-      role="search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (timer.current) clearTimeout(timer.current);
-        send(text);
-      }}
-      style={{
-        flex: size ? "0 0 auto" : phone ? "1 1 auto" : "1 1 200px",
-        width: size?.width,
-        minWidth: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        /* 40 drawn, 33 through the table; a phone keeps its 44, the touch target. */
-        height: size?.height ?? (phone ? 44 : 33),
-        padding: "0 9px",
-        boxSizing: "border-box",
-        borderRadius: r.control,
-        background: t.field,
-        border: `1px solid ${t.line}`,
-        color: t.text2,
-        /* Set on the field, not only the input: above 768px index.css makes an input inherit its size. */
-        fontFamily: FIGTREE,
-        fontSize: phone ? 16 : 13,
-      }}
-    >
-      <Search size={15} strokeWidth={1.6} aria-hidden="true" style={{ flexShrink: 0 }} />
-      <input
-        ref={bareInput}
-        type="search"
-        name="q"
-        aria-label="Search the gallery"
-        placeholder={PLACEHOLDER}
-        autoFocus={autoFocus}
-        value={text}
-        onChange={(event) => {
-          const value = event.target.value;
-          setText(value);
-          if (timer.current) clearTimeout(timer.current);
-          timer.current = setTimeout(() => send(value), SEARCH_DEBOUNCE_MS);
-        }}
-        style={{
-          background: "transparent",
-          border: 0,
-          outline: "none",
-          WebkitAppearance: "none",
-          appearance: "none",
-          flexGrow: 1,
-          minWidth: 0,
-          height: "100%",
-          fontFamily: FIGTREE,
-          /* 16 on a phone, the iOS minimum: anything smaller zooms the page on focus. */
-          fontSize: phone ? 16 : 13,
-          color: t.text,
-        }}
-      />
-    </form>
   );
 }
 
@@ -493,15 +506,15 @@ function ActiveFilters(props: GalleryFeedViewProps) {
   }
   if (chips.length === 0) return null;
 
+  /* A labelled button draws no icon under refined: each chip is named "Remove …", as before. */
   return (
-    <div data-testid="feed-active-filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+    <div data-testid="feed-active-filters" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
       {chips.map((chip) => (
-        <Button key={chip.key} variant="secondary" size={30} fontSize={12} aria-label={`Remove ${chip.label}`} onClick={chip.onRemove}>
+        <Button key={chip.key} variant="secondary" size={28} fontSize={12} aria-label={`Remove ${chip.label}`} onClick={chip.onRemove}>
           {chip.label}
-          <X size={12} strokeWidth={1.8} aria-hidden="true" />
         </Button>
       ))}
-      <Button variant="ghost" size={30} fontSize={12} onClick={onClearAll}>
+      <Button variant="ghost" size={28} fontSize={12} onClick={onClearAll}>
         Clear all
       </Button>
     </div>
@@ -510,10 +523,10 @@ function ActiveFilters(props: GalleryFeedViewProps) {
 
 /* ── the list ── */
 
-function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView; srcByPath: MediaSrcMap; viewerId: string | null; now?: number }) {
+function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView; srcByPath: GalleryFeedViewProps["srcByPath"]; viewerId: string | null; now?: number }) {
   return (
     <>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
         {section.rows.map(({ build, plaque }) => (
           <li key={build.id} style={{ minWidth: 0 }}>
             <GalleryCard
@@ -531,7 +544,7 @@ function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView;
       </ol>
       {section.hasMore ? (
         <div style={{ display: "flex", justifyContent: "center" }}>
-          <Button variant="secondary" size={42} fontSize={14} disabled={section.loadingMore} onClick={section.onMore}>
+          <Button variant="secondary" size={32} fontSize={13} disabled={section.loadingMore} onClick={section.onMore}>
             {section.loadingMore ? "Loading…" : "Show more"}
           </Button>
         </div>
@@ -542,59 +555,51 @@ function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView;
 
 function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <h2 id={id} style={mono(12, { margin: "12px 0 0", color: t.label, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 400 })}>
-      {children}
-    </h2>
+    <Eyebrow as="h2" style={{ margin: "8px 0 0" }}>
+      <span id={id}>{children}</span>
+    </Eyebrow>
   );
 }
 
 function ListSkeleton() {
   return (
-    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {Array.from({ length: 3 }, (_, i) => (
-        /* 18 is the picture lamp's height, which the table keeps, so the bones line up with the card that replaces them. */
-        <div key={i} style={{ paddingTop: 18 }}>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              padding: "9px 9px 13px",
-              borderRadius: r.card,
-              background: t.glass,
-              border: `1px solid ${t.glassBorder}`,
-            }}
-          >
-            <Skeleton height="auto" radius={r.media} style={{ aspectRatio: "2 / 1" }} />
-            <Skeleton width="60%" height={21} />
-            <Skeleton width="90%" height={16} />
-            <Skeleton width="45%" height={14} />
-          </div>
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            padding: 16,
+            borderRadius: 8,
+            background: t.module,
+            border: `1px solid ${t.moduleBorder}`,
+          }}
+        >
+          <Skeleton height="auto" radius={4} style={{ aspectRatio: "2 / 1" }} />
+          <Skeleton width="60%" height={16} />
+          <Skeleton width="90%" height={13} />
+          <Skeleton width="45%" height={13} />
         </div>
       ))}
     </LoadingRegion>
   );
 }
 
-function EmptyFeed({ query, onClearAll, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
+function EmptyFeed({ query, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
+  /* UI-P97: one line and one action. "Clear filters" is not repeated here: the filter row above this line already
+     carries "Clear all" whenever a filter or a query is set, so the way out of the empty list is one tap away. */
   return (
-    <div data-testid="gallery-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "17px 0" }}>
-      <p style={{ ...display(22), margin: 0, color: t.text }}>
-        {query ? `Nobody has hung a build for “${query}” yet.` : "No builds match these filters yet."}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        <Button variant="secondary" size={42} fontSize={14} onClick={() => onNavigate("/bounties")}>
-          Ask for it on Bounties
-        </Button>
-        <Button variant="ghost" size={42} fontSize={14} onClick={onClearAll}>
-          Clear filters
-        </Button>
-      </div>
-    </div>
+    <EmptyState
+      data-testid="gallery-empty"
+      line={query ? `Nobody has hung a build for “${query}” yet.` : "No builds match these filters yet."}
+      action={{ label: "Ask for it on Bounties", onClick: () => onNavigate("/bounties") }}
+    />
   );
 }
 
-function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
+function FeedList(props: GalleryFeedViewProps) {
   const { status, errorKind, error, onRetry, list, model, srcByPath, viewerId = null, now, aboveList } = props;
 
   if (status === "loading") return <ListSkeleton />;
@@ -616,23 +621,24 @@ function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
   if (empty) return <EmptyFeed query={props.query} onClearAll={props.onClearAll} onNavigate={props.onNavigate} />;
 
   const rowProps = { srcByPath, viewerId, now };
+  const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16 };
 
   return (
-    <div data-testid="gallery-feed" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div data-testid="gallery-feed" style={column}>
       {aboveList}
       {list.kind === "all" ? (
-        <section aria-label="Builds" data-testid="feed-section-all" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <section aria-label="Builds" data-testid="feed-section-all" style={column}>
           <Rows section={list.list} {...rowProps} />
         </section>
       ) : (
         <>
-          <section aria-labelledby="feed-reproduced-on" data-testid="feed-section-reproduced" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <section aria-labelledby="feed-reproduced-on" data-testid="feed-section-reproduced" style={column}>
             <SectionHeading id="feed-reproduced-on">
               Reproduced on {model?.name ?? ""} · {formatCount(list.reproducedOn.total ?? list.reproducedOn.rows.length)}
             </SectionHeading>
             <Rows section={list.reproducedOn} {...rowProps} />
           </section>
-          <section aria-labelledby="feed-not-yet" data-testid="feed-section-not-yet" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <section aria-labelledby="feed-not-yet" data-testid="feed-section-not-yet" style={column}>
             <SectionHeading id="feed-not-yet">
               Not yet reproduced on {model?.name ?? ""} · {formatCount(list.notYet.total ?? list.notYet.rows.length)}
             </SectionHeading>
@@ -646,31 +652,21 @@ function FeedList(props: GalleryFeedViewProps & { phone: boolean }) {
 
 /* ── the heading ── */
 
-export function countLineOf(props: GalleryFeedViewProps): string | null {
-  const { list, model, sort, status } = props;
-  if (status !== "ready") return null;
-  if (list.kind === "all") return feedCountLine(sort, list.list.total, null);
-  const reproduced = list.reproducedOn.total;
-  const rest = list.notYet.total;
-  if (reproduced === null || rest === null || !model) return null;
-  return feedCountLine(sort, reproduced + rest, { name: model.name, reproduced });
-}
-
 function Heading({ props, phone }: { props: GalleryFeedViewProps; phone: boolean }) {
   const line = countLineOf(props);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <h1 style={{ ...display(phone ? 36 : 44, { mobilePageHeading: phone }), margin: 0, color: t.text }}>Gallery</h1>
-        <p data-testid="feed-count" style={{ margin: 0, minHeight: 18, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.45, color: t.text2 }}>
-          {line ?? " "}
+        <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>Gallery</h1>
+        <p data-testid="feed-count" style={text(12.5, 400, t.text2, { margin: 0, minHeight: 16, ...tnum })}>
+          {line ?? " "}
         </p>
       </div>
       {phone ? null : (
         <Segmented<GalleryViewMode>
           label="Gallery view"
-          size={34}
-          fontSize={13}
+          size={28}
+          fontSize={12}
           semantics="radio"
           value={props.view}
           onChange={props.onViewChange}
@@ -690,16 +686,16 @@ function DesktopFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   return (
     <div data-testid="gallery-view" data-viewport="desktop" style={{ display: "flex", justifyContent: "center" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 680, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 680, minWidth: 0 }}>
         <Heading props={props} phone={false} />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          <SearchField query={props.query} onSearch={props.onSearch} phone={false} autoFocus={props.autoFocusSearch} />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <RefinedSearchField query={props.query} onSearch={props.onSearch} phone={false} autoFocus={props.autoFocusSearch} />
           {menus.map((menu) => (
             <DesktopMenu key={menu.key} menu={menu} />
           ))}
         </div>
         <ActiveFilters {...props} />
-        <FeedList {...props} phone={false} />
+        <FeedList {...props} />
       </div>
     </div>
   );
@@ -709,9 +705,9 @@ function PhoneFeed(props: GalleryFeedViewProps) {
   const menus = menusFor(props);
   const [open, setOpen] = useState<FeedMenu["key"] | null>(null);
   return (
-    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 9, minWidth: 0 }}>
+    <div data-testid="gallery-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
       <Heading props={props} phone />
-      <SearchField query={props.query} onSearch={props.onSearch} phone autoFocus={props.autoFocusSearch} />
+      <RefinedSearchField query={props.query} onSearch={props.onSearch} phone autoFocus={props.autoFocusSearch} />
       <ScrollRow gap={6} label="Filter the gallery">
         {menus.map((menu) => (
           <FilterChip
@@ -725,7 +721,7 @@ function PhoneFeed(props: GalleryFeedViewProps) {
         ))}
       </ScrollRow>
       <ActiveFilters {...props} />
-      <FeedList {...props} phone />
+      <FeedList {...props} />
       {menus.map((menu) => (
         <SheetMenu key={menu.key} menu={menu} open={open === menu.key} onOpenChange={(next) => setOpen(next ? menu.key : null)} />
       ))}

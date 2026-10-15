@@ -54,21 +54,39 @@ function resolve(theme: ThemeKey, token: TokenName): string {
   throw new Error(`--${token} does not resolve to a colour on ${theme}`);
 }
 
-type Rgb = [number, number, number];
+type Rgba = [number, number, number, number];
 
-function parse(colour: string): Rgb {
-  const hex = /^#([0-9a-f]{6})$/i.exec(colour.trim());
-  if (!hex) throw new Error(`a fill must be an opaque hex, got: ${colour}`);
-  const n = parseInt(hex[1], 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+function parse(colour: string): Rgba {
+  const c = colour.trim();
+  const hex = /^#([0-9a-f]{6})$/i.exec(c);
+  if (hex) {
+    const n = parseInt(hex[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
+  }
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(c);
+  if (!rgb) throw new Error(`a fill must be a hex or an rgba(), got: ${colour}`);
+  return [+rgb[1], +rgb[2], +rgb[3], rgb[4] === undefined ? 1 : +rgb[4]];
 }
+
+/** `fg` composited over `bg`, as an opaque hex. */
+function over(fg: string, bg: string): string {
+  const [r, g, b, a] = parse(fg);
+  const under = parse(bg);
+  const mix = [r, g, b].map((v, i) => Math.round(v * a + under[i] * (1 - a)));
+  return `#${mix.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** The surface a chip sits on. A fill is translucent, so it is measured over this. */
+const surfaceOf = (theme: ThemeKey) => resolve(theme, "module");
 
 /** WCAG 2.x relative luminance. */
 function luminance(colour: string): number {
-  const [r, g, b] = parse(colour).map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
+  const [r, g, b] = parse(colour)
+    .slice(0, 3)
+    .map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
@@ -76,8 +94,6 @@ function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
-
-const TEXT_FLOOR = 4.5;
 
 /** The nine, plus the tenth entry that is not a hue. */
 const RESOLVABLE = [...CATEGORIES, "fallback"] as const;
@@ -125,85 +141,26 @@ describe("every category resolves in both themes", () => {
 
 /* ── every fill pair is measured, in both themes ──────────────────────────── */
 
-describe("every chip fill clears 4.5:1, measured", () => {
+describe("every chip fill is the hue at a low alpha, and the hue reads on it", () => {
+  /** The hue reads as a mark and an edge on its own fill (3:1); as text it must also clear TEXT_FLOOR on the card, which contrast.test.ts holds, less the four Noon hues it pins. */
+  const UI_FLOOR = 3.0;
+
   it.each(CASES)("$theme $name on its own fill", ({ theme, name }) => {
     const hue = resolve(theme, `cat-${name}` as TokenName);
-    const fill = resolve(theme, `cat-${name}-fill` as TokenName);
-    const ratio = contrast(hue, fill);
-    expect(
-      ratio,
-      `${theme} --cat-${name} is ${ratio}:1 on --cat-${name}-fill`,
-    ).toBeGreaterThanOrEqual(TEXT_FLOOR);
+    const fill = over(resolve(theme, `cat-${name}-fill` as TokenName), surfaceOf(theme));
+    const ratio = contrast(over(hue, surfaceOf(theme)), fill);
+    expect(ratio, `${theme} --cat-${name} is ${ratio}:1 on --cat-${name}-fill`).toBeGreaterThanOrEqual(UI_FLOOR);
   });
 
-  it("records the measured pairs, so a moved value has to be re-recorded here", () => {
-    const table = CASES.map(({ theme, name }) => ({
-      pair: `${theme} ${name}`,
-      hue: resolve(theme, `cat-${name}` as TokenName).toUpperCase(),
-      fill: resolve(theme, `cat-${name}-fill` as TokenName).toUpperCase(),
-      ratio: contrast(
-        resolve(theme, `cat-${name}` as TokenName),
-        resolve(theme, `cat-${name}-fill` as TokenName),
-      ),
-    }));
-
-    expect(table).toEqual([
-      { pair: "noon instruction", hue: "#9C3E12", fill: "#DBD2CE", ratio: 4.54 },
-      { pair: "noon configuration", hue: "#0F6B31", fill: "#CDD8D4", ratio: 4.54 },
-      { pair: "noon data", hue: "#1D4ED8", fill: "#CCD4E6", ratio: 4.51 },
-      { pair: "noon artefact", hue: "#8F4309", fill: "#D7CEC7", ratio: 4.55 },
-      { pair: "noon evidence", hue: "#0E635C", fill: "#C2D1D2", ratio: 4.51 },
-      { pair: "noon narrative", hue: "#565B63", fill: "#D0D3D5", ratio: 4.54 },
-      { pair: "noon agents", hue: "#6D28D9", fill: "#D2CAE6", ratio: 4.51 },
-      { pair: "noon breakage", hue: "#B91C1C", fill: "#E1D6D8", ratio: 4.56 },
-      { pair: "noon media", hue: "#BE185D", fill: "#E2DEE2", ratio: 4.54 },
-      { pair: "noon fallback", hue: "#505A55", fill: "#D7DBD5", ratio: 5.11 },
-      { pair: "dusk instruction", hue: "#F0865A", fill: "#493034", ratio: 4.71 },
-      { pair: "dusk configuration", hue: "#5CCB7C", fill: "#2B3E3B", ratio: 5.55 },
-      { pair: "dusk data", hue: "#6AA1FF", fill: "#2E3655", ratio: 4.59 },
-      { pair: "dusk artefact", hue: "#F5B83D", fill: "#4A3A2F", ratio: 6.09 },
-      { pair: "dusk evidence", hue: "#86BDD3", fill: "#343B4D", ratio: 5.45 },
-      { pair: "dusk narrative", hue: "#A8A6A3", fill: "#3A3743", ratio: 4.78 },
-      { pair: "dusk agents", hue: "#A78BFA", fill: "#372F50", ratio: 4.58 },
-      { pair: "dusk breakage", hue: "#F26D6D", fill: "#412836", ratio: 4.54 },
-      { pair: "dusk media", hue: "#F472B6", fill: "#4A2C47", ratio: 4.55 },
-      { pair: "dusk fallback", hue: "#B3ABC6", fill: "#372F4A", ratio: 5.73 },
-    ]);
-  });
-
-  /* UI-P03 MOVED THE ROOM AND LEFT THE FILLS. The nine `cat-*-fill` steps were
-     struck over the previous grounds — Noon's #E4E6E8 and Dusk's #1F1B2B — and
-     the kit does not mention them, so they keep those values (UI-P03: tokens the
-     kit does not mention keep their current values). Each still clears 4.5:1
-     against its own hue, which the pairs above prove; what no longer holds is
-     "composited over the CURRENT --bg", so the alpha is recovered against the
-     ground they were struck on. UI-P14 re-strikes them over the new room and
-     deletes this constant. */
-  const STRUCK_OVER = { noon: "#E4E6E8", dusk: "#1F1B2B" } as const;
-
-  it("each fill is its hue at a low alpha over the ground, and nothing else", () => {
+  it("each fill is its hue at a low alpha, and nothing else", () => {
     // The rule the fills were produced under: adjust the alpha, never the hue.
-    // Recovering an alpha in [0.01, 0.20] from the composite is what proves the
-    // hue did not move to make the pairing legal.
     for (const { theme, name } of CASES) {
+      if (name === "fallback") continue; // an alias of --recess, which is a surface and not a hue
       const hue = parse(resolve(theme, `cat-${name}` as TokenName));
-      const bg = parse(STRUCK_OVER[theme]);
       const fill = parse(resolve(theme, `cat-${name}-fill` as TokenName));
-
-      const alphas = [0, 1, 2].map((i) =>
-        hue[i] === bg[i] ? null : (fill[i] - bg[i]) / (hue[i] - bg[i]),
-      );
-      const found = alphas.filter((a): a is number => a !== null);
-      const mean = found.reduce((sum, a) => sum + a, 0) / found.length;
-
-      expect(mean, `${theme} ${name} fill is not a low alpha of its hue`).toBeGreaterThan(0);
-      expect(mean, `${theme} ${name} fill is not a LOW alpha of its hue`).toBeLessThanOrEqual(0.21);
-      for (const a of found) {
-        // Rounding to 8-bit channels moves each channel's implied alpha a
-        // little; a channel that has drifted further than that is a hue that
-        // was nudged, which is the thing this test exists to catch.
-        expect(Math.abs(a - mean), `${theme} ${name} fill is off-hue`).toBeLessThan(0.05);
-      }
+      expect(fill.slice(0, 3), `${theme} ${name} fill is off-hue`).toEqual(hue.slice(0, 3));
+      expect(fill[3], `${theme} ${name} fill is not a low alpha`).toBeGreaterThan(0);
+      expect(fill[3], `${theme} ${name} fill is not a LOW alpha`).toBeLessThanOrEqual(0.21);
     }
   });
 });

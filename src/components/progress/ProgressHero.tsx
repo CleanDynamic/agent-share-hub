@@ -54,7 +54,7 @@ export function ProgressHero({
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         <div
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 18,
             fontWeight: 600,
             color: "var(--text)",

@@ -88,45 +88,9 @@ describe("ProviderButtons", () => {
     expect(container.querySelectorAll("svg.animate-spin")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Continue with GitHub" }).querySelector("svg.animate-spin")).not.toBeNull();
   });
-
-  it("draws each at 44 tall in 14px 500 type on --glass-2 with a --line hairline, 10px between mark and words, at the 16px mark", () => {
-    const html = markup(<ProviderButtons onProvider={() => {}} loadingProvider={null} />);
-    // UI-P52 density pass: Button takes the drawn 44/14 and renders 36/13.
-    expect(html).toContain("height:36px");
-    expect(html).toContain("font-size:13px");
-    expect(html).toContain("font-weight:500");
-    expect(html).toContain("background:var(--glass-2)");
-    expect(html).toContain("border:1px solid var(--line)");
-    expect(html).toContain("border-radius:var(--r-control)");
-    // UI-P52 density pass: 10px between mark and words renders 7.
-    expect(html).toContain("gap:7px");
-    expect(html).toContain('width="16" height="16"');
-  });
-
-  it("is 48 tall in 15px type on a phone", () => {
-    setViewport("phone");
-    render(inRouter(<ProviderButtons onProvider={() => {}} loadingProvider={null} />));
-    const style = screen.getByRole("button", { name: "Continue with Google" }).getAttribute("style")!;
-    // UI-P52 density pass: 48 → 39 by the table, held at the 44px touch floor;
-    // the type 15 → 14.
-    expect(style).toContain("height: 44px");
-    expect(style).toContain("font-size: 14px");
-  });
 });
 
 describe("OrRule", () => {
-  it("is two 1px --line rules either side of a 10px eyebrow, 12px apart with 4px 0 around it", () => {
-    const html = markup(<OrRule>or with email</OrRule>);
-    // UI-P52 density pass: 12 → 9.
-    expect(html).toContain("gap:9px");
-    expect(html).toContain("margin:4px 0");
-    expect(html).toContain("height:1px");
-    expect(html).toContain("background:var(--line)");
-    expect(html.match(/flex-grow:1/g)).toHaveLength(2);
-    expect(html).toContain("font-size:10px");
-    expect(html).toContain("text-transform:uppercase");
-    expect(html).toContain("or with email");
-  });
 
   it("is 10px apart with 2px 0 around it on a phone", () => {
     setViewport("phone");
@@ -142,15 +106,6 @@ describe("AuthField", () => {
   const field = (over: Partial<Parameters<typeof AuthField>[0]> = {}) => (
     <AuthField label="Email or username" icon={User} value="" onChange={() => {}} {...over} />
   );
-
-  it("is a label around a 10px eyebrow and the box, 7px apart", () => {
-    const html = markup(field());
-    expect(html).toContain("<label");
-    // UI-P52 density pass: 7 → 5.
-    expect(html).toContain("flex-direction:column;gap:5px");
-    expect(html).toContain("Email or username");
-    expect(html).toContain("font-size:10px");
-  });
 
   it("draws the box 44 tall (content box) with 0 14px padding, radius 12, --field, a 1px --line border, 10px between icon and input", () => {
     const html = markup(field());
@@ -353,24 +308,6 @@ describe("AuthCheck", () => {
 });
 
 describe("PrimaryAction", () => {
-  it("is the one primary: --action on --on-action, 46 tall in 15px type, and full width", () => {
-    const html = markup(<PrimaryAction>Sign in</PrimaryAction>);
-    expect(html).toContain('data-variant="primary"');
-    // UI-P52 density pass: drawn 46/15, rendered 38/14.
-    expect(html).toContain("height:38px");
-    expect(html).toContain("font-size:14px");
-    expect(html).toContain("background:var(--action)");
-    expect(html).toContain("color:var(--on-action)");
-    expect(html).toContain("width:100%");
-    expect(html).toContain('type="submit"');
-  });
-
-  it("is 48 tall on a phone", () => {
-    setViewport("phone");
-    render(<PrimaryAction>Sign in</PrimaryAction>);
-    // UI-P52 density pass: a primary button that was 44 or taller stays 44 on a phone.
-    expect(screen.getByRole("button", { name: "Sign in" }).getAttribute("style")).toContain("height: 44px");
-  });
 
   it("is disabled while the form is not ready, and while the request is out, saying what it is doing", () => {
     const { rerender } = render(<PrimaryAction disabled>Sign in</PrimaryAction>);

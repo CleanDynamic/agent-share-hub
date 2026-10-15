@@ -87,7 +87,7 @@
   background: none; border: none;
   border-bottom: 1px solid var(--line);
   cursor: pointer;
-  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   transition: color var(--motion-fast) var(--motion-ease);
   width: 100%;
   text-align: left;
@@ -99,7 +99,7 @@
 
 /* ── Section label (trending, categories etc) ── */
 .ns-section-label {
-  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;

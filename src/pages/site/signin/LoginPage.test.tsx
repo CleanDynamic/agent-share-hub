@@ -61,12 +61,6 @@ describe("the gate", () => {
     expect(screen.getByText("buildgallery", { exact: true })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
   });
-
-  it("fills the orbs from the same two numbers the Home and Gallery pages read", async () => {
-    open();
-    expect(await screen.findByText("48 today")).toBeTruthy();
-    expect(await screen.findByText("1,284")).toBeTruthy();
-  });
 });
 
 describe("signing in", () => {

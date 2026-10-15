@@ -139,7 +139,7 @@ describe("the solvers board", () => {
     const row = (await screen.findAllByTestId("solver-row"))[0];
     for (const testId of ["solver-position", "solver-solved", "solver-reward"]) {
       const element = within(row).getByTestId(testId);
-      expect(element.style.fontFamily).toContain("DM Mono");
+      expect(element.style.fontFamily).toContain("Geist Mono");
       expect(element.style.fontVariantNumeric).toBe("tabular-nums");
     }
   });

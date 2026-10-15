@@ -22,9 +22,6 @@
 // It does not animate. A bar that grows in on every render is a bar that says
 // something every time it is looked at.
 
-import type { CSSProperties } from "react";
-
-import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 
 import { Eyebrow } from "./Eyebrow";
@@ -57,9 +54,6 @@ export interface StripedBarProps {
   "data-testid"?: string;
 }
 
-const stripes = (colour: string): CSSProperties["background"] =>
-  `repeating-linear-gradient(-60deg, ${colour} 0 2.5px, transparent 2.5px 6px)`;
-
 const clamp = (value: number) => (Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0);
 
 export function StripedBar({
@@ -74,84 +68,50 @@ export function StripedBar({
   "data-testid": testId,
 }: StripedBarProps) {
   const percent = clamp(value);
-  const refined = useLook() === "refined";
 
-  if (refined) {
-    const h = height <= 8 ? 4 : 6;
-    const labelled = ticks.some((tick) => tick.label);
-    return (
-      <div data-ui="striped-bar" data-testid={testId} style={{ width: "100%" }}>
-        <div
-          role="progressbar"
-          aria-label={label}
-          aria-valuemin={0}
-          aria-valuemax={valueMax ?? 100}
-          aria-valuenow={valueNow ?? percent}
-          aria-valuetext={valueText}
-          style={{ position: "relative", display: "flex", gap: 2, height: h }}
-        >
-          {percent > 0 ? (
-            <span data-striped-fill="" style={{ width: `${percent}%`, borderRadius: 1, background: colour }} />
-          ) : null}
-          {percent < 100 ? <span style={{ flexGrow: 1, borderRadius: 1, background: t.barBase }} /> : null}
-          {ticks.map((tick) => (
-            <span
-              key={tick.at}
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: `${clamp(tick.at)}%`,
-                top: (h - 12) / 2,
-                width: 1,
-                height: 12,
-                background: t.label,
-              }}
-            />
-          ))}
-        </div>
-        {labelled ? (
-          <div aria-hidden="true" style={{ position: "relative", height: 14, marginTop: 12 }}>
-            {ticks.map((tick) =>
-              tick.label ? (
-                <Eyebrow key={tick.at} style={{ position: "absolute", left: `${clamp(tick.at)}%`, transform: "translateX(-50%)" }}>
-                  {tick.label}
-                </Eyebrow>
-              ) : null,
-            )}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
+  const h = height <= 8 ? 4 : 6;
+  const labelled = ticks.some((tick) => tick.label);
   return (
-    <div
-      data-ui="striped-bar"
-      data-testid={testId}
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={valueMax ?? 100}
-      aria-valuenow={valueNow ?? percent}
-      aria-valuetext={valueText}
-      style={{ position: "relative", display: "flex", height, width: "100%" }}
-    >
-      <div data-striped-fill="" style={{ width: `${percent}%`, background: stripes(colour) }} />
-      <div style={{ flexGrow: 1, background: stripes(t.barBase) }} />
-      {ticks.map((tick) => (
-        <span
-          key={tick.at}
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: `${clamp(tick.at)}%`,
-            top: -4,
-            bottom: -4,
-            width: 1.5,
-            background: tick.colour,
-          }}
-        />
-      ))}
+    <div data-ui="striped-bar" data-testid={testId} style={{ width: "100%" }}>
+      <div
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={valueMax ?? 100}
+        aria-valuenow={valueNow ?? percent}
+        aria-valuetext={valueText}
+        style={{ position: "relative", display: "flex", gap: 2, height: h }}
+      >
+        {percent > 0 ? (
+          <span data-striped-fill="" style={{ width: `${percent}%`, borderRadius: 1, background: colour }} />
+        ) : null}
+        {percent < 100 ? <span style={{ flexGrow: 1, borderRadius: 1, background: t.barBase }} /> : null}
+        {ticks.map((tick) => (
+          <span
+            key={tick.at}
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: `${clamp(tick.at)}%`,
+              top: (h - 12) / 2,
+              width: 1,
+              height: 12,
+              background: t.label,
+            }}
+          />
+        ))}
+      </div>
+      {labelled ? (
+        <div aria-hidden="true" style={{ position: "relative", height: 14, marginTop: 12 }}>
+          {ticks.map((tick) =>
+            tick.label ? (
+              <Eyebrow key={tick.at} style={{ position: "absolute", left: `${clamp(tick.at)}%`, transform: "translateX(-50%)" }}>
+                {tick.label}
+              </Eyebrow>
+            ) : null,
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

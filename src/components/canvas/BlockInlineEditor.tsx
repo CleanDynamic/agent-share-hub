@@ -74,7 +74,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 13,
             color: 'var(--text)',
             padding: '8px 10px',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             boxSizing: 'border-box',
           }}
         />
@@ -100,7 +100,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           style={{
             fontSize: 12,
             color: 'var(--text2)',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
           }}
         />
         {block.videoFileName && (
@@ -133,7 +133,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
           <div style={{
             fontSize: 10, color: 'var(--text2)',
             padding: '4px 8px',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
           }}>
             {resolved.kind === 'youtube' ? 'YouTube' : 'Video'} thumbnail
           </div>
@@ -166,7 +166,7 @@ function VideoEditor({ block, onChange }: VideoEditorProps) {
             fontSize: 13,
             color: 'var(--text)',
             padding: '8px 10px',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             boxSizing: 'border-box',
           }}
         />
@@ -240,7 +240,7 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             fontSize: 13, fontStyle: 'italic',
             color: 'var(--text2)',
             lineHeight: 1.6, resize: 'vertical',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             minHeight: 100, padding: 10,
             boxSizing: 'border-box',
           }}
@@ -272,7 +272,7 @@ export function BlockInlineEditor({ block, onChange }: BlockInlineEditorProps) {
             borderRadius: 6, outline: 'none', fontSize: 14,
             color: 'var(--text2)',
             lineHeight: 1.65, resize: 'vertical',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             minHeight: 100, padding: 10,
             boxSizing: 'border-box',
           }}

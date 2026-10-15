@@ -1074,7 +1074,7 @@ const ContentDetail = () => {
             color: 'var(--text2)',
             lineHeight: 1.75,
             margin: '0 0 18px 0',
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
           }}>
             {item.description}
           </p>

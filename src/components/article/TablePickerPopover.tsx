@@ -39,7 +39,7 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
           border: '1px solid var(--line)',
           borderRadius: 10,
           boxShadow: '0 8px 24px var(--line)',
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           color: 'var(--text)',
         }}
       >
@@ -105,7 +105,7 @@ export function TablePickerPopover({ editor, trigger }: TablePickerPopoverProps)
             background: 'var(--recess)',
             color: 'var(--text)',
             fontSize: 11,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             cursor: hover.r > 0 ? 'pointer' : 'not-allowed',
             opacity: hover.r > 0 ? 1 : 0.5,
           }}

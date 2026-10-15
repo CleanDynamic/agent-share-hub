@@ -17,36 +17,6 @@ function markup(node: React.ReactElement): string {
   return renderToStaticMarkup(node);
 }
 
-describe("the nine, and the fallback", () => {
-  for (const category of CATEGORIES) {
-    it(`paints ${category} in its own hue, with no fill`, () => {
-      const html = markup(<CategoryChip category={category} label={category} />);
-      expect(html).toContain(`color:var(--cat-${category})`);
-      expect(html).not.toMatch(/background/);
-    });
-  }
-
-  it("lands an unknown category on the fallback ink, not on an invented hue", () => {
-    const html = markup(<CategoryChip category="founders" label="founders" />);
-    expect(html).toContain("color:var(--cat-fallback)");
-  });
-
-  it("resolves a synonym rather than falling back", () => {
-    const html = markup(<CategoryChip category="gap" label="gap" />);
-    expect(html).toContain("color:var(--cat-breakage)");
-  });
-
-  it("is the kit's chip: a 1px --line border, DM Mono 10px, 2px 4px, no wrap", () => {
-    // UI-P52 density pass: the padding is 2px 4px (2px 6px before); 10px type is kept.
-    const html = markup(<CategoryChip category="data" label="data" />);
-    expect(html).toContain("border:1px solid var(--line)");
-    expect(html).toContain("font-size:10px");
-    expect(html).toContain("padding:2px 4px");
-    expect(html).toContain("white-space:nowrap");
-    expect(html).toContain("DM Mono");
-  });
-});
-
 describe("no raw hex", () => {
   /**
    * The whole chip set, every variant and state, in one sweep.
@@ -94,14 +64,6 @@ describe("the count", () => {
 });
 
 describe("selection", () => {
-  it("is a border, and never a fill", () => {
-    const html = markup(
-      <CategoryChip category="agents" label="agents" selected onClick={() => {}} />
-    );
-    expect(html).toContain("border-color:var(--action)");
-    expect(html).toContain("color:var(--cat-agents)");
-    expect(html).not.toMatch(/background/);
-  });
 
   it("makes a chip with a handler an operable control", () => {
     const onClick = vi.fn();
@@ -121,12 +83,6 @@ describe("selection", () => {
 });
 
 describe("the overflow variant", () => {
-  it("renders +N in --text2 and wears no category ground", () => {
-    const html = markup(<CategoryChip variant="overflow" count={4} />);
-    expect(html).toContain(">+4<");
-    expect(html).toContain("color:var(--text2)");
-    expect(html).not.toMatch(/background:var\(--cat-[a-z]+-fill\)/);
-  });
 
   it("is phrasing content, so it may sit inside a paragraph", () => {
     const html = markup(<CategoryChip variant="overflow" count={2} />);

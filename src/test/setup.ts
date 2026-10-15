@@ -36,19 +36,3 @@ for (const [name, read] of [
     });
   }
 }
-
-// UI-P98: the site switch is on, so a bare render (no router, no `/dev` URL) would now be refined. The unit tests
-// written for the current look keep that look in a bare render; a test asks for the refined one the way a dev page
-// does, with `?look=refined` on a `/dev/*` route. UI-P99 retires this along with the current look.
-vi.mock("@/lib/theme/look", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/theme/look")>();
-  const { useContext } = await import("react");
-  const { UNSAFE_LocationContext } = await import("react-router-dom");
-  return {
-    ...actual,
-    useLook: () => {
-      const location = useContext(UNSAFE_LocationContext)?.location;
-      return actual.resolveLook(location?.pathname ?? "", location?.search ?? "", false);
-    },
-  };
-});

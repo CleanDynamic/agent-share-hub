@@ -99,7 +99,7 @@ export function DiscoverSearchHeader({
                 style={{
                   gap: 6,
                   color: isActive ? 'var(--text)' : 'var(--text2)',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: 13,
                   fontWeight: 500,
                   transition: feedback("color"),
@@ -116,7 +116,7 @@ export function DiscoverSearchHeader({
               </div>
               <span
                 style={{
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   fontSize: 10,
                   fontWeight: 400,
                   color: 'var(--text)',
@@ -154,7 +154,7 @@ export function DiscoverSearchHeader({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 14,
               fontWeight: 400,
               color: 'var(--text)',
@@ -171,7 +171,7 @@ export function DiscoverSearchHeader({
           />
           <span
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 10,
               fontWeight: 500,
               color: 'var(--text)',
@@ -201,7 +201,7 @@ export function DiscoverSearchHeader({
           <SlidersHorizontal size={14} style={{ color: 'var(--text)' }} />
           <span
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 13,
               fontWeight: 500,
               color: 'var(--text2)',
@@ -217,7 +217,7 @@ export function DiscoverSearchHeader({
                 borderRadius: '50%',
                 background: 'color-mix(in srgb, var(--action) 20%, transparent)',
                 color: 'var(--action)',
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 10,
                 fontWeight: 600,
                 display: 'flex',
@@ -239,7 +239,7 @@ export function DiscoverSearchHeader({
               key={filter.key}
               className="flex items-center"
               style={{
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '3px 8px',
@@ -270,7 +270,7 @@ export function DiscoverSearchHeader({
             <button
               onClick={onClearFilters}
               style={{
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 fontSize: 11,
                 fontWeight: 500,
                 color: 'var(--text2)',
@@ -292,7 +292,7 @@ export function DiscoverSearchHeader({
       <div className="flex items-center justify-between" style={{ height: 32, marginTop: 12 }}>
         <span
           style={{
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
             fontSize: 12,
             fontWeight: 400,
             color: 'var(--text2)',
@@ -306,7 +306,7 @@ export function DiscoverSearchHeader({
             onClick={() => setSortOpen(!sortOpen)}
             className="flex items-center"
             style={{
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
               fontSize: 12,
               fontWeight: 500,
               color: 'var(--text2)',
@@ -346,7 +346,7 @@ export function DiscoverSearchHeader({
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
-                    fontFamily: 'Figtree, sans-serif',
+                    fontFamily: 'var(--font-ui)',
                     fontSize: 12,
                     fontWeight: option === sort ? 600 : 400,
                     color: option === sort ? 'var(--action)' : 'var(--text2)',

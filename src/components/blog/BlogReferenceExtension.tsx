@@ -146,7 +146,7 @@ function ChipNodeView({ node, editor, getPos }: NodeViewProps) {
             minWidth: 180,
             display: "flex",
             flexDirection: "column",
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 12,
           }}
           onMouseDown={(e) => e.stopPropagation()}

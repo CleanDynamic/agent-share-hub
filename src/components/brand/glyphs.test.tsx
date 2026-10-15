@@ -8,7 +8,6 @@ import { Bell, Search, Sparkles } from "lucide-react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-
 import { Glyph } from "./Glyph";
 import { Icon } from "./Icon";
 import { GLYPHS, GLYPH_NAMES, type GlyphName } from "./glyphs";
@@ -42,7 +41,7 @@ const TABLE: Record<GlyphName, string> = {
   mail: "M2.5 4h11v8h-11zM2.5 4.5 8 9l5.5-4.5",
 };
 
-const REFINED_URL = "/dev/kit/components?look=refined";
+const REFINED_URL = "/dev/kit/components";
 const CURRENT_URL = "/dev/kit/components?look=current";
 const at = (url: string, node: React.ReactElement) => <MemoryRouter initialEntries={[url]}>{node}</MemoryRouter>;
 const svgOf = (container: HTMLElement) => container.querySelector("svg") as SVGSVGElement;
@@ -102,24 +101,6 @@ describe("Glyph", () => {
 });
 
 describe("Icon", () => {
-  it("is the lucide icon under the current look, as given", () => {
-    const svg = svgOf(
-      render(at(CURRENT_URL, <Icon lucide={Search} glyph="search" size={16} strokeWidth={1.6} />)).container,
-    );
-    expect(svg).toHaveClass("lucide-search");
-    expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
-    expect(svg).toHaveAttribute("width", "16");
-    expect(svg).toHaveAttribute("stroke-width", "1.6");
-    expect(svg).toHaveAttribute("stroke-linecap", "round");
-    expect(svg).toHaveAttribute("aria-hidden", "true");
-    expect(svg.querySelector(`path[d="${GLYPHS.search}"]`)).toBeNull();
-  });
-
-  it("keeps the current look with no router at all (the unit-test setup pins it; the switch itself is tested in look.test.ts)", () => {
-    const svg = svgOf(render(<Icon lucide={Bell} glyph="bell" />).container);
-    expect(svg).toHaveClass("lucide-bell");
-    expect(svg).toHaveAttribute("width", "24");
-  });
 
   it("leaves `aria-hidden` to the caller when the caller sets it", () => {
     const svg = svgOf(render(at(CURRENT_URL, <Icon lucide={Search} aria-hidden={false} />)).container);

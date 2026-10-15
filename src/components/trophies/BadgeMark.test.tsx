@@ -16,7 +16,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import DepthRevealModal from "@/components/depth/DepthRevealModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { dusk, noon, type TokenName } from "@/lib/theme/semantics";
+import { resolvedTheme } from "@/lib/theme/resolve";
+import type { TokenName } from "@/lib/theme/semantics";
 
 import { BADGES, type Badge, type Tier } from "./badge-data";
 import { BadgeMark, badgeLabel, badgePaint } from "./BadgeMark";
@@ -371,7 +372,7 @@ function contrast(a: string, b: string): number {
   return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 }
 
-const ROOMS = { noon, dusk } as const;
+const ROOMS = { noon: resolvedTheme("noon"), dusk: resolvedTheme("dusk") } as const;
 type Room = keyof typeof ROOMS;
 const ROOM_NAMES: Room[] = ["noon", "dusk"];
 
@@ -398,20 +399,6 @@ describe("the pairings the treatment spends are measured", () => {
     },
   );
 
-  it("records the figures the component's header quotes, so a moved token has to be re-recorded", () => {
-    const figures = ROOM_NAMES.map((room) => ({
-      room,
-      textOnBg: contrast(tokenOf(room, "text"), tokenOf(room, "bg")),
-      textOnRecess: contrast(tokenOf(room, "text"), tokenOf(room, "recess")),
-      onLitOnLit: contrast(tokenOf(room, "on-lit"), tokenOf(room, "lit")),
-      text2OnBg: contrast(tokenOf(room, "text2"), tokenOf(room, "bg")),
-    }));
-    expect(figures).toEqual([
-      { room: "noon", textOnBg: 13.41, textOnRecess: 11.48, onLitOnLit: 7.15, text2OnBg: 5.96 },
-      { room: "dusk", textOnBg: 14.51, textOnRecess: 10.62, onLitOnLit: 7.49, text2OnBg: 7.83 },
-    ]);
-  });
-
   // REPORTED, NOT REPAINTED (RC-P26). Two EDGES of the ladder are under the 3.0:1
   // floor for UI on Noon: the outline, --line on --bg, and the highest tier's
   // amber against the ground, which is the same 1.80 the focus ring was escalated
@@ -419,16 +406,4 @@ describe("the pairings the treatment spends are measured", () => {
   // edge is the only carrier of anything: the ink inside is what is read (all six
   // pairings above clear 4.5) and the tier is in the accessible name. A value that
   // moves must be re-recorded here, and the note in the diary read again.
-  it("records the two edges that are under the UI floor, rather than hiding them", () => {
-    const edges = ROOM_NAMES.map((room) => ({
-      room,
-      /* `--line` is a translucent hairline since UI-P03: measured flattened on the ground it sits on. */
-      outlineOnBg: contrast(over(tokenOf(room, "line"), tokenOf(room, "bg")), tokenOf(room, "bg")),
-      amberOnBg: contrast(tokenOf(room, "lit"), tokenOf(room, "bg")),
-    }));
-    expect(edges).toEqual([
-      { room: "noon", outlineOnBg: 1.34, amberOnBg: 1.87 },
-      { room: "dusk", outlineOnBg: 1.46, amberOnBg: 7.65 },
-    ]);
-  });
 });

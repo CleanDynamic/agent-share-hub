@@ -1,63 +1,69 @@
-/* UI-P50 — Gallery, the dashboard: how builds were made.
+/* UI-P89 — the Gallery dashboard in the refined look, as `design/reference/refined/{dusk,noon}/gallery-dashboard.html`
+   draws it.
 
-   PURE. Props in, markup out: no fetching, no `useAuth()`, no router hooks but
-   `Link`. `GalleryDashboardPage` supplies live data; the dev compare page
-   (/dev/kit/pages/gallery-dashboard) supplies the fixture. DESKTOP ONLY: below
-   768px the page renders the feed instead (UI-P49), so this view never draws a
-   phone layout.
+   UI-P99: THIS WAS THE REFINED FORK. The current view it forked is deleted and this took its name; what follows was written when both existed, so "the current look" below means the look that has been retired. `GalleryDashboardView` stays the current look; this is the same page with the same props
+   (imported from it, not copied), the same menus (`menusFor`), handlers, copy, accessible names and order of parts.
+   `GalleryDashboardPage` and the dev page choose between the two with `useLook()`. DESKTOP ONLY, as before: below
+   768px the page renders the feed.
 
-   LAYOUT (1280 column): a grid `212px minmax(0, 1fr)`, gap 12. The sidebar is
-   one plain Panel (heading, the three tabs, labs, reporting, links, drafts); the
-   main panel is another (title and pill, search and the Feed | Dashboard switch,
-   tabs, toolbar, the table, the footer's calculations).
+   LAYOUT. The frame draws the breadcrumb; this is a wrapping row, gap 32: the sidebar (`flex: 1 1 208px`, max 224, a
+   hairline on its right, gap 24) and the content (`flex: 999 1 640px`, gap 16). No panels: the frame's one surface is
+   the ground, and the table is rows on hairlines, not a well.
 
-   DENSER SINCE UI-P56, to the design canvas's numbers (no board draws this
-   page): the sidebar 212 wide with rows 30 / 28, the main panel 12 in, the four
-   toolbar menus 28 tall in one inset strip with Export 36 beside it (the strip's
-   own height), and the table in a bordered well with a 30px `--cell` header and
-   42px rows. Where the canvas is silent a size is its old value through the
-   density table (`design/prompts/README-density.md`). Brand pieces take the size
-   they render through the table: a size given to Button, Segmented or Panel below
-   is the one that renders the canvas's number, and the comment beside it says so.
-
-   THE ADDRESS IS THE STATE, and it is not held here: every control is a callback
-   the page answers by writing the address. The view owns only what is in
-   flight: the ticked rows, the footer's two toggles and the search text before
-   its debounce. UI-P50 built the Builds tab; UI-P51 adds the Models and Makers
-   tabs (folds of the rows the filters leave) and the detail sheet, which is
-   open exactly when `openId` names a build (`onOpenBuild` / `onCloseBuild`).
-
-   EVERY COLOUR IS A TOKEN. */
+   THE SIDEBAR'S LABS carry their real marks (`ModelMark lab`), with no tile. The table's AI models cell carries
+   `ModelTag`s. */
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Check, ChevronDown, Download, Minus, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
+import { Checkbox } from "@/components/brand/Checkbox";
+import { Eyebrow } from "@/components/brand/Eyebrow";
+import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
-import { Panel } from "@/components/brand/Panel";
+import { MenuButton } from "@/components/brand/MenuButton";
+import { ModelMark } from "@/components/brand/ModelMark";
+import { ModelTag } from "@/components/brand/ModelTag";
+import { Pill } from "@/components/brand/Pill";
 import { Segmented } from "@/components/brand/Segmented";
 import { Skeleton } from "@/components/brand/Skeleton";
+import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { Sparkline } from "@/components/brand/charts";
-import type { PageFit } from "@/components/shell/siteFrameFit";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { makerRows, modelRows } from "@/lib/build/dashboardAggregates";
 import type { DashboardRow } from "@/lib/build/gallery";
-import type { DashboardActive, DashboardReport, DashboardSort, DashboardTab, GalleryViewMode } from "@/lib/build/galleryParams";
+import type {
+  DashboardTab,
+  GalleryViewMode,
+  DashboardActive,
+  DashboardReport,
+  DashboardSort,
+} from "@/lib/build/galleryParams";
 import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
-import { r } from "@/lib/theme/radius";
+import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
+import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, display } from "@/lib/theme/type";
+import { FIGTREE, DM_MONO } from "@/lib/theme/type";
 
 import { BuildDetailSheet } from "./BuildDetailSheet";
-import { menuContent, menuItem, groupHeading, SearchField } from "./GalleryFeedView";
 import {
-  ACTIVE_ITEMS,
-  DASHBOARD_SORT_ITEMS,
-  audienceCounts,
+  RefinedGroupHeading,
+  RefinedOptionBody,
+  RefinedSearchField,
+  refinedMenuContent,
+  refinedMenuItem,
+} from "./GalleryFeedView";
+import {
   averageSessions,
   buildCsv,
   downloadText,
@@ -71,11 +77,13 @@ import {
   sortModelRows,
   sparkValues,
   sumOfPrompts,
+  ACTIVE_ITEMS,
+  DASHBOARD_SORT_ITEMS,
+  audienceCounts,
   type DashboardCounts,
 } from "./dashboardModel";
 import { formatCount } from "./galleryModel";
-
-/* ── the view's props ── */
+import type { PageFit } from "@/components/shell/siteFrameFit";
 
 export interface GalleryDashboardViewProps {
   fit?: PageFit;
@@ -120,281 +128,13 @@ export interface GalleryDashboardViewProps {
   onOpenModel: (id: string) => void;
 }
 
-/* ── small pieces ── */
-
-const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
+export const mono = (px: number, extra: CSSProperties = {}): CSSProperties => ({
   fontFamily: DM_MONO,
   fontSize: px,
   lineHeight: "normal",
   fontVariantNumeric: "tabular-nums",
   ...extra,
 });
-
-const figtree = (px: number, extra: CSSProperties = {}): CSSProperties => ({
-  fontFamily: FIGTREE,
-  fontSize: px,
-  lineHeight: "normal",
-  ...extra,
-});
-
-const bareButton: CSSProperties = {
-  appearance: "none",
-  background: "transparent",
-  border: 0,
-  margin: 0,
-  padding: 0,
-  color: "inherit",
-  font: "inherit",
-  cursor: "pointer",
-  textAlign: "left",
-};
-
-/** The 15px checkbox (18 before UI-P56): a button with `role="checkbox"`, so it can say "mixed". */
-function Box({ checked, label, onChange }: { checked: boolean | "mixed"; label: string; onChange: () => void }) {
-  return (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={onChange}
-      style={{
-        ...bareButton,
-        width: 15,
-        height: 15,
-        borderRadius: 5,
-        boxSizing: "border-box",
-        flexShrink: 0,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: checked ? t.text : "transparent",
-        border: `1px solid ${checked ? t.text : t.line}`,
-        color: t.onText,
-      }}
-    >
-      {checked === "mixed" ? (
-        <Minus size={12} strokeWidth={2} aria-hidden="true" />
-      ) : checked ? (
-        <Check size={12} strokeWidth={2} aria-hidden="true" />
-      ) : null}
-    </button>
-  );
-}
-
-/** A sidebar row: the label grows, the count sits on the right. */
-function NavButton({
-  label,
-  count,
-  on,
-  onClick,
-  minHeight,
-  pressed,
-  lead,
-  current,
-  testId,
-}: {
-  label: string;
-  count?: number;
-  on: boolean;
-  onClick: () => void;
-  minHeight: number;
-  /** A toggle (aria-pressed) rather than the current page's tab. */
-  pressed?: boolean;
-  lead?: ReactNode;
-  current?: boolean;
-  testId?: string;
-}) {
-  return (
-    <button
-      type="button"
-      data-testid={testId}
-      aria-pressed={pressed ? on : undefined}
-      aria-current={current && on ? "page" : undefined}
-      onClick={onClick}
-      style={{
-        ...bareButton,
-        ...figtree(13, { fontWeight: on ? 600 : 400, color: t.text }),
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        width: "100%",
-        minHeight,
-        padding: "0 6px",
-        boxSizing: "border-box",
-        borderRadius: 10,
-        background: on ? t.rowHighlight : "transparent",
-      }}
-    >
-      {lead}
-      <span style={{ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      {count !== undefined ? <span style={mono(11, { color: t.text2, fontWeight: 400 })}>{formatCount(count)}</span> : null}
-    </button>
-  );
-}
-
-const sectionHeading: CSSProperties = mono(10, {
-  color: t.label,
-  textTransform: "uppercase",
-  letterSpacing: ".08em",
-  padding: "0 6px 4px",
-});
-
-const linkRow: CSSProperties = {
-  ...figtree(13, { color: t.text2 }),
-  display: "flex",
-  alignItems: "center",
-  minHeight: 28,
-  padding: "0 6px",
-  boxSizing: "border-box",
-  borderRadius: 10,
-  textDecoration: "none",
-  width: "100%",
-};
-
-/* ── the sidebar ── */
-
-function Sidebar(props: GalleryDashboardViewProps) {
-  const { tab, onTabChange, counts, lab, onLabChange, report, onReportChange, drafts, onConnect } = props;
-  const tabs: { value: DashboardTab; label: string; count: number }[] = [
-    { value: "builds", label: "Builds", count: counts.builds },
-    { value: "models", label: "Models", count: MODEL_VERSIONS.length },
-    { value: "makers", label: "Makers", count: counts.makers },
-  ];
-  const draftCount = drafts?.count ?? null;
-  return (
-    /* The Panel maps its padding through the table: 16px 14px renders the canvas's 12px 10px. */
-    <Panel as="aside" padding="16px 14px" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ padding: "0 6px" }}>
-        <div style={figtree(14, { fontWeight: 600, color: t.text })}>Gallery</div>
-        <div style={figtree(12, { color: t.text2 })}>How builds were made</div>
-      </div>
-
-      <nav aria-label="Dashboard" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {tabs.map((item) => (
-          <NavButton
-            key={item.value}
-            testId={`dash-nav-${item.value}`}
-            label={item.label}
-            count={item.count}
-            on={tab === item.value}
-            current
-            minHeight={30}
-            onClick={() => onTabChange(item.value)}
-          />
-        ))}
-      </nav>
-
-      <div role="group" aria-label="Labs" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={sectionHeading}>Labs</div>
-        {LABS.map((name) => (
-          <NavButton
-            key={name}
-            testId={`dash-lab-${name}`}
-            label={name}
-            count={counts.byLab[name] ?? 0}
-            on={lab === name}
-            pressed
-            minHeight={28}
-            onClick={() => onLabChange(lab === name ? null : name)}
-            lead={
-              <span
-                aria-hidden="true"
-                style={mono(11, {
-                  width: 18,
-                  height: 18,
-                  borderRadius: 6,
-                  background: t.cell,
-                  color: t.text,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  fontWeight: 400,
-                })}
-              >
-                {name.charAt(0).toUpperCase()}
-              </span>
-            }
-          />
-        ))}
-      </div>
-
-      <div role="group" aria-label="Reporting" style={{ display: "flex", flexDirection: "column" }}>
-        <div style={sectionHeading}>Reporting</div>
-        <NavButton
-          testId="dash-report-month"
-          label="Active this month"
-          count={counts.activeThisMonth}
-          on={report === "month"}
-          pressed
-          minHeight={28}
-          onClick={() => onReportChange(report === "month" ? null : "month")}
-        />
-        <NavButton
-          testId="dash-report-multi"
-          label="Built over 3+ sessions"
-          count={counts.multiSession}
-          on={report === "multi"}
-          pressed
-          minHeight={28}
-          onClick={() => onReportChange(report === "multi" ? null : "multi")}
-        />
-      </div>
-
-      <div style={{ borderTop: `1px solid ${t.hairline}`, paddingTop: 6, display: "flex", flexDirection: "column" }}>
-        <button type="button" onClick={onConnect} style={{ ...bareButton, ...linkRow }}>
-          Connect a tool
-        </button>
-        <Link to="/about" style={linkRow}>
-          Help
-        </Link>
-      </div>
-
-      {drafts ? (
-        <div
-          data-testid="dash-drafts"
-          style={{
-            padding: 10,
-            borderRadius: 12,
-            background: t.cell,
-            border: `1px solid ${t.hairline}`,
-            display: "flex",
-            flexDirection: "column",
-            gap: 7,
-          }}
-        >
-          <div>
-            <div style={figtree(13, { fontWeight: 600, color: t.text })}>
-              {draftCount === null ? "Drafts" : `${formatCount(draftCount)} ${draftCount === 1 ? "draft" : "drafts"}`}
-            </div>
-            <div style={figtree(12, { color: t.text2 })}>Waiting to be finished</div>
-          </div>
-          <Link
-            to="/drafts"
-            style={{
-              ...figtree(12, { fontWeight: 500, color: t.text }),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 30,
-              width: "100%",
-              boxSizing: "border-box",
-              borderRadius: r.control,
-              border: `1px solid ${t.line}`,
-              background: t.glass2,
-              textDecoration: "none",
-            }}
-          >
-            Open drafts
-          </Link>
-        </div>
-      ) : null}
-    </Panel>
-  );
-}
-
-/* ── the toolbar's menus ── */
 
 export interface ToolbarOption {
   key: string;
@@ -410,60 +150,6 @@ export interface ToolbarMenu {
   label: string;
   value: string;
   groups: { heading?: string; options: ToolbarOption[] }[];
-}
-
-function ToolbarMenuView({ menu }: { menu: ToolbarMenu }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {/* Inside the strip: 28 tall at 12px (34/12 through the table), the secondary's `--glass-2` with no border, chip radius. */}
-        <Button
-          variant="secondary"
-          size={34}
-          fontSize={12}
-          data-testid={`dash-menu-${menu.key}`}
-          style={{ border: 0, borderRadius: r.chip }}
-        >
-          <span style={{ color: t.text2, fontWeight: 500 }}>{menu.label}</span>
-          <span style={{ fontWeight: 600, color: t.text }}>{menu.value}</span>
-          <ChevronDown size={12} strokeWidth={1.8} aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} style={menuContent} aria-label={menu.label}>
-        {menu.groups.map((group, index) => (
-          <div key={group.heading ?? index} role="group" aria-label={group.heading}>
-            {group.heading ? <div style={groupHeading}>{group.heading}</div> : null}
-            {group.options.map((option) => (
-              <DropdownMenuItem
-                key={option.key}
-                role="menuitemradio"
-                aria-checked={option.selected}
-                className={MENU_ITEM_CLASS}
-                style={menuItem}
-                onSelect={option.onSelect}
-              >
-                <span
-                  style={{
-                    flexGrow: 1,
-                    minWidth: 0,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontWeight: option.selected ? 600 : 500,
-                    color: option.selected ? t.text : undefined,
-                  }}
-                >
-                  {option.label}
-                </span>
-                {option.selected ? <Check size={14} strokeWidth={1.8} aria-hidden="true" style={{ flexShrink: 0 }} /> : null}
-                {option.note ? <span style={mono(12, { color: t.label, flexShrink: 0 })}>{option.note}</span> : null}
-              </DropdownMenuItem>
-            ))}
-          </div>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 export function menusFor(props: GalleryDashboardViewProps): ToolbarMenu[] {
@@ -543,42 +229,288 @@ export function menusFor(props: GalleryDashboardViewProps): ToolbarMenu[] {
   ];
 }
 
-/* ── the table ── */
+/* ── type ── */
 
-const GRID: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "minmax(200px, 1fr) 196px 58px 58px 62px 80px 80px 150px 28px",
-  columnGap: 8,
-  alignItems: "center",
-  padding: "0 6px",
-  borderBottom: `1px solid ${t.hairline}`,
+const text = (px: number, weight: 400 | 500, color: string, extra: CSSProperties = {}): CSSProperties => ({
+  fontFamily: FIGTREE,
+  fontSize: px,
+  fontWeight: weight,
+  lineHeight: "normal",
+  color,
+  ...extra,
+});
+
+const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
+const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+
+const bareButton: CSSProperties = {
+  appearance: "none",
+  background: "transparent",
+  border: 0,
+  margin: 0,
+  padding: 0,
+  color: "inherit",
+  font: "inherit",
+  cursor: "pointer",
+  textAlign: "left",
 };
 
-/* The last row's hairline would sit on the well's own edge and draw it twice. */
-const LAST_ROW: CSSProperties = { borderBottom: 0 };
+/* ── the sidebar ── */
 
-/* The tracks need 200 + 712 of fixed columns, 64 of gaps and 12 of padding: below 988 the last columns
-   would spill out of the row's hairline and highlight, so the table scrolls sideways from there (1100,
-   the old tracks' sum, before UI-P56). Not the canvas's 1040: the well is 1028 wide at 1440 (1280 less
-   the 212 sidebar, the 12 gap, the panel's edges and padding and its own edges), and 1040 would clip the
-   row actions there. */
-const TABLE_MIN_WIDTH = 988;
+/** A sidebar row: the label grows, the count sits on the right in `--label`. The current one is the control recipe. */
+function NavRow({
+  label,
+  count,
+  on,
+  onClick,
+  height,
+  size,
+  pressed,
+  lead,
+  current,
+  testId,
+}: {
+  label: string;
+  count?: number;
+  on: boolean;
+  onClick: () => void;
+  height: 30 | 32;
+  size: 12.5 | 13;
+  /** A toggle (aria-pressed) rather than the current page's tab. */
+  pressed?: boolean;
+  lead?: ReactNode;
+  current?: boolean;
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-pressed={pressed ? on : undefined}
+      aria-current={current && on ? "page" : undefined}
+      onClick={onClick}
+      style={{
+        ...bareButton,
+        ...text(size, size === 13 || on ? 500 : 400, on ? t.text : t.text2),
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        width: "100%",
+        height,
+        padding: "0 8px",
+        boxSizing: "border-box",
+        borderRadius: 6,
+        ...(on ? { ...CONTROL, ...CONTROL_HOVER } : { border: "1px solid transparent" }),
+      }}
+    >
+      {lead}
+      <span style={{ flexGrow: 1, minWidth: 0, ...ellipsis }}>{label}</span>
+      {count !== undefined ? <span style={text(11.5, 400, t.label, tnum)}>{formatCount(count)}</span> : null}
+    </button>
+  );
+}
 
-/** The table's well: a 1px hairline at radius 10, clipping the header's ground and the rows' highlight. */
-const well: CSSProperties = { border: `1px solid ${t.hairline}`, borderRadius: 10, overflow: "hidden" };
+const groupStyle: CSSProperties = { display: "flex", flexDirection: "column", gap: 2 };
 
-const headCell: CSSProperties = figtree(11, { color: t.text2, fontWeight: 500 });
+function Sidebar(props: GalleryDashboardViewProps) {
+  const { tab, onTabChange, counts, lab, onLabChange, report, onReportChange, drafts, onConnect } = props;
+  const tabs: { value: DashboardTab; label: string; count: number }[] = [
+    { value: "builds", label: "Builds", count: counts.builds },
+    { value: "models", label: "Models", count: MODEL_VERSIONS.length },
+    { value: "makers", label: "Makers", count: counts.makers },
+  ];
+  const draftCount = drafts?.count ?? null;
+  const stacked = !useMinWidth(BETWEEN.stack);
+  return (
+    <aside
+      style={asideStyle(stacked, {
+        flex: "1 1 208px",
+        maxWidth: 224,
+        minWidth: 0,
+        boxSizing: "border-box",
+        paddingRight: 24,
+        borderRight: `1px solid ${t.hairline}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 24,
+      })}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <span style={text(14, 500, t.text)}>Gallery</span>
+        <span style={text(12, 400, t.text2)}>How builds were made</span>
+      </div>
+
+      <nav aria-label="Dashboard" style={groupStyle}>
+        {tabs.map((item) => (
+          <NavRow
+            key={item.value}
+            testId={`dash-nav-${item.value}`}
+            label={item.label}
+            count={item.count}
+            on={tab === item.value}
+            current
+            height={32}
+            size={13}
+            onClick={() => onTabChange(item.value)}
+          />
+        ))}
+      </nav>
+
+      <div role="group" aria-label="Labs" style={groupStyle}>
+        <Eyebrow style={{ padding: "0 8px 6px" }}>Labs</Eyebrow>
+        {LABS.map((name) => (
+          <NavRow
+            key={name}
+            testId={`dash-lab-${name}`}
+            label={name}
+            count={counts.byLab[name] ?? 0}
+            on={lab === name}
+            pressed
+            height={30}
+            size={12.5}
+            onClick={() => onLabChange(lab === name ? null : name)}
+            lead={<ModelMark lab={name} size={18} />}
+          />
+        ))}
+      </div>
+
+      <div role="group" aria-label="Reporting" style={groupStyle}>
+        <Eyebrow style={{ padding: "0 8px 6px" }}>Reporting</Eyebrow>
+        <NavRow
+          testId="dash-report-month"
+          label="Active this month"
+          count={counts.activeThisMonth}
+          on={report === "month"}
+          pressed
+          height={30}
+          size={12.5}
+          onClick={() => onReportChange(report === "month" ? null : "month")}
+        />
+        <NavRow
+          testId="dash-report-multi"
+          label="Built over 3+ sessions"
+          count={counts.multiSession}
+          on={report === "multi"}
+          pressed
+          height={30}
+          size={12.5}
+          onClick={() => onReportChange(report === "multi" ? null : "multi")}
+        />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Button variant="secondary" size={28} fontSize={12} onClick={onConnect}>
+          Connect a tool
+        </Button>
+        <Link to="/about" style={text(12.5, 500, t.text2, { textDecoration: "none" })}>
+          Help
+        </Link>
+      </div>
+
+      {drafts ? (
+        <div
+          data-testid="dash-drafts"
+          style={{
+            background: t.tile,
+            border: `1px solid ${t.tileBorder}`,
+            borderRadius: 6,
+            padding: 12,
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={text(12.5, 500, t.text)}>
+              {draftCount === null ? "Drafts" : `${formatCount(draftCount)} ${draftCount === 1 ? "draft" : "drafts"}`}
+            </span>
+            <span style={text(12, 400, t.text2)}>Waiting to be finished</span>
+          </div>
+          <Link
+            to="/drafts"
+            style={text(12.5, 500, t.text, { textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line, alignSelf: "flex-start" })}
+          >
+            Open drafts
+          </Link>
+        </div>
+      ) : null}
+    </aside>
+  );
+}
+
+/* ── the filter row's menus ── */
+
+function ToolbarMenuView({ menu }: { menu: ToolbarMenu }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <MenuButton label={menu.label} value={menu.value} data-testid={`dash-menu-${menu.key}`} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6} style={refinedMenuContent} aria-label={menu.label}>
+        {menu.groups.map((group, index) => (
+          <div key={group.heading ?? index} role="group" aria-label={group.heading}>
+            {group.heading ? <RefinedGroupHeading>{group.heading}</RefinedGroupHeading> : null}
+            {group.options.map((option) => (
+              <DropdownMenuItem
+                key={option.key}
+                role="menuitemradio"
+                aria-checked={option.selected}
+                className={MENU_ITEM_CLASS}
+                style={refinedMenuItem}
+                onSelect={option.onSelect}
+              >
+                <RefinedOptionBody label={option.label} selected={option.selected} note={option.note} />
+              </DropdownMenuItem>
+            ))}
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/* ── the tables ── */
+
+const GRID_COLUMNS = "minmax(0, 2.6fr) minmax(0, 1.7fr) 64px 64px 64px 80px 72px minmax(0, 1.5fr) 28px";
+/* The tracks' fixed columns, their gaps and the shares the text needs: below this the table scrolls sideways. */
+const TABLE_MIN_WIDTH = 880;
+
+const gridOf = (columns: string): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: columns,
+  gap: 12,
+  alignItems: "center",
+});
+
+const headRow = (columns: string): CSSProperties => ({ ...gridOf(columns), height: 36, borderBottom: `1px solid ${t.hairline}` });
+
+/** A row: 48 high on a hairline; a selected one takes the tile fill and loses its hairline. */
+const bodyRow = (columns: string, filled: boolean): CSSProperties => ({
+  ...gridOf(columns),
+  height: 48,
+  padding: "0 8px",
+  margin: "0 -8px",
+  borderRadius: 6,
+  borderBottom: `1px solid ${filled ? "transparent" : t.hairline}`,
+  background: filled ? t.tile : undefined,
+});
+
+const headCell: CSSProperties = text(11.5, 500, t.label);
 const rightCell: CSSProperties = { textAlign: "right" };
-const numberCell: CSSProperties = mono(12, { color: t.text, textAlign: "right" });
-
-/** The header row: 30 tall on a `--cell` ground. */
-const headRow: CSSProperties = { height: 30, background: t.cell };
+const numberCell: CSSProperties = text(12.5, 400, t.text, { ...tnum, textAlign: "right" });
+const NONE = <span style={text(12, 400, t.label)}>—</span>;
 
 function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () => void }) {
   return (
-    <div role="row" style={{ ...GRID, ...headRow }}>
-      <div role="columnheader" style={{ ...headCell, display: "flex", alignItems: "center", gap: 7 }}>
-        <Box checked={all} label="Select all builds" onChange={onToggleAll} />
+    <div role="row" style={headRow(GRID_COLUMNS)}>
+      <div role="columnheader" style={{ ...headCell, display: "flex", alignItems: "center", gap: 12 }}>
+        <Checkbox
+          checked={all === true}
+          aria-checked={all === "mixed" ? "mixed" : undefined}
+          label="Select all builds"
+          onChange={onToggleAll}
+        />
         Build
       </div>
       <div role="columnheader" style={headCell}>
@@ -590,18 +522,10 @@ function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () 
       <div role="columnheader" style={{ ...headCell, ...rightCell }}>
         Prompts
       </div>
-      <div
-        role="columnheader"
-        title="Messages back and forth with the AI, across every session"
-        style={{ ...headCell, ...rightCell }}
-      >
+      <div role="columnheader" title="Messages back and forth with the AI, across every session" style={{ ...headCell, ...rightCell }}>
         AI turns
       </div>
-      <div
-        role="columnheader"
-        title="Runs, rebuilds, comments and saves from other people"
-        style={{ ...headCell, ...rightCell }}
-      >
+      <div role="columnheader" title="Runs, rebuilds, comments and saves from other people" style={{ ...headCell, ...rightCell }}>
         Engagement
       </div>
       <div role="columnheader" style={headCell}>
@@ -615,47 +539,33 @@ function Header({ all, onToggleAll }: { all: boolean | "mixed"; onToggleAll: () 
   );
 }
 
+/** The count, then up to two model tags with their real marks, then "+n". */
 function ModelsCell({ row }: { row: Pick<DashboardRow, "modelsUsed"> }) {
   const names = modelNamesOf(row);
-  if (names.length === 0) return <span style={mono(12, { color: t.text2 })}>—</span>;
+  if (names.length === 0) return NONE;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-      <span
-        data-testid="dash-model-count"
-        style={mono(10, {
-          minWidth: 18,
-          height: 18,
-          boxSizing: "border-box",
-          padding: "0 4px",
-          borderRadius: 6,
-          background: t.text,
-          color: t.onText,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        })}
-      >
+    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0, overflow: "hidden" }}>
+      <span data-testid="dash-model-count" style={text(12, 500, t.text, { ...tnum, paddingRight: 4, flexShrink: 0 })}>
         {names.length}
       </span>
       {names.slice(0, 2).map((name) => (
-        <span
-          key={name}
-          style={mono(10, {
-            padding: "1px 4px",
-            borderRadius: 6,
-            background: t.cell,
-            color: t.text,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            minWidth: 0,
-          })}
-        >
+        <ModelTag key={name} model={name}>
           {name}
-        </span>
+        </ModelTag>
       ))}
-      {names.length > 2 ? <span style={mono(10, { color: t.text2, flexShrink: 0 })}>+{names.length - 2}</span> : null}
+      {names.length > 2 ? <span style={text(11.5, 400, t.label, { flexShrink: 0 })}>+{names.length - 2}</span> : null}
+    </div>
+  );
+}
+
+/** A date over a quiet line: the board's two-line cell. */
+function DateCell({ at, line }: { at: string; line: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <span style={text(12, 500, t.text, tnum)}>{shortDate(at)}</span>
+      <span title={line} style={text(11.5, 400, t.label, ellipsis)}>
+        {line}
+      </span>
     </div>
   );
 }
@@ -664,49 +574,25 @@ function BuildRow({
   row,
   selected,
   open,
-  last,
   onToggle,
   onOpen,
 }: {
   row: DashboardRow;
   selected: boolean;
   open: boolean;
-  /** The well's last row, which leaves its bottom edge to the well. */
-  last: boolean;
   onToggle: () => void;
   onOpen: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
   const total = seriesTotal(row.series);
   return (
-    <div
-      role="row"
-      data-testid="dash-row"
-      aria-selected={selected}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ ...GRID, ...(last ? LAST_ROW : null), minHeight: 42, background: hovered || selected || open ? t.rowHighlight : "transparent" }}
-    >
-      <div role="cell" style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-        <Box checked={selected} label={`Select ${row.title}`} onChange={onToggle} />
-        <div style={{ display: "flex", flexDirection: "column", minWidth: 0, gap: 1 }}>
-          <button
-            type="button"
-            onClick={onOpen}
-            style={{
-              ...bareButton,
-              ...figtree(13, { fontWeight: 600, color: t.text }),
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxWidth: "100%",
-            }}
-          >
+    <div role="row" data-testid="dash-row" aria-selected={selected} style={bodyRow(GRID_COLUMNS, selected || open)}>
+      <div role="cell" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <Checkbox checked={selected} label={`Select ${row.title}`} onChange={onToggle} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <button type="button" onClick={onOpen} style={{ ...bareButton, ...text(12.5, 500, t.text, ellipsis), maxWidth: "100%" }}>
             {row.title}
           </button>
-          <span style={figtree(11, { color: t.text2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" })}>
-            by {row.creator.handle ? `@${row.creator.handle}` : "a maker"}
-          </span>
+          <span style={text(11.5, 400, t.label, ellipsis)}>by {row.creator.handle ? `@${row.creator.handle}` : "a maker"}</span>
         </div>
       </div>
       <div role="cell" style={{ minWidth: 0 }}>
@@ -724,57 +610,37 @@ function BuildRow({
       <div role="cell" style={numberCell} title={engagementTitle(row.engagement)}>
         {formatCount(row.engagement.total)}
       </div>
-      <div role="cell">
-        <Sparkline values={sparkValues(row.series)} width={72} height={18} label={`${total} engagements over 14 weeks`} />
+      <div role="cell" style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Sparkline
+          values={sparkValues(row.series)}
+          width={56}
+          height={16}
+          tone={total === 0 ? t.barMid : t.evidence}
+          label={`${total} engagements over 14 weeks`}
+        />
       </div>
-      <div role="cell" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-        {row.lastActivity.at ? (
-          <>
-            <span style={mono(12, { color: t.text, flexShrink: 0 })}>{shortDate(row.lastActivity.at)}</span>
-            <span aria-hidden="true" style={{ width: 1, height: 12, background: t.line, flexShrink: 0 }} />
-            <span
-              title={row.lastActivity.what}
-              style={figtree(12, { color: t.text2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 })}
-            >
-              {row.lastActivity.what}
-            </span>
-          </>
-        ) : (
-          <span style={mono(12, { color: t.text2 })}>—</span>
-        )}
+      <div role="cell" style={{ minWidth: 0 }}>
+        {row.lastActivity.at ? <DateCell at={row.lastActivity.at} line={row.lastActivity.what} /> : NONE}
       </div>
       <div role="cell">
-        {/* 26 square, the canvas's; no drawn size renders it (30 is 25), so it is set here. */}
         <IconButton
           icon={MoreHorizontal}
-          size={30}
+          glyph="chev"
+          boxed={false}
+          size={26}
           label={`Open details for ${row.title}`}
           onClick={onOpen}
-          style={{ width: 26, height: 26 }}
+          style={{ width: 24, height: 24 }}
         />
       </div>
     </div>
   );
 }
 
-/* ── the Models and Makers tabs (UI-P51) ── */
-
-/* UI-P56: each fixed track ×0.92, as the Builds table's moved, with its 8px column gap. */
-const MODELS_GRID: CSSProperties = {
-  ...GRID,
-  gridTemplateColumns: "minmax(184px, 1.2fr) 101px 66px 66px 66px 74px 85px minmax(184px, 1fr)",
-};
-const MAKERS_GRID: CSSProperties = {
-  ...GRID,
-  gridTemplateColumns: "minmax(166px, 1fr) 59px 66px 212px 66px 74px 85px 101px",
-};
-/* Both sets of tracks plus their gaps and the row's padding come to 894 and 897; the table scrolls sideways below 900 (1000 before UI-P56). */
-const SIMPLE_TABLE_MIN_WIDTH = 900;
-
-function PlainHeader({ grid, columns }: { grid: CSSProperties; columns: { label: string; right?: boolean }[] }) {
+function PlainHeader({ columns, labels }: { columns: string; labels: { label: string; right?: boolean }[] }) {
   return (
-    <div role="row" style={{ ...grid, ...headRow }}>
-      {columns.map((column) => (
+    <div role="row" style={headRow(columns)}>
+      {labels.map((column) => (
         <div key={column.label} role="columnheader" style={{ ...headCell, ...(column.right ? rightCell : null) }}>
           {column.label}
         </div>
@@ -783,122 +649,98 @@ function PlainHeader({ grid, columns }: { grid: CSSProperties; columns: { label:
   );
 }
 
-function NewBadge() {
+function EmptyLine({ children }: { children: ReactNode }) {
   return (
-    <span
-      style={mono(10, {
-        padding: "1px 4px",
-        borderRadius: r.chip,
-        background: t.evidenceFill,
-        color: t.onEvidenceFill,
-        flexShrink: 0,
-      })}
-    >
-      new
-    </span>
+    <p data-testid="dash-empty" style={text(13, 500, t.text, { margin: 0, padding: "16px 0 0" })}>
+      {children}
+    </p>
   );
 }
 
-const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const MODELS_COLUMNS = "minmax(0, 1.6fr) minmax(0, 1fr) 64px 64px 64px 64px 80px minmax(0, 1.5fr)";
+const MAKERS_COLUMNS = "minmax(0, 1.4fr) 64px 64px minmax(0, 2fr) 64px 64px 80px 96px";
 
 function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]; lab: Lab | null; onOpenModel: (id: string) => void }) {
   const list = useMemo(() => sortModelRows(modelRows(rows), lab), [rows, lab]);
   return (
-    <div style={{ padding: "0 12px 12px" }}>
-      <div style={well}>
-        <div style={{ overflowX: "auto" }}>
-          <div role="table" aria-label="Models" style={{ minWidth: SIMPLE_TABLE_MIN_WIDTH }}>
-            <PlainHeader
-              grid={MODELS_GRID}
-              columns={[
-                { label: "Model version" },
-                { label: "Lab" },
-                { label: "Builds", right: true },
-                { label: "Sessions", right: true },
-                { label: "Prompts", right: true },
-                { label: "AI turns", right: true },
-                { label: "Engagement", right: true },
-                { label: "Last used" },
-              ]}
-            />
-            <div role="rowgroup">
-              {list.map((row, index) => {
-                const isNew = row.modelId ? (MODEL_VERSIONS.find((version) => version.id === row.modelId)?.isNew ?? false) : false;
-                return (
-                  <div
-                    key={row.modelId ?? `raw:${row.modelName}`}
-                    role="row"
-                    data-testid="dash-model-row"
-                    style={{ ...MODELS_GRID, ...(index === list.length - 1 ? LAST_ROW : null), minHeight: 39 }}
-                  >
-                    <div role="cell" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      {row.modelId ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenModel(row.modelId as string)}
-                          style={{
-                            ...bareButton,
-                            ...mono(12, { fontWeight: 500, color: t.text }),
-                            ...ellipsis,
-                            textDecoration: "underline",
-                            textDecorationColor: t.line,
-                            textUnderlineOffset: 3,
-                          }}
-                        >
-                          {row.modelName}
-                        </button>
-                      ) : (
-                        /* A model the registry does not name has no id to filter by, so it is a name, not a button. */
-                        <span style={mono(12, { fontWeight: 500, color: t.text, ...ellipsis })}>{row.modelName}</span>
-                      )}
-                      {isNew ? <NewBadge /> : null}
-                    </div>
-                    <div role="cell" style={figtree(13, { color: t.text2 })}>
-                      {row.lab ?? "—"}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.builds)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.sessions)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.prompts)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.turns)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.engagement.total)}
-                    </div>
-                    <div role="cell" style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      {row.lastUsed ? (
-                        <>
-                          <span style={mono(12, { color: t.text, flexShrink: 0 })}>{shortDate(row.lastUsed.at)}</span>
-                          <span aria-hidden="true" style={{ width: 1, height: 12, background: t.line, flexShrink: 0 }} />
-                          <span title={row.lastUsed.buildTitle} style={figtree(12, { color: t.text2, minWidth: 0, ...ellipsis })}>
-                            {row.lastUsed.buildTitle}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span style={mono(12, { color: t.text2 })}>—</span>
-                          <span style={figtree(12, { color: t.text2, ...ellipsis })}>Not used in any build yet</span>
-                        </>
-                      )}
-                    </div>
+    <div>
+      <div style={{ overflowX: "auto" }}>
+        <div role="table" aria-label="Models" style={{ minWidth: TABLE_MIN_WIDTH, display: "flex", flexDirection: "column" }}>
+          <PlainHeader
+            columns={MODELS_COLUMNS}
+            labels={[
+              { label: "Model version" },
+              { label: "Lab" },
+              { label: "Builds", right: true },
+              { label: "Sessions", right: true },
+              { label: "Prompts", right: true },
+              { label: "AI turns", right: true },
+              { label: "Engagement", right: true },
+              { label: "Last used" },
+            ]}
+          />
+          <div role="rowgroup">
+            {list.map((row) => {
+              const isNew = row.modelId ? (MODEL_VERSIONS.find((version) => version.id === row.modelId)?.isNew ?? false) : false;
+              return (
+                <div key={row.modelId ?? `raw:${row.modelName}`} role="row" data-testid="dash-model-row" style={bodyRow(MODELS_COLUMNS, false)}>
+                  <div role="cell" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <ModelMark model={row.modelName} size={16} />
+                    {row.modelId ? (
+                      <button
+                        type="button"
+                        onClick={() => onOpenModel(row.modelId as string)}
+                        style={{
+                          ...bareButton,
+                          ...text(12.5, 500, t.text, ellipsis),
+                          textDecoration: "underline",
+                          textDecorationColor: t.line,
+                          textUnderlineOffset: 3,
+                        }}
+                      >
+                        {row.modelName}
+                      </button>
+                    ) : (
+                      /* A model the registry does not name has no id to filter by, so it is a name, not a button. */
+                      <span style={text(12.5, 500, t.text, ellipsis)}>{row.modelName}</span>
+                    )}
+                    {isNew ? <Pill tone="evidence">new</Pill> : null}
                   </div>
-                );
-              })}
-            </div>
+                  <div role="cell" style={text(12.5, 400, t.text2, ellipsis)}>
+                    {row.lab ?? "—"}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.builds)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.sessions)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.prompts)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.turns)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.engagement.total)}
+                  </div>
+                  <div role="cell" style={{ minWidth: 0 }}>
+                    {row.lastUsed ? (
+                      <DateCell at={row.lastUsed.at} line={row.lastUsed.buildTitle} />
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                        {NONE}
+                        <span style={text(11.5, 400, t.label, ellipsis)}>Not used in any build yet</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-        {list.length === 0 ? (
-          <p data-testid="dash-empty" style={{ ...display(20), margin: 0, padding: "17px 6px 6px", color: t.text }}>
-            No models match these filters.
-          </p>
-        ) : null}
       </div>
+      {list.length === 0 ? <EmptyLine>No models match these filters.</EmptyLine> : null}
     </div>
   );
 }
@@ -906,120 +748,121 @@ function ModelsTable({ rows, lab, onOpenModel }: { rows: readonly DashboardRow[]
 function MakersTable({ rows }: { rows: readonly DashboardRow[] }) {
   const list = useMemo(() => sortMakerRows(makerRows(rows)), [rows]);
   return (
-    <div style={{ padding: "0 12px 12px" }}>
-      <div style={well}>
-        <div style={{ overflowX: "auto" }}>
-          <div role="table" aria-label="Makers" style={{ minWidth: SIMPLE_TABLE_MIN_WIDTH }}>
-            <PlainHeader
-              grid={MAKERS_GRID}
-              columns={[
-                { label: "Maker" },
-                { label: "Builds", right: true },
-                { label: "Sessions", right: true },
-                { label: "AI models" },
-                { label: "Prompts", right: true },
-                { label: "AI turns", right: true },
-                { label: "Engagement", right: true },
-                { label: "Last published" },
-              ]}
-            />
-            <div role="rowgroup">
-              {list.map((row, index) => {
-                const handle = row.creator.handle;
-                return (
-                  <div
-                    key={row.creator.id}
-                    role="row"
-                    data-testid="dash-maker-row"
-                    style={{ ...MAKERS_GRID, ...(index === list.length - 1 ? LAST_ROW : null), minHeight: 39 }}
-                  >
-                    <div role="cell" style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                      <Avatar size={26} userId={row.creator.id} name={handle || "Maker"} />
-                      {handle ? (
-                        <Link
-                          to={`/profile/${encodeURIComponent(handle)}`}
-                          style={{ ...figtree(13, { fontWeight: 500, color: t.text, ...ellipsis }), textDecoration: "none" }}
-                        >
-                          @{handle}
-                        </Link>
-                      ) : (
-                        <span style={figtree(13, { fontWeight: 500, color: t.text2 })}>a maker</span>
-                      )}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.builds)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.sessions)}
-                    </div>
-                    <div role="cell" style={{ minWidth: 0 }}>
-                      <ModelsCell row={{ modelsUsed: row.models }} />
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.prompts)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.turns)}
-                    </div>
-                    <div role="cell" style={numberCell}>
-                      {formatCount(row.engagement.total)}
-                    </div>
-                    <div role="cell" style={mono(12, { color: row.lastPublishedAt ? t.text : t.text2 })}>
-                      {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "—"}
-                    </div>
+    <div>
+      <div style={{ overflowX: "auto" }}>
+        <div role="table" aria-label="Makers" style={{ minWidth: TABLE_MIN_WIDTH, display: "flex", flexDirection: "column" }}>
+          <PlainHeader
+            columns={MAKERS_COLUMNS}
+            labels={[
+              { label: "Maker" },
+              { label: "Builds", right: true },
+              { label: "Sessions", right: true },
+              { label: "AI models" },
+              { label: "Prompts", right: true },
+              { label: "AI turns", right: true },
+              { label: "Engagement", right: true },
+              { label: "Last published" },
+            ]}
+          />
+          <div role="rowgroup">
+            {list.map((row) => {
+              const handle = row.creator.handle;
+              return (
+                <div key={row.creator.id} role="row" data-testid="dash-maker-row" style={bodyRow(MAKERS_COLUMNS, false)}>
+                  <div role="cell" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <Avatar size={24} userId={row.creator.id} name={handle || "Maker"} />
+                    {handle ? (
+                      <Link to={`/profile/${encodeURIComponent(handle)}`} style={text(12.5, 500, t.text, { ...ellipsis, textDecoration: "none" })}>
+                        @{handle}
+                      </Link>
+                    ) : (
+                      <span style={text(12.5, 500, t.text2)}>a maker</span>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.builds)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.sessions)}
+                  </div>
+                  <div role="cell" style={{ minWidth: 0 }}>
+                    <ModelsCell row={{ modelsUsed: row.models }} />
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.prompts)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.turns)}
+                  </div>
+                  <div role="cell" style={numberCell}>
+                    {formatCount(row.engagement.total)}
+                  </div>
+                  <div role="cell" style={text(12, 500, row.lastPublishedAt ? t.text : t.label, tnum)}>
+                    {row.lastPublishedAt ? shortDate(row.lastPublishedAt) : "—"}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-        {list.length === 0 ? (
-          <p data-testid="dash-empty" style={{ ...display(20), margin: 0, padding: "17px 6px 6px", color: t.text }}>
-            No makers match these filters.
-          </p>
-        ) : null}
       </div>
+      {list.length === 0 ? <EmptyLine>No makers match these filters.</EmptyLine> : null}
     </div>
   );
 }
 
-
 function TableSkeleton() {
   return (
-    <div role="status" aria-busy="true" aria-label="Loading builds" style={{ padding: "0 12px" }}>
+    <div role="status" aria-busy="true" aria-label="Loading builds">
       {Array.from({ length: 8 }, (_, index) => (
-        <div key={index} style={{ ...GRID, height: 42 }}>
-          <Skeleton height={14} width="70%" />
-          <Skeleton height={14} width="80%" />
-          <Skeleton height={14} />
-          <Skeleton height={14} />
-          <Skeleton height={14} />
-          <Skeleton height={14} />
-          <Skeleton height={18} width={72} />
-          <Skeleton height={14} width="80%" />
-          <Skeleton height={18} width={26} />
+        <div key={index} style={bodyRow(GRID_COLUMNS, false)}>
+          <Skeleton height={13} width="70%" />
+          <Skeleton height={13} width="80%" />
+          <Skeleton height={13} />
+          <Skeleton height={13} />
+          <Skeleton height={13} />
+          <Skeleton height={13} />
+          <Skeleton height={16} width={56} />
+          <Skeleton height={13} width="80%" />
+          <Skeleton height={16} width={24} />
         </div>
       ))}
     </div>
   );
 }
 
-/* ── the main panel ── */
+/* ── the summary bar ── */
 
+/** A calculation toggle: pressed is the control recipe at its hover fill; off is quiet text. */
 function CalcToggle({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      style={{ ...bareButton, ...figtree(12, { color: on ? t.text : t.text2, fontWeight: on ? 600 : 400 }) }}
+      style={{
+        ...bareButton,
+        ...text(12, 400, on ? t.text : t.text2),
+        height: 28,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "0 12px",
+        boxSizing: "border-box",
+        borderRadius: 6,
+        ...(on ? { ...CONTROL, ...CONTROL_HOVER } : { border: "1px solid transparent" }),
+      }}
     >
       {children}
     </button>
   );
 }
 
-function Main(props: GalleryDashboardViewProps) {
+const strong = (value: ReactNode) => <span style={{ color: t.text, fontWeight: 500 }}>{value}</span>;
+
+/* ── the content ── */
+
+function Content(props: GalleryDashboardViewProps) {
   const { tab, onTabChange, rows, status, sort, query, onSearch, onViewChange, onClearFilters, openId = null } = props;
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [sum, setSum] = useState(false);
@@ -1043,87 +886,60 @@ function Main(props: GalleryDashboardViewProps) {
 
   const title = tab === "models" ? "Models" : tab === "makers" ? "Makers" : "Builds";
   const menus = menusFor(props);
-  const tabs: { value: DashboardTab; label: string }[] = [
-    { value: "builds", label: "Builds" },
-    { value: "models", label: "Models" },
-    { value: "makers", label: "Makers" },
-  ];
+  const stacked = !useMinWidth(BETWEEN.stack);
 
   return (
-    <Panel padding="0" style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 9, padding: "12px 12px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          {/* display() takes the drawn 30 and renders the canvas's 22. */}
-          <h1 style={{ ...display(30), margin: 0, color: t.text }}>{title}</h1>
-          <span
-            data-testid="dash-pill"
-            style={{
-              ...figtree(12, { color: t.text }),
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "2px 7px",
-              borderRadius: r.chip,
-              background: t.cell,
-            }}
-          >
-            <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: r.full, background: t.evidence }} />
-            {pillText(props.model, props.lab)}
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <SearchField query={query} onSearch={onSearch} phone={false} size={{ width: 220, height: 30 }} />
-          {/* 30 tall outside its edge at 12px, the search's height: 32 renders 20px items in 4px of padding and a 1px edge. */}
-          <Segmented<GalleryViewMode>
-            label="Gallery view"
-            size={32}
-            fontSize={12}
-            semantics="radio"
-            value="dashboard"
-            onChange={onViewChange}
-            items={[
-              { value: "feed", label: "Feed" },
-              { value: "dashboard", label: "Dashboard" },
-            ]}
-          />
-        </div>
+    <section style={mainStyle(stacked, { flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 })}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+        <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>{title}</h1>
+        <span
+          data-testid="dash-pill"
+          style={text(11.5, 400, t.text2, {
+            display: "inline-flex",
+            alignItems: "center",
+            height: 20,
+            padding: "0 6px",
+            boxSizing: "border-box",
+            borderRadius: 4,
+            background: t.tagFill,
+            whiteSpace: "nowrap",
+          })}
+        >
+          {pillText(props.model, props.lab)}
+        </span>
+        <span style={{ flexGrow: 1 }} />
+        <RefinedSearchField query={query} onSearch={onSearch} phone={false} width={240} />
+        <Segmented<GalleryViewMode>
+          label="Gallery view"
+          size={28}
+          fontSize={12}
+          semantics="radio"
+          value="dashboard"
+          onChange={onViewChange}
+          items={[
+            { value: "feed", label: "Feed" },
+            { value: "dashboard", label: "Dashboard" },
+          ]}
+        />
       </div>
 
-      <div role="tablist" aria-label="Dashboard tabs" style={{ display: "flex", gap: 16, padding: "6px 12px 0", borderBottom: `1px solid ${t.hairline}` }}>
-        {tabs.map((item) => {
-          const on = tab === item.value;
-          return (
-            <button
-              key={item.value}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => onTabChange(item.value)}
-              style={{
-                ...bareButton,
-                ...figtree(13, { color: on ? t.text : t.text2, fontWeight: on ? 600 : 400 }),
-                height: 34,
-                boxSizing: "border-box",
-                borderBottom: `2px solid ${on ? t.text : "transparent"}`,
-                marginBottom: -1,
-              }}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+      <UnderlineTabs<DashboardTab>
+        label="Dashboard tabs"
+        value={tab}
+        onChange={onTabChange}
+        tabs={[
+          { value: "builds", label: "Builds" },
+          { value: "models", label: "Models" },
+          { value: "makers", label: "Makers" },
+        ]}
+      />
 
       {tab !== "builds" ? (
         <div role="tabpanel" aria-label={title}>
           {status === "loading" ? (
-            <div style={{ paddingTop: 6 }}>
-              <TableSkeleton />
-            </div>
+            <TableSkeleton />
           ) : status === "error" ? (
-            <div style={{ padding: "12px 17px" }}>
-              <ErrorState panel={`The ${title.toLowerCase()} table`} onRetry={props.onRetry} error={props.error} />
-            </div>
+            <ErrorState panel={`The ${title.toLowerCase()} table`} onRetry={props.onRetry} error={props.error} />
           ) : tab === "models" ? (
             <ModelsTable rows={rows} lab={props.lab} onOpenModel={props.onOpenModel} />
           ) : (
@@ -1131,36 +947,20 @@ function Main(props: GalleryDashboardViewProps) {
           )}
         </div>
       ) : (
-        <div role="tabpanel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, padding: "9px 12px" }}>
-            {/* The four menus share one inset strip that grows to fill the row: `--cell`, a hairline, radius 12, 3 in, 4 apart. */}
-            <div
-              data-testid="dash-menu-strip"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 4,
-                flexGrow: 1,
-                padding: 3,
-                borderRadius: 12,
-                background: t.cell,
-                border: `1px solid ${t.hairline}`,
-              }}
-            >
-              {menus.map((menu) => (
-                <ToolbarMenuView key={menu.key} menu={menu} />
-              ))}
-            </div>
-            {/* Outside the strip and as tall as it (1 + 3 + 28 + 3 + 1): 36 at 12px, which a drawn 44 renders. */}
+        <div role="tabpanel" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            {menus.map((menu) => (
+              <ToolbarMenuView key={menu.key} menu={menu} />
+            ))}
+            <span style={{ flexGrow: 1 }} />
             <Button
               variant="secondary"
-              size={44}
+              size={28}
               fontSize={12}
               data-testid="dash-export"
               disabled={status !== "ready"}
               onClick={() => downloadText("gallery-builds.csv", buildCsv(sorted))}
             >
-              <Download size={14} strokeWidth={1.8} aria-hidden="true" />
               Export
             </Button>
           </div>
@@ -1168,74 +968,64 @@ function Main(props: GalleryDashboardViewProps) {
           {status === "loading" ? (
             <TableSkeleton />
           ) : status === "error" ? (
-            <div style={{ padding: "12px 17px" }}>
-              <ErrorState panel="The builds table" onRetry={props.onRetry} error={props.error} />
-            </div>
+            <ErrorState panel="The builds table" onRetry={props.onRetry} error={props.error} />
           ) : (
-            <div style={{ padding: "0 12px" }}>
-              <div style={well}>
-                <div style={{ overflowX: "auto" }}>
-                  <div role="table" aria-label="Builds" style={{ minWidth: TABLE_MIN_WIDTH }}>
-                    <Header all={all} onToggleAll={() => setTicked(all === true ? new Set() : new Set(sorted.map((row) => row.id)))} />
-                    <div role="rowgroup">
-                      {sorted.map((row, index) => (
-                        <BuildRow
-                          key={row.id}
-                          row={row}
-                          selected={ticked.has(row.id)}
-                          open={openId === row.id}
-                          last={index === sorted.length - 1}
-                          onToggle={() => toggle(row.id)}
-                          onOpen={() => props.onOpenBuild(row)}
-                        />
-                      ))}
-                    </div>
+            <div>
+              <div style={{ overflowX: "auto" }}>
+                <div role="table" aria-label="Builds" style={{ minWidth: TABLE_MIN_WIDTH, display: "flex", flexDirection: "column" }}>
+                  <Header all={all} onToggleAll={() => setTicked(all === true ? new Set() : new Set(sorted.map((row) => row.id)))} />
+                  <div role="rowgroup">
+                    {sorted.map((row) => (
+                      <BuildRow
+                        key={row.id}
+                        row={row}
+                        selected={ticked.has(row.id)}
+                        open={openId === row.id}
+                        onToggle={() => toggle(row.id)}
+                        onOpen={() => props.onOpenBuild(row)}
+                      />
+                    ))}
                   </div>
                 </div>
-                {sorted.length === 0 ? (
-                  <div data-testid="dash-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", padding: "17px 6px 0" }}>
-                    <p style={{ ...display(20), margin: 0, color: t.text }}>No builds match these filters.</p>
-                    <button
-                      type="button"
-                      onClick={onClearFilters}
-                      style={{ ...bareButton, ...figtree(13, { fontWeight: 600, color: t.text }), padding: "17px 6px" }}
-                    >
-                      Clear filters
-                    </button>
-                  </div>
-                ) : null}
               </div>
+              {sorted.length === 0 ? (
+                <EmptyState
+                  data-testid="dash-empty"
+                  line="No builds match these filters."
+                  action={{ label: "Clear filters", onClick: onClearFilters }}
+                />
+              ) : null}
             </div>
           )}
 
           <div
             data-testid="dash-footer"
-            style={{ ...figtree(12, { color: t.text2 }), display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", padding: "10px 14px 12px" }}
+            style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingTop: 16, borderTop: `1px solid ${t.hairline}` }}
           >
-            <span>
-              <span style={mono(12, { color: t.text })}>{formatCount(sorted.length)}</span> {sorted.length === 1 ? "build" : "builds"} in view
+            <span style={text(12, 400, t.text2, { ...tnum, flexGrow: 1 })}>
+              {strong(formatCount(sorted.length))} {sorted.length === 1 ? "build" : "builds"} in view
               {selected.length > 0 ? (
                 <>
                   {" · "}
-                  <span style={mono(12, { color: t.text })}>{formatCount(selected.length)}</span> selected
+                  {strong(formatCount(selected.length))} selected
                 </>
               ) : null}
             </span>
             <CalcToggle on={sum} onClick={() => setSum(!sum)}>
               Sum of prompts
-              {sum ? <span style={mono(12, { color: t.text, marginLeft: 4 })}>{formatCount(sumOfPrompts(sorted))}</span> : null}
+              {sum ? <span style={{ fontWeight: 500, ...tnum }}>{formatCount(sumOfPrompts(sorted))}</span> : null}
             </CalcToggle>
             <CalcToggle on={average} onClick={() => setAverage(!average)}>
               Avg sessions per build
-              {average ? <span style={mono(12, { color: t.text, marginLeft: 4 })}>{averageSessions(sorted)}</span> : null}
+              {average ? <span style={{ fontWeight: 500, ...tnum }}>{averageSessions(sorted)}</span> : null}
             </CalcToggle>
-            <span aria-disabled="true" style={{ opacity: 0.6, cursor: "not-allowed" }}>
+            <span aria-disabled="true" style={text(12, 400, t.label, { padding: "0 12px", cursor: "not-allowed" })}>
               + Add calculation
             </span>
           </div>
         </div>
       )}
-    </Panel>
+    </section>
   );
 }
 
@@ -1244,19 +1034,11 @@ function Main(props: GalleryDashboardViewProps) {
 export function GalleryDashboardView(props: GalleryDashboardViewProps) {
   /* Looked up in every build, not the filtered rows: a linked build opens even when a filter hides it. */
   const openBuild = props.openId ? (props.allRows.find((row) => row.id === props.openId) ?? null) : null;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <div
-      data-testid="gallery-dashboard"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "212px minmax(0, 1fr)",
-        gap: 12,
-        alignItems: "start",
-        minWidth: 0,
-      }}
-    >
+    <div data-testid="gallery-dashboard" style={trackRow(stacked, 32)}>
       <Sidebar {...props} />
-      <Main {...props} />
+      <Content {...props} />
       <BuildDetailSheet build={openBuild} onClose={props.onCloseBuild} />
     </div>
   );

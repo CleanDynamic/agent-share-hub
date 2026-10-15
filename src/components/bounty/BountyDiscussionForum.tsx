@@ -131,7 +131,7 @@ function Dropdown<T extends string>({
         style={{
           background: "var(--recess)",
           border: "0.5px solid var(--line)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
         }}
       >
         {selected?.label}
@@ -151,7 +151,7 @@ function Dropdown<T extends string>({
               }}
               className="block w-full text-left px-3 py-2 text-xs hover:bg-muted"
               style={{
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 color:
                   opt.value === value
                     ? "var(--evidence)"
@@ -199,7 +199,7 @@ function Composer({
         style={{
           background: "var(--recess)",
           border: "0.5px solid var(--line)",
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
         }}
       >
         Ask a question or start a discussion…
@@ -222,7 +222,7 @@ function Composer({
         placeholder="Write your message..."
         className="resize-none outline-none bg-transparent text-foreground/90"
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           fontSize: 14,
           minHeight: 80,
         }}
@@ -237,7 +237,7 @@ function Composer({
           />
           <span
             className="text-[11px] text-muted-foreground"
-            style={{ fontFamily: "Figtree, sans-serif" }}
+            style={{ fontFamily: "var(--font-ui)" }}
           >
             Tag bounty author
           </span>
@@ -250,7 +250,7 @@ function Composer({
               onToggle();
             }}
             className="text-xs text-muted-foreground hover:text-foreground"
-            style={{ fontFamily: "Figtree, sans-serif" }}
+            style={{ fontFamily: "var(--font-ui)" }}
           >
             Cancel
           </button>
@@ -312,7 +312,7 @@ function ReactionPill({
       <span
         className="text-[11px]"
         style={{
-          fontFamily: "Figtree, sans-serif",
+          fontFamily: "var(--font-ui)",
           color: hasReacted ? "var(--evidence)" : "var(--text2)",
         }}
       >
@@ -339,7 +339,7 @@ function RolePill({ role }: { role: "author" | "solver" }) {
       style={{
         background: cfg.bg,
         color: cfg.color,
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
       }}
     >
       {cfg.text}
@@ -360,7 +360,7 @@ function InlineReferenceChip({ reference }: { reference: InlineReference }) {
       style={{
         background: `${colourAlpha(c, 0.082)}`,
         border: `0.5px solid ${colourAlpha(c, 0.188)}`,
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 11,
       }}
     >
@@ -458,7 +458,7 @@ function CommentCard({
                 <span
                   className="text-foreground"
                   style={{
-                    fontFamily: "Figtree, sans-serif",
+                    fontFamily: "var(--font-ui)",
                     fontSize: avatarSize * 0.4,
                     fontWeight: 600,
                   }}
@@ -469,13 +469,13 @@ function CommentCard({
             </div>
             <span
               className="text-[12px] font-medium text-foreground/90 truncate"
-              style={{ fontFamily: "Figtree, sans-serif" }}
+              style={{ fontFamily: "var(--font-ui)" }}
             >
               {comment.author.displayName}
             </span>
             <span
               className="text-[11px] text-muted-foreground truncate"
-              style={{ fontFamily: "Figtree, sans-serif" }}
+              style={{ fontFamily: "var(--font-ui)" }}
             >
               @{comment.author.handle}
             </span>
@@ -488,7 +488,7 @@ function CommentCard({
           <div className="flex items-center gap-2 shrink-0">
             <span
               className="text-[11px] text-muted-foreground"
-              style={{ fontFamily: "Figtree, sans-serif" }}
+              style={{ fontFamily: "var(--font-ui)" }}
             >
               {formatRelativeTime(comment.timestamp)}
             </span>
@@ -504,7 +504,7 @@ function CommentCard({
 
         <div
           className="text-[13px] text-foreground/85 whitespace-pre-wrap leading-relaxed"
-          style={{ fontFamily: "Figtree, sans-serif" }}
+          style={{ fontFamily: "var(--font-ui)" }}
         >
           {comment.content}
           {comment.inlineReferences?.map((r, i) => (
@@ -558,7 +558,7 @@ function CommentCard({
             type="button"
             onClick={() => setShowReplyInput((v) => !v)}
             className="text-[11px] font-medium px-2 py-1 rounded hover:bg-muted"
-            style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)", fontFamily: "Figtree, sans-serif" }}
+            style={{ color: "color-mix(in srgb, var(--evidence) 85%, transparent)", fontFamily: "var(--font-ui)" }}
           >
             Reply
           </button>
@@ -575,7 +575,7 @@ function CommentCard({
               style={{
                 background: "var(--recess)",
                 border: "0.5px solid var(--line)",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -627,13 +627,13 @@ function EmptyState() {
       <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-3" />
       <div
         className="text-sm font-medium text-foreground/85 mb-1"
-        style={{ fontFamily: "Figtree, sans-serif" }}
+        style={{ fontFamily: "var(--font-ui)" }}
       >
         Start the discussion
       </div>
       <div
         className="text-xs text-muted-foreground"
-        style={{ fontFamily: "Figtree, sans-serif" }}
+        style={{ fontFamily: "var(--font-ui)" }}
       >
         Be the first to ask a question, share an approach, or brainstorm with the
         community.
@@ -686,7 +686,7 @@ export function BountyDiscussionForum({
           </h2>
           <p
             className="text-xs text-muted-foreground mt-1"
-            style={{ fontFamily: "Figtree, sans-serif" }}
+            style={{ fontFamily: "var(--font-ui)" }}
           >
             {stats.messages} {stats.messages === 1 ? "message" : "messages"} ·{" "}
             {stats.participants.size} active{" "}

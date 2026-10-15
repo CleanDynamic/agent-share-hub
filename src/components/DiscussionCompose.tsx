@@ -138,7 +138,7 @@ export function DiscussionCompose({
                   fontSize: 14,
                   color: 'var(--text)',
                   lineHeight: 1.65, resize: 'none',
-                  fontFamily: 'Figtree, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   minHeight: 60, overflow: 'hidden',
                   boxSizing: 'border-box',
                 }}
@@ -180,7 +180,7 @@ export function DiscussionCompose({
               fontSize: 13, color: 'color-mix(in srgb, var(--cat-data) 60%, transparent)',
               background: 'none', border: 'none',
               cursor: 'pointer', padding: '4px 0',
-              fontFamily: 'Figtree',
+              fontFamily: 'var(--font-ui)',
             }}
           >
             + Add to thread
@@ -224,7 +224,7 @@ export function DiscussionCompose({
             fontSize: 13, fontWeight: 700,
             cursor: mainText.trim() && !isOverLimit
               ? 'pointer' : 'default',
-            fontFamily: 'Figtree',
+            fontFamily: 'var(--font-ui)',
             transition: feedback("background-color"),
           }}
         >

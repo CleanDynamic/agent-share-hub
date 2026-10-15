@@ -143,7 +143,7 @@ describe("Analytics on builds", () => {
     expect(cells).toHaveLength(7);
     const gotWorking = cells[0];
     expect(gotWorking.textContent).toBe("4");
-    expect(gotWorking.style.fontFamily).toContain("DM Mono");
+    expect(gotWorking.style.fontFamily).toContain("Geist Mono");
     expect(gotWorking.style.fontVariantNumeric).toBe("tabular-nums");
     expect(gotWorking.style.textAlign).toBe("end");
     expect(within(firstRow).getByRole("link", { name: "Build 1" }).getAttribute("href")).toBe("/b2/build-1");

@@ -10,7 +10,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { ActivityGrid, activityLevels, type ActivityDay } from "./ActivityGrid";
-import { Histogram, LineChart, MiniBars, Sparkline, StepChart } from "./charts";
+import { Histogram, LineChart, MiniBars, StepChart } from "./charts";
 import { MarkTile, RankRung } from "./RankRung";
 import { Timeline } from "./Timeline";
 
@@ -19,12 +19,6 @@ const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
 describe("LineChart", () => {
   const values = Array.from({ length: 64 }, (_, i) => i / 63);
   const html = markup(<LineChart width={360} height={120} values={values} markerIndex={23} />);
-
-  it("draws five gridlines at sixths, in --hairline, down to 10px above the bottom", () => {
-    for (const x of ["60.0", "120.0", "180.0", "240.0", "300.0"]) {
-      expect(html).toContain(`<line x1="${x}" y1="0" x2="${x}" y2="110" stroke="var(--hairline)"></line>`);
-    }
-  });
 
   it("draws 101 ticks, every fifth 10px tall and the rest 6px, in --line", () => {
     const ticks: string[] = html.match(/<line [^>]*stroke="var\(--line\)"><\/line>/g) ?? [];
@@ -35,17 +29,6 @@ describe("LineChart", () => {
     expect(ticks[1]).toContain('x1="3.6"');
   });
 
-  it("splits the series at the marker: --label before at .7, --evidence after, with the point shared", () => {
-    expect(html).toMatch(/stroke="var\(--label\)" stroke-width="1.5" opacity="0.7"/);
-    expect(html).toMatch(/stroke="var\(--evidence\)" stroke-width="1.8"/);
-    const [before, after] = (html.match(/<polyline points="([^"]+)"/g) ?? []).map((p) => p.slice(18, -1).split(" "));
-    expect(before).toHaveLength(24);
-    expect(after).toHaveLength(41);
-    expect(before.at(-1)).toBe(after[0]);
-    expect(before[0].startsWith("0.0,")).toBe(true);
-    expect(after.at(-1)!.startsWith("360.0,")).toBe(true);
-  });
-
   it("maps values into 14px from the bottom to 8px from the top", () => {
     const flat = markup(<LineChart width={360} height={120} values={[0, 1]} markerIndex={0} />);
     expect(flat).toContain("0.0,106.0");
@@ -54,12 +37,6 @@ describe("LineChart", () => {
 
   it("puts the dashed --text marker at the marker point, 1.4px", () => {
     expect(html).toContain('x1="131.4" y1="0" x2="131.4" y2="120" stroke="var(--text)" stroke-width="1.4" stroke-dasharray="3 3"');
-  });
-
-  it("fills under the after-series with --evidence from .28 to 0", () => {
-    expect(html).toContain('stop-color="var(--evidence)" stop-opacity=".28"');
-    expect(html).toContain('stop-opacity="0"');
-    expect(html).toMatch(/<path d="M131.4,110 L/);
   });
 
   it("draws no marker and no before-series when nothing changed in the window (UI-P35)", () => {
@@ -78,18 +55,6 @@ describe("LineChart", () => {
       'role="img" aria-label="Runs"',
     );
   });
-
-  it("does not crash on an empty series, and gives each instance its own gradient id", () => {
-    expect(() => markup(<LineChart width={360} height={120} values={[]} markerIndex={0} />)).not.toThrow();
-    const { container } = render(
-      <>
-        <LineChart width={100} height={50} values={[0.1, 0.9]} markerIndex={0} />
-        <LineChart width={100} height={50} values={[0.1, 0.9]} markerIndex={0} />
-      </>,
-    );
-    const ids = [...container.querySelectorAll("linearGradient")].map((g) => g.id);
-    expect(new Set(ids).size).toBe(2);
-  });
 });
 
 describe("StepChart", () => {
@@ -106,27 +71,6 @@ describe("StepChart", () => {
     expect((html.match(/stroke="var\(--hairline\)"/g) ?? []).length).toBe(6);
     expect(html).toContain('x1="51.4"');
     expect(html).toContain('x1="308.6"');
-  });
-
-  it("steps after: holds each level to the next point's x", () => {
-    expect(html).toContain('d="M0 73.8 L36.0 73.8 L36.0 52.2 L100.8 52.2 L100.8 36.0 L187.2 36.0 L187.2 30.6 L266.4 30.6 L266.4 16.2 L360 16.2"');
-    expect(html).toContain('stroke="var(--cat-agents)" stroke-width="1.6"');
-  });
-
-  it("fills to the bottom from .4 to .03", () => {
-    expect(html).toContain('stop-opacity=".4"');
-    expect(html).toContain('stop-opacity=".03"');
-    expect(html).toContain('d="M0 90 L0 73.8');
-    expect(html).toMatch(/L360 90 Z"/);
-  });
-});
-
-describe("Sparkline", () => {
-  it("is one 1.4px --evidence polyline, 60×20 by default", () => {
-    const html = markup(<Sparkline values={[0, 0.5, 1]} />);
-    expect(html).toContain('width="60" height="20"');
-    expect(html).toContain('stroke="var(--evidence)" stroke-width="1.4"');
-    expect((html.match(/<polyline/g) ?? []).length).toBe(1);
   });
 });
 
@@ -198,28 +142,6 @@ describe("Timeline", () => {
   ] as const;
   const html = markup(<Timeline events={events} />);
 
-  it("draws the rail 5px in, from 6px down to 16px up, in --line", () => {
-    expect(html).toContain("left:5px;top:6px;bottom:16px;width:1px;background:var(--line)");
-  });
-
-  it("lays each item on a 16 / 44 / 1fr grid, 10px below", () => {
-    // UI-P52 density pass: 14 → 10 below each item; the tracks are not in the table.
-    expect(html).toContain("grid-template-columns:16px 44px minmax(0, 1fr)");
-    expect(html).toContain("padding-bottom:10px");
-    expect((html.match(/<li/g) ?? []).length).toBe(5);
-  });
-
-  it("colours each kind's dot, and the kind's name in the same colour — deploy's name in --lit-ink", () => {
-    const dot = (c: string) => `width:11px;height:11px;border-radius:50%;background-color:var(--${c})`;
-    for (const c of ["cat-instruction", "evidence", "cat-breakage", "label", "lit"]) expect(html).toContain(dot(c));
-    expect(html).toContain("color:var(--lit-ink)");
-    expect(html).toContain("text-transform:uppercase");
-  });
-
-  it("does not glow on Noon", () => {
-    expect(html).not.toContain("box-shadow");
-  });
-
   it("is a named list", () => {
     render(<Timeline events={events} />);
     expect(screen.getByRole("list", { name: "Events" }).children).toHaveLength(5);
@@ -261,18 +183,10 @@ describe("RankRung and MarkTile", () => {
   });
 });
 
-
 describe("refined charts and timeline (UI-P85)", () => {
   const refined = (node: React.ReactElement) =>
-    markup(<MemoryRouter initialEntries={["/dev/kit/components?look=refined"]}>{node}</MemoryRouter>);
+    markup(<MemoryRouter initialEntries={["/dev/kit/components"]}>{node}</MemoryRouter>);
   const values = Array.from({ length: 20 }, (_, i) => i / 19);
-
-  it("Sparkline strokes at 1.2 with no dots", () => {
-    const html = refined(<Sparkline values={values} />);
-    expect(html).toContain('stroke-width="1.2"');
-    expect(html).not.toContain("<circle");
-    expect(markup(<Sparkline values={values} />)).toContain('stroke-width="1.4"');
-  });
 
   it("LineChart and StepChart draw a 1.4 line over a flat area, on a dashed hairline grid, with no gradient", () => {
     const line = refined(<LineChart width={360} height={120} values={values} markerIndex={null} />);

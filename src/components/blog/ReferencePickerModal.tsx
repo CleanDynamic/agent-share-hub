@@ -96,7 +96,7 @@ const styles = {
   },
   headerIcon: { color: "var(--evidence)", width: 14, height: 14 },
   headerTitle: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 14,
     fontWeight: 600,
     color: "var(--text)",
@@ -141,12 +141,12 @@ const styles = {
   tabContent: { display: "flex", alignItems: "center", gap: 5 },
   tabIcon: { width: 12, height: 12 },
   tabLabel: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 12,
     fontWeight: 500,
   },
   tabCount: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 9,
     fontWeight: 400,
     color: "var(--text2)",
@@ -170,7 +170,7 @@ const styles = {
     flex: 1,
     background: "none",
     border: "none",
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 13,
     fontWeight: 400,
     color: "var(--text)",
@@ -213,7 +213,7 @@ const styles = {
     gap: 1,
   },
   resultTitle: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 12,
     fontWeight: 500,
     color: "var(--text)",
@@ -222,7 +222,7 @@ const styles = {
     textOverflow: "ellipsis",
   },
   resultSubtitle: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 11,
     fontWeight: 400,
     color: "var(--text2)",
@@ -237,7 +237,7 @@ const styles = {
     flexShrink: 0,
   },
   typePill: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 9,
     fontWeight: 500,
     color: "var(--text2)",
@@ -255,7 +255,7 @@ const styles = {
     flexShrink: 0,
   },
   statsText: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 10,
     fontWeight: 400,
     color: "var(--text2)",
@@ -268,7 +268,7 @@ const styles = {
     flexShrink: 0,
   },
   blockTypeLabel: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 9,
     fontWeight: 600,
     textTransform: "uppercase" as const,
@@ -285,13 +285,13 @@ const styles = {
   },
   emptyIcon: { width: 48, height: 48, color: "var(--text2)" },
   emptyTitle: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 13,
     fontWeight: 500,
     color: "var(--text2)",
   },
   emptyDescription: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 12,
     fontWeight: 400,
     color: "var(--text2)",
@@ -306,7 +306,7 @@ const styles = {
     borderTop: "0.5px solid var(--line)",
   },
   footerText: {
-    fontFamily: "Figtree, sans-serif",
+    fontFamily: "var(--font-ui)",
     fontSize: 11,
     fontWeight: 400,
     color: "var(--text2)",

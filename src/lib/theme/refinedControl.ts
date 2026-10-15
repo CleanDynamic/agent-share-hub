@@ -1,4 +1,4 @@
-// The refined look's control recipes (UI-P84), spent by the primitives under `useLook() === "refined"`.
+// The refined look's control recipes (UI-P84), spent by the primitives.
 //
 // Each is a ready-made style object of tokens, from the recipes in the series rules: *control* (fill, 1px border, the
 // shadow; hover steps the fill to `--control-on`, never an opacity), *pressed* (the control sinks to the well),

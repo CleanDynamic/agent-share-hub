@@ -262,7 +262,7 @@ export function BlockResultCard({
             className="whitespace-pre-wrap text-[12px] leading-relaxed"
             style={{
               color: "var(--text)",
-              fontFamily: isCode ? "ui-monospace, SFMono-Regular, monospace" : "'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontFamily: isCode ? "ui-monospace, SFMono-Regular, monospace" : "var(--font-ui)",
               margin: 0,
             }}
           >

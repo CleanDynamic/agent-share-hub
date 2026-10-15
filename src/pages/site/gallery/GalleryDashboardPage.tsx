@@ -25,11 +25,9 @@ import { galleryHref, parseGalleryParams, type GalleryParams } from "@/lib/build
 import { listGalleryDashboard, type GalleryDashboardParams } from "@/lib/build/gallery";
 import { countDraftBuilds } from "@/lib/build/sessions";
 import { LABS } from "@/lib/models/registry";
-import { useLook } from "@/lib/theme/look";
 
 import { GalleryDashboardView } from "./GalleryDashboardView";
 import { dashboardCounts } from "./dashboardModel";
-import { RefinedGalleryDashboardView } from "./RefinedGalleryDashboardView";
 
 const STALE_MS = 60 * 1000;
 
@@ -39,8 +37,6 @@ export function GalleryDashboardPage() {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const connector = useConnectorDialog();
-  /* UI-P89: the refined look renders the fork, with the same props. */
-  const View = useLook() === "refined" ? RefinedGalleryDashboardView : GalleryDashboardView;
 
   const params = useMemo(() => parseGalleryParams(searchParams), [searchParams]);
   const tab = params.tab ?? "builds";
@@ -119,7 +115,7 @@ export function GalleryDashboardPage() {
         description="How the builds in the gallery were made: the AI models, sessions, prompts and what people did with them."
         path="/gallery"
       />
-      <View
+      <GalleryDashboardView
         fit="content"
         tab={tab}
         onTabChange={(next) => go({ tab: next === "builds" ? undefined : next })}

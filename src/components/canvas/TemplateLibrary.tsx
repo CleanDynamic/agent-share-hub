@@ -197,7 +197,7 @@ export function TemplateLibrary({
                   ? 600 : 400,
                 whiteSpace: 'nowrap',
                 transition: feedback("color"),
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
               }}
             >
               {cat === 'all' ? 'All'

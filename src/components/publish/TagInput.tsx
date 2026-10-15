@@ -139,7 +139,7 @@ export function TagInput({
                 color: isFlashing ? "var(--cat-breakage)" : "var(--action)",
                 fontSize: "12px",
                 fontWeight: 500,
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
               }}
             >
               {tag}
@@ -177,7 +177,7 @@ export function TagInput({
             "placeholder:text-[var(--text2)]",
             "disabled:cursor-not-allowed",
           )}
-          style={{ fontFamily: "Figtree, sans-serif" }}
+          style={{ fontFamily: "var(--font-ui)" }}
         />
       </div>
 
@@ -206,7 +206,7 @@ export function TagInput({
                     ? "bg-[var(--recess)] border-l-2 border-l-[var(--action)]"
                     : "hover:bg-[var(--recess)] border-l-2 border-l-transparent",
                 )}
-                style={{ fontFamily: "Figtree, sans-serif" }}
+                style={{ fontFamily: "var(--font-ui)" }}
               >
                 <span className="flex items-center gap-1.5">
                   <span style={{ color: "var(--text2)", fontSize: "12px" }}>#</span>
@@ -231,7 +231,7 @@ export function TagInput({
                 "bg-[var(--recess)] border-l-2 border-l-[var(--action)]",
                 "hover:bg-[var(--recess)]",
               )}
-              style={{ fontFamily: "Figtree, sans-serif" }}
+              style={{ fontFamily: "var(--font-ui)" }}
             >
               <span style={{ color: "var(--text2)", fontSize: "12px" }}>
                 Press Enter to add{" "}

@@ -7,10 +7,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { HeroPlate } from "./HeroPlate";
 import { PartViewer } from "./PartViewer";
 import { Plaque, type PlaqueBuild } from "./Plaque";
-import { Tagline } from "./Tagline";
 
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
 
@@ -23,184 +21,13 @@ const BUILD: PlaqueBuild = {
   last_confirmed_model: "sonnet-4.5",
   published_at: new Date(NOW - 90 * DAY).toISOString(),
 };
-const LINES = ["Every AI build,", "hung with", "its proof."] as const;
-
-describe("Tagline", () => {
-  it("is one heading whose text is the whole sentence, with the chips hidden from screen readers", () => {
-    render(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Every AI build, hung with its proof." })).toBeTruthy();
-    const chips = document.querySelectorAll('[data-ui="tagline"] > span[aria-hidden="true"]');
-    expect(chips).toHaveLength(3);
-  });
-
-  it("derives padding, gap and the mark from the size, truncated (46 and 30, the reference's two)", () => {
-    // UI-P52 density pass: each derived padding and gap goes through the table
-    // (10 14 11 → 7 10 8, 11 → 8); the mark is an SVG the kit sizes by attribute,
-    // which the pass left alone.
-    const at46 = markup(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
-    expect(at46).toContain("padding:7px 10px 8px");
-    expect(at46).toContain("gap:8px");
-    expect(at46).toContain('width="27"');
-    const at30 = markup(<Tagline lines={LINES} size={30} offsets={[0, 44, 14]} />);
-    expect(at30).toContain("padding:4px 6px 5px");
-    expect(at30).toContain("gap:5px");
-    expect(at30).toContain('width="18"');
-  });
-
-  it("steps the chips by their offsets and shapes their corners 1 / 2 / 3", () => {
-    const html = markup(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
-    expect(html).toContain("margin-left:0;");
-    // UI-P52 density pass: the offsets go through the table, 90 → 65 and 30 → 22.
-    expect(html).toContain("margin-left:65px");
-    expect(html).toContain("margin-left:22px");
-    expect(html).toContain("border-radius:14px 14px 0 14px");
-    expect(html).toContain("border-radius:0 14px 14px 14px");
-    expect(html).toContain("border-radius:14px");
-  });
-
-  it("sets −0.03em at every size and spends the tagline tokens, with the lamp on its own token", () => {
-    const html = markup(<Tagline lines={LINES} size={46} offsets={[0, 90, 30]} />);
-    expect(html).toContain("letter-spacing:-0.03em");
-    expect(html).toContain("background:var(--tagline-chip)");
-    expect(html).toContain("color:var(--on-tagline-chip)");
-    expect(html).toContain('fill="var(--tagline-lamp)"');
-  });
-
-  it("puts the mark on line 2 only", () => {
-    expect(markup(<Tagline lines={LINES} size={40} offsets={[0, 70, 24]} />).match(/data-ui="mark"/g)).toHaveLength(1);
-  });
-
-  it("sets its leading at 1 at every size the reference draws it (UI-P36's 26px has no 1.05)", () => {
-    for (const [size, offsets] of [
-      [46, [0, 90, 30]],
-      [40, [0, 70, 24]],
-      [30, [0, 44, 14]],
-      [26, [0, 40, 12]],
-    ] as const) {
-      const html = markup(<Tagline lines={LINES} size={size} offsets={offsets} />);
-      expect(html, `at ${size}px`).toContain("line-height:1;");
-      expect(html, `at ${size}px`).not.toContain("line-height:1.05");
-    }
-  });
-
-  it("derives the sign-in phone tagline's chip from 26: padding 5px 6px 4px, gap 4px, a 15px mark", () => {
-    // UI-P52 density pass: 5 8 6 → 5 6 4 (5 is under the table's floor), 6 → 4,
-    // and the offsets 40 → 29, 12 → 9.
-    const html = markup(<Tagline lines={LINES} size={26} offsets={[0, 40, 12]} />);
-    expect(html).toContain("padding:5px 6px 4px");
-    expect(html).toContain("gap:4px");
-    expect(html).toContain('width="15"');
-    expect(html).toContain("margin-left:29px");
-    expect(html).toContain("margin-left:9px");
-  });
-});
 
 describe("Plaque tone", () => {
-  it("is on --inverse-evidence-fill and --on-inverse when inverse, at the reference's 10px / 11px", () => {
-    const html = markup(<Plaque build={BUILD} tone="inverse" now={NOW} />);
-    expect(html).toContain("background:var(--inverse-evidence-fill)");
-    expect(html).toContain("color:var(--on-inverse-evidence-fill)");
-    expect(html).toContain("color:var(--on-inverse)");
-    expect(html).toContain("font-size:10px");
-    expect(html).toContain("font-size:11px");
-    expect(html).toContain("yesterday, on sonnet-4.5");
-    expect(html).not.toContain("var(--evidence-fill)");
-  });
 
   it("is unchanged on a surface, by default", () => {
     const html = markup(<Plaque build={BUILD} now={NOW} />);
     expect(html).toContain("background:var(--evidence-fill)");
     expect(html).not.toContain("inverse");
-  });
-
-  it("says 'not yet reproduced' in --on-inverse-2 on the inverse ground", () => {
-    const html = markup(
-      <Plaque build={{ ...BUILD, reproduction_count: 0, last_confirmed_at: null }} tone="inverse" now={NOW} />,
-    );
-    expect(html).toContain("color:var(--on-inverse-2)");
-    expect(html).toContain("not yet reproduced");
-  });
-});
-
-describe("HeroPlate · featured", () => {
-  const featured = (
-    <HeroPlate
-      variant="featured"
-      cover={<div data-testid="cover" />}
-      title="Support reply drafter"
-      outcome="Drafts a first reply."
-      build={BUILD}
-      rank={1}
-      now={NOW}
-    />
-  );
-
-  it("is a lamp over a framed row: the cover at 1.2 and the inverse panel at 1", () => {
-    const html = markup(featured);
-    expect(html.indexOf('data-ui="picture-lamp"')).toBeLessThan(html.indexOf('data-testid="cover"'));
-    expect(html).toContain("flex-grow:1.2");
-    expect(html).toContain("background:var(--inverse)");
-    expect(html).toContain("color:var(--on-inverse)");
-    // UI-P52 density pass: 18px 20px → 13px 14px.
-    expect(html).toContain("padding:13px 14px");
-    expect(html).toContain("border:1px solid var(--glass-border)");
-    expect(html).toContain("box-shadow:var(--shadow-card)");
-    expect(html).toContain("MOST REPRODUCED THIS MONTH");
-  });
-
-  it("hangs the rank square 14px below, left 20, 84×84, zero-padded", () => {
-    const html = markup(featured);
-    expect(html).toContain("left:20px");
-    expect(html).toContain("bottom:-14px");
-    expect(html).toContain("width:84px");
-    expect(html).toContain("box-shadow:var(--shadow-square)");
-    expect(html).toContain(">NO.<");
-    expect(html).toContain(">01<");
-  });
-
-  it("is a level-2 heading, and carries the inverse plaque", () => {
-    render(featured);
-    expect(screen.getByRole("heading", { level: 2, name: "Support reply drafter" })).toBeTruthy();
-    expect(document.querySelector('[data-ui="plaque"][data-plaque-tone="inverse"]')).not.toBeNull();
-  });
-
-  it("is not blurred", () => {
-    expect(markup(featured)).not.toMatch(/backdrop-filter|blur/i);
-  });
-});
-
-describe("HeroPlate · build", () => {
-  const plate = (
-    <HeroPlate
-      variant="build"
-      title="Invoice triage agent"
-      outcome="Reads every supplier invoice."
-      credit={<span>made by @maya</span>}
-      delta="Δ swapped model"
-    />
-  );
-
-  it("is placed 16px from left, right and bottom, on --plate, with the one blur", () => {
-    const html = markup(plate);
-    expect(html).toContain("left:16px;right:16px;bottom:16px");
-    // UI-P52 density pass: 18px 20px → 13px 14px; the left padding is the mark
-    // square's room (14 in + 88 + a 13px gap), so it is 115 rather than the 86
-    // the tightened board draws over the square.
-    expect(html).toContain("padding:13px 14px 13px 115px");
-    expect(html).toContain("border-radius:var(--r-panel)");
-    expect(html).toContain("background:var(--plate)");
-    expect(html).toContain("border:1px solid var(--header-border)");
-    expect(html).toContain("backdrop-filter:blur(16px) saturate(1.15)");
-  });
-
-  it("has an h1, the credit row, and the mark square at 30 / 30", () => {
-    render(plate);
-    expect(screen.getByRole("heading", { level: 1, name: "Invoice triage agent" })).toBeTruthy();
-    expect(screen.getByText("Δ swapped model")).toBeTruthy();
-    const html = markup(plate);
-    expect(html).toContain("left:30px;bottom:30px");
-    expect(html).toContain("width:88px");
-    expect(html).toContain('width="50"');
   });
 });
 

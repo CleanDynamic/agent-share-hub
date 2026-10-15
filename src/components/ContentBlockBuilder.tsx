@@ -1003,7 +1003,7 @@ const PromptBlockEditor = ({ block, update, index }: {
           border: '1px solid var(--line)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: 'var(--text)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Figtree, sans-serif',
+          resize: 'vertical', fontFamily: 'var(--font-ui)',
           lineHeight: 1.6, boxSizing: 'border-box',
         }} />
     </div>
@@ -1326,7 +1326,7 @@ const WorkflowBlockEditor = ({ block: rawBlock, update, index }: {
                   border: '1px solid var(--line)',
                   borderRadius: 6, padding: '6px 8px', fontSize: 12,
                   color: 'var(--text2)', outline: 'none',
-                  resize: 'vertical', fontFamily: 'Figtree, sans-serif',
+                  resize: 'vertical', fontFamily: 'var(--font-ui)',
                   boxSizing: 'border-box',
                 }} />
 
@@ -1461,7 +1461,7 @@ const CodeBlockEditor = ({ block, update, index }: {
           border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'var(--text2)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Figtree',
+          resize: 'vertical', fontFamily: 'var(--font-ui)',
           boxSizing: 'border-box',
         }} />
 
@@ -1498,7 +1498,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         border: '1px solid color-mix(in srgb, var(--cat-breakage) 15%, transparent)',
         borderRadius: 8, padding: '8px 10px', fontSize: 13,
         color: 'var(--text2)', outline: 'none',
-        resize: 'vertical', fontFamily: 'Figtree',
+        resize: 'vertical', fontFamily: 'var(--font-ui)',
         boxSizing: 'border-box',
       }} />
 
@@ -1513,7 +1513,7 @@ const ResultBlockEditor = ({ block, update, index }: {
           border: '1px solid color-mix(in srgb, var(--cat-configuration) 15%, transparent)',
           borderRadius: 8, padding: '8px 10px', fontSize: 13,
           color: 'var(--text)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Figtree',
+          resize: 'vertical', fontFamily: 'var(--font-ui)',
           boxSizing: 'border-box',
         }} />
       <button type="button"
@@ -1537,7 +1537,7 @@ const ResultBlockEditor = ({ block, update, index }: {
         border: '1px solid var(--line)',
         borderRadius: 8, padding: '7px 10px', fontSize: 13,
         color: 'var(--text2)', outline: 'none',
-        resize: 'vertical', fontFamily: 'Figtree',
+        resize: 'vertical', fontFamily: 'var(--font-ui)',
         boxSizing: 'border-box',
       }} />
 
@@ -1674,7 +1674,7 @@ const ComparisonBlockEditor = ({ block, update, index }: {
           border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'var(--text2)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Figtree',
+          resize: 'vertical', fontFamily: 'var(--font-ui)',
           boxSizing: 'border-box',
         }} />
     </div>
@@ -1742,7 +1742,7 @@ const ResourceBlockEditor = ({ block, update, index }: {
           border: '1px solid var(--line)',
           borderRadius: 8, padding: '7px 10px', fontSize: 13,
           color: 'var(--text2)', outline: 'none',
-          resize: 'vertical', fontFamily: 'Figtree',
+          resize: 'vertical', fontFamily: 'var(--font-ui)',
           boxSizing: 'border-box',
         }} />
 
@@ -2152,7 +2152,7 @@ const TutorialStepEditor = ({ block, update, index }: {
           borderBottom: '1px solid var(--line)',
           fontSize: 14, color: 'var(--text2)',
           outline: 'none', resize: 'none', padding: '4px 0',
-          fontFamily: 'Figtree, sans-serif', lineHeight: 1.65,
+          fontFamily: 'var(--font-ui)', lineHeight: 1.65,
           boxSizing: 'border-box',
         }}
       />

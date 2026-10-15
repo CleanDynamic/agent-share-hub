@@ -115,7 +115,7 @@ export function BlockPickerMenu({
         borderRadius: 10,
         boxShadow: '0 10px 30px var(--line)',
         padding: 4,
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
       }}
       ref={listRef}
       onMouseDown={(e) => e.preventDefault()}
@@ -167,7 +167,7 @@ export function BlockPickerMenu({
                   : 'transparent',
                 color: 'var(--text)',
                 fontSize: 12,
-                fontFamily: 'Figtree, sans-serif',
+                fontFamily: 'var(--font-ui)',
                 textAlign: 'left',
                 cursor: 'pointer',
               }}

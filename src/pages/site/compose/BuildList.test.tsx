@@ -1,9 +1,15 @@
+// UI-P93 — the current view's own suite, run against the refined fork under `?look=refined` (same names, handlers and
+// behaviour), then a block for what the refined board draws. Styles are read through SSR markup.
+
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 
-import { BuildList, type BuildListProps } from "./BuildList";
+import type { BuildListProps } from "./BuildList";
+import { BuildList as BuildList } from "./BuildList";
 import { agentEyebrow, dividers, isClamped, madeIn } from "./buildListModel";
 
 vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), getMediaById: vi.fn(() => Promise.resolve(null)) }));
@@ -30,7 +36,11 @@ function list(over: Partial<BuildListProps> = {}) {
     onAddAgentTo: vi.fn(),
     ...over,
   };
-  render(<BuildList {...props} />);
+  render(
+    <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+      <BuildList {...props} />
+    </MemoryRouter>,
+  );
   return props;
 }
 
@@ -53,17 +63,18 @@ describe("session dividers", () => {
 });
 
 describe("step cards", () => {
-  it("draws a default title in the quiet colour and a typed one in the strong colour", () => {
+  it("draws a default title in the quiet colour and a typed one in the strong colour, both at 500 (UI-P93)", () => {
     list();
     const card = (name: RegExp) => screen.getByRole("group", { name });
     const quiet = within(card(/^Prompt 2:/)).getByRole("heading", { level: 3 });
     const named = within(card(/^Prompt 1:/)).getByRole("heading", { level: 3 });
     expect(quiet.textContent).toBe("Prompt 2");
-    // A default title is marked, and drawn at weight 500 in `--text2` (the colour itself is not readable in jsdom).
+    // A default title is marked and drawn in `--text2` (the colour itself is not readable in jsdom); under the refined
+    // look both are 500 and only the ink differs.
     expect(quiet.getAttribute("data-default-title")).toBe("true");
     expect(quiet.getAttribute("style")).toMatch(/font-weight:\s*500/);
     expect(named.getAttribute("data-default-title")).toBeNull();
-    expect(named.getAttribute("style")).toMatch(/font-weight:\s*600/);
+    expect(named.getAttribute("style")).toMatch(/font-weight:\s*500/);
     expect(named.textContent).toBe("Homepage copy");
   });
 
@@ -327,5 +338,40 @@ describe("a manual step (UI-P70)", () => {
     manualList();
     expect(screen.getByRole("group", { name: /^Prompt 4:/ })).toBeTruthy();
     expect(within(screen.getByRole("group", { name: /^Prompt 4:/ })).getByText("Output of 3 · Manual step 3")).toBeTruthy();
+  });
+});
+
+describe("the refined look (UI-P93)", () => {
+  const markup = () =>
+    renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/dev/kit/pages/sandbox"]}>
+        <BuildList {...sandboxListProps("bakery")} />
+      </MemoryRouter>,
+    );
+
+  it("leads each session with the tool's real mark, and draws prompts as modules, the selection the selected recipe", () => {
+    list();
+    const heads = screen.getAllByRole("separator");
+    expect(heads.map((head) => Boolean(head.querySelector("[data-mark]")))).toEqual([true, true, true]);
+    const html = markup();
+    expect(html).toMatch(/data-selected="true"[^>]*style="[^"]*background:var\(--selected-fill\);border:1px solid var\(--selected-edge\)/);
+    expect(html).toContain("padding-left:36px");
+  });
+
+  it("draws a suggestion as a dashed chip with Accept as a 20-high control and Dismiss as text", () => {
+    list();
+    const accept = screen.getByRole("button", { name: "Accept" });
+    expect(accept.getAttribute("style")).toMatch(/height:\s*20px/);
+    expect(screen.getByRole("button", { name: "Dismiss" }).getAttribute("data-variant")).toBeNull();
+    expect(markup()).toContain("height:28px;padding:0 4px 0 8px;box-sizing:border-box;border-radius:6px;border:1px dashed var(--line)");
+  });
+
+  it("draws the agent's run rule as a tag and Add a prompt to this agent as a dashed, text-only row", () => {
+    list();
+    const agent = screen.getByRole("group", { name: /^Agent 5/ });
+    expect(within(agent).getByText("Repeats until a condition is met · every item has a price")).toBeTruthy();
+    const add = within(agent).getByRole("button", { name: "Add a prompt to this agent" });
+    expect(add.querySelector("svg")).toBeNull();
+    expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);
   });
 });

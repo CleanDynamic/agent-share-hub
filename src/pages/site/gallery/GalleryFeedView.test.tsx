@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import GalleryFeedDemo from "@/pages/dev/GalleryFeedDemo";
 
-const REFINED = "/dev/kit/pages/gallery-feed?look=refined";
+const REFINED = "/dev/kit/pages/gallery-feed";
 
 const tree = (state: "populated" | "loading" | "empty" | "error" = "populated") => (
   <MemoryRouter initialEntries={[REFINED]}>
@@ -29,10 +29,9 @@ afterEach(() => {
   delete (window as { matchMedia?: unknown }).matchMedia;
 });
 
-describe("RefinedGalleryFeedView on a desktop", () => {
+describe("GalleryFeedView on a desktop", () => {
   it("is the refined fork: the heading, the view switch, the search and three menu buttons", () => {
     render(tree());
-    expect(screen.getByTestId("gallery-view").getAttribute("data-look")).toBe("refined");
     expect(screen.getByRole("heading", { level: 1, name: "Gallery" })).toBeTruthy();
     expect(screen.getByRole("radiogroup", { name: "Gallery view" })).toBeTruthy();
     expect(screen.getByRole("searchbox", { name: "Search the gallery" })).toBeTruthy();
@@ -67,7 +66,7 @@ describe("RefinedGalleryFeedView on a desktop", () => {
   });
 });
 
-describe("RefinedGalleryFeedView on a phone", () => {
+describe("GalleryFeedView on a phone", () => {
   it("keeps today's order: heading, search, the three chips, the list", () => {
     phone(true);
     render(tree());

@@ -68,7 +68,7 @@ function ruleEnd(text: string, open: number): number {
 
 // UI-P52 density pass: the floor is 20 (it was 17), because the pass takes the
 // smallest headings under 20 and those are now set in Figtree 600.
-describe("the display floor: Sentient never below 20px", () => {
+describe("the display floor: the display face never below 20px", () => {
   it("holds across the shipped scale", () => {
     expect(assertFloors()).toEqual([]);
   });
@@ -124,7 +124,7 @@ describe("the display floor: Sentient never below 20px", () => {
   });
 });
 
-describe("the weight floor: Figtree never under 400 below 18px", () => {
+describe("the weight floor: the UI face never under 400 below 18px", () => {
   it("holds across the shipped scale", () => {
     const light = Object.entries(scale).filter(
       ([, s]) => s.fontFamily === FIGTREE && (minPx(s.fontSize) ?? 99) < BODY_WEIGHT_FLOOR_PX,
@@ -277,7 +277,6 @@ describe("the retired faces", () => {
       readFileSync(join(process.cwd(), "index.html"), "utf8"),
       readFileSync(join(process.cwd(), "src/index.css"), "utf8"),
       readFileSync(join(process.cwd(), "src/styles/shared-ns.css"), "utf8"),
-      readFileSync(join(process.cwd(), "src/components/shell/flat-shell.css"), "utf8"),
     ].join("\n");
     // A Google Fonts request names the family in the URL; the comments left
     // behind mention the retired names in prose, so match the request shape.
@@ -287,41 +286,42 @@ describe("the retired faces", () => {
     expect(shipped).not.toMatch(/font-family:[^;]*Playfair/);
   });
 
-  it("leaves the two Google families requested exactly once, and Bodoni Moda not at all", () => {
+  it("requests no font from Google, and names no retired family in a stylesheet or a font stack", () => {
+    // UI-P99 retired Figtree, Sentient and DM Mono; the faces are Geist and Geist Mono, self-hosted.
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
-    for (const family of ["DM+Mono", "Figtree"]) {
-      expect(html, `${family} should be requested`).toContain(family);
-    }
-    expect(html.match(/fonts\.googleapis\.com\/css2/g) ?? []).toHaveLength(1);
-    // UI-P05: the request, in any shipped file, names no Bodoni family.
+    expect(html).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
     expect(html).not.toMatch(/family=Bodoni/);
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
-    expect(css).not.toMatch(/font-family:[^;]*Bodoni/);
+    expect(css).not.toMatch(/font-family:[^;]*(Bodoni|Figtree|Sentient|DM Mono)/);
+    const shared = readFileSync(join(process.cwd(), "src/styles/shared-ns.css"), "utf8");
+    expect(shared).not.toMatch(/font-family:[^;]*(Figtree|Sentient|DM Mono)/);
+    for (const file of ["Sentient-Medium-latin.woff2", "Sentient-Bold-latin.woff2"]) {
+      expect(existsSync(join(process.cwd(), "public/fonts", file)), `${file} is gone`).toBe(false);
+    }
   });
 
-  it("self-hosts Sentient: two Latin WOFF2 files, two @font-face rules, both preloaded", () => {
+  it("self-hosts Geist and Geist Mono: two variable WOFF2 files, two @font-face rules, Geist preloaded", () => {
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
     const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
-    for (const file of ["Sentient-Medium-latin.woff2", "Sentient-Bold-latin.woff2"]) {
+    for (const file of ["Geist-Variable.woff2", "GeistMono-Variable.woff2"]) {
       expect(existsSync(join(process.cwd(), "public/fonts", file)), `${file} is shipped`).toBe(true);
-      expect(html).toMatch(
-        new RegExp(`<link\\s+rel="preload"\\s+as="font"\\s+type="font/woff2"\\s+href="/fonts/${file.replace(/\./g, "\\.")}"\\s+crossorigin`),
-      );
     }
+    expect(html).toMatch(
+      /<link\s+rel="preload"\s+as="font"\s+type="font\/woff2"\s+href="\/fonts\/Geist-Variable\.woff2"\s+crossorigin/,
+    );
     const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => m[1]);
-    const sentient = faces.filter((f) => /font-family:\s*"Sentient"/.test(f));
-    expect(sentient).toHaveLength(2);
-    for (const weight of [500, 700]) {
-      const face = sentient.find((f) => new RegExp(`font-weight:\\s*${weight}\\b`).test(f));
-      expect(face, `Sentient ${weight} is declared`).toBeDefined();
+    expect(faces).toHaveLength(2);
+    for (const family of ["Geist", "Geist Mono"]) {
+      const face = faces.find((f) => new RegExp(`font-family:\\s*"${family}"`).test(f));
+      expect(face, `${family} is declared`).toBeDefined();
       expect(face).toMatch(/font-display:\s*swap/);
       expect(face).toMatch(/format\("woff2"\)/);
-      expect(face).toMatch(/unicode-range:/);
+      expect(face).toMatch(/font-weight:\s*100 900/);
     }
   });
 });
 
-describe("every Sentient instance comes from the scale", () => {
+describe("every display-face instance comes from the scale", () => {
   // This is what makes the floor test cover the whole product rather than one
   // module. The scale is floor-checked above; if nothing else in src/ names
   // the face, then no route can render it below 20px.
@@ -509,12 +509,11 @@ describe("type.mono(px, { caps })", () => {
   });
 });
 
-/* ── UI-P80 — the two looks ────────────────────────────────────────────────
+/* ── UI-P80 — the roles ────────────────────────────────────────────────────
    The roles are var() references; the declarations are in src/index.css. This
-   resolves them the way the browser does, once with no `data-look` (only the
-   family block in `:root`) and once with `:root[data-look="refined"]`. */
+   resolves them the way the browser does. */
 
-describe("roles per look (UI-P80)", () => {
+describe("roles (UI-P80)", () => {
   const css = readFileSync(join(process.cwd(), "src/index.css"), "utf8");
   const declarations = (selector: string) => {
     const open = css.indexOf("{", css.indexOf(`\n${selector} {`));
@@ -522,8 +521,7 @@ describe("roles per look (UI-P80)", () => {
     for (const m of css.slice(open + 1, css.indexOf("}", open)).matchAll(/^\s*--([a-z0-9-]+):\s*(.+);\s*$/gm)) out[m[1]] = m[2];
     return out;
   };
-  const current = declarations(":root");
-  const refined = { ...current, ...declarations(':root[data-look="refined"]') };
+  const refined = declarations(":root");
 
   /** `var(--a, fb)` as a browser resolves it, innermost first. */
   const resolve = (value: unknown, vars: Record<string, string>): string => {
@@ -535,37 +533,17 @@ describe("roles per look (UI-P80)", () => {
   };
   const first = (family: string) => /^'?([^',]+)'?/.exec(family)![1];
 
-  it("declares the three family tokens: Figtree, Sentient and DM Mono now; Geist, Geist and Geist Mono refined", () => {
-    expect(first(current["font-ui"])).toBe("Figtree");
-    expect(first(current["font-display"])).toBe("Sentient");
-    expect(first(current["font-data"])).toBe("DM Mono");
+  it("declares the three family tokens: Geist, Geist and Geist Mono", () => {
     expect(first(refined["font-ui"])).toBe("Geist");
     expect(first(refined["font-display"])).toBe("Geist");
     expect(first(refined["font-data"])).toBe("Geist Mono");
   });
 
-  it("resolves every role to today's value with the switch off", () => {
-    expect(resolve(type.body.fontSize, current)).toBe("15px");
-    expect(resolve(type.body.lineHeight, current)).toBe("1.55");
-    expect(resolve(type.bodyLarge.fontSize, current)).toBe("16px");
-    expect(resolve(type.cardTitle.fontSize, current)).toBe("19px");
-    expect(resolve(type.cardTitle.fontWeight, current)).toBe("600");
-    expect(resolve(type.sectionHead.fontSize, current)).toBe("clamp(22px, 2.7vw, 36px)");
-    expect(resolve(type.hero.fontSize, current)).toBe("clamp(33px, 4.8vw, 58px)");
-    expect(resolve(type.hero.letterSpacing, current)).toBe("-0.02em");
-    expect(resolve(type.data.fontSize, current)).toBe("clamp(12px, 0.83vw, 13px)");
-    expect(resolve(type.label.fontSize, current)).toBe("12px");
-    expect(first(resolve(type.body.fontFamily, current))).toBe("Figtree");
-    expect(first(resolve(type.hero.fontFamily, current))).toBe("Sentient");
-    expect(first(resolve(type.eyebrow.fontFamily, current))).toBe("DM Mono");
-    expect(resolve(type.eyebrow.letterSpacing, current)).toBe("0.08em");
-  });
-
-  it("resolves to the refined table with data-look=\"refined\"", () => {
+  it("resolves to the table of UI-P80", () => {
     const r = (v: unknown) => resolve(v, refined);
     // hero 44 / 1.04 / -0.04em, Geist; 32 on mobile
     expect([r(type.hero.fontSize), r(type.hero.lineHeight), r(type.hero.letterSpacing), r(type.hero.fontWeight)]).toEqual(["44px", "1.04", "-0.04em", "500"]);
-    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root\[data-look="refined"\] \{ --type-hero-size: 32px; \}/);
+    expect(css).toMatch(/@media \(max-width: 767px\) \{\s*:root \{ --type-hero-size: 32px; \}/);
     // page title 20 / 500 / 1.2 / -0.015em
     expect([r(type.sectionHead.fontSize), r(type.sectionHead.lineHeight), r(type.sectionHead.letterSpacing)]).toEqual(["20px", "1.2", "-0.015em"]);
     // figure 24 / 500 / 1.1 / -0.02em, tabular
@@ -597,7 +575,7 @@ describe("roles per look (UI-P80)", () => {
     expect(refined["font-display"]).not.toMatch(/serif(?!\s*$)|Georgia|Sentient/);
   });
 
-  it("keeps the floors over the current look's values", () => {
+  it("keeps the floors over the shipped scale", () => {
     expect(assertFloors()).toEqual([]);
   });
 });

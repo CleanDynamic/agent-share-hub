@@ -25,21 +25,9 @@
 import type { CSSProperties, MouseEventHandler } from "react";
 
 import { categoryColour } from "@/lib/theme/category";
-import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
-
-/** What every chip shares: the reference's box, with no fill and a hairline. */
-const BASE: CSSProperties = {
-  border: `1px solid ${t.line}`,
-  fontFamily: DM_MONO,
-  fontSize: 10,
-  lineHeight: "normal",
-  padding: "2px 4px",
-  borderRadius: r.chip,
-  whiteSpace: "nowrap",
-};
+import { FIGTREE, tabular } from "@/lib/theme/type";
 
 interface CommonProps {
   /** Anything the surface wants on hover — what the category means, usually. */
@@ -98,9 +86,8 @@ const TAG: CSSProperties = {
 export function CategoryChip(props: CategoryChipProps) {
   const { title, onClick, style } = props;
   const selectable = Boolean(onClick);
-  const refined = useLook() === "refined";
 
-  if (props.variant === "overflow" && refined) {
+  if (props.variant === "overflow") {
     return (
       <span
         data-ui="category-chip"
@@ -116,50 +103,15 @@ export function CategoryChip(props: CategoryChipProps) {
     );
   }
 
-  if (props.variant === "overflow") {
-    return (
-      <span
-        data-ui="category-chip"
-        data-variant="overflow"
-        data-visual-slot="category-chip"
-        data-chip-variant="overflow"
-        title={title}
-        onClick={onClick}
-        style={{
-          /* An overflow chip names no category, so it wears no category hue: a
-             coloured "+4" reads as a tenth category rather than as the rest of
-             the row. */
-          ...BASE,
-          ...tabular,
-          color: t.text2,
-          ...style,
-        }}
-      >
-        +{props.count}
-      </span>
-    );
-  }
-
   const { category, label, count, selected, gap } = props;
   const showCount = typeof count === "number" && count > 0;
   const colour = categoryColour(category);
-  const chipStyle: CSSProperties = refined
-    ? {
-        ...TAG,
-        ...(selected ? { borderColor: t.selectedEdge } : null),
-        cursor: selectable ? "pointer" : undefined,
-        ...style,
-      }
-    : {
-        ...BASE,
-        color: colour,
-        ...(selected ? { borderColor: t.action } : null),
-        display: "inline-flex",
-        alignItems: "baseline",
-        gap: 5,
-        cursor: selectable ? "pointer" : undefined,
-        ...style,
-      };
+  const chipStyle: CSSProperties = {
+    ...TAG,
+    ...(selected ? { borderColor: t.selectedEdge } : null),
+    cursor: selectable ? "pointer" : undefined,
+    ...style,
+  };
 
   return (
     <span
@@ -188,19 +140,17 @@ export function CategoryChip(props: CategoryChipProps) {
       }
       style={chipStyle}
     >
-      {refined ? (
-        <span
-          aria-hidden="true"
-          style={{
-            boxSizing: "border-box",
-            width: 6,
-            height: 6,
-            flexShrink: 0,
-            borderRadius: 1,
-            ...(gap ? { border: `1px dashed ${colour}` } : { background: colour }),
-          }}
-        />
-      ) : null}
+      <span
+        aria-hidden="true"
+        style={{
+          boxSizing: "border-box",
+          width: 6,
+          height: 6,
+          flexShrink: 0,
+          borderRadius: 1,
+          ...(gap ? { border: `1px dashed ${colour}` } : { background: colour }),
+        }}
+      />
       {label}
       {/* The count is set apart by `tabular` and by the gap. It carries no
           opacity: the ink has to stay the measured hue (BG-P30). */}

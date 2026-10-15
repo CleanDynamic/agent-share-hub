@@ -7,100 +7,11 @@ import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { denseFont } from "@/lib/theme/density";
-
 import LevelRing from "@/components/profile-game/LevelRing";
 
-import { OrbGlass } from "./OrbGlass";
 import { OrbRing } from "./OrbRing";
-import { OrbSolid } from "./OrbSolid";
 
 const markup = (node: React.ReactElement) => renderToStaticMarkup(node);
-
-describe("OrbGlass", () => {
-  it("is a circle of the painted glass ground, with the edge, the inner light and the drop", () => {
-    const html = markup(<OrbGlass size={162} label="Reproduced today" sub="48 runs" />);
-    expect(html).toContain('data-ui="orb-glass"');
-    expect(html).toContain("width:162px;height:162px;border-radius:50%");
-    expect(html).toContain("background:var(--orb-glass)");
-    expect(html).toContain(
-      "box-shadow:inset 0 0 0 1px var(--orb-glass-edge), inset 0 12px 40px rgba(255,255,255,.18), 0 20px 50px rgba(0,0,0,.25)",
-    );
-  });
-
-  it("centres a column with gap 5 and keeps 16% of the size clear at the foot, through the table", () => {
-    // UI-P52 density pass: 16% of 162 is 25, which renders at 18; of 118, 18 → 13.
-    expect(markup(<OrbGlass size={162} label="L" />)).toContain("gap:5px;padding-bottom:18px");
-    expect(markup(<OrbGlass size={118} label="L" />)).toContain("gap:5px;padding-bottom:13px");
-    expect(markup(<OrbGlass size={162} label="L" />)).toContain("flex-direction:column;align-items:center;justify-content:center");
-  });
-
-  it("draws a static dotted circle: 18px, r 7.5, stroke --on-orb-glass 1.6, dashed 1.2 3.4, round caps", () => {
-    const html = markup(<OrbGlass size={162} label="L" />);
-    expect(html).toContain('width="18" height="18" viewBox="0 0 20 20"');
-    expect(html).toContain('r="7.5"');
-    expect(html).toContain('stroke="var(--on-orb-glass)"');
-    expect(html).toContain('stroke-width="1.6"');
-    expect(html).toContain('stroke-dasharray="1.2 3.4"');
-    expect(html).toContain('stroke-linecap="round"');
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).not.toMatch(/animation|<animate|transition/);
-  });
-
-  it("sets the label in Figtree 12px 500 and the sub-label in DM Mono 10px at 80%", () => {
-    // UI-P52 density pass: the label 13 → 12; 10 is kept.
-    const html = markup(<OrbGlass size={162} label="Reproduced today" sub="48 runs" />);
-    expect(html).toContain("font-weight:500;font-size:12px");
-    expect(html).toContain("color:var(--on-orb-glass);text-align:center");
-    expect(html).toContain("font-size:10px");
-    expect(html).toContain("opacity:0.8");
-    expect(html).toContain("Reproduced today");
-    expect(html).toContain("48 runs");
-  });
-
-  it("omits the sub-label when there is none", () => {
-    expect(markup(<OrbGlass size={118} label="41 ran it" />)).not.toContain("opacity:0.8");
-  });
-
-  it("is real text, so the count is read as words", () => {
-    render(<OrbGlass size={118} label="41 ran it" sub="last 27 Sep" />);
-    expect(screen.getByText("41 ran it")).toBeTruthy();
-    expect(screen.getByText("last 27 Sep")).toBeTruthy();
-  });
-});
-
-describe("OrbSolid", () => {
-  it("is a circle of the solid ground with the drop shadow only", () => {
-    const html = markup(<OrbSolid size={162} top="This week" value="312" bottom="runs reported" />);
-    expect(html).toContain('data-ui="orb-solid"');
-    expect(html).toContain("width:162px;height:162px;border-radius:50%");
-    expect(html).toContain("background:var(--orb-solid)");
-    expect(html).toContain("box-shadow:0 20px 50px rgba(0,0,0,.25)");
-    expect(html).not.toContain("inset");
-    expect(html).toContain("gap:3px");
-  });
-
-  it.each([
-    [162, 27],
-    [150, 25],
-    [140, 23],
-    [128, 21],
-    [118, 20],
-  ])("a %ipx orb sets its number at %ipx, as drawn, through the table", (size, px) => {
-    // UI-P52 density pass: 27 → 23, 25 → 21, 23 → 20, 21 → 18, 20 → 17.
-    const html = markup(<OrbSolid size={size} top="t" value="1" bottom="b" />);
-    expect(html).toContain(`font-size:${denseFont(px)}px`);
-    expect(html).toContain("letter-spacing:-0.03em");
-    expect(html).toContain("color:var(--on-orb-solid)");
-  });
-
-  it("sets the two lines in Figtree 11px --on-orb-solid-2", () => {
-    const html = markup(<OrbSolid size={162} top="This week" value="312" bottom="runs reported" />);
-    expect(html.match(/font-size:11px;line-height:normal;color:var\(--on-orb-solid-2\)/g)).toHaveLength(2);
-    expect(html).toContain("This week");
-    expect(html).toContain("runs reported");
-  });
-});
 
 describe("OrbRing", () => {
   const ring = (percent = 77, size = 150) =>
@@ -147,7 +58,7 @@ describe("OrbRing", () => {
     expect(html).toContain("font-size:22px");
     expect(html).toContain("letter-spacing:-0.03em");
     expect(html).toContain("line-height:1");
-    expect(html).toContain("Sentient");
+    expect(html).toContain("Geist");
     expect(html).toContain("font-size:10px");
     expect(html).toContain("level");
     expect(markup(<OrbRing size={120} percent={50} value={3} label="x" />)).toContain("font-size:20px");

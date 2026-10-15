@@ -31,7 +31,7 @@ export function ProgressTabBar({ tabs, active, onChange }: ProgressTabBarProps) 
               background: "transparent",
               border: 0,
               padding: "12px 0",
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 14,
               fontWeight: isActive ? 600 : 500,
               color: isActive ? "var(--text)" : "var(--text2)",

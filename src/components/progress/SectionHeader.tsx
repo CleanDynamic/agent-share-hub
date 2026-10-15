@@ -21,7 +21,7 @@ export function SectionHeader({ title, subtitle, action }: SectionHeaderProps) {
       <div>
         <h2
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 16,
             fontWeight: 600,
             color: "var(--text)",

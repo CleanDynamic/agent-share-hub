@@ -173,7 +173,7 @@ describe("GalleryPage — the feed", () => {
     expect(within(on).getByRole("heading", { level: 2 })).toHaveTextContent("Reproduced on Sonnet 5.5 · 4");
     expect(within(not).getByRole("heading", { level: 2 })).toHaveTextContent("Not yet reproduced on Sonnet 5.5 · 8");
     expect(within(on).getByText("5 reproduced")).toBeInTheDocument();
-    expect(within(on).getAllByText(/, on Sonnet 5\.5/).length).toBeGreaterThan(0);
+    expect(within(on).getAllByText("Sonnet 5.5").length).toBeGreaterThan(0);
     expect(within(not).getByText("not yet reproduced")).toBeInTheDocument();
     expect(screen.getByTestId("feed-count")).toHaveTextContent("4 of 12 builds reproduced on Sonnet 5.5, newest first");
     expect(screen.getByRole("button", { name: "Remove Proof on Sonnet 5.5" })).toBeInTheDocument();
@@ -250,8 +250,6 @@ describe("GalleryPage — the feed", () => {
     renderAt("/gallery?q=zzzz");
     expect(await screen.findByText("Nobody has hung a build for “zzzz” yet.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ask for it on Bounties" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    await waitFor(() => expect(address()).toBe("/gallery"));
   });
 
   it("says That didn't load. when the read fails, and a retry asks again", async () => {

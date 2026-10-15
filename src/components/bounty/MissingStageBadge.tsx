@@ -57,7 +57,7 @@ export function MissingStageBadge({
       <Puzzle size={32} style={{ color: "var(--cat-breakage)" }} strokeWidth={1.5} />
       <span
         style={{
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 14,
           fontWeight: 600,
           color: 'var(--text)',
@@ -68,7 +68,7 @@ export function MissingStageBadge({
       <p
         className="text-center"
         style={{
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 12,
           fontWeight: 400,
           color: 'var(--text2)',
@@ -81,7 +81,7 @@ export function MissingStageBadge({
       </p>
       <span
         style={{
-          fontFamily: 'Figtree, sans-serif',
+          fontFamily: 'var(--font-ui)',
           fontSize: 10,
           fontWeight: 600,
           letterSpacing: '0.06em',

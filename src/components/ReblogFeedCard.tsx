@@ -203,7 +203,7 @@ export function ReblogFeedCard({ post }: { post: ReblogPost }) {
               fontSize: 14, lineHeight: 1.65,
               color: 'var(--text2)',
               margin: '8px 0 0 0',
-              fontFamily: 'Figtree, sans-serif',
+              fontFamily: 'var(--font-ui)',
             }}>
               {post.description}
             </p>

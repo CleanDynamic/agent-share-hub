@@ -136,7 +136,7 @@ describe("RebuildTree", () => {
     expect(root).toHaveTextContent("Maker root");
     const count = within(root).getAllByTestId("rebuild-tree-reproduced")[0];
     expect(count).toHaveTextContent("12 reproduced");
-    expect(count.style.fontFamily).toContain("DM Mono");
+    expect(count.style.fontFamily).toContain("Geist Mono");
     expect(count.style.fontVariantNumeric).toBe("tabular-nums");
   });
 
@@ -146,7 +146,7 @@ describe("RebuildTree", () => {
     const notes = screen.getAllByTestId("rebuild-tree-note");
     expect(notes).toHaveLength(1);
     expect(notes[0].textContent).toBe("Δ Swapped the model and cut two steps");
-    expect(notes[0].style.fontFamily).toContain("DM Mono");
+    expect(notes[0].style.fontFamily).toContain("Geist Mono");
     // jsdom drops a var() font-size, so assert the role: the current look's 12px.
     expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
     expect(notes[0].style.whiteSpace).toBe("nowrap");
@@ -226,7 +226,7 @@ describe("the Rebuilds tab's family", () => {
     renderWith(<RebuildsTab rebuilds={[direct]} family={{ rootId: "root", currentId: "root" }} />);
 
     const heading = screen.getByRole("heading", { name: "The family" });
-    expect(heading.style.fontFamily).toContain("DM Mono");
+    expect(heading.style.fontFamily).toContain("Geist Mono");
     expect(fallbackOf(typeScale.eyebrow.fontSize)).toBe("12px");
     expect(heading.style.textTransform).toBe("uppercase");
 

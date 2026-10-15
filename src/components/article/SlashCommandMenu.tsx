@@ -279,7 +279,7 @@ export function SlashCommandMenu({
         borderRadius: 12,
         boxShadow: '0 12px 32px var(--line)',
         overflow: 'hidden',
-        fontFamily: 'Figtree, sans-serif',
+        fontFamily: 'var(--font-ui)',
         zIndex: 100,
       }}
     >
@@ -306,7 +306,7 @@ export function SlashCommandMenu({
             color: 'var(--text)',
             fontSize: 13,
             fontWeight: 500,
-            fontFamily: 'Figtree, sans-serif',
+            fontFamily: 'var(--font-ui)',
           }}
         />
       </div>

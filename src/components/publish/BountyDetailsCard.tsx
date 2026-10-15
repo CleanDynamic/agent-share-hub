@@ -93,7 +93,7 @@ export function BountyDetailsCard({
           <Target size={14} color="var(--lit)" strokeWidth={1.8} />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 13,
               fontWeight: 600,
               color: "var(--text)",
@@ -180,7 +180,7 @@ export function BountyDetailsCard({
                     : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "var(--text)",
@@ -211,7 +211,7 @@ export function BountyDetailsCard({
                     : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "var(--text)",
@@ -248,7 +248,7 @@ export function BountyDetailsCard({
                     : "0.5px solid var(--line)",
                   borderRadius: 6,
                   padding: "0 12px",
-                  fontFamily: "Figtree, sans-serif",
+                  fontFamily: "var(--font-ui)",
                   fontSize: 14,
                   fontWeight: 500,
                   color: "var(--text)",
@@ -287,7 +287,7 @@ export function BountyDetailsCard({
                 border: "0.5px solid var(--line)",
                 borderRadius: 6,
                 padding: "0 12px",
-                fontFamily: "Figtree, sans-serif",
+                fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 fontWeight: 500,
                 color: value.deadline
@@ -352,7 +352,7 @@ export function BountyDetailsCard({
                 : "0.5px solid var(--line)",
               borderRadius: 6,
               padding: 12,
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 14,
               fontWeight: 500,
               color: "var(--text)",
@@ -369,7 +369,7 @@ export function BountyDetailsCard({
           )}
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 400,
               color: "var(--text2)",
@@ -395,7 +395,7 @@ export function BountyDetailsCard({
           />
           <span
             style={{
-              fontFamily: "Figtree, sans-serif",
+              fontFamily: "var(--font-ui)",
               fontSize: 11,
               fontWeight: 500,
               color: "var(--text2)",
@@ -406,7 +406,7 @@ export function BountyDetailsCard({
         </div>
         <span
           style={{
-            fontFamily: "Figtree, sans-serif",
+            fontFamily: "var(--font-ui)",
             fontSize: 10,
             fontWeight: 400,
             color: "var(--text2)",
@@ -435,7 +435,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 10,
         fontWeight: 600,
         textTransform: "uppercase",
@@ -465,7 +465,7 @@ function HelperText({
   return (
     <span
       style={{
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 11,
         fontWeight: 400,
         color,
@@ -497,7 +497,7 @@ function Chip({
           : "0.5px solid var(--line)",
         borderRadius: 6,
         background: active ? "color-mix(in srgb, var(--lit) 10%, transparent)" : "transparent",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 12,
         fontWeight: 500,
         color: active ? "var(--lit)" : "var(--text2)",
@@ -527,7 +527,7 @@ function QuickPickChip({
         border: "0.5px solid var(--line)",
         borderRadius: 6,
         background: "transparent",
-        fontFamily: "Figtree, sans-serif",
+        fontFamily: "var(--font-ui)",
         fontSize: 11,
         fontWeight: 500,
         color: "var(--text2)",
