@@ -19,7 +19,9 @@ import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { Panel, PanelHead } from "@/components/brand/Panel";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
@@ -32,7 +34,26 @@ const SYMBOL: Record<ChangeRowKind, { glyph: string; colour: string }> = {
   removed: { glyph: "−", colour: t.catBreakage },
 };
 
+/** "sonnet-4.5 → claude opus 5" with each model's real mark (14, in a value) before its name; a name with no logo stands alone. */
+function ModelsValue({ value }: { value: string }) {
+  const parts = value.split(" → ");
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 ? " → " : null}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <ModelMark model={part} size={14} />
+            {part}
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
+
 export function ChangeList({ groups, phone = false }: { groups: readonly ChangeGroupView[]; phone?: boolean }) {
+  const refined = useLook() === "refined";
   return (
     <div data-testid="change-list">
       {groups.map((group) => (
@@ -84,7 +105,7 @@ export function ChangeList({ groups, phone = false }: { groups: readonly ChangeG
                     ...(phone ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
                   }}
                 >
-                  {row.value}
+                  {refined && row.name === "Made with" ? <ModelsValue value={row.value} /> : row.value}
                 </span>
               </li>
             ))}

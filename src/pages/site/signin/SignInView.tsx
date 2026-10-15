@@ -42,20 +42,23 @@ import type { MouseEvent, ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Lockup } from "@/components/brand/Lockup";
+import { Mark } from "@/components/brand/Mark";
 import { OrbGlass } from "@/components/brand/OrbGlass";
 import { OrbSolid } from "@/components/brand/OrbSolid";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { Panel } from "@/components/brand/Panel";
 import { Segmented } from "@/components/brand/Segmented";
 import { Tagline } from "@/components/brand/Tagline";
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { FrameLink } from "@/components/shell/FrameLink";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ThemeSegmented } from "@/components/theme/ThemeSegmented";
 import type { ThemeChoice } from "@/contexts/ThemeContext";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { FIGTREE } from "@/lib/theme/type";
+import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import type { AuthMode } from "./authModel";
 
@@ -125,6 +128,83 @@ function Orbs({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps
   );
 }
 
+
+/* ── the refined look's pieces (UI-P95): the entrance without orbs or chips ── */
+
+/** The tagline as one heading in the page-title role: plain Geist lines, the mark after "hung with", no chips. */
+function RefinedTagline({ size }: { size: number }) {
+  return (
+    <h1
+      data-ui="tagline"
+      style={{
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: FIGTREE,
+        fontSize: size,
+        fontWeight: 500,
+        letterSpacing: "-0.04em",
+        lineHeight: 1.04,
+        color: t.text,
+      }}
+    >
+      <VisuallyHidden>{TAGLINE.join(" ")}</VisuallyHidden>
+      <span aria-hidden="true">{TAGLINE[0]}</span>
+      <span aria-hidden="true" style={{ paddingLeft: 48, display: "inline-flex", alignItems: "center", gap: 12 }}>
+        {TAGLINE[1]}
+        <Mark size={Math.round(size * 0.68)} />
+      </span>
+      <span aria-hidden="true" style={{ paddingLeft: 24 }}>
+        {TAGLINE[2]}
+      </span>
+    </h1>
+  );
+}
+
+/** One live count as a module: the words, then the number in tabular Geist Mono. */
+function CountModule({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <div
+      style={{
+        flex: "1 1 0",
+        minWidth: 0,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        padding: 16,
+        background: t.module,
+        border: `1px solid ${t.moduleBorder}`,
+        borderRadius: 8,
+        boxShadow: t.moduleShadow,
+      }}
+    >
+      <span style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: "normal", color: t.label }}>{label}</span>
+      <span style={{ fontFamily: DM_MONO, fontSize: 24, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+      <span style={{ fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "normal", color: t.label }}>{unit}</span>
+    </div>
+  );
+}
+
+function RefinedCounts({ reproducedToday, inGallery, countsFailed }: Pick<SignInViewProps, "reproducedToday" | "inGallery" | "countsFailed">) {
+  const waiting = (reproducedToday === null || inGallery === null) && !countsFailed;
+  const row = { display: "flex", gap: 12 } as const;
+  const placeholder = countsFailed ? null : <Skeleton height={92} radius={8} style={{ flex: "1 1 0" }} />;
+  const counts = (
+    <>
+      {reproducedToday === null ? placeholder : <CountModule label="Reproduced" value={reproducedToday.toLocaleString("en-GB")} unit="today" />}
+      {inGallery === null ? placeholder : <CountModule label="Hung" value={inGallery.toLocaleString("en-GB")} unit="builds" />}
+    </>
+  );
+  return waiting ? (
+    <LoadingRegion what="the counts" style={row}>
+      {counts}
+    </LoadingRegion>
+  ) : (
+    <div style={row}>{counts}</div>
+  );
+}
+
 /** Sign in · Join free: two pages, so two links. Only the first two modes have a current side. */
 function AccountSwitch({ mode, carry, size, fontSize }: { mode: AuthMode; carry: string; size: 32 | 38; fontSize: 12 | 13 }) {
   return (
@@ -175,6 +255,7 @@ function BackLink({ onBack }: { onBack: () => void }) {
 /* ── desktop ── */
 
 function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToday, inGallery, countsFailed, themeValue, children }: SignInViewProps) {
+  const refined = useLook() === "refined";
   return (
     <div
       data-testid="signin-view"
@@ -196,8 +277,12 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
         <Lockup size={70} />
-        <Tagline lines={TAGLINE} size={40} offsets={[0, 70, 24]} />
-        <Orbs reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
+        {refined ? <RefinedTagline size={44} /> : <Tagline lines={TAGLINE} size={40} offsets={[0, 70, 24]} />}
+        {refined ? (
+          <RefinedCounts reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
+        ) : (
+          <Orbs reproducedToday={reproducedToday} inGallery={inGallery} countsFailed={countsFailed} />
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -207,11 +292,15 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
           style={{
             width: 420,
             boxSizing: "border-box",
-            padding: 19,
-            borderRadius: 20,
-            background: t.header,
-            border: `1px solid ${t.headerBorder}`,
-            boxShadow: `${t.shadowFloat}, ${t.panelHighlight}`,
+            ...(refined
+              ? { padding: 16, borderRadius: 8, background: t.module, border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow }
+              : {
+                  padding: 19,
+                  borderRadius: 20,
+                  background: t.header,
+                  border: `1px solid ${t.headerBorder}`,
+                  boxShadow: `${t.shadowFloat}, ${t.panelHighlight}`,
+                }),
             display: "flex",
             flexDirection: "column",
             gap: 9,
@@ -232,6 +321,7 @@ function DesktopView({ fit = "content", mode, carry = "", onBack, reproducedToda
 /* ── phone ── */
 
 function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: SignInViewProps) {
+  const refined = useLook() === "refined";
   return (
     <div
       data-testid="signin-view"
@@ -249,7 +339,7 @@ function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: 
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 13, padding: "7px 0 4px" }}>
         <Lockup size={34} />
-        <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />
+        {refined ? <RefinedTagline size={36} /> : <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />}
       </div>
 
       <Panel surface="glass" padding="16px">

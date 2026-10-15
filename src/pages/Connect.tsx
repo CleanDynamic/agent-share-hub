@@ -49,11 +49,13 @@ import {
 import { Link } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
 import { elevation } from "@/lib/theme/elevation";
 import { focusRing } from "@/lib/theme/focus";
 import { useInteractive } from "@/lib/theme/interactive";
+import { useLook } from "@/lib/theme/look";
 import { fade } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { SPACE } from "@/lib/theme/space";
@@ -314,8 +316,9 @@ function HelpLink({ href, children }: { href: string; children: ReactNode }) {
  * The ring is the shared one, spent through `useInteractive` because an inline
  * style cannot say `:focus-visible`.
  */
-function ClientPanel({ id, name, children }: { id: string; name: string; children: ReactNode }) {
+function ClientPanel({ id, name, tool, children }: { id: string; name: string; tool: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const refined = useLook() === "refined";
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   const buttonId = `connect-${id}-toggle`;
   const stepsId = `connect-${id}-steps`;
@@ -354,6 +357,7 @@ function ClientPanel({ id, name, children }: { id: string; name: string; childre
           <span aria-hidden style={{ ...dataText, color: t.text2 }}>
             {open ? "▾" : "▸"}
           </span>
+          {refined ? <ModelMark tool={tool} size={20} /> : null}
           <span>{name}</span>
         </button>
       </h3>
@@ -431,7 +435,7 @@ export default function Connect() {
             </h2>
 
             <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
-              <ClientPanel id="claude" name="Claude (web and desktop)">
+              <ClientPanel id="claude" tool="claude" name="Claude (web and desktop)">
                 <ol
                   style={{
                     ...bodyText,
@@ -465,7 +469,7 @@ export default function Connect() {
                 </HelpLink>
               </ClientPanel>
 
-              <ClientPanel id="claude-code" name="Claude Code">
+              <ClientPanel id="claude-code" tool="claude code" name="Claude Code">
                 <Say>Run this in your terminal:</Say>
                 <CopyField value={CLAUDE_CODE_COMMAND} copyLabel="Copy the Claude Code command" />
                 <Say>
@@ -474,7 +478,7 @@ export default function Connect() {
                 </Say>
               </ClientPanel>
 
-              <ClientPanel id="chatgpt" name="ChatGPT">
+              <ClientPanel id="chatgpt" tool="chatgpt" name="ChatGPT">
                 <Say>
                   ChatGPT needs Developer Mode switched on before it can add this connector.
                   OpenAI's guide has the steps. When it asks for the connector's address, use:
@@ -489,7 +493,7 @@ export default function Connect() {
                 </HelpLink>
               </ClientPanel>
 
-              <ClientPanel id="cursor" name="Cursor">
+              <ClientPanel id="cursor" tool="cursor" name="Cursor">
                 <Say>Add it in Cursor's MCP settings as a server with this address:</Say>
                 <CopyField value={CONNECTOR_URL} copyLabel="Copy the connector address" />
                 <Say>

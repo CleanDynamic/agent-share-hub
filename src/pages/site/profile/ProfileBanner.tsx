@@ -19,6 +19,7 @@ import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { CoverFallback } from "@/components/brand/CoverFallback";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { display, FIGTREE } from "@/lib/theme/type";
@@ -120,6 +121,7 @@ export interface ProfileBannerProps extends ProfileActionsProps {
 const ELLIPSIS: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 
 export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBannerProps) {
+  const refined = useLook() === "refined";
   const line = handleLine(maker.handle, maker.bio);
   const mark = (size: number, radius: number, avatar: number) => (
     <div
@@ -127,12 +129,12 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
       style={{
         width: size,
         height: size,
-        borderRadius: radius,
+        borderRadius: refined ? 8 : radius,
         background: t.inverse,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: t.shadowSquare,
+        boxShadow: refined ? "none" : t.shadowSquare,
         flexShrink: 0,
       }}
     >
@@ -143,7 +145,7 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
   if (phone) {
     return (
       <section data-testid="profile-banner" style={{ position: "relative", height: 290 }}>
-        <div style={{ height: 180, borderRadius: 18, overflow: "hidden", position: "relative", border: `1px solid ${t.glassBorder}` }}>
+        <div style={{ height: 180, borderRadius: refined ? 8 : 18, overflow: "hidden", position: "relative", border: `1px solid ${refined ? t.moduleBorder : t.glassBorder}` }}>
           <div style={FILL}>
             <Cover maker={maker} />
           </div>
@@ -154,6 +156,45 @@ export function ProfileBanner({ maker, phone = false, ...actions }: ProfileBanne
           <Eyebrow>{eyebrowLine(maker.place, maker.since, true)}</Eyebrow>
           <h1 style={{ ...display(30, { mobilePageHeading: true }), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
           <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, ...ELLIPSIS }}>{line}</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (refined) {
+    /* The cover is a media well and the identity row sits on a module strip under it: no scrim gradient to read the name through. */
+    return (
+      <section
+        data-testid="profile-banner"
+        style={{ position: "relative", height: "100%", borderRadius: 8, overflow: "hidden", border: `1px solid ${t.moduleBorder}`, boxShadow: t.moduleShadow }}
+      >
+        <div style={FILL}>
+          <Cover maker={maker} />
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "12px 16px",
+            padding: 16,
+            background: t.module,
+            borderTop: `1px solid ${t.hairlineModule}`,
+          }}
+        >
+          {mark(72, 8, 56)}
+          <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <Eyebrow>{eyebrowLine(maker.place, maker.since)}</Eyebrow>
+            <h1 style={{ ...display(32), margin: 0, color: t.text, ...ELLIPSIS }}>{maker.name}</h1>
+            <div style={{ fontFamily: FIGTREE, fontSize: 12, lineHeight: "normal", color: t.text2, ...ELLIPSIS }}>{line}</div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <ProfileActions {...actions} />
+          </div>
         </div>
       </section>
     );

@@ -33,6 +33,7 @@ import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { checkboxStyle, ring } from "@/lib/theme/controls";
 import { r } from "@/lib/theme/radius";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -55,6 +56,8 @@ export interface ProviderButtonsProps {
 /** One button per provider, as siblings of the card's column, so the card's gap is the reference's. */
 export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtonsProps) {
   const sizes = useAuthSizes();
+  /* Under the refined look a labelled button carries no icon: the words name the provider. A spinner stays, it is state. */
+  const refined = useLook() === "refined";
   return (
     <>
       {PROVIDERS.map((provider) => (
@@ -70,7 +73,7 @@ export function ProviderButtons({ onProvider, loadingProvider }: ProviderButtons
         >
           {loadingProvider === provider.id ? (
             <Loader2 className="animate-spin" size={16} aria-hidden="true" />
-          ) : (
+          ) : refined ? null : (
             provider.mark
           )}
           {provider.label}
@@ -165,6 +168,7 @@ export function AuthField({
   autoComplete,
 }: AuthFieldProps) {
   const sizes = useAuthSizes();
+  const refined = useLook() === "refined";
   const [focused, setFocused] = useState(false);
   const [focusVisible, setFocusVisible] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -273,7 +277,7 @@ export function AuthField({
         </span>
       </label>
       {helperText ? (
-        <p style={{ ...MESSAGE, marginTop: 4, fontStyle: "italic", color: t.text2 }}>{helperText}</p>
+        <p style={{ ...MESSAGE, marginTop: 4, fontStyle: refined ? "normal" : "italic", color: t.text2 }}>{helperText}</p>
       ) : null}
       <FieldMessage id={messageId} tone={confirmed ? "good" : "error"}>
         {message}

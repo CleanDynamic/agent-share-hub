@@ -33,6 +33,7 @@ import { ErrorState, type PanelFailure } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { OrbRing } from "@/components/brand/OrbRing";
+import { useLook } from "@/lib/theme/look";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { MarkTile } from "@/components/brand/RankRung";
 import { Segmented } from "@/components/brand/Segmented";
@@ -47,7 +48,7 @@ import { sideTrack, useIsPhone, useTierFit, useWidthTier, type WidthTier } from 
 import type { TrackId } from "@/lib/progress";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
-import { display, FIGTREE, mono } from "@/lib/theme/type";
+import { display, DM_MONO, FIGTREE, mono } from "@/lib/theme/type";
 
 import { ProfileActions, ProfileBanner, type ProfileMakerView } from "./ProfileBanner";
 import {
@@ -125,6 +126,36 @@ function StreakRow({ view, phone }: { view: LevelView; phone: boolean }) {
   );
 }
 
+/** The level under the refined look: a tile with the figure and a lamp bar for the progress, said in the same words as the ring. */
+function LevelTile({ level, phone }: { level: LevelView; phone: boolean }) {
+  const percent = Math.min(100, Math.max(0, Number.isFinite(level.percent) ? level.percent : 0));
+  return (
+    <div
+      data-ui="level-tile"
+      role="img"
+      aria-label={ringLabel(level)}
+      style={{
+        flexShrink: 0,
+        width: phone ? 88 : 96,
+        boxSizing: "border-box",
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        background: t.tile,
+        border: `1px solid ${t.tileBorder}`,
+        borderRadius: 6,
+      }}
+    >
+      <span aria-hidden="true" style={{ fontFamily: DM_MONO, fontSize: 24, lineHeight: "normal", color: t.text, fontVariantNumeric: "tabular-nums" }}>{level.level}</span>
+      <span aria-hidden="true" style={{ fontFamily: FIGTREE, fontSize: 11.5, lineHeight: "normal", color: t.label }}>{RING_CAPTION}</span>
+      <span aria-hidden="true" style={{ display: "block", height: 3, borderRadius: 1, background: t.ringTrack }}>
+        <span style={{ display: "block", height: 3, width: `${percent}%`, borderRadius: 1, background: t.lit, boxShadow: t.lampGlow }} />
+      </span>
+    </div>
+  );
+}
+
 /** The level panel before it has arrived: the orb's circle, the track and its figures as bones — and on a phone the track chips' row. */
 function LevelSkeleton({ phone }: { phone: boolean }) {
   const orb = phone ? 118 : 150;
@@ -167,6 +198,7 @@ function LevelPanel({
   phone: boolean;
 }) {
   const orb = phone ? 118 : 150;
+  const refined = useLook() === "refined";
   const editable = isOwn && Boolean(onTrack);
 
   if (failure) {
@@ -184,7 +216,11 @@ function LevelPanel({
   const track = level.track;
   const trackItems = TRACK_ITEMS.map((item) => ({ value: item.value, label: item.label }));
 
-  const orbNode = <OrbRing size={orb} percent={level.percent} value={level.level} caption={RING_CAPTION} label={ringLabel(level)} />;
+  const orbNode = refined ? (
+    <LevelTile level={level} phone={phone} />
+  ) : (
+    <OrbRing size={orb} percent={level.percent} value={level.level} caption={RING_CAPTION} label={ringLabel(level)} />
+  );
 
   if (phone) {
     const name = trackLabel(track);

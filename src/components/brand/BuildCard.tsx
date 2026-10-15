@@ -295,6 +295,7 @@ export interface CardCreditProps {
  * it has neither half.
  */
 export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
+  const refined = useLook() === "refined";
   const source = (rebuiltFrom ?? "").trim();
   const who = (by ?? "").trim();
   if (!source && !who) return null;
@@ -319,7 +320,7 @@ export function CardCredit({ rebuiltFrom, by }: CardCreditProps) {
     >
       {source ? (
         <>
-          Rebuilt from <i style={{ color: t.text }}>{source}</i>
+          Rebuilt from <i style={{ color: t.text, fontStyle: refined ? "normal" : undefined }}>{source}</i>
           {who ? ` by ${who}` : null}
         </>
       ) : (

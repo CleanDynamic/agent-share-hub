@@ -49,12 +49,14 @@ import {
   type FreshnessSource,
   type StalenessSource,
 } from "@/lib/build/signals";
+import { markFor } from "@/lib/models/marks";
 import { useLook } from "@/lib/theme/look";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE, tabular } from "@/lib/theme/type";
 
 import { LampDot } from "./LampDot";
+import { ModelMark } from "./ModelMark";
 import { Pill } from "./Pill";
 
 /**
@@ -160,6 +162,21 @@ export function plaqueState(build: PlaqueBuild, now?: number): PlaqueState {
   return isStale(build, now) ? "stale" : "healthy";
 }
 
+/** "3 days ago, on sonnet-4.5" with the model's real mark (14, in a tag) before its name; the words are unchanged. */
+function FreshnessWords({ words, model }: { words: string; model: string | null | undefined }) {
+  const at = words.lastIndexOf(", on ");
+  if (at < 0 || markFor({ model }) === null) return <>{words}</>;
+  return (
+    <>
+      {words.slice(0, at + 5)}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: t.text }}>
+        <ModelMark model={model} size={14} />
+        <span style={{ color: "inherit" }}>{words.slice(at + 5)}</span>
+      </span>
+    </>
+  );
+}
+
 export function Plaque({ build, size = "card", tone = "surface", trailing, wording, now }: PlaqueProps) {
   const count = build.reproduction_count ?? 0;
   const state = plaqueState(build, now);
@@ -226,7 +243,7 @@ export function Plaque({ build, size = "card", tone = "surface", trailing, wordi
           style={{ ...text, display: "flex", alignItems: "center", gap: 8, minWidth: 0, color: stale ? t.label : t.text2 }}
         >
           <LampDot data-plaque-lamp={stale ? "dim" : "lit"} dim={stale} width={8} />
-          {words ?? NEVER_CONFIRMED}
+          {words ? <FreshnessWords words={words} model={build.last_confirmed_model} /> : NEVER_CONFIRMED}
         </span>
         {trailing}
       </div>
