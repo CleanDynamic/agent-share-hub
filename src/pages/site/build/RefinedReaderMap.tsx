@@ -22,9 +22,11 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { ModelTag } from "@/components/brand/ModelTag";
 import type { ReaderStep } from "@/lib/build/readerSteps";
+import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { WELL } from "@/lib/theme/refinedControl";
+import { mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -128,6 +130,7 @@ export default function RefinedReaderMap({ view, announce, onRead, start }: Read
   const place = entry ? siblings.findIndex((candidate) => candidate.step.id === entry.step.id) : -1;
   const next = place >= 0 ? (siblings[place + 1] ?? null) : null;
 
+  const stacked = !useMinWidth(BETWEEN.stack);
   const select = useCallback((id: string) => setSelectedId(id), []);
 
   const copy = async () => {
@@ -145,8 +148,8 @@ export default function RefinedReaderMap({ view, announce, onRead, start }: Read
   if (chat?.kind === "new" && chat.date) tags.push(<Tag key="date">{chat.date}</Tag>);
 
   return (
-    <div data-testid="reader-map" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-      <div style={{ flex: "0 1 550px", minWidth: 0 }}>
+    <div data-testid="reader-map" style={trackRow(stacked, 16)}>
+      <div style={mainStyle(stacked, { flex: "0 1 550px", minWidth: 0 })}>
         <BuildMap
           mode="reader"
           steps={steps}
@@ -182,7 +185,7 @@ export default function RefinedReaderMap({ view, announce, onRead, start }: Read
         data-testid="reading-panel"
         aria-label="Reading panel"
         style={{
-          width: 380,
+          width: stacked ? "100%" : 380,
           flexShrink: 0,
           boxSizing: "border-box",
           padding: 20,

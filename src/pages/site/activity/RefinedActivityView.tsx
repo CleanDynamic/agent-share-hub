@@ -34,7 +34,8 @@ import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { useRoom } from "@/components/brand/useRoom";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { shortAgo } from "@/pages/site/home/homeModel";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -612,15 +613,16 @@ function ShowMe({
 function DesktopActivity(props: ActivityViewProps) {
   const { now, list, unread, live, kindCounts, peopleThisWeek, peopleError, runs, writeError, onOpen, onMarkAllRead } = props;
   const [chosen, setChosen] = useState<ReadonlySet<ActivityKind>>(NONE);
+  const stacked = !useMinWidth(BETWEEN.stack);
 
   return (
     <div
       data-testid="activity-view"
       data-viewport="desktop"
       data-look="refined"
-      style={{ display: "flex", flexWrap: "wrap", gap: 48, alignItems: "flex-start" }}
+      style={trackRow(stacked, 48)}
     >
-      <section aria-labelledby="activity-heading" style={{ flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 }}>
+      <section aria-labelledby="activity-heading" style={mainStyle(stacked, { flex: "999 1 560px", minWidth: 0, display: "flex", flexDirection: "column", gap: 32 })}>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, flexGrow: 1, minWidth: 0 }}>
             <h1 id="activity-heading" style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>
@@ -644,8 +646,8 @@ function DesktopActivity(props: ActivityViewProps) {
       </section>
 
       <aside
-        style={{
-          flex: "1 1 300px",
+        style={asideStyle(stacked, {
+          flex: "1 0 300px",
           maxWidth: 340,
           minWidth: 0,
           display: "flex",
@@ -653,7 +655,7 @@ function DesktopActivity(props: ActivityViewProps) {
           gap: 24,
           paddingLeft: 32,
           borderLeft: `1px solid ${t.hairline}`,
-        }}
+        })}
       >
         <People peopleThisWeek={peopleThisWeek} peopleError={peopleError} live={live} />
         <RunsChart runs={runs} />

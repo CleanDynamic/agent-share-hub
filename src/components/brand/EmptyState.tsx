@@ -21,6 +21,7 @@
 import type { CSSProperties, HTMLAttributes } from "react";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
+import { useLook } from "@/lib/theme/look";
 import { t } from "@/lib/theme/tokens";
 import { display } from "@/lib/theme/type";
 
@@ -42,6 +43,24 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "c
 
 export function EmptyState({ line, action, style, ...rest }: EmptyStateProps) {
   const phone = useIsPhone();
+  if (useLook() === "refined") {
+    /* UI-P97: one 13 `--text` line and one action. Secondary, because a panel's empty state is never the page's
+       decision; a view with no other primary passes its own button instead of an `action`. 44 tall on a phone. */
+    return (
+      <div
+        data-ui="empty-state"
+        {...rest}
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12, padding: "24px 16px", ...style }}
+      >
+        <p style={{ margin: 0, fontFamily: "var(--font-ui)", fontSize: 13, lineHeight: "20px", fontWeight: 400, color: t.text }}>{line}</p>
+        {action ? (
+          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={action.onClick}>
+            {action.label}
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div
       data-ui="empty-state"

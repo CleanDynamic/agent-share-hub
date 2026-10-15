@@ -46,7 +46,8 @@ import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { Sparkline } from "@/components/brand/charts";
 import { FrameLink } from "@/components/shell/FrameLink";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { useIsPhone } from "@/components/shell/useMinWidth";
+import { BETWEEN, useIsPhone, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -144,7 +145,8 @@ function LitLine({ litToday, phone }: { litToday: number | null; phone: boolean 
 
 /** The tagline: one sentence for assistive technology, three indented lines on screen, the mark after "hung with". */
 function Tagline({ phone }: { phone: boolean }) {
-  const size = phone ? 36 : 44;
+  /* UI-P97: a phone's hero is the mobile hero size, 32 (`--type-hero-size` at 767 and below). */
+  const size = phone ? 32 : 44;
   return (
     <h1
       style={{
@@ -779,20 +781,21 @@ function WhereNext({ whereNext, onNavigate }: Pick<HomeViewProps, "whereNext" | 
 
 function DesktopHome(props: HomeViewProps) {
   const { now, scope, onScopeChange, litToday, reproducedToday, runsThisWeek, orbsError, feed, seenAt, challenges, thisWeekHref, streak, whereNext, onNavigate } = props;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
     <div
       data-testid="home-view"
       data-viewport="desktop"
       data-look="refined"
-      style={{ display: "flex", flexWrap: "wrap", gap: 48, alignItems: "flex-start" }}
+      style={trackRow(stacked, 48)}
     >
-      <div style={{ flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 40 }}>
+      <div style={mainStyle(stacked, { flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 40 })}>
         <Hero scope={scope} onScopeChange={onScopeChange} litToday={litToday} phone={false} onNavigate={onNavigate} />
         <Book feed={feed} seenAt={seenAt} now={now} phone={false} onNavigate={onNavigate} />
       </div>
       <aside
-        style={{
-          flex: "1 1 300px",
+        style={asideStyle(stacked, {
+          flex: "1 0 300px",
           maxWidth: 340,
           minWidth: 0,
           display: "flex",
@@ -800,7 +803,7 @@ function DesktopHome(props: HomeViewProps) {
           gap: 24,
           paddingLeft: 32,
           borderLeft: `1px solid ${t.hairline}`,
-        }}
+        })}
       >
         <RunCounts reproducedToday={reproducedToday} runsThisWeek={runsThisWeek} failure={orbsError} />
         <Challenges challenges={challenges} thisWeekHref={thisWeekHref} phone={false} onNavigate={onNavigate} />

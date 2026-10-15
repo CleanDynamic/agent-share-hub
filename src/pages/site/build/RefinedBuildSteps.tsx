@@ -161,6 +161,7 @@ function DownloadButton({ href, name, label = "Download" }: { href: string; name
     <a
       href={href}
       download={name}
+      data-hit=""
       aria-label={`${label} ${name}`}
       {...handlers}
       style={{
@@ -211,6 +212,7 @@ function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; lab
   return (
     <button
       type="button"
+      data-hit=""
       onClick={onRead}
       {...handlers}
       style={{
@@ -504,7 +506,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
   const { view } = ctx;
   const name = result.url ? (
-    <a href={result.url} target="_blank" rel="noopener noreferrer" style={{ ...text(14, 500, t.text), textDecoration: "none", overflowWrap: "anywhere" }}>
+    <a href={result.url} target="_blank" rel="noopener noreferrer" data-hit="" style={{ ...text(14, 500, t.text), textDecoration: "none", overflowWrap: "anywhere" }}>
       {result.title}
     </a>
   ) : (

@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
@@ -376,21 +377,15 @@ function ListSkeleton() {
   );
 }
 
-function EmptyFeed({ query, onClearAll, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
+function EmptyFeed({ query, onNavigate }: Pick<GalleryFeedViewProps, "query" | "onClearAll" | "onNavigate">) {
+  /* UI-P97: one line and one action. "Clear filters" is not repeated here: the filter row above this line already
+     carries "Clear all" whenever a filter or a query is set, so the way out of the empty list is one tap away. */
   return (
-    <div data-testid="gallery-empty" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12, padding: "16px 0" }}>
-      <p style={text(14, 500, t.text, { margin: 0 })}>
-        {query ? `Nobody has hung a build for “${query}” yet.` : "No builds match these filters yet."}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <Button variant="secondary" size={32} fontSize={13} onClick={() => onNavigate("/bounties")}>
-          Ask for it on Bounties
-        </Button>
-        <Button variant="ghost" size={32} fontSize={13} onClick={onClearAll}>
-          Clear filters
-        </Button>
-      </div>
-    </div>
+    <EmptyState
+      data-testid="gallery-empty"
+      line={query ? `Nobody has hung a build for “${query}” yet.` : "No builds match these filters yet."}
+      action={{ label: "Ask for it on Bounties", onClick: () => onNavigate("/bounties") }}
+    />
   );
 }
 

@@ -175,7 +175,7 @@ describe("RefinedActivityView on a desktop", () => {
 
     const onRetry = vi.fn();
     const failed = mount({ list: { ...base, status: "error", groups: [], onRetry } });
-    expect(screen.getByTestId("activity-error").textContent).toContain("Your activity");
+    expect(screen.getByTestId("activity-error").getAttribute("aria-label")).toContain("Your activity");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     failed.unmount();
@@ -190,7 +190,7 @@ describe("RefinedActivityView on a desktop", () => {
     write.unmount();
 
     const people = mount({ peopleThisWeek: null, peopleError: { onRetry } });
-    expect(screen.getByTestId("activity-orbs-error").textContent).toContain("People this week");
+    expect(screen.getByTestId("activity-orbs-error").getAttribute("aria-label")).toContain("People this week");
     expect(screen.getByText("Listening")).toBeTruthy();
     people.unmount();
 

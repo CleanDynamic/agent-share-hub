@@ -323,6 +323,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         {clamped ? (
           <button
             type="button"
+            data-hit=""
             onClick={(event) => {
               event.stopPropagation();
               open?.();
