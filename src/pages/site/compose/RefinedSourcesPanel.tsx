@@ -301,11 +301,11 @@ export function RefinedSourcesPanel(props: SourcesPanelProps) {
 
       {empty ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
+          <p style={{ ...text(13, 400, t.text), margin: 0 }}>{SOURCES_COPY.noSessions}</p>
           <Link to={props.connectHref} style={{ ...text(12.5, 500, t.text), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
             {SOURCES_COPY.connect}
           </Link>
-          <p style={{ ...text(13, 400, t.text2), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
+          <p style={{ ...text(13, 400, t.text), margin: "6px 0 0" }}>{SOURCES_COPY.noFiles}</p>
         </div>
       ) : null}
 

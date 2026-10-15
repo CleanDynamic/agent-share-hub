@@ -339,7 +339,7 @@ function PhoneView({ fit = "content", mode, carry = "", themeValue, children }: 
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 13, padding: "7px 0 4px" }}>
         <Lockup size={34} />
-        {refined ? <RefinedTagline size={36} /> : <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />}
+        {refined ? <RefinedTagline size={32} /> : <Tagline lines={TAGLINE} size={26} offsets={[0, 40, 12]} />}
       </div>
 
       <Panel surface="glass" padding="16px">

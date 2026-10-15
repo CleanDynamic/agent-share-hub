@@ -164,7 +164,8 @@ describe("RefinedGalleryDashboardView", () => {
     rerender(tree(props({ tab: "makers" })));
     expect(screen.getAllByTestId("dash-maker-row").length).toBeGreaterThan(0);
     rerender(tree(props({ rows: [] })));
-    expect(screen.getByTestId("dash-empty").textContent).toBe("No builds match these filters.");
+    expect(screen.getByTestId("dash-empty").querySelector("p")?.textContent).toBe("No builds match these filters.");
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeTruthy();
     rerender(tree(props({ status: "error" })));
     expect(screen.getByRole("button", { name: /try again|retry/i })).toBeTruthy();
   });

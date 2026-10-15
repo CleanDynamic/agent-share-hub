@@ -26,6 +26,7 @@
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
+import { useLook } from "@/lib/theme/look";
 import { animation, SKELETON_PULSE_MS } from "@/lib/theme/motion";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -43,18 +44,21 @@ export interface SkeletonProps {
 }
 
 export function Skeleton({ width = "100%", height, radius = 8, style }: SkeletonProps) {
+  /* UI-P97: under the refined look a skeleton is a flat `--well` block at the content's size. Nothing moves: no pulse,
+     no shimmer gradient, so there is no animation to guard and none to forget under reduced motion. */
+  const refined = useLook() === "refined";
   return (
     <div
       data-ui="skeleton"
-      data-bg-animated=""
+      data-bg-animated={refined ? undefined : ""}
       aria-hidden="true"
       style={{
         width,
         height,
         borderRadius: radius,
-        background: t.recess,
+        background: refined ? t.well : t.recess,
         flexShrink: 0,
-        animation: animation("skeletonPulse", SKELETON_PULSE_MS, { iterations: "infinite" }),
+        animation: refined ? undefined : animation("skeletonPulse", SKELETON_PULSE_MS, { iterations: "infinite" }),
         ...style,
       }}
     />

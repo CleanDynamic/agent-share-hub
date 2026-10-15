@@ -70,7 +70,8 @@ export const wellField: CSSProperties = {
   borderRadius: 6,
   boxSizing: "border-box",
   width: "100%",
-  outline: "none",
+  /* No inline `outline`: the global field rule is `outline: none` at rest and rings the field on :focus-visible, and an
+     inline `none` would delete that ring (UI-P97). */
   ...text(13.5, 400, t.text),
 };
 

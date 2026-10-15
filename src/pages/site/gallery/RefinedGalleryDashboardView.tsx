@@ -21,6 +21,7 @@ import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Eyebrow } from "@/components/brand/Eyebrow";
+import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -38,6 +39,8 @@ import type { DashboardTab, GalleryViewMode } from "@/lib/build/galleryParams";
 import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
+import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -152,9 +155,10 @@ function Sidebar(props: GalleryDashboardViewProps) {
     { value: "makers", label: "Makers", count: counts.makers },
   ];
   const draftCount = drafts?.count ?? null;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
     <aside
-      style={{
+      style={asideStyle(stacked, {
         flex: "1 1 208px",
         maxWidth: 224,
         minWidth: 0,
@@ -164,7 +168,7 @@ function Sidebar(props: GalleryDashboardViewProps) {
         display: "flex",
         flexDirection: "column",
         gap: 24,
-      }}
+      })}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={text(14, 500, t.text)}>Gallery</span>
@@ -717,9 +721,10 @@ function Content(props: GalleryDashboardViewProps) {
 
   const title = tab === "models" ? "Models" : tab === "makers" ? "Makers" : "Builds";
   const menus = menusFor(props);
+  const stacked = !useMinWidth(BETWEEN.stack);
 
   return (
-    <section style={{ flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+    <section style={mainStyle(stacked, { flex: "999 1 640px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 })}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
         <h1 style={text(20, 500, t.text, { margin: 0, letterSpacing: "-0.015em" })}>{title}</h1>
         <span
@@ -819,12 +824,11 @@ function Content(props: GalleryDashboardViewProps) {
                 </div>
               </div>
               {sorted.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
-                  <EmptyLine>No builds match these filters.</EmptyLine>
-                  <Button variant="secondary" size={28} fontSize={12} onClick={onClearFilters}>
-                    Clear filters
-                  </Button>
-                </div>
+                <EmptyState
+                  data-testid="dash-empty"
+                  line="No builds match these filters."
+                  action={{ label: "Clear filters", onClick: onClearFilters }}
+                />
               ) : null}
             </div>
           )}
@@ -865,12 +869,9 @@ function Content(props: GalleryDashboardViewProps) {
 export function RefinedGalleryDashboardView(props: GalleryDashboardViewProps) {
   /* Looked up in every build, not the filtered rows: a linked build opens even when a filter hides it. */
   const openBuild = props.openId ? (props.allRows.find((row) => row.id === props.openId) ?? null) : null;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <div
-      data-testid="gallery-dashboard"
-      data-look="refined"
-      style={{ display: "flex", flexWrap: "wrap", gap: 32, alignItems: "flex-start", minWidth: 0 }}
-    >
+    <div data-testid="gallery-dashboard" data-look="refined" style={trackRow(stacked, 32)}>
       <Sidebar {...props} />
       <Content {...props} />
       <BuildDetailSheet build={openBuild} onClose={props.onCloseBuild} />

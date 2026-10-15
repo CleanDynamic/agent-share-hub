@@ -1786,6 +1786,62 @@ input[type="search"] { border-radius: var(--r-control); }
   outline-offset: -4px;
 }
 
+/* UI-P97 — the refined look's focus, motion and phone rules. Each is scoped to :root[data-look="refined"], so with the
+   switch off (or `?look=current` on /dev) nothing below applies.
+
+   FOCUS. Every focusable thing shows the one ring: 2px `--focus-ring`, 2px off. It is drawn from the stylesheet and with
+   `!important` because the refined views set `outline: none` inline on rows that are links, map boxes and cards, which
+   no inline ring can defend against. The list is in `:where()` so it adds no specificity and `[data-ring-inset]` below
+   still wins for a control that sits on a clipping edge. Fields are not listed: the rule above already rings every
+   <input>, <textarea> and <select>, and a field drawn as a transparent input inside a well (the header search, the
+   sign-in fields) turns that ring off on purpose and draws it on the well, which tracks the same :focus-visible.
+   `tabindex="-1"` is a programmatic focus target (a section scrolled to, the opened map), never a Tab stop, so it
+   stays unringed. */
+:root[data-look="refined"] :where(
+    a[href],
+    button,
+    summary,
+    [role="button"],
+    [role="tab"],
+    [role="radio"],
+    [role="checkbox"],
+    [role="switch"],
+    [role="link"],
+    [role="menuitem"],
+    [role="option"],
+    [role="row"][tabindex],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+}
+:root[data-look="refined"] [data-ring-inset]:focus-visible {
+  outline-offset: -4px !important;
+}
+
+/* MOTION. Nothing in the refined look animates except the theme change: no hover fade, no pulse, no reveal, no
+   enter or exit. The theme change is `[data-theme-changing]`, which has its own rule above, so these stand down
+   while it is set. Whatever a dependency adds (a Radix dialog's enter keyframes) is covered by the same rule. */
+:root[data-look="refined"]:not([data-theme-changing]) *,
+:root[data-look="refined"]:not([data-theme-changing]) *::before,
+:root[data-look="refined"]:not([data-theme-changing]) *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* A PHONE. Below the 768 chrome switch a field is 16px so the browser does not zoom the page on focus. The list leaves
+   out the inputs that draw no text (a checkbox, a radio, a range, a file picker). Touch targets need no rule here: the
+   UI-P38 rule above already grows the hit area of every primitive and of anything marked `data-hit`, and draws nothing. */
+@media (max-width: 767px) {
+  :root[data-look="refined"] :is(
+      input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"], [type="hidden"]),
+      textarea,
+      select
+    ) {
+    font-size: 16px !important;
+  }
+}
+
 /* UI-P09b — liquid glass, on page-level panels only. THE ONE CLASS THIS STYLESHEET ADDS FOR STYLING: RULES.md §3
    forbids new classes, and this is the single amendment, because a refracted edge needs two pseudo-elements and an
    inline style cannot express one. Every colour in it is a custom property, so the tokens still govern it.

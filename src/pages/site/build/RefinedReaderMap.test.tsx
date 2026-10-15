@@ -116,6 +116,8 @@ describe("RefinedReaderMap", () => {
   });
 
   it("is what RefinedStepsList shows when Map is chosen", async () => {
+    /* 1024 and up: two tracks, the panel 380 wide. */
+    window.matchMedia = ((query: string) => ({ matches: query.includes("min-width"), media: query, addEventListener: () => undefined, removeEventListener: () => undefined })) as unknown as typeof window.matchMedia;
     render(
       <MemoryRouter initialEntries={[REFINED]}>
         <RefinedStepsList view={view()} phone={false} announce={() => undefined} />

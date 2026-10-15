@@ -31,7 +31,8 @@ import { Row } from "@/components/brand/Row";
 import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { ScrollRow } from "@/components/shell/ScrollRow";
-import { useIsPhone, useWidthTier } from "@/components/shell/useMinWidth";
+import { BETWEEN, useIsPhone, useMinWidth, useWidthTier } from "@/components/shell/useMinWidth";
+import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { scrollBehavior } from "@/lib/theme/motion";
@@ -79,10 +80,10 @@ const moduleStyle: CSSProperties = {
   minWidth: 0,
 };
 
-/** A wrapping row of a wide column and a side column, as the board lays both rows out. */
-const pair: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 48, alignItems: "flex-start" };
-const wide: CSSProperties = { flex: "999 1 640px", minWidth: 0 };
-const side: CSSProperties = { flex: "1 1 300px", maxWidth: 340, minWidth: 0 };
+/** A row of a wide column and a side column, as the board lays both rows out; one column below 1024 (UI-P97). */
+const pair = (stacked: boolean): CSSProperties => trackRow(stacked, 48);
+const wide = (stacked: boolean): CSSProperties => mainStyle(stacked, { flex: "999 1 640px", minWidth: 0 });
+const side: CSSProperties = { flex: "1 0 300px", maxWidth: 340, minWidth: 0 };
 
 /* ── the hero ── */
 
@@ -198,6 +199,7 @@ function Hero({
   now?: number;
   announce: (text: string) => void;
 }) {
+  const stacked = !useMinWidth(BETWEEN.stack);
   const tag = `${hero.shape}${hero.viaConnector ? " · via connector" : ""}`;
   const lamp = plaqueState(proof.build, now);
   const credit = <Credit credit={hero.credit} />;
@@ -205,7 +207,7 @@ function Hero({
     <section
       data-testid="build-hero"
       aria-label="The build"
-      style={{ ...moduleStyle, ...(phone ? null : wide), padding: 0, overflow: "hidden" }}
+      style={{ ...moduleStyle, ...(phone ? null : wide(stacked)), padding: 0, overflow: "hidden" }}
     >
       <div
         style={{
@@ -312,8 +314,9 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
 function Proof({ proof, phone, now }: { proof: BuildProofView; phone: boolean; now?: number }) {
   const count = proof.build.reproduction_count ?? 0;
   const { action } = proof;
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone ? null : side), display: "flex", flexDirection: "column", gap: 20 }}>
+    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <Eyebrow>Reproduction</Eyebrow>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -367,8 +370,9 @@ const BUILD_PANEL = "build-tabpanel";
 /** The tabs and The build. Exported for the dev page's Map board (UI-P91), which draws it on a bare surface. */
 export function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildViewerView; steps: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
   const onSteps = viewer.tab === "anatomy";
+  const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <div data-testid="build-steps-panel" style={{ ...(phone ? null : wide), display: "flex", flexDirection: "column", gap: 16 }}>
+    <div data-testid="build-steps-panel" style={{ ...(phone ? null : wide(stacked)), display: "flex", flexDirection: "column", gap: 16 }}>
       {phone ? null : (
         <UnderlineTabs
           label="Sections of this build"
@@ -388,14 +392,15 @@ export function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildVi
 /** What you need, with the dialog an "Other parts" row opens its own body in. */
 function StepsNeed({ steps, phone }: { steps: BuildStepsView; phone: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
+  const stacked = !useMinWidth(BETWEEN.stack);
   const row = open ? steps.need.flatMap((group) => group.rows).find((candidate) => candidate.id === open) : undefined;
   return (
     <div
       style={
         phone
           ? { minWidth: 0 }
-          : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline. */
-            { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` }
+          : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline; under 1024 it drops under The build. */
+            asideStyle(stacked, { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` })
       }
     >
       <RefinedNeedPanel view={steps} onOpenOther={setOpen} />
@@ -411,16 +416,17 @@ function StepsNeed({ steps, phone }: { steps: BuildStepsView; phone: boolean }) 
 function DesktopBuild(props: BuildViewProps) {
   const { now, hero, actions, proof, anatomy, viewer, timeline, steps } = props;
   const tier = useWidthTier();
+  const stacked = tier === "stacked";
   const { announce, region } = useAnnouncer();
 
   return (
     <div data-testid="build-view" data-viewport="desktop" data-look="refined" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>
-      <div style={pair}>
+      <div style={pair(stacked)}>
         <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} />
         <Proof proof={proof} phone={false} now={now} />
       </div>
       {steps ? (
-        <div data-testid="build-second-row" style={pair}>
+        <div data-testid="build-second-row" style={pair(stacked)}>
           <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
           <StepsNeed steps={steps} phone={false} />
         </div>

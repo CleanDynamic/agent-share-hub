@@ -32,6 +32,7 @@ import { ChevronRight, GripVertical, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
+import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { IconButton } from "@/components/brand/IconButton";
 import { ModelMark } from "@/components/brand/ModelMark";
@@ -111,7 +112,7 @@ const underlined: CSSProperties = {
 function TextButton({ onClick, style, children }: { onClick: () => void; style?: CSSProperties; children: ReactNode }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
+    <button type="button" data-hit="" onClick={onClick} {...handlers} style={{ ...underlined, borderRadius: 6, ...ring(state.focusVisible), ...style }}>
       {children}
     </button>
   );
@@ -559,6 +560,7 @@ export function DraftsView({
   const [removing, setRemoving] = useState<SessionSummary | null>(null);
   const loading = status === "loading";
   const failed = status === "error";
+  const refined = useLook() === "refined";
 
   const pick = (session: SessionSummary) => (item: MenuItem) => {
     if (item.kind === "target" || item.kind === "draft") {
@@ -596,7 +598,12 @@ export function DraftsView({
           <ErrorState panel="Continue editing" onRetry={onRetry} />
         </div>
       ) : drafts.length === 0 ? (
-        <p style={{ ...display(22), margin: 0, padding: "14px 9px 17px", color: t.text }}>Nothing in progress.</p>
+        /* UI-P97: under refined, the empty line is the 13 `--text` line; the start row above it is the one action. */
+        refined ? (
+          <EmptyState line="Nothing in progress." />
+        ) : (
+          <p style={{ ...display(22), margin: 0, padding: "14px 9px 17px", color: t.text }}>Nothing in progress.</p>
+        )
       ) : (
         <ul style={rows}>
           {drafts.map((draft) => (
@@ -622,7 +629,9 @@ export function DraftsView({
         </div>
       ) : (
         <>
-          {sessions.length === 0 ? (
+          {sessions.length === 0 && refined ? (
+            <EmptyState line="No new sessions." action={{ label: "Connect a tool", onClick: onConnect }} />
+          ) : sessions.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, padding: "14px 9px 17px" }}>
               <p style={{ ...display(22), margin: 0, color: t.text }}>No new sessions.</p>
               <TextButton onClick={onConnect}>Connect a tool</TextButton>
@@ -680,6 +689,7 @@ export function DraftsView({
   const older = (
     <Link
       to="/drafts/posts"
+      data-hit=""
       style={{ alignSelf: "flex-start", fontFamily: FIGTREE, fontSize: 12, color: t.text2, textDecoration: "underline" }}
     >
       Older post drafts
