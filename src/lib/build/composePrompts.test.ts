@@ -121,11 +121,22 @@ describe("writing by hand", () => {
     expect(upsertNode.mock.calls[0][0]).toMatchObject({ type: "prompt", title: null, payload: { text: "Now make it run every night." }, source_ref: null, position: 5 });
   });
 
-  it("keeps the tool and model it names, and drops a tool no client knows", async () => {
+  it("keeps a listed tool as its id, a typed name as typed, and the model", async () => {
     await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "claude-code", model: "Opus 5.5" });
     expect(upsertNode.mock.calls[0][0].payload).toEqual({ text: "Hi", tool: "claude-code", model: "Opus 5.5" });
-    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "notepad", model: " " });
-    expect(upsertNode.mock.calls[1][0].payload).toEqual({ text: "Hi" });
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "lovable" });
+    expect(upsertNode.mock.calls[1][0].payload).toEqual({ text: "Hi", tool: "lovable" });
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: " Photoshop ", model: " " });
+    expect(upsertNode.mock.calls[2][0].payload).toEqual({ text: "Hi", tool: "Photoshop" });
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "  " });
+    expect(upsertNode.mock.calls[3][0].payload).toEqual({ text: "Hi" });
+  });
+
+  it("keeps a tool of 40 characters and refuses 41", async () => {
+    await addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "x".repeat(40) });
+    expect(upsertNode.mock.calls[0][0].payload.tool).toBe("x".repeat(40));
+    await expect(addWrittenPrompt({ buildId: BUILD, tree: [], text: "Hi", tool: "x".repeat(41) })).rejects.toThrow("A tool is at most 40 characters.");
+    expect(upsertNode).toHaveBeenCalledTimes(1);
   });
 
   it("never writes an empty prompt", async () => {

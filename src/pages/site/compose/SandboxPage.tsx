@@ -123,6 +123,12 @@ export function SandboxPage() {
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: groups.length, steps, groups };
   }, [tree, made]);
 
+  /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
+  const inBuild = useMemo(() => {
+    const names = [...flatten(steps).map((step) => step.tool), ...groups.map((group) => group.tool)];
+    return names.filter((name): name is string => Boolean(name));
+  }, [steps, groups]);
+
   const mapAvailable = sessionCount >= 2 || hasAgent;
 
   /* ── agents and teams (UI-P69) ── */
@@ -527,6 +533,7 @@ export function SandboxPage() {
           <DetailsPanel
             phone={phone}
             view={view}
+            inBuild={inBuild}
             onSelect={setSelectedId}
             onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
@@ -590,6 +597,7 @@ export function SandboxPage() {
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={prompts.addNow}
+            inBuild={inBuild}
             focusAdd={focusAdd}
           />
         }
@@ -631,6 +639,7 @@ export function SandboxPage() {
         onOpenChange={setAddManualOpen}
         after={afterStep ? `${afterStep.number} · ${afterStep.title ?? afterStep.defaultTitle}` : null}
         available={manualAvailable}
+        inBuild={inBuild}
         onAdd={(input) => void onAddManual(input)}
       />
       <FullPromptWindow

@@ -30,10 +30,11 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
-import { TOOL_CLIENTS } from "@/lib/build/making";
 import type { Step } from "@/lib/build/graph";
 import { runsLabel, stepTitle } from "@/lib/build/graph";
+import { markFor } from "@/lib/models/marks";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL } from "@/lib/theme/refinedControl";
@@ -53,6 +54,7 @@ import {
 import { TextButton } from "./composeControls";
 import { ManualThumb } from "./ManualThumb";
 import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { ToolPicker } from "./ToolPicker";
 import {
   INDENT,
   bareButton,
@@ -97,6 +99,8 @@ export interface BuildListProps {
   onDismiss: (suggestion: ListSuggestion) => void;
   /** Resolves true once the prompt is saved, so the field can clear. */
   onAddPrompt: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
+  /** The tools the build already uses, first in the tool picker. */
+  inBuild?: readonly string[];
   /** Changes to put the cursor in the add field ("Add › Prompt"). */
   focusAdd: number;
   /** UI-P69: "Add a prompt to this agent". Resolves true once it is saved. */
@@ -650,7 +654,19 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
         <NumberTile>{step.number}</NumberTile>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span data-testid="manual-eyebrow" style={text(11.5, 400, t.label)}>
-            Manual step{step.tool ? ` · ${step.tool}` : ""} · added by maker
+            Manual step
+            {step.tool ? (
+              <>
+                {" · "}
+                {markFor({ tool: step.tool }) !== null ? (
+                  <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 6 }}>
+                    <ToolMark tool={step.tool} size={14} />
+                  </span>
+                ) : null}
+                {step.tool}
+              </>
+            ) : null}
+            {" · added by maker"}
           </span>
           {renaming ? (
             <RenameField label={`Title of manual step ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
@@ -776,7 +792,7 @@ function PickMenu({
   );
 }
 
-function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone" | "onAddPrompt" | "focusAdd">) {
+function AddPrompt({ phone, onAddPrompt, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "focusAdd" | "inBuild">) {
   const [value, setValue] = useState("");
   const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
@@ -795,7 +811,7 @@ function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone
     if (saved) setValue("");
   };
 
-  const toolLabel = TOOL_CLIENTS.find((entry) => entry.client === tool)?.label;
+  const toolLabel = tool ? (toolName(tool) ?? tool.trim()) : null;
   return (
     <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
       <textarea
@@ -814,14 +830,8 @@ function AddPrompt({ phone, onAddPrompt, focusAdd }: Pick<BuildListProps, "phone
         style={{ ...wellField, resize: "none", padding: 12, fontSize: phone ? 16 : 13.5 }}
       />
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-        <PickMenu
-          label={`Typed here · ${toolLabel ?? "pick a tool"}`}
-          value={tool}
-          options={TOOL_CLIENTS.map((entry) => ({ value: entry.client, label: entry.label }))}
-          onChange={setTool}
-          none="No tool"
-          phone={phone}
-        />
+        <Quiet>Typed here ·</Quiet>
+        <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={setTool} inBuild={inBuild} allowNone phone={phone} />
         <PickMenu
           label={model ? `model ${model}` : "model"}
           value={model}
@@ -883,7 +893,7 @@ export function BuildList(props: BuildListProps) {
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
-      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} focusAdd={props.focusAdd} />
+      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} focusAdd={props.focusAdd} inBuild={props.inBuild} />
     </div>
   );
 }

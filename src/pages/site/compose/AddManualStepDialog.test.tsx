@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AddManualStepDialog, MANUAL_DIALOG_COPY, MANUAL_TOOLS, type AddManualStepDialogProps } from "./AddManualStepDialog";
+import { AddManualStepDialog, MANUAL_DIALOG_COPY, type AddManualStepDialogProps } from "./AddManualStepDialog";
 
 let phone = false;
 beforeEach(() => {
@@ -19,6 +19,12 @@ function open(over: Partial<AddManualStepDialogProps> = {}) {
   return props;
 }
 
+const toolButton = () => screen.getByRole("button", { name: "Tool" });
+const pickTool = (name: string) => {
+  fireEvent.click(toolButton());
+  fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: name } });
+  fireEvent.keyDown(screen.getByRole("combobox", { name: "Find a tool" }), { key: "Enter" });
+};
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const line = () => screen.getByLabelText("What was done") as HTMLInputElement;
 const picture = (type: string, size = 100, name = "hero.png") => {
@@ -36,15 +42,26 @@ describe("the Add manual step dialog", () => {
     expect(screen.getByText("Goes after 3 · Fix the mobile layout")).toBeTruthy();
   });
 
-  it("offers the tools toolLabel knows, then Figma, Lovable and Vercel, then Other…", () => {
+  it("has one tool picker with no default tool, and the build's tools first", () => {
+    open({ inBuild: ["Midjourney"] });
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(toolButton().textContent).toBe("Pick a tool");
+    fireEvent.click(toolButton());
+    expect(screen.getAllByRole("option")[0].textContent).toBe("Midjourney");
+  });
+
+  it("keeps Add disabled until a tool is picked", () => {
     open();
-    const options = [...(screen.getByLabelText("Tool") as HTMLSelectElement).options].map((option) => option.textContent);
-    expect(options).toEqual([...MANUAL_TOOLS, "Other…"]);
-    expect(MANUAL_TOOLS).toEqual(["Claude", "Claude Code", "ChatGPT", "Cursor", "Figma", "Lovable", "Vercel"]);
+    fireEvent.change(line(), { target: { value: "Laid out the hero" } });
+    expect(add().disabled).toBe(true);
+    pickTool("Midjourney");
+    expect(toolButton().textContent).toBe("Midjourney");
+    expect(add().disabled).toBe(false);
   });
 
   it("needs a line before Add is enabled, and counts it out of 140 in DM Mono", () => {
     open();
+    pickTool("Midjourney");
     expect(add().disabled).toBe(true);
     expect(screen.getByTestId("manual-counter").textContent).toBe("0 / 140");
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
@@ -53,29 +70,26 @@ describe("the Add manual step dialog", () => {
     expect(line().maxLength).toBe(140);
   });
 
-  it("adds with Figma by default and the line trimmed", () => {
+  it("adds a listed tool by its id and the line trimmed", () => {
     const props = open();
+    pickTool("Midjourney");
     fireEvent.change(line(), { target: { value: "  Laid out the hero " } });
     fireEvent.click(add());
-    expect(props.onAdd).toHaveBeenCalledWith({ tool: "Figma", text: "Laid out the hero", file: null });
+    expect(props.onAdd).toHaveBeenCalledWith({ tool: "midjourney", text: "Laid out the hero", file: null });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("turns Other… into a text field of at most 40, and needs it filled", () => {
+  it("adds a name that is not listed as typed, trimmed", () => {
     const props = open();
-    fireEvent.change(screen.getByLabelText("Tool"), { target: { value: "__other__" } });
-    const other = screen.getByLabelText("Other tool") as HTMLInputElement;
-    expect(other.maxLength).toBe(40);
+    pickTool(" DaVinci Resolve ");
     fireEvent.change(line(), { target: { value: "Exported the video" } });
-    expect(add().disabled).toBe(true);
-    fireEvent.change(other, { target: { value: " DaVinci Resolve " } });
-    expect(add().disabled).toBe(false);
     fireEvent.click(add());
     expect(props.onAdd).toHaveBeenCalledWith({ tool: "DaVinci Resolve", text: "Exported the video", file: null });
   });
 
   it("takes one picture, refuses what is not a picture, and lets it go again", () => {
     const props = open();
+    pickTool("Figma");
     picture("application/pdf", 100, "spec.pdf");
     expect(screen.getByRole("alert").textContent).toBe("spec.pdf is not a picture.");
     const file = picture("image/png");
@@ -83,7 +97,7 @@ describe("the Add manual step dialog", () => {
     expect(screen.getByText("hero.png")).toBeTruthy();
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
     fireEvent.click(add());
-    expect(props.onAdd).toHaveBeenCalledWith({ tool: "Figma", text: "Laid out the hero", file });
+    expect(props.onAdd).toHaveBeenCalledWith({ tool: "figma", text: "Laid out the hero", file });
   });
 
   it("refuses a picture over the size limit and removes a chosen one", () => {
@@ -97,6 +111,7 @@ describe("the Add manual step dialog", () => {
 
   it("is disabled, with its reason, while the node type is not live", () => {
     open({ available: false });
+    pickTool("Figma");
     fireEvent.change(line(), { target: { value: "Laid out the hero" } });
     expect(add().disabled).toBe(true);
     expect(screen.getByText(MANUAL_DIALOG_COPY.missing)).toBeTruthy();

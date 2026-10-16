@@ -260,18 +260,22 @@ describe("a manual step (UI-P70)", () => {
     expect(screen.getByText("Uses")).toBeTruthy();
   });
 
-  it("edits the tool and the line within their limits, and ignores a blank", () => {
+  it("changes the tool through the picker, and edits the line within its limit, ignoring a blank", () => {
     const props = panel("prompt", "bakery", { view: view(), onManual: vi.fn(), onManualPicture: vi.fn() });
-    const tool = screen.getByLabelText("Tool") as HTMLInputElement;
     const line = screen.getByLabelText("What was done") as HTMLTextAreaElement;
-    expect(tool.maxLength).toBe(40);
     expect(line.maxLength).toBe(140);
-    fireEvent.change(tool, { target: { value: "Lovable" } });
-    fireEvent.blur(tool);
-    expect(props.onManual).toHaveBeenLastCalledWith("m3", { tool: "Lovable" });
+    fireEvent.click(screen.getByRole("button", { name: "Tool" }));
+    const find = screen.getByRole("combobox", { name: "Find a tool" });
+    fireEvent.change(find, { target: { value: "Lovable" } });
+    fireEvent.keyDown(find, { key: "Enter" });
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { tool: "lovable" });
+    fireEvent.click(screen.getByRole("button", { name: "Tool" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "Photoshop" } });
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Find a tool" }), { key: "Enter" });
+    expect(props.onManual).toHaveBeenLastCalledWith("m3", { tool: "Photoshop" });
     fireEvent.change(line, { target: { value: "  " } });
     fireEvent.blur(line);
-    expect(props.onManual).toHaveBeenCalledTimes(1);
+    expect(props.onManual).toHaveBeenCalledTimes(2);
     fireEvent.change(line, { target: { value: "Deployed it" } });
     fireEvent.blur(line);
     expect(props.onManual).toHaveBeenLastCalledWith("m3", { text: "Deployed it" });

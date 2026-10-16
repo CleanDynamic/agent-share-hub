@@ -3,8 +3,9 @@
    A Radix dialog, 420 wide, on the Card's surface tokens (a `BottomSheet` below
    768). Work done outside AI, put between two prompts so readers see every step:
 
-   - Tool: the tools `toolLabel` knows, then Figma, Lovable and Vercel, then
-     "Other…", which turns the menu into a text field (at most 40).
+   - Tool: the tool picker (TF-02), with the build's own tools first. A listed
+     tool is stored as its id, any other name as typed (at most 40). There is
+     no default: Add waits until one is picked.
    - What was done: one line, at most 140, with a DM Mono counter.
    - Picture, optional: one, through the media path (`uploadMedia`, in the page).
    - "Add", the one primary, and "Cancel".
@@ -20,24 +21,18 @@ import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { MANUAL_TEXT_MAX, MANUAL_TOOL_MAX } from "@/lib/build/graph";
 import { MEDIA_MAX_BYTES, mediaKindFor } from "@/lib/build/media";
-import { TOOL_CLIENTS } from "@/lib/build/making";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { fieldBase } from "./composeFields";
+import { ToolPicker } from "./ToolPicker";
 
 export const MANUAL_DIALOG_COPY = {
   title: "Add a manual step",
-  other: "Other…",
   placeholder: "What you did, in one line",
   missing: "Manual steps need the Deploy queue item from UI-P61.",
 } as const;
-
-/** The tools the menu offers, in order: what `toolLabel` knows, then the three by hand. */
-export const MANUAL_TOOLS: readonly string[] = [...TOOL_CLIENTS.map((entry) => entry.label), "Figma", "Lovable", "Vercel"];
-
-const OTHER = "__other__";
 
 export interface AddManualStepInput {
   tool: string;
@@ -53,18 +48,19 @@ export interface AddManualStepDialogProps {
   /** False while the `manual_step` node type is not live. */
   available: boolean;
   onAdd: (input: AddManualStepInput) => void;
+  /** The tools the build already uses, first in the tool picker. */
+  inBuild?: readonly string[];
 }
 
-function Form({ after, available, onAdd, onCancel, phone }: Pick<AddManualStepDialogProps, "after" | "available" | "onAdd"> & { onCancel: () => void; phone: boolean }) {
-  const [choice, setChoice] = useState("Figma");
-  const [other, setOther] = useState("");
+function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<AddManualStepDialogProps, "after" | "available" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
+  const [picked, setPicked] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
   const uid = useId();
 
-  const tool = (choice === OTHER ? other : choice).trim();
+  const tool = (picked ?? "").trim();
   const ready = available && tool.length > 0 && tool.length <= MANUAL_TOOL_MAX && text.trim().length > 0 && text.length <= MANUAL_TEXT_MAX;
 
   const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
@@ -91,20 +87,10 @@ function Form({ after, available, onAdd, onCancel, phone }: Pick<AddManualStepDi
       {after ? <p style={{ margin: 0, fontFamily: DM_MONO, fontSize: 11.5, color: t.text2 }}>Goes after {after}</p> : null}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label htmlFor={`${uid}-tool`} style={label}>
-          Tool
-        </label>
-        <select id={`${uid}-tool`} value={choice} onChange={(event) => setChoice(event.target.value)} style={control}>
-          {MANUAL_TOOLS.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-          <option value={OTHER}>{MANUAL_DIALOG_COPY.other}</option>
-        </select>
-        {choice === OTHER ? (
-          <input type="text" aria-label="Other tool" autoFocus maxLength={MANUAL_TOOL_MAX} value={other} placeholder="Which tool" onChange={(event) => setOther(event.target.value)} style={control} />
-        ) : null}
+        <span style={label}>Tool</span>
+        <div>
+          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} />
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -164,7 +150,7 @@ function Form({ after, available, onAdd, onCancel, phone }: Pick<AddManualStepDi
   );
 }
 
-export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd }: AddManualStepDialogProps) {
+export function AddManualStepDialog({ open, onOpenChange, after, available, onAdd, inBuild }: AddManualStepDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddManualStepInput) => {
@@ -175,7 +161,7 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={MANUAL_DIALOG_COPY.title}>
-        {open ? <Form after={after} available={available} onAdd={add} onCancel={close} phone /> : null}
+        {open ? <Form after={after} available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone /> : null}
       </BottomSheet>
     );
   }
@@ -208,7 +194,7 @@ export function AddManualStepDialog({ open, onOpenChange, after, available, onAd
           }}
         >
           <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{MANUAL_DIALOG_COPY.title}</Dialog.Title>
-          <Form after={after} available={available} onAdd={add} onCancel={close} phone={false} />
+          <Form after={after} available={available} inBuild={inBuild} onAdd={add} onCancel={close} phone={false} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
