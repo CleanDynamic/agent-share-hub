@@ -28,8 +28,9 @@ import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { SeoHead } from "@/components/SeoHead";
-import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
+import { feedMedia, useSignedMedia } from "@/components/gallery/cardMedia";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEngagement } from "@/hooks/useEngagement";
 import { galleryHref, getGalleryFacets, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import {
   listGalleryFeed,
@@ -224,7 +225,10 @@ function GalleryFeedPage() {
   /* ── covers: one signing pass for every row on the page (useSignedMedia keys on the paths, not the array) ── */
 
   const allRows = list.kind === "all" ? list.list.rows : [...list.reproducedOn.rows, ...list.notYet.rows];
-  const srcByPath = useSignedMedia(allRows.flatMap((row) => cardMedia(row.build)));
+  const srcByPath = useSignedMedia(allRows.flatMap((row) => feedMedia(row.build)));
+
+  /* One engagement call for the rows shown: three requests at most, however many builds. */
+  const engagement = useEngagement(allRows.map((row) => row.build.id));
 
   const error = firstQuery?.error ?? null;
   const status = error && !firstPage ? "error" : !firstPage ? "loading" : "ready";
@@ -257,6 +261,7 @@ function GalleryFeedPage() {
         list={list}
         srcByPath={srcByPath}
         viewerId={user?.id ?? null}
+        engagement={engagement}
         aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
         onClearAll={() => go({ query: null, model: undefined, madeFor: [] })}
         onNavigate={navigate}

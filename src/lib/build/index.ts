@@ -97,6 +97,7 @@ export {
   THREAD_NODE_TYPES,
   ThreadError,
   checkThread,
+  getThreadMedia,
   isThreadDoc,
   legacyThread,
   postBodyLength,

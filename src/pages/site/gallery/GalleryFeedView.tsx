@@ -41,6 +41,7 @@ import { formatCount, FEED_SORT_ITEMS, feedCountLine, sortItemLabel, sortLabel }
 import type { PlaqueBuild } from "@/components/brand/Plaque";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { PageFit } from "@/components/shell/siteFrameFit";
+import { engagementFor, type Engagement } from "@/hooks/useEngagement";
 import type { GalleryFeedCounts, GalleryFeedRow, GalleryFeedSort } from "@/lib/build/gallery";
 import { LABS, MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
 import { r } from "@/lib/theme/radius";
@@ -102,6 +103,8 @@ export interface GalleryFeedViewProps {
   srcByPath: MediaSrcMap;
   /** The signed-in reader, for the creator's own shortfall line. */
   viewerId?: string | null;
+  /** PT-04: like, comment and save counts for the rows shown, from one useEngagement call. Absent: no action row. */
+  engagement?: Engagement;
   /** Above the list: the makers a search names. */
   aboveList?: ReactNode;
   /** Search, model and audience cleared; the sort stays. */
@@ -523,19 +526,35 @@ function ActiveFilters(props: GalleryFeedViewProps) {
 
 /* ── the list ── */
 
-function Rows({ section, srcByPath, viewerId, now }: { section: FeedSectionView; srcByPath: GalleryFeedViewProps["srcByPath"]; viewerId: string | null; now?: number }) {
+function Rows({
+  section,
+  srcByPath,
+  viewerId,
+  engagement,
+  now,
+}: {
+  section: FeedSectionView;
+  srcByPath: GalleryFeedViewProps["srcByPath"];
+  viewerId: string | null;
+  engagement?: Engagement;
+  now?: number;
+}) {
   return (
     <>
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* PT-04: no gap between items. Each is a post with a 1px hairline under it. */}
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column" }}>
         {section.rows.map(({ build, plaque }) => (
-          <li key={build.id} style={{ minWidth: 0 }}>
+          <li key={build.id} style={{ minWidth: 0, borderBottom: `1px solid ${t.hairline}` }}>
             <GalleryCard
               build={build}
               srcByPath={srcByPath}
               layout="row"
               makerHandle={build.creatorHandle}
+              makerName={build.creatorName}
+              makerAvatar={build.creatorAvatar}
               modelsUsed={build.models_used}
               plaqueBuild={plaque}
+              engagement={engagement ? engagementFor(engagement, build.id) : undefined}
               now={now}
             />
             <Shortfall build={build} viewerId={viewerId} />
@@ -563,24 +582,19 @@ function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
 
 function ListSkeleton() {
   return (
-    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <LoadingRegion what="the gallery" data-testid="gallery-loading" style={{ display: "flex", flexDirection: "column" }}>
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-            padding: 16,
-            borderRadius: 8,
-            background: t.module,
-            border: `1px solid ${t.moduleBorder}`,
-          }}
+          style={{ display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", columnGap: 12, padding: "20px 0 16px", borderBottom: `1px solid ${t.hairline}` }}
         >
-          <Skeleton height="auto" radius={4} style={{ aspectRatio: "2 / 1" }} />
-          <Skeleton width="60%" height={16} />
-          <Skeleton width="90%" height={13} />
-          <Skeleton width="45%" height={13} />
+          <Skeleton width={40} height={40} radius={999} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+            <Skeleton width="40%" height={16} />
+            <Skeleton width="90%" height={24} />
+            <Skeleton width="70%" height={16} />
+            <Skeleton width="100%" height={180} radius={6} />
+          </div>
         </div>
       ))}
     </LoadingRegion>
@@ -600,7 +614,7 @@ function EmptyFeed({ query, onNavigate }: Pick<GalleryFeedViewProps, "query" | "
 }
 
 function FeedList(props: GalleryFeedViewProps) {
-  const { status, errorKind, error, onRetry, list, model, srcByPath, viewerId = null, now, aboveList } = props;
+  const { status, errorKind, error, onRetry, list, model, srcByPath, viewerId = null, engagement, now, aboveList } = props;
 
   if (status === "loading") return <ListSkeleton />;
   if (status === "error") {
@@ -620,7 +634,7 @@ function FeedList(props: GalleryFeedViewProps) {
     list.kind === "all" ? list.list.rows.length === 0 : list.reproducedOn.rows.length === 0 && list.notYet.rows.length === 0;
   if (empty) return <EmptyFeed query={props.query} onClearAll={props.onClearAll} onNavigate={props.onNavigate} />;
 
-  const rowProps = { srcByPath, viewerId, now };
+  const rowProps = { srcByPath, viewerId, engagement, now };
   const column: CSSProperties = { display: "flex", flexDirection: "column", gap: 16 };
 
   return (

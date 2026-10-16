@@ -256,40 +256,53 @@ describe("the skeleton", () => {
   });
 });
 
-describe("UI-P49 — the row layout", () => {
+describe("UI-P49, PT-04 — the row layout is the feed's post", () => {
   const renderRow = (subject: GalleryBuild, extra: Partial<Parameters<typeof GalleryCard>[0]> = {}) =>
     render(
       <MemoryRouter>
-        <GalleryCard build={subject} srcByPath={NO_MEDIA} layout="row" makerHandle="maria" modelsUsed={["claude-sonnet-5-5", "claude-opus-5-5", "claude-sonnet-5-5"]} {...extra} />
+        <GalleryCard
+          build={subject}
+          srcByPath={NO_MEDIA}
+          layout="row"
+          makerHandle="maria"
+          makerName="Maria Silva"
+          modelsUsed={["claude-sonnet-5-5", "claude-opus-5-5", "claude-sonnet-5-5"]}
+          {...extra}
+        />
       </MemoryRouter>,
     );
 
-  it("keeps the order: cover, title, description, credit, plaque, chips, open ask", () => {
+  it("keeps the order: author row, the post, the build line with its plaque and open ask", () => {
     const { container } = renderRow(
       build({ nodes: [node({ type: "prompt" })] as never, bounties: [{ id: "x", reward_gbp: 25, status: "open" }] }),
     );
-    const parts = [...container.querySelectorAll("[data-card-part]")].map((el) => el.getAttribute("data-card-part"));
-    expect(parts).toEqual(["cover", "title", "description", "credit", "plaque", "chips", "reward"]);
+    const order = ["[data-feed-author-row]", "[data-feed-post-body]", "[data-feed-build-line]"].map((selector) => container.querySelector(selector));
+    expect(order.every(Boolean)).toBe(true);
+    expect(order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelector('[data-card-part="plaque"]')).not.toBeNull();
+    expect(screen.getByTestId("feed-open-ask")).toHaveTextContent("1 part unsolved");
   });
 
-  it("credits the maker with a link to the profile and names the models once each", () => {
+  it("puts the maker on top with a link to the profile, and links the build from its title", () => {
     renderRow(build());
-    expect(screen.getByRole("link", { name: "@maria" })).toHaveAttribute("href", "/profile/maria");
-    expect(screen.getByTestId("row-credit")).toHaveTextContent("by @maria · made with Sonnet 5.5 + Opus 5.5");
+    expect(screen.getByTestId("feed-author-name")).toHaveTextContent("Maria Silva");
+    expect(screen.getByTestId("feed-author-name")).toHaveAttribute("href", "/profile/maria");
+    expect(screen.getByText("@maria", { exact: false })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Invoice triage agent" })).toHaveAttribute("href", "/b2/a-build");
-    expect(screen.getByText("Triages invoices.")).toBeInTheDocument();
   });
 
-  it("lets the plaque and the lamp speak for the record it is handed", () => {
+  it("says what it was made with in marks, not words", () => {
+    renderRow(build());
+    expect(screen.getByRole("img", { name: "Made with Claude" })).toBeInTheDocument();
+    expect(screen.queryByText(/made with/i)).toBeNull();
+  });
+
+  it("lets the plaque speak for the record it is handed, and draws no lamp above the item", () => {
     const { container } = renderRow(build(), {
       plaqueBuild: { reproduction_count: 0, last_confirmed_at: null, last_confirmed_model: null, published_at: "2026-08-01T00:00:00Z" },
     });
     expect(screen.getByText("not yet reproduced")).toBeInTheDocument();
-    expect(container.querySelector('[data-ui="picture-lamp"]')).toHaveAttribute("data-variant", "off");
-  });
-
-  it("keeps the rebuild credit on a rebuild", () => {
-    renderRow(build({ source_title_at_fork: "Standup summariser", source_handle_at_fork: "kofi" }));
-    expect(screen.getByTestId("rebuild-credit-line")).toHaveTextContent("Rebuilt from Standup summariser by @kofi");
+    expect(container.querySelector('[data-ui="picture-lamp"]')).toBeNull();
   });
 });

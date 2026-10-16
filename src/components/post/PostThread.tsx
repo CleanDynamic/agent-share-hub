@@ -47,6 +47,8 @@ export interface PostThreadProps {
   phone?: boolean;
   /** A different thread: an open one is closed. */
   resetKey?: string;
+  /** The rest of the thread is on its way: the toggle reads "Loading…" and is disabled. */
+  loading?: boolean;
 }
 
 /** Room kept at the end of a post's first line for its counter, "10 / 10" in 11px mono. */
@@ -62,6 +64,7 @@ export function PostThread({
   capTall = false,
   phone = false,
   resetKey,
+  loading = false,
 }: PostThreadProps) {
   const regionId = useId();
 
@@ -114,6 +117,7 @@ export function PostThread({
           more={rest.length}
           controls={regionId}
           phone={phone}
+          loading={loading}
           onPress={() => (open ? onClose?.() : onOpen?.())}
         />
       ) : null}
@@ -184,12 +188,14 @@ function Toggle({
   more,
   controls,
   phone,
+  loading,
   onPress,
 }: {
   open: boolean;
   more: number;
   controls: string;
   phone: boolean;
+  loading: boolean;
   onPress: () => void;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
@@ -199,6 +205,7 @@ function Toggle({
       data-post-toggle=""
       aria-expanded={open}
       aria-controls={controls}
+      disabled={loading}
       {...handlers}
       onClick={(event) => {
         // A thread in a Gallery card sits inside the card's link.
@@ -221,13 +228,15 @@ function Toggle({
         gap: 8,
         fontFamily: FIGTREE,
         color: t.text,
-        cursor: "pointer",
+        cursor: loading ? "default" : "pointer",
         // Hover is a step in colour; pressed sinks to the well.
         background: state.pressed ? t.well : state.hovered ? t.tile : "transparent",
         ...ring(state.focusVisible),
       }}
     >
-      {open ? (
+      {loading ? (
+        <span style={{ fontSize: 14, fontWeight: 500, color: t.text2 }}>Loading…</span>
+      ) : open ? (
         <>
           <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Show less</span>
           <Glyph name="up" size={16} color={t.text2} />

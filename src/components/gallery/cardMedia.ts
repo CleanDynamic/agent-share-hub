@@ -38,6 +38,9 @@ import {
   postEntriesOf,
   resolveCover,
   signedMediaUrl,
+  splitThread,
+  threadMediaIds,
+  threadOf,
   type GalleryBuild,
   type GalleryMedia,
   type GalleryNode,
@@ -377,6 +380,29 @@ export function cardMedia(build: GalleryBuild): CardMedia[] {
   return rows;
 }
 
+/**
+ * What the Gallery feed signs for one build: post 1's pictures, at the thread's
+ * width, and nothing else of the thread. The posts after the first are signed
+ * when the reader presses Show more (FeedPost), so a page of twenty builds does
+ * not sign every picture of every thread.
+ *
+ * A build with no thread is drawn from its cover, so the cover is signed at
+ * the body's width, as cardMedia does. The grid and the dashboard keep calling
+ * cardMedia; this is the feed's own.
+ */
+export function feedMedia(build: GalleryBuild): CardMedia[] {
+  const doc = threadOf(build, build.media);
+  const posts = doc ? splitThread(doc) : [];
+
+  if (posts.length === 0) {
+    const cover = coverMedia(build);
+    return cover ? [{ ...cover, slotWidth: CARD_MEDIA_WIDTH }] : [];
+  }
+
+  const ids = new Set(threadMediaIds({ type: "doc", content: posts[0].content }));
+  return build.media.filter((row) => ids.has(row.id)).map((row) => ({ ...row, slotWidth: CARD_THREAD_WIDTH }));
+}
+
 // =============================================================================
 // Signing
 // =============================================================================
@@ -401,6 +427,25 @@ export function stillRef(media: GalleryMedia): MediaRef {
     return { bucket: media.bucket, path: media.poster_path, kind: "image" };
   }
   return { bucket: media.bucket, path: media.path, kind: media.kind };
+}
+
+/**
+ * The same signing as useSignedMedia, once and as a promise: for a surface that
+ * decides to sign rows at a moment of its own (the feed's Show more). A row the
+ * storage would not sign is left out of the map.
+ */
+export async function signCardMedia(rows: readonly CardMedia[]): Promise<MediaSrcMap> {
+  const targets = new Map<string, { ref: MediaRef; width: number }>();
+  for (const row of rows) {
+    const ref = stillRef(row);
+    if (!targets.has(ref.path)) targets.set(ref.path, { ref, width: row.slotWidth });
+  }
+  const results = await Promise.allSettled(
+    [...targets].map(async ([path, { ref, width }]) => [path, await signedMediaUrl(ref, { width })] as const)
+  );
+  const out = new Map<string, string>();
+  for (const result of results) if (result.status === "fulfilled") out.set(...result.value);
+  return out;
 }
 
 /**
