@@ -306,7 +306,8 @@ export interface ThreadProblem {
   message: string;
 }
 
-function linkAllowed(href: unknown): boolean {
+/** Whether a link's address may be followed: http, https or mailto. PostBody draws any other href as text. */
+export function linkAllowed(href: unknown): boolean {
   if (typeof href !== "string" || !href.trim()) return false;
   try {
     return LINK_PROTOCOLS.has(new URL(href.trim()).protocol);
