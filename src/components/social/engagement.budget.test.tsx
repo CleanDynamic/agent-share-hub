@@ -140,27 +140,28 @@ describe("the engagement budgets", () => {
 
     const like = (doc: Document) => doc.querySelector('[data-engagement-action="like"], [data-engagement-action="unlike"]');
     const heart = (doc: Document) => like(doc)?.querySelector("[data-engagement-icon]");
+    const heartShape = (doc: Document) => heart(doc)?.querySelector("svg");
 
     expect(like(quiet)?.getAttribute("aria-label")).toBe("Like");
     expect(like(quiet)?.getAttribute("aria-pressed")).toBe("false");
-    expect(heart(quiet)?.getAttribute("fill")).toBe("none");
+    expect(heartShape(quiet)?.getAttribute("fill")).toBe("none");
     expect(styleOf(like(quiet))).toContain("color:var(--text2)");
 
     expect(like(liked)?.getAttribute("aria-label")).toBe("Unlike");
     expect(like(liked)?.getAttribute("aria-pressed")).toBe("true");
-    expect(heart(liked)?.getAttribute("fill")).toBe("currentColor");
+    expect(heartShape(liked)?.getAttribute("fill")).toBe("currentColor");
     expect(styleOf(heart(liked))).toContain("color:var(--action)");
     // The count beside a liked heart is --text (STATES.md row 8).
     expect(styleOf(like(liked))).toContain("color:var(--text)");
   });
 
-  it("draws every icon at 18px with a 1.5 stroke", () => {
+  it("draws every glyph at 18px, at the glyph set's 1.3 stroke", () => {
     const doc = staticDoc(providers(<EngagementRow variant="page" build={CARD} {...ENGAGEMENT} />));
-    const icons = [...doc.querySelectorAll("[data-engagement-icon]")];
+    const icons = [...doc.querySelectorAll("[data-engagement-icon] svg")];
     expect(icons).toHaveLength(4);
     for (const icon of icons) {
       expect(icon.getAttribute("width")).toBe("18");
-      expect(icon.getAttribute("stroke-width")).toBe("1.5");
+      expect(icon.getAttribute("stroke-width")).toBe("1.3");
     }
   });
 });
