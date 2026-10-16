@@ -10,15 +10,18 @@
 
 import { EditorContent, useEditorState, type Editor } from "@tiptap/react";
 import { TextSelection } from "@tiptap/pm/state";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
+import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
+import { addPictures } from "@/components/post/editor/pictures";
 import { PostOutline, type OutlineEntry } from "@/components/post/editor/PostOutline";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
-import type { ThreadDoc } from "@/lib/build/thread";
+import { PICTURE_ACCEPT } from "@/lib/build/postMedia";
+import { getThreadMedia, type ThreadDoc } from "@/lib/build/thread";
 import { movePost, postLead, postRuns } from "@/lib/build/threadEditor";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
@@ -30,7 +33,7 @@ export interface PostTabProps {
   thread: ComposeThread;
   /** Below 768px. */
   phone: boolean;
-  /** PT-06 fills this: the two picture items of the slash menu are listed once it is given. */
+  /** Replaces the slash menu's way of adding a picture. Absent: the tab asks for files itself (PT-06). */
   onInsertPicture?: InsertPicture;
 }
 
@@ -71,6 +74,41 @@ function Body({ thread, phone, onInsertPicture }: PostTabProps) {
       thread.onDoc(doc);
     },
   });
+  const host = controls.pictures;
+  // Read at the moment an upload needs them, so a render never holds a stale one.
+  host.ensureBuild.current = thread.ensureBuild;
+  host.notice.current = setNotice;
+
+  // The thread's pictures are in the store before the node views ask for them.
+  const buildId = thread.buildId;
+  useEffect(() => {
+    if (!buildId) return;
+    let stale = false;
+    getThreadMedia(buildId)
+      .then((rows) => {
+        if (!stale) host.store.addRows(rows);
+      })
+      .catch((cause) => console.error("[Compose] thread media did not load", cause));
+    return () => {
+      stale = true;
+    };
+  }, [buildId, host]);
+
+  // "Picture or video" and "Row of pictures": ask for files, then put them where the slash was.
+  const chooser = useRef<HTMLInputElement>(null);
+  const wanted = useRef<{ kind: "single" | "row"; gap: number; replaceEmpty: boolean } | null>(null);
+  const chooseFiles: InsertPicture = useCallback((kind, current) => {
+    const { selection, doc: document_ } = current.state;
+    const index = selection.$from.index(0);
+    const block = document_.maybeChild(index);
+    const empty = Boolean(block && block.type.name === "paragraph" && block.content.size === 0);
+    wanted.current = { kind, gap: empty ? index : index + 1, replaceEmpty: empty };
+    const input = chooser.current;
+    if (!input) return;
+    input.multiple = kind === "row";
+    input.click();
+  }, []);
+
   const { entries, active } = useEditorState({ editor, selector: ({ editor: current }) => outlineOf(current) }) ?? { entries: [], active: 0 };
 
   const go = useCallback(
@@ -104,8 +142,23 @@ function Body({ thread, phone, onInsertPicture }: PostTabProps) {
   return (
     <div data-testid="post-tab" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 48, paddingTop: 12, minWidth: 0 }}>
       {phone ? null : <PostOutline entries={entries} active={active} onGo={go} onMove={move} />}
-      <div style={{ flex: "999 1 520px", maxWidth: 628, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ flex: "999 1 520px", maxWidth: 628, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
         <EditorContent editor={editor} />
+        <BlockHandle editor={editor} host={host} phone={phone} />
+        <input
+          ref={chooser}
+          type="file"
+          accept={PICTURE_ACCEPT}
+          hidden
+          data-testid="post-picture-file"
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = "";
+            const want = wanted.current;
+            wanted.current = null;
+            if (files.length > 0 && want) void addPictures(host, files, { gap: want.gap, replaceEmpty: want.replaceEmpty }, want.kind);
+          }}
+        />
         {notice ? (
           <p role="status" style={{ margin: 0, fontFamily: FIGTREE, fontSize: 12.5, fontWeight: 400, lineHeight: "normal", color: t.text2 }}>
             {notice}
@@ -114,7 +167,7 @@ function Body({ thread, phone, onInsertPicture }: PostTabProps) {
       </div>
       {phone ? null : <div data-testid="post-preview-slot" aria-hidden="true" style={{ flex: "1 1 280px", maxWidth: 320 }} />}
       <FormatBar editor={editor} controls={controls} phone={phone} />
-      <SlashMenu editor={editor} controls={controls} onInsertPicture={onInsertPicture} notice={setNotice} phone={phone} />
+      <SlashMenu editor={editor} controls={controls} onInsertPicture={onInsertPicture ?? chooseFiles} notice={setNotice} phone={phone} />
     </div>
   );
 }

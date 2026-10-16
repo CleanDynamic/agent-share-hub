@@ -6,12 +6,13 @@
 // `readDoc` returns then, so the words typed so far are kept.
 
 import { useEditor, type Editor } from "@tiptap/react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import type { ThreadDoc } from "@/lib/build/thread";
 import { emptyThread } from "@/lib/build/threadEditor";
 
 import { editorAttributes, postExtensions, type PostEditorControls } from "./extensions";
+import { createPictureHost } from "./pictures";
 
 /** A document the editor can open: a thread with no blocks opens on one empty paragraph. */
 export function loadable(doc: ThreadDoc): ThreadDoc {
@@ -27,7 +28,7 @@ export interface UsePostEditorOptions {
 }
 
 export function usePostEditor({ readDoc, phone, onDoc }: UsePostEditorOptions): { editor: Editor | null; controls: PostEditorControls } {
-  const controls = useRef<PostEditorControls>({ slashKey: { current: null }, openLink: { current: null } }).current;
+  const controls = useRef<PostEditorControls>({ slashKey: { current: null }, openLink: { current: null }, pictures: createPictureHost() }).current;
   const onDocRef = useRef(onDoc);
   onDocRef.current = onDoc;
 
@@ -43,6 +44,11 @@ export function usePostEditor({ readDoc, phone, onDoc }: UsePostEditorOptions): 
     },
     [phone],
   );
+
+  // The pictures reach the live editor through the host: a phone width rebuilds the editor, and an upload in flight lands in the new one.
+  useEffect(() => {
+    controls.pictures.editor.current = editor;
+  }, [editor, controls]);
 
   return { editor, controls };
 }

@@ -344,7 +344,7 @@ export function mediaPath(
 
 // --- internals ---------------------------------------------------------------
 
-interface ProbeResult {
+export interface ProbeResult {
   width: number | null;
   height: number | null;
   duration: number | null;
@@ -359,7 +359,7 @@ const NO_PROBE: ProbeResult = { width: null, height: null, duration: null };
  * format the browser will not decode leaves the columns null; it does not cost
  * a creator their upload. The row is still correct, just less described.
  */
-async function probeFile(file: File, kind: MediaKind): Promise<ProbeResult> {
+export async function probeFile(file: File, kind: MediaKind): Promise<ProbeResult> {
   try {
     if (kind === "image") return await probeImage(file);
     if (kind === "video" || kind === "audio") return await probeMedia(file, kind);

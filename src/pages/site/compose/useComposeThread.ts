@@ -42,6 +42,10 @@ export interface ComposeThread {
   readDoc: () => ThreadDoc;
   /** The editor's every change. */
   onDoc: (doc: ThreadDoc) => void;
+  /** The build this thread belongs to, once there is one (the first change makes the draft). */
+  buildId: string | undefined;
+  /** The build's id, making the draft first when there is none: what a picture upload needs. */
+  ensureBuild: () => Promise<string>;
   /** Posts, counted as the Gallery counts them (an empty post at either end is not one). */
   posts: number;
   save: SaveState;
@@ -247,7 +251,11 @@ export function useComposeThread({ build, buildId, isOwner, ensureBuild }: UseCo
     void media.refetch();
   }, [media]);
 
+  const ensure = useCallback(() => ensureRef.current(), []);
+
   return {
+    buildId: idRef.current,
+    ensureBuild: ensure,
     status: version > 0 ? "ready" : media.isError ? "error" : "loading",
     version,
     readDoc,
