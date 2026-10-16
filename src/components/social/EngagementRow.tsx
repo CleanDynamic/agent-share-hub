@@ -14,9 +14,10 @@
 // filled button, so the header's one primary stays the only one
 // ⟦von-restorff-effect⟧.
 //
-// THE NUMBERS. Icons are lucide at 18px and stroke 1.5, the weight that sits
-// beside 400-weight text ⟦better-ui › Match icon stroke to text weight⟧.
-// Counts are DM Mono 12, tabular, for Like and Comment only. 4 between an icon
+// THE NUMBERS. Icons are the site's own glyphs (heart, comment, save, share,
+// rebuild) at 18px; Glyph draws them at stroke 1.3 with square caps, like every
+// other glyph. Counts are DM Mono 12, tabular, for Like and Comment, and for
+// Rebuild where it is shown. 4 between an icon
 // and its count and 12 between pairs ⟦law-of-proximity: "Icon + label"⟧: each
 // button pads its content by 6 on either side, so two neighbouring pairs are
 // 6 + 6 apart. Each button is at least 36×36 by its own padding, and 44×44 on a
@@ -24,11 +25,16 @@
 // 44 everywhere before the density table); the first one is pulled
 // back by its own padding so its icon lines up with the text above it.
 //
-// MOTION. Colour and opacity only, 150ms, and none under reduced motion
-// ⟦better-ui › Motion restraint⟧ ⟦buildgallery-theme › Motion⟧; every state has
-// a static cue (fill, colour, ring). Hover is a colour step on a fine pointer
-// only, and nothing is hover-only ⟦critique-affordance › Action
-// Discoverability⟧: all the actions are visible at rest, on touch too.
+// REBUILD. A caller that passes withRebuild gets a link to /rebuild/{slug} with
+// the build's rebuild count, and the order becomes Comment, Rebuild, Like, Save,
+// Share. No caller passes it yet; without it the row is as it was.
+//
+// MOTION. Colour only, 150ms, and none under reduced motion ⟦better-ui › Motion
+// restraint⟧ ⟦buildgallery-theme › Motion⟧; every state has a static cue (fill,
+// colour, ring). Hover is a colour step to --text on a fine pointer only; a
+// press sinks to the well, never fades. Nothing is hover-only
+// ⟦critique-affordance › Action Discoverability⟧: all the actions are visible
+// at rest, on touch too.
 //
 // OPTIMISTIC, AND HONEST ABOUT IT. Like and Save change on the press and ask
 // the database after; if it refuses, the row goes back to what it was and says
@@ -42,9 +48,8 @@
 // from reaching the link and cancels the link's own navigation.
 
 import { useEffect, useId, useState, type CSSProperties, type MouseEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bookmark, Heart, MessageCircle, Share2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateEngagement } from "@/hooks/useEngagement";
@@ -52,6 +57,7 @@ import { LIBRARY_SAVED_KEY, requestAddToCollection } from "@/components/library/
 import { copyToClipboard } from "@/lib/deepLink";
 import { isPermissionError } from "@/lib/errors/permission";
 import { SocialError, likeBuild, saveBuild, unlikeBuild, unsaveBuild, type EngagementCounts } from "@/lib/social";
+import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -63,17 +69,19 @@ import { DM_MONO, tabular } from "@/lib/theme/type";
 /** Where a shared link points. Canonical, whatever address the reader is on. */
 export const SHARE_ORIGIN = "https://buildgallery.ai";
 
-/** The icon, at the size and weight the row draws everywhere. */
+/** The glyph, at the size the row draws it everywhere. */
 export const ENGAGEMENT_ICON_SIZE = 18;
-export const ENGAGEMENT_ICON_STROKE = 1.5;
 
 /** The smallest a press target may be, in either direction: 44 drawn, 36 through the density table, 44 on a phone (the touch target). */
 const hitOf = (phone: boolean) => (phone ? 44 : 36);
 
-/** Padding either side of a button's content: half of the 12 between pairs. */
+/** Padding plus border either side of a button's content: half of the 12 between pairs. */
 const PAD_INLINE = 6;
 
-/** Top and bottom padding that makes an 18px icon a full target. */
+/** The border a press shows. It is there at rest, clear, so a press moves nothing. */
+const BORDER = 1;
+
+/** Top and bottom padding plus border that makes an 18px icon a full target. */
 const padBlockOf = (phone: boolean) => (hitOf(phone) - ENGAGEMENT_ICON_SIZE) / 2;
 
 /** Between an icon and its count. */
@@ -95,12 +103,14 @@ const SAVED_TOAST_ACTION: CSSProperties = {
 };
 
 export interface EngagementRowProps {
-  build: { id: string; slug: string; title: string };
+  build: { id: string; slug: string; title: string; rebuild_count?: number | null };
   /** Null until the list's counts have arrived. */
   counts: EngagementCounts | null;
   liked: boolean;
   saved: boolean;
   variant: "card" | "page";
+  /** Add the Rebuild link, with the build's rebuild count. Absent: Like, Comment, Save, and Share on a page. */
+  withRebuild?: boolean;
 }
 
 /** One build's share of its list's engagement: what a card or header passes on. */
@@ -108,7 +118,7 @@ export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved
 
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
-export function EngagementRow({ build, counts, liked, saved, variant }: EngagementRowProps) {
+export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
   const phone = useIsPhone();
   const navigate = useNavigate();
@@ -209,6 +219,44 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
     toast(copied ? "Link copied" : "The link could not be copied.");
   };
 
+  const like: ActionSpec = {
+    id: "like",
+    label: shownLiked ? "Unlike" : "Like",
+    pressed: shownLiked,
+    count: shownLikes,
+    onPress: toggleLike,
+    glyph: "heart",
+  };
+  const commentAction: ActionSpec = {
+    id: "comment",
+    label: "Comment",
+    count: counts?.comments ?? null,
+    onPress: comment,
+    glyph: "comment",
+  };
+  const saveAction: ActionSpec = {
+    id: "save",
+    label: shownSaved ? "Unsave" : "Save",
+    pressed: shownSaved,
+    onPress: toggleSave,
+    glyph: "save",
+  };
+  const shareAction: ActionSpec = { id: "share", label: "Share", onPress: share, glyph: "share" };
+  const rebuilds = build.rebuild_count ?? 0;
+  const rebuildAction: ActionSpec = {
+    id: "rebuild",
+    slot: "rebuild",
+    label: `Rebuild, ${rebuilds} ${rebuilds === 1 ? "rebuild" : "rebuilds"}`,
+    count: rebuilds,
+    href: `/rebuild/${build.slug}`,
+    glyph: "rebuild",
+  };
+
+  const page = variant === "page" ? [shareAction] : [];
+  const actions: ActionSpec[] = withRebuild
+    ? [commentAction, rebuildAction, like, saveAction, ...page]
+    : [like, commentAction, saveAction, ...page];
+
   /** A press inside a card is the row's, not the card link's. */
   const keepOffTheCard =
     variant === "card"
@@ -234,36 +282,9 @@ export function EngagementRow({ build, counts, liked, saved, variant }: Engageme
         ...(variant === "card" ? { marginTop: 6 } : null),
       }}
     >
-      <Action
-        phone={phone}
-        label={shownLiked ? "Unlike" : "Like"}
-        pressed={shownLiked}
-        count={shownLikes}
-        onPress={toggleLike}
-        icon={Heart}
-      />
-      <Action
-        phone={phone}
-        label="Comment"
-        count={counts?.comments ?? null}
-        onPress={comment}
-        icon={MessageCircle}
-      />
-      <Action
-        phone={phone}
-        label={shownSaved ? "Unsave" : "Save"}
-        pressed={shownSaved}
-        onPress={toggleSave}
-        icon={Bookmark}
-      />
-      {variant === "page" ? (
-        <Action
-          phone={phone}
-          label="Share"
-          onPress={share}
-          icon={Share2}
-        />
-      ) : null}
+      {actions.map(({ id, ...action }) => (
+        <Action key={id} phone={phone} {...action} />
+      ))}
     </div>
   );
 }
@@ -283,23 +304,32 @@ function focusComments() {
   target?.focus({ preventScroll: true });
 }
 
-interface ActionProps {
+/** What one action is: a button with a press handler, or a link when it has an href. */
+interface ActionSpec {
+  /** Stable across states, so a toggle keeps its element (and its focus) when its label changes. */
+  id: string;
+  /** The `data-engagement-action` value. Absent: the label, lower case. */
+  slot?: string;
   label: string;
-  icon: LucideIcon;
-  onPress: () => void;
+  glyph: GlyphName;
+  onPress?: () => void;
+  /** Rebuild only: the action is a link, not a button. */
+  href?: string;
   /** Like and Save only. Absent on the actions that are not toggles. */
   pressed?: boolean;
-  /** Like and Comment only; null while the counts are on their way. */
+  /** Like, Comment and Rebuild only; null while the counts are on their way. */
   count?: number | null;
-  phone: boolean;
 }
 
-/** One tertiary action: the icon, and its count where it has one. */
-function Action({ label, icon: Icon, onPress, pressed, count, phone }: ActionProps) {
-  const { state, handlers } = useInteractive<HTMLButtonElement>();
+type ActionProps = Omit<ActionSpec, "id"> & { phone: boolean };
+
+/** One tertiary action: the glyph, and its count where it has one. */
+function Action({ label, slot, glyph, onPress, href, pressed, count, phone }: ActionProps) {
+  const { state, handlers } = useInteractive<HTMLButtonElement | HTMLAnchorElement>();
   const countId = useId();
   const active = pressed === true;
   const hasCount = count !== undefined;
+  const name = slot ?? label.toLowerCase();
 
   const style: CSSProperties = {
     display: "inline-flex",
@@ -308,40 +338,36 @@ function Action({ label, icon: Icon, onPress, pressed, count, phone }: ActionPro
     gap: ICON_TO_COUNT,
     minWidth: hitOf(phone),
     minHeight: hitOf(phone),
-    padding: `${padBlockOf(phone)}px ${PAD_INLINE}px`,
+    padding: `${padBlockOf(phone) - BORDER}px ${PAD_INLINE - BORDER}px`,
     margin: 0,
-    background: "transparent",
-    border: "none",
+    boxSizing: "border-box",
+    // A press sinks to the well; at rest the border is there but clear.
+    background: state.pressed ? t.well : "transparent",
+    border: `${BORDER}px solid ${state.pressed ? t.wellBorder : "transparent"}`,
     borderRadius: r.control,
-    // The count's colour; the icon takes its own below.
+    // The count's colour; the glyph takes its own below.
     color: active || state.hovered ? t.text : t.text2,
-    opacity: state.pressed ? 0.72 : 1,
     cursor: "pointer",
-    transition: feedback("color", "opacity"),
+    textDecoration: "none",
+    transition: feedback("color", "background-color", "border-color"),
     ...ring(state.focusVisible),
   };
 
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={pressed === undefined ? undefined : active}
-      aria-describedby={hasCount && count !== null ? countId : undefined}
-      data-engagement-action={label.toLowerCase()}
-      onClick={onPress}
-      {...handlers}
-      style={style}
-    >
-      {/* One SVG: outline at rest, the same shape filled when active. */}
-      <Icon
-        aria-hidden
+  const content = (
+    <>
+      {/* One glyph: outline at rest, the same shape filled when active. */}
+      <span
         data-engagement-icon=""
         data-active={active ? "" : undefined}
-        size={ENGAGEMENT_ICON_SIZE}
-        strokeWidth={ENGAGEMENT_ICON_STROKE}
-        fill={active ? "currentColor" : "none"}
-        style={{ flexShrink: 0, color: active ? t.action : "currentColor", transition: feedback("color") }}
-      />
+        style={{
+          display: "inline-flex",
+          flexShrink: 0,
+          color: active ? t.action : "currentColor",
+          transition: feedback("color"),
+        }}
+      >
+        <Glyph name={glyph} size={ENGAGEMENT_ICON_SIZE} fill={active ? "currentColor" : "none"} />
+      </span>
       {hasCount ? (
         <span
           id={countId}
@@ -356,6 +382,29 @@ function Action({ label, icon: Icon, onPress, pressed, count, phone }: ActionPro
           {count ?? ""}
         </span>
       ) : null}
+    </>
+  );
+
+  if (href !== undefined) {
+    return (
+      <Link to={href} aria-label={label} data-engagement-action={name} {...handlers} style={style}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed === undefined ? undefined : active}
+      aria-describedby={hasCount && count !== null ? countId : undefined}
+      data-engagement-action={name}
+      onClick={onPress}
+      {...handlers}
+      style={style}
+    >
+      {content}
     </button>
   );
 }

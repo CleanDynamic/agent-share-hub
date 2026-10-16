@@ -3,7 +3,7 @@
 // The paths are the refined boards' own and are held to the UI-P82 table character for character. Sixteen are the row
 // "Glyphs · 16 px · square caps" on foundations.html; `chevd`, `more`, `up`, `globe` and `mail` are drawn inside the
 // page boards that use them; `chevl`, `expand` and `grid` are drawn on no board, so the table is their only source.
-// `Glyph.tsx` paints them, at stroke 1.3 with square caps (2 for `more`).
+// `Glyph.tsx` paints them, at stroke 1.3 with square caps (2 for the dots-only `more` and `grip`).
 //
 // Kept apart from the component so the table can be read by a test and by the dev catalogue without making the
 // component file export anything but a component.
@@ -34,6 +34,15 @@ export const GLYPHS = {
   globe:
     "M13.5 8a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0zM2.5 8h11M8 2.5c1.5 1.5 2.3 3.4 2.3 5.5S9.5 12 8 13.5M8 2.5C6.5 4 5.7 5.9 5.7 8s.8 4 2.3 5.5",
   mail: "M2.5 4h11v8h-11zM2.5 4.5 8 9l5.5-4.5",
+  heart: "M8 13s-5-3-5-6.5A2.75 2.75 0 0 1 8 5a2.75 2.75 0 0 1 5 1.5C13 10 8 13 8 13z",
+  comment: "M2.75 3.75h10.5v7H7l-3 2.5v-2.5H2.75z",
+  save: "M4.5 2.75h7v10.5L8 10.75l-3.5 2.5z",
+  share: "M8 2.5v8M5 5.5l3-3 3 3M3.5 9.5v4h9v-4",
+  rebuild: "M12.75 3v3h-3M3.25 13v-3h3M12.4 6A4.75 4.75 0 0 0 3.6 5.25M3.6 10a4.75 4.75 0 0 0 8.8.75",
+  listBullet: "M6.5 4.5h7M6.5 8h7M6.5 11.5h7M3 4.25h.5v.5H3zM3 7.75h.5v.5H3zM3 11.25h.5v.5H3z",
+  listNumber: "M6.5 4.5h7M6.5 8h7M6.5 11.5h7M2.75 3.25v2.5M2.25 7h1.5l-1.5 2h1.5M2.25 10.75h1.5l-.75 1 .75 1h-1.5",
+  link: "M7 9a2.5 2.5 0 0 0 3.5 0l2-2A2.5 2.5 0 0 0 9 3.5l-.75.75M9 7a2.5 2.5 0 0 0-3.5 0l-2 2A2.5 2.5 0 0 0 7 12.5l.75-.75",
+  grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;
