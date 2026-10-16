@@ -274,7 +274,7 @@ export async function getRebuildDraft({
     .maybeSingle();
 
   if (error) throw buildLayerError("getRebuildDraft", error);
-  return (data as Build | null) ?? null;
+  return (data as unknown as Build | null) ?? null;
 }
 
 /**

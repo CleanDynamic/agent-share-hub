@@ -29,6 +29,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { updateBuild } from "./builds";
 import { MEDIA_COLUMNS } from "./media";
+import { MAX_THREAD_MEDIA } from "./thread";
 import { buildLayerError, type Build, type BuildMedia, type BuildNode } from "./types";
 
 /**
@@ -293,7 +294,7 @@ export const POST_MEDIA_COLUMNS = `${MEDIA_COLUMNS}, post_position, post_text`;
 
 /** Why a post-media write was refused, for a caller that must tell them apart. */
 export type PostMediaErrorCode =
-  /** More than MAX_POST_MEDIA were offered at once. */
+  /** More than MAX_THREAD_MEDIA were offered at once. */
   | "too_many"
   /** The set is already full, so there is no free position to append at. */
   | "full"
@@ -329,10 +330,10 @@ export class PostMediaError extends Error {
  * arranged a set have one, and every other build renders from resolveCover's
  * existing chain exactly as it did before this column existed.
  *
- * The .limit is MAX_POST_MEDIA rather than a round number because that IS the
- * ceiling — the partial unique index and the 0..3 CHECK make more than four
- * rows unrepresentable, so a fifth row coming back would be a corrupted table
- * and truncating it is the right response.
+ * The .limit is MAX_THREAD_MEDIA rather than a round number because that IS the
+ * ceiling — the partial unique index and the 0..39 CHECK (PT-01) make more than
+ * forty rows unrepresentable, so a forty-first row coming back would be a
+ * corrupted table and truncating it is the right response.
  */
 export async function getPostMedia(buildId: string): Promise<BuildMedia[]> {
   const { data, error } = await supabase
@@ -341,7 +342,7 @@ export async function getPostMedia(buildId: string): Promise<BuildMedia[]> {
     .eq("build_id", buildId)
     .not("post_position", "is", null)
     .order("post_position", { ascending: true })
-    .limit(MAX_POST_MEDIA);
+    .limit(MAX_THREAD_MEDIA);
 
   if (error) throw buildLayerError("getPostMedia", error);
   return (data ?? []) as BuildMedia[];
@@ -380,10 +381,12 @@ export async function setPostMedia(
 ): Promise<BuildMedia[]> {
   const ids = [...mediaIds];
 
-  if (ids.length > MAX_POST_MEDIA) {
+  // The thread's ceiling, not the legacy post's (PT-01): a thread writes every
+  // picture it shows into this set. addPostMedia still caps at MAX_POST_MEDIA.
+  if (ids.length > MAX_THREAD_MEDIA) {
     throw new PostMediaError(
       "too_many",
-      `a post shows at most ${MAX_POST_MEDIA} pictures — ${ids.length} were given`
+      `a thread shows at most ${MAX_THREAD_MEDIA} pictures — ${ids.length} were given`
     );
   }
 
@@ -400,7 +403,7 @@ export async function setPostMedia(
   const { data, error } = await supabase
     .rpc("set_build_post_media", { p_build_id: buildId, p_media_ids: ids })
     .select(POST_MEDIA_COLUMNS)
-    .limit(MAX_POST_MEDIA);
+    .limit(MAX_THREAD_MEDIA);
 
   if (error) throw buildLayerError("setPostMedia", error);
   return (data ?? []) as unknown as BuildMedia[];

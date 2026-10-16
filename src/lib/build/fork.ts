@@ -316,7 +316,7 @@ async function insertForkHeader({
     .single();
 
   if (error) throw buildLayerError("forkBuild (header)", error);
-  return data as Build;
+  return data as unknown as Build;
 }
 
 // --- payload rewriting -------------------------------------------------------
