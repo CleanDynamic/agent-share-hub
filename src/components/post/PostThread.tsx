@@ -18,7 +18,6 @@
 
 import { useEffect, useId, useRef, type CSSProperties } from "react";
 
-import { Glyph } from "@/components/brand/Glyph";
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { UNFOLD_MS } from "@/components/gallery/CardThread";
 import type { GalleryMedia } from "@/lib/build";
@@ -239,13 +238,11 @@ function Toggle({
       ) : open ? (
         <>
           <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Show less</span>
-          <Glyph name="up" size={16} color={t.text2} />
         </>
       ) : (
         <>
           <span style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Show more</span>
           <span style={{ fontSize: 13, fontWeight: 400, color: t.text2 }}>{more === 1 ? "1 more post" : `${more} more posts`}</span>
-          <Glyph name="chevd" size={16} color={t.text2} />
         </>
       )}
     </button>

@@ -21,15 +21,18 @@
 import { useRef, useState, type CSSProperties, type ReactNode, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 
+import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { FilterChip } from "@/components/brand/FilterChip";
 import { PictureLight, ResultWindow } from "@/components/brand/FramedWork";
+import { MadeWithMarks } from "@/components/brand/MadeWithMarks";
 import { Mark } from "@/components/brand/Mark";
 import { Plaque, plaqueState } from "@/components/brand/Plaque";
 import { Row } from "@/components/brand/Row";
 import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
+import { PostThread } from "@/components/post/PostThread";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import {
   BETWEEN,
@@ -39,6 +42,7 @@ import {
   sideTrack,
   type WidthTier,
 } from "@/components/shell/useMinWidth";
+import { EngagementRow } from "@/components/social/EngagementRow";
 import { asideStyle, mainStyle, trackRow } from "@/lib/theme/refinedLayout";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -53,6 +57,7 @@ import type {
   BuildHeroView,
   BuildProofView,
   BuildStepsView,
+  BuildThreadView,
   BuildViewerView,
   CompletenessView,
 } from "./buildModel";
@@ -598,6 +603,7 @@ function DockItem({
   label,
   first,
   phone,
+  height,
   onClick,
   to,
   testId,
@@ -605,6 +611,8 @@ function DockItem({
   label: string;
   first: boolean;
   phone: boolean;
+  /** The item's height on a desktop: 28 on the hero's well, 30 in the thread's title block. A phone's is 44. */
+  height: number;
   onClick?: () => void;
   to?: string;
   testId: string;
@@ -613,7 +621,7 @@ function DockItem({
   const style: CSSProperties = {
     appearance: "none",
     boxSizing: "border-box",
-    height: phone ? 44 : 28,
+    height: phone ? 44 : height,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -644,7 +652,18 @@ function DockItem({
 }
 
 /** Copy for AI, Download, Rebuild, Lineage: one control-recipe group on the hero, or the row under it on a phone. */
-function ActionDock({ actions, phone, announce }: { actions: BuildActionsView; phone: boolean; announce: (text: string) => void }) {
+function ActionDock({
+  actions,
+  phone,
+  announce,
+  inline = false,
+}: {
+  actions: BuildActionsView;
+  phone: boolean;
+  announce: (text: string) => void;
+  /** In the flow, at the right of the thread's title block, rather than laid over the hero's well. */
+  inline?: boolean;
+}) {
   const [, confirmCopied] = useConfirmed();
   const copy = async () => {
     if (await actions.onCopyForAI()) {
@@ -654,7 +673,10 @@ function ActionDock({ actions, phone, announce }: { actions: BuildActionsView; p
   };
   const frame: CSSProperties = phone
     ? { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }
-    : { position: "absolute", right: 16, top: 12, display: "inline-flex" };
+    : inline
+      ? { display: "inline-flex", flexShrink: 0 }
+      : { position: "absolute", right: 16, top: 12, display: "inline-flex" };
+  const height = inline ? 30 : 28;
   return (
     <div
       data-testid="build-action-dock"
@@ -662,10 +684,10 @@ function ActionDock({ actions, phone, announce }: { actions: BuildActionsView; p
       aria-label="Take this build"
       style={{ ...frame, ...CONTROL, borderRadius: 6, overflow: "hidden", boxSizing: "border-box" }}
     >
-      <DockItem label="Copy for AI" first phone={phone} onClick={() => void copy()} testId="build-copy-for-ai" />
-      <DockItem label="Download" first={false} phone={phone} onClick={actions.onDownload} testId="build-download" />
-      <DockItem label="Rebuild" first={false} phone={phone} onClick={actions.onRebuild} testId="build-rebuild" />
-      <DockItem label="Lineage" first={false} phone={phone} to={actions.lineageTo} testId="build-lineage" />
+      <DockItem label="Copy for AI" first phone={phone} height={height} onClick={() => void copy()} testId="build-copy-for-ai" />
+      <DockItem label="Download" first={false} phone={phone} height={height} onClick={actions.onDownload} testId="build-download" />
+      <DockItem label="Rebuild" first={false} phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" />
+      <DockItem label="Lineage" first={false} phone={phone} height={height} to={actions.lineageTo} testId="build-lineage" />
     </div>
   );
 }
@@ -783,6 +805,158 @@ function Hero({
   );
 }
 
+/* ── the hero with the maker's thread (PT-08) ── */
+
+/** The thread's content column is no wider than this. */
+const THREAD_COLUMN = 700;
+/** The author column, and the space between it and the content. */
+const AUTHOR_COLUMN = 40;
+const AUTHOR_GAP = 12;
+
+const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+
+/**
+ * A build that has a thread opens with it: the title block and its line, then the maker's posts the way a thread reads,
+ * every one open, then the engagement row. No well and no result window; the posts carry the pictures.
+ */
+function ThreadHero({
+  hero,
+  thread,
+  actions,
+  phone,
+  announce,
+}: {
+  hero: BuildHeroView;
+  thread: BuildThreadView;
+  actions: BuildActionsView;
+  phone: boolean;
+  announce: (text: string) => void;
+}) {
+  const { maker } = hero;
+  const { follow } = thread;
+  const rebuilt = Boolean(hero.credit.rebuiltFrom);
+  const handle = (maker?.handle ?? "").trim();
+  const name = (maker?.name ?? "").trim() || handle || "Maker";
+  const profileHref = handle ? `/profile/${encodeURIComponent(handle)}` : null;
+  const tag = `${hero.shape}${hero.viaConnector ? " · via connector" : ""}`;
+  const columns: CSSProperties = { display: "grid", gridTemplateColumns: `${AUTHOR_COLUMN}px minmax(0, 1fr)`, columnGap: AUTHOR_GAP };
+
+  const nameNode = profileHref ? (
+    <Link
+      to={profileHref}
+      data-testid="build-author-name"
+      style={{ color: t.text, textDecoration: "none", ...(phone ? { display: "inline-flex", alignItems: "center", minHeight: 44 } : null) }}
+    >
+      {name}
+    </Link>
+  ) : (
+    <span data-testid="build-author-name">{name}</span>
+  );
+
+  return (
+    <section data-testid="build-hero" data-hero="thread" aria-label="The build" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div
+        data-testid="build-title-block"
+        style={{
+          display: "flex",
+          flexDirection: phone ? "column" : "row",
+          flexWrap: phone ? "nowrap" : "wrap",
+          alignItems: phone ? "stretch" : "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+          paddingBottom: 20,
+          borderBottom: `1px solid ${t.hairline}`,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 320px", minWidth: 0 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 8, rowGap: 4 }}>
+            <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+            {hero.shape ? (
+              <span
+                data-testid="build-shape-tag"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  height: 20,
+                  padding: "0 6px",
+                  boxSizing: "border-box",
+                  borderRadius: 4,
+                  background: t.tagFill,
+                  ...text(11.5, 400, t.onTag),
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tag}
+              </span>
+            ) : null}
+          </div>
+          {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
+          {/* An original build's author row carries the credit; a rebuild keeps its source line. */}
+          {rebuilt ? <p style={{ ...text(12, 400, t.label), margin: 0 }}><Credit credit={hero.credit} /></p> : null}
+          {hero.delta ? <p style={{ ...text(12, 400, t.label), margin: 0 }}>{hero.delta}</p> : null}
+        </div>
+        <ActionDock actions={actions} phone={phone} announce={announce} inline />
+      </div>
+
+      <div data-testid="build-thread" style={{ ...columns, marginTop: 32 }}>
+        <div data-testid="build-author-column" style={{ gridColumn: 1, gridRow: "1 / 3", position: "relative", width: AUTHOR_COLUMN }}>
+          {maker ? <Avatar size={40} userId={maker.userId} name={name} src={maker.avatarUrl} /> : null}
+          <span
+            aria-hidden="true"
+            data-testid="build-thread-line"
+            style={{ position: "absolute", top: 46, bottom: 0, left: 19, width: 2, background: t.hairline }}
+          />
+        </div>
+
+        <div
+          data-testid="build-author-row"
+          style={{ gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 30, marginBottom: 4, minWidth: 0, maxWidth: THREAD_COLUMN, whiteSpace: "nowrap" }}
+        >
+          <span style={{ ...text(15, 500, t.text), fontWeight: 600, flex: "0 100 auto", minWidth: 0, ...ellipsis }}>{nameNode}</span>
+          <span style={{ ...text(14, 400, t.label), display: "flex", flex: "0 1 auto", minWidth: 0 }}>
+            {handle ? <span style={{ minWidth: 0, ...ellipsis }}>{`@${handle}`}</span> : null}
+            {thread.published ? <span style={{ flex: "none", whiteSpace: "pre" }}>{handle ? ` · ${thread.published}` : thread.published}</span> : null}
+          </span>
+          <span style={{ marginLeft: 2, display: "inline-flex", flex: "none" }}>
+            <MadeWithMarks madeWith={hero.madeWith} modelsUsed={hero.modelsUsed} phone={phone} />
+          </span>
+          {follow ? (
+            <Button
+              data-testid="build-follow"
+              variant="secondary"
+              size={30}
+              fontSize={13}
+              disabled={follow.busy}
+              onClick={follow.onToggle}
+              style={{ marginLeft: "auto", height: phone ? 44 : 30 }}
+            >
+              {follow.following ? "Following" : "Follow"}
+            </Button>
+          ) : null}
+        </div>
+
+        <div data-testid="build-posts" style={{ gridColumn: 2, gridRow: 2, minWidth: 0, maxWidth: THREAD_COLUMN }}>
+          <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
+        </div>
+      </div>
+
+      <div style={{ ...columns, marginTop: 12 }}>
+        <div style={{ gridColumn: 2, minWidth: 0 }}>
+          <EngagementRow
+            build={thread.build}
+            counts={thread.engagement.counts}
+            liked={thread.engagement.liked}
+            saved={thread.engagement.saved}
+            variant="page"
+            withRebuild
+            style={{ maxWidth: 560 }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── the reproduction column ── */
 
 function CompletenessModule({ completeness }: { completeness: CompletenessView }) {
@@ -817,12 +991,12 @@ function CompletenessModule({ completeness }: { completeness: CompletenessView }
   );
 }
 
-function Proof({ proof, phone, now }: { proof: BuildProofView; phone: boolean; now?: number }) {
+function Proof({ proof, phone, now, inColumn = false }: { proof: BuildProofView; phone: boolean; now?: number; inColumn?: boolean }) {
   const count = proof.build.reproduction_count ?? 0;
   const { action } = proof;
   const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 20 }}>
+    <section data-testid="build-proof" aria-label="Reproduction" style={{ ...(phone || inColumn ? null : mainStyle(stacked, side)), display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <Eyebrow>Reproduction</Eyebrow>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -874,11 +1048,24 @@ function Proof({ proof, phone, now }: { proof: BuildProofView; phone: boolean; n
 const BUILD_PANEL = "build-tabpanel";
 
 /** The tabs and The build. Exported for the dev page's Map board (UI-P91), which draws it on a bare surface. */
-export function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildViewerView; steps: BuildStepsView; phone: boolean; announce: (text: string) => void }) {
+export function BuildPanel({
+  viewer,
+  steps,
+  phone,
+  announce,
+  inColumn = false,
+}: {
+  viewer: BuildViewerView;
+  steps: BuildStepsView;
+  phone: boolean;
+  announce: (text: string) => void;
+  /** Inside the thread layout's left column, which sizes it: no flex basis of its own. */
+  inColumn?: boolean;
+}) {
   const onSteps = viewer.tab === "anatomy";
   const stacked = !useMinWidth(BETWEEN.stack);
   return (
-    <div data-testid="build-steps-panel" style={{ ...(phone ? null : wide(stacked)), display: "flex", flexDirection: "column", gap: 16 }}>
+    <div data-testid="build-steps-panel" style={{ ...(phone || inColumn ? null : wide(stacked)), display: "flex", flexDirection: "column", gap: 16 }}>
       {phone ? null : (
         <UnderlineTabs
           label="Sections of this build"
@@ -896,7 +1083,7 @@ export function BuildPanel({ viewer, steps, phone, announce }: { viewer: BuildVi
 }
 
 /** What you need, with the dialog an "Other parts" row opens its own body in. */
-function StepsNeed({ steps, phone }: { steps: BuildStepsView; phone: boolean }) {
+function StepsNeed({ steps, phone, inColumn = false }: { steps: BuildStepsView; phone: boolean; inColumn?: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
   const stacked = !useMinWidth(BETWEEN.stack);
   const row = open ? steps.need.flatMap((group) => group.rows).find((candidate) => candidate.id === open) : undefined;
@@ -905,7 +1092,10 @@ function StepsNeed({ steps, phone }: { steps: BuildStepsView; phone: boolean }) 
       style={
         phone
           ? { minWidth: 0 }
-          : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline; under 1024 it drops under The build. */
+          : inColumn
+            ? /* Under the reproduction in the right column: full width of it, with a hairline on top. */
+              asideStyle(true, side)
+            : /* Content-box, as the board: 340 of column, then its 32 of padding and the hairline; under 1024 it drops under The build. */
             asideStyle(stacked, { ...side, boxSizing: "content-box", paddingLeft: 32, borderLeft: `1px solid ${t.hairline}` })
       }
     >
@@ -925,17 +1115,46 @@ function DesktopBuild(props: BuildViewProps) {
   const stacked = tier === "stacked";
   const { announce, region } = useAnnouncer();
 
+  /* PT-08: with a thread the left column is the title block, the thread, the actions and, 32 under them, The build; the
+     right column is the reproduction and What you need. The two sit at the row's two edges. Stacked, the order is the
+     page's own: hero, reproduction, The build, What you need. */
   return (
     <div data-testid="build-view" data-viewport="desktop" style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 8, lineHeight: "normal" }}>
-      <div style={pair(stacked)}>
-        <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} />
-        <Proof proof={proof} phone={false} now={now} />
-      </div>
-      {steps ? (
-        <div data-testid="build-second-row" style={pair(stacked)}>
-          <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
-          <StepsNeed steps={steps} phone={false} />
+      {hero.thread ? (
+        <div data-testid="build-thread-row" style={{ ...pair(stacked), justifyContent: "space-between" }}>
+          {stacked ? (
+            <>
+              <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
+              <Proof proof={proof} phone={false} now={now} />
+              {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} /> : null}
+              {steps ? <StepsNeed steps={steps} phone={false} /> : null}
+            </>
+          ) : (
+            <>
+              <div style={{ ...wide(false), display: "flex", flexDirection: "column", gap: 32 }}>
+                <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone={false} announce={announce} />
+                {steps ? <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} inColumn /> : null}
+              </div>
+              <div style={{ ...side, display: "flex", flexDirection: "column", gap: 32 }}>
+                <Proof proof={proof} phone={false} now={now} inColumn />
+                {steps ? <StepsNeed steps={steps} phone={false} inColumn /> : null}
+              </div>
+            </>
+          )}
         </div>
+      ) : (
+        <div style={pair(stacked)}>
+          <Hero hero={hero} actions={actions} proof={proof} phone={false} now={now} announce={announce} />
+          <Proof proof={proof} phone={false} now={now} />
+        </div>
+      )}
+      {steps ? (
+        hero.thread ? null : (
+          <div data-testid="build-second-row" style={pair(stacked)}>
+            <BuildPanel viewer={viewer} steps={steps} phone={false} announce={announce} />
+            <StepsNeed steps={steps} phone={false} />
+          </div>
+        )
       ) : (
         <div style={{ ...bottomRow(tier), gap: 16 }}>
           <div style={{ minHeight: 0 }}>
@@ -1000,8 +1219,14 @@ function PhoneBuild(props: BuildViewProps) {
 
   return (
     <div data-testid="build-view" data-viewport="mobile" style={{ display: "flex", flexDirection: "column", gap: 16, lineHeight: "normal", minWidth: 0 }}>
-      <Hero hero={hero} actions={actions} proof={proof} phone now={now} announce={announce} />
-      <ActionDock actions={actions} phone announce={announce} />
+      {hero.thread ? (
+        <ThreadHero hero={hero} thread={hero.thread} actions={actions} phone announce={announce} />
+      ) : (
+        <>
+          <Hero hero={hero} actions={actions} proof={proof} phone now={now} announce={announce} />
+          <ActionDock actions={actions} phone announce={announce} />
+        </>
+      )}
       <Proof proof={proof} phone now={now} />
       <ScrollRow gap={6} label="Sections of this build" tablist>
         {viewer.tabs.map((tab) => (

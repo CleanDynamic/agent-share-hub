@@ -388,7 +388,7 @@ export function FormatBar({ editor, controls, phone }: { editor: Editor | null; 
         {() => <span style={{ ...letter, fontWeight: 700 }}>B</span>}
       </BarButton>
       <BarButton label="Italic" pressed={state.italic} onClick={toggle(() => editor.chain().focus().toggleItalic().run())}>
-        {() => <span style={{ ...letter, fontWeight: 500, fontStyle: "italic" }}>I</span>}
+        {(color) => <Glyphed name="italic" color={color} />}
       </BarButton>
       <BarButton label="Underline" pressed={state.underline} onClick={toggle(() => editor.chain().focus().toggleUnderline().run())}>
         {() => <span style={{ ...letter, fontWeight: 500, textDecoration: "underline" }}>U</span>}

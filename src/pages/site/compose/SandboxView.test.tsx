@@ -404,11 +404,11 @@ describe("the Card and the Post tab", () => {
 });
 
 describe("the tabs on a phone", () => {
-  it("are a full-width Segmented, 40 high, and choosing Post writes the address", () => {
+  it("are a full-width Segmented, 50 high with items of 44, and choosing Post writes the address", () => {
     stubWidth(390);
     viewAt("/compose/x");
     const group = screen.getByRole("group", { name: "Upload steps" });
-    expect(group.style.height).toBe("40px");
+    expect(group.style.height).toBe("50px");
     expect(group.style.width).toBe("100%");
     expect(screen.queryByRole("tablist")).toBeNull();
     fireEvent.click(within(group).getByRole("button", { name: "Post" }));

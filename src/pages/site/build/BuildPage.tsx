@@ -40,12 +40,13 @@ import { MEDIA_WIDTH, useMediaSrc, type ResolveMedia } from "@/components/build/
 import { producedAt } from "@/components/build/Replay";
 import { getNodeCopyText, resolveRenderer } from "@/components/build/renderers";
 import { GalleryCard } from "@/components/gallery/GalleryCard";
-import { cardMedia, useSignedMedia } from "@/components/gallery/cardMedia";
+import { CARD_THREAD_WIDTH, cardMedia, useSignedMedia, type CardMedia } from "@/components/gallery/cardMedia";
 import { ReportDialog } from "@/components/moderation/ReportDialog";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { useCrumbTitle } from "@/components/shell/useBreadcrumb";
 import { Comments } from "@/components/social/Comments";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { engagementFor, useEngagement } from "@/hooks/useEngagement";
 import {
   listBuildBounties,
@@ -67,6 +68,7 @@ import {
   getBuildBySlug,
   getBuildHeader,
   getMediaForBuild,
+  getThreadMedia,
   getWhereNext,
   layerOf,
   listRebuildCards,
@@ -75,6 +77,8 @@ import {
   recordSelfConfirmation,
   resolveCover,
   serialiseChangeSet,
+  splitThread,
+  threadOf,
   type Build,
   type BuildEvent,
   type BuildLayer,
@@ -82,6 +86,7 @@ import {
   type BuildNode,
   type BuildRecord,
   type GalleryBuild,
+  type GalleryMedia,
   type NodeTree,
   type NodeType,
   type RebuildSummary,
@@ -93,6 +98,7 @@ import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, what
 import { getCreatedVia, type CreatedVia } from "@/lib/build/provenance";
 import { shareDescription, shareTitle } from "@/lib/build/shareMeta";
 import { isBuildHidden } from "@/lib/moderation";
+import { followMaker, isFollowingMaker, unfollowMaker } from "@/lib/profile/follow";
 import { getMakerName } from "@/lib/profile/makerName";
 import { numberParts } from "@/lib/social";
 import { r } from "@/lib/theme/radius";
@@ -348,6 +354,14 @@ export function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+  /* PT-08 — the maker's thread: its pictures in thread order, read once with the build. */
+  const threadMedia = useQuery<BuildMedia[]>({
+    queryKey: ["build", "getThreadMedia", buildId],
+    queryFn: () => getThreadMedia(buildId as string),
+    enabled: Boolean(buildId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
   const layers = useQuery<BuildLayer[]>({
     queryKey: ["build", "getApprovedLayers", buildId],
     queryFn: () => getApprovedLayers(buildId as string),
@@ -412,6 +426,28 @@ export function BuildPage() {
     staleTime: STALE_TIME,
     refetchOnWindowFocus: false,
   });
+  const threadPosts = useMemo(() => {
+    const doc = build ? threadOf(build, threadMedia.data ?? []) : null;
+    return doc ? splitThread(doc) : [];
+  }, [build, threadMedia.data]);
+  const threaded = threadPosts.length > 0;
+  const threadRows = useMemo(() => (threadMedia.data ?? []) as unknown as GalleryMedia[], [threadMedia.data]);
+  const threadById = useMemo(() => new Map(threadRows.map((row) => [row.id, row])), [threadRows]);
+
+  /* Follow: not on your own build, and nothing to ask unless someone is signed in. */
+  const viewerId = user?.id ?? null;
+  const makerId = build?.creator_id ?? null;
+  const canFollow = threaded && !viewerIsCreator && Boolean(makerId);
+  const followKey = ["profile", "isFollowingMaker", viewerId, makerId] as const;
+  const following = useQuery<boolean>({
+    queryKey: followKey,
+    queryFn: () => isFollowingMaker(viewerId as string, makerId as string),
+    enabled: canFollow && Boolean(viewerId),
+    staleTime: STALE_TIME,
+    refetchOnWindowFocus: false,
+  });
+  const [followBusy, setFollowBusy] = useState(false);
+  const { toast } = useToast();
   const needsMakerName = Boolean(build) && !(build?.outcome ?? "").trim();
   const makerName = useQuery<string | null>({
     queryKey: ["profile", "getMakerName", build?.creator_id],
@@ -589,12 +625,18 @@ export function BuildPage() {
 
   /* Every card picture on the page, signed in one pass and never per card: the gallery's rule. */
   const cardRows = useMemo(
-    () => [...nextRows.flatMap((row) => row.builds), ...(rebuildCards.data ?? [])].flatMap(cardMedia),
-    [nextRows, rebuildCards.data],
+    () => [
+      ...[...nextRows.flatMap((row) => row.builds), ...(rebuildCards.data ?? [])].flatMap(cardMedia),
+      ...threadRows.map((row): CardMedia => ({ ...row, slotWidth: CARD_THREAD_WIDTH })),
+    ],
+    [nextRows, rebuildCards.data, threadRows],
   );
   const srcByPath = useSignedMedia(cardRows);
   /* One engagement call for where next's cards, as the old foot of the page made. */
-  const nextIds = useMemo(() => nextRows.flatMap((row) => row.builds.map((card) => card.id)), [nextRows]);
+  const nextIds = useMemo(
+    () => [...(buildId ? [buildId] : []), ...nextRows.flatMap((row) => row.builds.map((card) => card.id))],
+    [buildId, nextRows],
+  );
   const engagement = useEngagement(nextIds);
 
   /* ── writes ── */
@@ -645,6 +687,30 @@ export function BuildPage() {
       if (change === "accepted") void queryClient.invalidateQueries({ queryKey: recordKey(slug) });
     },
     [bounties, queryClient, slug],
+  );
+
+  /* OPTIMISTIC, as the profile page's Follow is: the button changes on the press, the write follows, and a refusal puts
+     it back and says so. Nobody signed in goes to sign in and back. */
+  const writeFollow = useCallback(
+    async (next: boolean) => {
+      if (!viewerId || !makerId) {
+        navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+        return;
+      }
+      setFollowBusy(true);
+      queryClient.setQueryData<boolean>(followKey, next);
+      try {
+        await (next ? followMaker(viewerId, makerId) : unfollowMaker(viewerId, makerId));
+      } catch {
+        void queryClient.invalidateQueries({ queryKey: followKey });
+        toast({ title: next ? "Could not follow" : "Could not unfollow", variant: "destructive" });
+      } finally {
+        setFollowBusy(false);
+      }
+    },
+    // followKey is rebuilt from viewerId and makerId each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewerId, makerId, navigate, location.pathname, queryClient, toast],
   );
 
   const renderFooter = useCallback(
@@ -908,6 +974,31 @@ export function BuildPage() {
             madeBy: makerLabel(record.maker),
           },
           delta,
+          thread: threaded
+            ? {
+                posts: threadPosts,
+                mediaById: threadById,
+                srcByPath,
+                published: shortDate(build.published_at),
+                build: { id: build.id, slug: build.slug, title: build.title, rebuild_count: build.rebuild_count },
+                engagement: engagementFor(engagement, build.id),
+                follow: canFollow
+                  ? {
+                      following: following.data ?? false,
+                      busy: followBusy,
+                      onToggle: () => void writeFollow(!(following.data ?? false)),
+                    }
+                  : undefined,
+              }
+            : null,
+          maker: {
+            name: (record.maker?.displayName ?? "").trim() || (record.maker?.username ?? "").trim() || (makerName.data ?? "").trim() || "Maker",
+            handle: (record.maker?.username ?? "").trim() || null,
+            avatarUrl: record.maker?.avatarUrl ?? null,
+            userId: build.creator_id,
+          },
+          madeWith: build.made_with ?? [],
+          modelsUsed: build.models_used ?? [],
         }}
         actions={{
           onCopyForAI: () =>

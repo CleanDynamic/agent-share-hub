@@ -56,12 +56,17 @@ export interface Engagement {
 /** The root of every engagement query, for updateEngagement to find them all. */
 export const ENGAGEMENT_KEY = "engagement";
 
-async function fetchSlice(ids: string[], signedIn: boolean): Promise<EngagementSlice> {
-  const [counts, liked, saved] = await Promise.all([
-    getEngagementCounts(ids),
+async function fetchSlice(ids: string[], signedIn: boolean, known: EngagementCountMap = {}): Promise<EngagementSlice> {
+  // Counts the list already read with its rows are not asked for again.
+  const unknown = ids.filter((id) => !(id in known));
+  const [fetched, liked, saved] = await Promise.all([
+    unknown.length > 0 ? getEngagementCounts(unknown) : Promise.resolve({} as EngagementCountMap),
     signedIn ? getMyLikes(ids) : Promise.resolve(new Set<string>()),
     signedIn ? getMySaves(ids) : Promise.resolve(new Set<string>()),
   ]);
+  const counts: EngagementCountMap = {};
+  for (const id of ids) if (id in known) counts[id] = known[id];
+  Object.assign(counts, fetched);
   return { ids, counts, liked: [...liked], saved: [...saved] };
 }
 
@@ -73,8 +78,12 @@ function slices(ids: readonly string[]): string[][] {
   return out;
 }
 
-/** Like and comment counts, and the reader's likes and saves, for these builds. */
-export function useEngagement(buildIds: readonly string[]): Engagement {
+/**
+ * Like and comment counts, and the reader's likes and saves, for these builds.
+ * `known` holds counts the caller already has from the request that listed the builds: a signed-out reader's list then
+ * costs no request at all.
+ */
+export function useEngagement(buildIds: readonly string[], known?: EngagementCountMap): Engagement {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -87,7 +96,7 @@ export function useEngagement(buildIds: readonly string[]): Engagement {
   return useQueries({
     queries: slices(ids).map((slice) => ({
       queryKey: [ENGAGEMENT_KEY, userId, slice.join(",")],
-      queryFn: () => fetchSlice(slice, userId !== null),
+      queryFn: () => fetchSlice(slice, userId !== null, known),
       staleTime: ENGAGEMENT_STALE_MS,
       refetchOnWindowFocus: false,
       // A slice that grows keeps showing what it knew while it asks again.

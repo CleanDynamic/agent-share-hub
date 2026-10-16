@@ -152,7 +152,7 @@ function Tool({ glyph }: { glyph: GlyphName }) {
 
 // --- the rows above the buttons -------------------------------------------------------------
 
-const rowBase: CSSProperties = { boxSizing: "border-box", borderBottom: `1px solid ${t.hairlineModule}` };
+const rowBase: CSSProperties = { boxSizing: "border-box", borderBottom: `1px solid ${t.hairline}` };
 
 /** A style's own type, at its phone size. */
 function phoneStyle(name: TextStyleName): CSSProperties {
@@ -397,7 +397,7 @@ export function PhoneToolbar({
           zIndex: 35,
           boxSizing: "border-box",
           background: t.module,
-          borderTop: `1px solid ${t.surfaceBorder}`,
+          borderTop: `1px solid ${t.hairline}`,
           boxShadow: t.sheetShadow,
         }}
       >
@@ -411,7 +411,7 @@ export function PhoneToolbar({
             <span style={{ ...letter, fontWeight: 700 }}>B</span>
           </ToolButton>
           <ToolButton label="Italic" pressed={tools.italic} onClick={run(() => editor.chain().focus().toggleItalic().run())}>
-            <span style={{ ...letter, fontWeight: 500, fontStyle: "italic" }}>I</span>
+            <Tool glyph="italic" />
           </ToolButton>
           <ToolButton label="Underline" pressed={tools.underline} onClick={run(() => editor.chain().focus().toggleUnderline().run())}>
             <span style={{ ...letter, fontWeight: 500, textDecoration: "underline" }}>U</span>

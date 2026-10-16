@@ -169,7 +169,7 @@ export default function PostThreadDemo(_props: DesignPageProps) {
             {WIDTHS.map(({ px, phone }) => (
               <div key={px} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p style={note}>{px}px</p>
-                <div style={{ padding: 16, background: t.surface, border: `1px solid ${t.surfaceBorder}`, borderRadius: 10, maxWidth: "100%", boxSizing: "border-box" }}>
+                <div style={{ padding: 16, background: t.surface, border: `1px solid ${t.hairline}`, borderRadius: 10, maxWidth: "100%", boxSizing: "border-box" }}>
                   <Thread start={mode} px={px} phone={phone} />
                 </div>
               </div>

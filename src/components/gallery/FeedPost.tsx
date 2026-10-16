@@ -197,7 +197,13 @@ export function FeedPost({
       <div data-feed-author-column="" style={{ gridColumn: 1, gridRow: "1 / 3", position: "relative", width: 40 }}>
         {profileHref ? (
           // The name beside it is the same link; this one stays out of the tab order and the reader's way.
-          <Link to={profileHref} tabIndex={-1} aria-hidden="true" style={{ display: "block", width: 40, height: 40, borderRadius: 999 }}>
+          <Link
+            to={profileHref}
+            tabIndex={-1}
+            aria-hidden="true"
+            // 44 on a phone, pulled back by its own extra 2 either side so the avatar stays where it was.
+            style={{ display: "block", width: phone ? 44 : 40, height: phone ? 44 : 40, margin: phone ? -2 : 0, borderRadius: 999 }}
+          >
             <Avatar size={40} userId={build.creator_id} name={name} src={makerAvatar} />
           </Link>
         ) : (
@@ -217,7 +223,7 @@ export function FeedPost({
         data-feed-author-row=""
         style={{ ...column, gridColumn: 2, gridRow: 1, display: "flex", alignItems: "center", gap: 6, minHeight: 24, marginBottom: 4, whiteSpace: "nowrap" }}
       >
-        <QuietLink to={profileHref} testId="feed-author-name" style={{ flex: "0 100 auto", fontSize: 15, fontWeight: 600, ...ellipsis }} colour={t.text}>
+        <QuietLink to={profileHref} testId="feed-author-name" touch={phone} style={{ flex: "0 100 auto", fontSize: 15, fontWeight: 600, ...ellipsis }} colour={t.text}>
           {name}
         </QuietLink>
         <span style={{ display: "flex", flex: "0 1 auto", minWidth: 0, fontFamily: FIGTREE, fontSize: 14, lineHeight: 1.4, color: t.label }}>
@@ -253,7 +259,7 @@ export function FeedPost({
       {/* The build line, then the actions. */}
       <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: 12 }}>
         <div data-feed-build-line="" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
-          <QuietLink to={preview ? null : `/b2/${build.slug}`} testId="feed-build-title" colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
+          <QuietLink to={preview ? null : `/b2/${build.slug}`} testId="feed-build-title" touch={phone} colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
             {title}
           </QuietLink>
           {preview ? (
@@ -299,16 +305,26 @@ function QuietLink({
   colour,
   style,
   testId,
+  touch = false,
   children,
 }: {
   to: string | null;
   colour: string;
   style?: CSSProperties;
   testId?: string;
+  /** Below 768px: the link is a 44px target. */
+  touch?: boolean;
   children: ReactNode;
 }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
-  const base: CSSProperties = { fontFamily: FIGTREE, lineHeight: 1.4, color: colour, textDecoration: "none", ...style };
+  const base: CSSProperties = {
+    fontFamily: FIGTREE,
+    lineHeight: 1.4,
+    color: colour,
+    textDecoration: "none",
+    ...(touch && to ? { display: "block", lineHeight: "44px" } : null),
+    ...style,
+  };
   if (!to) return <span data-testid={testId} style={base}>{children}</span>;
   return (
     <Link

@@ -66,12 +66,13 @@ describe("the format bar", () => {
     expect([bar().style.borderRadius, bar().style.padding, bar().style.gap]).toEqual(["8px", "4px", "2px"]);
   });
 
-  it("draws B in bold, I in italic and U underlined, in Geist and never serif", () => {
+  it("draws B in bold and U underlined in Geist, and I as a drawn glyph, never italic type", () => {
     const { editor } = mount(doc(p("hello world")));
     select(editor);
     const letter = (name: string) => within(bar()).getByRole("button", { name }).querySelector("span") as HTMLElement;
     expect(letter("Bold").style.fontWeight).toBe("700");
-    expect(letter("Italic").style.fontStyle).toBe("italic");
+    expect(within(bar()).getByRole("button", { name: "Italic" }).querySelector("svg")).not.toBeNull();
+    expect(within(bar()).getByRole("button", { name: "Italic" }).innerHTML).not.toContain("italic");
     expect(letter("Underline").style.textDecoration).toBe("underline");
     expect(letter("Bold").getAttribute("style")).toContain("'Geist'");
   });

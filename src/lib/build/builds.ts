@@ -174,7 +174,7 @@ export async function getBuild(id: string): Promise<BuildRecord | null> {
 export async function getBuildBySlug(slug: string): Promise<BuildRecord | null> {
   const { data, error } = await supabase
     .from("builds")
-    .select(`${BUILD_COLUMNS}, maker:profiles!builds_creator_id_fkey(username, display_name, avatar_url)`)
+    .select(`${BUILD_COLUMNS}, models_used, maker:profiles!builds_creator_id_fkey(username, display_name, avatar_url)`)
     .eq("slug", slug)
     .maybeSingle();
 

@@ -15,7 +15,7 @@
 
    PT-05: TWO TABS under the title row, "Upload steps": Build (everything above, unchanged) and Post (the thread
    written as one page, the `post` slot). The tab is in the URL as `?tab=post`, so a refresh keeps it; below 768 the
-   tabs are a full-width Segmented, 40 high. The Build side stays mounted while Post is shown, only hidden, so nothing
+   tabs are a full-width Segmented, 50 high (items of 44). The Build side stays mounted while Post is shown, only hidden, so nothing
    typed in it is lost. PT-07: a phone shows a Preview button in the title row on the Post tab, which opens the draft as a
    sheet. The Card's Cover is now one line and a button that comes here; "a cover picture or video" in
    Missing opens this tab too.
@@ -697,7 +697,7 @@ export function SandboxView(props: SandboxViewProps) {
   const tabs = phone ? (
     <Segmented<ComposeTab>
       label="Upload steps"
-      size={40}
+      size={50}
       fontSize={13}
       fullWidth
       value={tab}

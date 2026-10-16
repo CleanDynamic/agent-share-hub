@@ -50,3 +50,15 @@ export async function unfollowMaker(followerId: string, makerId: string): Promis
   const response = await supabase.from("follows").delete().eq("follower_id", followerId).eq("following_id", makerId);
   if (response.error) throw failure("unfollowMaker", followerId, response);
 }
+
+/** Whether `followerId` follows `makerId`. One row at most is asked for. */
+export async function isFollowingMaker(followerId: string, makerId: string): Promise<boolean> {
+  const response = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", followerId)
+    .eq("following_id", makerId)
+    .limit(1);
+  if (response.error) throw failure("isFollowingMaker", followerId, response);
+  return (response.data ?? []).length > 0;
+}
