@@ -23,6 +23,10 @@ const getWhereNext = vi.fn().mockResolvedValue({ rebuilds: [], sharedTool: null,
 const listRebuildCards = vi.fn().mockResolvedValue([]);
 const listBuildBounties = vi.fn().mockResolvedValue([]);
 const getCreatedVia = vi.fn().mockResolvedValue(null);
+const getThreadMedia = vi.fn().mockResolvedValue([]);
+const isFollowingMaker = vi.fn().mockResolvedValue(false);
+const followMaker = vi.fn().mockResolvedValue(undefined);
+const unfollowMaker = vi.fn().mockResolvedValue(undefined);
 const isBuildHidden = vi.fn().mockResolvedValue(false);
 const auth = vi.hoisted(() => ({ isLoggedIn: false, userId: null as string | null }));
 
@@ -38,6 +42,11 @@ vi.mock("@/lib/social", async (importOriginal) => ({
   getEngagementCounts: vi.fn(async () => ({})),
   listComments: vi.fn(async () => ({ comments: [], rows: [], nextAfter: null })),
   listPartCommentCounts: vi.fn(async () => ({})),
+}));
+vi.mock("@/lib/profile/follow", () => ({
+  isFollowingMaker: (a: string, b: string) => isFollowingMaker(a, b),
+  followMaker: (a: string, b: string) => followMaker(a, b),
+  unfollowMaker: (a: string, b: string) => unfollowMaker(a, b),
 }));
 vi.mock("@/lib/profile/makerName", () => ({ getMakerName: vi.fn(async () => "Maya Okafor") }));
 vi.mock("@/lib/build/provenance", () => ({ getCreatedVia: (buildId: string) => getCreatedVia(buildId) }));
@@ -56,6 +65,7 @@ vi.mock("@/lib/build", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/build")>()),
   getBuildBySlug: (slug: string) => getBuildBySlug(slug),
   getMediaForBuild: (buildId: string) => getMediaForBuild(buildId),
+  getThreadMedia: (buildId: string) => getThreadMedia(buildId),
   getApprovedLayers: (buildId: string) => getApprovedLayers(buildId),
   listRebuilds: (buildId: string) => listRebuilds(buildId),
   getBuild: (id: string) => getBuild(id),
@@ -149,6 +159,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   getBuildBySlug.mockResolvedValue(record);
   getMediaForBuild.mockResolvedValue([]);
+  getThreadMedia.mockResolvedValue([]);
+  isFollowingMaker.mockResolvedValue(false);
   getApprovedLayers.mockResolvedValue([]);
   listRebuilds.mockResolvedValue([]);
   getBuild.mockResolvedValue(null);
@@ -580,5 +592,76 @@ describe("BuildPage (site frame) — the tab bodies, UI-P30", () => {
     expect(getWhereNext).toHaveBeenCalledWith({ buildId: "b", creatorId: "maker", madeWith: ["claude-opus-4-5"] });
     // A row with nothing in it is left out.
     expect(within(lower).queryByTestId("where-next-rebuilds")).toBeNull();
+  });
+});
+
+/* PT-08 — a build with a thread opens with it. */
+describe("BuildPage with the maker's thread", () => {
+  const post_doc = {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "I built this over a weekend." }] },
+      { type: "postBreak" },
+      { type: "paragraph", content: [{ type: "text", text: "Here is what broke first." }] },
+    ],
+  };
+  const threaded = {
+    ...record,
+    build: { ...header, post_doc, models_used: ["claude-opus-4-5"] },
+    maker: { username: "maya", displayName: "Maya Okafor", avatarUrl: null },
+  };
+
+  it("shows the author row and every post open, and no result window", async () => {
+    getBuildBySlug.mockResolvedValue(threaded);
+    renderAt();
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    const hero = screen.getByTestId("build-hero");
+    expect(hero.getAttribute("data-hero")).toBe("thread");
+    expect(within(screen.getByTestId("build-author-row")).getByText("Maya Okafor")).toBeTruthy();
+    expect(screen.getByTestId("build-author-row").textContent).toContain("@maya · 1 Sep");
+    expect(within(hero).getByText("I built this over a weekend.")).toBeTruthy();
+    expect(within(hero).getByText("Here is what broke first.")).toBeTruthy();
+    expect(within(hero).queryByRole("img", { name: /· Result$/ })).toBeNull();
+    expect(getThreadMedia).toHaveBeenCalledWith("b");
+  });
+
+  it("follows and unfollows the maker as the profile page does", async () => {
+    auth.isLoggedIn = true;
+    auth.userId = "reader";
+    getBuildBySlug.mockResolvedValue(threaded);
+    renderAt();
+    const follow = await screen.findByRole("button", { name: "Follow" });
+    expect(isFollowingMaker).toHaveBeenCalledWith("reader", "maker");
+    fireEvent.click(follow);
+    expect(await screen.findByRole("button", { name: "Following" })).toBeTruthy();
+    await waitFor(() => expect(followMaker).toHaveBeenCalledWith("reader", "maker"));
+    fireEvent.click(screen.getByRole("button", { name: "Following" }));
+    await waitFor(() => expect(unfollowMaker).toHaveBeenCalledWith("reader", "maker"));
+  });
+
+  it("sends a reader who is not signed in to sign in", async () => {
+    getBuildBySlug.mockResolvedValue(threaded);
+    renderAt();
+    fireEvent.click(await screen.findByRole("button", { name: "Follow" }));
+    await waitFor(() => expect(screen.getByTestId("path").textContent).toBe("/login?redirect=%2Fb2%2Finbox-triage"));
+    expect(followMaker).not.toHaveBeenCalled();
+  });
+
+  it("has no Follow on your own build", async () => {
+    auth.isLoggedIn = true;
+    auth.userId = "maker";
+    getBuildBySlug.mockResolvedValue(threaded);
+    renderAt();
+    await screen.findByTestId("build-author-row");
+    expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
+    expect(isFollowingMaker).not.toHaveBeenCalled();
+  });
+
+  it("without a thread keeps today's hero", async () => {
+    renderAt();
+    await screen.findByRole("heading", { level: 1, name: "Inbox triage agent" });
+    expect(screen.getByTestId("build-hero").getAttribute("data-hero")).toBeNull();
+    expect(screen.queryByTestId("build-author-row")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Follow/ })).toBeNull();
   });
 });

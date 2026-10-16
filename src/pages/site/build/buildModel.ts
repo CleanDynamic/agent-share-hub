@@ -16,7 +16,10 @@ import { asPayload, eventLead, payloadNumber, payloadText } from "@/components/b
 import { creatorLabel } from "@/components/build/rebuildDisplay";
 import { collectRunSequence, runSequenceText } from "@/components/build/RunView";
 import type { ResolveMedia } from "@/components/build/MediaFigure";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
+import type { RowEngagement } from "@/components/social/EngagementRow";
 import type { BuildBounty } from "@/lib/bounty";
+import type { Post } from "@/lib/build/thread";
 import {
   LAYER_ATTRIBUTION,
   collectGaps,
@@ -26,6 +29,7 @@ import {
   type BuildNode,
   type ChangeLine,
   type EventKind,
+  type GalleryMedia,
   type NodeTree,
   type NodeType,
   type RebuildSummary,
@@ -104,6 +108,34 @@ export interface BuildHeroView {
   credit: BuildCreditView;
   /** "Δ swapped model: …", or null when there is nothing worked out to say. */
   delta: string | null;
+  /** The maker's thread, every post open (PT-08). Null or absent: today's hero, unchanged. */
+  thread?: BuildThreadView | null;
+  /** Who made it: the thread's author row. */
+  maker?: BuildHeroMaker;
+  /** builds.made_with and builds.models_used, for the marks in the author row. */
+  madeWith?: readonly string[];
+  modelsUsed?: readonly string[];
+}
+
+export interface BuildHeroMaker {
+  name: string;
+  handle: string | null;
+  avatarUrl: string | null;
+  userId: string;
+}
+
+/** What the hero needs to draw the thread at the top of the build page. */
+export interface BuildThreadView {
+  posts: readonly Post[];
+  mediaById: ReadonlyMap<string, GalleryMedia>;
+  srcByPath: MediaSrcMap;
+  /** The published date as the author row says it: "6 Oct". Null for a draft. */
+  published: string | null;
+  /** What the engagement row reads. */
+  build: { id: string; slug: string; title: string; rebuild_count: number | null };
+  engagement: RowEngagement;
+  /** Absent on the reader's own build. */
+  follow?: { following: boolean; busy: boolean; onToggle: () => void };
 }
 
 export interface BuildActionsView {
