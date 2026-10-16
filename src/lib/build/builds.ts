@@ -13,6 +13,10 @@ import {
   type BuildShape,
 } from "./types";
 
+// post_doc (PT-01) is newer than the generated types, so PostgREST's type-level
+// parser reports it as missing and every read of this list casts through
+// unknown to Build, which carries the column as a typed extension (types.ts).
+//
 // One string literal, not a concatenation: PostgREST parses the column list at
 // the type level, and `+` erases the literal type it needs.
 //
@@ -22,7 +26,7 @@ import {
 // startRebuild would have written the attribution snapshot and handed back a
 // build with no sign of it.
 export const BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, cost_setup, cost_monthly, currency, time_to_first_result, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, parent_build_id, root_build_id, forked_from_event_id, source_content_item_id, monetisation_type, price_gbp, donation_enabled, created_at, updated_at, published_at, rebuild_note, rebuild_count, source_title_at_fork, source_handle_at_fork, solves_node_id, post_doc";
 
 const CREATOR_LIST_LIMIT = 50;
 
@@ -113,7 +117,7 @@ export async function createBuild(input: CreateBuildInput): Promise<Build> {
     .single();
 
   if (error) throw buildLayerError("createBuild", error);
-  return data as Build;
+  return data as unknown as Build;
 }
 
 /** The build header alone. Prefer getBuild unless you truly only need this. */
@@ -125,7 +129,7 @@ export async function getBuildHeader(id: string): Promise<Build | null> {
     .maybeSingle();
 
   if (error) throw buildLayerError("getBuildHeader", error);
-  return (data as Build | null) ?? null;
+  return (data as unknown as Build | null) ?? null;
 }
 
 /**
@@ -145,7 +149,7 @@ export async function getBuildHeaderBySlug(slug: string): Promise<Build | null> 
     .maybeSingle();
 
   if (error) throw buildLayerError("getBuildHeaderBySlug", error);
-  return (data as Build | null) ?? null;
+  return (data as unknown as Build | null) ?? null;
 }
 
 /**
@@ -164,25 +168,25 @@ export async function getBuild(id: string): Promise<BuildRecord | null> {
 
 /**
  * The composed build record, addressed by slug. Same shape as getBuild, plus
- * the maker's name for the page's credit line (RC-P17b), embedded on the same
+ * the maker's name and avatar for the page's credit line (RC-P17b), embedded on the same
  * request rather than asked for separately.
  */
 export async function getBuildBySlug(slug: string): Promise<BuildRecord | null> {
   const { data, error } = await supabase
     .from("builds")
-    .select(`${BUILD_COLUMNS}, maker:profiles!builds_creator_id_fkey(username, display_name)`)
+    .select(`${BUILD_COLUMNS}, maker:profiles!builds_creator_id_fkey(username, display_name, avatar_url)`)
     .eq("slug", slug)
     .maybeSingle();
 
   if (error) throw buildLayerError("getBuildBySlug", error);
   if (!data) return null;
-  type MakerEmbed = { username: string | null; display_name: string | null };
+  type MakerEmbed = { username: string | null; display_name: string | null; avatar_url: string | null };
   const { maker, ...row } = data as unknown as Build & { maker?: MakerEmbed | MakerEmbed[] | null };
   const embed = Array.isArray(maker) ? (maker[0] ?? null) : (maker ?? null);
   const record = await composeRecord(row as Build);
   return {
     ...record,
-    maker: embed ? { username: embed.username, displayName: embed.display_name } : null,
+    maker: embed ? { username: embed.username, displayName: embed.display_name, avatarUrl: embed.avatar_url ?? null } : null,
   };
 }
 
@@ -209,7 +213,7 @@ export async function updateBuild(
     .single();
 
   if (error) throw buildLayerError("updateBuild", error);
-  return data as Build;
+  return data as unknown as Build;
 }
 
 /**
@@ -229,7 +233,7 @@ export async function listBuildsByCreator(
     .limit(limit);
 
   if (error) throw buildLayerError("listBuildsByCreator", error);
-  return (data ?? []) as Build[];
+  return (data ?? []) as unknown as Build[];
 }
 
 /**
@@ -252,7 +256,7 @@ export async function listDraftBuildsByCreator(
     .limit(limit);
 
   if (error) throw buildLayerError("listDraftBuildsByCreator", error);
-  return (data ?? []) as Build[];
+  return (data ?? []) as unknown as Build[];
 }
 
 /** Delete a build. Nodes and events go with it — the FKs cascade. */

@@ -161,6 +161,24 @@ async function placeCoverNode(buildId: string, media: BuildMedia): Promise<Build
   });
 }
 
+/** Point an evidence node at another picture, its type following the picture's kind. */
+async function repointCoverNode(node: BuildNode, media: BuildMedia): Promise<BuildNode> {
+  const payload = node.payload && typeof node.payload === "object" && !Array.isArray(node.payload) ? node.payload : {};
+  return upsertNode({
+    id: node.id,
+    build_id: node.build_id,
+    parent_id: node.parent_id,
+    position: node.position,
+    title: node.title,
+    note: node.note,
+    source_ref: node.source_ref,
+    event_id: node.event_id,
+    is_gap: node.is_gap,
+    type: coverNodeType(media.kind),
+    payload: { ...(payload as Record<string, unknown>), media_id: media.id },
+  });
+}
+
 /**
  * Add the cover: upload, put it in the post's set, record it as evidence.
  *
@@ -205,20 +223,7 @@ export async function replaceComposerCover({
     const tree = await getNodeTree(buildId);
     const node = coverNodeFor(tree, current.id);
     if (node) {
-      const payload = node.payload && typeof node.payload === "object" && !Array.isArray(node.payload) ? node.payload : {};
-      await upsertNode({
-        id: node.id,
-        build_id: node.build_id,
-        parent_id: node.parent_id,
-        position: node.position,
-        title: node.title,
-        note: node.note,
-        source_ref: node.source_ref,
-        event_id: node.event_id,
-        is_gap: node.is_gap,
-        type: coverNodeType(media.kind),
-        payload: { ...(payload as Record<string, unknown>), media_id: media.id },
-      });
+      await repointCoverNode(node, media);
     } else {
       await placeCoverNode(buildId, media);
     }
@@ -238,4 +243,34 @@ export async function removeComposerCover(buildId: string, current: BuildMedia):
   const node = coverNodeFor(tree, current.id);
   if (node) await deleteNode(node.id);
   await deleteMedia(current.id);
+}
+
+/**
+ * Keep the cover's evidence node on the thread's first picture (PT-01), after
+ * saveThread has written the set.
+ *
+ * The same moves replaceComposerCover makes: the evidence node that carried
+ * `previousMediaId` is repointed at the new first picture; if there is none, a
+ * node is placed for it. A first picture that already has an evidence node
+ * needs nothing. A thread with no pictures leaves the evidence where it is: a
+ * thread edit never deletes a node.
+ *
+ * Returns the node now carrying the first picture, or null when there is none.
+ */
+export async function syncThreadCover(
+  buildId: string,
+  firstMediaId: string | null,
+  previousMediaId: string | null = null,
+): Promise<BuildNode | null> {
+  if (!firstMediaId) return null;
+
+  const tree = await getNodeTree(buildId);
+  const existing = coverNodeFor(tree, firstMediaId);
+  if (existing) return existing;
+
+  const media = (await getPostMedia(buildId)).find((row) => row.id === firstMediaId);
+  if (!media) return null;
+
+  const previous = previousMediaId && previousMediaId !== firstMediaId ? coverNodeFor(tree, previousMediaId) : null;
+  return previous ? repointCoverNode(previous, media) : placeCoverNode(buildId, media);
 }

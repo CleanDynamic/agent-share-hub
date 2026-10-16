@@ -10,6 +10,7 @@ import type {
   TablesInsert,
   TablesUpdate,
 } from "@/integrations/supabase/types";
+import type { ThreadDoc } from "./thread";
 
 // --- row types ---------------------------------------------------------------
 
@@ -20,7 +21,11 @@ import type {
  */
 export type { Json };
 
-export type Build = Tables<"builds">;
+/**
+ * post_doc (PT-01) is newer than the generated types, so it is added here as a
+ * narrow extension rather than by editing the generated file.
+ */
+export type Build = Tables<"builds"> & { post_doc: ThreadDoc | null };
 export type BuildNode = Tables<"build_nodes">;
 export type BuildEvent = Tables<"build_events">;
 export type BuildMedia = Tables<"build_media">;
@@ -145,6 +150,7 @@ export interface BuildRecord {
 export interface BuildMaker {
   username: string | null;
   displayName: string | null;
+  avatarUrl: string | null;
 }
 
 // --- errors ------------------------------------------------------------------

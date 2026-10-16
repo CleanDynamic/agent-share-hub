@@ -865,7 +865,7 @@ export async function findConversion(contentItemId: string): Promise<Build | nul
     .maybeSingle();
 
   if (error) throw buildLayerError("findConversion", error);
-  return (data as Build | null) ?? null;
+  return (data as unknown as Build | null) ?? null;
 }
 
 async function currentUserId(): Promise<string | null> {

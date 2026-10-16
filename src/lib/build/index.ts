@@ -84,6 +84,39 @@ export {
   type PostMediaErrorCode,
   type PostTextSource,
 } from "./cover";
+export {
+  ALT_MAX,
+  CAPTION_MAX,
+  MAX_POST_PICTURES,
+  MAX_THREAD_MEDIA,
+  MAX_THREAD_POSTS,
+  POST_BODY_MAX,
+  POST_MEDIA_WIDTH_MAX,
+  POST_MEDIA_WIDTH_MIN,
+  THREAD_MARK_TYPES,
+  THREAD_NODE_TYPES,
+  ThreadError,
+  checkThread,
+  isThreadDoc,
+  legacyThread,
+  postBodyLength,
+  postPlainText,
+  saveThread,
+  splitThread,
+  threadMediaIds,
+  threadOf,
+  type ParagraphSize,
+  type Post,
+  type PostBlock,
+  type PostMediaAttrs,
+  type ThreadBlock,
+  type ThreadDoc,
+  type ThreadMark,
+  type ThreadMedia,
+  type ThreadProblem,
+  type ThreadProblemCode,
+  type ThreadSource,
+} from "./thread";
 export { GAP_PROBLEM_KEY, collectGaps, gapProblem, gapProblemPatch } from "./gaps";
 export {
   EXACT_NODE_TYPE,
@@ -378,4 +411,4 @@ export {
   type ReaderStep,
 } from "./readerSteps";
 export { suggestFromProposal, suggestUses, type Suggestion } from "./suggest";
-export { placeChildNode } from "./composeCover";
+export { placeChildNode, syncThreadCover } from "./composeCover";

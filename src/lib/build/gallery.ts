@@ -24,6 +24,7 @@ import type { Bounty } from "@/lib/bounty/types";
 import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
+import type { ThreadDoc } from "./thread";
 import { normaliseQuery, searchBuildIds } from "./search";
 import {
   SHAPE_RULES,
@@ -301,7 +302,7 @@ const BOUNTIES_PER_BUILD = 4;
  * beside the reproduction count.
  */
 export const GALLERY_BUILD_COLUMNS =
-  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, parent_build_id, rebuild_count, rebuild_note, source_title_at_fork, source_handle_at_fork";
+  "id, creator_id, slug, title, outcome, shape, status, made_for, made_with, live_url, repo_url, hero_node_id, cover_media_id, completeness, reproduction_count, last_confirmed_at, last_confirmed_model, published_at, parent_build_id, rebuild_count, rebuild_note, source_title_at_fork, source_handle_at_fork, post_doc";
 
 const GALLERY_NODE_COLUMNS = "id, type, title, payload, position, is_gap";
 
@@ -458,6 +459,11 @@ export interface GalleryBuild
     | "source_title_at_fork"
     | "source_handle_at_fork"
   > {
+  /**
+   * The thread (PT-01). Newer than the generated types, so typed here. Absent
+   * on a card assembled from a feed row that did not carry it.
+   */
+  post_doc?: ThreadDoc | null;
   nodes: GalleryNode[];
   media: GalleryMedia[];
   /**

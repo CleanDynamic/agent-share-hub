@@ -431,6 +431,7 @@ import {
   setPostMedia,
   setPostMediaText,
 } from "@/lib/build/cover";
+import { MAX_THREAD_MEDIA } from "@/lib/build/thread";
 
 /** The args of the first call to `method`, or undefined if it was never made. */
 function argsOf(method: string): unknown[] | undefined {
@@ -515,7 +516,7 @@ describe("resolveCover: link 0, the post's set", () => {
 describe("getPostMedia", () => {
   beforeEach(() => resetSupabase([]));
 
-  it("asks for the set by position, named columns, capped at four", async () => {
+  it("asks for the set by position, named columns, capped at the thread's forty", async () => {
     await getPostMedia(BUILD_ID);
 
     expect(argsOf("from")).toEqual(["build_media"]);
@@ -523,7 +524,7 @@ describe("getPostMedia", () => {
     expect(argsOf("eq")).toEqual(["build_id", BUILD_ID]);
     expect(argsOf("not")).toEqual(["post_position", "is", null]);
     expect(argsOf("order")).toEqual(["post_position", { ascending: true }]);
-    expect(argsOf("limit")).toEqual([MAX_POST_MEDIA]);
+    expect(argsOf("limit")).toEqual([MAX_THREAD_MEDIA]);
   });
 
   it("names post_position on top of the media module's own column list", () => {
@@ -576,22 +577,16 @@ describe("setPostMedia", () => {
     expect(args.p_media_ids).toEqual([]);
   });
 
-  it("rejects a FIFTH before it reaches the wire, with a named error", async () => {
-    await expect(
-      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d", "m-e"])
-    ).rejects.toBeInstanceOf(PostMediaError);
-
-    await expect(
-      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d", "m-e"])
-    ).rejects.toMatchObject({ name: "PostMediaError", code: "too_many" });
-
+  it("rejects a FORTY-FIRST before it reaches the wire, with a named error", async () => {
+    const ids = Array.from({ length: MAX_THREAD_MEDIA + 1 }, (_, i) => `m-${i}`);
+    await expect(setPostMedia(BUILD_ID, ids)).rejects.toBeInstanceOf(PostMediaError);
+    await expect(setPostMedia(BUILD_ID, ids)).rejects.toMatchObject({ name: "PostMediaError", code: "too_many" });
     expect(allArgsOf("rpc")).toHaveLength(0);
   });
 
-  it("accepts exactly four, so the limit is four and not three", async () => {
-    await expect(
-      setPostMedia(BUILD_ID, ["m-a", "m-b", "m-c", "m-d"])
-    ).resolves.toEqual([]);
+  it("accepts exactly forty, a whole thread's pictures", async () => {
+    const ids = Array.from({ length: MAX_THREAD_MEDIA }, (_, i) => `m-${i}`);
+    await expect(setPostMedia(BUILD_ID, ids)).resolves.toEqual([]);
     expect(allArgsOf("rpc")).toHaveLength(1);
   });
 
@@ -605,7 +600,7 @@ describe("setPostMedia", () => {
   it("names the columns it reads back rather than taking the function's row type", async () => {
     await setPostMedia(BUILD_ID, ["m-a"]);
     expect(argsOf("select")).toEqual([POST_MEDIA_COLUMNS]);
-    expect(argsOf("limit")).toEqual([MAX_POST_MEDIA]);
+    expect(argsOf("limit")).toEqual([MAX_THREAD_MEDIA]);
   });
 
   it("does not mutate the array it was handed", async () => {
