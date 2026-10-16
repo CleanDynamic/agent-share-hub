@@ -6,8 +6,9 @@
 // forwards (controls.slashKey), and a click on an item is a cancelled
 // mouse-down.
 //
-// THE PICTURE ITEMS WAIT FOR PT-06. "Picture or video" and "Row of pictures"
-// are listed only when the caller gives `onInsertPicture`; until then they are
+// THE PICTURE ITEMS NEED A WAY TO ADD A PICTURE. "Picture or video" and "Row of
+// pictures" are listed only when the caller gives `onInsertPicture` (PostTab
+// does, PT-06: it asks for the files and uploads them); without one they are
 // not in the list.
 
 import { useEditorState, type Editor } from "@tiptap/react";
@@ -30,7 +31,7 @@ export interface SlashItem {
   line: string;
 }
 
-/** What PT-06 fills: called with the kind of picture block asked for. */
+/** Called with the kind of picture block asked for: PostTab opens the file chooser (PT-06). */
 export type InsertPicture = (kind: "single" | "row", editor: Editor) => void;
 
 const ITEMS: readonly SlashItem[] = [

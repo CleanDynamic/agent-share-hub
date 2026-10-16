@@ -49,12 +49,20 @@ export interface FeedPostProps {
   makerAvatar: string | null;
   /** builds.models_used, for the marks beyond made_with. */
   modelsUsed: readonly string[];
-  plaqueBuild: PlaqueBuild;
-  /** The open ask's line ("1 part unsolved · £120"), or null. */
-  openAsk: string | null;
+  /** Absent in a preview, which draws "Draft" where the plaque goes. */
+  plaqueBuild?: PlaqueBuild;
+  /** The open ask's line ("1 part unsolved · £120"), or null. Absent: none. */
+  openAsk?: string | null;
   /** The reader's share of the page's engagement. Absent: no action row. */
   engagement?: RowEngagement;
   now?: number;
+  /** Draw at the phone's sizes (true) or the desktop's (false), whatever the window is. Absent: the window decides. */
+  phone?: boolean;
+  /**
+   * The composer's preview (PT-07): the draft as the Gallery will draw it. Nothing is fetched and nothing links away,
+   * Show more opens the posts in place, and the word "Draft" stands where the plaque does.
+   */
+  preview?: boolean;
 }
 
 type Phase = "closed" | "loading" | "open";
@@ -72,14 +80,17 @@ export function FeedPost({
   makerAvatar,
   modelsUsed,
   plaqueBuild,
-  openAsk,
+  openAsk = null,
   engagement,
   now,
+  phone: phoneOverride,
+  preview = false,
 }: FeedPostProps) {
-  const phone = useIsPhone();
+  const windowPhone = useIsPhone();
+  const phone = phoneOverride ?? windowPhone;
   const handle = (makerHandle ?? "").trim();
   const name = (makerName ?? "").trim() || handle || "Maker";
-  const profileHref = handle ? `/profile/${encodeURIComponent(handle)}` : null;
+  const profileHref = handle && !preview ? `/profile/${encodeURIComponent(handle)}` : null;
   const title = (build.title ?? "").trim() || "Untitled build";
 
   /* ── the thread ── */
@@ -124,7 +135,8 @@ export function FeedPost({
 
   const open = useCallback(async () => {
     if (asking.current || phase !== "closed") return;
-    if (rest) {
+    // A preview already holds every picture; there is nothing to ask for.
+    if (rest || preview) {
       setPhase("open");
       return;
     }
@@ -140,7 +152,7 @@ export function FeedPost({
       asking.current = false;
       setPhase("open");
     }
-  }, [build.id, phase, rest]);
+  }, [build.id, phase, preview, rest]);
 
   const close = useCallback(() => setPhase("closed"), []);
 
@@ -241,10 +253,16 @@ export function FeedPost({
       {/* The build line, then the actions. */}
       <div style={{ ...column, gridColumn: 2, gridRow: 3, marginTop: 12 }}>
         <div data-feed-build-line="" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", columnGap: 12, rowGap: 6, minWidth: 0 }}>
-          <QuietLink to={`/b2/${build.slug}`} testId="feed-build-title" colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
+          <QuietLink to={preview ? null : `/b2/${build.slug}`} testId="feed-build-title" colour={t.text} style={{ fontSize: 13, fontWeight: 500, maxWidth: "100%", ...ellipsis }}>
             {title}
           </QuietLink>
-          <Plaque build={plaqueBuild} size="card" now={now} />
+          {preview ? (
+            <span data-testid="feed-draft" style={{ fontFamily: FIGTREE, fontSize: 12, fontWeight: 500, lineHeight: 1.4, color: t.text2 }}>
+              Draft
+            </span>
+          ) : plaqueBuild ? (
+            <Plaque build={plaqueBuild} size="card" now={now} />
+          ) : null}
           {openAsk ? (
             <span
               data-testid="feed-open-ask"

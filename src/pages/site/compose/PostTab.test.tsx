@@ -250,9 +250,10 @@ describe("the layout", () => {
     const nav = screen.getByRole("navigation", { name: "Posts" });
     expect(nav.style.flex).toBe("1 1 170px");
     expect(nav.style.maxWidth).toBe("190px");
-    const slot = screen.getByTestId("post-preview-slot");
-    expect(slot.style.maxWidth).toBe("320px");
-    expect(slot.childElementCount).toBe(0);
+    // PT-07 fills the slot: the preview, in the same 280 to 320 column.
+    const preview = screen.getByRole("region", { name: "Preview" });
+    expect(preview.style.flex).toBe("1 1 280px");
+    expect(preview.style.maxWidth).toBe("320px");
   });
 
   it("draws text in the published post's type", () => {

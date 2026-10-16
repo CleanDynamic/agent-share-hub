@@ -29,6 +29,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
+import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
@@ -39,6 +40,7 @@ import { getNodeType } from "@/lib/build/nodeTypes";
 
 import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { useComposePage } from "./ComposePage";
+import type { PreviewMaker } from "@/components/post/PostPreview";
 import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
@@ -74,6 +76,19 @@ export function SandboxPage() {
   /* PT-05: the thread of the Post tab. Held here so the tab count, the status line and Publish can see it. */
   const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
   const { flush: flushThread, hold: threadHold } = thread;
+  /* PT-07: the preview draws the signed-in maker, and a phone opens it as a sheet from the title row. */
+  const { user, profile } = useAuth();
+  const maker = useMemo<PreviewMaker>(
+    () => ({
+      id: user?.id ?? null,
+      name: profile?.display_name ?? profile?.username ?? null,
+      handle: profile?.username ?? null,
+      avatar: profile?.avatar_url ?? null,
+    }),
+    [user?.id, profile?.display_name, profile?.username, profile?.avatar_url],
+  );
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const openPreview = useCallback(() => setPreviewOpen(true), []);
   const onPublish = useCallback(async () => {
     await flushThread();
     // A thread that cannot be saved is not published half-written.
@@ -463,7 +478,16 @@ export function SandboxPage() {
         save={mergeSave(viewProps.save, thread.save)}
         onRetrySave={onRetrySave}
         onPublish={() => void onPublish()}
-        post={<PostTab thread={thread} phone={phone} />}
+        post={
+          <PostTab
+            thread={thread}
+            phone={phone}
+            draft={{ build, title: viewProps.title, maker }}
+            previewOpen={previewOpen}
+            onPreviewOpenChange={setPreviewOpen}
+          />
+        }
+        onPreview={openPreview}
         postCount={thread.posts}
         threadNote={thread.hold}
         onAddFile={pick}

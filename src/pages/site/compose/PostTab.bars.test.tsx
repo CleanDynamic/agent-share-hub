@@ -252,13 +252,13 @@ describe("the slash menu", () => {
   };
   const listbox = () => screen.getByRole("listbox", { name: "Insert" });
 
-  it("opens on / in an empty paragraph, with the picture items left out until PT-06", () => {
+  it("opens on / in an empty paragraph, the two picture items first", () => {
     const { editor } = mount(doc(p("")));
     typeSlash(editor);
     const options = within(listbox()).getAllByRole("option");
-    expect(options.map((option) => option.querySelector("span")?.textContent)).toEqual(["Bulleted list", "Numbered list", "Title", "Heading", "Code", "New post"]);
+    expect(options.map((option) => option.querySelector("span")?.textContent)).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Title", "Heading", "Code", "New post"]);
     expect(options[0].style.height).toBe("40px");
-    expect(options[0].querySelectorAll("span")[1].textContent).toBe("A list with dots");
+    expect(options[2].querySelectorAll("span")[1].textContent).toBe("A list with dots");
   });
 
   it("lists the picture items first once there is a way to insert a picture", () => {
@@ -297,8 +297,8 @@ describe("the slash menu", () => {
   it("chooses with the arrow keys and Enter, taking the slash away", () => {
     const { editor, dom } = mount(doc(p("")));
     typeSlash(editor);
-    fireEvent.keyDown(dom, { key: "ArrowDown" });
-    expect(within(listbox()).getAllByRole("option")[1].getAttribute("aria-selected")).toBe("true");
+    for (let press = 0; press < 3; press++) fireEvent.keyDown(dom, { key: "ArrowDown" });
+    expect(within(listbox()).getAllByRole("option")[3].getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(dom, { key: "Enter" });
     expect(json(editor).content[0].type).toBe("orderedList");
     expect(editor.getText()).not.toContain("/");

@@ -424,3 +424,29 @@ describe("the tabs on a phone", () => {
     expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
   });
 });
+
+describe("the Preview button on a phone (PT-07)", () => {
+  it("is in the title row on the Post tab, 44 high, and asks for the preview sheet", () => {
+    stubWidth(390);
+    const onPreview = vi.fn();
+    viewAt("/compose/x?tab=post", { onPreview });
+    const button = screen.getByRole("button", { name: "Preview" });
+    expect(button.style.height).toBe("44px");
+    expect(screen.getByTestId("sandbox-heading").parentElement?.parentElement?.contains(button)).toBe(true);
+    fireEvent.click(button);
+    expect(onPreview).toHaveBeenCalledTimes(1);
+  });
+
+  it("is not there on the Build tab, on a desktop, or when nothing handles it", () => {
+    stubWidth(390);
+    viewAt("/compose/x", { onPreview: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Preview" })).toBeNull();
+    cleanup();
+    viewAt("/compose/x?tab=post");
+    expect(screen.queryByRole("button", { name: "Preview" })).toBeNull();
+    cleanup();
+    stubWidth(1440);
+    viewAt("/compose/x?tab=post", { onPreview: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Preview" })).toBeNull();
+  });
+});

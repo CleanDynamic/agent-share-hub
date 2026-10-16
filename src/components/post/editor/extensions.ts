@@ -2,9 +2,9 @@
 //
 // ONLY WHAT thread.ts ALLOWS. The nodes are paragraph (with a size), heading
 // (levels 1 and 2: a Title and a Heading), codeBlock, bulletList, orderedList,
-// listItem, hardBreak, postBreak, and postMedia and postMediaRow, which are here
-// so a thread that already holds pictures opens and saves with them intact
-// (PT-06 draws them properly). The marks are bold, italic, underline and link.
+// listItem, hardBreak, postBreak, and postMedia and postMediaRow, which PT-06
+// draws as the published post draws them, with a size control, a caption and
+// a row of buttons. The marks are bold, italic, underline and link.
 // Blockquote, horizontal rule, strike, inline code and the other heading levels
 // are switched off, so a table, an image or a quote pasted in arrives as plain
 // paragraphs: the schema has nowhere else to put it.
@@ -16,19 +16,22 @@
 // for them, so styles go on as style attributes and node views build their
 // elements by hand. No class names.
 
-import { Extension, mergeAttributes, Node as TipNode, type Editor } from "@tiptap/react";
+import { Extension, mergeAttributes, Node as TipNode, ReactNodeViewRenderer, type Editor } from "@tiptap/react";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import { NodeSelection, Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
-import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, postType } from "@/components/post/postType";
+import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, ROW_GAP, postType } from "@/components/post/postType";
+import { stepWidth } from "@/lib/build/postMedia";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
 import { linkAllowed, POST_BODY_MAX } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
+import { PictureView, type PictureOptions } from "./PictureView";
+import { picturePlugin, type PictureHost } from "./pictures";
 import { applyStyle, styleString } from "./styleString";
 
 /** The words in the editor's empty last paragraph. */
@@ -43,6 +46,8 @@ export interface PostEditorControls {
   slashKey: { current: ((event: KeyboardEvent) => boolean) | null };
   /** Opens the link popover over the selection: true when it did. Null while there is no format bar. */
   openLink: { current: (() => boolean) | null };
+  /** The pictures: the store the node views read, and what the editor's uploads call back into (PT-06). */
+  pictures: PictureHost;
 }
 
 // --- breaks -------------------------------------------------------------------
@@ -179,37 +184,24 @@ export const PostBreak = TipNode.create({
   },
 });
 
-// --- pictures, until PT-06 -----------------------------------------------------
-
-const pictureTile = {
-  boxSizing: "border-box",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 96,
-  padding: 12,
-  borderRadius: 6,
-  background: t.tile,
-  borderWidth: 1,
-  borderStyle: "solid",
-  borderColor: t.tileBorder,
-  fontFamily: FIGTREE,
-  fontSize: 13,
-  fontWeight: 400,
-  color: t.text2,
-} as const;
+// --- pictures (PT-06) ------------------------------------------------------------
 
 /**
- * A picture already in the thread. PT-06 gives it its picture, its caption and
- * its handles; here it is an atom that keeps every attribute, so a thread that
- * has pictures is saved with them.
+ * A picture or video. An atom: its node view (PictureView) draws PostMedia with the editor's controls around it.
+ * `uploadId` is the editor's mark on a picture still uploading, never drawn into HTML and never stored (tidyThread
+ * drops it when it is null; the save waits while the picture has no mediaId).
  */
-export const PostMediaNode = TipNode.create({
+export const PostMediaNode = TipNode.create<PictureOptions>({
   name: "postMedia",
   group: "block",
   atom: true,
   selectable: true,
-  draggable: false,
+  // Draggable from the picture itself (the node view marks it as the handle); the margin handle moves any block.
+  draggable: true,
+
+  addOptions() {
+    return { host: null as unknown as PictureHost, phone: false };
+  },
 
   addAttributes() {
     return {
@@ -219,6 +211,7 @@ export const PostMediaNode = TipNode.create({
       h: { default: null },
       alt: { default: "" },
       caption: { default: "" },
+      uploadId: { default: null, rendered: false },
     };
   },
 
@@ -226,36 +219,63 @@ export const PostMediaNode = TipNode.create({
   renderHTML: ({ node }) => ["figure", { "data-post-media": String(node.attrs.mediaId ?? "") }],
 
   addNodeView() {
-    return ({ node }) => {
-      const dom = document.createElement("figure");
-      dom.setAttribute("data-post-media", String(node.attrs.mediaId ?? ""));
-      dom.contentEditable = "false";
-      dom.style.margin = "0";
-      const tile = document.createElement("div");
-      applyStyle(tile, pictureTile);
-      tile.textContent = typeof node.attrs.alt === "string" && node.attrs.alt ? node.attrs.alt : "Picture";
-      dom.append(tile);
-      return {
-        dom,
-        selectNode: () => applyStyle(tile, { background: t.well }),
-        deselectNode: () => tile.style.setProperty("background", t.tile),
-        ignoreMutation: () => true,
-      };
+    return ReactNodeViewRenderer(PictureView);
+  },
+
+  // [ and ] step a selected picture through Small, Medium, Large and Full. Not inside a row: a row fills the column.
+  addKeyboardShortcuts() {
+    const step = (direction: 1 | -1) => () => {
+      const { state, view } = this.editor;
+      const { selection } = state;
+      if (!(selection instanceof NodeSelection) || selection.node.type.name !== "postMedia") return false;
+      if (selection.$from.parent.type.name === "postMediaRow") return false;
+      const width = stepWidth(Number(selection.node.attrs.width) || 100, direction);
+      view.dispatch(state.tr.setNodeMarkup(selection.from, undefined, { ...selection.node.attrs, width }));
+      return true;
     };
+    return { "[": step(-1), "]": step(1) };
   },
 });
 
-/** Two or three pictures side by side. */
+/** Two or three pictures side by side. The children size themselves (PictureView); a selected row gets the picture outline. */
 export const PostMediaRowNode = TipNode.create({
   name: "postMediaRow",
   group: "block",
   content: "postMedia{2,3}",
   isolating: true,
+  selectable: true,
   draggable: false,
 
   parseHTML: () => [],
-  renderHTML: () => ["div", { "data-post-media-row": "", style: styleString({ display: "grid", gridAutoFlow: "column", gridAutoColumns: "1fr", gap: 8 }) }, 0],
+  renderHTML: () => ["div", { "data-post-media-row": "", style: styleString({ display: "flex", gap: ROW_GAP, alignItems: "flex-start" }) }, 0],
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("postMediaRowSelected"),
+        props: {
+          decorations: (state) => {
+            const { selection } = state;
+            if (!(selection instanceof NodeSelection) || selection.node.type.name !== "postMediaRow") return null;
+            return DecorationSet.create(state.doc, [
+              Decoration.node(selection.from, selection.to, { style: styleString({ outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3, borderRadius: 6 }) }),
+            ]);
+          },
+        },
+      }),
+    ];
+  },
 });
+
+/** Files dropped on the editor or pasted into it become pictures; a block dragged inside it is moved. */
+function postPictures(controls: PostEditorControls) {
+  return Extension.create({
+    name: "postPictures",
+    addProseMirrorPlugins() {
+      return [picturePlugin(controls.pictures)];
+    },
+  });
+}
 
 // --- text ---------------------------------------------------------------------
 
@@ -485,8 +505,9 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     paragraphSize(phone),
     PostLink,
     PostBreak,
-    PostMediaNode,
+    PostMediaNode.configure({ host: controls.pictures, phone }),
     PostMediaRowNode,
+    postPictures(controls),
     PostChrome,
     postKeys(controls),
   ];

@@ -145,7 +145,8 @@ export function movePost(doc: ThreadDoc, from: number, to: number): ThreadDoc {
 
 // --- comparing and tidying ----------------------------------------------------
 
-const DEFAULT_ATTRS: Record<string, unknown> = { size: "body", language: null };
+// uploadId is the editor's mark on a picture still uploading; null is its default and never stored.
+const DEFAULT_ATTRS: Record<string, unknown> = { size: "body", language: null, uploadId: null };
 
 function tidyNode(node: unknown): unknown {
   if (!isRecord(node)) return node;

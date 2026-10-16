@@ -26,6 +26,8 @@ export const doc = (...content: ThreadBlock[]): ThreadDoc => ({ type: "doc", con
 
 export function fakeThread(initial: ThreadDoc, over: Partial<ComposeThread> = {}): ComposeThread {
   return {
+    buildId: undefined,
+    ensureBuild: async () => "00000000-0000-4000-8000-000000000001",
     status: "ready",
     version: 1,
     readDoc: () => initial,
