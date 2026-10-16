@@ -2,14 +2,14 @@
 // behaviour), then a block for what the refined board draws. Styles are read through SSR markup.
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, countsLine, type SandboxViewProps } from "./SandboxView";
+import { ADD_ITEMS, buildTabCount, countsLine, postTabCount, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -264,5 +264,163 @@ describe("the refined Map and Card (UI-P94)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Card" }));
     const card = screen.getByTestId("sandbox-card");
     expect(card.style.width).toBe("472px");
+  });
+});
+
+/* ── PT-05: the Build and Post tabs ── */
+
+function Where() {
+  const location = useLocation();
+  return <output data-testid="where">{`${location.pathname}${location.search}`}</output>;
+}
+
+function viewAt(entry: string, over: Partial<SandboxViewProps> = {}) {
+  const props = { ...sandboxViewProps("bakery"), onPublish: vi.fn(), onLens: vi.fn(), post: <p>the post tab body</p>, sources: <p>the sources panel</p>, ...over };
+  render(
+    <MemoryRouter initialEntries={[entry]}>
+      <SandboxView {...props} />
+      <Where />
+    </MemoryRouter>,
+  );
+  return props;
+}
+
+const where = () => screen.getByTestId("where").textContent;
+
+describe("the tab counts", () => {
+  it("says 5 prompts, 1 prompt, and nothing for none", () => {
+    expect(buildTabCount(5)).toBe("5 prompts");
+    expect(buildTabCount(1)).toBe("1 prompt");
+    expect(buildTabCount(0)).toBeUndefined();
+  });
+
+  it("says 4 posts, 1 post, and No posts yet", () => {
+    expect(postTabCount(4)).toBe("4 posts");
+    expect(postTabCount(1)).toBe("1 post");
+    expect(postTabCount(0)).toBe("No posts yet");
+    expect(postTabCount(null)).toBe("No posts yet");
+    expect(postTabCount(undefined)).toBe("No posts yet");
+  });
+});
+
+describe("the Build and Post tabs", () => {
+  it("are tabs labelled Upload steps, Build with its prompt count and Post with its post count", () => {
+    viewAt("/compose/x", { postCount: 4 });
+    const tabs = screen.getByRole("tablist", { name: "Upload steps" });
+    const [build, post] = within(tabs).getAllByRole("tab");
+    expect(build.textContent).toBe("Build 12 prompts");
+    expect(post.textContent).toBe("Post 4 posts");
+    expect(build.getAttribute("aria-selected")).toBe("true");
+    expect(post.getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("say No posts yet while the thread is empty", () => {
+    viewAt("/compose/x", { postCount: 0 });
+    expect(within(screen.getByRole("tablist", { name: "Upload steps" })).getAllByRole("tab")[1].textContent).toBe("Post No posts yet");
+  });
+
+  it("show Build, exactly as before, when there is no tab in the address", () => {
+    viewAt("/compose/x");
+    for (const name of ["Sources", "Build", "Details"]) expect(screen.getByRole("region", { name })).toBeTruthy();
+    expect(screen.queryByText("the post tab body")).toBeNull();
+    expect(screen.getByRole("group", { name: "Build view" })).toBeTruthy();
+  });
+
+  it("follow ?tab=post in the address, so a refresh keeps the tab", () => {
+    viewAt("/compose/x?tab=post");
+    expect(screen.getByRole("tab", { name: /^Post/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("the post tab body")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Build" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
+    expect(screen.getByRole("tabpanel", { name: /^Post/ })).toBeTruthy();
+  });
+
+  it("write the tab into the address when chosen, and take it out for Build", () => {
+    viewAt("/compose/x?a=1");
+    fireEvent.click(screen.getByRole("tab", { name: /^Post/ }));
+    expect(where()).toBe("/compose/x?a=1&tab=post");
+    expect(screen.getByText("the post tab body")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /^Build/ }));
+    expect(where()).toBe("/compose/x?a=1");
+    expect(screen.getByRole("region", { name: "Build" })).toBeTruthy();
+  });
+
+  it("keep the Build side mounted, only hidden, while Post is shown", () => {
+    viewAt("/compose/x?tab=post");
+    expect(screen.getByText("the sources panel")).toBeTruthy();
+    const panel = document.getElementById("compose-panel-build") as HTMLElement;
+    expect(panel.getAttribute("role")).toBe("tabpanel");
+    expect(panel.hasAttribute("hidden")).toBe(true);
+    expect(panel.style.display).toBe("none");
+  });
+
+  it("move with the arrow keys, as tabs do", () => {
+    viewAt("/compose/x");
+    fireEvent.keyDown(screen.getByRole("tab", { name: /^Build/ }), { key: "ArrowRight" });
+    expect(where()).toBe("/compose/x?tab=post");
+  });
+
+  it("put a thread's waiting sentence in the status line", () => {
+    viewAt("/compose/x?tab=post", { threadNote: "Post 3 is over 1,000 characters", missing: [] });
+    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · Post 3 is over 1,000 characters");
+  });
+});
+
+describe("the Card and the Post tab", () => {
+  it("opens the Post tab from a missing cover, and not the Card", () => {
+    viewAt("/compose/x");
+    fireEvent.click(screen.getByRole("button", { name: "a cover picture or video" }));
+    expect(where()).toBe("/compose/x?tab=post");
+    expect(screen.queryByTestId("sandbox-card")).toBeNull();
+    expect(screen.getByText("the post tab body")).toBeTruthy();
+  });
+
+  it("still opens the Card at the field for a missing title", () => {
+    viewAt("/compose/x", { missing: [{ key: "title", label: "a title" }] });
+    fireEvent.click(screen.getByRole("button", { name: "a title" }));
+    expect(screen.getByTestId("sandbox-card")).toBeTruthy();
+    expect(where()).toBe("/compose/x");
+  });
+
+  it("says the cover is the first picture of the post, and Edit the post closes the sheet and opens the tab", () => {
+    viewAt("/compose/x");
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    const card = screen.getByTestId("sandbox-card");
+    expect(within(card).getByText("The cover is the first picture in your post.")).toBeTruthy();
+    fireEvent.click(within(card).getByRole("button", { name: "Edit the post" }));
+    expect(screen.queryByTestId("sandbox-card")).toBeNull();
+    expect(where()).toBe("/compose/x?tab=post");
+    expect(screen.getByText("the post tab body")).toBeTruthy();
+  });
+
+  it("keeps Title, One-line summary, Who it's for, Made with and More details", () => {
+    viewAt("/compose/x");
+    fireEvent.click(screen.getByRole("button", { name: "Card" }));
+    const card = screen.getByTestId("sandbox-card");
+    for (const label of ["Title", "One-line summary", "Who it's for"]) expect(within(card).getByLabelText(label)).toBeTruthy();
+    expect(within(card).getByTestId("compose-made-with")).toBeTruthy();
+    expect(within(card).getByRole("button", { name: /More details/ })).toBeTruthy();
+  });
+});
+
+describe("the tabs on a phone", () => {
+  it("are a full-width Segmented, 40 high, and choosing Post writes the address", () => {
+    stubWidth(390);
+    viewAt("/compose/x");
+    const group = screen.getByRole("group", { name: "Upload steps" });
+    expect(group.style.height).toBe("40px");
+    expect(group.style.width).toBe("100%");
+    expect(screen.queryByRole("tablist")).toBeNull();
+    fireEvent.click(within(group).getByRole("button", { name: "Post" }));
+    expect(where()).toBe("/compose/x?tab=post");
+    expect(screen.getByText("the post tab body")).toBeTruthy();
+    expect(within(group).getByRole("button", { name: "Post" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("keeps the action bar under either tab", () => {
+    stubWidth(390);
+    viewAt("/compose/x?tab=post");
+    expect(screen.getByRole("group", { name: "Actions" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Publish" })).toBeTruthy();
   });
 });

@@ -66,11 +66,23 @@ describe("SandboxCard: what SandboxCard does", () => {
     expect(screen.getByText(`${props.description.length} / 200`)).toBeTruthy();
   });
 
-  it("takes dropped files, and closes from Close", () => {
+  it("says the cover is the first picture of the post, and Edit the post goes there (PT-05)", () => {
+    const onEditPost = vi.fn();
+    mount({ onEditPost });
+    const cover = screen.getByRole("region", { name: "Cover" });
+    expect(within(cover).getByText("The cover is the first picture in your post.")).toBeTruthy();
+    expect(screen.queryByTestId("compose-dropzone")).toBeNull();
+    fireEvent.click(within(cover).getByRole("button", { name: "Edit the post" }));
+    expect(onEditPost).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers no Edit the post when nothing can open the Post tab", () => {
+    mount();
+    expect(screen.queryByRole("button", { name: "Edit the post" })).toBeNull();
+  });
+
+  it("closes from Close", () => {
     const props = mount();
-    const file = new File(["x"], "cover.png", { type: "image/png" });
-    fireEvent.drop(screen.getByTestId("compose-dropzone"), { dataTransfer: { types: ["Files"], files: [file] } });
-    expect(props.onFiles).toHaveBeenCalledWith([file]);
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -97,17 +109,6 @@ describe("SandboxCard: the board", () => {
     const title = screen.getByRole("heading", { name: "Card" });
     expect(title.style.fontSize).toBe("15px");
     expect(title.style.fontWeight).toBe("500");
-  });
-
-  it("draws the drop zone 216 high in the tile's fill, dashed, with the image glyph and the underlined browse link", () => {
-    mount();
-    const zone = screen.getByTestId("compose-dropzone");
-    expect(zone.style.height).toBe("216px");
-    expect(zone.style.borderRadius).toBe("8px");
-    expect(zone.style.backgroundSize).toBe("16px 16px");
-    expect(within(zone).getByText("Drop a screenshot or a short video").style.fontSize).toBe("13px");
-    expect(within(zone).getByRole("button", { name: "or browse your files" }).style.textDecoration).toBe("underline");
-    expect(zone.querySelector("svg")).not.toBeNull();
   });
 
   it("puts the fields in wells 36 high under 12.5/500 labels, the summary 80 high", () => {

@@ -37,8 +37,10 @@ import { getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedi
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
-import { PUBLISH_WORDS } from "./composeModel";
+import { mergeSave, PUBLISH_WORDS } from "./composeModel";
 import { useComposePage } from "./ComposePage";
+import { PostTab } from "./PostTab";
+import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput } from "./AddAgentDialog";
@@ -63,11 +65,28 @@ function makingSessions(making: unknown): MakingSession[] {
 const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
 
 export function SandboxPage() {
-  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts } = useComposePage();
+  const { viewProps, missing, build, tree, ensureBuild, nodes, sessions, prompts, compose, buildId } = useComposePage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const phone = useIsPhone();
   const fine = useFinePointer();
+
+  /* PT-05: the thread of the Post tab. Held here so the tab count, the status line and Publish can see it. */
+  const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
+  const { flush: flushThread, hold: threadHold } = thread;
+  const onPublish = useCallback(async () => {
+    await flushThread();
+    // A thread that cannot be saved is not published half-written.
+    if (threadHold) {
+      toast(threadHold);
+      return;
+    }
+    viewProps.onPublish();
+  }, [flushThread, threadHold, viewProps]);
+  const onRetrySave = useCallback(() => {
+    if (thread.save === "error") thread.retry();
+    if (viewProps.save === "error") viewProps.onRetrySave();
+  }, [thread, viewProps]);
 
   const [lens, setLens] = useState<SandboxLens>("list");
   const [switched, setSwitched] = useState(false);
@@ -441,6 +460,12 @@ export function SandboxPage() {
       />
       <SandboxView
         {...viewProps}
+        save={mergeSave(viewProps.save, thread.save)}
+        onRetrySave={onRetrySave}
+        onPublish={() => void onPublish()}
+        post={<PostTab thread={thread} phone={phone} />}
+        postCount={thread.posts}
+        threadNote={thread.hold}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => void addPiece("tool")}

@@ -324,6 +324,17 @@ describe("refined controls (UI-P84)", () => {
     expect(ghost).not.toContain("--control-shadow");
   });
 
+  it("Segmented at 40, fullWidth (PT-05), takes the whole width and the items share it", () => {
+    const html = refined(
+      <Segmented label="Steps" size={40} fullWidth value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
+    );
+    expect(html).toContain("display:flex");
+    expect(html).toContain("width:100%");
+    expect(html).toContain("height:40px");
+    expect(html).toContain("flex:1");
+    expect(refined(<Segmented label="Feed" value="a" onChange={() => {}} items={[{ value: "a", label: "A" }]} />)).not.toContain("width:100%");
+  });
+
   it("Segmented has a 2px track in --seg-track and items size − 6 tall", () => {
     const html = refined(
       <Segmented label="Feed" size={28} value="a" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />,
@@ -412,6 +423,18 @@ describe("Pill, MenuButton, SearchField and Checkbox (UI-P84)", () => {
     expect(button.textContent).toBe("Sort byEngagement");
     expect(button.querySelector("svg")).not.toBeNull();
     expect(button.style.height).toBe("28px");
+  });
+
+  it("MenuButton on an --inverse bar (PT-05) is 30 high with no fill, its value in --on-inverse and its chevron in --on-inverse-2", () => {
+    const html = markup(<MenuButton tone="inverse" label="" value="Body" />);
+    expect(html).toContain("height:30px");
+    expect(html).toContain("background:transparent");
+    expect(html).toContain("border:0");
+    expect(html).toContain("color:var(--on-inverse)");
+    expect(html).toContain('stroke="var(--on-inverse-2)"');
+    expect(html).not.toContain("color:var(--text)");
+    // Unchanged for everyone else.
+    expect(markup(<MenuButton label="Sort by" value="Engagement" />)).toContain("height:28px");
   });
 
   it("SearchField names its input and draws the key hint", () => {

@@ -10,13 +10,15 @@
    drop zone 216 high in the tile's fill with the dot grid, 1px dashed `--line`, radius 8, the `image` glyph 20
    `--text2`, the drop line 13/500 and the underlined browse link 12 `--text2`); the fields, labels 12.5/500 over the
    well recipe 36 high (the summary 80, its counter 11.5 `--label` tabular, the hint 12 `--label`); Made with, as
-   `ModelTag`s; More details (optional) as a disclosure. */
+   `ModelTag`s; More details (optional) as a disclosure.
+
+   PT-05: THE COVER IS ONE LINE. It is the first picture in the post, so the sheet says that and offers "Edit the post",
+   which closes it and opens the Post tab. The drop zone, Replace and Remove moved with the pictures (PT-06). */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { t } from "@/lib/theme/tokens";
 
@@ -70,6 +72,8 @@ export interface SandboxCardProps extends CardProps {
   /** A result's picture can be the cover: present only when a result has one. */
   onUseResultPicture?: () => void;
   phone: boolean;
+  /** PT-05: closes the sheet and opens the Post tab. The Cover line offers it when given. */
+  onEditPost?: () => void;
 }
 
 const underlined: CSSProperties = { ...text(12, 400, t.text2), textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line };
@@ -90,160 +94,18 @@ function RefinedField({ id, label, hint, right, children }: { id: string; label:
   );
 }
 
-function Adding({ pct }: { pct: number }) {
+export const COVER_LINE = "The cover is the first picture in your post.";
+
+/** PT-05: the Cover is the first picture of the post, so the Card only says so and points at the Post tab. */
+function Cover({ onEditPost }: { onEditPost?: () => void }) {
   return (
-    <div role="status" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ height: 4, borderRadius: 2, background: t.hairlineModule, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: t.text2 }} />
-      </div>
-      <span style={{ ...text(12, 400, t.text2), ...tnum }}>Adding… {pct}%</span>
-    </div>
-  );
-}
-
-type CoverProps = Pick<SandboxCardProps, "cover" | "adding" | "mediaError" | "accept" | "onFiles" | "onRemoveCover" | "onUseResultPicture" | "phone">;
-
-/** The Cover: the same file input, drop, replace and remove as `MediaPanel`, in the refined look. */
-function Cover({ cover, adding, mediaError, accept, onFiles, onRemoveCover, onUseResultPicture, phone }: CoverProps) {
-  const input = useRef<HTMLInputElement>(null);
-  const [over, setOver] = useState(false);
-  const pick = () => input.current?.click();
-  const busy = adding !== null;
-  const pct = Math.round((adding ?? 0) * 100);
-  const zoneRing = useRing<HTMLDivElement>();
-
-  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
-  const dropHandlers = {
-    onDragEnter: (event: DragEvent) => {
-      if (!carriesFiles(event)) return;
-      event.preventDefault();
-      setOver(true);
-    },
-    onDragOver: (event: DragEvent) => {
-      if (!carriesFiles(event)) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-      setOver(true);
-    },
-    onDragLeave: () => setOver(false),
-    onDrop: (event: DragEvent) => {
-      if (!carriesFiles(event)) return;
-      event.preventDefault();
-      setOver(false);
-      const files = Array.from(event.dataTransfer.files);
-      if (files.length > 0 && !busy) onFiles(files);
-    },
-  };
-
-  const zone: CSSProperties = {
-    height: 216,
-    boxSizing: "border-box",
-    borderRadius: 8,
-    border: `1px dashed ${over ? t.selectedEdge : t.line}`,
-    backgroundColor: over ? t.controlOn : t.tile,
-    backgroundImage: `radial-gradient(${t.dotGrid} 1px, transparent 1px)`,
-    backgroundSize: "16px 16px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 12,
-    textAlign: "center",
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>Cover</h2>
-        <p style={{ ...text(12, 400, t.text2), margin: 0 }}>What people see first in the Gallery.</p>
-      </div>
-      <input
-        ref={input}
-        type="file"
-        accept={accept.join(",")}
-        hidden
-        data-testid="compose-file"
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          event.target.value = "";
-          if (files.length > 0) onFiles(files);
-        }}
-      />
-      {cover ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ aspectRatio: "16 / 9", borderRadius: 6, overflow: "hidden", background: t.well, border: `1px solid ${t.wellBorder}`, boxSizing: "border-box" }}>
-            {cover.url === null ? null : cover.kind === "video" ? (
-              <video src={cover.url} controls muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            ) : (
-              <img src={cover.url} alt="Cover" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            )}
-          </div>
-          {busy ? (
-            <Adding pct={pct} />
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ flexGrow: 1, ...text(12, 400, t.label) }}>Cover</span>
-              <TextButton onClick={pick} style={text(12.5, 500, t.text2)}>
-                Replace
-              </TextButton>
-              <TextButton onClick={onRemoveCover} style={text(12.5, 500, t.text2)}>
-                Remove
-              </TextButton>
-            </div>
-          )}
-        </div>
-      ) : busy ? (
-        <div style={{ ...zone, borderColor: t.line }}>
-          <div style={{ width: "100%", maxWidth: 320 }}>
-            <Adding pct={pct} />
-          </div>
-        </div>
-      ) : (
-        <div
-          data-testid="compose-dropzone"
-          data-over={over ? "true" : undefined}
-          {...dropHandlers}
-          {...(phone
-            ? {
-                ...zoneRing.handlers,
-                role: "button",
-                tabIndex: 0,
-                "aria-label": "Add a screenshot or a short video",
-                onClick: pick,
-                onKeyDown: (event: KeyboardEvent) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    pick();
-                  }
-                },
-              }
-            : null)}
-          style={{ ...zone, cursor: phone ? "pointer" : "default", ...(phone ? zoneRing.style : null) }}
-        >
-          <Glyph name="image" size={20} color={t.text2} />
-          <span style={text(13, 500, t.text)}>{phone ? "Add a screenshot or a short video" : "Drop a screenshot or a short video"}</span>
-          <TextButton
-            underline
-            onClick={(event) => {
-              event.stopPropagation();
-              pick();
-            }}
-            style={underlined}
-          >
-            or browse your files
-          </TextButton>
-        </div>
-      )}
-      {mediaError ? (
-        <p role="alert" style={{ ...text(12.5, 400, t.breakage), margin: 0 }}>
-          {mediaError}
-        </p>
-      ) : null}
-      {onUseResultPicture ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <h2 style={{ ...text(13.5, 500, t.text), margin: 0 }}>Cover</h2>
+      <p style={{ ...text(12, 400, t.text2), margin: 0 }}>{COVER_LINE}</p>
+      {onEditPost ? (
         <div>
-          <TextButton underline onClick={onUseResultPicture} style={underlined}>
-            Use a result's picture
+          <TextButton underline onClick={onEditPost} style={underlined}>
+            Edit the post
           </TextButton>
         </div>
       ) : null}
@@ -296,16 +158,7 @@ export function SandboxCard(props: SandboxCardProps) {
 
           <div style={{ flexGrow: 1, overflowY: "auto", padding: phone ? 16 : 24, display: "flex", flexDirection: "column", gap: 24 }}>
             <section id={CARD_FIELD_ID.cover} tabIndex={-1} aria-label="Cover" style={{ outline: "none" }}>
-              <Cover
-                phone={phone}
-                cover={props.cover}
-                adding={props.adding}
-                mediaError={props.mediaError}
-                accept={props.accept}
-                onFiles={props.onFiles}
-                onRemoveCover={props.onRemoveCover}
-                onUseResultPicture={props.onUseResultPicture}
-              />
+              <Cover onEditPost={props.onEditPost} />
             </section>
 
             <RefinedField id={CARD_FIELD_ID.title} label="Title">

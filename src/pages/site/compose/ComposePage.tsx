@@ -23,7 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { SeoHead } from "@/components/SeoHead";
@@ -66,6 +66,10 @@ const ACCEPT = coverMediaTypes(acceptedMediaTypes());
 export function useComposePage() {
   const { buildId } = useParams<{ buildId: string }>();
   const navigate = useNavigate();
+  /* PT-05: the address keeps its query (?tab=post) when the first change swaps /compose/new for /compose/{id}. */
+  const location = useLocation();
+  const search = useRef(location.search);
+  search.current = location.search;
   const queryClient = useQueryClient();
   const compose = useComposeBuild(buildId);
   const { build } = compose;
@@ -114,7 +118,7 @@ export function useComposePage() {
           hydratedFor.current = created.id;
           setCreatedHere(true);
           // replace: /compose/new must not sit in history, or Back re-enters it and starts a second draft.
-          navigate(`/compose/${created.id}`, { replace: true });
+          navigate({ pathname: `/compose/${created.id}`, search: search.current }, { replace: true });
           return created.id;
         })
         .catch((cause: unknown) => {
