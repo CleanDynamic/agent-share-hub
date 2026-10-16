@@ -1,27 +1,33 @@
 /* PT-05 — the composer's Post tab: the whole thread written as one page.
 
    A wrapping row with 48 between, 12 above it: the Posts outline (flex 1 1 170, max 190), the editor (flex 999 1 520,
-   max 628: the width of a post in the Gallery) and an empty slot for the preview (flex 1 1 280, max 320, PT-07's).
+   max 628: the width of a post in the Gallery) and the preview (flex 1 1 280, max 320, PT-07): the draft drawn as the
+   Gallery will draw it, from the document as the editor has it, not as it was last saved.
    The editor has no box, border or background: the text sits on the surface, in the type the published post uses.
 
    WHAT IS WRITTEN LIVES IN `useComposeThread` (in the page), so it survives a switch to Build. This file is the
-   editor, the outline and the two things drawn over it: the format bar and the slash menu. A phone (below 768) has
-   no outline, no preview slot and no format bar; posts are reached by scrolling. */
+   editor, the outline, the preview and the two things drawn over the text: the format bar and the slash menu. A phone
+   (below 768) has no outline, no preview column and no format bar; posts are reached by scrolling, the toolbar is
+   docked to the bottom of the screen, and the preview is a sheet the title row's Preview button opens. */
 
 import { EditorContent, useEditorState, type Editor } from "@tiptap/react";
 import { TextSelection } from "@tiptap/pm/state";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { ErrorState } from "@/components/brand/ErrorState";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
 import { addPictures } from "@/components/post/editor/pictures";
+import { PhoneToolbar } from "@/components/post/editor/PhoneToolbar";
 import { PostOutline, type OutlineEntry } from "@/components/post/editor/PostOutline";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
+import { PostPreview, type PreviewMaker } from "@/components/post/PostPreview";
+import { BottomSheet } from "@/components/shell/BottomSheet";
 import { PICTURE_ACCEPT } from "@/lib/build/postMedia";
 import { getThreadMedia, type ThreadDoc } from "@/lib/build/thread";
+import type { Build } from "@/lib/build/types";
 import { movePost, postLead, postRuns } from "@/lib/build/threadEditor";
 import { prefersReducedMotion } from "@/lib/theme/motion";
 import { t } from "@/lib/theme/tokens";
@@ -35,7 +41,21 @@ export interface PostTabProps {
   phone: boolean;
   /** Replaces the slash menu's way of adding a picture. Absent: the tab asks for files itself (PT-06). */
   onInsertPicture?: InsertPicture;
+  /** What the preview draws around the thread: the build row, the title as typed and the signed-in maker. */
+  draft?: PostDraft;
+  /** A phone's preview sheet, opened by the title row's Preview button. */
+  previewOpen?: boolean;
+  onPreviewOpenChange?: (open: boolean) => void;
 }
+
+/** The parts of the draft that are not the thread. */
+export interface PostDraft {
+  build: Build | null;
+  title: string;
+  maker: PreviewMaker | null;
+}
+
+const NO_DRAFT: PostDraft = { build: null, title: "", maker: null };
 
 interface Outline {
   entries: OutlineEntry[];
@@ -64,17 +84,21 @@ function breakPosition(editor: Editor, index: number): number {
   return found;
 }
 
-function Body({ thread, phone, onInsertPicture }: PostTabProps) {
+function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen = false, onPreviewOpenChange }: PostTabProps) {
   const [notice, setNotice] = useState<string | null>(null);
+  // The preview draws the document as the editor has it, on every change, not as it was last saved.
+  const [liveDoc, setLiveDoc] = useState<ThreadDoc>(() => thread.readDoc());
   const { editor, controls } = usePostEditor({
     readDoc: thread.readDoc,
     phone,
     onDoc: (doc) => {
       setNotice(null);
+      setLiveDoc(doc);
       thread.onDoc(doc);
     },
   });
   const host = controls.pictures;
+  const pictures = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot);
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
@@ -139,6 +163,11 @@ function Body({ thread, phone, onInsertPicture }: PostTabProps) {
     [editor],
   );
 
+  const insertPicture = onInsertPicture ?? chooseFiles;
+  const preview = (variant: "column" | "sheet") => (
+    <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant={variant} />
+  );
+
   return (
     <div data-testid="post-tab" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 48, paddingTop: 12, minWidth: 0 }}>
       {phone ? null : <PostOutline entries={entries} active={active} onGo={go} onMove={move} />}
@@ -165,9 +194,17 @@ function Body({ thread, phone, onInsertPicture }: PostTabProps) {
           </p>
         ) : null}
       </div>
-      {phone ? null : <div data-testid="post-preview-slot" aria-hidden="true" style={{ flex: "1 1 280px", maxWidth: 320 }} />}
+      {phone ? null : preview("column")}
       <FormatBar editor={editor} controls={controls} phone={phone} />
-      <SlashMenu editor={editor} controls={controls} onInsertPicture={onInsertPicture ?? chooseFiles} notice={setNotice} phone={phone} />
+      <SlashMenu editor={editor} controls={controls} onInsertPicture={insertPicture} notice={setNotice} phone={phone} />
+      {phone ? (
+        <>
+          <PhoneToolbar editor={editor} onInsertPicture={insertPicture} notice={setNotice} />
+          <BottomSheet open={previewOpen} onOpenChange={(open) => onPreviewOpenChange?.(open)} title="Preview">
+            {previewOpen ? preview("sheet") : null}
+          </BottomSheet>
+        </>
+      ) : null}
     </div>
   );
 }

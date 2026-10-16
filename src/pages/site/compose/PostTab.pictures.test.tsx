@@ -292,7 +292,8 @@ describe("a selected picture", () => {
     await drawn();
     const box = document.querySelector("[data-post-media-box]") as HTMLElement;
     expect(box.style.aspectRatio).toBe("800 / 400");
-    expect(document.querySelectorAll("figcaption")).toHaveLength(0);
+    // (The preview beside the editor draws the caption; the picture in the editor leaves it to the field below.)
+    expect(document.querySelectorAll("[data-picture] figcaption")).toHaveLength(0);
     expect((screen.getByRole("textbox", { name: "Caption" }) as HTMLTextAreaElement).value).toBe("A caption");
   });
 });

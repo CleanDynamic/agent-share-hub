@@ -16,7 +16,8 @@
    PT-05: TWO TABS under the title row, "Upload steps": Build (everything above, unchanged) and Post (the thread
    written as one page, the `post` slot). The tab is in the URL as `?tab=post`, so a refresh keeps it; below 768 the
    tabs are a full-width Segmented, 40 high. The Build side stays mounted while Post is shown, only hidden, so nothing
-   typed in it is lost. The Card's Cover is now one line and a button that comes here; "a cover picture or video" in
+   typed in it is lost. PT-07: a phone shows a Preview button in the title row on the Post tab, which opens the draft as a
+   sheet. The Card's Cover is now one line and a button that comes here; "a cover picture or video" in
    Missing opens this tab too.
 
    MAP (UI-P94, `refined/{dusk,noon}/composer-map.html`). Sources folds to its rail as today, drawn as a module 52
@@ -134,6 +135,8 @@ export interface SandboxViewProps extends CardProps {
   postCount?: number | null;
   /** A sentence for the status line while the thread's save is waiting: "Post 3 is over 1,000 characters". */
   threadNote?: string | null;
+  /** PT-07: a phone's Preview button, in the title row while the Post tab is shown. It opens the preview sheet. */
+  onPreview?: () => void;
 
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
@@ -729,9 +732,16 @@ export function SandboxView(props: SandboxViewProps) {
   if (phone) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}>
-          {heading}
-          {statusLine}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
+            {heading}
+            {statusLine}
+          </div>
+          {tab === "post" && props.onPreview ? (
+            <Button variant="secondary" size={44} fontSize={13} onClick={props.onPreview}>
+              Preview
+            </Button>
+          ) : null}
         </div>
         {tabs}
         {banner}
