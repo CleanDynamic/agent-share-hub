@@ -133,7 +133,7 @@ export function PostPreview({ doc, build, title, maker, media, src, variant = "c
         <Segmented<PreviewWidth> label="Preview width" size={22} fontSize={12} value={width} onChange={setWidth} items={WIDTHS} />
       </div>
       {shown === "desktop" ? <Scaled>{post}</Scaled> : <div style={{ minWidth: 0 }}>{post}</div>}
-      <p style={{ ...text(12, 400, t.text2), margin: 0, paddingTop: 12, borderTop: `1px solid ${t.surfaceBorder}`, lineHeight: 1.5 }}>{PREVIEW_NOTE}</p>
+      <p style={{ ...text(12, 400, t.text2), margin: 0, paddingTop: 12, borderTop: `1px solid ${t.hairline}`, lineHeight: 1.5 }}>{PREVIEW_NOTE}</p>
     </section>
   );
 }

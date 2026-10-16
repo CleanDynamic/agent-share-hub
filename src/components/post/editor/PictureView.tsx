@@ -85,7 +85,7 @@ function CaptionField({ value, phone, onChange, onDone }: { value: string; phone
   return (
     <div style={{ position: "relative", marginTop: 8 }}>
       {value ? null : (
-        <span aria-hidden="true" style={{ ...small, color: t.label, position: "absolute", left: 0, top: 0, pointerEvents: "none", whiteSpace: "nowrap" }}>
+        <span aria-hidden="true" style={{ ...small, color: t.label, position: "absolute", left: 0, top: phone ? 12 : 0, pointerEvents: "none", whiteSpace: "nowrap" }}>
           Add a caption
         </span>
       )}
@@ -110,7 +110,8 @@ function CaptionField({ value, phone, onChange, onDone }: { value: string; phone
           display: "block",
           width: "100%",
           boxSizing: "border-box",
-          padding: 0,
+          // 44 high on a phone, the touch target: the padding is the target.
+          padding: phone ? "12px 0" : 0,
           border: 0,
           borderRadius: 6,
           background: "transparent",
@@ -289,7 +290,7 @@ export function PictureView(props: NodeViewProps) {
                 <div style={{ ...plateInk, background: t.inverse, borderRadius: 6, padding: 2 }}>
                   <Segmented
                     label="Picture size"
-                    size={phone ? 40 : 26}
+                    size={phone ? 50 : 26}
                     items={WIDTH_STEPS.map((step) => ({ value: String(step), label: WIDTH_NAMES[step] }))}
                     value={String(stored)}
                     onChange={(value) => set({ width: Number(value) })}

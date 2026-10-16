@@ -842,7 +842,11 @@ function ThreadHero({
   const columns: CSSProperties = { display: "grid", gridTemplateColumns: `${AUTHOR_COLUMN}px minmax(0, 1fr)`, columnGap: AUTHOR_GAP };
 
   const nameNode = profileHref ? (
-    <Link to={profileHref} data-testid="build-author-name" style={{ color: t.text, textDecoration: "none" }}>
+    <Link
+      to={profileHref}
+      data-testid="build-author-name"
+      style={{ color: t.text, textDecoration: "none", ...(phone ? { display: "inline-flex", alignItems: "center", minHeight: 44 } : null) }}
+    >
       {name}
     </Link>
   ) : (

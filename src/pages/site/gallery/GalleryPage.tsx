@@ -227,8 +227,11 @@ function GalleryFeedPage() {
   const allRows = list.kind === "all" ? list.list.rows : [...list.reproducedOn.rows, ...list.notYet.rows];
   const srcByPath = useSignedMedia(allRows.flatMap((row) => feedMedia(row.build)));
 
-  /* One engagement call for the rows shown: three requests at most, however many builds. */
-  const engagement = useEngagement(allRows.map((row) => row.build.id));
+  /* The rows arrive with their counts, so a signed-out page asks nothing more; a signed-in one asks which the reader likes and saves. */
+  const known = Object.fromEntries(
+    allRows.flatMap((row) => (row.build.engagement ? [[row.build.id, row.build.engagement] as const] : [])),
+  );
+  const engagement = useEngagement(allRows.map((row) => row.build.id), known);
 
   const error = firstQuery?.error ?? null;
   const status = error && !firstPage ? "error" : !firstPage ? "loading" : "ready";

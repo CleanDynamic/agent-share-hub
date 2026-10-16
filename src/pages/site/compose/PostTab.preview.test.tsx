@@ -94,7 +94,7 @@ describe("the preview", () => {
     expect([note.style.fontSize, note.style.paddingTop]).toEqual(["12px", "12px"]);
     // jsdom drops a border written as var(), so the line is read from the markup as the server would send it.
     const html = renderToStaticMarkup(<PostPreview doc={doc(p("Hello"))} build={DRAFT.build} title="T" maker={MAKER} media={new Map()} src={new Map()} />);
-    expect(html).toContain("border-top:1px solid var(--surface-border)");
+    expect(html).toContain("border-top:1px solid var(--hairline)");
     expect(html).toContain("padding-top:12px");
     // No card, box or border around the item.
     const item = within(preview()).getByRole("article");
@@ -232,7 +232,7 @@ describe("the phone toolbar", () => {
     // jsdom drops colours written as var(); the toolbar's skin is read from the markup.
     const html = renderToStaticMarkup(<PhoneToolbar editor={editor} onInsertPicture={vi.fn()} notice={vi.fn()} />);
     expect(html).toContain("background:var(--module)");
-    expect(html).toContain("border-top:1px solid var(--surface-border)");
+    expect(html).toContain("border-top:1px solid var(--hairline)");
     expect(html).toContain("box-shadow:var(--sheet-shadow)");
   });
 
@@ -286,7 +286,7 @@ describe("the phone toolbar", () => {
       expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["false", "false", "true", "false", "false"]);
       expect(row.style.padding).toBe("12px 8px 8px");
       expect(row.style.overflowX).toBe("auto");
-      expect(renderToStaticMarkup(<TextSizeRow editor={editor} current="Body" onDone={vi.fn()} />)).toContain("border-bottom:1px solid var(--hairline-module)");
+      expect(renderToStaticMarkup(<TextSizeRow editor={editor} current="Body" onDone={vi.fn()} />)).toContain("border-bottom:1px solid var(--hairline)");
       // Each in its own phone size.
       expect(within(row).getByText("Title").style.fontSize).toBe("24px");
       expect(within(row).getByText("Heading").style.fontSize).toBe("18px");

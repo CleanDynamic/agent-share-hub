@@ -1102,6 +1102,11 @@ export interface GalleryFeedRow extends GalleryBuild {
   creatorAvatar: string | null;
   /** Reproductions by model, most worked first. */
   proof: ModelProof[];
+  /**
+   * builds.like_count and comment_count, read with the cards so the feed's action row has its numbers without a
+   * request of its own. Absent when the read did not carry them.
+   */
+  engagement?: { likes: number; comments: number };
 }
 
 export interface GalleryFeedCounts {
@@ -1285,6 +1290,14 @@ function makerOf(profiles: Map<string, CreatorProfile>, creatorId: string) {
   };
 }
 
+type EngagementColumns = { like_count?: number | null; comment_count?: number | null };
+
+/** The counts a feed read carried, or undefined when it carried none. */
+function engagementOf(row: EngagementColumns): GalleryFeedRow["engagement"] {
+  if (row.like_count === undefined && row.comment_count === undefined) return undefined;
+  return { likes: Math.max(0, row.like_count ?? 0), comments: Math.max(0, row.comment_count ?? 0) };
+}
+
 /** The card data for these ids, in the order given. One request (ids are at most two pages). */
 async function feedRows(
   ids: string[],
@@ -1293,13 +1306,13 @@ async function feedRows(
   if (ids.length === 0) return [];
 
   const query = withFeedEmbeds(
-    feedTable("builds").select(`${gallerySelect(false)}, models_used`).in("id", ids)
+    feedTable("builds").select(`${gallerySelect(false)}, models_used, like_count, comment_count`).in("id", ids)
   ).limit(ids.length);
   const { data, error } = await query;
   if (error) throw buildLayerError("listGalleryFeed", error);
 
   const byId = new Map(
-    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[]).map((row) => [row.id, row])
+    ((data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[]).map((row) => [row.id, row])
   );
   const found = ids.filter((id) => byId.has(id));
 
@@ -1316,6 +1329,7 @@ async function feedRows(
       models_used: row.models_used ?? [],
       ...makerOf(profiles, row.creator_id),
       proof: known[id] ?? fetched[id] ?? [],
+      engagement: engagementOf(row),
     };
   });
 }
@@ -1402,12 +1416,12 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used`, audience, search, true), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
 
-    const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[];
+    const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null } & EngagementColumns)[];
     const pageRows = all.slice(0, FEED_PAGE_SIZE);
     const [profiles, proofs] = await Promise.all([
       creatorProfiles(pageRows.map((row) => row.creator_id)),
@@ -1418,6 +1432,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
       models_used: row.models_used ?? [],
       ...makerOf(profiles, row.creator_id),
       proof: proofs[row.id] ?? [],
+      engagement: engagementOf(row),
     }));
     return {
       kind: "all",

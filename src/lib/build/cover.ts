@@ -386,7 +386,7 @@ export async function setPostMedia(
   if (ids.length > MAX_THREAD_MEDIA) {
     throw new PostMediaError(
       "too_many",
-      `a thread shows at most ${MAX_THREAD_MEDIA} pictures — ${ids.length} were given`
+      `a thread shows at most ${MAX_THREAD_MEDIA} pictures, ${ids.length} were given`
     );
   }
 

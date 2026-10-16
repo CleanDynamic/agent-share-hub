@@ -46,6 +46,7 @@ const TABLE: Record<GlyphName, string> = {
   rebuild: "M12.75 3v3h-3M3.25 13v-3h3M12.4 6A4.75 4.75 0 0 0 3.6 5.25M3.6 10a4.75 4.75 0 0 0 8.8.75",
   listBullet: "M6.5 4.5h7M6.5 8h7M6.5 11.5h7M3 4.25h.5v.5H3zM3 7.75h.5v.5H3zM3 11.25h.5v.5H3z",
   listNumber: "M6.5 4.5h7M6.5 8h7M6.5 11.5h7M2.75 3.25v2.5M2.25 7h1.5l-1.5 2h1.5M2.25 10.75h1.5l-.75 1 .75 1h-1.5",
+  italic: "M9.5 3.5h-3M9.5 12.5h-3M9 3.5l-2 9",
   link: "M7 9a2.5 2.5 0 0 0 3.5 0l2-2A2.5 2.5 0 0 0 9 3.5l-.75.75M9 7a2.5 2.5 0 0 0-3.5 0l-2 2A2.5 2.5 0 0 0 7 12.5l.75-.75",
   grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
 };
@@ -56,8 +57,8 @@ const at = (url: string, node: React.ReactElement) => <MemoryRouter initialEntri
 const svgOf = (container: HTMLElement) => container.querySelector("svg") as SVGSVGElement;
 
 describe("the glyph table", () => {
-  it("is the 24 glyphs of the UI-P82 table and the nine added for posts, in its order", () => {
-    expect(GLYPH_NAMES).toHaveLength(33);
+  it("is the 24 glyphs of the UI-P82 table and the ten added for posts, in its order", () => {
+    expect(GLYPH_NAMES).toHaveLength(34);
     expect(GLYPH_NAMES).toEqual(Object.keys(TABLE));
   });
 
