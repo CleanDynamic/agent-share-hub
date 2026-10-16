@@ -35,6 +35,7 @@ import {
   type ChecklistRow,
 } from "./detailsModel";
 import { ToolMark } from "./refinedPieces";
+import { ToolPicker } from "./ToolPicker";
 import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
 import type { Runs, Use } from "@/lib/build/graph";
 
@@ -160,6 +161,8 @@ export interface DetailsHandlers {
 export interface DetailsPanelProps extends DetailsHandlers {
   phone: boolean;
   view: DetailsView | null;
+  /** The tools the build already uses, first in a manual step's tool picker. */
+  inBuild?: readonly string[];
 }
 
 export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
@@ -504,7 +507,7 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
 
 /* ── a manual step (UI-P70) ── */
 
-function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean } & DetailsHandlers) {
+function ManualDetails({ view, phone, inBuild = [], ...h }: { view: ManualView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const picker = useRef<HTMLInputElement>(null);
   const commit = (fields: { tool?: string; text?: string }) => {
     // Both are required: a blank value goes back to what was there.
@@ -517,9 +520,10 @@ function ManualDetails({ view, phone, ...h }: { view: ManualView; phone: boolean
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of manual step ${view.number}`} phone={phone} onRename={h.onRename} />
         <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
       </Head>
-      <FieldBlock label="Tool">
-        <CommitField key={`${view.id}:tool`} label="Tool" value={view.tool} max={40} phone={phone} onCommit={(value) => commit({ tool: value })} />
-      </FieldBlock>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+        <span style={quiet()}>Tool</span>
+        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} onChange={(value) => commit({ tool: value ?? "" })} />
+      </div>
       <FieldBlock label="What was done">
         <CommitField key={`${view.id}:text`} label="What was done" value={view.text} max={140} multiline phone={phone} onCommit={(value) => commit({ text: value })} />
       </FieldBlock>
@@ -807,12 +811,12 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
 /* ── the panel ── */
 
 /* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
-export function DetailsPanel({ view, phone, ...h }: DetailsPanelProps) {
+export function DetailsPanel({ view, phone, inBuild, ...h }: DetailsPanelProps) {
   if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
   return (
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

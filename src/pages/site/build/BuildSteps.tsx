@@ -531,7 +531,14 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder }}
       >
         <Title entry={entry} right={null} />
-        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{entry.manual.headline}</div>
+        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>
+          {markFor({ tool: step.tool }) !== null ? (
+            <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 6, color: t.text }}>
+              <ModelMark tool={step.tool} size={16} />
+            </span>
+          ) : null}
+          {entry.manual.headline}
+        </div>
         <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>

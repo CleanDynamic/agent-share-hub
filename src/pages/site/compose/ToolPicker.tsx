@@ -1,0 +1,228 @@
+/* TF-02 — one tool picker, with logos.
+
+   A trigger showing the chosen tool's logo at 16 and its name, or "Pick a tool". It opens a Radix popover: a field,
+   "Find a tool", that takes focus, then the rows (`pickerRows`) as a listbox. The focus stays in the field and the
+   active row is named by `aria-activedescendant`: Up and Down move, Enter picks, Esc closes and gives focus back to the
+   trigger. A listed tool is handed back as its `id`, a typed name as typed and trimmed, "No tool" as null.
+
+   Pure but for its own open state: the build's tools come in as `inBuild`. */
+
+import * as Popover from "@radix-ui/react-popover";
+import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+
+import { ModelMark } from "@/components/brand/ModelMark";
+import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { CONTROL, CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
+import { t } from "@/lib/theme/tokens";
+import { toolFor } from "@/lib/tools/registry";
+
+import { menuSurface, text, wellField } from "./refinedStyles";
+import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
+
+export interface ToolPickerProps {
+  /** A tool id, a typed name, or null. */
+  value: string | null;
+  onChange: (value: string | null) => void;
+  /** The tools the build already uses. */
+  inBuild: readonly string[];
+  allowNone?: boolean;
+  /** The trigger's accessible name. */
+  label: string;
+  phone: boolean;
+}
+
+const isPickable = (row: PickerRow): boolean => row.kind !== "heading";
+
+/** The words a row reads as. */
+function rowName(row: PickerRow): string {
+  switch (row.kind) {
+    case "none":
+      return "No tool";
+    case "tool":
+      return row.tool.name;
+    case "showAll":
+      return `Show all ${row.count} tools`;
+    case "showMore":
+      return `Show ${row.count} more`;
+    case "use":
+      return `Use "${row.name}"`;
+    case "heading":
+      return row.label;
+  }
+}
+
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone }: ToolPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [active, setActive] = useState(0);
+  const field = useRef<HTMLInputElement>(null);
+  const uid = useId();
+  const trigger = useInteractive<HTMLButtonElement>();
+
+  const chosen = toolFor(value);
+  const typedValue = value && !chosen ? value.trim() : null;
+  const shown = chosen ? chosen.name : typedValue || "Pick a tool";
+
+  const rows = pickerRows({ query, inBuild, expanded, allowNone });
+  const pickable = rows.filter(isPickable);
+  const current = Math.min(active, Math.max(pickable.length - 1, 0));
+  const rowId = (row: PickerRow) => `${uid}-row-${pickable.indexOf(row)}`;
+
+  const isChosen = (row: PickerRow): boolean => {
+    if (row.kind === "none") return !value;
+    if (row.kind === "tool") return chosen?.id === row.tool.id;
+    if (row.kind === "use") return typedValue !== null && typedValue.toLowerCase() === row.name.toLowerCase();
+    return false;
+  };
+
+  const openChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) return;
+    setQuery("");
+    setExpanded(false);
+    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone }).filter(isPickable);
+    setActive(Math.max(0, first.findIndex(isChosen)));
+  };
+
+  const pick = (row: PickerRow | undefined) => {
+    if (!row) return;
+    if (row.kind === "showAll" || row.kind === "showMore") {
+      setExpanded(true);
+      return;
+    }
+    if (row.kind === "none") onChange(null);
+    else if (row.kind === "tool") onChange(row.tool.id);
+    else if (row.kind === "use") onChange(row.name.trim().slice(0, TYPED_TOOL_MAX));
+    else return;
+    setOpen(false);
+  };
+
+  const move = (to: number) => {
+    const next = (to + pickable.length) % Math.max(pickable.length, 1);
+    setActive(next);
+    const element = document.getElementById(`${uid}-row-${next}`);
+    if (typeof element?.scrollIntoView === "function") element.scrollIntoView({ block: "nearest" });
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      move(current + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      move(current - 1);
+    } else if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      pick(pickable[current]);
+    }
+  };
+
+  const triggerStyle: CSSProperties = {
+    ...CONTROL,
+    ...(trigger.state.hovered ? CONTROL_HOVER : null),
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    boxSizing: "border-box",
+    maxWidth: "100%",
+    minWidth: 0,
+    height: phone ? 44 : 32,
+    padding: "0 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+    textAlign: "left",
+    ...text(13, 400, value ? t.text : t.text2),
+    ...ring(trigger.state.focusVisible),
+  };
+
+  const rowStyle = (row: PickerRow): CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    boxSizing: "border-box",
+    minHeight: phone ? 44 : 36,
+    padding: "0 10px",
+    borderRadius: 6,
+    border: "1px solid transparent",
+    cursor: "pointer",
+    overflowWrap: "anywhere",
+    ...text(13, 400, row.kind === "showAll" || row.kind === "showMore" ? t.text2 : t.text),
+    ...(pickable.indexOf(row) === current ? { background: t.controlOn } : null),
+    ...(isChosen(row) ? SELECTED : null),
+  });
+
+  return (
+    <Popover.Root open={open} onOpenChange={openChange}>
+      <Popover.Trigger asChild>
+        <button type="button" aria-label={label} aria-haspopup="listbox" aria-describedby={`${uid}-value`} {...trigger.handlers} style={triggerStyle}>
+          {value ? <ModelMark tool={chosen ? chosen.id : value} size={16} /> : null}
+          <span id={`${uid}-value`} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+            {shown}
+          </span>
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={4}
+          collisionPadding={16}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            field.current?.focus();
+          }}
+          style={{ ...menuSurface(280), display: "flex", flexDirection: "column", gap: 4 }}
+        >
+          <input
+            ref={field}
+            type="text"
+            role="combobox"
+            aria-label="Find a tool"
+            aria-expanded="true"
+            aria-controls={`${uid}-list`}
+            aria-activedescendant={pickable.length ? `${uid}-row-${current}` : undefined}
+            aria-autocomplete="list"
+            autoComplete="off"
+            placeholder="Find a tool"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setExpanded(false);
+              setActive(0);
+            }}
+            onKeyDown={onKeyDown}
+            style={{ ...wellField, width: "100%", boxSizing: "border-box", height: phone ? 44 : 32, padding: "0 10px", fontSize: phone ? 16 : 13 }}
+          />
+          <div id={`${uid}-list`} role="listbox" aria-label={label} style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+            {rows.map((row, index) =>
+              row.kind === "heading" ? (
+                <div key={`h-${row.label}`} role="presentation" style={{ ...text(11.5, 400, t.label), padding: index === 0 ? "4px 10px" : "8px 10px 4px" }}>
+                  {row.label}
+                </div>
+              ) : (
+                <div
+                  key={`${row.kind}-${row.kind === "tool" ? row.tool.id : row.kind === "use" ? row.name : index}`}
+                  id={rowId(row)}
+                  role="option"
+                  aria-selected={isChosen(row)}
+                  onMouseMove={() => setActive(pickable.indexOf(row))}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => pick(row)}
+                  style={rowStyle(row)}
+                >
+                  {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
+                  <span style={{ minWidth: 0 }}>{rowName(row)}</span>
+                </div>
+              ),
+            )}
+            {pickable.length === 0 ? <span style={VISUALLY_HIDDEN}>No tools match</span> : null}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+export default ToolPicker;

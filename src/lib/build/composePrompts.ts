@@ -23,8 +23,8 @@
 // index on (build_id, parent_id, position) is not deferrable.
 
 import type { Json } from "@/integrations/supabase/types";
+import { toolFor } from "@/lib/tools/registry";
 import { nodeRow, placeTopNode } from "./composeCover";
-import { toolLabel } from "./making";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import type { SessionPrompt } from "./sessions";
 import { buildLayerError, type BuildNode, type NodeTree } from "./types";
@@ -122,9 +122,13 @@ export async function addSessionPrompt({ buildId, tree, importSessionId, model, 
   });
 }
 
+/** The longest tool name a prompt keeps when it is typed. */
+export const PROMPT_TOOL_MAX = 40;
+
 /**
- * Place a prompt the maker wrote. Refuses one with no text. `tool` (a client
- * `toolLabel` knows) and `model` are kept in the payload when given (DATA §2).
+ * Place a prompt the maker wrote. Refuses one with no text. `tool` is kept when
+ * given: a tool `toolFor` knows as its id, any other name as typed (1 to 40
+ * characters). `model` is kept too (DATA §2).
  */
 export async function addWrittenPrompt({
   buildId,
@@ -141,7 +145,11 @@ export async function addWrittenPrompt({
 }): Promise<BuildNode> {
   if (!text.trim()) throw buildLayerError("addWrittenPrompt", new Error("A prompt needs its text."));
   const payload: Record<string, string> = { text };
-  if (tool && toolLabel(tool)) payload.tool = tool;
+  const named = tool?.trim();
+  if (named) {
+    if (named.length > PROMPT_TOOL_MAX) throw buildLayerError("addWrittenPrompt", new Error(`A tool is at most ${PROMPT_TOOL_MAX} characters.`));
+    payload.tool = toolFor(named)?.id ?? named;
+  }
   if (model?.trim()) payload.model = model.trim();
   return placeTopNode(buildId, tree, { type: PROMPT_TYPE, title: null, payload, source_ref: null });
 }
