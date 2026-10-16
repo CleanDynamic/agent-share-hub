@@ -35,7 +35,7 @@ import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-export type SegmentedSize = 26 | 28 | 30 | 32 | 34 | 36 | 38;
+export type SegmentedSize = 26 | 28 | 30 | 32 | 34 | 36 | 38 | 40;
 export type SegmentedFontSize = 11 | 12 | 13;
 
 export interface SegmentedItem<V extends string = string> {
@@ -71,6 +71,8 @@ export interface SegmentedProps<V extends string = string> {
    * arrow keys moving the choice.
    */
   semantics?: "buttons" | "radio";
+  /** The track takes the full width and the items share it (the composer's tabs on a phone, PT-05). */
+  fullWidth?: boolean;
 }
 
 function Segment({
@@ -80,6 +82,7 @@ function Segment({
   readOnly,
   href,
   semantics,
+  fullWidth,
   onSelect,
   children,
 }: {
@@ -89,6 +92,7 @@ function Segment({
   readOnly?: boolean;
   href?: string;
   semantics: "buttons" | "radio";
+  fullWidth: boolean;
   onSelect: () => void;
   children: ReactNode;
 }) {
@@ -109,6 +113,7 @@ function Segment({
     whiteSpace: "nowrap",
     background: "transparent",
     color: t.text2,
+    ...(fullWidth ? { flex: 1, justifyContent: "center", display: "inline-flex", alignItems: "center" } : null),
     ...(current ? { ...CONTROL, ...CONTROL_HOVER, color: t.text } : null),
     ...ring(state.focusVisible),
   };
@@ -154,6 +159,7 @@ export function Segmented<V extends string = string>({
   label,
   readOnly = false,
   semantics = "buttons",
+  fullWidth = false,
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
 
@@ -183,7 +189,8 @@ export function Segmented<V extends string = string>({
       onKeyDown={radio ? onKeyDown : undefined}
       style={
         {
-          display: "inline-flex",
+          display: fullWidth ? "flex" : "inline-flex",
+          width: fullWidth ? "100%" : undefined,
           boxSizing: "border-box",
           height: size,
           gap: 2,
@@ -203,6 +210,7 @@ export function Segmented<V extends string = string>({
           readOnly={readOnly}
           href={item.href}
           semantics={semantics}
+          fullWidth={fullWidth}
           onSelect={() => onChange?.(item.value)}
         >
           {item.label}

@@ -15,6 +15,7 @@ import {
   promptDragData,
   promptSourceLine,
   publishToast,
+  mergeSave,
   saveState,
   UNTITLED,
 } from "./composeModel";
@@ -69,6 +70,16 @@ describe("parseAudience", () => {
 
   it("is empty for nothing", () => {
     expect(parseAudience(" , ")).toEqual([]);
+  });
+});
+
+describe("mergeSave", () => {
+  it("reads two saves as one: an error outranks a save in flight, which outranks a save that landed", () => {
+    expect(mergeSave("saved", "error")).toBe("error");
+    expect(mergeSave("saving", "saved")).toBe("saving");
+    expect(mergeSave("idle", "saved")).toBe("saved");
+    expect(mergeSave("idle", "idle")).toBe("idle");
+    expect(mergeSave("error", "saving")).toBe("error");
   });
 });
 

@@ -102,6 +102,12 @@ export function saveState(input: { isSaving: boolean; saveError: unknown; lastSa
   return input.lastSavedAt ? "saved" : "idle";
 }
 
+/** Two saves read as one: an error outranks a save in flight, which outranks a save that landed (PT-05: the header and the thread save apart). */
+export function mergeSave(...states: readonly SaveState[]): SaveState {
+  for (const wanted of ["error", "saving", "saved"] as const) if (states.includes(wanted)) return wanted;
+  return "idle";
+}
+
 /* ── UI-P48: Prompts ── */
 
 /** The characters of a prompt the + button's accessible name keeps. */
