@@ -11,9 +11,9 @@
 // client sent it and is never rewritten to match; this file only decides what
 // to call it.
 
-export type Lab = "Anthropic" | "OpenAI" | "Google" | "xAI" | "DeepSeek";
+export type Lab = "Anthropic" | "OpenAI" | "Google" | "xAI" | "DeepSeek" | "Meta" | "TypeSafe";
 
-export const LABS: readonly Lab[] = ["Anthropic", "OpenAI", "Google", "xAI", "DeepSeek"];
+export const LABS: readonly Lab[] = ["Anthropic", "OpenAI", "Google", "xAI", "DeepSeek", "Meta", "TypeSafe"];
 
 export interface ModelVersion {
   id: string;
@@ -38,6 +38,13 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
     lab: "Anthropic",
     isNew: true,
     aliases: ["claude-opus-5-5", "claude-opus-5.5", "opus-5.5", "Opus 5.5", "claude opus 5.5"],
+  },
+  {
+    id: "fable-5-1",
+    name: "Fable 5.1",
+    lab: "Anthropic",
+    isNew: true,
+    aliases: ["claude-fable-5-1", "claude-fable-5.1", "fable-5.1", "claude fable 5.1"],
   },
   {
     id: "haiku-5-5",
@@ -108,6 +115,27 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
     lab: "DeepSeek",
     isNew: false,
     aliases: ["deepseek-v4-pro", "deepseek_v4_pro", "DeepSeek V4 Pro", "deepseek v4 pro", "deepseek-v4.pro"],
+  },
+  {
+    id: "muse-wonder",
+    name: "Muse Wonder",
+    lab: "Meta",
+    isNew: true,
+    aliases: ["muse-wonder-1.0", "meta muse wonder"],
+  },
+  {
+    id: "muse-spark-1-3",
+    name: "Muse Spark 1.3",
+    lab: "Meta",
+    isNew: false,
+    aliases: ["muse-spark-1.3", "muse spark 1.3", "muse spark"],
+  },
+  {
+    id: "jev",
+    name: "Jev",
+    lab: "TypeSafe",
+    isNew: true,
+    aliases: ["typesafe jev"],
   },
 ];
 

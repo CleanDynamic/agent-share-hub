@@ -96,6 +96,15 @@ describe("GalleryDashboardView", () => {
     fireEvent.click(anthropic);
     expect(p.onLabChange).toHaveBeenCalledWith("Anthropic");
 
+    expect(within(labs).getByTestId("dash-lab-Meta").querySelector('[data-mark="meta-color"]')).not.toBeNull();
+    const typeSafe = within(labs).getByTestId("dash-lab-TypeSafe");
+    const blank = typeSafe.firstElementChild as HTMLElement;
+    expect(blank.getAttribute("data-testid")).toBe("dash-lab-blank-TypeSafe");
+    expect(blank.style.width).toBe("18px");
+    expect(blank.style.height).toBe("18px");
+    expect(blank.textContent).toBe("");
+    expect(typeSafe.querySelector("[data-mark]")).toBeNull();
+
     fireEvent.click(within(screen.getByRole("group", { name: "Reporting" })).getByTestId("dash-report-month"));
     expect(p.onReportChange).toHaveBeenCalledWith("month");
     fireEvent.click(screen.getByRole("button", { name: "Connect a tool" }));

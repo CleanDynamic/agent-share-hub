@@ -5,21 +5,13 @@
 // `normaliseModel` so every spelling a client sends resolves, then the lab on its own (the Gallery's Labs list).
 // Anything the site has no logo for is `null` and the name stands alone.
 
+import { toolFor, type LogoKey } from "@/lib/tools/registry";
+
 import { normaliseModel, type Lab } from "./registry";
 
-export type MarkKey =
-  | "claude-color"
-  | "claudecode-color"
-  | "openai"
-  | "cursor"
-  | "gemini-color"
-  | "grok"
-  | "vercel"
-  | "deepseek-color"
-  | "anthropic"
-  | "google-color"
-  | "xai"
-  | "mail";
+export type { LogoKey };
+
+export type MarkKey = LogoKey;
 
 export interface MarkQuery {
   tool?: string | null;
@@ -31,24 +23,15 @@ export interface MarkQuery {
 const loose = (raw: string | null | undefined): string =>
   typeof raw === "string" ? raw.trim().toLowerCase().replace(/[\s_-]+/g, " ") : "";
 
-const TOOL_MARKS: Readonly<Record<string, MarkKey>> = {
-  claude: "claude-color",
-  "claude code": "claudecode-color",
-  chatgpt: "openai",
-  cursor: "cursor",
-  gemini: "gemini-color",
-  grok: "grok",
-  vercel: "vercel",
-  gmail: "mail",
-};
-
 /** A model is shown with its maker's product mark, not the company's. */
-const MODEL_MARKS: Readonly<Record<Lab, MarkKey>> = {
+const MODEL_MARKS: Readonly<Record<Lab, MarkKey | null>> = {
   Anthropic: "claude-color",
   OpenAI: "openai",
   Google: "gemini-color",
   xAI: "grok",
   DeepSeek: "deepseek-color",
+  Meta: "meta-color",
+  TypeSafe: null,
 };
 
 const LAB_MARKS: Readonly<Record<string, MarkKey>> = {
@@ -57,10 +40,11 @@ const LAB_MARKS: Readonly<Record<string, MarkKey>> = {
   google: "google-color",
   xai: "xai",
   deepseek: "deepseek-color",
+  meta: "meta-color",
 };
 
 export function markFor({ tool, model, lab }: MarkQuery): MarkKey | null {
-  const byTool = TOOL_MARKS[loose(tool)];
+  const byTool = toolFor(tool)?.logo;
   if (byTool) return byTool;
 
   const version = normaliseModel(model);

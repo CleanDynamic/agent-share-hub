@@ -10,17 +10,20 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
+import { TOOLS } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { buildLayerError, type BuildPatch } from "./types";
 
-/** The label a client adds to Made with. `web` and `unknown` name no tool. */
-const TOOL_LABELS: Record<string, string> = {
-  claude: "Claude",
-  "claude-code": "Claude Code",
-  chatgpt: "ChatGPT",
-  cursor: "Cursor",
-};
+/** The order `TOOL_CLIENTS` lists the clients in. */
+const CLIENT_ORDER = ["claude", "claude-code", "chatgpt", "cursor"];
+
+/** The label a client adds to Made with. `web` and `unknown` name no tool. Built from the tool list's `client` entries. */
+const TOOL_LABELS: Record<string, string> = Object.fromEntries(
+  TOOLS.flatMap((tool) => (tool.client ? [[tool.client, tool.name] as const] : [])).sort(
+    ([a], [b]) => CLIENT_ORDER.indexOf(a) - CLIENT_ORDER.indexOf(b),
+  ),
+);
 
 /** The clients `toolLabel` knows, in order: what a prompt written by hand can name as its tool (DATA §2). */
 export const TOOL_CLIENTS: readonly { client: string; label: string }[] = Object.entries(TOOL_LABELS).map(([client, label]) => ({ client, label }));

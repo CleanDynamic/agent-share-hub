@@ -29,7 +29,7 @@ describe("markFor", () => {
   });
 
   it("marks every named model", () => {
-    for (const m of MODEL_VERSIONS) expect(markFor({ model: m.name }), m.name).not.toBeNull();
+    for (const m of MODEL_VERSIONS.filter((v) => v.lab !== "TypeSafe")) expect(markFor({ model: m.name }), m.name).not.toBeNull();
   });
 
   it("resolves an alias to the same mark as the name", () => {
@@ -45,7 +45,7 @@ describe("markFor", () => {
     expect(markFor({ lab: "Google" })).toBe("google-color");
     expect(markFor({ lab: "xAI" })).toBe("xai");
     expect(markFor({ lab: "DeepSeek" })).toBe("deepseek-color");
-    for (const lab of LABS) expect(markFor({ lab }), lab).not.toBeNull();
+    for (const lab of LABS.filter((l) => l !== "TypeSafe")) expect(markFor({ lab }), lab).not.toBeNull();
   });
 
   it("puts the tool before the model and the model before the lab", () => {
@@ -64,6 +64,23 @@ describe("markFor", () => {
   it("returns null for anything else", () => {
     expect(markFor({})).toBeNull();
     expect(markFor({ tool: null, model: undefined, lab: "" })).toBeNull();
-    expect(markFor({ tool: "Notepad", model: "llama-9", lab: "Meta" })).toBeNull();
+    expect(markFor({ tool: "Notepad", model: "llama-9", lab: "Mistral" })).toBeNull();
+  });
+
+  it("reads the tool list for the newer tools", () => {
+    expect(markFor({ tool: "Lovable" })).toBe("lovable-color");
+    expect(markFor({ tool: "bolt.new" })).toBe("bolt-color");
+    expect(markFor({ tool: "Higgsfield" })).toBe("higgsfield");
+    expect(markFor({ tool: "Windsurf" })).toBe("devin-color");
+    expect(markFor({ tool: "Gamma" })).toBeNull();
+    expect(markFor({ tool: "Muse" })).toBeNull();
+  });
+
+  it("marks Meta, TypeSafe and the new models", () => {
+    expect(markFor({ lab: "Meta" })).toBe("meta-color");
+    expect(markFor({ model: "Muse Wonder" })).toBe("meta-color");
+    expect(markFor({ model: "claude-fable-5-1" })).toBe("claude-color");
+    expect(markFor({ lab: "TypeSafe" })).toBeNull();
+    expect(markFor({ model: "Jev" })).toBeNull();
   });
 });
