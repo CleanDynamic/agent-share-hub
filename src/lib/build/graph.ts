@@ -16,6 +16,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
+import { toolName } from "@/lib/tools/registry";
 import { toolLabel, type MakingSession } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
@@ -203,7 +204,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     words: wordCount(text),
     model: stringOf(payload.model),
     sessionId: typeof import_ === "string" && import_ ? import_ : null,
-    tool: tool ? (toolLabel(tool) ?? tool) : null,
+    tool: tool ? (toolName(tool) ?? tool) : null,
     runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
     uses: usesOf(node),
     dismissed: dismissedOf(payload),

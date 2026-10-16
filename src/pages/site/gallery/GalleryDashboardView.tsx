@@ -47,6 +47,7 @@ import type {
   DashboardReport,
   DashboardSort,
 } from "@/lib/build/galleryParams";
+import { markFor } from "@/lib/models/marks";
 import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
@@ -369,7 +370,13 @@ function Sidebar(props: GalleryDashboardViewProps) {
             height={30}
             size={12.5}
             onClick={() => onLabChange(lab === name ? null : name)}
-            lead={<ModelMark lab={name} size={18} />}
+            lead={
+              markFor({ lab: name }) ? (
+                <ModelMark lab={name} size={18} />
+              ) : (
+                <span aria-hidden="true" data-testid={`dash-lab-blank-${name}`} style={{ display: "inline-block", flexShrink: 0, width: 18, height: 18 }} />
+              )
+            }
           />
         ))}
       </div>

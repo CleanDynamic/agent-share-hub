@@ -2,15 +2,16 @@ import { describe, expect, it } from "vitest";
 import { LABS, MODEL_VERSIONS, modelLabel, normaliseModel } from "./registry";
 
 describe("registry", () => {
-  it("lists the five labs in order and the twelve versions in order", () => {
-    expect(LABS).toEqual(["Anthropic", "OpenAI", "Google", "xAI", "DeepSeek"]);
+  it("lists the seven labs in order and the sixteen versions in order", () => {
+    expect(LABS).toEqual(["Anthropic", "OpenAI", "Google", "xAI", "DeepSeek", "Meta", "TypeSafe"]);
     expect(MODEL_VERSIONS.map((m) => m.id)).toEqual([
-      "sonnet-5-5", "opus-5-5", "haiku-5-5", "opus-5",
+      "sonnet-5-5", "opus-5-5", "fable-5-1", "haiku-5-5", "opus-5",
       "gpt-6-astra", "gpt-6-1-sol", "gpt-6-luna", "gpt-5-6",
       "gemini-4-argon", "gemini-3-8-flash", "grok-4-7", "deepseek-v4-pro",
+      "muse-wonder", "muse-spark-1-3", "jev",
     ]);
     expect(MODEL_VERSIONS.filter((m) => m.isNew).map((m) => m.id)).toEqual([
-      "sonnet-5-5", "opus-5-5", "gpt-6-1-sol",
+      "sonnet-5-5", "opus-5-5", "fable-5-1", "gpt-6-1-sol", "muse-wonder", "jev",
     ]);
     for (const m of MODEL_VERSIONS) expect(LABS).toContain(m.lab);
   });

@@ -131,7 +131,7 @@ describe("the dashboard's parameters (UI-P50)", () => {
       active: 30,
       dsort: "prompts",
     });
-    const junk = parse("tab=builds&lab=Meta&report=week&active=14&dsort=engagement");
+    const junk = parse("tab=builds&lab=Mistral&report=week&active=14&dsort=engagement");
     expect(junk).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
   });
 
