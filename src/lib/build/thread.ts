@@ -13,7 +13,7 @@
 // through cover.ts and builds.ts.
 
 import { updateBuild } from "./builds";
-import { postEntriesOf, setPostMedia, type PostEntryMedia, type PostTextSource } from "./cover";
+import { getPostMedia, postEntriesOf, setPostMedia, type PostEntryMedia, type PostTextSource } from "./cover";
 import type { Build, BuildMedia, BuildPatch, Json } from "./types";
 
 // --- limits ------------------------------------------------------------------
@@ -306,7 +306,8 @@ export interface ThreadProblem {
   message: string;
 }
 
-function linkAllowed(href: unknown): boolean {
+/** Whether a link's address may be followed: http, https or mailto. PostBody draws any other href as text. */
+export function linkAllowed(href: unknown): boolean {
   if (typeof href !== "string" || !href.trim()) return false;
   try {
     return LINK_PROTOCOLS.has(new URL(href.trim()).protocol);
@@ -507,6 +508,14 @@ export function legacyThread(build: PostTextSource | null | undefined, media: re
 export function threadOf(build: ThreadSource | null | undefined, media: readonly ThreadMedia[]): ThreadDoc | null {
   if (isThreadDoc(build?.post_doc)) return build.post_doc;
   return legacyThread(build, media);
+}
+
+/**
+ * The thread's media rows, in thread order: what Show more asks for when it
+ * opens the posts after the first. At most MAX_THREAD_MEDIA rows, one request.
+ */
+export function getThreadMedia(buildId: string): Promise<BuildMedia[]> {
+  return getPostMedia(buildId);
 }
 
 // --- writing -----------------------------------------------------------------

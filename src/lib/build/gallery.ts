@@ -396,6 +396,23 @@ export function withCardEmbeds<Q>(query: Q): Q {
     .limit(BOUNTIES_PER_BUILD, { referencedTable: "bounties" }) as unknown as Q;
 }
 
+/**
+ * The feed's embeds: withCardEmbeds, with the pictures in their thread order.
+ *
+ * The feed draws post 1 of every build, so the twelve pictures it embeds must
+ * be the thread's first twelve, not whichever twelve the database returns.
+ * post_position ascending puts the placed pictures first in thread order and
+ * the unplaced ones (null) after them. Only the feed asks: withCardEmbeds
+ * stays what listGallery's inline copy is held equal to (whereNext.test.ts).
+ */
+function withFeedEmbeds<Q>(query: Q): Q {
+  return (withCardEmbeds(query) as unknown as CardEmbedQuery).order("post_position", {
+    referencedTable: "build_media",
+    ascending: true,
+    nullsFirst: false,
+  }) as unknown as Q;
+}
+
 /** A card's node: the embedded columns, nothing more. */
 export type GalleryNode = Pick<
   BuildNode,
@@ -1079,6 +1096,10 @@ export interface GalleryFeedRow extends GalleryBuild {
   models_used: string[];
   /** profiles.username; null when the profile has none or was not found. */
   creatorHandle: string | null;
+  /** profiles.display_name; null when the profile has none or was not found. */
+  creatorName: string | null;
+  /** profiles.avatar_url; null when the profile has none or was not found. */
+  creatorAvatar: string | null;
   /** Reproductions by model, most worked first. */
   proof: ModelProof[];
 }
@@ -1220,22 +1241,48 @@ function feedOrder(query: FeedQuery, sort: GalleryFeedSort): FeedQuery {
 
 const time = (iso: string | null): number => (iso ? Date.parse(iso) || 0 : 0);
 
-/** Creator id → handle: one profiles lookup per 100 ids (a feed page is one). */
-async function creatorHandles(creatorIds: string[]): Promise<Map<string, string | null>> {
+/** What the feed shows of a maker: their profile's handle, name and picture. Each null when the profile has none. */
+export interface CreatorProfile {
+  handle: string | null;
+  name: string | null;
+  avatar: string | null;
+}
+
+/** Creator id → profile: one profiles lookup per 100 ids (a feed page is one). */
+async function creatorProfiles(creatorIds: string[]): Promise<Map<string, CreatorProfile>> {
   const ids = [...new Set(creatorIds)];
-  const out = new Map<string, string | null>();
+  const out = new Map<string, CreatorProfile>();
   for (let i = 0; i < ids.length; i += FEED_ID_CHUNK) {
     const chunk = ids.slice(i, i + FEED_ID_CHUNK);
     const { data, error } = await feedTable("profiles")
-      .select("id, username")
+      .select("id, username, display_name, avatar_url")
       .in("id", chunk)
       .limit(chunk.length);
     if (error) throw buildLayerError("listGalleryFeed", error);
-    for (const row of (data ?? []) as { id: string; username: string | null }[]) {
-      out.set(row.id, row.username ?? null);
+    for (const row of (data ?? []) as {
+      id: string;
+      username: string | null;
+      display_name?: string | null;
+      avatar_url?: string | null;
+    }[]) {
+      out.set(row.id, {
+        handle: row.username ?? null,
+        name: row.display_name?.trim() || null,
+        avatar: row.avatar_url ?? null,
+      });
     }
   }
   return out;
+}
+
+/** The three fields a feed row carries about its maker, null where the profile was not found. */
+function makerOf(profiles: Map<string, CreatorProfile>, creatorId: string) {
+  const profile = profiles.get(creatorId);
+  return {
+    creatorHandle: profile?.handle ?? null,
+    creatorName: profile?.name ?? null,
+    creatorAvatar: profile?.avatar ?? null,
+  };
 }
 
 /** The card data for these ids, in the order given. One request (ids are at most two pages). */
@@ -1245,7 +1292,7 @@ async function feedRows(
 ): Promise<GalleryFeedRow[]> {
   if (ids.length === 0) return [];
 
-  const query = withCardEmbeds(
+  const query = withFeedEmbeds(
     feedTable("builds").select(`${gallerySelect(false)}, models_used`).in("id", ids)
   ).limit(ids.length);
   const { data, error } = await query;
@@ -1257,8 +1304,8 @@ async function feedRows(
   const found = ids.filter((id) => byId.has(id));
 
   const missing = found.filter((id) => !(id in known));
-  const [handles, fetched] = await Promise.all([
-    creatorHandles(found.map((id) => byId.get(id)!.creator_id)),
+  const [profiles, fetched] = await Promise.all([
+    creatorProfiles(found.map((id) => byId.get(id)!.creator_id)),
     missing.length > 0 ? getReproductionsByModel(missing) : Promise.resolve({} as Record<string, ModelProof[]>),
   ]);
 
@@ -1267,7 +1314,7 @@ async function feedRows(
     return {
       ...toGalleryBuild(row),
       models_used: row.models_used ?? [],
-      creatorHandle: handles.get(row.creator_id) ?? null,
+      ...makerOf(profiles, row.creator_id),
       proof: known[id] ?? fetched[id] ?? [],
     };
   });
@@ -1354,7 +1401,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const [search, counts] = await Promise.all([feedSearchClause(params.q), feedCounts()]);
 
   if (version === null) {
-    const query = withCardEmbeds(
+    const query = withFeedEmbeds(
       feedOrder(feedBase(`${gallerySelect(false)}, models_used`, audience, search, true), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
@@ -1362,14 +1409,14 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
     const all = (data ?? []) as unknown as (GalleryRow & { models_used: string[] | null })[];
     const pageRows = all.slice(0, FEED_PAGE_SIZE);
-    const [handles, proofs] = await Promise.all([
-      creatorHandles(pageRows.map((row) => row.creator_id)),
+    const [profiles, proofs] = await Promise.all([
+      creatorProfiles(pageRows.map((row) => row.creator_id)),
       getReproductionsByModel(pageRows.map((row) => row.id)),
     ]);
     const rows: GalleryFeedRow[] = pageRows.map((row) => ({
       ...toGalleryBuild(row),
       models_used: row.models_used ?? [],
-      creatorHandle: handles.get(row.creator_id) ?? null,
+      ...makerOf(profiles, row.creator_id),
       proof: proofs[row.id] ?? [],
     }));
     return {
@@ -1706,8 +1753,8 @@ export async function listGalleryDashboard(
     ? await latestRebuilds(builds.filter((row) => count(row.rebuild_count) > 0).map((row) => row.id))
     : new Map<string, { creatorId: string; at: string }>();
 
-  const [handles, proofs, series] = await Promise.all([
-    creatorHandles([...builds.map((row) => row.creator_id), ...[...rebuilt.values()].map((r) => r.creatorId)]),
+  const [profiles, proofs, series] = await Promise.all([
+    creatorProfiles([...builds.map((row) => row.creator_id), ...[...rebuilt.values()].map((r) => r.creatorId)]),
     getReproductionsByModel(ids),
     getEngagementSeries(ids, ENGAGEMENT_WEEKS),
   ]);
@@ -1715,7 +1762,7 @@ export async function listGalleryDashboard(
   const rows: DashboardRow[] = builds.map((row) => {
     const proof = proofs[row.id] ?? [];
     const rebuild = rebuilt.get(row.id);
-    const rebuildHandle = rebuild ? handles.get(rebuild.creatorId) : null;
+    const rebuildHandle = rebuild ? (profiles.get(rebuild.creatorId)?.handle ?? null) : null;
     const runs = count(row.reproduction_count);
     const rebuilds = count(row.rebuild_count);
     // comment_count and save_count are not on live (see DASHBOARD_BUILD_COLUMNS).
@@ -1725,7 +1772,7 @@ export async function listGalleryDashboard(
       id: row.id,
       slug: row.slug,
       title: row.title,
-      creator: { id: row.creator_id, handle: handles.get(row.creator_id) ?? "" },
+      creator: { id: row.creator_id, handle: profiles.get(row.creator_id)?.handle ?? "" },
       outcome: row.outcome ?? null,
       madeFor: row.made_for ?? [],
       modelsUsed: row.models_used ?? [],

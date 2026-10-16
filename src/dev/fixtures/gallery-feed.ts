@@ -211,6 +211,8 @@ function row(seed: Seed): GalleryFeedRow {
     bounties: seed.gapGbp ? [{ id: `${id}-ask`, reward_gbp: seed.gapGbp, status: "open" }] : [],
     models_used: seed.models,
     creatorHandle: seed.handle,
+    creatorName: null,
+    creatorAvatar: null,
     proof: seed.proof,
   };
 }

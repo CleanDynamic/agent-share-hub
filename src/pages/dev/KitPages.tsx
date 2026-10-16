@@ -67,6 +67,8 @@ const VIEWS: Record<string, LazyExoticComponent<ComponentType<DesignPageProps>> 
   sandbox: lazy(() => import("./SandboxDemo")),
   /* UI-P37 — the Bounties board, for its four states (no reference board is compared). */
   "bounty-board": lazy(() => import("./BountyBoardDemo")),
+  /* PT-03 — the post thread, closed, open and in page mode (no board is compared). */
+  "post-thread": lazy(() => import("./PostThreadDemo")),
   /* UI-P36 — Sign in (and, with `?mode=`, Join, reset and verify). */
   signin: lazy(() => import("./SignInDemo")),
 };

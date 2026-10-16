@@ -119,6 +119,42 @@ describe("listGalleryFeed without a model", () => {
     expect(rpcCalled).toBe(false);
   });
 
+  it("reads each maker's handle, name and picture in one limited profiles lookup, and carries them on the row", async () => {
+    respond = (r) => {
+      if (isCards(r)) return { data: [card("b0", { creator_id: "u-1" }), card("b1", { creator_id: "u-2" })] };
+      if (r.table === "profiles") {
+        return {
+          data: [
+            { id: "u-1", username: "ada", display_name: " Ada Lovelace ", avatar_url: "https://img.example/ada.png" },
+            { id: "u-2", username: null, display_name: null, avatar_url: null },
+          ],
+        };
+      }
+      return { data: [] };
+    };
+
+    const feed = await listGalleryFeed({ sort: "newest", page: 0 });
+    if (feed.kind !== "all") throw new Error("expected the one-list shape");
+
+    const lookups = on("profiles");
+    expect(lookups).toHaveLength(1);
+    expect(callsOf(lookups[0], "select")[0].args[0]).toBe("id, username, display_name, avatar_url");
+    expect(callsOf(lookups[0], "in")[0].args).toEqual(["id", ["u-1", "u-2"]]);
+    expect(callsOf(lookups[0], "limit")[0].args).toEqual([2]);
+
+    expect(feed.rows.map((row) => [row.creatorHandle, row.creatorName, row.creatorAvatar])).toEqual([
+      ["ada", "Ada Lovelace", "https://img.example/ada.png"],
+      [null, null, null],
+    ]);
+  });
+
+  it("looks a hundred ids at a time", async () => {
+    const rows = Array.from({ length: 24 }, (_, i) => card(`b${i}`));
+    respond = (r) => (isCards(r) ? { data: rows } : { data: [] });
+    await listGalleryFeed({ sort: "newest", page: 0 });
+    expect(on("profiles").every((r) => (callsOf(r, "in")[0].args[1] as unknown[]).length <= 100)).toBe(true);
+  });
+
   it.each([
     ["reproduced", ["reproduction_count", "last_confirmed_at", "published_at"]],
     ["confirmed", ["last_confirmed_at", "published_at"]],
@@ -126,7 +162,9 @@ describe("listGalleryFeed without a model", () => {
   ] as const)("orders %s in the database", async (sort, columns) => {
     await listGalleryFeed({ sort, page: 2 });
     const cards = requests.filter(isCards)[0];
-    expect(callsOf(cards, "order").map((c) => c.args[0])).toEqual([...columns, "id", "position"]);
+    // The feed's own last order: the pictures in thread order, nulls last (withFeedEmbeds).
+    expect(callsOf(cards, "order").map((c) => c.args[0])).toEqual([...columns, "id", "position", "post_position"]);
+    expect(callsOf(cards, "order").at(-1)?.args[1]).toEqual({ referencedTable: "build_media", ascending: true, nullsFirst: false });
     expect(callsOf(cards, "range")[0].args).toEqual([2 * FEED_PAGE_SIZE, 3 * FEED_PAGE_SIZE]);
   });
 

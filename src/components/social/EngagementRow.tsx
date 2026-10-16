@@ -111,6 +111,8 @@ export interface EngagementRowProps {
   variant: "card" | "page";
   /** Add the Rebuild link, with the build's rebuild count. Absent: Like, Comment, Save, and Share on a page. */
   withRebuild?: boolean;
+  /** Layout for where the row stands (a width cap, spreading the actions), applied over the row's own. */
+  style?: CSSProperties;
 }
 
 /** One build's share of its list's engagement: what a card or header passes on. */
@@ -118,7 +120,7 @@ export type RowEngagement = Pick<EngagementRowProps, "counts" | "liked" | "saved
 
 type Pending = { liked?: boolean; saved?: boolean; likes?: number };
 
-export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false }: EngagementRowProps) {
+export function EngagementRow({ build, counts, liked, saved, variant, withRebuild = false, style }: EngagementRowProps) {
   const { isLoggedIn } = useAuth();
   const phone = useIsPhone();
   const navigate = useNavigate();
@@ -280,6 +282,7 @@ export function EngagementRow({ build, counts, liked, saved, variant, withRebuil
         // into the padding instead.
         marginInlineStart: -PAD_INLINE,
         ...(variant === "card" ? { marginTop: 6 } : null),
+        ...style,
       }}
     >
       {actions.map(({ id, ...action }) => (

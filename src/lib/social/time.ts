@@ -27,3 +27,23 @@ export function commentTime(iso: string, now: number = Date.now()): string {
   if (days < 365) return ago(Math.floor(days / 30), "month");
   return ago(Math.floor(days / 365), "year");
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/**
+ * The age a feed item's author row shows: "now", "5m", "2h", "2d", then the
+ * date, "6 Oct" (with the year when it is not this year's: "6 Oct 2025").
+ * Empty for a date that cannot be read. A date ahead of the clock is "now".
+ */
+export function shortAge(iso: string | null | undefined, now: number = Date.now()): string {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(at)) return "";
+  const elapsed = Math.max(0, now - at);
+  if (elapsed < MINUTE) return "now";
+  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)}m`;
+  if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)}h`;
+  if (elapsed < 7 * DAY) return `${Math.floor(elapsed / DAY)}d`;
+  const date = new Date(at);
+  const base = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return date.getFullYear() === new Date(now).getFullYear() ? base : `${base} ${date.getFullYear()}`;
+}

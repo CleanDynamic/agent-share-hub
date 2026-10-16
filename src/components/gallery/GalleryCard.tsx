@@ -82,6 +82,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CardThread, type CardLayout } from "./CardThread";
 import { coverMedia, mediaAlt, postMediaOf, stillFor, type MediaSrcMap } from "./cardMedia";
 import { EngagementRow, type RowEngagement } from "@/components/social/EngagementRow";
+import { FeedPost } from "./FeedPost";
 
 /** The cover's height on the gallery wall. */
 const COVER_PX = COVER_HEIGHT.wall;
@@ -110,6 +111,9 @@ export interface GalleryCardProps {
   layout?: CardLayout | "row";
   /** UI-P49: the maker's handle, without its @ (the feed's creatorHandle). Row layout only. */
   makerHandle?: string | null;
+  /** PT-04: the maker's display name, and their picture. Row layout only. */
+  makerName?: string | null;
+  makerAvatar?: string | null;
   /** UI-P49: the build's models_used, as stored. Row layout only. */
   modelsUsed?: readonly string[];
   /**
@@ -145,18 +149,24 @@ export function GalleryCard({
   coverHeight = COVER_PX,
   titleSize,
   makerHandle,
+  makerName,
+  makerAvatar,
   modelsUsed,
   plaqueBuild,
   now,
 }: GalleryCardProps) {
   if (layout === "row") {
     return (
-      <RowCard
+      <FeedPost
         build={build}
         srcByPath={srcByPath}
         makerHandle={makerHandle ?? null}
+        makerName={makerName ?? null}
+        makerAvatar={makerAvatar ?? null}
         modelsUsed={modelsUsed ?? []}
         plaqueBuild={plaqueBuild ?? build}
+        openAsk={openBounty(build)}
+        engagement={engagement}
         now={now}
       />
     );
@@ -285,6 +295,10 @@ function madeWithLine(models: readonly string[]): string {
 }
 
 /**
+ * UNUSED SINCE PT-04. The Gallery's feed draws FeedPost: a post with the maker on
+ * top and no box. This is the UI-P49 card it replaced, left in the file so
+ * nothing else moves; delete it with the tests that name it when nothing needs it.
+ *
  * The feed's card. The existing card surface (a fill, a 1px border, the card
  * shadow, no blur: RULES §7b) at padding 9/9/13, radius 14, gap 10, under its
  * picture lamp (12/12/18 and 14 before the UI-P56 density pass; type and spacing

@@ -80,6 +80,8 @@ function row(id: string, over: Partial<GalleryFeedRow> = {}): GalleryFeedRow {
     media: [],
     models_used: ["claude-sonnet-5-5"],
     creatorHandle: "maria",
+    creatorName: null,
+    creatorAvatar: null,
     proof: [{ modelId: "gpt-6-astra", modelName: "GPT-6 Astra", worked: 3, lastConfirmedAt: new Date().toISOString() }],
     ...over,
   };
@@ -147,14 +149,14 @@ describe("GalleryPage — the feed", () => {
     renderAt("/gallery");
     expect(await screen.findByRole("heading", { level: 1, name: "Gallery" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId("feed-count")).toHaveTextContent("3 builds, newest first"));
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Build a", "Build b", "Build c"]);
+    expect(screen.getAllByTestId("feed-build-title").map((el) => el.textContent)).toEqual(["Build a", "Build b", "Build c"]);
     expect(listGalleryFeed).toHaveBeenCalledTimes(1);
     expect(listGalleryFeed).toHaveBeenCalledWith({ model: undefined, audience: undefined, sort: "newest", q: undefined, page: 0 });
     expect(countGalleryLenses).not.toHaveBeenCalled();
     expect(getGalleryStats).not.toHaveBeenCalled();
-    // The credit: the maker's profile, and the models by name.
-    expect(screen.getAllByRole("link", { name: "@maria" })[0]).toHaveAttribute("href", "/profile/maria");
-    expect(screen.getAllByTestId("row-credit")[0]).toHaveTextContent("by @maria · made with Sonnet 5.5");
+    // The author row: the maker's profile, and the tools as marks with their names.
+    expect(screen.getAllByTestId("feed-author-name")[0]).toHaveAttribute("href", "/profile/maria");
+    expect(screen.getAllByRole("img", { name: "Made with Claude" })[0]).toBeInTheDocument();
   });
 
   it("reads view, model, for, sort and q from the address and drops the old lens and facets", async () => {
@@ -187,11 +189,11 @@ describe("GalleryPage — the feed", () => {
 
     const on = await screen.findByTestId("feed-section-reproduced");
     fireEvent.click(within(on).getByRole("button", { name: "Show more" }));
-    await waitFor(() => expect(within(on).getAllByRole("heading", { level: 3 })).toHaveLength(2));
+    await waitFor(() => expect(within(on).getAllByTestId("feed-build-title")).toHaveLength(2));
     expect(listGalleryFeed).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }));
 
     const not = screen.getByTestId("feed-section-not-yet");
-    expect(within(not).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Build not1"]);
+    expect(within(not).getAllByTestId("feed-build-title").map((el) => el.textContent)).toEqual(["Build not1"]);
     expect(within(not).getByRole("button", { name: "Show more" })).toBeInTheDocument();
   });
 
@@ -271,6 +273,13 @@ describe("GalleryPage — the dashboard", () => {
     expect(screen.getByTestId("dash-pill")).toHaveTextContent("Google models");
     expect(screen.getByTestId("dash-lab-Google")).toHaveTextContent("3");
     expect(address()).toBe("/gallery?view=dashboard&lab=Google&report=multi&active=30&dsort=prompts&q=inbox");
+  });
+
+  it("is the table it was: no feed post, and the feed's reads are not made", async () => {
+    renderAt("/gallery?view=dashboard");
+    await screen.findByRole("table", { name: "Builds" });
+    expect(document.querySelector("[data-feed-post]")).toBeNull();
+    expect(listGalleryFeed).not.toHaveBeenCalled();
   });
 
   it("writes each control to the address, and a lab clears the model", async () => {
