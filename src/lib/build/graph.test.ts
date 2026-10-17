@@ -23,8 +23,12 @@ import {
   setInstructions,
   setManualFields,
   placeAfterMoves,
+  addMadeFile,
   addUse,
   buildSteps,
+  inputRefusal,
+  madeByOf,
+  madeFilesOf,
   dismissSuggestion,
   goesInto,
   parseRuns,
@@ -452,6 +456,84 @@ describe("a manual step (UI-P70)", () => {
       ]);
       expect(placeAfterMoves(tree, "missing", "p1")).toEqual([]);
       expect(placeAfterMoves(tree, "m", "missing")).toEqual([]);
+    });
+  });
+});
+
+describe("made files (TF-07)", () => {
+  const maker = (id: string, position: number, over: Partial<NodeTree> = {}) => node({ id, position, ...over });
+  const made = (id: string, by: string, title = "brand-guide.md", position = 9) =>
+    node({ id, position, type: "document", payload: { title, made_by: by } });
+
+  it("reads made_by and the map of made files, top level only", () => {
+    const f = made("f", "s1");
+    expect(madeByOf(f)).toBe("s1");
+    expect(madeByOf(node({ type: "document", payload: { title: "x" } }))).toBeNull();
+    const tree = [maker("s1", 1), f, node({ id: "plain", type: "document", payload: { title: "a.pdf" } }), node({ id: "inner", type: "document", parent_id: "s1", payload: { title: "b", made_by: "s1" } })];
+    expect([...madeFilesOf(tree)]).toEqual([["f", "s1"]]);
+  });
+
+  it("adds a made file with a name, its step and no media or url", async () => {
+    const tree = [maker("s1", 1), maker("s2", 2)];
+    await addMadeFile(BUILD, tree, { stepId: "s2", name: "  brand-guide.md ", summary: "The colours" });
+    const row = upsertNode.mock.calls[0][0] as { type: string; parent_id: null; position: number; payload: Record<string, unknown> };
+    expect(row.type).toBe("document");
+    expect(row.parent_id).toBeNull();
+    expect(row.payload).toEqual({ title: "brand-guide.md", made_by: "s2", summary: "The colours" });
+    expect(row.payload).not.toHaveProperty("media_id");
+    expect(row.payload).not.toHaveProperty("url");
+  });
+
+  it("refuses a step that is not in the build, an empty or long name, and a repeat in any case", async () => {
+    const tree = [maker("s1", 1), made("f", "s1")];
+    await expect(addMadeFile(BUILD, tree, { stepId: "nope", name: "a.md" })).rejects.toThrow(/not a step/);
+    await expect(addMadeFile(BUILD, tree, { stepId: "f", name: "a.md" })).rejects.toThrow(/not a step/);
+    await expect(addMadeFile(BUILD, tree, { stepId: "s1", name: "   " })).rejects.toThrow(/1 to 120/);
+    await expect(addMadeFile(BUILD, tree, { stepId: "s1", name: "x".repeat(121) })).rejects.toThrow(/1 to 120/);
+    await expect(addMadeFile(BUILD, tree, { stepId: "s1", name: "BRAND-guide.MD" })).rejects.toThrow(/already makes/);
+    expect(upsertNode).not.toHaveBeenCalled();
+    await addMadeFile(BUILD, tree, { stepId: "s1", name: "x".repeat(120) });
+    expect(upsertNode).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets two steps make a file of the same name", async () => {
+    const tree = [maker("s1", 1), maker("s2", 2), made("f", "s1")];
+    await addMadeFile(BUILD, tree, { stepId: "s2", name: "brand-guide.md" });
+    expect(upsertNode).toHaveBeenCalledTimes(1);
+  });
+
+  describe("inputRefusal", () => {
+    const use = { kind: "file" as const, node_id: "f" };
+    const tree = [maker("a", 1), maker("b", 2), maker("c", 3), made("f", "b")];
+    const steps = buildSteps(tree);
+    const map = madeFilesOf(tree);
+    const names = new Map([["f", "brand-guide.md"]]);
+
+    it("allows a step after the one that makes it", () => {
+      expect(inputRefusal("c", [], use, steps, map, names)).toBeNull();
+    });
+    it("refuses the step before, and the step itself, in the words of the rule", () => {
+      expect(inputRefusal("a", [], use, steps, map, names)).toBe("Only a step after step 2 can use brand-guide.md.");
+      expect(inputRefusal("b", [], use, steps, map, names)).toBe("Only a step after step 2 can use brand-guide.md.");
+    });
+    it("treats a file nobody makes like any other file", () => {
+      expect(inputRefusal("a", [], { kind: "file", node_id: "plain" }, steps, map, names)).toBeNull();
+      expect(inputRefusal("a", [], use, steps)).toBeNull();
+    });
+    it("allows an earlier step inside an agent or team only when the maker repeats until a condition is met", () => {
+      const mk = (id: string, position: number, runs?: Record<string, string>) =>
+        node({ id, parent_id: "tm", position, type: "agent_config", payload: { system_prompt: "x", model: "m", ...(runs ? { runs } : {}) } });
+      const looped = [node({ id: "tm", type: "team", position: 1, payload: {}, children: [mk("writer", 1), mk("checker", 2, { how: "until", detail: "ok" }), mk("other", 3)] }), made("g", "checker")];
+      const inner = buildSteps(looped);
+      const m = madeFilesOf(looped);
+      expect(inputRefusal("writer", [], { kind: "file", node_id: "g" }, inner, m)).toBeNull();
+      const plain = [node({ id: "tm", type: "team", position: 1, payload: {}, children: [mk("writer", 1), mk("other", 2)] }), made("g", "other")];
+      expect(inputRefusal("writer", [], { kind: "file", node_id: "g" }, buildSteps(plain), madeFilesOf(plain))).toMatch(/^Only a step after step/);
+    });
+    it("is passed by addUse", async () => {
+      await expect(addUse(tree[0] as BuildNode, use, steps, map, names)).rejects.toThrow(/Only a step after step 2/);
+      await addUse(tree[2] as BuildNode, use, steps, map, names);
+      expect(payloadWritten().uses).toEqual([use]);
     });
   });
 });

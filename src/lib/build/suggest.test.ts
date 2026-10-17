@@ -53,3 +53,20 @@ describe("suggestUses", () => {
 describe("suggestFromProposal", () => {
   it("is empty until the parser fields exist", () => expect(suggestFromProposal({}, [])).toEqual([]));
 });
+
+describe("a file a step makes (TF-07)", () => {
+  const made = [{ id: "m1", name: "brand-guide.md" }];
+  const map = new Map([["m1", "p2"]]);
+  const steps = [
+    step("p1", "Read brand-guide.md first.", { number: "1" }),
+    step("p2", "Write the guide.", { number: "2" }),
+    step("p3", "Check brand-guide.md again.", { number: "3" }),
+  ];
+  it("is suggested only to steps after the one that makes it", () => {
+    expect(ids(steps, made)).toEqual(["p1>m1", "p3>m1"]);
+    expect(suggestUses(steps, made, map).map((s) => s.stepId)).toEqual(["p3"]);
+  });
+  it("the step that makes it is not offered its own file", () => {
+    expect(suggestUses([step("p2", "Write brand-guide.md.", { number: "2" })], made, map)).toEqual([]);
+  });
+});

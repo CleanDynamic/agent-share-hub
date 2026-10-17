@@ -43,6 +43,8 @@ import {
   addTool,
   addUse,
   dismissSuggestion,
+  madeFileNamesOf,
+  madeFilesOf,
   MANUAL_STEP_TYPE,
   moveStep,
   placeStepAfter,
@@ -52,6 +54,7 @@ import {
   setManualFields,
   setRuns,
   setStepTitle,
+  usesOf,
   type Runs,
   type Step,
   type Use,
@@ -67,6 +70,11 @@ import { showMadeWithIn } from "./useComposeSessions";
 const LOCAL = "local-";
 
 const findTop = (tree: readonly NodeTree[], id: string) => tree.find((node) => node.id === id) ?? null;
+
+/** A node and everything inside it, as ids. */
+const idsWithin = (node: NodeTree | null): string[] => (node ? [node.id, ...(node.children ?? []).flatMap(idsWithin)] : []);
+
+const allNodes = (tree: readonly NodeTree[]): NodeTree[] => tree.flatMap((node) => [node, ...allNodes(node.children ?? [])]);
 
 /** A node at any depth: an agent's prompt or a team's agent as well as a top-level one. */
 const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
@@ -316,6 +324,22 @@ export function useComposePrompts({
       .catch(failed("Couldn't move that prompt. Try again."));
   };
 
+  /** Before a step goes: each file it makes comes out of every step's uses, then the file goes. */
+  const dropMadeFiles = async (stepId: string) => {
+    const within = new Set(idsWithin(findNode(nodes.current(), stepId)));
+    for (const [fileId, maker] of madeFilesOf(nodes.current())) {
+      if (!within.has(maker)) continue;
+      const use: Use = { kind: "file", node_id: fileId };
+      for (const user of allNodes(nodes.current())) {
+        if (!usesOf(user).some((entry) => entry.kind === use.kind && entry.node_id === use.node_id)) continue;
+        const fresh = findNode(nodes.current(), user.id);
+        if (fresh) nodes.record(fresh.id, await removeUse(rowOf(fresh), use));
+      }
+      await deleteNode(fileId);
+      nodes.record(fileId, null);
+    }
+  };
+
   const remove = (key: string) => {
     const timer = timers.current.get(key);
     if (timer !== undefined) {
@@ -327,6 +351,7 @@ export function useComposePrompts({
       .run(async () => {
         const id = nodeOf.current.get(key) ?? (key.startsWith(LOCAL) ? undefined : key);
         if (id) {
+          await dropMadeFiles(id);
           await deleteNode(id);
           nodes.record(id, null);
         }
@@ -437,7 +462,7 @@ export function useComposePrompts({
 
   const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename that. Try again.", (node) => setStepTitle(node, title));
   const accept = (id: string, use: Use, steps: readonly Step[]) =>
-    void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps));
+    void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
   const dismiss = (id: string, key: string) =>
     void writeStep(id, "Couldn't dismiss that. Try again.", (node) => dismissSuggestion(node, key));
 
@@ -453,6 +478,7 @@ export function useComposePrompts({
   const removeInside = (id: string) => {
     nodes
       .run(async () => {
+        await dropMadeFiles(id);
         await deleteNode(id);
         nodes.record(id, null);
       })

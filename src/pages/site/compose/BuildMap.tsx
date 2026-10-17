@@ -75,6 +75,9 @@ export interface BuildMapProps {
   tools: readonly MapPiece[];
   results: readonly MapResult[];
   suggestions: readonly MapSuggestion[];
+  /** Files a step makes, as file id to step id, and their names: a drop onto a step before the maker is refused. */
+  made?: ReadonlyMap<string, string>;
+  madeNames?: ReadonlyMap<string, string>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onClear: () => void;
@@ -547,7 +550,7 @@ const inputFrom = (box: MapBox): Use | null =>
   box.kind === "step" ? { kind: "output", node_id: box.id } : box.kind === "file" ? { kind: "file", node_id: box.id } : box.kind === "tool" ? { kind: "tool", node_id: box.id } : null;
 
 export function BuildMap(props: BuildMapProps) {
-  const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
+  const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, made, madeNames, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
   const reader = mode === "reader";
   const room = useResolvedTheme();
   // Readers never see a suggestion: only the uses the maker accepted are published.
@@ -607,7 +610,7 @@ export function BuildMap(props: BuildMapProps) {
       return;
     }
     const current = under.inputs.filter((input) => !input.suggested).map((input) => input.use);
-    const why = inputRefusal(under.id, current, use, steps);
+    const why = inputRefusal(under.id, current, use, steps, made, madeNames);
     if (why) {
       say(why);
       return;

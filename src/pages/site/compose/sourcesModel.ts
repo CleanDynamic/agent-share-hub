@@ -6,9 +6,10 @@
    everywhere. Prompts written by hand form a group of their own, "typed here".
 
    A file's note is "opened in session {n}" when its node names a session that
-   is in the build, and "added by you" otherwise. */
+   is in the build, and "added by you" otherwise. A file a step makes is noted
+   "made in step {n}". */
 
-import { FILE_TYPE, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FILE_TYPE, madeByOf, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
@@ -109,13 +110,17 @@ export function sourceSessions(
 }
 
 /** The build's files, from its top-level file nodes. */
-export function sourceFiles(tree: readonly BuildNode[], groups: readonly SessionGroup[]): SourceFile[] {
+export function sourceFiles(tree: readonly BuildNode[], groups: readonly SessionGroup[], steps: readonly Step[] = []): SourceFile[] {
+  const numbers = new Map(flatten(steps).map((step) => [step.id, step.number]));
   return tree
     .filter((node) => node.type === FILE_TYPE && node.parent_id === null)
     .map((node) => {
       const payload = (node.payload ?? {}) as Record<string, unknown>;
       const name = typeof payload.title === "string" && payload.title.trim() ? payload.title : "Untitled file";
       const from = typeof payload.session_id === "string" ? groups.find((group) => group.sessionId === payload.session_id) : undefined;
+      const maker = madeByOf(node);
+      const made = maker ? numbers.get(maker) : undefined;
+      if (made) return { id: node.id, name, note: `made in step ${made}` };
       return { id: node.id, name, note: from ? `opened in session ${from.number}` : "added by you" };
     });
 }

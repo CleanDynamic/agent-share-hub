@@ -7,6 +7,7 @@
 
 import {
   goesInto,
+  inputRefusal,
   RUNS_COUNT_MAX,
   RUNS_COUNT_MIN,
   stepTitle,
@@ -114,6 +115,7 @@ export function inputRows(step: Step, steps: readonly Step[], groups: readonly S
  * build's files and its tools. Never itself, its own container, or what it
  * already lists. A later step's output is offered only when that step sits in
  * the same agent or team and its runs is "until" (a checker sending work back).
+ * A file a step makes is offered only to the steps it may go into.
  */
 export function inputOptions(
   step: Step,
@@ -121,6 +123,7 @@ export function inputOptions(
   groups: readonly SessionGroup[],
   files: readonly NamedPiece[],
   tools: readonly NamedPiece[],
+  made: ReadonlyMap<string, string> = new Map(),
 ): InputOption[] {
   const all = flatten(steps).filter((candidate) => !isInstructions(candidate));
   const at = all.findIndex((candidate) => candidate.id === step.id);
@@ -143,7 +146,15 @@ export function inputOptions(
   });
   for (const file of files) {
     const use: Use = { kind: "file", node_id: file.id };
-    if (!taken.has(keyOf(use))) out.push({ key: keyOf(use), use, label: file.name, sub: file.note });
+    if (taken.has(keyOf(use))) continue;
+    const maker = made.get(file.id);
+    if (maker) {
+      if (inputRefusal(step.id, [], use, steps, made) !== null) continue;
+      const number = all.find((candidate) => candidate.id === maker)?.number;
+      out.push({ key: keyOf(use), use, label: file.name, sub: number ? `made in step ${number}` : file.note });
+      continue;
+    }
+    out.push({ key: keyOf(use), use, label: file.name, sub: file.note });
   }
   for (const tool of tools) {
     const use: Use = { kind: "tool", node_id: tool.id };

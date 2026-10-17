@@ -41,6 +41,13 @@ describe("sourceFiles and librarySources", () => {
     expect(rows.map((r) => r.note)).toEqual(["opened in session 1", "added by you"]);
   });
 
+  it("notes a file a step makes with the step's number", () => {
+    const node = (id: string, payload: object) => ({ id, type: "document", parent_id: null, payload }) as unknown as BuildNode;
+    const steps = [step({ id: "p1", number: "1" }), step({ id: "p2", number: "2" })];
+    const rows = sourceFiles([node("1", { title: "brand-guide.md", made_by: "p2" }), node("2", { title: "logo.png" })], [group({})], steps);
+    expect(rows.map((r) => r.note)).toEqual(["made in step 2", "added by you"]);
+  });
+
   it("lists only parsed sessions that are in no build", () => {
     const rows = librarySources([summary({ id: "1" }), summary({ id: "2", buildId: "b" }), summary({ id: "3", status: "claimed" })], new Set(["1"]), Date.now());
     expect(rows).toEqual([{ id: "1", label: "Opus 5.5", line: "1 Mar · 2 prompts", adding: true }]);

@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BuildNode, NodeTree } from "@/lib/build";
+import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 
 const graph = vi.hoisted(() => ({
   addAgent: vi.fn(),
@@ -14,6 +14,7 @@ const graph = vi.hoisted(() => ({
   placeStepAfter: vi.fn(),
   moveStep: vi.fn(),
   setManualFields: vi.fn(),
+  removeUse: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -299,5 +300,37 @@ describe("tools on steps feed Made with (TF-03)", () => {
     expect(warn).toHaveBeenCalledWith("[Compose] Made with not updated", { code: "42501", buildId: "b1" });
     expect(toast.error).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe("removing a step that makes a file (TF-07)", () => {
+  const file = row({ id: "f1", position: 3, type: "document", payload: { title: "brand-guide.md", made_by: "p1" } });
+  const plain = row({ id: "f2", position: 4, type: "document", payload: { title: "menu.pdf" } });
+  const p1 = row({ id: "p1", position: 1 });
+  const p2 = row({ id: "p2", position: 2, payload: { text: "x", uses: [{ kind: "file", node_id: "f1" }, { kind: "file", node_id: "f2" }] } });
+
+  it("takes the file out of every step's uses, deletes it, then deletes the step", async () => {
+    graph.removeUse.mockImplementation(async (node: BuildNode) => node);
+    const { result, record } = hook([p1, p2, file, plain]);
+    await act(async () => {
+      result.current.remove("p1");
+    });
+    await vi.waitFor(() => expect(deleteNode).toHaveBeenCalledWith("p1"));
+    expect(graph.removeUse).toHaveBeenCalledTimes(1);
+    expect(graph.removeUse.mock.calls[0][0]).toMatchObject({ id: "p2" });
+    expect(graph.removeUse.mock.calls[0][1]).toEqual({ kind: "file", node_id: "f1" });
+    expect((deleteNode as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0])).toEqual(["f1", "p1"]);
+    expect(record).toHaveBeenCalledWith("f1", null);
+    expect(record).toHaveBeenCalledWith("p1", null);
+  });
+
+  it("leaves files that no removed step makes", async () => {
+    const { result } = hook([p1, p2, file, plain]);
+    await act(async () => {
+      result.current.remove("p2");
+    });
+    await vi.waitFor(() => expect(deleteNode).toHaveBeenCalledWith("p2"));
+    expect(graph.removeUse).not.toHaveBeenCalled();
+    expect(deleteNode).toHaveBeenCalledTimes(1);
   });
 });
