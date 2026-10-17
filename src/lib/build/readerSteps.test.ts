@@ -12,6 +12,7 @@ vi.mock("./media", async (importOriginal) => ({
 
 import type { Making } from "./making";
 import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "./readerSteps";
+import { toolFor } from "@/lib/tools/registry";
 import type { NodeTree } from "./types";
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -78,6 +79,25 @@ const bakery = (): NodeTree[] => [
   node("v1", { position: 7, type: "prerequisite", title: "Vercel", payload: { requirement: "an account" } }),
   node("r1", { position: 8, type: "result", payload: { summary: "crumb-bakery.vercel.app", url: "https://crumb-bakery.vercel.app", uses: [{ kind: "output", node_id: "p5" }] } }),
 ];
+
+describe("readerSteps — a pasted chat given its tool (TF-13)", () => {
+  const pasted = (tools: Record<string, string>): Making => ({
+    excluded_models: [],
+    sessions: [{ id: "s9", started_at: "2026-10-07T09:00:00Z", client: "unknown", model: null, prompts: 1, turns: 2 }],
+    session_tools: tools,
+  });
+  const tree = () => [prompt("p1", 1, "Compare two laptops.", "s9")];
+
+  it("reads 'New chat' until the tool is chosen", () => {
+    expect(readerSteps(tree(), pasted({}), media)[0].chat).toMatchObject({ kind: "new", tool: null, headline: "New chat" });
+  });
+
+  it("reads 'New chat in Perplexity', with a tool that has a logo, once chosen", () => {
+    const chat = readerSteps(tree(), pasted({ s9: "perplexity" }), media)[0].chat;
+    expect(chat).toMatchObject({ kind: "new", tool: "Perplexity", headline: "New chat in Perplexity" });
+    expect(toolFor((chat as { tool: string }).tool)?.logo).toBe("perplexity-color");
+  });
+});
 
 describe("readerSteps — B1 the bakery", () => {
   const steps = readerSteps(bakery(), bakeryMaking, media);

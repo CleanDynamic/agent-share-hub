@@ -300,14 +300,28 @@ export function stepTitle(step: Pick<Step, "title" | "defaultTitle">): string {
   return step.title ?? step.defaultTitle;
 }
 
+/** The tool a maker gave a session: the list's name for it, else as typed. */
+function chosenTool(raw: string | undefined): string | null {
+  const typed = raw?.trim();
+  return typed ? (toolName(typed) ?? typed) : null;
+}
+
 /**
  * The sessions and runs of typed prompts that make up the top-level steps, in
  * order of first step (DATA §5). A session is one group wherever its prompts
  * sit; prompts with no session form one group per run of consecutive steps.
  * `sessions` is builds.making.sessions; an entry without an id cannot be
  * matched, and its prompts keep the model they name.
+ *
+ * `sessionTools` is builds.making.session_tools (TF-13): a session whose client
+ * names no tool takes the tool the maker gave it, by `toolName` or as typed. A
+ * client's own tool always wins.
  */
-export function sessionGroups(steps: readonly Step[], sessions: readonly MakingSession[]): SessionGroup[] {
+export function sessionGroups(
+  steps: readonly Step[],
+  sessions: readonly MakingSession[],
+  sessionTools: Readonly<Record<string, string>>,
+): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
 
@@ -329,7 +343,7 @@ export function sessionGroups(steps: readonly Step[], sessions: readonly MakingS
         group = {
           sessionId: step.sessionId,
           number: groups.length + 1,
-          tool: session ? toolLabel(session.client) : null,
+          tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[step.sessionId]),
           model: model ? modelLabel(model) : null,
           startedAt: session?.started_at ?? null,
           stepNumbers: [],
