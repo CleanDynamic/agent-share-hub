@@ -26,7 +26,7 @@ import { DM_MONO } from "@/lib/theme/type";
 import { TextButton } from "./composeControls";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
-import type { SourceFile, SourceLibraryItem, SourceSession } from "./sourcesModel";
+import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession } from "./sourcesModel";
 
 /** CONCEPT §7: at most this many rows in any list, then one "Show {n} more". */
 export const GROUP_ROWS = 6;
@@ -49,6 +49,8 @@ export interface SourcesPanelProps {
   sessions: readonly SourceSession[];
   files: readonly SourceFile[];
   library: readonly SourceLibraryItem[];
+  /** Setup files a coding tool in the build reads and the build does not have yet. */
+  reminders?: readonly SourceReminder[];
   /** The selected session's key, or the selected step's id. */
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -232,6 +234,18 @@ function FileRow({ file, phone }: { file: SourceFile; phone: boolean }) {
   );
 }
 
+/** "Claude Code reads CLAUDE.md · Add it": quiet, with a text button that opens the file picker. */
+function ReminderRow({ reminder, phone, onPick }: { reminder: SourceReminder; phone: boolean; onPick: () => void }) {
+  return (
+    <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
+      <span style={{ ...text(12.5, 400, t.text2), minWidth: 0, flexGrow: 1, overflowWrap: "anywhere" }}>{reminder.line}</span>
+      <TextButton onClick={onPick} target={phone} aria-label={`Add ${reminder.file}`} style={text(12.5, 500, t.text)}>
+        Add it
+      </TextButton>
+    </div>
+  );
+}
+
 function LibraryRow({ item, phone, onAdd }: { item: SourceLibraryItem; phone: boolean; onAdd: (id: string) => void }) {
   return (
     <div style={{ ...rowLine, display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : undefined, padding: "8px 0", boxSizing: "border-box" }}>
@@ -307,6 +321,7 @@ const group: CSSProperties = { display: "flex", flexDirection: "column", minWidt
 
 export function SourcesPanel(props: SourcesPanelProps) {
   const { phone, fine, status, sessions, files, library } = props;
+  const reminders = (props.reminders ?? []).slice(0, REMINDER_ROWS);
   const inBuild = sessions.length + files.length;
   const empty = sessions.length === 0 && files.length === 0;
 
@@ -352,10 +367,13 @@ export function SourcesPanel(props: SourcesPanelProps) {
         </section>
       ) : null}
 
-      {files.length > 0 ? (
+      {files.length > 0 || reminders.length > 0 ? (
         <section aria-label={SOURCES_COPY.files} style={group}>
           <GroupHead name={SOURCES_COPY.files} count={files.length} />
           <Capped rows={files} phone={phone} render={(file) => <FileRow key={file.id} file={file} phone={phone} />} />
+          {reminders.map((reminder) => (
+            <ReminderRow key={reminder.toolId} reminder={reminder} phone={phone} onPick={props.onPick} />
+          ))}
         </section>
       ) : null}
 

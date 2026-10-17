@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
-import { readerSteps, whatYouNeed } from "@/lib/build/readerSteps";
+import { readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 
 import type { BuildStepsView } from "./buildModel";
@@ -77,10 +77,20 @@ describe("StepsList", () => {
     expect(target.style.boxShadow).toBe("var(--selected-ring)");
   });
 
-  it("the attach row names the file and offers its Download", () => {
+  it("a project file of a coding tool in the build reads as one to put in the project, with its Download", () => {
     mountList(view("list"));
-    expect(screen.getByText("attach")).toBeTruthy();
+    expect(screen.getByText("Put CLAUDE.md in your project")).toBeTruthy();
+    expect(screen.queryByText("attach")).toBeNull();
     expect(screen.getAllByRole("link", { name: "Download CLAUDE.md" }).length).toBeGreaterThan(0);
+  });
+
+  it("any other file is still attached, and a workflow reads as one to import", () => {
+    const steps = view("list");
+    const [first, ...rest] = steps.steps;
+    const file = (name: string, setup: NonNullable<ReaderFile["setup"]> | null): ReaderFile => ({ id: name, name, mediaId: null, bytes: null, size: null, download: `https://x.test/${name}`, madeBy: null, madeIn: null, setup });
+    mountList({ ...steps, steps: [{ ...first, attach: [file("menu.pdf", null), file("workflow.json", { kind: "import", tool: "n8n" })] }, ...rest] });
+    expect(screen.getByText("attach")).toBeTruthy();
+    expect(screen.getByText("Import workflow.json into n8n")).toBeTruthy();
   });
 
   it("Read all of it opens the full prompt window, with the refined Before you send it", () => {

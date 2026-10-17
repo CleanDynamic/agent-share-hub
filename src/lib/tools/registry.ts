@@ -65,6 +65,10 @@ export interface Tool {
   client?: string;
   /** App builders: the words readers see on the link to the maker's project there. */
   projectLink?: string;
+  /** Files a coding tool reads from the project folder; a name ending in "/" is a folder. */
+  projectFiles?: string[];
+  /** The tool imports a workflow file (n8n, ComfyUI). */
+  importsFile?: true;
 }
 
 export const TOOL_GROUPS: readonly { key: ToolGroupKey; label: string }[] = [
@@ -89,10 +93,10 @@ export const TOOLS: readonly Tool[] = [
   { id: "claude", name: "Claude", group: "chat", logo: "claude-color", aliases: ["claude.ai"], client: "claude" },
   { id: "perplexity", name: "Perplexity", group: "chat", logo: "perplexity-color", aliases: ["perplexity ai", "perplexity.ai"] },
   { id: "character-ai", name: "Character.AI", group: "chat", logo: null, aliases: ["character ai", "c.ai"] },
-  { id: "claude-code", name: "Claude Code", group: "coding", logo: "claudecode-color", aliases: ["claudecode"], client: "claude-code" },
-  { id: "github-copilot", name: "GitHub Copilot", group: "coding", logo: "githubcopilot", aliases: ["gh copilot"] },
-  { id: "codex", name: "Codex", group: "coding", logo: "codex-color", aliases: ["openai codex", "codex cli"] },
-  { id: "cursor", name: "Cursor", group: "coding", logo: "cursor", aliases: ["cursor ai", "cursor.com"], client: "cursor" },
+  { id: "claude-code", name: "Claude Code", group: "coding", logo: "claudecode-color", aliases: ["claudecode"], client: "claude-code", projectFiles: ["CLAUDE.md", "SKILL.md"] },
+  { id: "github-copilot", name: "GitHub Copilot", group: "coding", logo: "githubcopilot", aliases: ["gh copilot"], projectFiles: [".github/copilot-instructions.md"] },
+  { id: "codex", name: "Codex", group: "coding", logo: "codex-color", aliases: ["openai codex", "codex cli"], projectFiles: ["AGENTS.md"] },
+  { id: "cursor", name: "Cursor", group: "coding", logo: "cursor", aliases: ["cursor ai", "cursor.com"], client: "cursor", projectFiles: [".cursor/rules/"] },
   { id: "devin-desktop", name: "Devin Desktop", group: "coding", logo: "devin-color", aliases: ["windsurf", "windsurf ide"] },
   { id: "antigravity", name: "Antigravity", group: "coding", logo: "antigravity-color", aliases: ["google antigravity"] },
   { id: "google-ai-studio", name: "Google AI Studio", group: "builders", logo: "aistudio", aliases: ["ai studio", "aistudio.google.com"], projectLink: "Open the app in Google AI Studio" },
@@ -105,10 +109,10 @@ export const TOOLS: readonly Tool[] = [
   { id: "openclaw", name: "OpenClaw", group: "agents", logo: "openclaw-color", aliases: ["open claw"] },
   { id: "hermes-agent", name: "Hermes Agent", group: "agents", logo: "hermesagent", aliases: [] },
   { id: "muse", name: "Muse", group: "agents", logo: null, aliases: ["meta muse", "muse by meta"] },
-  { id: "n8n", name: "n8n", group: "automation", logo: "n8n-color", aliases: ["n8n.io"] },
+  { id: "n8n", name: "n8n", group: "automation", logo: "n8n-color", aliases: ["n8n.io"], importsFile: true },
   { id: "zapier", name: "Zapier", group: "automation", logo: "zapier-color", aliases: ["zapier.com"] },
   { id: "make", name: "Make", group: "automation", logo: "make-color", aliases: ["make.com", "integromat"] },
-  { id: "comfyui", name: "ComfyUI", group: "automation", logo: "comfyui-color", aliases: ["comfy ui"] },
+  { id: "comfyui", name: "ComfyUI", group: "automation", logo: "comfyui-color", aliases: ["comfy ui"], importsFile: true },
   { id: "midjourney", name: "Midjourney", group: "image", logo: "midjourney", aliases: ["mid journey"] },
   { id: "nano-banana", name: "Nano Banana", group: "image", logo: "nanobanana-color", aliases: ["nano banana pro"] },
   { id: "kling", name: "Kling", group: "video", logo: "kling-color", aliases: ["kling ai"] },
@@ -173,4 +177,22 @@ export function cleanProjectLink(raw: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+/** Whether a file name is this project file: the same name in any case, or the end of a path. A folder takes any path under it. */
+export function matchesProjectFile(fileName: string, projectFile: string): boolean {
+  const name = fileName.trim().replace(/\\/g, "/").toLowerCase();
+  const want = projectFile.toLowerCase();
+  if (!want.endsWith("/")) return name === want || name.endsWith(`/${want}`);
+  // Cursor's rules are .mdc files, wherever they were picked up from.
+  return name.endsWith(".mdc") || name.startsWith(want) || name.includes(`/${want}`);
+}
+
+/** The tool among `toolIds` whose project file this is, or null. */
+export function projectFileOf(fileName: string, toolIds: readonly string[]): Tool | null {
+  for (const id of toolIds) {
+    const tool = TOOLS.find((candidate) => candidate.id === id);
+    if (tool?.projectFiles?.some((projectFile) => matchesProjectFile(fileName, projectFile))) return tool;
+  }
+  return null;
 }

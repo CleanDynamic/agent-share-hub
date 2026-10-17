@@ -92,7 +92,7 @@ describe("readerSteps — B1 the bakery", () => {
   it("step 4 pastes in 2 and 3 and attaches CLAUDE.md with its size and download", () => {
     expect(steps[3].pasteIns.map((p) => p.number)).toEqual(["2", "3"]);
     expect(steps[3].attach).toEqual([
-      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null, madeIn: null },
+      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null, madeIn: null, setup: { kind: "project", tool: "Claude Code" } },
     ]);
   });
   it("step 5 is sent in the same chat as step 4", () => {
@@ -161,7 +161,7 @@ describe("readerSteps — B1 the bakery", () => {
 
       Paste in what step 2 gave you (Homepage copy).
       Paste in what step 3 gave you (Palette).
-      Attach CLAUDE.md: https://files.test/b/claude.md.
+      Put CLAUDE.md in your project folder before you start. https://files.test/b/claude.md
 
       \`\`\`
       Build the homepage. Follow CLAUDE.md.
@@ -376,6 +376,58 @@ describe("readerSteps — a file a step makes (TF-08)", () => {
     expect(text).toContain("Attach menu.pdf: https://example.com/menu.pdf.");
     expect(text.indexOf("Save what this step")).toBeGreaterThan(text.indexOf("## Step 1"));
     expect(text.indexOf("Save what this step")).toBeLessThan(text.indexOf("## Step 2"));
+  });
+});
+
+/* ── setup files and workflow files ── */
+
+describe("setup files and workflow files", () => {
+  const file = (id: string, title: string, over: object = {}) => node(id, { position: 9, type: "document", payload: { title, ...over } });
+  const makingFor = (client: string): Making => ({
+    excluded_models: [],
+    sessions: [{ id: "s1", started_at: "2026-10-03T09:00:00Z", client, model: "claude-sonnet-5-5", prompts: 1, turns: 2 }],
+  });
+  const uses = (...ids: string[]) => ({ payload: { uses: ids.map((node_id) => ({ kind: "file", node_id })) } });
+
+  it("a project file of a coding tool the build uses reads as one to put in the project", () => {
+    const tree = [prompt("p1", 1, "Build it.", "s1", uses("f1", "f2")), file("f1", "CLAUDE.md", { url: "https://x.test/c.md" }), file("f2", "menu.pdf")];
+    const [step] = readerSteps(tree, makingFor("claude-code"));
+    expect(step.attach.map((f) => [f.name, f.setup])).toEqual([
+      ["CLAUDE.md", { kind: "project", tool: "Claude Code" }],
+      ["menu.pdf", null],
+    ]);
+    const md = stepsMarkdown({ title: "T" }, [step]);
+    expect(md).toContain("Put CLAUDE.md in your project folder before you start.");
+    expect(md).toContain("Attach menu.pdf.");
+  });
+
+  it("is still an attachment when the build uses no tool that reads it", () => {
+    const tree = [prompt("p1", 1, "Build it.", "s1", uses("f1")), file("f1", "CLAUDE.md")];
+    const [step] = readerSteps(tree, makingFor("chatgpt"));
+    expect(step.attach[0].setup).toBeNull();
+    expect(stepsMarkdown({ title: "T" }, [step])).toContain("Attach CLAUDE.md.");
+  });
+
+  it("a .json file used by an n8n step reads as one to import, and a ComfyUI one too", () => {
+    const tree = [
+      node("m1", { position: 1, type: "manual_step", payload: { text: "Import it.", tool: "n8n", uses: [{ kind: "file", node_id: "f1" }] } }),
+      node("m2", { position: 2, type: "manual_step", payload: { text: "Load it.", tool: "ComfyUI", uses: [{ kind: "file", node_id: "f2" }] } }),
+      file("f1", "workflow.json", { url: "https://x.test/w.json" }),
+      file("f2", "graph.JSON"),
+    ];
+    const steps = readerSteps(tree, null);
+    expect(steps[0].attach[0].setup).toEqual({ kind: "import", tool: "n8n" });
+    expect(steps[1].attach[0].setup).toEqual({ kind: "import", tool: "ComfyUI" });
+    const md = stepsMarkdown({ title: "T" }, steps.map((s) => ({ ...s, manual: null })));
+    expect(md).toContain("Import workflow.json into n8n.");
+    expect(md).toContain("Import graph.JSON into ComfyUI.");
+  });
+
+  it("leaves a .json file alone in a step whose tool does not import it, and a made file alone", () => {
+    const tree = [prompt("p1", 1, "Use it.", "s1", uses("f1")), file("f1", "workflow.json")];
+    expect(readerSteps(tree, makingFor("claude-code"))[0].attach[0].setup).toBeNull();
+    const made = [prompt("p1", 1, "Make it.", "s1"), prompt("p2", 2, "Use it.", "s1", uses("f1")), file("f1", "CLAUDE.md", { made_by: "p1" })];
+    expect(readerSteps(made, makingFor("claude-code"))[1].attach[0].setup).toBeNull();
   });
 });
 

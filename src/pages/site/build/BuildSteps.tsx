@@ -474,8 +474,16 @@ function Inputs({ entry, phone, go }: { entry: ReaderStep; phone: boolean; go: (
           <MadeFileRow key={file.id} file={file} madeIn={file.madeIn} phone={phone} go={go} />
         ) : (
           <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
-            <span style={text(12.5, 400, t.text2)}>attach</span>
-            <Chip>{file.name}</Chip>
+            {file.setup ? (
+              <span style={{ ...text(12.5, 400, t.text), minWidth: 0, overflowWrap: "anywhere" }}>
+                {file.setup.kind === "project" ? `Put ${file.name} in your project` : `Import ${file.name} into ${file.setup.tool}`}
+              </span>
+            ) : (
+              <>
+                <span style={text(12.5, 400, t.text2)}>attach</span>
+                <Chip>{file.name}</Chip>
+              </>
+            )}
             <span style={{ flexGrow: 1 }} />
             <AttachDownload file={file} />
           </div>
