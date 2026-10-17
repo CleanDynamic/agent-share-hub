@@ -325,4 +325,14 @@ describe("the refined look (UI-P93)", () => {
     const html = markup();
     expect(html.match(/data-glyph="larr"|M13 8H3.5/g)?.length ?? 0).toBeGreaterThan(0);
   });
+
+  it("leads Add an input with a file from your computer, which opens the picker for that step", async () => {
+    const onAttach = vi.fn();
+    panel("prompt", "bakery", { onAttach });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Add an input" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items[0].textContent).toBe("A file from your computer");
+    fireEvent.click(items[0]);
+    expect(onAttach).toHaveBeenCalledWith("p3");
+  });
 });
