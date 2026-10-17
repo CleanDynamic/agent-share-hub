@@ -92,7 +92,7 @@ describe("readerSteps — B1 the bakery", () => {
   it("step 4 pastes in 2 and 3 and attaches CLAUDE.md with its size and download", () => {
     expect(steps[3].pasteIns.map((p) => p.number)).toEqual(["2", "3"]);
     expect(steps[3].attach).toEqual([
-      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null },
+      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null, madeIn: null },
     ]);
   });
   it("step 5 is sent in the same chat as step 4", () => {
@@ -345,5 +345,36 @@ describe("readerSteps — a file a step makes (TF-08)", () => {
     const rows = whatYouNeed(steps, tree, null).find((group) => group.key === "files")?.rows ?? [];
     expect(rows.find((row) => row.title === "brand-guide.md")?.download ?? null).toBeNull();
     expect(rows.find((row) => row.title === "menu.pdf")?.download).toBe("https://example.com/menu.pdf");
+  });
+
+  it("reads which step makes a file, with its number, and what that step makes", () => {
+    const steps = readerSteps(tree, null);
+    expect(steps[1].attach.map((file) => ({ name: file.name, madeIn: file.madeIn, download: file.download }))).toEqual([
+      { name: "brand-guide.md", madeIn: { stepId: "p1", number: "1" }, download: null },
+    ]);
+    expect(steps[0].makes.map((file) => file.name)).toEqual(["brand-guide.md"]);
+    expect(steps[1].makes).toEqual([]);
+  });
+
+  it("has no maker for a file that was added, and none for a maker that is not a step", () => {
+    const added = readerSteps([...tree, prompt("p3", 5, "Use the menu.", null, { payload: { uses: [{ kind: "file", node_id: "f1" }] } })], null);
+    expect(added[2].attach[0]).toMatchObject({ name: "menu.pdf", madeBy: null, madeIn: null, download: "https://example.com/menu.pdf" });
+    const orphan = [prompt("p1", 1, "One.", null), node("bg", { position: 2, type: "document", payload: { title: "gone.md", made_by: "nope" } })];
+    expect(readerMap(orphan, null).files[0]).toMatchObject({ madeBy: "nope" });
+  });
+
+  it("What you need says where a made file is made, with no download", () => {
+    const rows = whatYouNeed(readerSteps(tree, null), tree, null).find((group) => group.key === "files")?.rows ?? [];
+    expect(rows.find((row) => row.title === "brand-guide.md")).toEqual({ title: "brand-guide.md", detail: "Made in step 1 · used in step 2", download: null });
+  });
+
+  it("Copy for AI tells the maker to save it and the user to attach it, and leaves an added file's line alone", () => {
+    const withMenu = [...tree, prompt("p3", 5, "Use the menu.", null, { payload: { uses: [{ kind: "file", node_id: "f1" }] } })];
+    const text = stepsMarkdown({ title: "Brand" }, readerSteps(withMenu, null));
+    expect(text).toContain("Save what this step gives you as brand-guide.md.");
+    expect(text).toContain("Attach brand-guide.md, the file step 1 made.");
+    expect(text).toContain("Attach menu.pdf: https://example.com/menu.pdf.");
+    expect(text.indexOf("Save what this step")).toBeGreaterThan(text.indexOf("## Step 1"));
+    expect(text.indexOf("Save what this step")).toBeLessThan(text.indexOf("## Step 2"));
   });
 });

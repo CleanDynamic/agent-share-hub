@@ -444,20 +444,82 @@ function Inputs({ entry, phone, go }: { entry: ReaderStep; phone: boolean; go: (
       {entry.pasteIns.map((paste) => (
         <PasteRow key={paste.stepId} text={paste.text} title={paste.title} phone={phone} onGo={() => go(paste.stepId)} />
       ))}
-      {entry.attach.map((file) => (
-        <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
-          <span style={text(12.5, 400, t.text2)}>attach</span>
-          <Chip>{file.name}</Chip>
-          <span style={{ flexGrow: 1 }} />
-          <AttachDownload file={file} />
-        </div>
-      ))}
+      {entry.attach.map((file) =>
+        file.madeIn ? (
+          <MadeFileRow key={file.id} file={file} madeIn={file.madeIn} phone={phone} go={go} />
+        ) : (
+          <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+            <span style={text(12.5, 400, t.text2)}>attach</span>
+            <Chip>{file.name}</Chip>
+            <span style={{ flexGrow: 1 }} />
+            <AttachDownload file={file} />
+          </div>
+        ),
+      )}
     </div>
   );
 }
 
 function AttachDownload({ file }: { file: ReaderFile }) {
   return file.download ? <DownloadButton href={file.download} name={file.name} /> : null;
+}
+
+/** "attach brand-guide.md, made in step 2" and a way to that step, in place of Download. Wraps on a narrow screen. */
+function MadeFileRow({ file, madeIn, phone, go }: { file: ReaderFile; madeIn: NonNullable<ReaderFile["madeIn"]>; phone: boolean; go: (id: string) => void }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+      <span style={text(12.5, 400, t.text2)}>attach</span>
+      <span style={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}>
+        <Chip>{file.name}</Chip>
+        <span style={{ ...text(12.5, 400, t.text2), whiteSpace: "nowrap" }}>, made in {stepList([madeIn.number], false)}</span>
+      </span>
+      <span style={{ flexGrow: 1 }} />
+      <GoToStep stepId={madeIn.stepId} number={madeIn.number} phone={phone} go={go} />
+    </div>
+  );
+}
+
+/** "Go to step 2": where Download would be, for a file a step makes. A real link to the step's `#node-` address that scrolls and rings the card. */
+function GoToStep({ stepId, number, phone, go }: { stepId: string; number: string; phone: boolean; go: (id: string) => void }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <a
+      href={`#node-${stepId}`}
+      data-hit=""
+      onClick={(event) => {
+        event.preventDefault();
+        go(stepId);
+      }}
+      {...handlers}
+      style={{
+        ...text(12.5, 500, t.text),
+        display: "inline-flex",
+        alignItems: "center",
+        minHeight: phone ? 44 : 24,
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+        textDecoration: "underline",
+        textUnderlineOffset: 3,
+        textDecorationColor: state.hovered ? t.text2 : t.line,
+        ...ring(state.focusVisible),
+      }}
+    >
+      Go to {stepList([number], false)}
+    </a>
+  );
+}
+
+/** Under a step's text: what to keep its output as, once for each file it makes. */
+function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; indent?: number }) {
+  return (
+    <>
+      {files.map((file) => (
+        <p key={file.id} data-testid="save-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent, overflowWrap: "anywhere" }}>
+          Save what this step gives you as {file.name}
+        </p>
+      ))}
+    </>
+  );
 }
 
 /* ── the heads ── */
@@ -540,6 +602,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           {entry.manual.headline}
         </div>
         <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
+        <SaveLines files={entry.makes} />
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>
             <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
@@ -553,6 +616,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
+      <SaveLines files={entry.makes} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
       {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
     </article>
@@ -591,6 +655,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
         </div>
         <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
+        <SaveLines files={entry.makes} indent={0} />
         {entry.uses.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
             <Eyebrow>Uses</Eyebrow>
@@ -642,6 +707,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
       </div>
       <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
+      <SaveLines files={entry.makes} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />

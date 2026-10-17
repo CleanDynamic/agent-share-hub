@@ -6,6 +6,8 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
+import { readerSteps, whatYouNeed } from "@/lib/build/readerSteps";
+import type { NodeTree } from "@/lib/build/types";
 
 import type { BuildStepsView } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
@@ -113,6 +115,52 @@ describe("StepsList", () => {
     mountList(view("one"));
     expect(screen.getAllByTestId("step-card")).toHaveLength(1);
     expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
+  });
+});
+
+/** Step 1 makes brand-guide.md; step 2 attaches it. */
+function madeFileView(): BuildStepsView {
+  const node = (id: string, position: number, type: string, payload: object): NodeTree =>
+    ({ id, build_id: "b", parent_id: null, position, type, title: null, note: null, payload, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-07T09:00:00.000Z", children: [] }) as NodeTree;
+  const tree = [
+    node("p1", 1, "prompt", { text: "Write a brand guide." }),
+    node("p2", 2, "prompt", { text: "Use the guide.", uses: [{ kind: "file", node_id: "bg" }] }),
+    node("bg", 3, "document", { title: "brand-guide.md", made_by: "p1" }),
+  ];
+  const steps = readerSteps(tree, null);
+  return view("list", { steps, need: whatYouNeed(steps, tree, null), results: [] });
+}
+
+describe("a file a step makes", () => {
+  it("the step that uses it says where it was made and goes there; there is no Download", () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    mountList(madeFileView());
+    const second = screen.getAllByTestId("step-card")[1];
+    expect(second.textContent).toContain("attach" + "brand-guide.md, made in step 1");
+    expect(within(second).queryByRole("link", { name: /Download/ })).toBeNull();
+    const link = within(second).getByRole("link", { name: "Go to step 1" });
+    expect(link.getAttribute("href")).toBe("#node-p1");
+    fireEvent.click(link);
+    expect(scroll.mock.contexts[0]).toBe(document.getElementById("step-p1"));
+  });
+
+  it("the step that makes it says to save it, quietly, and the other step does not", () => {
+    mountList(madeFileView());
+    const [first, second] = screen.getAllByTestId("step-card");
+    expect(within(first).getByTestId("save-line").textContent).toBe("Save what this step gives you as brand-guide.md");
+    expect(within(second).queryByTestId("save-line")).toBeNull();
+  });
+
+  it("What you need reads Made in step 1 with no Download", () => {
+    render(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <NeedPanel view={madeFileView()} onOpenOther={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const need = screen.getByTestId("build-need");
+    expect(within(need).getByText("Made in step 1 · used in step 2")).toBeTruthy();
+    expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
 
