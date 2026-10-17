@@ -385,3 +385,71 @@ describe("a manual step in the Map (UI-P70)", () => {
     expect(p4.column).toBeGreaterThan(layout.boxes.find((candidate) => candidate.id === "m3")!.column);
   });
 });
+
+describe("a file a step makes (TF-08)", () => {
+  /** Step 2 makes brand-guide.md, step 4 uses it; step 3 is a chat on the next day, so only the file pushes step 4 right. */
+  function made() {
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      step({ id: "p2", number: "2", sessionId: "s1" }),
+      step({ id: "p3", number: "3", sessionId: "s2" }),
+      step({ id: "p4", number: "4", sessionId: "s2", uses: [{ kind: "file", node_id: "bg" }] }),
+    ];
+    const groups: SessionGroup[] = [
+      { sessionId: "s1", number: 1, tool: "Claude", model: "Opus 5.5", startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "2"] },
+      { sessionId: "s2", number: 2, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-03-04T10:00:00", stepNumbers: ["3", "4"] },
+    ];
+    const layout = layoutMap(steps, groups, [{ id: "bg", name: "brand-guide.md", madeBy: "p2" }], [], []);
+    return { steps, groups, layout };
+  }
+  const box = (layout: MapLayout, id: string) => layout.boxes.find((candidate) => candidate.id === id)!;
+
+  it("sits in the files band one column after the step that makes it, and the step that uses it one more after that", () => {
+    const { layout } = made();
+    expect(col(layout, "p2")).toBe(1);
+    expect(col(layout, "bg")).toBe(2);
+    expect(col(layout, "p4")).toBe(3);
+    expect(layout.lanes[box(layout, "bg").lane].kind).toBe("files");
+    expect(box(layout, "p2").x).toBeLessThan(box(layout, "bg").x);
+    expect(box(layout, "bg").x).toBeLessThan(box(layout, "p4").x);
+    expect(overlaps(layout)).toEqual([]);
+  });
+
+  it("wires the step's output dot to the file's left edge, unnamed, and the file to the step that uses it, named", () => {
+    const { layout } = made();
+    const maker = box(layout, "p2");
+    const file = box(layout, "bg");
+    const wire = layout.wires.find((candidate) => candidate.from === "p2" && candidate.to === "bg");
+    expect(wire).toMatchObject({ named: false, loop: false, suggested: false, x1: maker.x + maker.w, y1: maker.y + MAP_SIZES.head / 2, x2: file.x, y2: file.y + MAP_SIZES.head / 2 });
+    const use = layout.wires.find((candidate) => candidate.from === "bg" && candidate.to === "p4");
+    expect(use).toMatchObject({ named: true });
+  });
+
+  it("is where a file nobody makes already was: one column before its first user", () => {
+    const { steps, groups } = made();
+    const layout = layoutMap(steps, groups, [{ id: "bg", name: "brand-guide.md" }], [], []);
+    expect(col(layout, "bg")).toBe(col(layout, "p4") - 1);
+    expect(layout.wires.some((candidate) => candidate.to === "bg")).toBe(false);
+  });
+
+  it("is drawn after an agent or a team that makes it, from that box, when a step inside makes it", () => {
+    const inner = step({ id: "a2:p", number: "2.1" });
+    const steps: Step[] = [
+      step({ id: "p1", number: "1", sessionId: "s1" }),
+      step({ id: "a2", number: "2", kind: "agent", uses: [out("p1")], children: [inner] }),
+      step({ id: "p3", number: "3", sessionId: "s1", uses: [{ kind: "file", node_id: "bg" }] }),
+    ];
+    const groups: SessionGroup[] = [{ sessionId: "s1", number: 1, tool: "Claude", model: null, startedAt: "2026-03-03T10:00:00", stepNumbers: ["1", "3"] }];
+    const layout = layoutMap(steps, groups, [{ id: "bg", name: "brand-guide.md", madeBy: "a2:p" }], [], []);
+    expect(col(layout, "bg")).toBe(col(layout, "a2") + 2);
+    expect(col(layout, "p3")).toBeGreaterThan(col(layout, "bg"));
+    expect(layout.wires.some((candidate) => candidate.from === "a2" && candidate.to === "bg" && !candidate.named)).toBe(true);
+  });
+
+  it("is dimmed with the step and the users it joins when it is selected", () => {
+    const { layout } = made();
+    const { boxes, wires } = joinedTo(layout, "bg");
+    expect([...boxes].sort()).toEqual(["bg", "p2", "p4"]);
+    expect(wires.size).toBe(2);
+  });
+});

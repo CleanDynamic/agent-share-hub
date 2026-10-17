@@ -54,7 +54,7 @@ import { BuildMap } from "./BuildMap";
 import { attachFiles } from "./attachFiles";
 import { DetailsPanel } from "./DetailsPanel";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
-import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
+import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
@@ -168,6 +168,8 @@ export function SandboxPage() {
   /* ── List (UI-P65) ── */
 
   const [focusAdd, setFocusAdd] = useState(0);
+  /** "Name a file it makes": the prompt whose Makes field Details opens, and when it was asked. */
+  const [focusMakes, setFocusMakes] = useState<{ id: string; at: number } | null>(null);
   const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
   const listFacts = useMemo(() => {
     const names: Record<string, string> = {};
@@ -195,6 +197,17 @@ export function SandboxPage() {
   const mapPieces = useMemo(() => pieces(tree, []), [tree]);
   const madeFiles = useMemo(() => madeFilesOf(tree), [tree]);
   const madeNames = useMemo(() => madeFileNamesOf(tree), [tree]);
+  /** The files each step makes, by step id: the List's "Makes" line. */
+  const madeByStep = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const [fileId, stepId] of madeFiles) {
+      const name = madeNames.get(fileId);
+      if (name) (out[stepId] ??= []).push(name);
+    }
+    return out;
+  }, [madeFiles, madeNames]);
+  /** The Map's files: a made file says which step makes it, so the Map places it after that step. */
+  const mapFiles = useMemo<MapPiece[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
   // UI-P71: exact facts only — a file named word for word in a prompt.
   const suggestions: ListSuggestion[] = useMemo(
     () =>
@@ -227,6 +240,14 @@ export function SandboxPage() {
   /* ── Sources ── */
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const onNameMade = useCallback((stepId: string) => {
+    setSelectedId(stepId);
+    setFocusMakes({ id: stepId, at: Date.now() });
+  }, []);
+  // The ask belongs to the prompt it was made on: once something else is selected it is spent.
+  useEffect(() => {
+    if (focusMakes && selectedId !== focusMakes.id) setFocusMakes(null);
+  }, [selectedId, focusMakes]);
   /** UI-P67: the prompt open in the full prompt window. */
   const [openPromptId, setOpenPromptId] = useState<string | null>(null);
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
@@ -553,7 +574,7 @@ export function SandboxPage() {
           <BuildMap
             steps={steps}
             groups={groups}
-            files={mapPieces.files}
+            files={mapFiles}
             tools={mapPieces.tools}
             results={mapResults}
             suggestions={mapSuggestions}
@@ -581,10 +602,16 @@ export function SandboxPage() {
             phone={phone}
             view={view}
             inBuild={inBuild}
+            focusMakes={focusMakes}
             onSelect={setSelectedId}
             onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
             onModel={prompts.setModel}
+            onAddMade={(stepId, name) => void prompts.addMadeFile(stepId, name)}
+            onRemoveMade={(fileId) => {
+              prompts.removeMadeFile(fileId);
+              afterWrite();
+            }}
             onAddUse={(id, use) => {
               prompts.accept(id, use, steps);
               afterWrite();
@@ -643,6 +670,8 @@ export function SandboxPage() {
             onAddAgentPrompt={onAddAgentPrompt}
             onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
             onAttach={pickForStep}
+            onNameMade={onNameMade}
+            madeNames={madeByStep}
             onDropOnStep={(id, files) => void onDropOnStep(id, files)}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}

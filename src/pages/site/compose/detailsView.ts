@@ -8,6 +8,7 @@
 import { promptNodes, promptOrigin } from "@/lib/build/composePrompts";
 import {
   FILE_TYPE,
+  madeByOf,
   madeFilesOf,
   RESULT_TYPE,
   stepTitle,
@@ -24,6 +25,7 @@ import {
   goesIntoRows,
   inputOptions,
   insideCounts,
+  makesRows,
   promptPlace,
   sessionNumberOf,
   textLabel,
@@ -104,6 +106,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+    makes: instructions ? [] : makesRows(step.id, ctx.tree),
   };
 }
 
@@ -127,6 +130,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+    makes: makesRows(step.id, ctx.tree),
   };
 }
 
@@ -196,13 +200,16 @@ function fileView(node: NodeTree, ctx: ViewContext): FileView {
   const mediaId = text(payload.media_id);
   const facts = mediaId ? ctx.media(mediaId) : undefined;
   const source = ctx.sourceFiles.find((file) => file.id === node.id);
+  // A file a step makes is made by running the step: it has nothing to download.
+  const maker = madeByOf(node);
+  const number = maker ? flatten(ctx.steps).find((step) => step.id === maker)?.number : undefined;
   return {
     kind: "file",
     id: node.id,
     name: text(payload.title) || "Untitled file",
-    from: source?.note ?? "added by you",
+    from: number ? `Made in step ${number}` : (source?.note ?? "added by you"),
     size: fileSize(facts?.bytes),
-    canDownload: Boolean(mediaId || text(payload.url)),
+    canDownload: !maker && Boolean(mediaId || text(payload.url)),
     usedBy: usedBy(ctx.steps, { kind: "file", node_id: node.id }),
   };
 }

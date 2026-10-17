@@ -11,7 +11,7 @@ vi.mock("./media", async (importOriginal) => ({
 }));
 
 import type { Making } from "./making";
-import { buildCounts, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "./readerSteps";
+import { buildCounts, readerMap, readerResults, readerSteps, stepsMarkdown, whatYouNeed, type ReaderMedia } from "./readerSteps";
 import type { NodeTree } from "./types";
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -92,7 +92,7 @@ describe("readerSteps — B1 the bakery", () => {
   it("step 4 pastes in 2 and 3 and attaches CLAUDE.md with its size and download", () => {
     expect(steps[3].pasteIns.map((p) => p.number)).toEqual(["2", "3"]);
     expect(steps[3].attach).toEqual([
-      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md" },
+      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null },
     ]);
   });
   it("step 5 is sent in the same chat as step 4", () => {
@@ -322,5 +322,28 @@ describe("readerSteps — B4 and the edges", () => {
     expect(whatYouNeed(readerSteps(tree, one), tree, one).some((g) => g.key === "time")).toBe(false);
     const undated: Making = { sessions: [{ client: "claude", model: null, prompts: 1, turns: 1 }, { client: "claude", model: null, prompts: 1, turns: 1 }], excluded_models: [] };
     expect(whatYouNeed(readerSteps(tree, undated), tree, undated).some((g) => g.key === "time")).toBe(false);
+  });
+});
+
+describe("readerSteps — a file a step makes (TF-08)", () => {
+  const tree = [
+    prompt("p1", 1, "Write a brand guide.", null),
+    prompt("p2", 2, "Use the guide.", null, { payload: { uses: [{ kind: "file", node_id: "bg" }] } }),
+    node("bg", { position: 3, type: "document", payload: { title: "brand-guide.md", made_by: "p1", url: "https://example.com/x" } }),
+    node("f1", { position: 4, type: "document", payload: { title: "menu.pdf", url: "https://example.com/menu.pdf" } }),
+  ];
+
+  it("tells the Map which step makes it", () => {
+    expect(readerMap(tree, null).files).toEqual([
+      { id: "bg", name: "brand-guide.md", madeBy: "p1" },
+      { id: "f1", name: "menu.pdf", madeBy: null },
+    ]);
+  });
+
+  it("is never offered to download on the build page, and a file that was added still is", () => {
+    const steps = readerSteps(tree, null);
+    const rows = whatYouNeed(steps, tree, null).find((group) => group.key === "files")?.rows ?? [];
+    expect(rows.find((row) => row.title === "brand-guide.md")?.download ?? null).toBeNull();
+    expect(rows.find((row) => row.title === "menu.pdf")?.download).toBe("https://example.com/menu.pdf");
   });
 });

@@ -12,7 +12,7 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Pencil, X } from "lucide-react";
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
@@ -33,11 +33,12 @@ import {
   type InputOption,
   type UseRow,
   type ChecklistRow,
+  type MakesRow,
 } from "./detailsModel";
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import type { Runs, Use } from "@/lib/build/graph";
+import { MADE_FILE_NAME_MAX, type Runs, type Use } from "@/lib/build/graph";
 
 export interface InputsView {
   uses: readonly UseRow[];
@@ -62,6 +63,8 @@ export interface PromptView extends InputsView {
   model: string | null;
   text: string;
   words: number;
+  /** The files it makes; empty for an agent's instructions. */
+  makes: readonly MakesRow[];
 }
 
 /** Work done outside AI (UI-P70). It is never detected, and has no model and no text to copy. */
@@ -75,6 +78,7 @@ export interface ManualView extends InputsView {
   text: string;
   /** Its picture, with the file's name when it could be read. */
   picture: { id: string; name: string } | null;
+  makes: readonly MakesRow[];
 }
 
 export interface SessionView {
@@ -144,6 +148,9 @@ export interface DetailsHandlers {
   /** TF-06: "A file from your computer" opens the file picker for this step. Absent: the item is not shown. */
   onAttach?: (id: string) => void;
   onRemoveUse: (id: string, use: Use) => void;
+  /** TF-08: name a file a step makes, and take one away (it also comes out of the steps that use it). Absent: no Makes list. */
+  onAddMade?: (stepId: string, name: string) => void;
+  onRemoveMade?: (fileId: string) => void;
   onRuns: (id: string, runs: Runs | null) => void;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
   onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
@@ -165,12 +172,21 @@ export interface DetailsPanelProps extends DetailsHandlers {
   view: DetailsView | null;
   /** The tools the build already uses, first in a manual step's tool picker. */
   inBuild?: readonly string[];
+  /** TF-08: "Name a file it makes" in the List asks this step's Makes field to open; `at` changes each time. */
+  focusMakes?: { id: string; at: number } | null;
 }
 
 export const MANUAL_DETAILS_COPY = { never: "Added by you · never detected" } as const;
 
 export const DETAILS_COPY = {
   empty: "Select a prompt, session or file to see it here.",
+} as const;
+
+export const MAKES_COPY = {
+  title: "Makes",
+  add: "Name a file it makes",
+  placeholder: "File name, such as brand-guide.md",
+  taken: "This step already makes a file with that name.",
 } as const;
 
 /* ── small pieces ── */
@@ -459,12 +475,159 @@ function RowList({ title, rows, phone, glyph = "rarr", onSelect }: { title: stri
   );
 }
 
+/* ── Makes (TF-08): the files a step makes ── */
+
+/** A made file's name, renamed in place: Enter or leaving saves, Esc goes back, and a blank name goes back too. */
+function MadeName({ row, phone, onRename }: { row: MakesRow; phone: boolean; onRename: (id: string, name: string) => void }) {
+  const [draft, setDraft] = useState(row.name);
+  const commit = () => {
+    const next = draft.trim();
+    if (!next) setDraft(row.name);
+    else if (next !== row.name) onRename(row.id, next);
+  };
+  const { state, handlers } = useInteractive<HTMLInputElement>({ onBlur: commit });
+  return (
+    <input
+      type="text"
+      aria-label={`Name of ${row.name}`}
+      value={draft}
+      maxLength={MADE_FILE_NAME_MAX}
+      onChange={(event) => setDraft(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          commit();
+        }
+        if (event.key === "Escape") setDraft(row.name);
+      }}
+      {...handlers}
+      style={{ ...wellField, flexGrow: 1, minWidth: 0, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+    />
+  );
+}
+
+function MakesList({
+  stepId,
+  rows,
+  phone,
+  focus,
+  onAdd,
+  onRename,
+  onRemove,
+}: {
+  stepId: string;
+  rows: readonly MakesRow[];
+  phone: boolean;
+  focus: DetailsPanelProps["focusMakes"];
+  onAdd: (stepId: string, name: string) => void;
+  onRename: (id: string, name: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [all, setAll] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [taken, setTaken] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+  const button = useInteractive<HTMLButtonElement>();
+  const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
+
+  /* The List's menu item opens the field, or puts the cursor back in it when it is open already. */
+  const asked = focus && focus.id === stepId ? focus.at : 0;
+  useEffect(() => {
+    if (!asked) return;
+    setAdding(true);
+    field.current?.focus();
+  }, [asked]);
+
+  const close = () => {
+    setAdding(false);
+    setDraft("");
+    setTaken(false);
+  };
+  const submit = () => {
+    const name = draft.trim();
+    if (!name) return;
+    if (rows.some((row) => row.name.trim().toLowerCase() === name.toLowerCase())) {
+      setTaken(true);
+      return;
+    }
+    onAdd(stepId, name);
+    close();
+  };
+
+  return (
+    <Section title={MAKES_COPY.title} count={rows.length}>
+      {shown.visible.map((row) => (
+        <div key={row.id} style={listRow()}>
+          <MadeName key={row.name} row={row} phone={phone} onRename={onRename} />
+          <RemoveButton label={`Remove ${row.name}`} phone={phone} onClick={() => onRemove(row.id)} />
+        </div>
+      ))}
+      <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
+      {adding ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
+          <input
+            ref={field}
+            autoFocus
+            type="text"
+            aria-label={MAKES_COPY.add}
+            placeholder={MAKES_COPY.placeholder}
+            value={draft}
+            maxLength={MADE_FILE_NAME_MAX}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              setTaken(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                submit();
+              }
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                close();
+              }
+            }}
+            onBlur={() => {
+              if (!draft.trim()) close();
+            }}
+            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+          />
+          {taken ? <span style={quiet()}>{MAKES_COPY.taken}</span> : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          {...button.handlers}
+          onClick={() => setAdding(true)}
+          style={{
+            ...bareButton,
+            height: phone ? 44 : 36,
+            ...text(12.5, 500, button.state.hovered ? t.text : t.text2),
+            cursor: "pointer",
+            alignSelf: "flex-start",
+            ...ring(button.state.focusVisible),
+          }}
+        >
+          {MAKES_COPY.add}
+        </button>
+      )}
+    </Section>
+  );
+}
+
 /* ── a prompt ── */
 
 /** The tool, from the session line: "Session 2 · Claude Code" and "Typed here · ChatGPT" both end in it. */
 const toolOf = (sessionLine: string): string => sessionLine.split(" · ").pop() ?? "";
 
-function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean } & DetailsHandlers) {
+/** The Makes list of a step; only where the panel can write it. */
+function Makes({ id, rows, phone, focus, h }: { id: string; rows: readonly MakesRow[]; phone: boolean; focus: DetailsPanelProps["focusMakes"]; h: DetailsHandlers }) {
+  if (!h.onAddMade) return null;
+  return <MakesList stepId={id} rows={rows} phone={phone} focus={focus} onAdd={h.onAddMade} onRename={(fileId, name) => h.onFields(fileId, { title: name })} onRemove={(fileId) => h.onRemoveMade?.(fileId)} />;
+}
+
+function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
   const open = h.onOpenPrompt ? () => h.onOpenPrompt?.(view.id) : undefined;
   return (
     <>
@@ -507,6 +670,7 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
         <span style={{ ...quiet(), ...tnum }}>{view.words} words</span>
       </div>
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      {view.editable ? <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} /> : null}
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
@@ -514,7 +678,7 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
 
 /* ── a manual step (UI-P70) ── */
 
-function ManualDetails({ view, phone, inBuild = [], ...h }: { view: ManualView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
+function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: ManualView; phone: boolean; inBuild?: readonly string[]; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
   const picker = useRef<HTMLInputElement>(null);
   const commit = (fields: { tool?: string; text?: string }) => {
     // Both are required: a blank value goes back to what was there.
@@ -560,6 +724,7 @@ function ManualDetails({ view, phone, inBuild = [], ...h }: { view: ManualView; 
         </div>
       </Section>
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
@@ -818,12 +983,12 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
 /* ── the panel ── */
 
 /* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
-export function DetailsPanel({ view, phone, inBuild, ...h }: DetailsPanelProps) {
+export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: DetailsPanelProps) {
   if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
   return (
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
-      {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
+      {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
+      {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

@@ -19,6 +19,7 @@ import {
   TOOL_TYPE,
   buildSteps,
   goesInto,
+  madeByOf,
   runsLabel,
   sessionGroups,
   stepTitle,
@@ -77,8 +78,10 @@ export interface ReaderFile {
   bytes: number | null;
   /** "1.2 KB", or null when the size is not known. */
   size: string | null;
-  /** The existing media path, or the file's own link; null when there is neither. */
+  /** The existing media path, or the file's own link; null when there is neither, and for a file a step makes. */
   download: string | null;
+  /** The id of the step that makes this file; null for a file nobody makes. */
+  madeBy: string | null;
 }
 
 export interface ReaderTool {
@@ -254,13 +257,16 @@ function readFiles(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
         const mediaId = text(node, "media_id");
         const found = mediaId ? media.get(mediaId) : undefined;
         const bytes = found?.bytes ?? null;
+        const madeBy = madeByOf(node);
         files.set(node.id, {
           id: node.id,
           name: text(node, "title") ?? "Untitled file",
           mediaId,
           bytes,
           size: formatSize(bytes),
-          download: found ? mediaUrl(found, { width: "original" }) : text(node, "url"),
+          // A file a step makes is made by running the step: it is never offered to download.
+          download: madeBy ? null : found ? mediaUrl(found, { width: "original" }) : text(node, "url"),
+          madeBy,
         });
       }
       visit(node.children ?? []);
@@ -463,7 +469,7 @@ export function readerMap(tree: readonly NodeTree[], making: Making | null | und
   });
   return {
     groups: context.groups,
-    files: [...context.files.values()].map((file) => ({ id: file.id, name: file.name })),
+    files: [...context.files.values()].map((file) => ({ id: file.id, name: file.name, madeBy: file.madeBy })),
     tools: [...context.tools.values()].map((tool) => ({ id: tool.id, name: tool.name })),
     results,
   };

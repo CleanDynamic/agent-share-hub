@@ -40,6 +40,7 @@ import {
   addManualStep,
   addResult,
   addTeam,
+  addMadeFile as writeMadeFile,
   addTool,
   addUse,
   dismissSuggestion,
@@ -137,6 +138,10 @@ export interface ComposePrompts {
   setFields: (id: string, fields: Record<string, string | null>) => void;
   /** UI-P66: take a node out of an agent or a team. */
   removeInside: (id: string) => void;
+  /** TF-08: name a file a step makes; resolves its id, or null if it failed. */
+  addMadeFile: (stepId: string, name: string) => Promise<string | null>;
+  /** TF-08: take a made file out of the build and out of the steps that use it. */
+  removeMadeFile: (fileId: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
@@ -324,19 +329,23 @@ export function useComposePrompts({
       .catch(failed("Couldn't move that prompt. Try again."));
   };
 
-  /** Before a step goes: each file it makes comes out of every step's uses, then the file goes. */
+  /** A file goes: it comes out of every step's uses first, so no step is left naming a file that is gone. */
+  const dropFile = async (fileId: string) => {
+    const use: Use = { kind: "file", node_id: fileId };
+    for (const user of allNodes(nodes.current())) {
+      if (!usesOf(user).some((entry) => entry.kind === use.kind && entry.node_id === use.node_id)) continue;
+      const fresh = findNode(nodes.current(), user.id);
+      if (fresh) nodes.record(fresh.id, await removeUse(rowOf(fresh), use));
+    }
+    await deleteNode(fileId);
+    nodes.record(fileId, null);
+  };
+
+  /** Before a step goes: each file it makes goes too. */
   const dropMadeFiles = async (stepId: string) => {
     const within = new Set(idsWithin(findNode(nodes.current(), stepId)));
     for (const [fileId, maker] of madeFilesOf(nodes.current())) {
-      if (!within.has(maker)) continue;
-      const use: Use = { kind: "file", node_id: fileId };
-      for (const user of allNodes(nodes.current())) {
-        if (!usesOf(user).some((entry) => entry.kind === use.kind && entry.node_id === use.node_id)) continue;
-        const fresh = findNode(nodes.current(), user.id);
-        if (fresh) nodes.record(fresh.id, await removeUse(rowOf(fresh), use));
-      }
-      await deleteNode(fileId);
-      nodes.record(fileId, null);
+      if (within.has(maker)) await dropFile(fileId);
     }
   };
 
@@ -485,6 +494,28 @@ export function useComposePrompts({
       .catch(failed("Couldn't remove that. Try again."));
   };
 
+  /** TF-08: name a file `stepId` makes. Resolves the new file's id, or null if it failed. */
+  const addMadeFile = (stepId: string, name: string) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await writeMadeFile(build, nodes.current(), { stepId, name });
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        failed("Couldn't add that file. Try again.")(cause);
+        return null;
+      });
+
+  /** TF-08: take a made file out of the build, and out of the steps that use it. Anything that is not a made file is left alone. */
+  const removeMadeFile = (fileId: string) =>
+    void nodes
+      .run(async () => {
+        if (madeFilesOf(nodes.current()).has(fileId)) await dropFile(fileId);
+      })
+      .catch(failed("Couldn't remove that file. Try again."));
+
   const addPiece = (kind: "tool" | "result") =>
     nodes
       .run(async () => {
@@ -602,5 +633,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
 }
