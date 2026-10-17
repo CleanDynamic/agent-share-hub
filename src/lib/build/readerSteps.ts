@@ -82,6 +82,8 @@ export interface ReaderFile {
   download: string | null;
   /** The id of the step that makes this file; null for a file nobody makes. */
   madeBy: string | null;
+  /** The step that makes it, with its number, read from `payload.made_by`; null for a file nobody makes and for a maker that is not a step of this build. */
+  madeIn: { stepId: string; number: string } | null;
 }
 
 export interface ReaderTool {
@@ -99,6 +101,8 @@ export interface ReaderStep {
   /** What a prompt takes in. Read as "Paste in", "Attach {name}" and the tool, outside an agent or a team. */
   pasteIns: ReaderPasteIn[];
   attach: ReaderFile[];
+  /** The files this step makes: its output is kept as each of them. */
+  makes: ReaderFile[];
   tools: ReaderTool[];
   /** Inside an agent or a team, and for an agent or a team itself: the same inputs read as "Uses", in the order listed. Never "Paste in". */
   uses: string[];
@@ -249,7 +253,11 @@ const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
   return out;
 };
 
-function readFiles(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderMedia>): Map<string, ReaderFile> {
+function readFiles(
+  tree: readonly NodeTree[],
+  media: ReadonlyMap<string, ReaderMedia>,
+  steps: ReadonlyMap<string, Pick<Step, "id" | "number">>,
+): Map<string, ReaderFile> {
   const files = new Map<string, ReaderFile>();
   const visit = (nodes: readonly NodeTree[]) => {
     for (const node of nodes) {
@@ -258,6 +266,7 @@ function readFiles(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
         const found = mediaId ? media.get(mediaId) : undefined;
         const bytes = found?.bytes ?? null;
         const madeBy = madeByOf(node);
+        const maker = madeBy ? steps.get(madeBy) : undefined;
         files.set(node.id, {
           id: node.id,
           name: text(node, "title") ?? "Untitled file",
@@ -267,6 +276,7 @@ function readFiles(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderM
           // A file a step makes is made by running the step: it is never offered to download.
           download: madeBy ? null : found ? mediaUrl(found, { width: "original" }) : text(node, "url"),
           madeBy,
+          madeIn: maker ? { stepId: maker.id, number: maker.number } : null,
         });
       }
       visit(node.children ?? []);
@@ -300,11 +310,12 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
       if (isRecord(use) && use.kind === "output" && typeof use.node_id === "string") resultFrom.add(use.node_id);
     }
   }
+  const byId = new Map(all.map((step) => [step.id, step]));
   return {
     all,
-    byId: new Map(all.map((step) => [step.id, step])),
+    byId,
     index: new Map(all.map((step, i) => [step.id, i])),
-    files: readFiles(tree, media),
+    files: readFiles(tree, media, byId),
     tools: readTools(tree),
     groups: sessionGroups(topSteps, sessions),
     sessions: new Map(sessions.filter((s) => s.id).map((s) => [s.id as string, { startedAt: s.started_at ?? null }])),
@@ -401,6 +412,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     chat: chatFor(step, context),
     pasteIns,
     attach,
+    makes: [...context.files.values()].filter((file) => file.madeIn?.stepId === step.id),
     tools,
     uses: container ? uses : [],
     manual:
@@ -555,11 +567,14 @@ export function whatYouNeed(
   if (tools.length > 0) groups.push({ key: "tools", label: "Tools and models", rows: tools });
 
   /* Files */
-  const files: NeedRow[] = [...context.files.values()].map((file) => ({
-    title: file.name,
-    detail: [stepList(used.get(file.id) ?? []), file.size].filter(Boolean).join(" · "),
-    download: file.download,
-  }));
+  const files: NeedRow[] = [...context.files.values()].map((file) => {
+    const numbers = used.get(file.id) ?? [];
+    // A file a step makes is made by running that step: it says where, and has no size and no download.
+    const detail = file.madeIn
+      ? [`Made in ${stepList([file.madeIn.number], false)}`, numbers.length > 0 ? `used in ${stepList(numbers)}` : null]
+      : [stepList(numbers), file.size];
+    return { title: file.name, detail: detail.filter(Boolean).join(" · "), download: file.download };
+  });
   if (files.length > 0) groups.push({ key: "files", label: "Files", rows: files });
 
   /* How it runs */
@@ -669,9 +684,17 @@ function chatSentence(chat: ReaderChat): string {
 function inputSentences(entry: ReaderStep): string[] {
   const out: string[] = [];
   for (const paste of entry.pasteIns) out.push(`Paste in what step ${paste.number} gave you (${paste.title}).`);
-  for (const file of entry.attach) out.push(file.download ? `Attach ${file.name}: ${file.download}.` : `Attach ${file.name}.`);
+  for (const file of entry.attach) {
+    if (file.madeIn) out.push(`Attach ${file.name}, the file ${stepList([file.madeIn.number], false)} made.`);
+    else out.push(file.download ? `Attach ${file.name}: ${file.download}.` : `Attach ${file.name}.`);
+  }
   for (const tool of entry.tools) out.push(`Use ${tool.name}.`);
   return out;
+}
+
+/** What a step that makes a file tells the reader to do with its output. */
+function saveSentences(entry: ReaderStep): string[] {
+  return entry.makes.map((file) => `Save what this step gives you as ${file.name}.`);
 }
 
 function subSteps(entry: ReaderStep, lines: string[]): void {
@@ -684,6 +707,8 @@ function subSteps(entry: ReaderStep, lines: string[]): void {
     if (child.uses.length > 0) lines.push(`Uses ${join(child.uses)}.`, "");
     if (child.goesInto.length > 0) lines.push(`Goes into ${child.goesInto.join(", ")}.`, "");
     if (child.step.text) lines.push(fenced(child.step.text), "");
+    const saves = saveSentences(child);
+    if (saves.length > 0) lines.push(...saves, "");
     // An agent inside a team shows its instructions in its own row; what follows is its own prompts.
     const own = { ...child, children: child.children.filter((grand) => !grand.step.id.endsWith(":instructions")) };
     subSteps(own, lines);
@@ -708,14 +733,17 @@ export function stepsMarkdown(
     const { step } = entry;
     lines.push(`## Step ${step.number} · ${entry.title}`, "");
 
+    const saves = saveSentences(entry);
     if (entry.manual) {
       lines.push(`${entry.manual.headline}: ${entry.manual.line}`.replace(/\.?$/, "."), "");
+      if (saves.length > 0) lines.push(...saves, "");
       continue;
     }
     if (step.kind === "agent" || step.kind === "team") {
       const how = [entry.runs, entry.madeIn].filter(Boolean).join(" · ");
       if (how) lines.push(`${how}.`, "");
       if (entry.uses.length > 0) lines.push(`Uses ${join(entry.uses)}.`, "");
+      if (saves.length > 0) lines.push(...saves, "");
       subSteps(entry, lines);
       continue;
     }
@@ -723,6 +751,7 @@ export function stepsMarkdown(
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     if (step.text) lines.push(fenced(step.text), "");
+    if (saves.length > 0) lines.push(...saves, "");
   }
 
   lines.push("## Result", "");
