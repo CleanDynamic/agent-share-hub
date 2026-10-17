@@ -86,3 +86,10 @@ export function madeIn(step: Pick<Step, "uses">, steps: readonly Step[]): string
   }
   return numbers;
 }
+
+/** "Makes brand-guide.md": the files a step makes, two names and then "+{n}". Null when it makes none. */
+export function madeLine(names: readonly string[]): string | null {
+  if (names.length === 0) return null;
+  const more = names.length - 2;
+  return `Makes ${names.slice(0, 2).join(", ")}${more > 0 ? ` +${more}` : ""}`;
+}

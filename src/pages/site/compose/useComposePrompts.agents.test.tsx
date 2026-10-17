@@ -15,6 +15,7 @@ const graph = vi.hoisted(() => ({
   moveStep: vi.fn(),
   setManualFields: vi.fn(),
   removeUse: vi.fn(),
+  addMadeFile: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -332,5 +333,63 @@ describe("removing a step that makes a file (TF-07)", () => {
     await vi.waitFor(() => expect(deleteNode).toHaveBeenCalledWith("p2"));
     expect(graph.removeUse).not.toHaveBeenCalled();
     expect(deleteNode).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("naming and removing a file a step makes (TF-08)", () => {
+  const p1 = row({ id: "p1", position: 1 });
+  const p2 = row({ id: "p2", position: 2, payload: { text: "x", uses: [{ kind: "file", node_id: "f1" }, { kind: "file", node_id: "f2" }] } });
+  const made = row({ id: "f1", position: 3, type: "document", payload: { title: "brand-guide.md", made_by: "p1" } });
+  const plain = row({ id: "f2", position: 4, type: "document", payload: { title: "menu.pdf" } });
+
+  it("writes the file for the step, records it and resolves its id", async () => {
+    graph.addMadeFile.mockResolvedValue({ id: "f9" } as BuildNode);
+    const { result, record, tree } = hook([p1]);
+    let id: string | null = null;
+    await act(async () => {
+      id = await result.current.addMadeFile("p1", "brand-guide.md");
+    });
+    expect(graph.addMadeFile).toHaveBeenCalledWith("b1", tree, { stepId: "p1", name: "brand-guide.md" });
+    expect(record).toHaveBeenCalledWith("f9", { id: "f9" });
+    expect(id).toBe("f9");
+  });
+
+  it("says so and resolves null when the file could not be written", async () => {
+    graph.addMadeFile.mockRejectedValue(new Error("That step already makes a file with that name."));
+    const { result, record } = hook([p1]);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let id: string | null = "x";
+    await act(async () => {
+      id = await result.current.addMadeFile("p1", "brand-guide.md");
+    });
+    expect(id).toBeNull();
+    expect(record).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith("Couldn't add that file. Try again.");
+  });
+
+  it("takes a made file out of the steps that use it, then deletes it", async () => {
+    graph.removeUse.mockImplementation(async (node: BuildNode) => node);
+    const { result, record } = hook([p1, p2, made, plain]);
+    await act(async () => {
+      result.current.removeMadeFile("f1");
+    });
+    await vi.waitFor(() => expect(deleteNode).toHaveBeenCalledWith("f1"));
+    expect(graph.removeUse).toHaveBeenCalledTimes(1);
+    expect(graph.removeUse.mock.calls[0][0]).toMatchObject({ id: "p2" });
+    expect(graph.removeUse.mock.calls[0][1]).toEqual({ kind: "file", node_id: "f1" });
+    expect(record).toHaveBeenCalledWith("f1", null);
+    expect(deleteNode).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a file nobody makes alone", async () => {
+    const { result } = hook([p1, p2, made, plain]);
+    await act(async () => {
+      result.current.removeMadeFile("f2");
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(deleteNode).not.toHaveBeenCalled();
+    expect(graph.removeUse).not.toHaveBeenCalled();
   });
 });

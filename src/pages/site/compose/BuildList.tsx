@@ -21,6 +21,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   useLayoutEffect,
@@ -45,6 +46,7 @@ import {
   agentEyebrow,
   inputLabel,
   madeIn,
+  madeLine,
   stepModel,
   suggestionKey,
   type ListResult,
@@ -107,6 +109,15 @@ export interface BuildListProps {
   onAddAgentPrompt: (agentId: string, text: string) => Promise<boolean>;
   /** UI-P69: "Add an agent to this team". */
   onAddAgentTo: (teamId: string) => void;
+  /** TF-06: "Attach a file" opens the file picker for this prompt. Absent: the item is not shown. */
+  onAttach?: (id: string) => void;
+  /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
+  onDropOnStep?: (id: string, files: File[]) => void;
+  fine?: boolean;
+  /** TF-08: "Name a file it makes" selects the prompt and opens the Makes field in Details. Absent: the item is not shown. */
+  onNameMade?: (id: string) => void;
+  /** TF-08: the names of the files each step makes, by step id. */
+  madeNames?: Readonly<Record<string, readonly string[]>>;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -319,6 +330,12 @@ function StepTitle({ title, isDefault }: { title: string; isDefault: boolean }) 
   );
 }
 
+/** "Makes brand-guide.md", quiet, under a step's text. */
+function MadeLine({ names }: { names: readonly string[] | undefined }) {
+  const line = madeLine(names ?? []);
+  return line ? <Quiet style={{ paddingLeft: INDENT, overflowWrap: "anywhere" }}>{line}</Quiet> : null;
+}
+
 /* ── a prompt's card ── */
 
 function StepCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
@@ -328,6 +345,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const isDefault = step.title === null;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
+  const [over, setOver] = useState(false);
   const { ref: textRef, clamped } = useClamped<HTMLParagraphElement>(step.text);
   const open = props.onOpenPrompt ? () => props.onOpenPrompt?.(step.id) : undefined;
   const editable = step.kind === "prompt";
@@ -351,6 +369,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     }
   };
 
+  const takesDrops = Boolean(props.fine && props.onDropOnStep);
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+
   return (
     <div
       role="group"
@@ -361,7 +382,28 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      onDragEnter={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        setOver(true);
+      } : undefined}
+      onDragOver={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setOver(true);
+      } : undefined}
+      onDragLeave={takesDrops ? (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false);
+      } : undefined}
+      onDrop={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        setOver(false);
+        const files = Array.from(event.dataTransfer.files);
+        if (files.length > 0) props.onDropOnStep?.(step.id, files);
+      } : undefined}
+      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <NumberTile>{step.number}</NumberTile>
@@ -391,6 +433,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
+                {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
+                {props.onNameMade ? <MenuRow phone={phone} onSelect={() => props.onNameMade?.(step.id)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
                 <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
@@ -405,6 +449,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       >
         {step.text}
       </p>
+      <MadeLine names={props.madeNames?.[step.id]} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
         <span style={{ flexGrow: 1 }} />
@@ -436,7 +481,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 
 /* ── agents and teams (UI-P69) ── */
 
-function InnerCard({ step, eyebrow, runs, nested }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean }) {
+function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[] }) {
   return (
     <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
@@ -446,6 +491,7 @@ function InnerCard({ step, eyebrow, runs, nested }: { step: Step; eyebrow?: stri
         {runs ? <span style={tagStyle}>{runs}</span> : null}
       </div>
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
+      {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
     </div>
   );
 }
@@ -577,6 +623,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
                 step={child}
                 eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
                 runs={isTeam ? runsLabel(child.runs) : undefined}
+                made={props.madeNames?.[child.id]}
               />
               {own.length > 0 ? (
                 <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -593,7 +640,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
                       {open ? `Hide its ${own.length === 1 ? "prompt" : `${own.length} prompts`}` : `Show its ${own.length === 1 ? "prompt" : `${own.length} prompts`}`}
                     </TextButton>
                   </span>
-                  {open ? own.map((grand) => <InnerCard key={grand.id} step={grand} nested />) : null}
+                  {open ? own.map((grand) => <InnerCard key={grand.id} step={grand} nested made={props.madeNames?.[grand.id]} />) : null}
                 </div>
               ) : null}
             </div>
@@ -703,6 +750,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
         </Menu.Root>
       </div>
       <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      <MadeLine names={props.madeNames?.[step.id]} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
         {step.mediaId ? (

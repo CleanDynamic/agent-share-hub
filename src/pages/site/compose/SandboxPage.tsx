@@ -32,6 +32,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
+import type { BuildNode } from "@/lib/build/types";
 import { addFile, buildSteps, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MakingSession } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
@@ -50,9 +51,10 @@ import { BuildList } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
+import { attachFiles } from "./attachFiles";
 import { DetailsPanel } from "./DetailsPanel";
 import { pieces, resolveView, type MediaFacts } from "./detailsView";
-import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
+import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
@@ -166,6 +168,8 @@ export function SandboxPage() {
   /* ── List (UI-P65) ── */
 
   const [focusAdd, setFocusAdd] = useState(0);
+  /** "Name a file it makes": the prompt whose Makes field Details opens, and when it was asked. */
+  const [focusMakes, setFocusMakes] = useState<{ id: string; at: number } | null>(null);
   const onAddPromptFocus = useCallback(() => setFocusAdd((count) => count + 1), []);
   const listFacts = useMemo(() => {
     const names: Record<string, string> = {};
@@ -193,6 +197,17 @@ export function SandboxPage() {
   const mapPieces = useMemo(() => pieces(tree, []), [tree]);
   const madeFiles = useMemo(() => madeFilesOf(tree), [tree]);
   const madeNames = useMemo(() => madeFileNamesOf(tree), [tree]);
+  /** The files each step makes, by step id: the List's "Makes" line. */
+  const madeByStep = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const [fileId, stepId] of madeFiles) {
+      const name = madeNames.get(fileId);
+      if (name) (out[stepId] ??= []).push(name);
+    }
+    return out;
+  }, [madeFiles, madeNames]);
+  /** The Map's files: a made file says which step makes it, so the Map places it after that step. */
+  const mapFiles = useMemo<MapPiece[]>(() => mapPieces.files.map((file) => ({ id: file.id, name: file.name, madeBy: madeFiles.get(file.id) ?? null })), [mapPieces.files, madeFiles]);
   // UI-P71: exact facts only — a file named word for word in a prompt.
   const suggestions: ListSuggestion[] = useMemo(
     () =>
@@ -225,11 +240,28 @@ export function SandboxPage() {
   /* ── Sources ── */
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const onNameMade = useCallback((stepId: string) => {
+    setSelectedId(stepId);
+    setFocusMakes({ id: stepId, at: Date.now() });
+  }, []);
+  // The ask belongs to the prompt it was made on: once something else is selected it is spent.
+  useEffect(() => {
+    if (focusMakes && selectedId !== focusMakes.id) setFocusMakes(null);
+  }, [selectedId, focusMakes]);
   /** UI-P67: the prompt open in the full prompt window. */
   const [openPromptId, setOpenPromptId] = useState<string | null>(null);
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
   const picker = useRef<HTMLInputElement>(null);
-  const pick = useCallback(() => picker.current?.click(), []);
+  /** The prompt that opened the picker; none for Sources and Add › File, which add to the build. */
+  const pickFor = useRef<string | null>(null);
+  const pick = useCallback(() => {
+    pickFor.current = null;
+    picker.current?.click();
+  }, []);
+  const pickForStep = useCallback((stepId: string) => {
+    pickFor.current = stepId;
+    picker.current?.click();
+  }, []);
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions), [groups, steps, sessions.sessions]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
@@ -422,30 +454,56 @@ export function SandboxPage() {
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. */
   const addOneFile = useCallback(
-    async (file: File) => {
+    async (file: File, verb: "add" | "attach" = "add"): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
-        return;
+        return null;
       }
       if (file.size > MEDIA_MAX_BYTES) {
         toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
-        return;
+        return null;
       }
       try {
         const id = await ensureBuild();
+        const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
           const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id });
           nodes.record(node.id, node);
+          added.node = node;
         });
         await queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+        return added.node;
       } catch (cause) {
         console.error("[Sandbox] file not added", cause);
-        toast.error(`Couldn't add ${file.name}. Try again.`);
+        toast.error(`Couldn't ${verb} ${file.name}. Try again.`);
+        return null;
       }
     },
     [ensureBuild, nodes, queryClient],
+  );
+
+  /** Files onto one prompt: each is added to the build and then listed as that prompt's input, in order. */
+  const attach = useCallback(
+    (stepId: string, files: File[]) =>
+      attachFiles(stepId, files, (file) => addOneFile(file, "attach"), (id, use) => {
+        prompts.accept(id, use, steps);
+        afterWrite();
+      }),
+    [addOneFile, prompts, steps, afterWrite],
+  );
+
+  /** A drop on a prompt's card: a chat export goes to the intake and nothing is attached. */
+  const onDropOnStep = useCallback(
+    async (stepId: string, files: File[]) => {
+      if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
+        navigate("/compose/start");
+        return;
+      }
+      await attach(stepId, files);
+    },
+    [attach, navigate],
   );
 
   /** A drop sorts its files: a chat export goes to the intake, the rest are files of the build. */
@@ -480,7 +538,11 @@ export function SandboxPage() {
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
-          if (files.length > 0) onPicked(files);
+          const stepId = pickFor.current;
+          pickFor.current = null;
+          if (files.length === 0) return;
+          if (stepId) void attach(stepId, files);
+          else onPicked(files);
         }}
       />
       <SandboxView
@@ -512,7 +574,7 @@ export function SandboxPage() {
           <BuildMap
             steps={steps}
             groups={groups}
-            files={mapPieces.files}
+            files={mapFiles}
             tools={mapPieces.tools}
             results={mapResults}
             suggestions={mapSuggestions}
@@ -540,14 +602,21 @@ export function SandboxPage() {
             phone={phone}
             view={view}
             inBuild={inBuild}
+            focusMakes={focusMakes}
             onSelect={setSelectedId}
             onOpenPrompt={setOpenPromptId}
             onRename={prompts.rename}
             onModel={prompts.setModel}
+            onAddMade={(stepId, name) => void prompts.addMadeFile(stepId, name)}
+            onRemoveMade={(fileId) => {
+              prompts.removeMadeFile(fileId);
+              afterWrite();
+            }}
             onAddUse={(id, use) => {
               prompts.accept(id, use, steps);
               afterWrite();
             }}
+            onAttach={pickForStep}
             onRemoveUse={(id, use) => {
               prompts.removeUse(id, use);
               afterWrite();
@@ -600,6 +669,11 @@ export function SandboxPage() {
             onRemove={prompts.remove}
             onAddAgentPrompt={onAddAgentPrompt}
             onAddAgentTo={(teamId) => void onAddAgentTo(teamId)}
+            onAttach={pickForStep}
+            onNameMade={onNameMade}
+            madeNames={madeByStep}
+            onDropOnStep={(id, files) => void onDropOnStep(id, files)}
+            fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={prompts.addNow}

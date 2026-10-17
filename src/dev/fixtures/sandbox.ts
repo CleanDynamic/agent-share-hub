@@ -198,7 +198,7 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
   const fox = which === "fox";
   const views: Record<SandboxDetails, DetailsView> = {
     prompt: fox
-      ? { kind: "prompt", id: "p1", number: "1", title: null, defaultTitle: "Prompt 1", editable: true, sessionLine: "Session 1 · Claude", detailLine: "Opus 5.5 · 3 Mar · prompt 1 of 1", typed: false, model: "Opus 5.5", text: FOX_TEXT, words: 27, uses: [], options: [], goesInto: [{ id: "result", label: "Result" }] }
+      ? { kind: "prompt", id: "p1", number: "1", title: null, defaultTitle: "Prompt 1", editable: true, sessionLine: "Session 1 · Claude", detailLine: "Opus 5.5 · 3 Mar · prompt 1 of 1", typed: false, model: "Opus 5.5", text: FOX_TEXT, words: 27, uses: [], options: [], goesInto: [{ id: "result", label: "Result" }], makes: [] }
       : {
           kind: "prompt",
           id: "p3",
@@ -218,6 +218,7 @@ export function sandboxDetailsProps(kind: SandboxDetails = "prompt", which: Sand
           ],
           options: [{ key: "output:p1", use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }],
           goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
+          makes: [],
         },
     session: { kind: "session", key: "s1", number: 1, tool: "Claude", model: "Opus 5.5", date: "3 Mar", inBuild: 2, total: 3, status: "ready", checklist: [{ ordinal: 0, label: "Write the homepage copy", stepId: "p1" }, { ordinal: 1, label: "Prompt 2", stepId: "p2" }, { ordinal: 2, label: "Add a footer with the address", stepId: null }] },
     agent: { kind: "agent", id: "a5", number: "5", name: "Order checker", defaultName: "Agent 5", model: "Opus 5.5", runs: { how: "until", detail: "every item has a price" }, inside: "1 prompt", insideRows: [{ id: "a5:p", label: "5.2 · Prompt 5.2" }], instructions: "Check the menu and reply with any item that has no price.", parent: null, uses: [{ use: { kind: "output", node_id: "p1" }, label: "Output of 1", sub: "Homepage copy · Session 1" }], options: [], goesInto: [{ id: "result", label: "Result" }] },

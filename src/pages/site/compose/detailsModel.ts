@@ -8,6 +8,8 @@
 import {
   goesInto,
   inputRefusal,
+  madeFileNamesOf,
+  madeFilesOf,
   RUNS_COUNT_MAX,
   RUNS_COUNT_MIN,
   stepTitle,
@@ -18,6 +20,7 @@ import {
   type Step,
   type Use,
 } from "@/lib/build/graph";
+import type { NodeTree } from "@/lib/build/types";
 
 /** Rows shown in any list before "Show {n} more" (CONCEPT §7). */
 export const DETAILS_ROWS = 6;
@@ -217,4 +220,16 @@ export function usedBy(steps: readonly Step[], use: Use): GoesRow[] {
   return flatten(steps)
     .filter((step) => !isInstructions(step) && step.uses.some((entry) => keyOf(entry) === keyOf(use)))
     .map((step) => ({ id: step.id, label: `${step.number} · ${stepTitle(step)}` }));
+}
+
+/** A file a step makes, as a row of its Makes list. */
+export interface MakesRow {
+  id: string;
+  name: string;
+}
+
+/** The files `stepId` makes, in the order the build holds them. */
+export function makesRows(stepId: string, tree: readonly NodeTree[]): MakesRow[] {
+  const names = madeFileNamesOf(tree);
+  return [...madeFilesOf(tree)].filter(([, maker]) => maker === stepId).map(([id]) => ({ id, name: names.get(id) ?? "Untitled file" }));
 }

@@ -16,11 +16,14 @@
 //            dateColumn is the index of the step's session date among the
 //            build's distinct dates; a typed prompt takes its neighbour's.
 //            A result goes one column after the step it comes from; a file or
-//            a tool sits one column before its first user. An agent's or a
-//            team's box spans two columns, so what follows it starts after both.
+//            a tool sits one column before its first user. A file a step makes
+//            (`madeBy`) sits one column after that step, in the files band, and
+//            whatever uses it sits after the file. An agent's or a team's box
+//            spans two columns, so what follows it starts after both.
 //   wires    from an output dot (right edge, the middle of the header) to a
 //            named input dot (left edge, the middle of its row). The next step
-//            in the same session joins level with the header, unnamed. A loop
+//            in the same session joins level with the header, unnamed; so does
+//            the wire from a step to a file it makes. A loop
 //            back (DATA §3, "until") rises 36 above both boxes.
 //
 // Units are px in the map's own space; the view adds its frame padding.
@@ -62,6 +65,8 @@ export const MAP_SIZES = {
 export interface MapPiece {
   id: string;
   name: string;
+  /** The id of the step that makes this file; absent or null for a file nobody makes. */
+  madeBy?: string | null;
 }
 
 export interface MapResult {
@@ -295,6 +300,18 @@ export function layoutMap(
 
   /* ── columns ── */
   const indexOfStep = new Map(steps.map((step, at) => [step.id, at]));
+  /* A file made by a step inside an agent or a team is made by that container's box: the Map draws top-level steps only. */
+  const topOf = new Map<string, number>();
+  const note = (step: Step, at: number) => {
+    topOf.set(step.id, at);
+    step.children.forEach((child) => note(child, at));
+  };
+  steps.forEach(note);
+  const makerOf = new Map<string, number>();
+  for (const file of files) {
+    const at = file.madeBy ? topOf.get(file.madeBy) : undefined;
+    if (at !== undefined) makerOf.set(file.id, at);
+  }
   const stepColumn: number[] = [];
   const lastInLane = new Map<number, number>();
   steps.forEach((step, at) => {
@@ -302,6 +319,12 @@ export function layoutMap(
     const before = lastInLane.get(stepLane[at]);
     if (before !== undefined) column = Math.max(column, stepColumn[before] + spanOf(steps[before]));
     for (const use of step.uses) {
+      if (use.kind === "file") {
+        // A made file sits one column after its step, and what uses it one more after that.
+        const maker = makerOf.get(use.node_id);
+        if (maker !== undefined && maker < at) column = Math.max(column, stepColumn[maker] + spanOf(steps[maker]) + 1);
+        continue;
+      }
       if (use.kind !== "output") continue;
       const from = indexOfStep.get(use.node_id);
       // A use of a later step is a loop: it does not push this one right.
@@ -401,7 +424,10 @@ export function layoutMap(
   });
   const addPiece = (piece: MapPiece, kind: "file" | "tool") => {
     const user = firstUser.get(piece.id);
-    add({ id: piece.id, kind, stepKind: null, number: null, title: piece.name, defaultTitle: false, text: "", words: 0, lane: filesLane, column: user === undefined ? 0 : user - 1, x: 0, y: 0, w: S.column, h: S.piece, inputs: [], accepted: 0, suggested: 0, span: 1, contents: null, runs: null, stack: null });
+    const maker = makerOf.get(piece.id);
+    // A made file is one column after its step; any other piece is one before its first user.
+    const column = maker !== undefined ? stepColumn[maker] + spanOf(steps[maker]) : user === undefined ? 0 : user - 1;
+    add({ id: piece.id, kind, stepKind: null, number: null, title: piece.name, defaultTitle: false, text: "", words: 0, lane: filesLane, column, x: 0, y: 0, w: S.column, h: S.piece, inputs: [], accepted: 0, suggested: 0, span: 1, contents: null, runs: null, stack: null });
   };
   for (const file of files) addPiece(file, "file");
   for (const tool of tools) addPiece(tool, "tool");
@@ -492,6 +518,13 @@ export function layoutMap(
       const from = boxOf.get(input.from);
       if (from) wire(from, box, at, input.suggested);
     });
+  }
+  // A step to a file it makes, joined level with the header and unnamed, from its output dot to the file's left edge.
+  for (const file of files) {
+    const maker = makerOf.get(file.id);
+    const from = maker !== undefined ? boxOf.get(steps[maker].id) : undefined;
+    const to = boxOf.get(file.id);
+    if (from && to) wire(from, to, null, false);
   }
   // The next step in the same session, joined level with the header and unnamed.
   steps.forEach((step, at) => {

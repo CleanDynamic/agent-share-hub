@@ -10,7 +10,7 @@ import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/de
 
 import type { BuildListProps } from "./BuildList";
 import { BuildList as BuildList } from "./BuildList";
-import { agentEyebrow, dividers, isClamped, madeIn } from "./buildListModel";
+import { agentEyebrow, dividers, isClamped, madeIn, madeLine } from "./buildListModel";
 
 vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), getMediaById: vi.fn(() => Promise.resolve(null)) }));
 
@@ -373,5 +373,64 @@ describe("the refined look (UI-P93)", () => {
     const add = within(agent).getByRole("button", { name: "Add a prompt to this agent" });
     expect(add.querySelector("svg")).toBeNull();
     expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);
+  });
+
+  it("has Attach a file after Read all of it, and calls onAttach for that prompt", async () => {
+    const onAttach = vi.fn();
+    list({ onAttach, onOpenPrompt: vi.fn() });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Move up", "Move down", "Remove"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
+    expect(onAttach).toHaveBeenCalledWith("p2");
+  });
+
+  it("has Name a file it makes after Attach a file: 7 items, the most a menu may hold", async () => {
+    const onNameMade = vi.fn();
+    list({ onAttach: vi.fn(), onNameMade, onOpenPrompt: vi.fn() });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Name a file it makes", "Move up", "Move down", "Remove"]);
+    expect(items).toHaveLength(7);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Name a file it makes" }));
+    expect(onNameMade).toHaveBeenCalledWith("p2");
+  });
+
+  it("shows no Name a file it makes item when nothing handles it", async () => {
+    list({ onOpenPrompt: vi.fn() });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
+    await screen.findAllByRole("menuitem");
+    expect(screen.queryByRole("menuitem", { name: "Name a file it makes" })).toBeNull();
+  });
+
+  it("says what a prompt makes, quietly, under its text", () => {
+    list({ madeNames: { p2: ["brand-guide.md"], p3: ["a.md", "b.md", "c.md", "d.md"] } });
+    expect(within(screen.getByRole("group", { name: /^Prompt 2:/ })).getByText("Makes brand-guide.md")).toBeTruthy();
+    expect(within(screen.getByRole("group", { name: /^Prompt 3:/ })).getByText("Makes a.md, b.md +2")).toBeTruthy();
+    expect(within(screen.getByRole("group", { name: /^Prompt 1:/ })).queryByText(/^Makes /)).toBeNull();
+  });
+
+  it("builds the Makes line: one name, two names, then +{n}", () => {
+    expect(madeLine([])).toBeNull();
+    expect(madeLine(["brand-guide.md"])).toBe("Makes brand-guide.md");
+    expect(madeLine(["a.md", "b.md"])).toBe("Makes a.md, b.md");
+    expect(madeLine(["a.md", "b.md", "c.md"])).toBe("Makes a.md, b.md +1");
+  });
+
+  it("attaches files dropped on a card to that card's prompt, with a fine pointer", () => {
+    const onDropOnStep = vi.fn();
+    list({ onDropOnStep, fine: true });
+    const card = screen.getByRole("group", { name: /^Prompt 2:/ });
+    const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
+    fireEvent.drop(card, { dataTransfer: { types: ["Files"], files: [file] } });
+    expect(onDropOnStep).toHaveBeenCalledWith("p2", [file]);
+  });
+
+  it("takes no drop without a fine pointer", () => {
+    const onDropOnStep = vi.fn();
+    list({ onDropOnStep, fine: false });
+    const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
+    fireEvent.drop(screen.getByRole("group", { name: /^Prompt 2:/ }), { dataTransfer: { types: ["Files"], files: [file] } });
+    expect(onDropOnStep).not.toHaveBeenCalled();
   });
 });

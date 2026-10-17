@@ -132,3 +132,13 @@ describe("the refined look (UI-P93)", () => {
     expect(html).toMatch(/data-testid="sources-drop" style="[^"]*min-height:56px[^"]*border:1px dashed var\(--line\)/);
   });
 });
+
+describe("a file a step makes (TF-08)", () => {
+  it("is noted as made in step 2 in Files in this build", () => {
+    panel({ files: [{ id: "bg", name: "brand-guide.md", note: "made in step 2" }, { id: "f1", name: "menu.pdf", note: "added by you" }] });
+    const group = screen.getByRole("region", { name: "Files in this build" });
+    expect(within(group).getByText("brand-guide.md")).toBeTruthy();
+    expect(within(group).getByText("made in step 2")).toBeTruthy();
+    expect(within(group).getByText("added by you")).toBeTruthy();
+  });
+});

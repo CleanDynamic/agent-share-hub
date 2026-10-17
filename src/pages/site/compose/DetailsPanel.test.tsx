@@ -245,6 +245,7 @@ describe("a manual step (UI-P70)", () => {
     tool: "Figma",
     text: "Laid out the hero",
     picture: { id: "media-1", name: "hero.png" },
+    makes: [],
     uses: [],
     options: [],
     goesInto: [{ id: "p4", label: "4 · Prompt 4" }],
@@ -324,5 +325,131 @@ describe("the refined look (UI-P93)", () => {
     expect(screen.getByRole("button", { name: "Remove Output of 2" })).toBeTruthy();
     const html = markup();
     expect(html.match(/data-glyph="larr"|M13 8H3.5/g)?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it("leads Add an input with a file from your computer, which opens the picker for that step", async () => {
+    const onAttach = vi.fn();
+    panel("prompt", "bakery", { onAttach });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Add an input" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items[0].textContent).toBe("A file from your computer");
+    fireEvent.click(items[0]);
+    expect(onAttach).toHaveBeenCalledWith("p3");
+  });
+});
+
+describe("Makes (TF-08)", () => {
+  const makes = [
+    { id: "f9", name: "brand-guide.md" },
+    { id: "f10", name: "voice.md" },
+  ];
+  const withMakes = (kind: SandboxDetails, over: Partial<DetailsPanelProps> = {}) => {
+    const base = sandboxDetailsProps(kind, "bakery");
+    const view = { ...base.view, makes } as DetailsPanelProps["view"];
+    return panel(kind, "bakery", { view, onAddMade: vi.fn(), onRemoveMade: vi.fn(), ...over });
+  };
+  const makesList = () => within(screen.getByRole("heading", { name: "Makes" }).closest("section") as HTMLElement);
+
+  it("lists the files a prompt makes after Uses, in the same hairline rows, with a count", () => {
+    withMakes("prompt");
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+    expect(headings.indexOf("Makes")).toBe(headings.indexOf("Uses") + 1);
+    expect((screen.getByLabelText("Name of brand-guide.md") as HTMLInputElement).value).toBe("brand-guide.md");
+    expect((screen.getByLabelText("Name of voice.md") as HTMLInputElement).value).toBe("voice.md");
+    expect(screen.getByRole("button", { name: "Remove brand-guide.md" })).toBeTruthy();
+  });
+
+  it("is there for a manual step, and not for an agent or an agent's instructions", () => {
+    const manual: DetailsPanelProps["view"] = { kind: "manual", id: "m3", number: "3", title: null, defaultTitle: "Manual step 3", tool: "Figma", text: "Laid out the hero", picture: null, makes, uses: [], options: [], goesInto: [] };
+    panel("prompt", "bakery", { view: manual, onAddMade: vi.fn(), onRemoveMade: vi.fn() });
+    expect(screen.getByRole("button", { name: "Name a file it makes" })).toBeTruthy();
+    expect(screen.getByLabelText("Name of brand-guide.md")).toBeTruthy();
+    cleanup();
+    panel("agent", "bakery", { onAddMade: vi.fn(), onRemoveMade: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Name a file it makes" })).toBeNull();
+    cleanup();
+    const base = sandboxDetailsProps("prompt", "bakery");
+    panel("prompt", "bakery", { view: { ...base.view, editable: false, makes: [] } as DetailsPanelProps["view"], onAddMade: vi.fn(), onRemoveMade: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Name a file it makes" })).toBeNull();
+  });
+
+  it("has no Makes list when the panel cannot write it", () => {
+    panel("prompt");
+    expect(screen.queryByRole("button", { name: "Name a file it makes" })).toBeNull();
+  });
+
+  it("opens a one-line field with the placeholder, adds on Enter and closes", () => {
+    const props = withMakes("prompt");
+    fireEvent.click(screen.getByRole("button", { name: "Name a file it makes" }));
+    const field = screen.getByLabelText("Name a file it makes") as HTMLInputElement;
+    expect(field.placeholder).toBe("File name, such as brand-guide.md");
+    expect(document.activeElement).toBe(field);
+    fireEvent.change(field, { target: { value: "  checklist.md " } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(props.onAddMade).toHaveBeenCalledWith("p3", "checklist.md");
+    expect(screen.queryByLabelText("Name a file it makes")).toBeNull();
+  });
+
+  it("closes the field on Esc without adding, and adds nothing for a blank name", () => {
+    const props = withMakes("prompt");
+    fireEvent.click(screen.getByRole("button", { name: "Name a file it makes" }));
+    fireEvent.keyDown(screen.getByLabelText("Name a file it makes"), { key: "Enter" });
+    expect(props.onAddMade).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Name a file it makes"), { target: { value: "x.md" } });
+    fireEvent.keyDown(screen.getByLabelText("Name a file it makes"), { key: "Escape" });
+    expect(screen.queryByLabelText("Name a file it makes")).toBeNull();
+    expect(props.onAddMade).not.toHaveBeenCalled();
+  });
+
+  it("keeps the field open and says so when the step already makes a file with that name", () => {
+    const props = withMakes("prompt");
+    fireEvent.click(screen.getByRole("button", { name: "Name a file it makes" }));
+    fireEvent.change(screen.getByLabelText("Name a file it makes"), { target: { value: "Brand-Guide.md" } });
+    fireEvent.keyDown(screen.getByLabelText("Name a file it makes"), { key: "Enter" });
+    expect(props.onAddMade).not.toHaveBeenCalled();
+    expect(screen.getByText("This step already makes a file with that name.")).toBeTruthy();
+    expect(screen.getByLabelText("Name a file it makes")).toBeTruthy();
+  });
+
+  it("renames in place through the file's title: Enter saves, Esc and a blank name go back", () => {
+    const props = withMakes("prompt");
+    const field = screen.getByLabelText("Name of brand-guide.md") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "style-guide.md" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(props.onFields).toHaveBeenCalledWith("f9", { title: "style-guide.md" });
+
+    const other = screen.getByLabelText("Name of voice.md") as HTMLInputElement;
+    fireEvent.change(other, { target: { value: "nope.md" } });
+    fireEvent.keyDown(other, { key: "Escape" });
+    expect(other.value).toBe("voice.md");
+    fireEvent.change(other, { target: { value: "   " } });
+    fireEvent.keyDown(other, { key: "Enter" });
+    expect(other.value).toBe("voice.md");
+    expect(props.onFields).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes a file with its x", () => {
+    const props = withMakes("prompt");
+    fireEvent.click(screen.getByRole("button", { name: "Remove voice.md" }));
+    expect(props.onRemoveMade).toHaveBeenCalledWith("f10");
+    expect(makesList().getAllByRole("textbox")).toHaveLength(2);
+  });
+
+  it("opens the field when the List asks for it, and puts the cursor back in it when it is open", () => {
+    const base = sandboxDetailsProps("prompt", "bakery");
+    const props = { ...base, view: { ...base.view, makes } as DetailsPanelProps["view"], onAddMade: vi.fn(), onRemoveMade: vi.fn(), onFields: vi.fn() } as DetailsPanelProps;
+    const { rerender } = render(<MemoryRouter><DetailsPanel {...props} focusMakes={{ id: "p3", at: 1 }} /></MemoryRouter>);
+    const field = screen.getByLabelText("Name a file it makes");
+    expect(document.activeElement).toBe(field);
+    (document.activeElement as HTMLElement).blur();
+    rerender(<MemoryRouter><DetailsPanel {...props} focusMakes={{ id: "p3", at: 2 }} /></MemoryRouter>);
+    expect(document.activeElement).toBe(screen.getByLabelText("Name a file it makes"));
+  });
+
+  it("ignores an ask made for another step", () => {
+    const base = sandboxDetailsProps("prompt", "bakery");
+    const props = { ...base, view: { ...base.view, makes } as DetailsPanelProps["view"], onAddMade: vi.fn(), onRemoveMade: vi.fn() } as DetailsPanelProps;
+    render(<MemoryRouter><DetailsPanel {...props} focusMakes={{ id: "p1", at: 1 }} /></MemoryRouter>);
+    expect(screen.queryByLabelText("Name a file it makes")).toBeNull();
   });
 });
