@@ -1,11 +1,13 @@
 // UI-P90 — The build and What you need in the refined look, rendered with the dev fixture: the same steps, words,
 // names and handlers as `StepsList` and `NeedPanel`, on modules, tiles and rows with the tools' real marks.
 
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
+import { readerSteps } from "@/lib/build/readerSteps";
+import type { NodeTree } from "@/lib/build/types";
 
 import type { BuildStepsView } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
@@ -134,5 +136,34 @@ describe("NeedPanel", () => {
     expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
     expect(within(need).getByText("Copy for AI copies all 5 steps in order, with each new chat and paste-in written out.")).toBeTruthy();
+  });
+});
+
+describe("an agent's tool (TF-04)", () => {
+  const agentTree = (tool?: string): NodeTree[] =>
+    [
+      {
+        id: "ag", build_id: "b", parent_id: null, position: 1, type: "agent_config", title: "Order checker", note: null, source_ref: null, event_id: null, is_gap: false,
+        created_at: "2026-10-07T09:00:00.000Z", children: [], payload: { system_prompt: "Check the menu.", model: "claude-opus-5-5", ...(tool ? { tool } : null) },
+      },
+    ] as unknown as NodeTree[];
+  const withAgent = (tool?: string) => view("one", { steps: readerSteps(agentTree(tool), { sessions: [], excluded_models: [] }) });
+
+  it("reads 'Agent · Runs in OpenClaw' with OpenClaw's logo before 'Runs in'", () => {
+    mountList(withAgent("openclaw"));
+    const line = screen.getByText(/Runs in OpenClaw/).parentElement as HTMLElement;
+    expect(line.textContent).toBe("Agent · Runs in OpenClaw");
+    const words = screen.getByText("Runs in OpenClaw") as HTMLElement;
+    expect(words.querySelector('[data-mark="openclaw-color"]')).not.toBeNull();
+    expect(words.firstElementChild?.getAttribute("data-mark")).toBe("openclaw-color");
+  });
+
+  it("names a tool that has no logo, and says plain 'Agent' for an agent with none", () => {
+    mountList(withAgent("My own harness"));
+    expect(screen.getByText("Runs in My own harness").querySelector("[data-mark]")).toBeNull();
+    cleanup();
+    mountList(withAgent());
+    expect(screen.queryByText(/Runs in/)).toBeNull();
+    expect(screen.getByText("Agent")).toBeTruthy();
   });
 });

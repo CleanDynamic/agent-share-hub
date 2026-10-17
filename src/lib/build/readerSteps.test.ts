@@ -324,3 +324,20 @@ describe("readerSteps — B4 and the edges", () => {
     expect(whatYouNeed(readerSteps(tree, undated), tree, undated).some((g) => g.key === "time")).toBe(false);
   });
 });
+
+describe("readerSteps — an agent's tool (TF-04)", () => {
+  const tree = (tool?: string): NodeTree[] => [
+    prompt("p1", 1, "Set up an agent.", "s1"),
+    node("ag", { position: 2, type: "agent_config", title: "Order checker", payload: { system_prompt: "Check the menu.", model: "claude-opus-5-5", ...(tool ? { tool } : null) } }),
+  ];
+
+  it("Copy for AI adds 'Runs in OpenClaw.' to the agent's heading line", () => {
+    const md = stepsMarkdown({ title: "T" }, readerSteps(tree("openclaw"), teamMaking));
+    expect(md).toContain("## Step 2 · Order checker\n\nRuns in OpenClaw.");
+  });
+
+  it("leaves it out for an agent that names no tool", () => {
+    const md = stepsMarkdown({ title: "T" }, readerSteps(tree(), teamMaking));
+    expect(md).not.toContain("Runs in");
+  });
+});

@@ -631,7 +631,10 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { view, phone, announce } = ctx;
   const team = step.kind === "team";
   const agents = entry.children.filter((child) => child.step.kind === "agent").length;
-  const line = [team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent", entry.madeIn].filter(Boolean).join(" · ");
+  const lead = team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent";
+  /* TF-04: an agent says what it runs in, with that tool's logo before "Runs in". */
+  const runsIn = team ? null : step.tool;
+  const line = runsIn ? null : [lead, entry.madeIn].filter(Boolean).join(" · ");
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ctx.ringed === step.id)}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
@@ -641,7 +644,20 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <span style={{ flexGrow: 1 }} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
       </div>
-      <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
+      <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>
+        {runsIn ? (
+          <>
+            {`${lead} · `}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, verticalAlign: "middle" }}>
+              <ModelMark tool={runsIn} size={16} />
+              {`Runs in ${runsIn}`}
+            </span>
+            {entry.madeIn ? ` · ${entry.madeIn}` : null}
+          </>
+        ) : (
+          line
+        )}
+      </div>
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />

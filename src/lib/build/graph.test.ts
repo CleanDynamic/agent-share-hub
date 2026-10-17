@@ -20,6 +20,7 @@ import {
   addAgentPrompt,
   addManualStep,
   addTeam,
+  setAgentTool,
   setInstructions,
   setManualFields,
   placeAfterMoves,
@@ -453,5 +454,52 @@ describe("a manual step (UI-P70)", () => {
       expect(placeAfterMoves(tree, "missing", "p1")).toEqual([]);
       expect(placeAfterMoves(tree, "m", "missing")).toEqual([]);
     });
+  });
+});
+
+describe("an agent's tool (TF-04)", () => {
+  it("addAgent keeps a listed tool as its id and a typed one as typed, and leaves it out when none is given", async () => {
+    await addAgent(BUILD, [], { model: "claude-sonnet-5-5", tool: "OpenClaw" });
+    await addAgent(BUILD, [], { model: "claude-sonnet-5-5", tool: "  My own harness " });
+    await addAgent(BUILD, [], { model: "claude-sonnet-5-5", tool: " " });
+    await addAgent(BUILD, [], { model: "claude-sonnet-5-5" });
+    expect(upsertNode.mock.calls.map(([row]) => row.payload)).toEqual([
+      { system_prompt: "", model: "claude-sonnet-5-5", tool: "openclaw" },
+      { system_prompt: "", model: "claude-sonnet-5-5", tool: "My own harness" },
+      { system_prompt: "", model: "claude-sonnet-5-5" },
+      { system_prompt: "", model: "claude-sonnet-5-5" },
+    ]);
+  });
+
+  it("addAgent refuses a tool of more than 40 characters", async () => {
+    await expect(addAgent(BUILD, [], { model: "m", tool: "x".repeat(41) })).rejects.toThrow(/40/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("setAgentTool sets it, changes it, and clears it with null, keeping the rest of the payload", async () => {
+    const agent = node({ id: "ag", type: "agent_config", payload: { system_prompt: "Be brief.", model: "m", runs: { how: "once" } } }) as BuildNode;
+    await setAgentTool(agent, "hermes agent");
+    expect(payloadWritten()).toEqual({ system_prompt: "Be brief.", model: "m", runs: { how: "once" }, tool: "hermes-agent" });
+
+    const withTool = node({ id: "ag", type: "agent_config", payload: { system_prompt: "x", model: "m", tool: "openclaw" } }) as BuildNode;
+    upsertNode.mockClear();
+    await setAgentTool(withTool, null);
+    expect(payloadWritten()).toEqual({ system_prompt: "x", model: "m" });
+  });
+
+  it("setAgentTool refuses a team and any step that is not an agent", async () => {
+    await expect(setAgentTool(node({ type: "team", payload: {} }) as BuildNode, "openclaw")).rejects.toThrow(/Only an agent/);
+    await expect(setAgentTool(node({}) as BuildNode, "openclaw")).rejects.toThrow(/Only an agent/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("buildSteps carries an agent's tool as its name on step.tool, and a team has none", () => {
+    const tree = [
+      node({ id: "ag", type: "agent_config", position: 1, payload: { system_prompt: "x", model: "m", tool: "openclaw" } }),
+      node({ id: "ag2", type: "agent_config", position: 2, payload: { system_prompt: "x", model: "m", tool: "My own harness" } }),
+      node({ id: "ag3", type: "agent_config", position: 3, payload: { system_prompt: "x", model: "m" } }),
+      node({ id: "tm", type: "team", position: 4, payload: {} }),
+    ];
+    expect(buildSteps(tree).map((step) => step.tool)).toEqual(["OpenClaw", "My own harness", null, null]);
   });
 });

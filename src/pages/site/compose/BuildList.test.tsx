@@ -188,6 +188,21 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.getByTestId("container-eyebrow").textContent).toBe("Agent · made in prompts 1 and 2 · Opus 5.5");
   });
 
+  it("puts the tool an agent runs in before its model, each with its logo (TF-04)", () => {
+    const base = sandboxListProps("bakery");
+    list({ steps: base.steps.map((step) => (step.id === "a5" ? { ...step, tool: "OpenClaw" } : step)) });
+    const eyebrow = screen.getByTestId("container-eyebrow");
+    expect(eyebrow.textContent).toBe("Agent · OpenClaw · Opus 5.5");
+    const marks = [...eyebrow.querySelectorAll("[data-mark]")].map((mark) => mark.getAttribute("data-mark"));
+    expect(marks).toEqual(["openclaw-color", "claude-color"]);
+  });
+
+  it("names an agent's tool that has no logo (TF-04)", () => {
+    const base = sandboxListProps("bakery");
+    list({ steps: base.steps.map((step) => (step.id === "a5" ? { ...step, tool: "My own harness", model: null } : step)) });
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Agent · My own harness");
+  });
+
   it("draws an agent without 'made in' when it uses no step", () => {
     list();
     expect(screen.getByTestId("container-eyebrow").textContent).toBe("Agent · Opus 5.5");

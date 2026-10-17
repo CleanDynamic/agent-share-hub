@@ -270,6 +270,20 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
     expect(title.style.fontWeight).toBe("500");
   });
 
+  it("puts the tool an agent runs in, with its logo, in the box's head and its name (TF-04)", () => {
+    const base = sandboxMapProps("bakery");
+    refinedMap({ steps: base.steps.map((step) => (step.id === "a5" ? { ...step, tool: "OpenClaw" } : step)) });
+    const agent = screen.getByTestId("map-box-a5");
+    expect(agent.getAttribute("aria-label")).toBe("Agent 5, Order checker, runs in OpenClaw, 0 inputs");
+    expect(within(agent).getByText("OpenClaw")).toBeTruthy();
+    expect(agent.querySelector('[data-mark="openclaw-color"]')).not.toBeNull();
+    expect(within(agent).getByText("Agent 5").style.fontSize).toBe("10.5px");
+  });
+
+  it("names an agent in a box the same as before when it runs in no tool (TF-04)", () => {
+    expect(boxName({ kind: "step", stepKind: "agent", number: "5", title: "Order checker", inputs: [], tool: null })).toBe("Agent 5, Order checker, 0 inputs");
+  });
+
   it("draws the legend's samples 1px in --text2", () => {
     expect(markup()).toContain("width:24px;height:0;border-top:1px solid var(--text2)");
   });

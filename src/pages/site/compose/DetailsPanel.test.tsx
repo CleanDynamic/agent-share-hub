@@ -163,6 +163,43 @@ describe("an agent", () => {
   });
 });
 
+describe("what an agent runs in (TF-04)", () => {
+  const agentView = (tool: string | null) => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    return { ...base.view, tool };
+  };
+
+  it("has a 'Runs in' picker that shows the tool and its logo, and writes the one picked", () => {
+    const props = panel("agent", "bakery", { view: agentView("openclaw"), onAgentTool: vi.fn() });
+    const trigger = screen.getByRole("button", { name: "Runs in" });
+    expect(trigger.textContent).toBe("OpenClaw");
+    expect(trigger.querySelector('[data-mark="openclaw-color"]')).not.toBeNull();
+    fireEvent.click(trigger);
+    const find = screen.getByRole("combobox", { name: "Find a tool" });
+    fireEvent.change(find, { target: { value: "Hermes" } });
+    fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: "Hermes Agent" }));
+    expect(props.onAgentTool).toHaveBeenLastCalledWith("a5", "hermes-agent");
+  });
+
+  it("takes the tool off with 'No tool', first in the list", () => {
+    const props = panel("agent", "bakery", { view: agentView("openclaw"), onAgentTool: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: "Runs in" }));
+    const first = within(screen.getByRole("listbox")).getAllByRole("option")[0];
+    expect(first.textContent).toBe("No tool");
+    fireEvent.click(first);
+    expect(props.onAgentTool).toHaveBeenLastCalledWith("a5", null);
+  });
+
+  it("is not offered for a team, or where nothing can write it", () => {
+    panel("agent", "bakery", { view: { ...agentView(null), kind: "team", instructions: "" }, onAgentTool: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+    cleanup();
+    panel("agent");
+    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+  });
+});
+
 describe("an agent inside a team (UI-P69)", () => {
   const inTeam = () => {
     const base = sandboxDetailsProps("agent", "bakery");

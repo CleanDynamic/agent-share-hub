@@ -137,6 +137,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     name: step.title,
     defaultName: step.defaultTitle,
     model: step.model ? modelLabel(step.model) : null,
+    tool: step.kind === "agent" ? step.tool : null,
     runs: step.runs,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),

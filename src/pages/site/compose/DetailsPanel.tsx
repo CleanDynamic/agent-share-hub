@@ -115,6 +115,8 @@ export interface AgentView extends InputsView {
   name: string | null;
   defaultName: string;
   model: string | null;
+  /** The tool an agent runs in; null for none, and always null for a team. */
+  tool: string | null;
   runs: Runs | null;
   /** "Inside 2 prompts". */
   inside: string;
@@ -147,6 +149,8 @@ export interface DetailsHandlers {
   onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
   /** UI-P70: add or replace a manual step's picture. */
   onManualPicture?: (id: string, file: File) => void;
+  /** TF-04: change the tool an agent runs in; null takes it off. */
+  onAgentTool?: (id: string, tool: string | null) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
   onRemoveInside: (id: string) => void;
@@ -724,7 +728,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
   );
 }
 
-function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean } & DetailsHandlers) {
+function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
   return (
     <>
@@ -738,6 +742,12 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
         <div>
           {view.parent ? <KeyValue label="In">{view.parent}</KeyValue> : null}
           {view.model ? <KeyValue label="Model">{view.model}</KeyValue> : null}
+        </div>
+      ) : null}
+      {view.kind === "agent" && h.onAgentTool ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+          <span style={quiet()}>Runs in</span>
+          <ToolPicker key={`${view.id}:tool`} label="Runs in" value={view.tool} inBuild={inBuild} allowNone phone={phone} onChange={(value) => h.onAgentTool?.(view.id, value)} />
         </div>
       ) : null}
       {view.kind === "agent" ? (
@@ -820,7 +830,7 @@ export function DetailsPanel({ view, phone, inBuild, ...h }: DetailsPanelProps) 
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
-      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
     </div>
   );
