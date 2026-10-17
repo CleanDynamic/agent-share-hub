@@ -107,6 +107,34 @@ describe("Sources' rows", () => {
   });
 });
 
+describe("the setup-file reminder", () => {
+  const reminder = (toolId: string, name: string, file: string) => ({ toolId, line: `${name} reads ${file}`, file });
+
+  it("sits under Files in this build, and Add it opens the file picker", () => {
+    const props = panel({ files: fileRows(1), reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md")] });
+    const files = screen.getByRole("region", { name: "Files in this build" });
+    expect(within(files).getByText("Claude Code reads CLAUDE.md")).toBeTruthy();
+    fireEvent.click(within(files).getByRole("button", { name: "Add CLAUDE.md" }));
+    expect(props.onPick).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows even when the build has no file yet, and caps at two rows", () => {
+    panel({
+      files: [],
+      reminders: [reminder("claude-code", "Claude Code", "CLAUDE.md"), reminder("codex", "Codex", "AGENTS.md"), reminder("cursor", "Cursor", ".cursor/rules/")],
+    });
+    const files = screen.getByRole("region", { name: "Files in this build" });
+    expect(within(files).getAllByRole("button", { name: /^Add / })).toHaveLength(2);
+    expect(within(files).queryByText("Cursor reads .cursor/rules/")).toBeNull();
+  });
+
+  it("goes when there are none", () => {
+    panel({ files: [], reminders: [] });
+    expect(screen.queryByRole("region", { name: "Files in this build" })).toBeNull();
+    expect(screen.queryByText(/ reads /)).toBeNull();
+  });
+});
+
 describe("the refined look (UI-P93)", () => {
   const markup = () =>
     renderToStaticMarkup(

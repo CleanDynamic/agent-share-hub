@@ -9,6 +9,7 @@
 // suggest.ts. Only the uses the maker accepted are published.
 
 import { modelLabel } from "@/lib/models/registry";
+import { projectFileOf, toolFor } from "@/lib/tools/registry";
 import { EVIDENCE_NODE_TYPES } from "./cover";
 import {
   AGENT_TYPE,
@@ -84,6 +85,8 @@ export interface ReaderFile {
   madeBy: string | null;
   /** The step that makes it, with its number, read from `payload.made_by`; null for a file nobody makes and for a maker that is not a step of this build. */
   madeIn: { stepId: string; number: string } | null;
+  /** On a step's attach list only: a project file a coding tool reads ("Put CLAUDE.md in your project"), or a workflow file its tool imports ("Import workflow.json into n8n"). `tool` is the tool's name. */
+  setup?: { kind: "project" | "import"; tool: string } | null;
 }
 
 export interface ReaderTool {
@@ -243,6 +246,8 @@ interface Context {
   sessions: Map<string, { startedAt: string | null }>;
   topSteps: Step[];
   resultFrom: Set<string>;
+  /** The registry ids of the tools the build uses: its sessions, its hand-typed and manual steps, and its tools. */
+  toolIds: string[];
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -311,17 +316,38 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     }
   }
   const byId = new Map(all.map((step) => [step.id, step]));
+  const groups = sessionGroups(topSteps, sessions);
+  const tools = readTools(tree);
+  const toolIds = [
+    ...new Set(
+      [...groups.map((group) => group.tool), ...all.map((step) => step.tool), ...[...tools.values()].map((tool) => tool.name)].flatMap((name) => {
+        const found = toolFor(name);
+        return found ? [found.id] : [];
+      }),
+    ),
+  ];
   return {
     all,
     byId,
     index: new Map(all.map((step, i) => [step.id, i])),
     files: readFiles(tree, media, byId),
-    tools: readTools(tree),
-    groups: sessionGroups(topSteps, sessions),
+    tools,
+    groups,
     sessions: new Map(sessions.filter((s) => s.id).map((s) => [s.id as string, { startedAt: s.started_at ?? null }])),
     topSteps,
     resultFrom,
+    toolIds,
   };
+}
+
+/** What an attached file is for: a project file of a coding tool the build uses, or a .json file used by a step whose tool imports it. A file a step makes is neither. */
+function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly string[]): ReaderFile["setup"] {
+  if (file.madeIn) return null;
+  const project = projectFileOf(file.name, context.toolIds);
+  if (project) return { kind: "project", tool: project.name };
+  if (!/\.json$/i.test(file.name)) return null;
+  const importer = stepToolIds.map((id) => toolFor(id)).find((tool) => tool?.importsFile);
+  return importer ? { kind: "import", tool: importer.name } : null;
 }
 
 /* ── the chat each prompt starts or joins ── */
@@ -394,6 +420,17 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     }
   }
 
+  // The tools this step is done in: the session it belongs to, the tool it names, and the tools it uses.
+  const stepToolIds = [
+    context.groups.find((group) => group.stepNumbers.includes(step.number))?.tool,
+    step.tool,
+    ...tools.map((tool) => tool.name),
+  ].flatMap((name) => {
+    const found = toolFor(name);
+    return found ? [found.id] : [];
+  });
+  const attached = attach.map((file) => ({ ...file, setup: setupOf(file, context, stepToolIds) }));
+
   const isContainer = step.kind === "agent" || step.kind === "team";
   const startedAt = step.sessionId ? (context.sessions.get(step.sessionId)?.startedAt ?? null) : null;
   const lastRun = isContainer ? dateTime(startedAt) : null;
@@ -411,7 +448,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     isDefaultTitle: step.title === null,
     chat: chatFor(step, context),
     pasteIns,
-    attach,
+    attach: attached,
     makes: [...context.files.values()].filter((file) => file.madeIn?.stepId === step.id),
     tools,
     uses: container ? uses : [],
@@ -685,7 +722,10 @@ function inputSentences(entry: ReaderStep): string[] {
   const out: string[] = [];
   for (const paste of entry.pasteIns) out.push(`Paste in what step ${paste.number} gave you (${paste.title}).`);
   for (const file of entry.attach) {
+    const link = file.download ? ` ${file.download}` : "";
     if (file.madeIn) out.push(`Attach ${file.name}, the file ${stepList([file.madeIn.number], false)} made.`);
+    else if (file.setup?.kind === "project") out.push(`Put ${file.name} in your project folder before you start.${link}`);
+    else if (file.setup?.kind === "import") out.push(`Import ${file.name} into ${file.setup.tool}.${link}`);
     else out.push(file.download ? `Attach ${file.name}: ${file.download}.` : `Attach ${file.name}.`);
   }
   for (const tool of entry.tools) out.push(`Use ${tool.name}.`);
