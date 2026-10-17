@@ -30,12 +30,12 @@ afterEach(() => {
 });
 
 describe("GalleryFeedView on a desktop", () => {
-  it("is the refined fork: the heading, the view switch, the search and three menu buttons", () => {
+  it("is the refined fork: the heading, the view switch, the search and four menu buttons", () => {
     render(tree());
     expect(screen.getByRole("heading", { level: 1, name: "Gallery" })).toBeTruthy();
     expect(screen.getByRole("radiogroup", { name: "Gallery view" })).toBeTruthy();
     expect(screen.getByRole("searchbox", { name: "Search the gallery" })).toBeTruthy();
-    for (const key of ["model", "for", "sort"]) {
+    for (const key of ["model", "tool", "for", "sort"]) {
       expect(screen.getByTestId(`feed-menu-${key}`).getAttribute("data-ui")).toBe("menu-button");
     }
     expect(within(screen.getByTestId("feed-section-all")).getAllByRole("listitem").length).toBeGreaterThan(0);
@@ -67,14 +67,14 @@ describe("GalleryFeedView on a desktop", () => {
 });
 
 describe("GalleryFeedView on a phone", () => {
-  it("keeps today's order: heading, search, the three chips, the list", () => {
+  it("keeps today's order: heading, search, the four chips, the list", () => {
     phone(true);
     render(tree());
     const viewEl = screen.getByTestId("gallery-view");
     expect(viewEl.getAttribute("data-viewport")).toBe("mobile");
     expect(screen.queryByRole("radiogroup", { name: "Gallery view" })).toBeNull();
     const chips = screen.getByRole("group", { name: "Filter the gallery" });
-    expect(within(chips).getAllByRole("button")).toHaveLength(3);
+    expect(within(chips).getAllByRole("button")).toHaveLength(4);
     expect(screen.getByTestId("gallery-feed")).toBeTruthy();
   });
 });

@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { ModelMark } from "@/components/brand/ModelMark";
 import { EmptyState } from "@/components/brand/EmptyState";
 import { ErrorState } from "@/components/brand/ErrorState";
 import { Eyebrow } from "@/components/brand/Eyebrow";
@@ -43,7 +44,9 @@ import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { PageFit } from "@/components/shell/siteFrameFit";
 import { engagementFor, type Engagement } from "@/hooks/useEngagement";
 import type { GalleryFeedCounts, GalleryFeedRow, GalleryFeedSort } from "@/lib/build/gallery";
+import { markFor } from "@/lib/models/marks";
 import { LABS, MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
+import { TOOL_GROUPS, toolsInGroup, type Tool } from "@/lib/tools/registry";
 import { r } from "@/lib/theme/radius";
 
 /** One row: the build, and the record its plaque reads (its own figures, or one model's). */
@@ -85,6 +88,9 @@ export interface GalleryFeedViewProps {
   /** The chosen version; null is "Any model". */
   model: ModelVersion | null;
   onModelChange: (id: string | null) => void;
+  /** TF-14. The chosen tool; null is "Any tool". */
+  tool: Tool | null;
+  onToolChange: (id: string | null) => void;
   audience: string | null;
   onAudienceChange: (audience: string | null) => void;
   /** "Made for" options, with counts. */
@@ -107,7 +113,7 @@ export interface GalleryFeedViewProps {
   engagement?: Engagement;
   /** Above the list: the makers a search names. */
   aboveList?: ReactNode;
-  /** Search, model and audience cleared; the sort stays. */
+  /** Search, model, tool and audience cleared; the sort stays. */
   onClearAll: () => void;
   /** Navigation from a button (links are links). */
   onNavigate: (to: string) => void;
@@ -143,24 +149,28 @@ export interface MenuOption {
   label: string;
   count?: number;
   isNew?: boolean;
+  /** TF-14. A logo drawn before the label. */
+  mark?: ReactNode;
   selected: boolean;
   onSelect: () => void;
 }
 
 export interface MenuGroup {
   heading?: string;
+  /** TF-14. A logo drawn before the heading. */
+  headingMark?: ReactNode;
   options: MenuOption[];
 }
 
 export interface FeedMenu {
-  key: "model" | "for" | "sort";
+  key: "model" | "tool" | "for" | "sort";
   label: string;
   value: string;
   groups: MenuGroup[];
 }
 
 export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
-  const { model, onModelChange, audience, onAudienceChange, audiences, sort, onSortChange, counts } = props;
+  const { model, onModelChange, tool, onToolChange, audience, onAudienceChange, audiences, sort, onSortChange, counts } = props;
 
   const modelGroups: MenuGroup[] = [
     {
@@ -170,6 +180,7 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
     },
     ...LABS.map((lab) => ({
       heading: lab,
+      headingMark: markFor({ lab }) ? <ModelMark lab={lab} size={14} /> : undefined,
       options: MODEL_VERSIONS.filter((version) => version.lab === lab).map((version) => ({
         key: version.id,
         label: version.name,
@@ -177,6 +188,20 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
         isNew: version.isNew,
         selected: model?.id === version.id,
         onSelect: () => onModelChange(version.id),
+      })),
+    })).filter((group) => group.options.length > 0),
+  ];
+
+  const toolGroups: MenuGroup[] = [
+    { options: [{ key: "any", label: "Any tool", selected: tool === null, onSelect: () => onToolChange(null) }] },
+    ...TOOL_GROUPS.map((group) => ({
+      heading: group.label,
+      options: toolsInGroup(group.key).map((entry) => ({
+        key: entry.id,
+        label: entry.name,
+        mark: entry.logo ? <ModelMark tool={entry.id} size={16} /> : undefined,
+        selected: tool?.id === entry.id,
+        onSelect: () => onToolChange(entry.id),
       })),
     })).filter((group) => group.options.length > 0),
   ];
@@ -207,6 +232,7 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
 
   return [
     { key: "model", label: "Model", value: model ? model.name : "Any", groups: modelGroups },
+    { key: "tool", label: "Made with", value: tool ? tool.name : "Any", groups: toolGroups },
     { key: "for", label: "Made for", value: audienceLabel, groups: [{ options: audienceOptions }] },
     { key: "sort", label: "Sort", value: sortLabel(sort), groups: [{ options: sortOptions }] },
   ];
@@ -383,14 +409,32 @@ export const refinedMenuItem: CSSProperties = {
   outline: "none",
 };
 
-export function RefinedGroupHeading({ children }: { children: ReactNode }) {
-  return <Eyebrow style={{ padding: "8px 8px 4px" }}>{children}</Eyebrow>;
+export function RefinedGroupHeading({ children, mark }: { children: ReactNode; mark?: ReactNode }) {
+  return (
+    <Eyebrow style={{ padding: "8px 8px 4px", ...(mark ? { display: "flex", alignItems: "center", gap: 6 } : {}) }}>
+      {mark ? <span style={{ display: "inline-flex", color: t.text }}>{mark}</span> : null}
+      {children}
+    </Eyebrow>
+  );
 }
 
 /** An option's body: the label, "new" as a mono tag, a check when chosen, the note or count in `--label`. */
-export function RefinedOptionBody({ label, selected, note, isNew }: { label: string; selected: boolean; note?: string; isNew?: boolean }) {
+export function RefinedOptionBody({
+  label,
+  selected,
+  note,
+  isNew,
+  mark,
+}: {
+  label: string;
+  selected: boolean;
+  note?: string;
+  isNew?: boolean;
+  mark?: ReactNode;
+}) {
   return (
     <>
+      {mark ? <span style={{ display: "inline-flex", flexShrink: 0, color: t.text }}>{mark}</span> : null}
       <span
         style={{
           flexGrow: 1,
@@ -427,7 +471,7 @@ function DesktopMenu({ menu }: { menu: FeedMenu }) {
       <DropdownMenuContent align="start" sideOffset={6} style={refinedMenuContent} aria-label={menu.label}>
         {menu.groups.map((group, index) => (
           <div key={group.heading ?? index} role="group" aria-label={group.heading}>
-            {group.heading ? <RefinedGroupHeading>{group.heading}</RefinedGroupHeading> : null}
+            {group.heading ? <RefinedGroupHeading mark={group.headingMark}>{group.heading}</RefinedGroupHeading> : null}
             {group.options.map((option) => (
               <DropdownMenuItem
                 key={option.key}
@@ -441,6 +485,7 @@ function DesktopMenu({ menu }: { menu: FeedMenu }) {
                   label={option.label}
                   selected={option.selected}
                   isNew={option.isNew}
+                  mark={option.mark}
                   note={option.count !== undefined ? formatCount(option.count) : undefined}
                 />
               </DropdownMenuItem>
@@ -458,7 +503,7 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
       <div role="group" aria-label={menu.label} style={{ display: "flex", flexDirection: "column" }}>
         {menu.groups.map((group, index) => (
           <div key={group.heading ?? index} style={{ display: "flex", flexDirection: "column" }}>
-            {group.heading ? <RefinedGroupHeading>{group.heading}</RefinedGroupHeading> : null}
+            {group.heading ? <RefinedGroupHeading mark={group.headingMark}>{group.heading}</RefinedGroupHeading> : null}
             {group.options.map((option) => (
               <button
                 key={option.key}
@@ -485,6 +530,7 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
                   label={option.label}
                   selected={option.selected}
                   isNew={option.isNew}
+                  mark={option.mark}
                   note={option.count !== undefined ? formatCount(option.count) : undefined}
                 />
               </button>
@@ -499,10 +545,11 @@ function SheetMenu({ menu, open, onOpenChange }: { menu: FeedMenu; open: boolean
 /* ── the active filters ── */
 
 function ActiveFilters(props: GalleryFeedViewProps) {
-  const { query, onSearch, model, onModelChange, audience, onAudienceChange, audiences, onClearAll } = props;
+  const { query, onSearch, model, onModelChange, tool, onToolChange, audience, onAudienceChange, audiences, onClearAll } = props;
   const chips: { key: string; label: string; onRemove: () => void }[] = [];
   if (query) chips.push({ key: "q", label: `“${query}”`, onRemove: () => onSearch(null) });
   if (model) chips.push({ key: "model", label: `Proof on ${model.name}`, onRemove: () => onModelChange(null) });
+  if (tool) chips.push({ key: "tool", label: `Made with ${tool.name}`, onRemove: () => onToolChange(null) });
   if (audience) {
     const label = audiences.find((option) => option.value === audience)?.label ?? audience;
     chips.push({ key: "for", label: `Made for ${label}`, onRemove: () => onAudienceChange(null) });

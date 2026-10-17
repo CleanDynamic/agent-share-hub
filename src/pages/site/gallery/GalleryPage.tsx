@@ -8,7 +8,7 @@
    `view=dashboard` renders the feed too; the address keeps saying dashboard
    until the reader changes it, so a resized window comes back to it.
 
-   THE ADDRESS IS THE STATE. view, for, model, sort and q are read from the URL
+   THE ADDRESS IS THE STATE. view, for, model, tool, sort and q are read from the URL
    with `parseGalleryParams` and every change writes it with `galleryHref`; an
    address the feed cannot read in full is replaced by the one it can. The old
    lens, with and shape parameters are read and ignored — the canonical address
@@ -40,6 +40,7 @@ import {
 } from "@/lib/build/gallery";
 import { isPermissionError } from "@/lib/errors/permission";
 import { MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
+import { TOOLS } from "@/lib/tools/registry";
 import { searchMakers } from "@/lib/profile/searchMakers";
 
 import { useIsPhone } from "@/components/shell/useMinWidth";
@@ -86,8 +87,10 @@ function GalleryFeedPage() {
   const view = params.view ?? "feed";
   const modelId = params.model ?? null;
   const audience = params.madeFor[0] ?? null;
+  const toolId = params.tool ?? null;
   const sort: GalleryFeedSort = params.sort ?? "newest";
   const { query } = params;
+  const chosenTool = toolId ? (TOOLS.find((entry) => entry.id === toolId) ?? null) : null;
   const chosen = modelId ? (MODEL_VERSIONS.find((version) => version.id === modelId) ?? null) : null;
 
   /** What the feed's address holds: the old lens and facet parameters are left out. */
@@ -95,11 +98,12 @@ function GalleryFeedPage() {
     () => ({
       view,
       model: modelId ?? undefined,
+      tool: toolId ?? undefined,
       madeFor: audience ? [audience] : [],
       sort,
       query,
     }),
-    [view, modelId, audience, sort, query],
+    [view, modelId, toolId, audience, sort, query],
   );
 
   /** Every change writes the address; the query keys follow it. */
@@ -117,7 +121,7 @@ function GalleryFeedPage() {
 
   /* ── the feed, a page at a time ── */
 
-  const filters = { model: modelId, audience, sort, q: query };
+  const filters = { model: modelId, tool: toolId, audience, sort, q: query };
   const viewKey = JSON.stringify(filters);
   const [paging, setPaging] = useState<Paging>({ key: viewKey, first: 1, second: 1 });
   const shown: Paging = paging.key === viewKey ? paging : { key: viewKey, first: 1, second: 1 };
@@ -129,6 +133,7 @@ function GalleryFeedPage() {
       queryFn: () =>
         listGalleryFeed({
           model: modelId ?? undefined,
+          tool: toolId ?? undefined,
           audience: audience ?? undefined,
           sort,
           q: query ?? undefined,
@@ -251,6 +256,8 @@ function GalleryFeedPage() {
         onSearch={(next) => go({ query: next })}
         model={chosen}
         onModelChange={(id) => go({ model: id ?? undefined })}
+        tool={chosenTool}
+        onToolChange={(id) => go({ tool: id ?? undefined })}
         audience={audience}
         onAudienceChange={(next) => go({ madeFor: next ? [next] : [] })}
         audiences={audiences}
@@ -266,7 +273,7 @@ function GalleryFeedPage() {
         viewerId={user?.id ?? null}
         engagement={engagement}
         aboveList={query !== null ? <MakersRow makers={makers.data ?? []} /> : undefined}
-        onClearAll={() => go({ query: null, model: undefined, madeFor: [] })}
+        onClearAll={() => go({ query: null, model: undefined, tool: undefined, madeFor: [] })}
         onNavigate={navigate}
         autoFocusSearch={focusSearch}
       />

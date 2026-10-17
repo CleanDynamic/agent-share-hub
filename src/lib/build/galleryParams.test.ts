@@ -117,6 +117,27 @@ describe("UI-P49 — the feed's parameters", () => {
   });
 });
 
+describe("TF-14 — the tool parameter", () => {
+  it("reads tool as an id, writes it after model and before sort, and reads a name as its id", () => {
+    const params = parse("sort=reproduced&tool=lovable&model=sonnet-5-5");
+    expect(params).toMatchObject({ tool: "lovable", model: "sonnet-5-5", sort: "reproduced" });
+    expect(galleryHref(params)).toBe("/gallery?model=sonnet-5-5&tool=lovable&sort=reproduced");
+    expect(parse("tool=Claude%20Code").tool).toBe("claude-code");
+  });
+
+  it("drops a tool the registry does not name, and leaves the key out when none is chosen", () => {
+    expect(parse("tool=notatool")).toEqual({ lens: "all", madeFor: [], madeWith: [], query: null });
+    expect(galleryHref({ tool: "notatool" })).toBe("/gallery");
+    expect(galleryHref({})).toBe("/gallery");
+  });
+
+  it("round-trips, and leaves with alone", () => {
+    const href = galleryHref(parse("with=Lovable&tool=lovable"));
+    expect(href).toBe("/gallery?with=Lovable&tool=lovable");
+    expect(parse(href.split("?")[1])).toMatchObject({ madeWith: ["Lovable"], tool: "lovable" });
+  });
+});
+
 describe("the dashboard's parameters (UI-P50)", () => {
   it("reads tab, lab, report, active and dsort, and drops what it does not know", () => {
     expect(parse("view=dashboard&tab=makers&lab=Google&report=multi&active=30&dsort=prompts")).toEqual({

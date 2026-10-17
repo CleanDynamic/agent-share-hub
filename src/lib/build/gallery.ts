@@ -22,6 +22,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Bounty } from "@/lib/bounty/types";
 import { MODEL_VERSIONS, normaliseModel, type Lab, type ModelVersion } from "@/lib/models/registry";
+import { TOOLS } from "@/lib/tools/registry";
 import { weekStartUtc } from "@/lib/progress/weekly";
 import { WEEKLY_REPRODUCTION_GOAL } from "@/lib/progress/goals";
 import type { ThreadDoc } from "./thread";
@@ -1085,6 +1086,8 @@ export interface GalleryFeedParams {
   model?: string;
   /** A made_for value. */
   audience?: string;
+  /** A tool id from the registry (TF-14). An id it does not name is ignored. */
+  tool?: string;
   sort: GalleryFeedSort;
   q?: string;
   /** Zero-based. With a model it pages both lists. */
@@ -1218,7 +1221,8 @@ function feedBase(
   columns: string,
   audience: string | undefined,
   search: string | null,
-  withCount = false
+  withCount = false,
+  madeWith: readonly string[] = []
 ): FeedQuery {
   let query = feedTable("builds")
     .select(columns, withCount ? { count: "exact" } : undefined)
@@ -1226,8 +1230,15 @@ function feedBase(
     // A second `or` is an AND with the first: PostgREST ANDs repeated filters.
     .or(galleryPredicate());
   if (audience) query = query.overlaps("made_for", [audience]);
+  if (madeWith.length > 0) query = query.overlaps("made_with", madeWith);
   if (search) query = query.or(search);
   return query;
+}
+
+/** TF-14 — what made_with may hold for a tool: its name and its other spellings. Empty for an id the registry does not name. */
+export function madeWithSpellings(toolId: string | undefined): string[] {
+  const tool = toolId ? TOOLS.find((entry) => entry.id === toolId) : undefined;
+  return tool ? [tool.name, ...tool.aliases] : [];
 }
 
 /** The sort's own database order, with id last so a page never repeats a row. */
@@ -1411,12 +1422,13 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const end = start + FEED_PAGE_SIZE;
   const audience = params.audience?.trim() || undefined;
   const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
+  const madeWith = madeWithSpellings(params.tool);
 
   const [search, counts] = await Promise.all([feedSearchClause(params.q), feedCounts()]);
 
   if (version === null) {
     const query = withFeedEmbeds(
-      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true), params.sort)
+      feedOrder(feedBase(`${gallerySelect(false)}, models_used, like_count, comment_count`, audience, search, true, madeWith), params.sort)
     ).range(start, end);
     const { data, error, count } = await query;
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1449,7 +1461,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
   const light: LightRow[] = [];
   for (let i = 0; i < candidates.length; i += FEED_ID_CHUNK) {
     const chunk = candidates.slice(i, i + FEED_ID_CHUNK);
-    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search)
+    const { data, error } = await feedBase(FEED_LIGHT_COLUMNS, audience, search, false, madeWith)
       .in("id", chunk)
       .limit(chunk.length);
     if (error) throw buildLayerError("listGalleryFeed", error);
@@ -1475,7 +1487,7 @@ export async function listGalleryFeed(params: GalleryFeedParams): Promise<Galler
 
   // notYet: the rest of the (capped) gallery, in the sort's overall order.
   const { data: populationData, error: populationError } = await feedOrder(
-    feedBase("id", audience, search),
+    feedBase("id", audience, search, false, madeWith),
     params.sort
   ).limit(FEED_POPULATION_CAP);
   if (populationError) throw buildLayerError("listGalleryFeed", populationError);
