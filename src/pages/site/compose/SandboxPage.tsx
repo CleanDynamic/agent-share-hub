@@ -32,7 +32,7 @@ import { SeoHead } from "@/components/SeoHead";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
-import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MakingSession } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
@@ -191,6 +191,8 @@ export function SandboxPage() {
     return { names, intoResult, results };
   }, [tree, steps]);
   const mapPieces = useMemo(() => pieces(tree, []), [tree]);
+  const madeFiles = useMemo(() => madeFilesOf(tree), [tree]);
+  const madeNames = useMemo(() => madeFileNamesOf(tree), [tree]);
   // UI-P71: exact facts only — a file named word for word in a prompt.
   const suggestions: ListSuggestion[] = useMemo(
     () =>
@@ -199,8 +201,9 @@ export function SandboxPage() {
         Object.entries(listFacts.names)
           .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE))
           .map(([id, name]) => ({ id, name })),
+        madeFiles,
       ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
-    [steps, tree, listFacts.names],
+    [steps, tree, listFacts.names, madeFiles],
   );
   const mapSuggestions: MapSuggestion[] = useMemo(
     () => suggestions.map(({ stepId, use, label }) => ({ stepId, use, label })),
@@ -229,7 +232,7 @@ export function SandboxPage() {
   const pick = useCallback(() => picker.current?.click(), []);
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions), [groups, steps, sessions.sessions]);
-  const sourceFileRows = useMemo(() => sourceFiles(tree, groups), [tree, groups]);
+  const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
 
   /* ── Details (UI-P66) ── */
@@ -513,6 +516,8 @@ export function SandboxPage() {
             tools={mapPieces.tools}
             results={mapResults}
             suggestions={mapSuggestions}
+            made={madeFiles}
+            madeNames={madeNames}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onClear={() => setSelectedId(null)}

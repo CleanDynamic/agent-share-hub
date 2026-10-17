@@ -50,9 +50,10 @@ function walk(steps: readonly Step[], out: Step[]): void {
 /**
  * Files offered as inputs. An agent's instructions are read from the agent
  * itself, so its "Instructions" child is skipped. Manual steps are never
- * suggested for, and a team has no text.
+ * suggested for, and a team has no text. A file a step makes (`made`) is
+ * suggested only to the steps after the one that makes it.
  */
-export function suggestUses(steps: readonly Step[], files: readonly SuggestableFile[]): Suggestion[] {
+export function suggestUses(steps: readonly Step[], files: readonly SuggestableFile[], made?: ReadonlyMap<string, string>): Suggestion[] {
   const all: Step[] = [];
   walk(steps, all);
   const out: Suggestion[] = [];
@@ -63,7 +64,7 @@ export function suggestUses(steps: readonly Step[], files: readonly SuggestableF
       const use: Use = { kind: "file", node_id: file.id };
       if (dismissed.has(`file:${file.id}`)) continue;
       if (!namesFile(step.text, file.name)) continue;
-      if (inputRefusal(step.id, step.uses, use, steps) !== null) continue;
+      if (inputRefusal(step.id, step.uses, use, steps, made) !== null) continue;
       out.push({ stepId: step.id, use, reason: NAMED_IN_PROMPT });
     }
   }

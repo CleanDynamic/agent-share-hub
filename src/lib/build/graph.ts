@@ -136,6 +136,33 @@ export function usesOf(node: Pick<BuildNode, "payload">): Use[] {
   return out;
 }
 
+/** The step that makes a file, or null for a file nobody makes. Read from the file; the step stores nothing. */
+export function madeByOf(node: Pick<BuildNode, "payload">): string | null {
+  return stringOf(payloadOf(node).made_by);
+}
+
+/** Every made file of a tree, as file id to the id of the step that makes it. */
+export function madeFilesOf(tree: readonly Pick<BuildNode, "id" | "type" | "parent_id" | "payload">[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const node of tree) {
+    if (node.type !== FILE_TYPE || node.parent_id !== null) continue;
+    const step = madeByOf(node);
+    if (step) out.set(node.id, step);
+  }
+  return out;
+}
+
+/** Every made file of a tree, as file id to its name. */
+export function madeFileNamesOf(tree: readonly Pick<BuildNode, "id" | "type" | "parent_id" | "payload">[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const [id] of madeFilesOf(tree)) {
+    const node = tree.find((candidate) => candidate.id === id);
+    const name = node ? stringOf(payloadOf(node).title) : null;
+    if (name) out.set(id, name);
+  }
+  return out;
+}
+
 /** How a step runs, or null for a value that is not a Runs. A null `runs` means "once". */
 export function parseRuns(value: unknown): Runs | null {
   if (!isRecord(value) || !RUNS_HOWS.includes(value.how as RunsHow)) return null;
@@ -374,7 +401,14 @@ const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
  * runs is "until": a checker sending work back. Pure, so the Map can say no
  * to a drag before anything is written.
  */
-export function inputRefusal(nodeId: string, current: readonly Use[], use: Use, steps: readonly Step[]): string | null {
+export function inputRefusal(
+  nodeId: string,
+  current: readonly Use[],
+  use: Use,
+  steps: readonly Step[],
+  made?: ReadonlyMap<string, string>,
+  names?: ReadonlyMap<string, string>,
+): string | null {
   if (!USE_KINDS.includes(use.kind) || !use.node_id) return "That input is not a step, a file or a tool.";
   if (use.node_id === nodeId) return "A step never uses itself.";
   if (current.some((entry) => useKey(entry) === useKey(use))) return "That input is already listed.";
@@ -394,13 +428,35 @@ export function inputRefusal(nodeId: string, current: readonly Use[], use: Use, 
       }
     }
   }
+  if (use.kind === "file") {
+    const maker = made?.get(use.node_id);
+    if (maker) {
+      const all = flattenSteps(steps);
+      const from = all.findIndex((step) => step.id === nodeId);
+      const at = all.findIndex((step) => step.id === maker);
+      if (from >= 0 && at >= 0 && at >= from) {
+        const parentOf = (id: string) => steps.find((step) => step.children.some((child) => child.id === id));
+        const parent = parentOf(nodeId);
+        const sameContainer = at > from && Boolean(parent) && parent === parentOf(maker);
+        if (!sameContainer || all[at].runs?.how !== "until") {
+          return `Only a step after step ${all[at].number} can use ${names?.get(use.node_id) ?? "that file"}.`;
+        }
+      }
+    }
+  }
   return null;
 }
 
 /** Add an input to a step; `inputRefusal` says when it cannot. */
-export async function addUse(node: BuildNode, use: Use, steps: readonly Step[]): Promise<BuildNode> {
+export async function addUse(
+  node: BuildNode,
+  use: Use,
+  steps: readonly Step[],
+  made?: ReadonlyMap<string, string>,
+  names?: ReadonlyMap<string, string>,
+): Promise<BuildNode> {
   const current = usesOf(node);
-  const why = inputRefusal(node.id, current, use, steps);
+  const why = inputRefusal(node.id, current, use, steps, made, names);
   if (why) throw refuse("addUse", why);
 
   const payload = payloadOf(node);
@@ -611,6 +667,33 @@ export async function addFile(
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
   return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) });
+}
+
+export const MADE_FILE_NAME_MAX = 120;
+
+/**
+ * A file a step makes, such as brand-guide.md. Only the name and the step that
+ * makes it are stored (`made_by`); readers make the file by running the step,
+ * so it has no `media_id` and no `url`.
+ */
+export async function addMadeFile(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { stepId, name, summary }: { stepId: string; name: string; summary?: string },
+): Promise<BuildNode> {
+  const isStep = flattenSteps(buildSteps(tree)).some((step) => step.id === stepId && !step.id.endsWith(":instructions"));
+  if (!isStep) throw refuse("addMadeFile", "That is not a step of this build.");
+  const title = name.trim();
+  if (!title || title.length > MADE_FILE_NAME_MAX) throw refuse("addMadeFile", `A file name is 1 to ${MADE_FILE_NAME_MAX} characters.`);
+  const taken = tree.some(
+    (node) =>
+      node.type === FILE_TYPE &&
+      node.parent_id === null &&
+      madeByOf(node) === stepId &&
+      (stringOf(payloadOf(node).title) ?? "").trim().toLowerCase() === title.toLowerCase(),
+  );
+  if (taken) throw refuse("addMadeFile", "That step already makes a file with that name.");
+  return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title, made_by: stepId, summary }) });
 }
 
 /** An app or connector the AI used. */

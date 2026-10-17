@@ -8,6 +8,7 @@
 import { promptNodes, promptOrigin } from "@/lib/build/composePrompts";
 import {
   FILE_TYPE,
+  madeFilesOf,
   RESULT_TYPE,
   stepTitle,
   TOOL_TYPE,
@@ -101,7 +102,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     text: step.text,
     words: step.words,
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
-    options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
+    options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),
   };
 }
@@ -124,7 +125,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     text: step.text,
     picture: step.mediaId ? { id: step.mediaId, name: facts?.name ?? "Picture" } : null,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
-    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
   };
 }
@@ -139,7 +140,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     model: step.model ? modelLabel(step.model) : null,
     runs: step.runs,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
-    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
     inside: insideCounts(step),
     instructions: step.kind === "agent" ? step.text : "",

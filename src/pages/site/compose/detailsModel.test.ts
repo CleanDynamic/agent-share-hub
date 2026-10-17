@@ -93,3 +93,24 @@ describe("rows", () => {
     expect([fileSize(900), fileSize(2048), fileSize(3 * 1024 * 1024), fileSize(null)]).toEqual(["900 B", "2 KB", "3.0 MB", null]);
   });
 });
+
+describe("a file a step makes (TF-07)", () => {
+  const p1 = step({ id: "p1", number: "1" });
+  const p2 = step({ id: "p2", number: "2" });
+  const p3 = step({ id: "p3", number: "3" });
+  const steps = [p1, p2, p3];
+  const made: NamedPiece = { id: "m1", name: "brand-guide.md", note: "File · made in step 2" };
+  const map = new Map([["m1", "p2"]]);
+
+  it("is offered only to the steps after the one that makes it, with its step in the sub", () => {
+    expect(inputOptions(p1, steps, groups, [made], [], map).map((option) => option.key)).toEqual([]);
+    expect(inputOptions(p2, steps, groups, [made], [], map).map((option) => option.key)).toEqual(["output:p1"]);
+    const options = inputOptions(p3, steps, groups, [made], [], map);
+    expect(options.map((option) => option.key)).toEqual(["output:p1", "output:p2", "file:m1"]);
+    expect(options[2]).toMatchObject({ label: "brand-guide.md", sub: "made in step 2" });
+  });
+
+  it("leaves other files as they were", () => {
+    expect(inputOptions(p1, steps, groups, [file], [], map)[0]).toMatchObject({ key: "file:f1", sub: "File · added by you" });
+  });
+});
