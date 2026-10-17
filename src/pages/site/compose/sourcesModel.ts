@@ -13,6 +13,7 @@ import { FILE_TYPE, madeByOf, stepTitle, TYPED_HERE, type SessionGroup, type Ste
 import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
+import { matchesProjectFile, toolFor } from "@/lib/tools/registry";
 import type { BuildNode } from "@/lib/build/types";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
@@ -123,6 +124,36 @@ export function sourceFiles(tree: readonly BuildNode[], groups: readonly Session
       if (made) return { id: node.id, name, note: `made in step ${made}` };
       return { id: node.id, name, note: from ? `opened in session ${from.number}` : "added by you" };
     });
+}
+
+export interface SourceReminder {
+  toolId: string;
+  /** "Claude Code reads CLAUDE.md". */
+  line: string;
+  /** The file to add. */
+  file: string;
+}
+
+/** At most this many setup-file reminders in Sources. */
+export const REMINDER_ROWS = 2;
+
+/**
+ * A quiet row for each coding tool the build uses that has no file matching its first project file yet
+ * ("Claude Code reads CLAUDE.md"), at most two. A row goes once the file is in the build.
+ */
+export function projectFileReminders(sessions: readonly Pick<SourceSession, "tool">[], files: readonly Pick<SourceFile, "name">[]): SourceReminder[] {
+  const seen = new Set<string>();
+  const out: SourceReminder[] = [];
+  for (const { tool: label } of sessions) {
+    const tool = toolFor(label);
+    const first = tool?.projectFiles?.[0];
+    if (!tool || !first || seen.has(tool.id)) continue;
+    seen.add(tool.id);
+    if (files.some((file) => matchesProjectFile(file.name, first))) continue;
+    out.push({ toolId: tool.id, line: `${tool.name} reads ${first}`, file: first });
+    if (out.length === REMINDER_ROWS) break;
+  }
+  return out;
 }
 
 /** The library's sessions that are in no build, newest first as the library lists them. */

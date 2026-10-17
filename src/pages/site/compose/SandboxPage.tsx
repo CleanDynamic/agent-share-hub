@@ -57,7 +57,7 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapPiece, MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { isChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
+import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 
 /** builds.making.sessions, read defensively: it is a json column. */
@@ -265,6 +265,7 @@ export function SandboxPage() {
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions), [groups, steps, sessions.sessions]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
+  const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
 
   /* ── Details (UI-P66) ── */
@@ -692,6 +693,7 @@ export function SandboxPage() {
             sessions={sourceSessionRows}
             files={sourceFileRows}
             library={libraryRows}
+            reminders={reminderRows}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onAddSession={(id) => void onAddSession(id)}

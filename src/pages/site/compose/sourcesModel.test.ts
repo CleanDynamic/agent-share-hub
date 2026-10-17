@@ -4,7 +4,7 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
 
-import { isChatExport, looksLikeChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
+import { isChatExport, looksLikeChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 
 const step = (over: Partial<Step>): Step => ({
   id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
@@ -83,5 +83,27 @@ describe("isChatExport", () => {
     expect(await isChatExport(dropped("flow.json", "application/json", '{"nodes":[],"connections":{}}'))).toBe(false);
     expect(await isChatExport(dropped("export.json", "", '[{"mapping":{}}]'))).toBe(true);
     expect(await isChatExport(dropped("menu.pdf", "application/pdf", "x"))).toBe(false);
+  });
+});
+
+describe("projectFileReminders", () => {
+  const tools = (...names: string[]) => names.map((tool) => ({ tool }));
+  const files = (...names: string[]) => names.map((name) => ({ name }));
+
+  it("asks for the first project file of each coding tool in the build that has none", () => {
+    expect(projectFileReminders(tools("Claude Code"), [])).toEqual([{ toolId: "claude-code", line: "Claude Code reads CLAUDE.md", file: "CLAUDE.md" }]);
+    expect(projectFileReminders(tools("Cursor"), files("menu.pdf"))).toEqual([{ toolId: "cursor", line: "Cursor reads .cursor/rules/", file: ".cursor/rules/" }]);
+  });
+
+  it("says nothing for a chat tool, an unknown tool, or a tool with its file in the build", () => {
+    expect(projectFileReminders(tools("ChatGPT", "Unknown tool"), [])).toEqual([]);
+    expect(projectFileReminders(tools("Claude Code"), files("docs/claude.md"))).toEqual([]);
+    // SKILL.md is a second file: it does not stand in for the first.
+    expect(projectFileReminders(tools("Claude Code"), files("SKILL.md"))).toHaveLength(1);
+  });
+
+  it("lists a tool once however many sessions it has, and at most two rows", () => {
+    expect(projectFileReminders(tools("Claude Code", "Claude Code"), [])).toHaveLength(1);
+    expect(projectFileReminders(tools("Claude Code", "Codex", "Cursor", "GitHub Copilot"), []).map((r) => r.toolId)).toEqual(["claude-code", "codex"]);
   });
 });
