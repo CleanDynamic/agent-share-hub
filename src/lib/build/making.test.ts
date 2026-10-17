@@ -20,7 +20,7 @@ vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
 }));
 
-import { nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel } from "./making";
+import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel, withTools } from "./making";
 
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
 
@@ -218,9 +218,58 @@ describe("Made with, changed in the composer (UI-P48)", () => {
     expect(listBuildSessions).not.toHaveBeenCalled();
   });
 
+  it("setMadeWithEntry saves a name the tool list knows as the tool's name", async () => {
+    build(["Claude Code"]);
+    const done = await setMadeWithEntry(BUILD_ID, "lovable.dev", true);
+    expect(patch()).toEqual({ made_with: ["Claude Code", "Lovable"] });
+    expect(done.madeWith).toEqual(["Claude Code", "Lovable"]);
+  });
+
+  it("setMadeWithEntry still takes out an entry saved under the old spelling", async () => {
+    build(["lovable.dev", "Cursor"]);
+    const done = await setMadeWithEntry(BUILD_ID, "lovable.dev", false);
+    expect(patch()).toEqual({ made_with: ["Cursor"] });
+    expect(done.madeWith).toEqual(["Cursor"]);
+  });
+
+  it("addMadeWithTools writes once, only the names that were missing", async () => {
+    build(["Claude Code"], { excluded_models: ["Opus 5.5"] });
+    const done = await addMadeWithTools(BUILD_ID, ["claude code", "Base44", "base44"]);
+    expect(updateBuild).toHaveBeenCalledTimes(1);
+    expect(patch()).toEqual({ made_with: ["Claude Code", "Base44"] });
+    expect(done).toEqual({ madeWith: ["Claude Code", "Base44"], excluded: ["Opus 5.5"] });
+  });
+
+  it("addMadeWithTools does not write when nothing is missing", async () => {
+    build(["Claude Code", "Base44"]);
+    const done = await addMadeWithTools(BUILD_ID, ["BASE44"]);
+    expect(updateBuild).not.toHaveBeenCalled();
+    expect(done.madeWith).toEqual(["Claude Code", "Base44"]);
+  });
+
   it("names the tool a client adds, and none for web or unknown", () => {
     expect(toolLabel("claude-code")).toBe("Claude Code");
     expect(toolLabel("web")).toBeNull();
     expect(toolLabel(null)).toBeNull();
+  });
+});
+
+describe("withTools", () => {
+  it("appends the names that are missing, in the order given", () => {
+    expect(withTools(["Claude Code"], ["Lovable", "Base44"])).toEqual(["Claude Code", "Lovable", "Base44"]);
+  });
+
+  it("ignores case and keeps the entry already there", () => {
+    expect(withTools(["Claude Code", "Lovable"], ["lovable", "CLAUDE CODE", "Bolt"])).toEqual(["Claude Code", "Lovable", "Bolt"]);
+  });
+
+  it("adds a name once, and never an empty one", () => {
+    expect(withTools([], ["Bolt", "bolt", "  ", ""])).toEqual(["Bolt"]);
+  });
+
+  it("returns the same list when nothing is missing", () => {
+    const list = ["Claude Code", "Lovable"];
+    expect(withTools(list, ["lovable"])).toBe(list);
+    expect(withTools(list, [])).toBe(list);
   });
 });

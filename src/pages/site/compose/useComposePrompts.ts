@@ -14,8 +14,11 @@
    while it is on its way, so a double press adds it once. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { addMadeWithTools } from "@/lib/build/making";
+import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
 import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
@@ -58,6 +61,7 @@ import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
+import { showMadeWithIn } from "./useComposeSessions";
 
 /** The key a prompt written on this page carries until it is saved. */
 const LOCAL = "local-";
@@ -79,6 +83,17 @@ const failed = (line: string) => (cause: unknown) => {
   console.error("[Compose] prompt write failed", cause);
   toast.error(line);
 };
+
+/** A code for the log, and only a code. */
+function errorCode(error: unknown): string {
+  for (const candidate of [error, (error as { cause?: unknown } | null)?.cause]) {
+    if (candidate && typeof candidate === "object") {
+      const { code } = candidate as { code?: unknown };
+      if (typeof code === "string" && code.length > 0) return code;
+    }
+  }
+  return "unknown";
+}
 
 export interface ComposePrompts {
   rows: ComposePromptRow[];
@@ -188,6 +203,21 @@ export function useComposePrompts({
   }, [buildId]);
 
   const { run, current, record, settled } = nodes;
+  const queryClient = useQueryClient();
+
+  /**
+   * A step names a tool: put it into Made with, and show it on the Card at once.
+   * The step is already saved, so a failure is logged with a code and the build
+   * id and never blocks it.
+   */
+  const noteTool = (build: string | undefined, tool: string | null | undefined) => {
+    const value = tool?.trim();
+    if (!build || !value) return;
+    addMadeWithTools(build, [toolName(value) ?? value]).then(
+      (state) => showMadeWithIn(queryClient, build, state),
+      (cause) => console.warn("[Compose] Made with not updated", { code: errorCode(cause), buildId: build }),
+    );
+  };
 
   const save = useCallback(
     (key: string) =>
@@ -388,6 +418,7 @@ export function useComposePrompts({
         const build = await latest.current.ensureBuild();
         const created = await addWrittenPrompt({ buildId: build, tree: nodes.current(), text, tool, model });
         nodes.record(created.id, created);
+        noteTool(build, tool);
         return true;
       })
       .catch((cause) => {
@@ -498,6 +529,7 @@ export function useComposePrompts({
         // `addManualStep` places it last; then it moves straight after the selected step.
         const created = await addManualStep(build, nodes.current(), { tool, text, media_id: mediaId });
         nodes.record(created.id, created);
+        noteTool(build, tool);
         if (afterId) {
           for (const step of await placeStepAfter(build, nodes.current(), created.id, afterId)) {
             const node = findTop(nodes.current(), step.id);
@@ -512,7 +544,11 @@ export function useComposePrompts({
       });
 
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
-    void writeStep(id, "Couldn't save that. Try again.", (node) => setManualFields(node, fields));
+    void writeStep(id, "Couldn't save that. Try again.", async (node) => {
+      const saved = await setManualFields(node, fields);
+      noteTool(latest.current.buildId, fields.tool);
+      return saved;
+    });
 
   const setManualPicture = (id: string, file: File) =>
     nodes

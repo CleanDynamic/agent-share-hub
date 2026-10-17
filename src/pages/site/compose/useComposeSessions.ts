@@ -22,7 +22,7 @@
    too, where completeness reads it. */
 
 import { useCallback, useRef, useState } from "react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
@@ -46,6 +46,14 @@ const NO_SESSIONS: SessionSummary[] = [];
 export const buildSessionsKey = (buildId: string | undefined) => ["build", "listBuildSessions", buildId] as const;
 export const sessionPromptsKey = (sessionId: string) => ["build", "getSessionPrompts", sessionId] as const;
 export const madeWithKey = (buildId: string | undefined) => ["build", "getMadeWith", buildId] as const;
+
+/** Show Made with: the line's own cache, and the record the Card reads it from. */
+export function showMadeWithIn(queryClient: QueryClient, id: string, state: MadeWithState) {
+  queryClient.setQueryData<MadeWithState>(madeWithKey(id), state);
+  queryClient.setQueryData<BuildRecord | null>(composeBuildQueryKey(id), (previous) =>
+    previous ? { ...previous, build: { ...previous.build, made_with: state.madeWith } } : previous,
+  );
+}
 
 export interface ComposeSessions {
   /** This build's own sessions, oldest first: what Made with is drawn from. */
@@ -131,12 +139,7 @@ export function useComposeSessions({
     queryClient.getQueryData<MadeWithState>(madeWithKey(id)) ?? { madeWith: [...latest.current.recordMadeWith], excluded: [] };
 
   const showMadeWith = useCallback(
-    (id: string, state: MadeWithState) => {
-      queryClient.setQueryData<MadeWithState>(madeWithKey(id), state);
-      queryClient.setQueryData<BuildRecord | null>(composeBuildQueryKey(id), (previous) =>
-        previous ? { ...previous, build: { ...previous.build, made_with: state.madeWith } } : previous,
-      );
-    },
+    (id: string, state: MadeWithState) => showMadeWithIn(queryClient, id, state),
     [queryClient],
   );
 

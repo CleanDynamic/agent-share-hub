@@ -10,7 +10,7 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
-import { TOOLS } from "@/lib/tools/registry";
+import { TOOLS, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { buildLayerError, type BuildPatch } from "./types";
@@ -214,10 +214,43 @@ export async function setMadeWithModel(buildId: string, model: string, on: boole
   return getMadeWith(buildId);
 }
 
-/** Add a tool or model typed by hand to Made with, or take one out. `made_with` only. */
+/**
+ * Made with plus each name it lacks, in the order given. Pure. Matching ignores
+ * case and the list's own order is kept. Nothing is ever removed. The same list
+ * comes back when nothing is missing.
+ */
+export function withTools(madeWith: readonly string[], names: readonly string[]): string[] {
+  const out = [...madeWith];
+  for (const raw of names) {
+    const name = raw.trim();
+    if (name && !has(out, name)) out.push(name);
+  }
+  return out.length === madeWith.length ? (madeWith as string[]) : out;
+}
+
+/**
+ * Put the tools a step names into Made with. One read, and one write only when
+ * something was added. Like refreshMakingStats it only ever grows `made_with`:
+ * unticking under Made with is still the only way out. Resolves with Made with
+ * as it stands.
+ */
+export async function addMadeWithTools(buildId: string, names: readonly string[]): Promise<MadeWithState> {
+  const { state } = await readMadeWith("addMadeWithTools", buildId);
+  const madeWith = withTools(state.madeWith, names);
+  if (madeWith === state.madeWith) return state;
+  await updateBuild(buildId, { made_with: madeWith });
+  return { madeWith, excluded: state.excluded };
+}
+
+/**
+ * Add a tool or model typed by hand to Made with, or take one out. `made_with` only.
+ * A name the tool list knows is saved as that tool's name ("lovable.dev" as
+ * "Lovable"), so its chip draws the tool's logo. Taking one out uses the name
+ * as the chip shows it, so an entry saved before this still goes.
+ */
 export async function setMadeWithEntry(buildId: string, entry: string, on: boolean): Promise<MadeWithState> {
   const { state } = await readMadeWith("setMadeWithEntry", buildId);
-  const next = nextMadeWith(state, entry, on, "entry");
+  const next = nextMadeWith(state, on ? (toolName(entry) ?? entry) : entry, on, "entry");
   const unchanged = next.madeWith.length === state.madeWith.length && next.madeWith.every((name, i) => name === state.madeWith[i]);
   if (unchanged) return state;
   await updateBuild(buildId, { made_with: next.madeWith });
