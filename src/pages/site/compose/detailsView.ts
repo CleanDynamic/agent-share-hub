@@ -9,6 +9,7 @@ import { promptNodes, promptOrigin } from "@/lib/build/composePrompts";
 import {
   FILE_TYPE,
   madeByOf,
+  previewMediaIdOf,
   madeFilesOf,
   RESULT_TYPE,
   stepTitle,
@@ -202,6 +203,7 @@ function fileView(node: NodeTree, ctx: ViewContext): FileView {
   const source = ctx.sourceFiles.find((file) => file.id === node.id);
   // A file a step makes is made by running the step: it has nothing to download.
   const maker = madeByOf(node);
+  const previewId = previewMediaIdOf(node);
   const number = maker ? flatten(ctx.steps).find((step) => step.id === maker)?.number : undefined;
   return {
     kind: "file",
@@ -210,6 +212,8 @@ function fileView(node: NodeTree, ctx: ViewContext): FileView {
     from: number ? `Made in step ${number}` : (source?.note ?? "added by you"),
     size: fileSize(facts?.bytes),
     canDownload: !maker && Boolean(mediaId || text(payload.url)),
+    made: Boolean(maker),
+    preview: maker && previewId ? { mediaId: previewId, name: ctx.media(previewId)?.name ?? "Preview" } : null,
     usedBy: usedBy(ctx.steps, { kind: "file", node_id: node.id }),
   };
 }

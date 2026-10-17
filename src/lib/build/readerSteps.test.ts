@@ -92,7 +92,7 @@ describe("readerSteps — B1 the bakery", () => {
   it("step 4 pastes in 2 and 3 and attaches CLAUDE.md with its size and download", () => {
     expect(steps[3].pasteIns.map((p) => p.number)).toEqual(["2", "3"]);
     expect(steps[3].attach).toEqual([
-      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null, madeIn: null },
+      { id: "f1", name: "CLAUDE.md", mediaId: "m-claude", bytes: 1228, size: "1.2 KB", download: "https://files.test/b/claude.md", madeBy: null, madeIn: null, preview: null },
     ]);
   });
   it("step 5 is sent in the same chat as step 4", () => {
@@ -376,5 +376,33 @@ describe("readerSteps — a file a step makes (TF-08)", () => {
     expect(text).toContain("Attach menu.pdf: https://example.com/menu.pdf.");
     expect(text.indexOf("Save what this step")).toBeGreaterThan(text.indexOf("## Step 1"));
     expect(text.indexOf("Save what this step")).toBeLessThan(text.indexOf("## Step 2"));
+  });
+});
+
+describe("readerSteps — a preview on a made file (TF-10)", () => {
+  const tree = [
+    prompt("p1", 1, "Make a hero picture.", null),
+    prompt("p2", 2, "Use the picture.", null, { payload: { uses: [{ kind: "file", node_id: "hero" }] } }),
+    node("hero", { position: 3, type: "document", payload: { title: "hero.png", made_by: "p1", preview_media_id: "m-hero" } }),
+    node("plain", { position: 4, type: "document", payload: { title: "menu.pdf", url: "https://example.com/menu.pdf", preview_media_id: "m-x" } }),
+  ];
+
+  it("carries the preview of a made file, and none for a file nobody makes", () => {
+    const steps = readerSteps(tree, null);
+    expect(steps[0].makes[0].preview).toEqual({ mediaId: "m-hero" });
+    expect(steps[1].attach[0].preview).toEqual({ mediaId: "m-hero" });
+    expect(readerSteps([...tree, prompt("p3", 5, "Use the menu.", null, { payload: { uses: [{ kind: "file", node_id: "plain" }] } })], null)[2].attach[0].preview).toBeNull();
+  });
+
+  it("never turns a preview into a download, in a step, in What you need or in Copy for AI", () => {
+    const steps = readerSteps(tree, null);
+    expect(steps[0].makes[0].download).toBeNull();
+    expect(steps[1].attach[0].download).toBeNull();
+    const rows = whatYouNeed(steps, tree, null).find((group) => group.key === "files")?.rows ?? [];
+    expect(rows.find((row) => row.title === "hero.png")?.download ?? null).toBeNull();
+    const text = stepsMarkdown({ title: "Hero" }, steps);
+    expect(text).not.toContain("m-hero");
+    expect(text).toContain("Save what this step gives you as hero.png.");
+    expect(text).toContain("Attach hero.png, the file step 1 made.");
   });
 });

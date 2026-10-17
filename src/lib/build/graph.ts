@@ -141,6 +141,11 @@ export function madeByOf(node: Pick<BuildNode, "payload">): string | null {
   return stringOf(payloadOf(node).made_by);
 }
 
+/** The picture, clip or track a made file shows readers, as a media id; null for none. Read from the file; never a download. */
+export function previewMediaIdOf(node: Pick<BuildNode, "payload">): string | null {
+  return stringOf(payloadOf(node).preview_media_id);
+}
+
 /** Every made file of a tree, as file id to the id of the step that makes it. */
 export function madeFilesOf(tree: readonly Pick<BuildNode, "id" | "type" | "parent_id" | "payload">[]): Map<string, string> {
   const out = new Map<string, string>();
@@ -694,6 +699,20 @@ export async function addMadeFile(
   );
   if (taken) throw refuse("addMadeFile", "That step already makes a file with that name.");
   return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title, made_by: stepId, summary }) });
+}
+
+/**
+ * Set, or with null clear, what a made file shows readers (`preview_media_id`):
+ * a picture, a clip or a track that someone can view and not download. Only a
+ * file a step makes has one.
+ */
+export async function setMadeFilePreview(node: BuildNode, mediaId: string | null): Promise<BuildNode> {
+  if (node.type !== FILE_TYPE || !madeByOf(node)) throw refuse("setMadeFilePreview", "Only a file a step makes can have a preview.");
+  const payload = { ...payloadOf(node) };
+  const id = mediaId?.trim() ?? "";
+  if (id) payload.preview_media_id = id;
+  else delete payload.preview_media_id;
+  return upsertNode(withPayload(node, payload));
 }
 
 /** An app or connector the AI used. */

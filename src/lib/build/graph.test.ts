@@ -22,6 +22,8 @@ import {
   addTeam,
   setInstructions,
   setManualFields,
+  setMadeFilePreview,
+  previewMediaIdOf,
   placeAfterMoves,
   addMadeFile,
   addUse,
@@ -535,5 +537,26 @@ describe("made files (TF-07)", () => {
       await addUse(tree[2] as BuildNode, use, steps, map, names);
       expect(payloadWritten().uses).toEqual([use]);
     });
+  });
+});
+
+describe("a made file's preview (TF-10)", () => {
+  const made = (over: Record<string, unknown> = {}) => node({ id: "f", type: "document", payload: { title: "hero.png", made_by: "s1", ...over } }) as unknown as BuildNode;
+
+  it("sets and clears preview_media_id on a made file, keeping its other fields", async () => {
+    await setMadeFilePreview(made(), " m-1 ");
+    expect((upsertNode.mock.calls[0][0] as { payload: object }).payload).toEqual({ title: "hero.png", made_by: "s1", preview_media_id: "m-1" });
+    await setMadeFilePreview(made({ preview_media_id: "m-1" }), null);
+    expect((upsertNode.mock.calls[1][0] as { payload: object }).payload).toEqual({ title: "hero.png", made_by: "s1" });
+    expect(previewMediaIdOf(made({ preview_media_id: "m-1" }))).toBe("m-1");
+    expect(previewMediaIdOf(made())).toBeNull();
+  });
+
+  it("refuses a file nobody makes and any node that is not a file", async () => {
+    const plain = node({ id: "g", type: "document", payload: { title: "menu.pdf" } }) as unknown as BuildNode;
+    const step = node({ id: "s1", type: "prompt", payload: { text: "Hi", made_by: "s1" } }) as unknown as BuildNode;
+    await expect(setMadeFilePreview(plain, "m-1")).rejects.toThrow(/Only a file a step makes/);
+    await expect(setMadeFilePreview(step, "m-1")).rejects.toThrow(/Only a file a step makes/);
+    expect(upsertNode).not.toHaveBeenCalled();
   });
 });

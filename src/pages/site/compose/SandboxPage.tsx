@@ -279,8 +279,8 @@ export function SandboxPage() {
   /** Media ids a selected file or result points at; their names and sizes come from build_media. */
   const mediaIds = useMemo(() => {
     const node = tree.find((candidate) => candidate.id === selectedId);
-    const id = (node?.payload as { media_id?: unknown } | null)?.media_id;
-    return typeof id === "string" && id ? [id] : [];
+    const payload = node?.payload as { media_id?: unknown; preview_media_id?: unknown } | null;
+    return [payload?.media_id, payload?.preview_media_id].filter((id): id is string => typeof id === "string" && id !== "");
   }, [tree, selectedId]);
   const mediaRows = useQueries({
     queries: mediaIds.map((id) => ({ queryKey: ["build", "getMediaById", id], queryFn: () => getMediaById(id), staleTime: 60_000 })),
@@ -610,6 +610,13 @@ export function SandboxPage() {
             onAddMade={(stepId, name) => void prompts.addMadeFile(stepId, name)}
             onRemoveMade={(fileId) => {
               prompts.removeMadeFile(fileId);
+              afterWrite();
+            }}
+            onAddPreview={(fileId, file) => {
+              void prompts.setMadePreview(fileId, file).then(afterWrite);
+            }}
+            onRemovePreview={(fileId) => {
+              prompts.removeMadePreview(fileId);
               afterWrite();
             }}
             onAddUse={(id, use) => {

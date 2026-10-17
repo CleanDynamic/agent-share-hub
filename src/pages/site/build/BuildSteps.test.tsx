@@ -12,6 +12,12 @@ import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
 
+vi.mock("@/lib/build", async (original) => ({
+  ...(await original<typeof import("@/lib/build")>()),
+  signedMediaUrl: async () => "https://files.test/signed",
+  mediaUrl: () => "https://files.test/plain",
+}));
+
 const REFINED = "/dev/kit/pages/build-steps";
 
 function view(which: BuildStepsSample = "list", over: Partial<BuildStepsView> = {}): BuildStepsView {
@@ -161,6 +167,49 @@ describe("a file a step makes", () => {
     const need = screen.getByTestId("build-need");
     expect(within(need).getByText("Made in step 1 · used in step 2")).toBeTruthy();
     expect(within(need).queryByRole("link", { name: /Download/ })).toBeNull();
+  });
+});
+
+describe("a preview on a made file (TF-10)", () => {
+  const media = {
+    "m-hero": { id: "m-hero", bucket: "build-media", path: "b/hero.png", kind: "image", poster_path: null, width: 200, height: 100, mime: "image/png", bytes: 10 },
+    "m-track": { id: "m-track", bucket: "build-media", path: "b/theme.mp3", kind: "audio", poster_path: null, width: null, height: null, mime: "audio/mpeg", bytes: 10 },
+  } as unknown as Record<string, never>;
+
+  function previewView(): BuildStepsView {
+    const node = (id: string, position: number, type: string, payload: object): NodeTree =>
+      ({ id, build_id: "b", parent_id: null, position, type, title: null, note: null, payload, source_ref: null, event_id: null, is_gap: false, created_at: "2026-10-07T09:00:00.000Z", children: [] }) as NodeTree;
+    const tree = [
+      node("p1", 1, "prompt", { text: "Make a hero picture." }),
+      node("p2", 2, "prompt", { text: "Write a theme tune.", uses: [{ kind: "file", node_id: "hero" }] }),
+      node("hero", 3, "document", { title: "hero.png", made_by: "p1", preview_media_id: "m-hero" }),
+      node("tune", 4, "document", { title: "theme.mp3", made_by: "p2", preview_media_id: "m-track" }),
+    ];
+    const steps = readerSteps(tree, null);
+    return view("list", { steps, need: whatYouNeed(steps, tree, null), results: [], resolveMedia: (id) => (id ? (media[id] ?? null) : null) });
+  }
+
+  it("shows the picture under the step that makes it, labelled with the file's name, and no Download anywhere", async () => {
+    mountList(previewView());
+    const [first] = screen.getAllByTestId("step-card");
+    const preview = within(first).getByTestId("made-preview");
+    expect(within(preview).getByText("hero.png")).toBeTruthy();
+    expect(await within(preview).findByAltText("hero.png")).toBeTruthy();
+    expect(within(first).queryByRole("link", { name: /Download/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Download/ })).toBeNull();
+    expect(document.querySelector("a[download]")).toBeNull();
+  });
+
+  it("plays a track with no download control", async () => {
+    mountList(previewView());
+    const second = screen.getAllByTestId("step-card")[1];
+    const track = await vi.waitFor(() => {
+      const found = second.querySelector("audio");
+      if (!found) throw new Error("not yet");
+      return found;
+    });
+    expect(track.getAttribute("controlslist")).toBe("nodownload");
+    expect(within(second).queryByRole("link", { name: /Download/ })).toBeNull();
   });
 });
 

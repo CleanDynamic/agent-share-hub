@@ -453,3 +453,48 @@ describe("Makes (TF-08)", () => {
     expect(screen.queryByLabelText("Name a file it makes")).toBeNull();
   });
 });
+
+describe("a preview on a made file (TF-10)", () => {
+  const fileProps = (over: Record<string, unknown> = {}, handlers: Partial<DetailsPanelProps> = {}) => {
+    const base = sandboxDetailsProps("file", "bakery");
+    const view = { ...base.view, canDownload: false, made: true, from: "Made in step 2", ...over } as DetailsPanelProps["view"];
+    return panel("file", "bakery", { view, onAddPreview: vi.fn(), onRemovePreview: vi.fn(), ...handlers });
+  };
+  const choose = (file: File) => fireEvent.change(screen.getByTestId("details-preview"), { target: { files: [file] } });
+
+  it("adds a picture, a clip or a track, with one quiet line and no Download", () => {
+    const props = fileProps();
+    expect(screen.getByRole("button", { name: "Add a preview" })).toBeTruthy();
+    expect(screen.getByText("Readers can view it but not download it.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Download" })).toBeNull();
+    for (const [name, type] of [["hero.png", "image/png"], ["clip.mp4", "video/mp4"], ["theme.mp3", "audio/mpeg"]] as const) {
+      const file = new File(["x"], name, { type });
+      choose(file);
+      expect(props.onAddPreview).toHaveBeenLastCalledWith("f1", file);
+    }
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("refuses anything else with a plain line, and writes nothing", () => {
+    const props = fileProps();
+    choose(new File(["x"], "notes.pdf", { type: "application/pdf" }));
+    expect(screen.getByRole("alert").textContent).toBe("A preview is a picture, a clip or a track.");
+    expect(props.onAddPreview).not.toHaveBeenCalled();
+  });
+
+  it("shows Remove preview once there is one, and takes it away", () => {
+    const props = fileProps({ preview: { mediaId: "m1", name: "hero.png" } });
+    expect(screen.queryByRole("button", { name: "Add a preview" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Remove preview" }));
+    expect(props.onRemovePreview).toHaveBeenCalledWith("f1");
+  });
+
+  it("has no preview controls for a file nobody makes, or when the panel cannot write", () => {
+    fileProps({ made: false });
+    expect(screen.queryByRole("button", { name: "Add a preview" })).toBeNull();
+    expect(screen.queryByText("Readers can view it but not download it.")).toBeNull();
+    cleanup();
+    fileProps({}, { onAddPreview: undefined, onRemovePreview: undefined });
+    expect(screen.queryByRole("button", { name: "Add a preview" })).toBeNull();
+  });
+});
