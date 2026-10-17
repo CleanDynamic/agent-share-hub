@@ -113,7 +113,7 @@ export interface MapBox {
   suggested: number;
   /** Columns the box covers: 2 for an agent or a team, else 1. */
   span: number;
-  /** A manual step's tool ("Figma"); null for any other box. */
+  /** A manual step's tool ("Figma"), or the tool an agent runs in; null for any other box. */
   tool?: string | null;
   /** An agent's or a team's "2 prompts · 1 file · 1 tool"; null for any other box. */
   contents: string | null;
@@ -373,7 +373,7 @@ export function layoutMap(
       inputs,
       accepted: inputs.filter((input) => !input.suggested).length,
       suggested: inputs.filter((input) => input.suggested).length,
-      tool: step.kind === "manual" ? step.tool : null,
+      tool: step.kind === "manual" || step.kind === "agent" ? step.tool : null,
       span: spanOf(step),
       contents: container ? containsLine(step) : null,
       runs: container ? runsLabel(step.runs) : null,

@@ -47,6 +47,7 @@ import {
   moveStep,
   placeStepAfter,
   removeUse,
+  setAgentTool,
   setNodeFields,
   setInstructions,
   setManualFields,
@@ -132,7 +133,9 @@ export interface ComposePrompts {
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
-  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string }) => Promise<string | null>;
+  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string; tool?: string | null }) => Promise<string | null>;
+  /** TF-04: change the tool an agent runs in; null takes it off. */
+  setAgentTool: (id: string, tool: string | null) => void;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -475,13 +478,14 @@ export function useComposePrompts({
         return null;
       });
 
-  const addAgentOrTeam = ({ kind, name, model }: { kind: "agent" | "team"; name: string | null; model: string }) =>
+  const addAgentOrTeam = ({ kind, name, model, tool }: { kind: "agent" | "team"; name: string | null; model: string; tool?: string | null }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         if (kind === "agent") {
-          const created = await addAgent(build, nodes.current(), { name, model });
+          const created = await addAgent(build, nodes.current(), { name, model, tool });
           nodes.record(created.id, created);
+          noteTool(build, tool);
           return created.id;
         }
         const { team } = await addTeam(build, nodes.current(), { name, model });
@@ -516,6 +520,13 @@ export function useComposePrompts({
         failed("Couldn't add that prompt. Try again.")(cause);
         return false;
       });
+
+  const setAgentToolOf = (id: string, tool: string | null) =>
+    void writeStep(id, "Couldn't change what it runs in. Try again.", async (node) => {
+      const saved = await setAgentTool(node, tool);
+      noteTool(latest.current.buildId, tool);
+      return saved;
+    });
 
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
@@ -576,5 +587,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setAgentTool: setAgentToolOf, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
 }

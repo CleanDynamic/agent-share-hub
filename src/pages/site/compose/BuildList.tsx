@@ -523,17 +523,29 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
   );
 }
 
-/** "Agent · ", the model's mark at 14 and its name: the eyebrow's words are the current look's. */
+/** "Agent · ", the tool it runs in (TF-04) and the model, each with its mark at 14 and its name: the eyebrow's words are the current look's. */
 function ContainerEyebrow({ step, made, isTeam }: { step: Step; made: readonly string[]; isTeam: boolean }) {
   const model = isTeam ? null : stepModel(step);
+  const tool = isTeam ? null : step.tool;
   const lead = agentEyebrow(made, null, isTeam ? "Team" : "Agent");
   return (
     <span data-testid="container-eyebrow" style={{ ...text(11.5, 400, t.label), display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
-      {model ? (
+      {model || tool ? (
         <>
           {`${lead} · `}
-          <ToolMark model={step.model} size={14} />
-          {model}
+          {tool ? (
+            <>
+              <ToolMark tool={tool} size={14} />
+              {tool}
+            </>
+          ) : null}
+          {tool && model ? " · " : null}
+          {model ? (
+            <>
+              <ToolMark model={step.model} size={14} />
+              {model}
+            </>
+          ) : null}
         </>
       ) : (
         lead

@@ -554,6 +554,10 @@ export function SandboxPage() {
               prompts.setManual(id, fields);
               afterWrite();
             }}
+            onAgentTool={(id, tool) => {
+              prompts.setAgentTool(id, tool);
+              afterWrite();
+            }}
             onManualPicture={(id, file) => {
               void prompts.setManualPicture(id, file).then(afterWrite);
             }}
@@ -632,6 +636,7 @@ export function SandboxPage() {
         onOpenChange={setAddAgentOpen}
         nextNumber={steps.length + 1}
         teamsAvailable={teamsAvailable}
+        inBuild={inBuild}
         onAdd={(input) => void onAddAgentOrTeam(input)}
       />
       <AddManualStepDialog

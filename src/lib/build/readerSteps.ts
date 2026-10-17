@@ -708,7 +708,8 @@ export function stepsMarkdown(
     }
     if (step.kind === "agent" || step.kind === "team") {
       const how = [entry.runs, entry.madeIn].filter(Boolean).join(" · ");
-      if (how) lines.push(`${how}.`, "");
+      const runsIn = step.kind === "agent" && step.tool ? `Runs in ${step.tool}.` : "";
+      if (how || runsIn) lines.push([runsIn, how ? `${how}.` : ""].filter(Boolean).join(" "), "");
       if (entry.uses.length > 0) lines.push(`Uses ${join(entry.uses)}.`, "");
       subSteps(entry, lines);
       continue;

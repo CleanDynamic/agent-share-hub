@@ -7,6 +7,7 @@ import type { BuildNode, NodeTree } from "@/lib/build";
 
 const graph = vi.hoisted(() => ({
   addAgent: vi.fn(),
+  setAgentTool: vi.fn(),
   addAgentPrompt: vi.fn(),
   addTeam: vi.fn(),
   setInstructions: vi.fn(),
@@ -299,5 +300,68 @@ describe("tools on steps feed Made with (TF-03)", () => {
     expect(warn).toHaveBeenCalledWith("[Compose] Made with not updated", { code: "42501", buildId: "b1" });
     expect(toast.error).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe("an agent's tool (TF-04)", () => {
+  it("adds an agent with its tool, and Made with gets the tool's name", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const { result, tree } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5", tool: "openclaw" });
+    });
+    expect(graph.addAgent).toHaveBeenCalledWith("b1", tree, { name: null, model: "Opus 5.5", tool: "openclaw" });
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["OpenClaw"]);
+  });
+
+  it("adds an agent with no tool without touching Made with", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const { result } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5", tool: null });
+    });
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
+  });
+
+  it("never gives a team a tool", async () => {
+    graph.addTeam.mockResolvedValue({ team: { id: "tm1" }, agent: { id: "ag1" } });
+    const { result } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "team", name: null, model: "Opus 5.5", tool: "openclaw" });
+    });
+    expect(graph.addTeam).toHaveBeenCalledWith("b1", [], { name: null, model: "Opus 5.5" });
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
+  });
+
+  it("setAgentTool writes through the graph, records the node and adds the tool to Made with; clearing adds nothing", async () => {
+    const agent = row({ id: "ag1", type: "agent_config", payload: { system_prompt: "", model: "m" } });
+    graph.setAgentTool.mockResolvedValue({ id: "ag1", payload: { tool: "hermes-agent" } } as unknown as BuildNode);
+    const { result, record } = hook([agent]);
+    await act(async () => {
+      result.current.setAgentTool("ag1", "hermes-agent");
+      await Promise.resolve();
+    });
+    expect(graph.setAgentTool).toHaveBeenCalledWith(expect.objectContaining({ id: "ag1" }), "hermes-agent");
+    expect(record).toHaveBeenCalledWith("ag1", expect.objectContaining({ id: "ag1" }));
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["Hermes Agent"]);
+    making.addMadeWithTools.mockClear();
+    await act(async () => {
+      result.current.setAgentTool("ag1", null);
+      await Promise.resolve();
+    });
+    expect(graph.setAgentTool).toHaveBeenLastCalledWith(expect.anything(), null);
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
+  });
+
+  it("says so when the tool could not be saved, and leaves Made with alone", async () => {
+    graph.setAgentTool.mockRejectedValue(new Error("nope"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { result } = hook([row({ id: "ag1", type: "agent_config", payload: { system_prompt: "", model: "m" } })]);
+    await act(async () => {
+      result.current.setAgentTool("ag1", "openclaw");
+      await Promise.resolve();
+    });
+    expect(toast.error).toHaveBeenCalledWith("Couldn't change what it runs in. Try again.");
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
   });
 });

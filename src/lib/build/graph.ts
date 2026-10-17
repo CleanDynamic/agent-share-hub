@@ -16,7 +16,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
-import { toolName } from "@/lib/tools/registry";
+import { toolFor, toolName } from "@/lib/tools/registry";
 import { toolLabel, type MakingSession } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
@@ -92,6 +92,7 @@ export const RUNS_COUNT_MAX = 20;
 export const UNTIL_DETAIL_MAX = 80;
 export const WHEN_DETAIL_MAX = 60;
 export const MANUAL_TOOL_MAX = 40;
+export const AGENT_TOOL_MAX = 40;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -466,19 +467,47 @@ async function requireLiveType(operation: string, key: string): Promise<void> {
 const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
 
 /**
+ * The tool an agent runs in, as it is stored: an id `toolFor` knows, else the name as typed (1 to 40
+ * characters). Null for none.
+ */
+function agentToolOf(operation: string, tool: string | null | undefined): string | null {
+  const named = tool?.trim();
+  if (!named) return null;
+  if (named.length > AGENT_TOOL_MAX) throw refuse(operation, `A tool is 1 to ${AGENT_TOOL_MAX} characters.`);
+  return toolFor(named)?.id ?? named;
+}
+
+/**
  * An agent: top level, or inside a team when `parentId` names one (UI-P69).
- * A blank name saves as null, so the default "Agent {n}" shows.
+ * A blank name saves as null, so the default "Agent {n}" shows. `tool` is
+ * what it runs in (OpenClaw, Hermes Agent), kept as `payload.tool` (TF-04).
  */
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId }: { name?: string | null; model: string; parentId?: string | null },
+  { name, model, parentId, tool }: { name?: string | null; model: string; parentId?: string | null; tool?: string | null },
 ): Promise<BuildNode> {
   if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } };
+  const runsIn = agentToolOf("addAgent", tool);
+  const payload: Record<string, string> = { system_prompt: "", model: model.trim() };
+  if (runsIn) payload.tool = runsIn;
+  const node = { type: AGENT_TYPE, title, payload };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
+}
+
+/**
+ * Set the tool an agent runs in, or clear it with null (TF-04). Only an
+ * agent has one: a team does not, and nor does any other step.
+ */
+export async function setAgentTool(node: BuildNode, tool: string | null): Promise<BuildNode> {
+  if (node.type !== AGENT_TYPE) throw refuse("setAgentTool", "Only an agent runs in a tool.");
+  const payload = { ...payloadOf(node) };
+  const runsIn = agentToolOf("setAgentTool", tool);
+  if (runsIn) payload.tool = runsIn;
+  else delete payload.tool;
+  return upsertNode(withPayload(node, payload));
 }
 
 /** A team is never empty: it is made holding one agent, which `model` names. */

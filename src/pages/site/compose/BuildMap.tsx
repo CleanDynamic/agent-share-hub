@@ -48,6 +48,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { MAP_ARTWORK, type MapRoom } from "./mapArtwork";
+import { ToolMark } from "./refinedPieces";
 
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
@@ -102,14 +103,15 @@ export function columnDate(iso: string | null): string {
 }
 
 /** The accessible name of a box: "Prompt 3, Fix the layout, 2 inputs". */
-export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "title" | "inputs">): string {
+export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "title" | "inputs"> & { tool?: string | null }): string {
   if (box.kind === "file") return `File, ${box.title}`;
   if (box.kind === "tool") return `Tool, ${box.title}`;
   const count = box.inputs.length;
   const inputs = `${count} ${count === 1 ? "input" : "inputs"}`;
   if (box.kind === "result") return `Result, ${box.title}, ${inputs}`;
   const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : "Prompt";
-  return `${word} ${box.number}, ${box.title}, ${inputs}`;
+  const runsIn = box.stepKind === "agent" && box.tool ? `, runs in ${box.tool}` : "";
+  return `${word} ${box.number}, ${box.title}${runsIn}, ${inputs}`;
 }
 
 const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 };
@@ -251,6 +253,12 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
         <>
           <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(10.5, 500, t.label) }}>
             {box.stepKind === "team" ? "Team" : "Agent"} {box.number}
+            {box.stepKind === "agent" && box.tool ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 6, minWidth: 0 }}>
+                <ToolMark tool={box.tool} size={14} />
+                <span style={{ ...ellipsis, fontWeight: 400 }}>{box.tool}</span>
+              </span>
+            ) : null}
           </span>
           {/* The named inputs down the left, the title, counts and how it runs beside them. */}
           <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>

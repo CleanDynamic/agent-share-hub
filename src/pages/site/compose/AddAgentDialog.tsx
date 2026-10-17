@@ -3,7 +3,8 @@
    A Radix dialog, 420 wide, on the Card's surface tokens; below 768 it is a
    `BottomSheet`. A real radio group chooses "One agent" or "A team of agents",
    then a name (empty saves as null, so the default "Agent {n}" or "Team {n}"
-   shows) and, for an agent, a model from the registry. "Add" is the dialog's
+   shows), for an agent what it "Runs in" (the tool picker, TF-04; optional,
+   "No tool" first, and a team has none) and a model from the registry. "Add" is the dialog's
    one primary.
 
    A team is made holding one agent, which takes the model too, so the model is
@@ -25,6 +26,7 @@ import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { fieldBase } from "./composeFields";
+import { ToolPicker } from "./ToolPicker";
 
 export const AGENT_DIALOG_COPY = {
   title: "Add an agent or a team",
@@ -42,6 +44,8 @@ export interface AddAgentInput {
   /** Null when left empty: the default title shows. */
   name: string | null;
   model: string;
+  /** What an agent runs in: a tool id or a typed name. Null for none, and always null for a team. */
+  tool: string | null;
 }
 
 export interface AddAgentDialogProps {
@@ -52,6 +56,8 @@ export interface AddAgentDialogProps {
   /** False while the `team` node type is not live. */
   teamsAvailable: boolean;
   onAdd: (input: AddAgentInput) => void;
+  /** The tools the build already uses, first in the tool picker. */
+  inBuild?: readonly string[];
 }
 
 /** The model a new agent starts on. */
@@ -104,13 +110,14 @@ function Choice({
   );
 }
 
-function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd"> & { onCancel: () => void; phone: boolean }) {
+function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone, inBuild = [] }: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd" | "inBuild"> & { onCancel: () => void; phone: boolean }) {
   const [kind, setKind] = useState<"agent" | "team">("agent");
   const [name, setName] = useState("");
+  const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState(DEFAULT_AGENT_MODEL);
   const uid = useId();
 
-  const submit = () => onAdd({ kind, name: name.trim() || null, model });
+  const submit = () => onAdd({ kind, name: name.trim() || null, model, tool: kind === "agent" ? tool : null });
   const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
   const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
 
@@ -151,6 +158,15 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
         />
       </div>
 
+      {kind === "agent" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={label}>Runs in</span>
+          <div>
+            <ToolPicker label="Runs in" value={tool} onChange={setTool} inBuild={inBuild} allowNone phone={phone} />
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <label htmlFor={`${uid}-model`} style={label}>
           {kind === "team" ? "Model of its first agent" : "Model"}
@@ -176,7 +192,7 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
   );
 }
 
-export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd }: AddAgentDialogProps) {
+export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd, inBuild }: AddAgentDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddAgentInput) => {
@@ -188,7 +204,7 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={AGENT_DIALOG_COPY.title}>
-        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone /> : null}
+        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone inBuild={inBuild} /> : null}
       </BottomSheet>
     );
   }
@@ -221,7 +237,7 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
           }}
         >
           <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{AGENT_DIALOG_COPY.title}</Dialog.Title>
-          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} />
+          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} inBuild={inBuild} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

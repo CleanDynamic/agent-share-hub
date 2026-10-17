@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AddAgentDialog, AGENT_DIALOG_COPY, DEFAULT_AGENT_MODEL, type AddAgentDialogProps } from "./AddAgentDialog";
@@ -47,7 +47,7 @@ describe("the Add dialog", () => {
     expect(name.placeholder).toBe("Agent 4");
     expect(name.value).toBe("");
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL });
+    expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, tool: null });
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -58,7 +58,7 @@ describe("the Add dialog", () => {
     const other = [...model.options].find((option) => option.value !== DEFAULT_AGENT_MODEL)!;
     fireEvent.change(model, { target: { value: other.value } });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: "Order checker", model: other.value });
+    expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: "Order checker", model: other.value, tool: null });
   });
 
   it("changes the placeholder to Team {n} for a team, and asks for the model of its first agent", () => {
@@ -67,7 +67,47 @@ describe("the Add dialog", () => {
     expect((screen.getByLabelText("Name") as HTMLInputElement).placeholder).toBe("Team 4");
     expect(screen.getByLabelText("Model of its first agent")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(props.onAdd).toHaveBeenCalledWith({ kind: "team", name: null, model: DEFAULT_AGENT_MODEL });
+    expect(props.onAdd).toHaveBeenCalledWith({ kind: "team", name: null, model: DEFAULT_AGENT_MODEL, tool: null });
+  });
+
+  it("asks what an agent runs in, optional, with no tool to start and the build's tools first (TF-04)", () => {
+    const props = open({ inBuild: ["Midjourney"] });
+    const trigger = screen.getByRole("button", { name: "Runs in" });
+    expect(trigger.textContent).toBe("Pick a tool");
+    fireEvent.click(trigger);
+    const options = within(screen.getByRole("listbox")).getAllByRole("option");
+    expect(options[0].textContent).toBe("No tool");
+    expect(options[1].textContent).toBe("Midjourney");
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Find a tool" }), { key: "Escape" });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ kind: "agent", tool: null }));
+  });
+
+  it("passes the tool picked, between the name and the model (TF-04)", () => {
+    const props = open();
+    const picker = screen.getByRole("button", { name: "Runs in" });
+    const order = [screen.getByLabelText("Name"), picker, screen.getByLabelText("Model")];
+    expect(order[0].compareDocumentPosition(order[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(order[1].compareDocumentPosition(order[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(picker);
+    const find = screen.getByRole("combobox", { name: "Find a tool" });
+    fireEvent.change(find, { target: { value: "OpenClaw" } });
+    fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: "OpenClaw" }));
+    expect(picker.textContent).toBe("OpenClaw");
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith({ kind: "agent", name: null, model: DEFAULT_AGENT_MODEL, tool: "openclaw" });
+  });
+
+  it("gives a team no tool: no picker, and none passed even after one was picked (TF-04)", () => {
+    const props = open();
+    fireEvent.click(screen.getByRole("button", { name: "Runs in" }));
+    const find = screen.getByRole("combobox", { name: "Find a tool" });
+    fireEvent.change(find, { target: { value: "OpenClaw" } });
+    fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: "OpenClaw" }));
+    fireEvent.click(screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }));
+    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith({ kind: "team", name: null, model: DEFAULT_AGENT_MODEL, tool: null });
   });
 
   it("disables the team and says why while the team type is not live", () => {
