@@ -9,6 +9,7 @@
    is in the build, and "added by you" otherwise. */
 
 import { FILE_TYPE, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
+import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
@@ -131,7 +132,35 @@ export function librarySources(library: readonly SessionSummary[], adding: Reado
     }));
 }
 
-/** Whether a dropped file is a session export (it goes to the intake) rather than a file of the build. */
-export function isSessionExport(file: Pick<File, "name" | "type">): boolean {
-  return /\.jsonl?$/i.test(file.name) || file.type === "application/json";
+const CHAT_EXPORT_CHARS = 400_000;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+
+const carriesChat = (item: unknown): boolean => isRecord(item) && ("mapping" in item || "chat_messages" in item);
+
+/** Whether the text of a .json file is a chat export (ChatGPT, Claude or Lovable) rather than a file of the build, such as a workflow. */
+export function looksLikeChatExport(text: string): boolean {
+  if (detectExportSource(text) === "lovable") return true;
+  let root: unknown;
+  try {
+    root = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  if (Array.isArray(root)) return root.some(carriesChat);
+  if (!isRecord(root)) return false;
+  if (carriesChat(root)) return true;
+  return [root.conversations, root.messages].some((list) => Array.isArray(list) && list.some(carriesChat));
+}
+
+/** Whether a dropped file is a chat export (it goes to the intake) rather than a file of the build. */
+export async function isChatExport(file: Pick<File, "name" | "type"> & Partial<Pick<File, "slice">>): Promise<boolean> {
+  if (/\.jsonl$/i.test(file.name)) return true;
+  if (!/\.json$/i.test(file.name) && file.type !== "application/json") return false;
+  if (typeof file.slice !== "function") return false;
+  try {
+    return looksLikeChatExport(await file.slice(0, CHAT_EXPORT_CHARS).text());
+  } catch {
+    return false;
+  }
 }

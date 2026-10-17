@@ -34,7 +34,7 @@ import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { addFile, buildSteps, FILE_TYPE, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import type { MakingSession } from "@/lib/build/making";
-import { getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
+import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
 
@@ -55,7 +55,7 @@ import { pieces, resolveView, type MediaFacts } from "./detailsView";
 import type { MapResult, MapSuggestion } from "@/lib/build/mapLayout";
 import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
-import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
+import { isChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 
 /** builds.making.sessions, read defensively: it is a json column. */
@@ -420,8 +420,9 @@ export function SandboxPage() {
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. */
   const addOneFile = useCallback(
     async (file: File) => {
-      if (!mediaKindFor(file.type)) {
-        toast.error(`${file.name} is not a kind of file that can be added.`);
+      const decided = fileKindFor(file);
+      if ("refused" in decided) {
+        toast.error(decided.refused);
         return;
       }
       if (file.size > MEDIA_MAX_BYTES) {
@@ -444,10 +445,10 @@ export function SandboxPage() {
     [ensureBuild, nodes, queryClient],
   );
 
-  /** A drop sorts its files: a session export goes to the intake, the rest are files of the build. */
+  /** A drop sorts its files: a chat export goes to the intake, the rest are files of the build. */
   const onDropFiles = useCallback(
-    (files: File[]) => {
-      if (files.some(isSessionExport)) {
+    async (files: File[]) => {
+      if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
         navigate("/compose/start");
         return;
       }

@@ -151,6 +151,7 @@ import {
   getMediaById,
   getMediaForBuild,
   mediaKindFor,
+  fileKindFor,
   mediaPath,
   mediaUrl,
   signedMediaUrl,
@@ -293,7 +294,7 @@ describe("uploadMedia", () => {
   it("refuses a type that is not on the list", async () => {
     await expect(
       uploadMedia({ buildId: BUILD_ID, file: file("x.exe", "application/x-msdownload") })
-    ).rejects.toThrow(/not an accepted upload type/);
+    ).rejects.toThrow(/not a kind of file that can be added/);
     expect(state.uploaded).toHaveLength(0);
   });
 
@@ -410,5 +411,31 @@ describe("reads", () => {
   it("names the operation that failed", async () => {
     state.selectError = { message: "permission denied" };
     await expect(getMediaById("m1")).rejects.toThrow(/getMediaById failed/);
+  });
+});
+
+describe("fileKindFor", () => {
+  it("takes the files AI builds use by name when the browser reports no type", () => {
+    expect(fileKindFor({ name: "SKILL.md", type: "" })).toEqual({ kind: "file", mime: "text/markdown" });
+    expect(fileKindFor({ name: "workflow.json", type: "" })).toEqual({ kind: "file", mime: "application/json" });
+  });
+
+  it("stores code as plain text whatever the browser reports", () => {
+    expect(fileKindFor({ name: "layout.mdc", type: "" })).toEqual({ kind: "file", mime: "text/plain" });
+    expect(fileKindFor({ name: "app.ts", type: "video/mp2t" })).toEqual({ kind: "file", mime: "text/plain" });
+    expect(fileKindFor({ name: "page.html", type: "text/html" })).toEqual({ kind: "file", mime: "text/plain" });
+    expect(fileKindFor({ name: ".env.example", type: "" })).toEqual({ kind: "file", mime: "text/plain" });
+  });
+
+  it("refuses files that can hold secrets", () => {
+    expect(fileKindFor({ name: ".env", type: "" })).toEqual({ refused: ".env can hold keys or passwords, so it can't be added." });
+    expect(fileKindFor({ name: ".env.local", type: "" })).toHaveProperty("refused");
+    expect(fileKindFor({ name: "SERVER.PEM", type: "" })).toHaveProperty("refused");
+    expect(fileKindFor({ name: "id_rsa", type: "" })).toHaveProperty("refused");
+  });
+
+  it("keeps the existing kinds and refuses the rest", () => {
+    expect(fileKindFor({ name: "photo.png", type: "image/png" })).toEqual({ kind: "image", mime: "image/png" });
+    expect(fileKindFor({ name: "x.exe", type: "application/x-msdownload" })).toEqual({ refused: "x.exe is not a kind of file that can be added." });
   });
 });
