@@ -197,6 +197,12 @@ interface MediaFigureProps {
   width: number;
   alt: string;
   style?: CSSProperties;
+  /**
+   * A clip or a track the page shows and does not offer to save: no download
+   * control, and no picture-in-picture on a clip. The browser can still save
+   * what it plays; the page just never offers it.
+   */
+  noDownload?: boolean;
 }
 
 /**
@@ -213,6 +219,7 @@ export function MediaFigure({
   width,
   alt,
   style,
+  noDownload = false,
 }: MediaFigureProps) {
   const id = (reference ?? "").trim();
   const media = id ? resolveMedia(id) : null;
@@ -300,6 +307,8 @@ export function MediaFigure({
         src={src}
         poster={poster ?? undefined}
         controls
+        controlsList={noDownload ? "nodownload" : undefined}
+        disablePictureInPicture={noDownload ? true : undefined}
         // Nothing on a read surface downloads a video the reader has not
         // asked to watch.
         preload="none"
@@ -315,7 +324,7 @@ export function MediaFigure({
   if (media.kind === "audio") {
     if (!src) return <MediaPending media={media} style={style} />;
     return (
-      <audio src={src} controls preload="none" style={{ width: "100%", ...style }}>
+      <audio src={src} controls controlsList={noDownload ? "nodownload" : undefined} preload="none" style={{ width: "100%", ...style }}>
         {description}
       </audio>
     );

@@ -20,6 +20,7 @@ import {
   buildSteps,
   goesInto,
   madeByOf,
+  previewMediaIdOf,
   runsLabel,
   sessionGroups,
   stepTitle,
@@ -84,6 +85,8 @@ export interface ReaderFile {
   madeBy: string | null;
   /** The step that makes it, with its number, read from `payload.made_by`; null for a file nobody makes and for a maker that is not a step of this build. */
   madeIn: { stepId: string; number: string } | null;
+  /** A picture, a clip or a track the maker shows for a made file. Readers view it on the page; it is never a `download`, in a step, in What you need or in Copy for AI. */
+  preview: { mediaId: string } | null;
 }
 
 export interface ReaderTool {
@@ -267,6 +270,7 @@ function readFiles(
         const bytes = found?.bytes ?? null;
         const madeBy = madeByOf(node);
         const maker = madeBy ? steps.get(madeBy) : undefined;
+        const previewId = madeBy ? previewMediaIdOf(node) : null;
         files.set(node.id, {
           id: node.id,
           name: text(node, "title") ?? "Untitled file",
@@ -277,6 +281,7 @@ function readFiles(
           download: madeBy ? null : found ? mediaUrl(found, { width: "original" }) : text(node, "url"),
           madeBy,
           madeIn: maker ? { stepId: maker.id, number: maker.number } : null,
+          preview: previewId ? { mediaId: previewId } : null,
         });
       }
       visit(node.children ?? []);

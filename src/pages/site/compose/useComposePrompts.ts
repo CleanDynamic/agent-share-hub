@@ -21,7 +21,7 @@ import { addMadeWithTools } from "@/lib/build/making";
 import { toolName } from "@/lib/tools/registry";
 import { MEDIA_MAX_BYTES, mediaKindFor, uploadMedia } from "@/lib/build/media";
 import { SAVE_DEBOUNCE_MS } from "@/hooks/useComposeBuild";
-import { deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
+import { deleteMedia, deleteNode, type BuildNode, type NodeTree } from "@/lib/build";
 import {
   addSessionPrompt,
   addWrittenPrompt,
@@ -47,11 +47,13 @@ import {
   madeFileNamesOf,
   madeFilesOf,
   MANUAL_STEP_TYPE,
+  previewMediaIdOf,
   moveStep,
   placeStepAfter,
   removeUse,
   setNodeFields,
   setInstructions,
+  setMadeFilePreview,
   setManualFields,
   setRuns,
   setStepTitle,
@@ -62,6 +64,7 @@ import {
 } from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
 
+import { previewRefusal } from "./previewFiles";
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
 import { rowOf, type ComposeNodes } from "./useComposeNodes";
@@ -142,6 +145,10 @@ export interface ComposePrompts {
   addMadeFile: (stepId: string, name: string) => Promise<string | null>;
   /** TF-08: take a made file out of the build and out of the steps that use it. */
   removeMadeFile: (fileId: string) => void;
+  /** TF-10: store a picture, a clip or a track and show it for a made file, in place of any it had. Resolves true once it is saved. */
+  setMadePreview: (fileId: string, file: File) => Promise<boolean>;
+  /** TF-10: take a made file's preview away. */
+  removeMadePreview: (fileId: string) => void;
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
@@ -516,6 +523,42 @@ export function useComposePrompts({
       })
       .catch(failed("Couldn't remove that file. Try again."));
 
+  /** TF-10: show a picture, a clip or a track for a made file. A file of another kind is refused with the reason. */
+  const setMadePreview = (fileId: string, file: File) => {
+    const refused = previewRefusal(file);
+    if (refused) {
+      toast.error(refused);
+      return Promise.resolve(false);
+    }
+    return nodes
+      .run(async () => {
+        const node = findNode(nodes.current(), fileId);
+        if (!node || !madeFilesOf(nodes.current()).has(fileId)) throw new Error("not a file a step makes");
+        const build = await latest.current.ensureBuild();
+        const media = await uploadMedia({ buildId: build, file });
+        const before = previewMediaIdOf(node);
+        nodes.record(node.id, await setMadeFilePreview(rowOf(node), media.id));
+        if (before) await deleteMedia(before).catch(() => undefined);
+        return true;
+      })
+      .catch((cause) => {
+        failed(`Couldn't add ${file.name}. Try again.`)(cause);
+        return false;
+      });
+  };
+
+  /** TF-10: take a made file's preview away, and the stored file with it. */
+  const removeMadePreview = (fileId: string) =>
+    void nodes
+      .run(async () => {
+        const node = findNode(nodes.current(), fileId);
+        if (!node) return;
+        const before = previewMediaIdOf(node);
+        nodes.record(node.id, await setMadeFilePreview(rowOf(node), null));
+        if (before) await deleteMedia(before).catch(() => undefined);
+      })
+      .catch(failed("Couldn't remove that preview. Try again."));
+
   const addPiece = (kind: "tool" | "result") =>
     nodes
       .run(async () => {
@@ -633,5 +676,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, setMadePreview, removeMadePreview, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
 }

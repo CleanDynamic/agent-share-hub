@@ -35,6 +35,7 @@ import {
   type ChecklistRow,
   type MakesRow,
 } from "./detailsModel";
+import { PREVIEW_ACCEPT, PREVIEW_COPY, previewRefusal } from "./previewFiles";
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
@@ -101,6 +102,10 @@ export interface FileView {
   from: string;
   size: string | null;
   canDownload: boolean;
+  /** TF-10: a file a step makes. Only these can have a preview. */
+  made?: boolean;
+  /** TF-10: the preview a made file shows readers, with its name; none when it has none. */
+  preview?: { mediaId: string; name: string } | null;
   usedBy: readonly GoesRow[];
 }
 
@@ -151,6 +156,9 @@ export interface DetailsHandlers {
   /** TF-08: name a file a step makes, and take one away (it also comes out of the steps that use it). Absent: no Makes list. */
   onAddMade?: (stepId: string, name: string) => void;
   onRemoveMade?: (fileId: string) => void;
+  /** TF-10: show a picture, a clip or a track for a made file, and take it away. Absent: no preview controls. */
+  onAddPreview?: (fileId: string, file: File) => void;
+  onRemovePreview?: (fileId: string) => void;
   onRuns: (id: string, runs: Runs | null) => void;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
   onManual?: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
@@ -768,7 +776,10 @@ function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionV
 
 /* ── a file, a tool ── */
 
-function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; phone: boolean } & Pick<DetailsHandlers, "onDownload" | "onSelect">) {
+function FileDetails({ view, phone, onDownload, onSelect, onAddPreview, onRemovePreview }: { view: FileView; phone: boolean } & Pick<DetailsHandlers, "onDownload" | "onSelect" | "onAddPreview" | "onRemovePreview">) {
+  const picker = useRef<HTMLInputElement>(null);
+  const [refused, setRefused] = useState<string | null>(null);
+  const previews = view.made && Boolean(onAddPreview || onRemovePreview);
   return (
     <>
       <Head eyebrow="File">
@@ -783,6 +794,47 @@ function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; ph
           <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onDownload(view.id)} style={phone ? undefined : { height: 26 }}>
             Download
           </Button>
+        </div>
+      ) : null}
+      {previews ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {view.preview ? (
+            <div style={listRow(44)}>
+              <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{view.preview.name}</span>
+              {onRemovePreview ? (
+                <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => onRemovePreview(view.id)} style={phone ? undefined : { height: 26 }}>
+                  {PREVIEW_COPY.remove}
+                </Button>
+              ) : null}
+            </div>
+          ) : onAddPreview ? (
+            <div>
+              <input
+                ref={picker}
+                type="file"
+                accept={PREVIEW_ACCEPT}
+                hidden
+                data-testid="details-preview"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  const why = previewRefusal(file);
+                  setRefused(why);
+                  if (!why) onAddPreview(view.id, file);
+                }}
+              />
+              <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => picker.current?.click()} style={phone ? undefined : { height: 26 }}>
+                {PREVIEW_COPY.add}
+              </Button>
+            </div>
+          ) : null}
+          {refused ? (
+            <p role="alert" style={{ ...quiet(), margin: 0 }}>
+              {refused}
+            </p>
+          ) : null}
+          <p style={{ ...quiet(), margin: 0 }}>{PREVIEW_COPY.quiet}</p>
         </div>
       ) : null}
       <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
@@ -990,7 +1042,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
-      {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
+      {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} onAddPreview={h.onAddPreview} onRemovePreview={h.onRemovePreview} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}

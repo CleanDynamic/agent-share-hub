@@ -31,7 +31,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
-import { MediaFigure } from "@/components/build/MediaFigure";
+import { MEDIA_WIDTH, MediaFigure, type ResolveMedia } from "@/components/build/MediaFigure";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
@@ -509,14 +509,28 @@ function GoToStep({ stepId, number, phone, go }: { stepId: string; number: strin
   );
 }
 
-/** Under a step's text: what to keep its output as, once for each file it makes. */
-function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; indent?: number }) {
+/** The most a made file's preview is drawn at, in the step that makes it. */
+const PREVIEW_MAX = 480;
+
+/**
+ * Under a step's text: what to keep its output as, once for each file it makes, and under each its preview when
+ * the maker showed one. A preview is viewed here and never offered to download.
+ */
+function SaveLines({ files, resolveMedia, indent = INDENT }: { files: readonly ReaderFile[]; resolveMedia: ResolveMedia; indent?: number }) {
   return (
     <>
       {files.map((file) => (
-        <p key={file.id} data-testid="save-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent, overflowWrap: "anywhere" }}>
-          Save what this step gives you as {file.name}
-        </p>
+        <div key={file.id} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <p data-testid="save-line" style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: indent, overflowWrap: "anywhere" }}>
+            Save what this step gives you as {file.name}
+          </p>
+          {file.preview ? (
+            <figure data-testid="made-preview" style={{ margin: 0, paddingLeft: indent, display: "flex", flexDirection: "column", gap: 4, minWidth: 0, boxSizing: "border-box", maxWidth: PREVIEW_MAX + indent }}>
+              <MediaFigure reference={file.preview.mediaId} resolveMedia={resolveMedia} width={MEDIA_WIDTH.tree} alt={file.name} noDownload />
+              <figcaption style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{file.name}</figcaption>
+            </figure>
+          ) : null}
+        </div>
       ))}
     </>
   );
@@ -602,7 +616,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           {entry.manual.headline}
         </div>
         <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
-        <SaveLines files={entry.makes} />
+        <SaveLines files={entry.makes} resolveMedia={view.resolveMedia} />
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>
             <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
@@ -616,7 +630,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
-      <SaveLines files={entry.makes} />
+      <SaveLines files={entry.makes} resolveMedia={view.resolveMedia} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
       {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
     </article>
@@ -655,7 +669,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
         </div>
         <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
-        <SaveLines files={entry.makes} indent={0} />
+        <SaveLines files={entry.makes} resolveMedia={view.resolveMedia} indent={0} />
         {entry.uses.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
             <Eyebrow>Uses</Eyebrow>
@@ -707,7 +721,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
       </div>
       <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
-      <SaveLines files={entry.makes} />
+      <SaveLines files={entry.makes} resolveMedia={view.resolveMedia} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (
           <InnerCard key={child.step.id} entry={child} ctx={ctx} />
