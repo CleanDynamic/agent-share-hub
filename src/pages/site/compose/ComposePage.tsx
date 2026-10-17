@@ -370,6 +370,8 @@ export function useComposePage() {
     madeWith,
     onToggleMadeWith: sessions.toggleMadeWith,
     onAddMadeWith: sessions.addMadeWith,
+    projectLinks: sessions.madeWith.links,
+    onSetProjectLink: sessions.setProjectLink,
     details: details.details,
     onDetail: details.setDetail,
     onGapSwitch: details.setGapOn,

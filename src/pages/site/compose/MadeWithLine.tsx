@@ -27,6 +27,7 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { ModelTag } from "@/components/brand/ModelTag";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
+import { PROJECT_LINK_MAX, cleanProjectLink, toolFor, type Tool } from "@/lib/tools/registry";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
@@ -44,6 +45,10 @@ export interface MadeWithLineProps {
   onToggle: (chip: MadeWithChip, on: boolean) => void;
   /** A tool or model typed by hand. */
   onAdd: (name: string) => void;
+  /** Project links by tool id (TF-12). With `onSetProjectLink`, a chip of an app builder offers one. */
+  projectLinks?: Readonly<Record<string, string>>;
+  /** Save a project link, or remove it with null. */
+  onSetProjectLink?: (toolId: string, url: string | null) => void;
 }
 
 const floating: CSSProperties = {
@@ -76,6 +81,106 @@ function RefinedChip({ chip }: { chip: MadeWithChip }) {
         <ModelTag {...marks}>{chip.label}</ModelTag>
       )}
     </span>
+  );
+}
+
+/** The app builder a chip is for, when it has a project link to offer. */
+function linkTool(chip: MadeWithChip): Tool | null {
+  const tool = toolFor(chip.kind === "entry" ? chip.label : chip.tool);
+  return tool?.projectLink ? tool : null;
+}
+
+/** "Add project link" or "Change link", and the small popover it opens: the field, Save, and Remove once there is a link. */
+function ProjectLinkControl({ tool, url, phone, onSave }: { tool: Tool; url: string | undefined; phone: boolean; onSave: (url: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(url ?? "");
+  const id = useId();
+  const trigger = useInteractive<HTMLButtonElement>();
+  const clean = cleanProjectLink(value);
+  const invalid = value.trim() !== "" && clean === null;
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!clean) return;
+    onSave(clean);
+    setOpen(false);
+  };
+
+  return (
+    <Popover.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setValue(url ?? "");
+        setOpen(next);
+      }}
+    >
+      <Popover.Trigger
+        aria-label={`${url ? "Change link" : "Add project link"} for ${tool.name}`}
+        {...trigger.handlers}
+        style={{
+          fontFamily: FIGTREE,
+          fontSize: 12.5,
+          color: t.text2,
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+          textDecorationColor: t.line,
+          background: "transparent",
+          border: 0,
+          padding: 0,
+          borderRadius: 6,
+          cursor: "pointer",
+          ...(phone ? { padding: "12px 4px", margin: "-12px -4px", minHeight: 44 } : null),
+          ...ring(trigger.state.focusVisible),
+        }}
+      >
+        {url ? "Change link" : "Add project link"}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content align="start" sideOffset={6} collisionPadding={16} style={floating}>
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            <label htmlFor={`${id}-link`} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 600 }}>
+              Paste the link to the project
+            </label>
+            <input
+              id={`${id}-link`}
+              type="url"
+              inputMode="url"
+              placeholder="https://"
+              value={value}
+              maxLength={PROJECT_LINK_MAX}
+              autoComplete="off"
+              aria-invalid={invalid}
+              aria-describedby={invalid ? `${id}-hint` : undefined}
+              onChange={(event) => setValue(event.target.value)}
+              style={{ ...fieldBase, height: phone ? 44 : 33, padding: "0 7px", fontSize: phone ? 16 : 14 }}
+            />
+            {invalid ? (
+              <span id={`${id}-hint`} style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>
+                The link must start with https://
+              </span>
+            ) : null}
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12 }}>
+              {url ? (
+                <TextButton
+                  underline
+                  target={phone}
+                  onClick={() => {
+                    onSave(null);
+                    setOpen(false);
+                  }}
+                  style={{ fontSize: 12.5, color: t.text2, textUnderlineOffset: 3, textDecorationColor: t.line }}
+                >
+                  Remove
+                </TextButton>
+              ) : null}
+              <Button type="submit" size={phone ? 44 : 36} fontSize={13} disabled={!clean}>
+                Save
+              </Button>
+            </div>
+          </form>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
@@ -190,7 +295,7 @@ function AddEntry({ phone, onAdd }: { phone: boolean; onAdd: (name: string) => v
   );
 }
 
-export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: MadeWithLineProps) {
+export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd, projectLinks, onSetProjectLink }: MadeWithLineProps) {
   const Tag = RefinedChip;
   const [open, setOpen] = useState(false);
   /** The chips as they were when Change opened, so an entry unticked keeps its toggle until Done. */
@@ -206,6 +311,20 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
     return [...now, ...gone];
   })();
 
+  /** The chip, and after the first chip of each app builder its link control. */
+  const linkSeen = new Set<string>();
+  const withLink = (chip: MadeWithChip) => {
+    const tool = onSetProjectLink && chip.on ? linkTool(chip) : null;
+    const first = tool !== null && !linkSeen.has(tool.id);
+    if (tool) linkSeen.add(tool.id);
+    return (
+      <span key={chip.key} style={{ display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <Tag chip={chip} />
+        {tool && first ? <ProjectLinkControl tool={tool} url={projectLinks?.[tool.id]} phone={phone} onSave={(url) => onSetProjectLink?.(tool.id, url)} /> : null}
+      </span>
+    );
+  };
+
   const flip = () => {
     if (!open) setOpened(chips);
     setOpen((value) => !value);
@@ -215,13 +334,9 @@ export function MadeWithLine({ phone, chips, hasSessions, onToggle, onAdd }: Mad
     <div data-testid="compose-made-with" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 }}>
         <span>Made with</span>
-        {fromSessions.map((chip) => (
-          <Tag key={chip.key} chip={chip} />
-        ))}
+        {fromSessions.map(withLink)}
         {hasSessions ? <span>from your sessions.</span> : null}
-        {typed.map((chip) => (
-          <Tag key={chip.key} chip={chip} />
-        ))}
+        {typed.map(withLink)}
         {hasSessions ? null : <AddEntry phone={phone} onAdd={onAdd} />}
         {changeable || open ? (
           <TextButton

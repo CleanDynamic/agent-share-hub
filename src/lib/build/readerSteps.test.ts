@@ -378,3 +378,28 @@ describe("readerSteps — a file a step makes (TF-08)", () => {
     expect(text.indexOf("Save what this step")).toBeLessThan(text.indexOf("## Step 2"));
   });
 });
+
+/* ── project links (TF-12) ── */
+
+describe("project links in What you need", () => {
+  const tool = (id: string, service: string) => node(id, { position: 9, type: "tool", payload: { service } });
+  const rows = (tree: NodeTree[], making: Making | null) => whatYouNeed(readerSteps(tree, making), tree, making).find((group) => group.key === "tools")?.rows ?? [];
+  const making = (links: Record<string, string>): Making => ({ sessions: [], excluded_models: [], links });
+
+  it("puts the link, in its words, on that tool's row", () => {
+    const tree = [prompt("p1", 1, "Build it.", null), tool("t1", "Lovable")];
+    expect(rows(tree, making({ lovable: "https://lovable.dev/p/1" })).find((row) => row.title === "Lovable")?.link).toEqual({
+      label: "Open the project in Lovable",
+      href: "https://lovable.dev/p/1",
+    });
+  });
+
+  it("gives the tool a row of its own when the build shows none, and says nothing for http or a tool without a link", () => {
+    const tree = [prompt("p1", 1, "Build it.", null)];
+    expect(rows(tree, making({ "google-ai-studio": "https://aistudio.google.com/app/1" }))).toEqual([
+      { title: "Google AI Studio", detail: "", link: { label: "Open the app in Google AI Studio", href: "https://aistudio.google.com/app/1" } },
+    ]);
+    expect(rows(tree, making({ lovable: "http://lovable.dev/p", "claude-code": "https://x.test/a", nope: "https://x.test/b" }))).toEqual([]);
+    expect(rows(tree, null)).toEqual([]);
+  });
+});

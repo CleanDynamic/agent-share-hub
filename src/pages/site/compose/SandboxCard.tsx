@@ -59,6 +59,8 @@ export type CardProps = Pick<
   | "madeWith"
   | "onToggleMadeWith"
   | "onAddMadeWith"
+  | "projectLinks"
+  | "onSetProjectLink"
   | "details"
   | "onDetail"
   | "onGapSwitch"
@@ -219,6 +221,8 @@ export function SandboxCard(props: SandboxCardProps) {
               hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")}
               onToggle={props.onToggleMadeWith}
               onAdd={props.onAddMadeWith}
+              projectLinks={props.projectLinks}
+              onSetProjectLink={props.onSetProjectLink}
             />
 
             <MoreDetails phone={phone} details={props.details} onDetail={props.onDetail} onGapSwitch={props.onGapSwitch} />

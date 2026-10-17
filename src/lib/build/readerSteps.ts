@@ -9,6 +9,7 @@
 // suggest.ts. Only the uses the maker accepted are published.
 
 import { modelLabel } from "@/lib/models/registry";
+import { cleanProjectLink, toolFor } from "@/lib/tools/registry";
 import { EVIDENCE_NODE_TYPES } from "./cover";
 import {
   AGENT_TYPE,
@@ -126,6 +127,8 @@ export interface NeedRow {
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
   id?: string;
+  /** A tool row's project link: the words readers see and the https address. */
+  link?: { label: string; href: string };
 }
 
 export type NeedKey = "tools" | "files" | "runs" | "time" | "other";
@@ -563,6 +566,16 @@ export function whatYouNeed(
       title: (node.title ?? "").trim() || "Prerequisite",
       detail: [text(node, "requirement"), stepList(numbers)].filter(Boolean).join(" · ") || "prerequisite",
     });
+  }
+  // The maker's project links (TF-12): on the row of that tool, or a row of its own when the build shows none.
+  for (const [toolId, raw] of Object.entries(making?.links ?? {})) {
+    const tool = toolFor(toolId);
+    const href = cleanProjectLink(raw);
+    if (!tool?.projectLink || !href) continue;
+    const link = { label: tool.projectLink, href };
+    const row = tools.find((candidate) => toolFor(candidate.title)?.id === tool.id);
+    if (row) row.link = link;
+    else tools.push({ title: tool.name, detail: "", link });
   }
   if (tools.length > 0) groups.push({ key: "tools", label: "Tools and models", rows: tools });
 
