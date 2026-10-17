@@ -4,7 +4,7 @@ import type { SessionGroup, Step } from "@/lib/build/graph";
 import type { SessionSummary } from "@/lib/build/sessions";
 import type { BuildNode } from "@/lib/build/types";
 
-import { isSessionExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
+import { isChatExport, looksLikeChatExport, librarySources, sourceFiles, sourceSessions } from "./sourcesModel";
 
 const step = (over: Partial<Step>): Step => ({
   id: "n1", kind: "prompt", number: "1", title: null, defaultTitle: "Prompt 1", text: "x", words: 1, model: null, sessionId: null, tool: null, runs: null, uses: [], children: [], ...over,
@@ -47,9 +47,34 @@ describe("sourceFiles and librarySources", () => {
   });
 });
 
-describe("isSessionExport", () => {
-  it("takes json for an export and a pdf for a file", () => {
-    expect(isSessionExport({ name: "chat.json", type: "application/json" })).toBe(true);
-    expect(isSessionExport({ name: "menu.pdf", type: "application/pdf" })).toBe(false);
+const lovableExport = JSON.stringify({ messages: [{ id: "m1", role: "user", content: "Build me a box.", createdAt: "2026-08-18T09:12:04.000Z", createTime: "2026-08-18T09:12:05.100Z", patch: [], images: [], raw: {} }] });
+
+describe("looksLikeChatExport", () => {
+  it("does not take a workflow for a chat", () => {
+    expect(looksLikeChatExport(JSON.stringify({ nodes: [{ id: 1 }], connections: {} }))).toBe(false);
+    expect(looksLikeChatExport(JSON.stringify({ nodes: [{ id: 1 }], links: [] }))).toBe(false);
+    expect(looksLikeChatExport("not json")).toBe(false);
+  });
+
+  it("takes ChatGPT, Claude and Lovable exports", () => {
+    expect(looksLikeChatExport(JSON.stringify([{ title: "t", mapping: {} }]))).toBe(true);
+    expect(looksLikeChatExport(JSON.stringify({ conversations: [{ mapping: {} }] }))).toBe(true);
+    expect(looksLikeChatExport(JSON.stringify([{ uuid: "u", chat_messages: [] }]))).toBe(true);
+    expect(looksLikeChatExport(JSON.stringify({ messages: [{ chat_messages: [] }] }))).toBe(true);
+    expect(looksLikeChatExport(lovableExport)).toBe(true);
+  });
+});
+
+describe("isChatExport", () => {
+  const dropped = (name: string, type: string, text: string) => new File([text], name, { type });
+
+  it("takes a jsonl file without reading it", async () => {
+    expect(await isChatExport({ name: "chat.jsonl", type: "" })).toBe(true);
+  });
+
+  it("reads a json file before deciding", async () => {
+    expect(await isChatExport(dropped("flow.json", "application/json", '{"nodes":[],"connections":{}}'))).toBe(false);
+    expect(await isChatExport(dropped("export.json", "", '[{"mapping":{}}]'))).toBe(true);
+    expect(await isChatExport(dropped("menu.pdf", "application/pdf", "x"))).toBe(false);
   });
 });

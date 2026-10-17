@@ -138,6 +138,76 @@ export function mediaKindFor(mime: string | null | undefined): MediaKind | null 
   return MIME_KINDS[mime.split(";")[0].trim().toLowerCase()] ?? null;
 }
 
+/**
+ * Code and markup, by extension. Stored as text/plain whatever the browser
+ * reports, so a browser shows them and never runs them.
+ */
+const CODE_EXTENSIONS: readonly string[] = [
+  ".mdc", ".yaml", ".yml", ".toml", ".xml", ".html", ".htm", ".css",
+  ".js", ".jsx", ".ts", ".tsx", ".py", ".sh", ".sql",
+  ".env.example", ".env.sample",
+];
+
+/** Text files browsers often report with no type at all. */
+const UNTYPED_EXTENSIONS: Readonly<Record<string, string>> = {
+  ".md": "text/markdown",
+  ".markdown": "text/markdown",
+  ".txt": "text/plain",
+  ".json": "application/json",
+  ".csv": "text/csv",
+};
+
+const SECRET_EXTENSIONS: readonly string[] = [".pem", ".key", ".p12", ".pfx"];
+const SECRET_NAMES: readonly string[] = ["id_rsa", "id_ed25519"];
+
+export type FileKind = { kind: MediaKind; mime: string } | { refused: string };
+
+/** The final path segment, lower case. */
+function baseName(name: string): string {
+  return (name ?? "").split(/[\\/]/).pop()?.toLowerCase() ?? "";
+}
+
+function endsWithAny(name: string, suffixes: readonly string[]): string | null {
+  return suffixes.find((suffix) => name.endsWith(suffix)) ?? null;
+}
+
+/**
+ * What a file is, from its name first and the type the browser reports second.
+ *
+ * Browsers report no type for .md, .mdc or .yaml and a wrong one for .ts, so
+ * the name decides for code and text. Files that can hold keys or passwords
+ * are refused before anything else is looked at.
+ */
+export function fileKindFor(file: Pick<File, "name" | "type">): FileKind {
+  const name = baseName(file.name);
+  const shown = file.name || "file";
+
+  const isEnv = name === ".env" || name.startsWith(".env.");
+  const isEnvExample = name === ".env.example" || name === ".env.sample";
+  if (
+    (isEnv && !isEnvExample) ||
+    endsWithAny(name, SECRET_EXTENSIONS) ||
+    SECRET_NAMES.includes(name)
+  ) {
+    return { refused: `${shown} can hold keys or passwords, so it can't be added.` };
+  }
+
+  if (endsWithAny(name, CODE_EXTENSIONS)) {
+    return { kind: "file", mime: "text/plain" };
+  }
+
+  const reported = (file.type || "").split(";")[0].trim().toLowerCase();
+  const known = mediaKindFor(reported);
+  if (known) return { kind: known, mime: reported };
+
+  if (!reported || reported === "application/octet-stream") {
+    const mime = UNTYPED_EXTENSIONS[endsWithAny(name, Object.keys(UNTYPED_EXTENSIONS)) ?? ""];
+    if (mime) return { kind: "file", mime };
+  }
+
+  return { refused: `${shown} is not a kind of file that can be added.` };
+}
+
 /** The accepted mime types, for an <input accept> or a validation message. */
 export function acceptedMediaTypes(): string[] {
   return Object.keys(MIME_KINDS);
@@ -184,14 +254,11 @@ export async function uploadMedia({
     );
   }
 
-  const mime = (file.type || "").split(";")[0].trim().toLowerCase();
-  const kind = mediaKindFor(mime);
-  if (!kind) {
-    throw buildLayerError(
-      "uploadMedia",
-      new Error(`${mime || "unknown type"} is not an accepted upload type`)
-    );
+  const decided = fileKindFor(file);
+  if ("refused" in decided) {
+    throw buildLayerError("uploadMedia", new Error(decided.refused));
   }
+  const { kind, mime } = decided;
 
   // Read before the write, so a probe that hangs costs nothing uploaded.
   const probe = await probeFile(file, kind);
@@ -199,7 +266,7 @@ export async function uploadMedia({
   const path = mediaPath(buildId, nodeId, extensionFor(file.name, mime));
 
   onProgress?.(0);
-  await putObject(path, file, onProgress);
+  await putObject(path, file, mime, onProgress);
   onProgress?.(1);
 
   const { data, error } = await supabase
@@ -459,17 +526,18 @@ function objectUrl(file: File): string | null {
 async function putObject(
   path: string,
   file: File,
+  mime: string,
   onProgress?: (fraction: number) => void
 ): Promise<void> {
   if (onProgress && typeof XMLHttpRequest !== "undefined") {
-    const uploaded = await putObjectWithProgress(path, file, onProgress);
+    const uploaded = await putObjectWithProgress(path, file, mime, onProgress);
     if (uploaded) return;
   }
 
   const { error } = await supabase.storage
     .from(BUILD_MEDIA_BUCKET)
     .upload(path, file, {
-      contentType: file.type,
+      contentType: mime,
       cacheControl: "3600",
       upsert: false,
     });
@@ -485,6 +553,7 @@ async function putObject(
 async function putObjectWithProgress(
   path: string,
   file: File,
+  mime: string,
   onProgress: (fraction: number) => void
 ): Promise<boolean> {
   const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as
@@ -506,7 +575,7 @@ async function putObjectWithProgress(
     request.setRequestHeader("apikey", apiKey);
     request.setRequestHeader("x-upsert", "false");
     request.setRequestHeader("cache-control", "max-age=3600");
-    if (file.type) request.setRequestHeader("content-type", file.type);
+    request.setRequestHeader("content-type", mime);
 
     request.upload.onprogress = (event) => {
       if (!event.lengthComputable || event.total === 0) return;
