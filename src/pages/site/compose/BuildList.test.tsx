@@ -374,4 +374,31 @@ describe("the refined look (UI-P93)", () => {
     expect(add.querySelector("svg")).toBeNull();
     expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);
   });
+
+  it("has Attach a file after Read all of it, and calls onAttach for that prompt", async () => {
+    const onAttach = vi.fn();
+    list({ onAttach, onOpenPrompt: vi.fn() });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Prompt 2 options" }), { key: "Enter" });
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((item) => item.textContent)).toEqual(["Rename", "Read all of it", "Attach a file", "Move up", "Move down", "Remove"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Attach a file" }));
+    expect(onAttach).toHaveBeenCalledWith("p2");
+  });
+
+  it("attaches files dropped on a card to that card's prompt, with a fine pointer", () => {
+    const onDropOnStep = vi.fn();
+    list({ onDropOnStep, fine: true });
+    const card = screen.getByRole("group", { name: /^Prompt 2:/ });
+    const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
+    fireEvent.drop(card, { dataTransfer: { types: ["Files"], files: [file] } });
+    expect(onDropOnStep).toHaveBeenCalledWith("p2", [file]);
+  });
+
+  it("takes no drop without a fine pointer", () => {
+    const onDropOnStep = vi.fn();
+    list({ onDropOnStep, fine: false });
+    const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
+    fireEvent.drop(screen.getByRole("group", { name: /^Prompt 2:/ }), { dataTransfer: { types: ["Files"], files: [file] } });
+    expect(onDropOnStep).not.toHaveBeenCalled();
+  });
 });

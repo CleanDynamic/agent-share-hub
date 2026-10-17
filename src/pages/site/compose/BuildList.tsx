@@ -21,6 +21,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   useLayoutEffect,
@@ -107,6 +108,11 @@ export interface BuildListProps {
   onAddAgentPrompt: (agentId: string, text: string) => Promise<boolean>;
   /** UI-P69: "Add an agent to this team". */
   onAddAgentTo: (teamId: string) => void;
+  /** TF-06: "Attach a file" opens the file picker for this prompt. Absent: the item is not shown. */
+  onAttach?: (id: string) => void;
+  /** TF-06: files dropped on a prompt's card. Only with a fine pointer; absent: a card takes no drop. */
+  onDropOnStep?: (id: string, files: File[]) => void;
+  fine?: boolean;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -328,6 +334,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   const isDefault = step.title === null;
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState("");
+  const [over, setOver] = useState(false);
   const { ref: textRef, clamped } = useClamped<HTMLParagraphElement>(step.text);
   const open = props.onOpenPrompt ? () => props.onOpenPrompt?.(step.id) : undefined;
   const editable = step.kind === "prompt";
@@ -351,6 +358,9 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
     }
   };
 
+  const takesDrops = Boolean(props.fine && props.onDropOnStep);
+  const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+
   return (
     <div
       role="group"
@@ -361,7 +371,28 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
       onClick={() => props.onSelect(step.id)}
       onDoubleClick={phone ? undefined : open}
       onKeyDown={onKeyDown}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+      onDragEnter={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        setOver(true);
+      } : undefined}
+      onDragOver={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setOver(true);
+      } : undefined}
+      onDragLeave={takesDrops ? (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false);
+      } : undefined}
+      onDrop={takesDrops ? (event) => {
+        if (!carriesFiles(event)) return;
+        event.preventDefault();
+        setOver(false);
+        const files = Array.from(event.dataTransfer.files);
+        if (files.length > 0) props.onDropOnStep?.(step.id, files);
+      } : undefined}
+      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <NumberTile>{step.number}</NumberTile>
@@ -391,6 +422,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
               >
                 <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
                 <MenuRow phone={phone} disabled={!open} onSelect={open}>Read all of it</MenuRow>
+                {props.onAttach ? <MenuRow phone={phone} onSelect={() => props.onAttach?.(step.id)}>Attach a file</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
                 <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
