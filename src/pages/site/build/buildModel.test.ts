@@ -370,3 +370,11 @@ describe("a result's date", () => {
     expect(evidenceDate({ payload: {}, event_id: null, created_at: "" }, events)).toBeNull();
   });
 });
+
+describe("asMaking project links (TF-12)", () => {
+  it("keeps https links and drops anything else", async () => {
+    const { asMaking } = await import("./buildModel");
+    expect(asMaking({ sessions: [], links: { lovable: "https://lovable.dev/p/1", replit: "http://replit.com/a", bolt: 4 } }).links).toEqual({ lovable: "https://lovable.dev/p/1" });
+    expect(asMaking({ sessions: [] })).toEqual({ sessions: [], excluded_models: [] });
+  });
+});

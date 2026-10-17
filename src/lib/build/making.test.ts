@@ -20,7 +20,7 @@ vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
 }));
 
-import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel, withTools } from "./making";
+import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, setProjectLink, toolLabel, withTools } from "./making";
 
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
 
@@ -271,5 +271,49 @@ describe("withTools", () => {
     const list = ["Claude Code", "Lovable"];
     expect(withTools(list, ["lovable"])).toBe(list);
     expect(withTools(list, [])).toBe(list);
+  });
+});
+
+describe("project links (TF-12)", () => {
+  const LINK = "https://lovable.dev/projects/abc";
+
+  it("refreshMakingStats keeps links and any other key it does not own", async () => {
+    listBuildSessions.mockResolvedValue([session()]);
+    build([], { sessions: [], excluded_models: ["Opus 5.5"], links: { lovable: LINK }, note: "kept" });
+    await refreshMakingStats(BUILD_ID);
+    expect(patch().making).toMatchObject({ links: { lovable: LINK }, note: "kept", excluded_models: ["Opus 5.5"], sessions: [{ client: "claude-code" }] });
+  });
+
+  it("setProjectLink writes making.links and leaves the rest of making alone", async () => {
+    build(["Lovable"], { sessions: [{ client: "claude" }], excluded_models: ["Opus 5.5"], note: "kept" });
+    const done = await setProjectLink(BUILD_ID, "lovable", `  ${LINK} `);
+    expect(patch()).toEqual({ making: { sessions: [{ client: "claude" }], excluded_models: ["Opus 5.5"], note: "kept", links: { lovable: LINK } } });
+    expect(done).toEqual({ madeWith: ["Lovable"], excluded: ["Opus 5.5"], links: { lovable: LINK } });
+  });
+
+  it("setProjectLink changes one tool's link and removes it with null, dropping an empty links", async () => {
+    build([], { sessions: [], excluded_models: [], links: { lovable: LINK, replit: "https://replit.com/@a/b" } });
+    await setProjectLink(BUILD_ID, "lovable", null);
+    expect(patch().making).toEqual({ sessions: [], excluded_models: [], links: { replit: "https://replit.com/@a/b" } });
+
+    updateBuild.mockClear();
+    build([], { sessions: [], excluded_models: [], links: { lovable: LINK } });
+    await setProjectLink(BUILD_ID, "lovable", null);
+    expect(patch().making).toEqual({ sessions: [], excluded_models: [] });
+  });
+
+  it("setProjectLink refuses http, a long address and a tool with no project link, and writes nothing", async () => {
+    build();
+    await expect(setProjectLink(BUILD_ID, "lovable", "http://lovable.dev/p")).rejects.toThrow(/https/);
+    await expect(setProjectLink(BUILD_ID, "lovable", `https://x.test/${"a".repeat(500)}`)).rejects.toThrow(/500/);
+    await expect(setProjectLink(BUILD_ID, "claude-code", LINK)).rejects.toThrow(/no project link/);
+    await expect(setProjectLink(BUILD_ID, "nope", LINK)).rejects.toThrow(/no project link/);
+    expect(updateBuild).not.toHaveBeenCalled();
+  });
+
+  it("nextMadeWith and addMadeWithTools carry the links along", async () => {
+    expect(nextMadeWith({ madeWith: ["Lovable"], excluded: [], links: { lovable: LINK } }, "Lovable", true, "entry").links).toEqual({ lovable: LINK });
+    build(["Lovable"], { sessions: [], excluded_models: [], links: { lovable: LINK } });
+    expect((await addMadeWithTools(BUILD_ID, ["Replit"])).links).toEqual({ lovable: LINK });
   });
 });

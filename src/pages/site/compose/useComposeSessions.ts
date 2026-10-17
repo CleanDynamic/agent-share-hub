@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import type { BuildRecord } from "@/lib/build";
-import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, type MadeWithState } from "@/lib/build/making";
+import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, setProjectLink, type MadeWithState } from "@/lib/build/making";
 import {
   attachSession,
   getSessionPrompts,
@@ -75,6 +75,8 @@ export interface ComposeSessions {
   madeWith: MadeWithState;
   toggleMadeWith: (chip: MadeWithChip, on: boolean) => void;
   addMadeWith: (name: string) => void;
+  /** Save an app builder's project link, or remove it with null (TF-12). */
+  setProjectLink: (toolId: string, url: string | null) => void;
 }
 
 export function useComposeSessions({
@@ -197,6 +199,21 @@ export function useComposeSessions({
     });
   };
 
+  const changeProjectLink = (toolId: string, url: string | null) => {
+    const id = latest.current.buildId;
+    if (!id) return;
+    const current = readMadeWith(id);
+    const links = { ...current.links };
+    if (url === null) delete links[toolId];
+    else links[toolId] = url;
+    showMadeWith(id, { ...current, links: Object.keys(links).length > 0 ? links : undefined });
+    enqueue(async () => ({ id, state: await setProjectLink(id, toolId, url), value: undefined })).catch((cause) => {
+      console.error("[Compose] Project link not saved", cause);
+      toast.error("Couldn't save the project link. Try again.");
+      void settleMadeWith(id);
+    });
+  };
+
   /* ── sessions ── */
 
   const refreshLists = () =>
@@ -270,5 +287,6 @@ export function useComposeSessions({
     madeWith: madeWithQuery.data ?? { madeWith: [...recordMadeWith], excluded: [] },
     toggleMadeWith,
     addMadeWith,
+    setProjectLink: changeProjectLink,
   };
 }

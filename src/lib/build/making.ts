@@ -10,7 +10,7 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
-import { TOOLS, toolName } from "@/lib/tools/registry";
+import { TOOLS, cleanProjectLink, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { buildLayerError, type BuildPatch } from "./types";
@@ -47,6 +47,8 @@ export interface MakingSession {
 export interface Making {
   sessions: MakingSession[];
   excluded_models: string[];
+  /** Tool id → the https address of the maker's project there (TF-12). */
+  links?: Record<string, string>;
 }
 
 interface MakingRow {
@@ -74,6 +76,16 @@ function asStrings(value: unknown): string[] {
 function excludedModels(making: unknown): string[] {
   if (!making || typeof making !== "object" || Array.isArray(making)) return [];
   return asStrings((making as { excluded_models?: unknown }).excluded_models);
+}
+
+function linksOf(making: unknown): Record<string, string> {
+  const raw = asObject(asObject(making).links);
+  const out: Record<string, string> = {};
+  for (const [tool, url] of Object.entries(raw)) {
+    const clean = cleanProjectLink(url);
+    if (clean) out[tool] = clean;
+  }
+  return out;
 }
 
 function has(list: string[], value: string): boolean {
@@ -124,7 +136,9 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
       }
     }
 
-    const making: Making = {
+    // Whatever else `making` holds (the project links) is the maker's: it is kept, and only these two are rewritten.
+    const making = {
+      ...asObject(data.making),
       sessions: sessions.map((session) => ({
         id: session.id,
         started_at: session.createdAt,
@@ -160,6 +174,8 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
 export interface MadeWithState {
   madeWith: string[];
   excluded: string[];
+  /** Project links by tool id; absent when there are none. */
+  links?: Record<string, string>;
 }
 
 /** Whether a Made with change is a session's model or an entry typed by hand. */
@@ -169,7 +185,10 @@ async function readMadeWith(operation: string, buildId: string): Promise<{ state
   const { data, error } = await buildsMaking().select("made_with, making").eq("id", buildId).maybeSingle();
   if (error) throw buildLayerError(operation, error);
   if (!data) throw buildLayerError(operation, new Error("That build is no longer available."));
-  return { state: { madeWith: asStrings(data.made_with), excluded: excludedModels(data.making) }, making: data.making };
+  const links = linksOf(data.making);
+  const state: MadeWithState = { madeWith: asStrings(data.made_with), excluded: excludedModels(data.making) };
+  if (Object.keys(links).length > 0) state.links = links;
+  return { state, making: data.making };
 }
 
 /** builds.made_with and builds.making.excluded_models, as the composer's Made with line reads them. */
@@ -191,6 +210,7 @@ export function nextMadeWith(state: MadeWithState, name: string, on: boolean, ki
   const without = (list: string[]) => list.filter((entry) => entry.toLowerCase() !== value.toLowerCase());
   const withIt = (list: string[]) => (has(list, value) ? list : [...list, value]);
   return {
+    ...state,
     madeWith: on ? withIt(state.madeWith) : without(state.madeWith),
     excluded: kind === "entry" ? state.excluded : on ? without(state.excluded) : withIt(state.excluded),
   };
@@ -239,7 +259,7 @@ export async function addMadeWithTools(buildId: string, names: readonly string[]
   const madeWith = withTools(state.madeWith, names);
   if (madeWith === state.madeWith) return state;
   await updateBuild(buildId, { made_with: madeWith });
-  return { madeWith, excluded: state.excluded };
+  return { ...state, madeWith };
 }
 
 /**
@@ -255,6 +275,28 @@ export async function setMadeWithEntry(buildId: string, entry: string, on: boole
   if (unchanged) return state;
   await updateBuild(buildId, { made_with: next.madeWith });
   return next;
+}
+
+/**
+ * Save the link to the maker's project in an app builder, or take it away with null.
+ * https only, at most 500 characters, and only for a tool that has a `projectLink`.
+ * Writes `making.links` and leaves the rest of `making` as it was. Resolves with Made with as it stands.
+ */
+export async function setProjectLink(buildId: string, toolId: string, url: string | null): Promise<MadeWithState> {
+  const tool = toolFor(toolId);
+  if (!tool?.projectLink) throw buildLayerError("setProjectLink", new Error("That tool has no project link."));
+  const clean = url === null ? null : cleanProjectLink(url);
+  if (url !== null && !clean) throw buildLayerError("setProjectLink", new Error("The link must start with https:// and be at most 500 characters."));
+
+  const { state, making } = await readMadeWith("setProjectLink", buildId);
+  const links = { ...linksOf(making) };
+  if (clean) links[tool.id] = clean;
+  else delete links[tool.id];
+
+  const rest = { ...asObject(making) };
+  delete rest.links;
+  await updateBuild(buildId, { making: Object.keys(links).length > 0 ? { ...rest, links } : rest } as unknown as BuildPatch);
+  return Object.keys(links).length > 0 ? { ...state, links } : { madeWith: state.madeWith, excluded: state.excluded };
 }
 
 /** A code for the log, and only a code. */

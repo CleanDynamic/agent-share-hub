@@ -63,6 +63,8 @@ export interface Tool {
   aliases: string[];
   /** The connector's client id, where chats are imported from it. */
   client?: string;
+  /** App builders: the words readers see on the link to the maker's project there. */
+  projectLink?: string;
 }
 
 export const TOOL_GROUPS: readonly { key: ToolGroupKey; label: string }[] = [
@@ -93,12 +95,12 @@ export const TOOLS: readonly Tool[] = [
   { id: "cursor", name: "Cursor", group: "coding", logo: "cursor", aliases: ["cursor ai", "cursor.com"], client: "cursor" },
   { id: "devin-desktop", name: "Devin Desktop", group: "coding", logo: "devin-color", aliases: ["windsurf", "windsurf ide"] },
   { id: "antigravity", name: "Antigravity", group: "coding", logo: "antigravity-color", aliases: ["google antigravity"] },
-  { id: "google-ai-studio", name: "Google AI Studio", group: "builders", logo: "aistudio", aliases: ["ai studio", "aistudio.google.com"] },
-  { id: "lovable", name: "Lovable", group: "builders", logo: "lovable-color", aliases: ["lovable.dev"] },
-  { id: "replit", name: "Replit", group: "builders", logo: "replit-color", aliases: ["replit agent"] },
-  { id: "v0", name: "v0", group: "builders", logo: "v0", aliases: ["v0.dev", "v0.app", "v0 by vercel"] },
-  { id: "bolt", name: "Bolt", group: "builders", logo: "bolt-color", aliases: ["bolt.new"] },
-  { id: "base44", name: "Base44", group: "builders", logo: null, aliases: ["base 44"] },
+  { id: "google-ai-studio", name: "Google AI Studio", group: "builders", logo: "aistudio", aliases: ["ai studio", "aistudio.google.com"], projectLink: "Open the app in Google AI Studio" },
+  { id: "lovable", name: "Lovable", group: "builders", logo: "lovable-color", aliases: ["lovable.dev"], projectLink: "Open the project in Lovable" },
+  { id: "replit", name: "Replit", group: "builders", logo: "replit-color", aliases: ["replit agent"], projectLink: "Open the project in Replit" },
+  { id: "v0", name: "v0", group: "builders", logo: "v0", aliases: ["v0.dev", "v0.app", "v0 by vercel"], projectLink: "Open the project in v0" },
+  { id: "bolt", name: "Bolt", group: "builders", logo: "bolt-color", aliases: ["bolt.new"], projectLink: "Open the project in Bolt" },
+  { id: "base44", name: "Base44", group: "builders", logo: null, aliases: ["base 44"], projectLink: "Open the app in Base44" },
   { id: "manus", name: "Manus", group: "agents", logo: "manus", aliases: ["manus ai", "manus.im"] },
   { id: "openclaw", name: "OpenClaw", group: "agents", logo: "openclaw-color", aliases: ["open claw"] },
   { id: "hermes-agent", name: "Hermes Agent", group: "agents", logo: "hermesagent", aliases: [] },
@@ -156,4 +158,19 @@ export function toolName(raw: string | null | undefined): string | null {
 /** The group's tools, in list order. */
 export function toolsInGroup(key: ToolGroupKey): Tool[] {
   return TOOLS.filter((tool) => tool.group === key);
+}
+
+/** A project link can be at most this long. */
+export const PROJECT_LINK_MAX = 500;
+
+/** The address trimmed if it is an https address of at most 500 characters, else null. */
+export function cleanProjectLink(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  if (!value || value.length > PROJECT_LINK_MAX) return null;
+  try {
+    return new URL(value).protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }

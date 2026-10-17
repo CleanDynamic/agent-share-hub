@@ -35,6 +35,7 @@ import {
   type RebuildSummary,
 } from "@/lib/build";
 import type { Making, MakingSession } from "@/lib/build/making";
+import { cleanProjectLink } from "@/lib/tools/registry";
 import type { PortableCost } from "@/lib/build/portable";
 import type { NeedGroup, ReaderMapData, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 
@@ -253,8 +254,15 @@ export function asMaking(value: unknown): Making {
     ? record.sessions.filter((entry): entry is MakingSession => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
     : [];
   const excluded = Array.isArray(record.excluded_models) ? record.excluded_models.filter((entry): entry is string => typeof entry === "string") : [];
-  return { sessions, excluded_models: excluded };
+  const links = Object.fromEntries(
+    Object.entries(asRecord(record.links)).flatMap(([tool, url]) => {
+      const clean = cleanProjectLink(url);
+      return clean ? [[tool, clean] as const] : [];
+    }),
+  );
+  return { sessions, excluded_models: excluded, ...(Object.keys(links).length > 0 ? { links } : null) };
 }
+
 
 export interface BuildTimelineView {
   /** The kept events, clocked from the first. */

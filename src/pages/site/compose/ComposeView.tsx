@@ -136,6 +136,8 @@ export interface ComposeViewProps {
   madeWith: readonly MadeWithChip[];
   onToggleMadeWith: (chip: MadeWithChip, on: boolean) => void;
   onAddMadeWith: (name: string) => void;
+  projectLinks?: Readonly<Record<string, string>>;
+  onSetProjectLink?: (toolId: string, url: string | null) => void;
 
   /* ── UI-P48: More details ── */
   details: ComposeDetails;
@@ -533,6 +535,8 @@ export function ComposeView(props: ComposeViewProps) {
       hasSessions={props.madeWith.some((chip) => chip.kind !== "entry")}
       onToggle={props.onToggleMadeWith}
       onAdd={props.onAddMadeWith}
+      projectLinks={props.projectLinks}
+      onSetProjectLink={props.onSetProjectLink}
     />
   );
   const moreDetails = <MoreDetails phone={phone} details={props.details} onDetail={props.onDetail} onGapSwitch={props.onGapSwitch} />;

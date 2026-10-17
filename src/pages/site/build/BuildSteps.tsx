@@ -301,6 +301,31 @@ function NumberTile({ children, wide }: { children: ReactNode; wide?: boolean })
   );
 }
 
+/** "Open the project in Lovable": the maker's link, in a new tab. */
+function ProjectLink({ label, href }: { label: string; href: string }) {
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow"
+      data-hit=""
+      {...handlers}
+      style={{
+        ...text(12.5, 500, t.text),
+        textDecoration: "underline",
+        textUnderlineOffset: 3,
+        textDecorationColor: t.line,
+        textAlign: "right",
+        borderRadius: 4,
+        ...ring(state.focusVisible),
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+
 /** A secondary 26 that is a link: Download. */
 function DownloadButton({ href, name, label = "Download" }: { href: string; name: string; label?: string }) {
   const { state, handlers } = useInteractive<HTMLAnchorElement>();
@@ -905,6 +930,7 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
             )}
             {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
           </div>
+          {group.key === "tools" && row.link ? <ProjectLink label={row.link.label} href={row.link.href} /> : null}
           {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}
         </div>
       ))}

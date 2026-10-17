@@ -164,6 +164,21 @@ describe("a file a step makes", () => {
   });
 });
 
+describe("NeedPanel project link", () => {
+  it("opens the project in a new tab, with its words", () => {
+    const need = [{ key: "tools" as const, label: "Tools and models", rows: [{ title: "Lovable", detail: "tool", link: { label: "Open the project in Lovable", href: "https://lovable.dev/p/1" } }] }];
+    render(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <NeedPanel view={view("list", { need })} onOpenOther={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole("link", { name: "Open the project in Lovable" });
+    expect(link.getAttribute("href")).toBe("https://lovable.dev/p/1");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer nofollow");
+  });
+});
+
 describe("NeedPanel", () => {
   it("lists tools with their marks at 28, files with Download, time, and says what Copy for AI copies", () => {
     const onOpenOther = vi.fn();
