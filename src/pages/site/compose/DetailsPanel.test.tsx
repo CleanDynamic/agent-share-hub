@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxDetailsProps, type SandboxDetails } from "@/dev/fixtures/sandbox";
 
-import type { DetailsPanelProps } from "./DetailsPanel";
+import type { DetailsPanelProps, SessionView } from "./DetailsPanel";
 import { DetailsPanel as DetailsPanel } from "./DetailsPanel";
 
 beforeEach(() => {
@@ -112,6 +112,35 @@ describe("a session", () => {
     expect(props.onToggleSessionPrompt).toHaveBeenLastCalledWith(expect.objectContaining({ key: "s1" }), expect.objectContaining({ ordinal: 2 }), true);
     fireEvent.click(boxes[0]);
     expect(props.onToggleSessionPrompt).toHaveBeenLastCalledWith(expect.objectContaining({ key: "s1" }), expect.objectContaining({ stepId: "p1" }), false);
+  });
+});
+
+describe("a session whose client names no tool (TF-13)", () => {
+  const withPicker = (value: string | null): Partial<DetailsPanelProps> => {
+    const base = sandboxDetailsProps("session", "bakery");
+    return { view: { ...(base.view as SessionView), pickTool: { value } }, onSessionTool: vi.fn() };
+  };
+
+  it("offers 'Pick its tool' with 'No tool' first, and hands the choice back", () => {
+    const props = panel("session", "bakery", withPicker(null));
+    fireEvent.click(screen.getByRole("button", { name: "Pick its tool" }));
+    const rows = screen.getAllByRole("option");
+    expect(rows[0].textContent).toBe("No tool");
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: "Perplexity" } });
+    fireEvent.click(screen.getByRole("option", { name: "Perplexity" }));
+    expect(props.onSessionTool).toHaveBeenLastCalledWith("s1", "perplexity");
+  });
+
+  it("gives null for 'No tool'", () => {
+    const props = panel("session", "bakery", withPicker("perplexity"));
+    fireEvent.click(screen.getByRole("button", { name: "Pick its tool" }));
+    fireEvent.click(screen.getByRole("option", { name: "No tool" }));
+    expect(props.onSessionTool).toHaveBeenLastCalledWith("s1", null);
+  });
+
+  it("shows no picker when the client names the tool", () => {
+    panel("session", "bakery", { onSessionTool: vi.fn() });
+    expect(screen.queryByRole("button", { name: "Pick its tool" })).toBeNull();
   });
 });
 

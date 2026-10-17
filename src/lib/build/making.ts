@@ -43,10 +43,12 @@ export interface MakingSession {
   turns: number;
 }
 
-/** builds.making. `excluded_models` is the maker's to change (UI-P48). */
+/** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13). */
 export interface Making {
   sessions: MakingSession[];
   excluded_models: string[];
+  /** Import session id to the tool the maker gave a session whose client names none: a tool id or a typed name. */
+  session_tools?: Record<string, string>;
 }
 
 interface MakingRow {
@@ -74,6 +76,14 @@ function asStrings(value: unknown): string[] {
 function excludedModels(making: unknown): string[] {
   if (!making || typeof making !== "object" || Array.isArray(making)) return [];
   return asStrings((making as { excluded_models?: unknown }).excluded_models);
+}
+
+/** builds.making.session_tools, read defensively: it is a json column the maker can write. */
+export function sessionToolsOf(making: unknown): Record<string, string> {
+  const raw = asObject(asObject(making).session_tools);
+  const out: Record<string, string> = {};
+  for (const [id, tool] of Object.entries(raw)) if (typeof tool === "string" && tool.trim()) out[id] = tool.trim();
+  return out;
 }
 
 function has(list: string[], value: string): boolean {
@@ -125,6 +135,8 @@ export async function refreshMakingStats(buildId: string): Promise<void> {
     }
 
     const making: Making = {
+      // Keys this function does not own (session_tools) are kept as they are.
+      ...asObject(data.making),
       sessions: sessions.map((session) => ({
         id: session.id,
         started_at: session.createdAt,
@@ -255,6 +267,32 @@ export async function setMadeWithEntry(buildId: string, entry: string, on: boole
   if (unchanged) return state;
   await updateBuild(buildId, { made_with: next.madeWith });
   return next;
+}
+
+/** The longest tool name a maker can type for a session (the tool picker's own limit). */
+export const SESSION_TOOL_MAX = 40;
+
+/**
+ * Give a session whose client names no tool its tool, or take it back (null).
+ * `tool` is a tool id or a name typed by hand. Only `making.session_tools` is
+ * written, never `import_sessions.client`, and the rest of `making` is kept.
+ * The tool's name then joins Made with. Refuses a session that is not in this
+ * build. Resolves with Made with as it stands.
+ */
+export async function setSessionTool(buildId: string, sessionId: string, tool: string | null): Promise<MadeWithState> {
+  const value = tool?.trim() || null;
+  if (value && value.length > SESSION_TOOL_MAX) {
+    throw buildLayerError("setSessionTool", new Error(`A tool name is at most ${SESSION_TOOL_MAX} characters.`));
+  }
+  const inBuild = (await listBuildSessions(buildId)).some((session) => session.id === sessionId);
+  if (!inBuild) throw buildLayerError("setSessionTool", new Error("That session is not in this build."));
+
+  const { state, making } = await readMadeWith("setSessionTool", buildId);
+  const tools = { ...sessionToolsOf(making) };
+  if (value) tools[sessionId] = value;
+  else delete tools[sessionId];
+  await updateBuild(buildId, { making: { ...asObject(making), session_tools: tools } } as unknown as BuildPatch);
+  return value ? addMadeWithTools(buildId, [toolName(value) ?? value]) : state;
 }
 
 /** A code for the log, and only a code. */

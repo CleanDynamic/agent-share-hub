@@ -28,7 +28,7 @@ import { toast } from "sonner";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import { librarySessionsKey, useLibrarySessions } from "@/hooks/useLibrarySessions";
 import type { BuildRecord } from "@/lib/build";
-import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, type MadeWithState } from "@/lib/build/making";
+import { getMadeWith, nextMadeWith, setMadeWithEntry, setMadeWithModel, setSessionTool, type MadeWithState } from "@/lib/build/making";
 import {
   attachSession,
   getSessionPrompts,
@@ -72,6 +72,8 @@ export interface ComposeSessions {
   claimForBuild: (sessionId: string) => void;
   /** Resolves true once the model is saved. */
   setModel: (sessionId: string, model: string) => Promise<boolean>;
+  /** TF-13: resolves true once the tool is saved. */
+  setTool: (sessionId: string, tool: string | null) => Promise<boolean>;
   madeWith: MadeWithState;
   toggleMadeWith: (chip: MadeWithChip, on: boolean) => void;
   addMadeWith: (name: string) => void;
@@ -253,6 +255,24 @@ export function useComposeSessions({
         void queryClient.invalidateQueries({ queryKey: librarySessionsKey });
       });
 
+  /** Give a session whose client names no tool its tool; the tool joins Made with, and the record is read again so every view follows. */
+  const setTool = (sessionId: string, tool: string | null) =>
+    enqueue(async () => {
+      const id = latest.current.buildId;
+      if (!id) throw new Error("no build yet");
+      const state = await setSessionTool(id, sessionId, tool);
+      return { id, state, value: true };
+    })
+      .catch((cause) => {
+        console.error("[Compose] setSessionTool failed", cause);
+        toast.error("Couldn't save that tool. Try again.");
+        return false;
+      })
+      .finally(() => {
+        const id = latest.current.buildId;
+        if (id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) });
+      });
+
   // A re-read that fails keeps the list already on screen; the error is for one that never loaded.
   const status: ComposeSessions["status"] = library.data !== undefined ? "ready" : library.isError ? "error" : "loading";
 
@@ -267,6 +287,7 @@ export function useComposeSessions({
     retryPrompts: (sessionId) => void queryClient.refetchQueries({ queryKey: sessionPromptsKey(sessionId) }),
     claimForBuild,
     setModel,
+    setTool,
     madeWith: madeWithQuery.data ?? { madeWith: [...recordMadeWith], excluded: [] },
     toggleMadeWith,
     addMadeWith,

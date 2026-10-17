@@ -34,6 +34,36 @@ describe("sourceSessions", () => {
   });
 });
 
+describe("sourceSessions — a session given its tool (TF-13)", () => {
+  const steps = [step({ sessionId: "a" })];
+
+  it("shows the chosen tool, and offers the picker, when the client names none", () => {
+    const rows = sourceSessions([group({ tool: "Perplexity" })], steps, [summary({ id: "a", client: "unknown" })], { a: "perplexity" });
+    expect(rows[0]).toMatchObject({ tool: "Perplexity", pickTool: { value: "perplexity" } });
+  });
+
+  it("reads 'Unknown tool' until one is chosen, and offers the picker", () => {
+    const rows = sourceSessions([group({ tool: null })], steps, [summary({ id: "a", client: "web" })]);
+    expect(rows[0]).toMatchObject({ tool: "Unknown tool", pickTool: { value: null } });
+  });
+
+  it("offers no picker when the client names the tool", () => {
+    const rows = sourceSessions([group({ tool: "Claude" })], steps, [summary({ id: "a", client: "claude" })], { a: "perplexity" });
+    expect(rows[0].tool).toBe("Claude");
+    expect(rows[0].pickTool).toBeUndefined();
+  });
+
+  it("gives a session with no prompt yet its chosen tool too", () => {
+    const rows = sourceSessions([], [], [summary({ id: "z", client: "unknown" })], { z: "perplexity" });
+    expect(rows[0]).toMatchObject({ tool: "Perplexity", pickTool: { value: "perplexity" } });
+  });
+
+  it("offers none for prompts typed here", () => {
+    const rows = sourceSessions([group({ sessionId: null, tool: null, startedAt: "typed here" })], [step({})]);
+    expect(rows[0].pickTool).toBeUndefined();
+  });
+});
+
 describe("sourceFiles and librarySources", () => {
   it("says where a file came from", () => {
     const node = (id: string, payload: object) => ({ id, type: "document", parent_id: null, payload }) as unknown as BuildNode;

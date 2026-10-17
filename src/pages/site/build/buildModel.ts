@@ -253,7 +253,9 @@ export function asMaking(value: unknown): Making {
     ? record.sessions.filter((entry): entry is MakingSession => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
     : [];
   const excluded = Array.isArray(record.excluded_models) ? record.excluded_models.filter((entry): entry is string => typeof entry === "string") : [];
-  return { sessions, excluded_models: excluded };
+  const tools = record.session_tools && typeof record.session_tools === "object" && !Array.isArray(record.session_tools) ? Object.entries(record.session_tools) : [];
+  const session_tools = Object.fromEntries(tools.filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim() !== ""));
+  return { sessions, excluded_models: excluded, session_tools };
 }
 
 export interface BuildTimelineView {

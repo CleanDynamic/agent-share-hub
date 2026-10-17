@@ -32,7 +32,7 @@ const tree: NodeTree[] = [
 
 function context(selectedId: string | null) {
   const steps = buildSteps(tree);
-  const groups = sessionGroups(steps, []);
+  const groups = sessionGroups(steps, [], {});
   const files = sourceFiles(tree, groups, steps);
   return { selectedId, steps, groups, tree, sources: [], sourceFiles: files, promptsState: () => ({ prompts: undefined, error: false }), intoResult: new Set<string>(), media: () => ({ name: "menu.pdf", bytes: 2048 }) };
 }

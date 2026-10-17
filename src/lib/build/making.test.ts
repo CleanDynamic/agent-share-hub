@@ -20,7 +20,7 @@ vi.mock("./builds", () => ({
   updateBuild: (...a: unknown[]) => updateBuild(...a),
 }));
 
-import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, toolLabel, withTools } from "./making";
+import { addMadeWithTools, nextMadeWith, type MakingSession, refreshMakingStats, setMadeWithEntry, setMadeWithModel, setSessionTool, toolLabel, withTools } from "./making";
 
 const BUILD_ID = "33333333-0000-4000-8000-000000000003";
 
@@ -271,5 +271,40 @@ describe("withTools", () => {
     const list = ["Claude Code", "Lovable"];
     expect(withTools(list, ["lovable"])).toBe(list);
     expect(withTools(list, [])).toBe(list);
+  });
+});
+
+describe("setSessionTool (TF-13)", () => {
+  const making = { sessions: [{ id: "s9", client: "unknown" }], excluded_models: ["X"], session_tools: { other: "cursor" } };
+
+  it("writes only session_tools, keeps the rest of making, and adds the tool to Made with", async () => {
+    listBuildSessions.mockResolvedValue([session({ id: "s9", client: "unknown" })]);
+    build(["Claude"], making);
+    await setSessionTool(BUILD_ID, "s9", "perplexity");
+    expect(updateBuild).toHaveBeenCalledTimes(2);
+    expect(updateBuild.mock.calls[0][1]).toEqual({ making: { ...making, session_tools: { other: "cursor", s9: "perplexity" } } });
+    expect(updateBuild.mock.calls[1][1]).toEqual({ made_with: ["Claude", "Perplexity"] });
+  });
+
+  it("takes a chosen tool back with null and leaves Made with alone", async () => {
+    listBuildSessions.mockResolvedValue([session({ id: "s9", client: "unknown" })]);
+    build(["Perplexity"], { ...making, session_tools: { s9: "perplexity" } });
+    await setSessionTool(BUILD_ID, "s9", null);
+    expect(updateBuild).toHaveBeenCalledTimes(1);
+    expect(patch()).toEqual({ making: { ...making, session_tools: {} } });
+  });
+
+  it("refuses a session that is not in this build, and writes nothing", async () => {
+    listBuildSessions.mockResolvedValue([session({ id: "someone-else" })]);
+    build([], making);
+    await expect(setSessionTool(BUILD_ID, "s9", "perplexity")).rejects.toThrow("That session is not in this build.");
+    expect(updateBuild).not.toHaveBeenCalled();
+  });
+
+  it("is kept by refreshMakingStats", async () => {
+    listBuildSessions.mockResolvedValue([session({ id: "s9", client: "unknown" })]);
+    build([], { ...making, session_tools: { s9: "perplexity" } });
+    await refreshMakingStats(BUILD_ID);
+    expect((patch().making as { session_tools: unknown }).session_tools).toEqual({ s9: "perplexity" });
   });
 });

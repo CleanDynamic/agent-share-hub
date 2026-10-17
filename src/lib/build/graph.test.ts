@@ -164,7 +164,7 @@ describe("sessionGroups", () => {
       node({ position: 3, payload: { text: "typed", tool: "claude-code" } }),
       fromSession("s2", { position: 4 }),
     ]);
-    expect(sessionGroups(steps, sessions)).toEqual([
+    expect(sessionGroups(steps, sessions, {})).toEqual([
       { sessionId: "s1", number: 1, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-10-04T09:00:00Z", stepNumbers: ["1", "2"] },
       { sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["3"] },
       { sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"] },
@@ -173,8 +173,21 @@ describe("sessionGroups", () => {
 
   it("reads an old entry with no id or date without failing", () => {
     const steps = buildSteps([fromSession("s1")]);
-    const [group] = sessionGroups(steps, [{ client: "claude-code", model: "Sonnet 5.5", prompts: 1, turns: 1 }]);
+    const [group] = sessionGroups(steps, [{ client: "claude-code", model: "Sonnet 5.5", prompts: 1, turns: 1 }], {});
     expect(group).toMatchObject({ sessionId: "s1", tool: null, startedAt: null });
+  });
+
+  it("takes the tool the maker chose for a session whose client names none (TF-13)", () => {
+    const steps = buildSteps([fromSession("s9")]);
+    const pasted = [{ id: "s9", client: "unknown", model: null, prompts: 1, turns: 2, started_at: "2026-10-06T09:00:00Z" }];
+    expect(sessionGroups(steps, pasted, {})[0].tool).toBeNull();
+    expect(sessionGroups(steps, pasted, { s9: "perplexity" })[0].tool).toBe("Perplexity");
+    expect(sessionGroups(steps, pasted, { s9: "Some Local Tool" })[0].tool).toBe("Some Local Tool");
+  });
+
+  it("lets a client's tool win over a chosen one (TF-13)", () => {
+    const steps = buildSteps([fromSession("s1")]);
+    expect(sessionGroups(steps, sessions, { s1: "perplexity" })[0].tool).toBe("Claude Code");
   });
 
   it("splits typed prompts at an agent", () => {
@@ -183,7 +196,7 @@ describe("sessionGroups", () => {
       node({ position: 2, type: "agent_config", payload: { system_prompt: "x", model: "m" } }),
       node({ position: 3 }),
     ]);
-    expect(sessionGroups(steps, []).map((g) => g.stepNumbers)).toEqual([["1"], ["3"]]);
+    expect(sessionGroups(steps, [], {}).map((g) => g.stepNumbers)).toEqual([["1"], ["3"]]);
   });
 });
 

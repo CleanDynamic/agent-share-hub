@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
-import { readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
+import { buildCounts, readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 
 import type { BuildStepsView } from "./buildModel";
@@ -32,6 +32,29 @@ function mountList(steps: BuildStepsView, announce = vi.fn(), phone = false) {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("StepsList — a pasted chat given its tool (TF-13)", () => {
+  const pasted = {
+    id: "p1", build_id: "b", parent_id: null, position: 1, type: "prompt", title: null, note: null,
+    payload: { text: "Compare two laptops." }, source_ref: { source: "transcript", session_id: "x", index: 0, import_session_id: "s9" },
+    event_id: null, is_gap: false, created_at: "2026-10-07T09:00:00.000Z", children: [],
+  } as unknown as NodeTree;
+  const chatOnly = (session_tools: Record<string, string>) => {
+    const making = { excluded_models: [], sessions: [{ id: "s9", client: "unknown", model: null, prompts: 1, turns: 2, started_at: "2026-10-07T09:00:00Z" }], session_tools };
+    const steps = readerSteps([pasted], making, new Map());
+    return view("one", { steps, counts: buildCounts(steps) });
+  };
+
+  it("reads 'New chat' with no logo until a tool is chosen", () => {
+    mountList(chatOnly({}));
+    expect(screen.getByText("New chat").parentElement?.querySelector("[data-mark]")).toBeNull();
+  });
+
+  it("reads 'New chat in Perplexity' with Perplexity's logo once chosen", () => {
+    mountList(chatOnly({ s9: "perplexity" }));
+    expect(screen.getByText("New chat in Perplexity").parentElement?.querySelector('[data-mark="perplexity-color"]')).not.toBeNull();
+  });
 });
 
 describe("StepsList", () => {

@@ -34,7 +34,7 @@ import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { addFile, buildSteps, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
-import type { MakingSession } from "@/lib/build/making";
+import { sessionToolsOf, type MakingSession } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
@@ -115,7 +115,7 @@ export function SandboxPage() {
   const made = (build as { making?: unknown } | null)?.making;
   const { counts, hasAgent, sessionCount, steps, groups } = useMemo(() => {
     const steps = buildSteps(tree);
-    const groups = sessionGroups(steps, makingSessions(made));
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made));
     const all = flatten(steps);
     const next: SandboxCounts = {
       sessions: groups.length,
@@ -124,6 +124,7 @@ export function SandboxPage() {
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: groups.length, steps, groups };
   }, [tree, made]);
+  const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
   const inBuild = useMemo(() => {
@@ -263,7 +264,7 @@ export function SandboxPage() {
     picker.current?.click();
   }, []);
 
-  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions), [groups, steps, sessions.sessions]);
+  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools), [groups, steps, sessions.sessions, sessionTools]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
@@ -647,6 +648,7 @@ export function SandboxPage() {
                 if (real) prompts.add(real.id, row.ordinal);
               } else if (row.stepId) prompts.remove(row.stepId);
             }}
+            onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}

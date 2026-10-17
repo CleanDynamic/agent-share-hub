@@ -86,6 +86,8 @@ export interface SessionView {
   key: string;
   number: number;
   tool: string;
+  /** TF-13: present when the session's client names no tool, so its tool can be picked. `value` is the tool given, or null. */
+  pickTool?: { value: string | null };
   model: string;
   date: string;
   inBuild: number;
@@ -160,6 +162,8 @@ export interface DetailsHandlers {
   onInstructions?: (id: string, text: string) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
+  /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
+  onSessionTool?: (sessionId: string, tool: string | null) => void;
   onDownload: (id: string) => void;
   onFields: (id: string, fields: Record<string, string | null>) => void;
   onAddPicture: (id: string, file: File) => void;
@@ -732,7 +736,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
 
 /* ── a session ── */
 
-function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionView; phone: boolean } & Pick<DetailsHandlers, "onToggleSessionPrompt">) {
+function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
   const [all, setAll] = useState(false);
   const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
   return (
@@ -745,6 +749,11 @@ function SessionDetails({ view, phone, onToggleSessionPrompt }: { view: SessionV
       </Head>
       <div>
         <KeyValue label="Tool">{view.tool}</KeyValue>
+        {view.pickTool && onSessionTool ? (
+          <div style={{ padding: "10px 0", borderBottom: line }}>
+            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} onChange={(value) => onSessionTool(view.key, value)} />
+          </div>
+        ) : null}
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
         <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
       </div>
@@ -989,7 +998,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} onToggleSessionPrompt={h.onToggleSessionPrompt} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} {...h} /> : null}

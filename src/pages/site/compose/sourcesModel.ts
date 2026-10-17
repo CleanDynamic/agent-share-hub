@@ -13,7 +13,7 @@ import { FILE_TYPE, madeByOf, stepTitle, TYPED_HERE, type SessionGroup, type Ste
 import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
-import { matchesProjectFile, toolFor } from "@/lib/tools/registry";
+import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
 import type { BuildNode } from "@/lib/build/types";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
@@ -35,6 +35,8 @@ export interface SourceSession {
   /** "{model} · {d MMM}", or "typed here". */
   detail: string;
   prompts: SourcePrompt[];
+  /** TF-13: set for a session whose client names no tool. `value` is the tool the maker gave it, or null. */
+  pickTool?: { value: string | null };
 }
 
 export interface SourceFile {
@@ -70,12 +72,20 @@ const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [ste
  * this list and Not in a build. `inBuild` (the build's own sessions, oldest
  * first) fills that gap: those sessions follow the grouped ones with no prompts
  * under them, numbered on from the last.
+ *
+ * A session's tool is its client's tool, else the one the maker gave it
+ * (`sessionTools`, TF-13), else "Unknown tool". Only a session whose client
+ * names no tool can be given one, so only it carries `pickTool`.
  */
 export function sourceSessions(
   groups: readonly SessionGroup[],
   steps: readonly Step[],
   inBuild: readonly SessionSummary[] = [],
+  sessionTools: Readonly<Record<string, string>> = {},
 ): SourceSession[] {
+  const clients = new Map(inBuild.map((session) => [session.id, session.client]));
+  const pickTool = (id: string): SourceSession["pickTool"] =>
+    toolLabel(clients.get(id)) ? undefined : { value: sessionTools[id] ?? null };
   const prompts = flatten(steps).filter((step) => step.kind === "prompt");
   const grouped = groups.map((group) => {
     const mine = group.sessionId
@@ -89,6 +99,7 @@ export function sourceSessions(
       number: group.number,
       tool: group.tool ?? "Unknown tool",
       detail: [model, when].filter(Boolean).join(" · "),
+      ...(group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,
@@ -103,8 +114,9 @@ export function sourceSessions(
     .map((session, at): SourceSession => ({
       key: session.id,
       number: groups.length + at + 1,
-      tool: toolLabel(session.client) ?? "Unknown tool",
+      tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : "Unknown tool"),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
+      pickTool: pickTool(session.id),
       prompts: [],
     }));
   return [...grouped, ...waiting];

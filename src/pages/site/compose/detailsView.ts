@@ -186,6 +186,7 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     key: source.key,
     number: source.number,
     tool: group?.tool ?? source.tool,
+    ...(source.pickTool ? { pickTool: source.pickTool } : null),
     model: model || "",
     date: group ? (group.sessionId ? shortDate(group.startedAt) : "") : rest.join(" · "),
     inBuild: checklist.filter((row) => row.stepId !== null).length,

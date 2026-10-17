@@ -316,7 +316,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     }
   }
   const byId = new Map(all.map((step) => [step.id, step]));
-  const groups = sessionGroups(topSteps, sessions);
+  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {});
   const tools = readTools(tree);
   const toolIds = [
     ...new Set(
