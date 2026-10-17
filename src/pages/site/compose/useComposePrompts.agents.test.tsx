@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BuildNode, NodeTree } from "@/lib/build";
@@ -14,10 +16,13 @@ const graph = vi.hoisted(() => ({
   setManualFields: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
+const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
 const toast = vi.hoisted(() => ({ error: vi.fn(), default: vi.fn() }));
 
 vi.mock("@/lib/build/graph", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/graph")>()), ...graph }));
 vi.mock("@/lib/build/media", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/media")>()), uploadMedia: media.uploadMedia }));
+vi.mock("@/lib/build/making", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/making")>()), addMadeWithTools: making.addMadeWithTools }));
+vi.mock("@/lib/build/composePrompts", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build/composePrompts")>()), addWrittenPrompt: making.addWrittenPrompt }));
 vi.mock("sonner", () => ({ toast: Object.assign(toast.default, { error: toast.error }) }));
 vi.mock("@/lib/build", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build")>()), deleteNode: vi.fn() }));
 
@@ -26,6 +31,8 @@ import type { ComposeNodes } from "./useComposeNodes";
 
 const row = (over: Partial<NodeTree>): NodeTree =>
   ({ id: "n", build_id: "b1", parent_id: null, position: 1, type: "prompt", title: null, note: null, payload: {}, source_ref: null, created_at: "", updated_at: "", children: [], ...over }) as NodeTree;
+
+let queryClient = new QueryClient();
 
 function hook(tree: NodeTree[] = []) {
   const record = vi.fn();
@@ -36,14 +43,18 @@ function hook(tree: NodeTree[] = []) {
     record,
     settled: () => Promise.resolve(),
   } as unknown as ComposeNodes;
-  const rendered = renderHook(() =>
-    useComposePrompts({ buildId: "b1", nodes, ensureBuild: () => Promise.resolve("b1"), sessions: [], sessionPrompts: () => undefined }),
+  queryClient = new QueryClient();
+  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const rendered = renderHook(
+    () => useComposePrompts({ buildId: "b1", nodes, ensureBuild: () => Promise.resolve("b1"), sessions: [], sessionPrompts: () => undefined }),
+    { wrapper },
   );
   return { ...rendered, record, tree };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  making.addMadeWithTools.mockResolvedValue({ madeWith: [], excluded: [] });
 });
 
 describe("adding an agent or a team (UI-P69)", () => {
@@ -213,5 +224,80 @@ describe("a manual step (UI-P70)", () => {
     });
     expect(saved).toBe(false);
     expect(toast.error).toHaveBeenCalledWith("Couldn't add spec.pdf. Try again.");
+  });
+});
+
+describe("tools on steps feed Made with (TF-03)", () => {
+  const manual = () => [row({ id: "m", position: 1, type: "manual_step", payload: { tool: "Figma", text: "x" } })];
+  const settle = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+  it("a manual step added in Base44 adds Base44, and the Card shows it at once", async () => {
+    graph.addManualStep.mockResolvedValue({ id: "m" } as BuildNode);
+    making.addMadeWithTools.mockResolvedValue({ madeWith: ["Claude Code", "Base44"], excluded: [] });
+    const { result } = hook();
+    queryClient.setQueryData(["build", "getMadeWith", "b1"], { madeWith: ["Claude Code"], excluded: [] });
+    await act(async () => {
+      await result.current.addManual({ tool: "base44", text: "Built the form", file: null, afterId: null });
+    });
+    await settle();
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["Base44"]);
+    expect(queryClient.getQueryData(["build", "getMadeWith", "b1"])).toEqual({ madeWith: ["Claude Code", "Base44"], excluded: [] });
+  });
+
+  it("a name the tool list does not know is passed as typed", async () => {
+    graph.addManualStep.mockResolvedValue({ id: "m" } as BuildNode);
+    const { result } = hook();
+    await act(async () => {
+      await result.current.addManual({ tool: "My Own Script", text: "x", file: null, afterId: null });
+    });
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["My Own Script"]);
+  });
+
+  it("a typed prompt added with Midjourney adds Midjourney; with no tool it adds nothing", async () => {
+    making.addWrittenPrompt.mockResolvedValue({ id: "p9" } as BuildNode);
+    const { result } = hook();
+    await act(async () => {
+      await result.current.addNow({ text: "a lighthouse", tool: "midjourney", model: null });
+    });
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["Midjourney"]);
+    making.addMadeWithTools.mockClear();
+    await act(async () => {
+      await result.current.addNow({ text: "again", tool: null, model: null });
+    });
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
+  });
+
+  it("changing a manual step's tool adds the new tool; changing only its line does not", async () => {
+    graph.setManualFields.mockResolvedValue({ id: "m" } as BuildNode);
+    const { result } = hook(manual());
+    await act(async () => {
+      result.current.setManual("m", { tool: "Lovable" });
+      await Promise.resolve();
+    });
+    await settle();
+    expect(making.addMadeWithTools).toHaveBeenCalledWith("b1", ["Lovable"]);
+    making.addMadeWithTools.mockClear();
+    await act(async () => {
+      result.current.setManual("m", { text: "new line" });
+      await Promise.resolve();
+    });
+    await settle();
+    expect(making.addMadeWithTools).not.toHaveBeenCalled();
+  });
+
+  it("a Made with failure is logged with a code and the build id only, and never blocks the step", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    graph.addManualStep.mockResolvedValue({ id: "m" } as BuildNode);
+    making.addMadeWithTools.mockRejectedValue(Object.assign(new Error("addMadeWithTools failed: SECRET TEXT"), { cause: { code: "42501" } }));
+    const { result } = hook();
+    let id: string | null = null;
+    await act(async () => {
+      id = await result.current.addManual({ tool: "Base44", text: "x", file: null, afterId: null });
+    });
+    await settle();
+    expect(id).toBe("m");
+    expect(warn).toHaveBeenCalledWith("[Compose] Made with not updated", { code: "42501", buildId: "b1" });
+    expect(toast.error).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

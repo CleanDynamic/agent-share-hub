@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { MadeWithMarks, listNames, marksOf } from "./MadeWithMarks";
 
 const keys = (madeWith: string[], models: string[] = []) => marksOf(madeWith, models).map((mark) => mark.key);
+const logos = (madeWith: string[], models: string[] = []) => keys(madeWith, models).filter((key) => key !== null);
 
 describe("marksOf", () => {
   it("reads tool labels in order, one mark each", () => {
@@ -18,8 +19,14 @@ describe("marksOf", () => {
     expect(keys(["Opus 5.5", "ChatGPT"], ["gemini-4-argon"])).toEqual(["openai", "claude-color", "gemini-color"]);
   });
 
-  it("skips a name with no mark", () => {
-    expect(keys(["Some Tool I Wrote", "Cursor"], ["not-a-model"])).toEqual(["cursor"]);
+  it("keeps a tool or name with no logo as an entry with no key", () => {
+    expect(keys(["Some Tool I Wrote", "Cursor", "Base44"])).toEqual([null, "cursor", null]);
+    expect(marksOf(["base44", "BASE44"], []).map((mark) => mark.name)).toEqual(["Base44"]);
+  });
+
+  it("still leaves out a model that has no logo of its own", () => {
+    expect(marksOf(["Cursor", "not-a-model", "Jev"], ["not-a-model"]).map((mark) => mark.name)).toEqual(["Cursor"]);
+    expect(logos(["Cursor"], ["not-a-model"])).toEqual(["cursor"]);
   });
 
   it("names a mark found by a model by its product, and a tool by its own label", () => {
@@ -73,8 +80,23 @@ describe("MadeWithMarks", () => {
     expect(group).toHaveTextContent("+1");
   });
 
-  it("draws nothing when no name has a mark", () => {
-    const { container } = render(<MadeWithMarks madeWith={["Something"]} modelsUsed={[]} />);
+  it("draws one logo and counts two names without one, and names all three", () => {
+    render(<MadeWithMarks madeWith={["Lovable", "Base44", "Some Tool I Wrote"]} />);
+    const group = screen.getByRole("img", { name: "Made with Lovable, Base44 and Some Tool I Wrote" });
+    expect(group).toHaveAttribute("title", "Made with Lovable, Base44 and Some Tool I Wrote");
+    expect(group.querySelectorAll("[data-mark]")).toHaveLength(1);
+    expect(group).toHaveTextContent("+2");
+  });
+
+  it("counts a name with no logo after the logos it did not draw", () => {
+    render(<MadeWithMarks madeWith={[...four, "Cursor", "Base44"]} phone />);
+    const group = screen.getByRole("img");
+    expect(group.querySelectorAll("[data-mark]")).toHaveLength(3);
+    expect(group).toHaveTextContent("+3");
+  });
+
+  it("draws nothing when the build names nothing", () => {
+    const { container } = render(<MadeWithMarks madeWith={[]} modelsUsed={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
 });
