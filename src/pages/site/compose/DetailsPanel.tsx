@@ -141,6 +141,8 @@ export interface DetailsHandlers {
   onOpenPrompt?: (id: string) => void;
   onModel: (id: string, model: string | null) => void;
   onAddUse: (id: string, use: Use) => void;
+  /** TF-06: "A file from your computer" opens the file picker for this step. Absent: the item is not shown. */
+  onAttach?: (id: string) => void;
   onRemoveUse: (id: string, use: Use) => void;
   onRuns: (id: string, runs: Runs | null) => void;
   /** UI-P70: change a manual step's tool, its line or its picture (`media_id: null` takes it off). */
@@ -358,11 +360,11 @@ function ReadAll({ phone, disabled, onClick }: { phone: boolean; disabled: boole
 
 /* ── inputs: Uses, Add an input, Goes into ── */
 
-function AddInput({ id, options, phone, onAddUse }: { id: string; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse">) {
+function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onAttach">) {
   const [menuAll, setMenuAll] = useState(false);
   const menu = menuAll ? { visible: [...options], hidden: 0 } : firstRows(options);
   const { state, handlers } = useInteractive<HTMLButtonElement>();
-  const disabled = options.length === 0;
+  const disabled = options.length === 0 && !onAttach;
   return (
     <Menu.Root onOpenChange={(open) => !open && setMenuAll(false)}>
       <Menu.Trigger asChild>
@@ -385,6 +387,11 @@ function AddInput({ id, options, phone, onAddUse }: { id: string; options: reado
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Content align="start" sideOffset={6} style={{ ...menuSurface(260), maxHeight: 360, overflowY: "auto" }}>
+          {onAttach ? (
+            <Menu.Item onSelect={() => onAttach(id)} style={menuItem(true, phone)}>
+              A file from your computer
+            </Menu.Item>
+          ) : null}
           {menu.visible.map((option) => (
             <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 10px" }}>
               <span style={text(12.5, 500, t.text)}>{option.label}</span>
@@ -408,7 +415,7 @@ function AddInput({ id, options, phone, onAddUse }: { id: string; options: reado
   );
 }
 
-function UseList({ id, rows, options, phone, onAddUse, onRemoveUse }: { id: string; rows: readonly UseRow[]; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onRemoveUse">) {
+function UseList({ id, rows, options, phone, onAddUse, onAttach, onRemoveUse }: { id: string; rows: readonly UseRow[]; options: readonly InputOption[]; phone: boolean } & Pick<DetailsHandlers, "onAddUse" | "onAttach" | "onRemoveUse">) {
   const [all, setAll] = useState(false);
   const shown = all ? { visible: [...rows], hidden: 0 } : firstRows(rows);
   return (
@@ -424,7 +431,7 @@ function UseList({ id, rows, options, phone, onAddUse, onRemoveUse }: { id: stri
         </div>
       ))}
       <ShowMore hidden={shown.hidden} phone={phone} onClick={() => setAll(true)} />
-      <AddInput id={id} options={options} phone={phone} onAddUse={onAddUse} />
+      <AddInput id={id} options={options} phone={phone} onAddUse={onAddUse} onAttach={onAttach} />
     </Section>
   );
 }
@@ -499,7 +506,7 @@ function PromptDetails({ view, phone, ...h }: { view: PromptView; phone: boolean
         <span style={{ flexGrow: 1 }} />
         <span style={{ ...quiet(), ...tnum }}>{view.words} words</span>
       </div>
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
@@ -552,7 +559,7 @@ function ManualDetails({ view, phone, inBuild = [], ...h }: { view: ManualView; 
           </Button>
         </div>
       </Section>
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
@@ -758,7 +765,7 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
           </div>
         ))}
       </Section>
-      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onRemoveUse={h.onRemoveUse} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>
   );
