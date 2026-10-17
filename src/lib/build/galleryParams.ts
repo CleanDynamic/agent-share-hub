@@ -26,6 +26,9 @@
 // UI-P51 — build (a build's id) opens the dashboard's detail sheet. It sits
 // after dsort and before q, so a build can be linked.
 //
+// TF-14 — THE FEED ADDS tool (a tool id from the registry, /gallery?tool=lovable). It sits after model and before
+// sort. An id the registry does not name is dropped. `with` keeps its meaning and is still ignored by the feed.
+//
 // ONLY WHAT DIFFERS FROM THE DEFAULT IS WRITTEN. The All lens, an empty facet
 // and an empty query are the gallery's resting state, and /gallery is how that
 // state is spelled. Anything the gallery does not recognise — a lens it has no
@@ -35,6 +38,8 @@
 import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
 
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
+import { toolFor } from "@/lib/tools/registry";
+
 import { normaliseQuery } from "./search";
 
 /** UI-P49 — the gallery's two views of the same builds. */
@@ -87,6 +92,8 @@ export interface GalleryParams {
   view?: GalleryViewMode;
   /** UI-P49. A ModelVersion id; absent is "Any model". */
   model?: string;
+  /** TF-14. A tool id from the registry; absent is "Any tool". */
+  tool?: string;
   /** UI-P49. Present only when it is not newest. */
   sort?: GalleryFeedSort;
   /** UI-P50. The dashboard's tab; present only when it is not Builds. */
@@ -164,6 +171,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
   const lens = search.get("lens");
   const shapes = cleanShapes(search.getAll("shape"));
   const model = search.get("model");
+  const tool = toolFor(search.get("tool"))?.id;
   const sort = search.get("sort");
   const tab = search.get("tab");
   const lab = search.get("lab");
@@ -179,6 +187,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
     query: normaliseQuery(search.get("q")),
     ...(search.get("view") === "dashboard" ? { view: "dashboard" as const } : {}),
     ...(isModel(model) ? { model } : {}),
+    ...(tool ? { tool } : {}),
     ...(isSort(sort) && sort !== "newest" ? { sort } : {}),
     ...(isTab(tab) ? { tab } : {}),
     ...(isLab(lab) ? { lab } : {}),
@@ -191,7 +200,7 @@ export function parseGalleryParams(search: URLSearchParams): GalleryParams {
 
 /**
  * The address of a gallery view: only the values that differ from the
- * default, keys in the order view, lens, for, with, shape, model, sort, tab, lab, report, active, dsort, build, q.
+ * default, keys in the order view, lens, for, with, shape, model, tool, sort, tab, lab, report, active, dsort, build, q.
  */
 export function galleryHref(params: Partial<GalleryParams> = {}): string {
   const out = new URLSearchParams();
@@ -202,6 +211,8 @@ export function galleryHref(params: Partial<GalleryParams> = {}): string {
   for (const value of cleanValues(params.madeWith)) out.append("with", value);
   for (const value of cleanShapes(params.shapes)) out.append("shape", value);
   if (isModel(params.model)) out.set("model", params.model);
+  const tool = toolFor(params.tool)?.id;
+  if (tool) out.set("tool", tool);
   if (isSort(params.sort) && params.sort !== "newest") out.set("sort", params.sort);
   if (isTab(params.tab)) out.set("tab", params.tab);
   if (isLab(params.lab)) out.set("lab", params.lab);

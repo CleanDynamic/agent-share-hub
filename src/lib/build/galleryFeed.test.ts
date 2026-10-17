@@ -182,6 +182,31 @@ describe("listGalleryFeed without a model", () => {
   });
 });
 
+describe("TF-14 — the tool filter", () => {
+  const madeWith = (r: Request) => callsOf(r, "overlaps").filter((c) => c.args[0] === "made_with");
+
+  it("adds a made_with overlap on the tool's name and spellings to the cards read, and to nothing unfiltered", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0, tool: "lovable" });
+    expect(madeWith(requests.filter(isCards)[0])[0].args).toEqual(["made_with", ["Lovable", "lovable.dev"]]);
+    // The Model menu's counts read is unfiltered.
+    expect(requests.filter((r) => r.table === "builds" && !isCards(r)).every((r) => madeWith(r).length === 0)).toBe(true);
+  });
+
+  it("adds nothing without a tool, or with an id the registry does not name", async () => {
+    await listGalleryFeed({ sort: "newest", page: 0 });
+    await listGalleryFeed({ sort: "newest", page: 0, tool: "nope" });
+    expect(requests.filter((r) => r.table === "builds").every((r) => madeWith(r).length === 0)).toBe(true);
+  });
+
+  it("filters the model lists' reads too", async () => {
+    respond = (r) =>
+      r.table === "build_reproductions" ? { data: [{ build_id: "b0", model_used: "claude-sonnet-5-5" }] } : { data: [] };
+    await listGalleryFeed({ sort: "newest", page: 0, model: "sonnet-5-5", tool: "lovable" });
+    const filtered = requests.filter((r) => r.table === "builds" && madeWith(r).length > 0);
+    expect(filtered.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("the interim search", () => {
   it("matches title and outcome, a named model, and handles, without the RPC", async () => {
     respond = (r) => (r.table === "profiles" ? { data: [{ id: "u1" }, { id: "u2" }] } : { data: [] });

@@ -17,6 +17,7 @@ import {
 } from "@/dev/fixtures/gallery-feed";
 import type { GalleryViewMode } from "@/lib/build/galleryParams";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { TOOLS, type Tool } from "@/lib/tools/registry";
 import { GalleryFeedView, type FeedListView, type FeedSectionView } from "@/pages/site/gallery/GalleryFeedView";
 import { feedRowView } from "@/pages/site/gallery/galleryModel";
 import type { GalleryFeedRow } from "@/lib/build/gallery";
@@ -38,6 +39,7 @@ const section = (rows: GalleryFeedRow[], model: ModelVersion | null): FeedSectio
 export default function GalleryFeedDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [view, setView] = useState<GalleryViewMode>("feed");
   const [filters, setFilters] = useState<FeedFixtureFilters>({ model: null, audience: null, sort: "newest", q: null });
+  const [tool, setTool] = useState<Tool | null>(null);
   const set = (next: Partial<FeedFixtureFilters>) => setFilters((current) => ({ ...current, ...next }));
 
   const feed = state === "empty" ? feedFixture({ ...filters, q: filters.q ?? "zzzz" }) : feedFixture(filters);
@@ -56,6 +58,8 @@ export default function GalleryFeedDemo({ fit = "board", state = "populated" }: 
       onSearch={(q) => set({ q })}
       model={filters.model ? (MODEL_VERSIONS.find((version) => version.id === filters.model) ?? null) : null}
       onModelChange={(model) => set({ model })}
+      tool={tool}
+      onToolChange={(id) => setTool(TOOLS.find((entry) => entry.id === id) ?? null)}
       audience={filters.audience}
       onAudienceChange={(audience) => set({ audience })}
       audiences={FEED_FIXTURE_AUDIENCES}
@@ -66,7 +70,10 @@ export default function GalleryFeedDemo({ fit = "board", state = "populated" }: 
       onRetry={noop}
       list={list}
       srcByPath={NO_SRC}
-      onClearAll={() => set({ q: null, model: null, audience: null })}
+      onClearAll={() => {
+        set({ q: null, model: null, audience: null });
+        setTool(null);
+      }}
       onNavigate={noop}
     />
   );
