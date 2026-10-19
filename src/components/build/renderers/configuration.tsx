@@ -8,7 +8,10 @@
 // renders without a change here. Nothing in this file switches on node.type.
 
 import type { ReactNode } from "react";
+import { agentModelsOf } from "@/lib/build/graph";
+import { modelLabel } from "@/lib/models/registry";
 import { t } from "@/lib/theme/tokens";
+import { toolName } from "@/lib/tools/registry";
 import {
   Bullets,
   Caption,
@@ -61,6 +64,10 @@ export function AgentConfigRenderer(props: NodeProps) {
     value: str(payload, key) as ReactNode,
   }));
 
+  // CA-02 P5: what it ran in, and every model with its role. An agent saved before has neither, and reads as it did.
+  const harness = str(payload, "harness")?.trim();
+  const models = agentModelsOf(payload);
+
   const passing = num(payload, "test_passing");
   const total = num(payload, "test_total");
   const runAt = formatDate(str(payload, "test_run_at"));
@@ -70,6 +77,8 @@ export function AgentConfigRenderer(props: NodeProps) {
     "tools",
     "guardrails",
     "memory",
+    "harness",
+    "models",
     ...AGENT_PARAM_KEYS,
     ...AGENT_TEST_KEYS,
   ];
@@ -84,6 +93,22 @@ export function AgentConfigRenderer(props: NodeProps) {
         ) : null}
 
         <KeyValueGrid pairs={params} />
+
+        {harness ? (
+          <Field label="Runs in">
+            <Prose>{toolName(harness) ?? harness}</Prose>
+          </Field>
+        ) : null}
+
+        {models.length > 1 ? (
+          <Field label="Models">
+            <Stack gap={2}>
+              {models.map((row, index) => (
+                <Prose key={index}>{`${modelLabel(row.model)} · ${row.role}`}</Prose>
+              ))}
+            </Stack>
+          </Field>
+        ) : null}
 
         {guardrails.length > 0 ? (
           <Field label={labelFor(props.nodeType, "guardrails", "Guardrails")}>

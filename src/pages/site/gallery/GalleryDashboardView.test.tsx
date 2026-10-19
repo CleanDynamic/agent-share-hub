@@ -97,9 +97,11 @@ describe("GalleryDashboardView", () => {
     expect(p.onLabChange).toHaveBeenCalledWith("Anthropic");
 
     expect(within(labs).getByTestId("dash-lab-Meta").querySelector('[data-mark="meta-color"]')).not.toBeNull();
-    const typeSafe = within(labs).getByTestId("dash-lab-TypeSafe");
+    // TypeSafe's one model, Jev, is a decision model, so it is not a lab of text models (CA-02); Moonshot has no logo.
+    expect(within(labs).queryByTestId("dash-lab-TypeSafe")).toBeNull();
+    const typeSafe = within(labs).getByTestId("dash-lab-Moonshot");
     const blank = typeSafe.firstElementChild as HTMLElement;
-    expect(blank.getAttribute("data-testid")).toBe("dash-lab-blank-TypeSafe");
+    expect(blank.getAttribute("data-testid")).toBe("dash-lab-blank-Moonshot");
     expect(blank.style.width).toBe("18px");
     expect(blank.style.height).toBe("18px");
     expect(blank.textContent).toBe("");

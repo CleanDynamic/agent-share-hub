@@ -48,7 +48,7 @@ import type {
   DashboardSort,
 } from "@/lib/build/galleryParams";
 import { markFor } from "@/lib/models/marks";
-import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
+import { MODEL_VERSIONS, TEXT_LABS, offeredTextModels, type Lab } from "@/lib/models/registry";
 import { MENU_ITEM_CLASS } from "@/lib/theme/controls";
 import { CONTROL, CONTROL_HOVER } from "@/lib/theme/refinedControl";
 import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
@@ -183,7 +183,7 @@ export function menusFor(props: GalleryDashboardViewProps): ToolbarMenu[] {
       groups: [
         { options: [{ key: "all", label: "All models", selected: model === null, onSelect: () => onModelChange(null) }] },
         {
-          options: MODEL_VERSIONS.map((version) => ({
+          options: offeredTextModels().map((version) => ({
             key: version.id,
             label: version.name,
             note: version.lab,
@@ -317,7 +317,7 @@ function Sidebar(props: GalleryDashboardViewProps) {
   const { tab, onTabChange, counts, lab, onLabChange, report, onReportChange, drafts, onConnect } = props;
   const tabs: { value: DashboardTab; label: string; count: number }[] = [
     { value: "builds", label: "Builds", count: counts.builds },
-    { value: "models", label: "Models", count: MODEL_VERSIONS.length },
+    { value: "models", label: "Models", count: offeredTextModels().length },
     { value: "makers", label: "Makers", count: counts.makers },
   ];
   const draftCount = drafts?.count ?? null;
@@ -359,7 +359,7 @@ function Sidebar(props: GalleryDashboardViewProps) {
 
       <div role="group" aria-label="Labs" style={groupStyle}>
         <Eyebrow style={{ padding: "0 8px 6px" }}>Labs</Eyebrow>
-        {LABS.map((name) => (
+        {TEXT_LABS.map((name) => (
           <NavRow
             key={name}
             testId={`dash-lab-${name}`}

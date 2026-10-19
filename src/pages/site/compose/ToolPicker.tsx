@@ -5,7 +5,11 @@
    active row is named by `aria-activedescendant`: Up and Down move, Enter picks, Esc closes and gives focus back to the
    trigger. A listed tool is handed back as its `id`, a typed name as typed and trimmed, "No tool" as null.
 
-   Pure but for its own open state: the build's tools come in as `inBuild`. */
+   Pure but for its own open state: the build's tools come in as `inBuild`.
+
+   CA-02: `step` is the Add item the tool is named on, and the rows fit it (`pickerRows`). A row that does not fit is
+   drawn at the dim filter with its line under the name, and is `aria-disabled` unless it can still be picked (a tool
+   that runs prompts by itself, named on a prompt). */
 
 import * as Popover from "@radix-ui/react-popover";
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
@@ -16,7 +20,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, CONTROL_HOVER, SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
-import { toolFor } from "@/lib/tools/registry";
+import { toolFor, type StepKey } from "@/lib/tools/registry";
 
 import { menuSurface, text, wellField } from "./refinedStyles";
 import { pickerRows, TYPED_TOOL_MAX, type PickerRow } from "./toolPickerModel";
@@ -31,15 +35,22 @@ export interface ToolPickerProps {
   /** The trigger's accessible name. */
   label: string;
   phone: boolean;
+  /** The Add item the tool is being named on (CA-02). */
+  step: StepKey;
+  /** CA-02 P5: what the "No tool" row says, and the trigger while nothing is picked ("My own code (API)"). */
+  noneLabel?: string;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading";
 
+/** Over the Add dialogs, whose content sits at 51 over a scrim at 50. */
+export const FLOATING_Z = 52;
+
 /** The words a row reads as. */
-function rowName(row: PickerRow): string {
+function rowName(row: PickerRow, noneLabel = "No tool"): string {
   switch (row.kind) {
     case "none":
-      return "No tool";
+      return noneLabel;
     case "tool":
       return row.tool.name;
     case "showAll":
@@ -53,7 +64,10 @@ function rowName(row: PickerRow): string {
   }
 }
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone }: ToolPickerProps) {
+/** A row that is listed but cannot be picked. */
+const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
+
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -64,9 +78,9 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
 
   const chosen = toolFor(value);
   const typedValue = value && !chosen ? value.trim() : null;
-  const shown = chosen ? chosen.name : typedValue || "Pick a tool";
+  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel ? noneLabel : "Pick a tool");
 
-  const rows = pickerRows({ query, inBuild, expanded, allowNone });
+  const rows = pickerRows({ query, inBuild, expanded, allowNone, step });
   const pickable = rows.filter(isPickable);
   const current = Math.min(active, Math.max(pickable.length - 1, 0));
   const rowId = (row: PickerRow) => `${uid}-row-${pickable.indexOf(row)}`;
@@ -83,12 +97,12 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     if (!next) return;
     setQuery("");
     setExpanded(false);
-    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone }).filter(isPickable);
+    const first = pickerRows({ query: "", inBuild, expanded: false, allowNone, step }).filter(isPickable);
     setActive(Math.max(0, first.findIndex(isChosen)));
   };
 
   const pick = (row: PickerRow | undefined) => {
-    if (!row) return;
+    if (!row || isDisabled(row)) return;
     if (row.kind === "showAll" || row.kind === "showMore") {
       setExpanded(true);
       return;
@@ -147,9 +161,10 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
     padding: "0 10px",
     borderRadius: 6,
     border: "1px solid transparent",
-    cursor: "pointer",
+    cursor: isDisabled(row) ? "default" : "pointer",
     overflowWrap: "anywhere",
     ...text(13, 400, row.kind === "showAll" || row.kind === "showMore" ? t.text2 : t.text),
+    ...(row.kind === "tool" && row.unavailable ? { filter: t.dimFilter } : null),
     ...(pickable.indexOf(row) === current ? { background: t.controlOn } : null),
     ...(isChosen(row) ? SELECTED : null),
   });
@@ -173,7 +188,8 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
             event.preventDefault();
             field.current?.focus();
           }}
-          style={{ ...menuSurface(280), display: "flex", flexDirection: "column", gap: 4 }}
+          /* Above a dialog's content (51): the picker opens inside the Add dialogs. */
+          style={{ ...menuSurface(280), zIndex: FLOATING_Z, display: "flex", flexDirection: "column", gap: 4 }}
         >
           <input
             ref={field}
@@ -207,13 +223,21 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   id={rowId(row)}
                   role="option"
                   aria-selected={isChosen(row)}
+                  aria-disabled={isDisabled(row) ? true : undefined}
                   onMouseMove={() => setActive(pickable.indexOf(row))}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => pick(row)}
                   style={rowStyle(row)}
                 >
                   {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
-                  <span style={{ minWidth: 0 }}>{rowName(row)}</span>
+                  {row.kind === "tool" && row.line ? (
+                    <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
+                      <span>{rowName(row, noneLabel)}</span>
+                      <span style={text(11.5, 400, t.label)}>{row.line}</span>
+                    </span>
+                  ) : (
+                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel)}</span>
+                  )}
                 </div>
               ),
             )}

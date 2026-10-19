@@ -158,7 +158,8 @@ describe("the cover", () => {
     none.unmount();
 
     const unsigned = renderCard(build({ hero_node_id: "hero-node", media: [heroRow] } as Partial<GalleryBuild>), NO_MEDIA);
-    expect(unsigned.container.querySelector("img")).toBeNull();
+    // The plaque's model mark is an img too (sonnet-4.5 is a named model since CA-02); the cover is the only other one.
+    expect(unsigned.container.querySelector("img:not([data-mark])")).toBeNull();
     expect(unsigned.container.querySelector('[data-ui="cover-fallback"]')!.getAttribute("data-sky")).toBe(sky);
   });
 

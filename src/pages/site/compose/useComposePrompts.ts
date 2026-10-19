@@ -37,6 +37,8 @@ import {
 import {
   addAgent,
   addAgentPrompt,
+  addCode,
+  CODE_TYPE,
   addManualStep,
   addResult,
   addTeam,
@@ -53,9 +55,12 @@ import {
   setNodeFields,
   setInstructions,
   setManualFields,
+  setAgentSetup,
   setRuns,
   setStepTitle,
+  toolNodeFor,
   usesOf,
+  type AgentModel,
   type Runs,
   type Step,
   type Use,
@@ -104,6 +109,23 @@ function errorCode(error: unknown): string {
   return "unknown";
 }
 
+/** CA-02 P5: what an agent ran in, its models and its tools, as the dialog and Details hand them over. */
+export interface AgentSetupInput {
+  /** The main model. */
+  model: string;
+  harness?: string | null;
+  /** Every model with its role, the main one first; only when there is more than one. */
+  models?: AgentModel[];
+  /** Tool ids or typed names: each becomes a reference to the build's integration node for it, made when missing. */
+  tools?: readonly string[];
+}
+
+export interface AgentInput extends AgentSetupInput {
+  kind: "agent" | "team";
+  name: string | null;
+  instructions?: string;
+}
+
 export interface ComposePrompts {
   rows: ComposePromptRow[];
   focus: PromptFocus | null;
@@ -142,10 +164,12 @@ export interface ComposePrompts {
   addMadeFile: (stepId: string, name: string) => Promise<string | null>;
   /** TF-08: take a made file out of the build and out of the steps that use it. */
   removeMadeFile: (fileId: string) => void;
-  /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
-  addPiece: (kind: "tool" | "result") => Promise<string | null>;
+  /** UI-P66: add a tool or a result, then say which node it is (null if it failed). CA-02 P6: a tool comes named. */
+  addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
-  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string }) => Promise<string | null>;
+  addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
+  /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
+  setAgent: (id: string, setup: AgentSetupInput) => void;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -158,6 +182,8 @@ export interface ComposePrompts {
   setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
+  /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
+  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
 }
 
 export function useComposePrompts({
@@ -309,8 +335,9 @@ export function useComposePrompts({
       .run(async () => {
         const build = latest.current.buildId;
         if (!build) return;
-        // A manual step swaps with the step next to it, whatever that is.
-        if (findTop(nodes.current(), id)?.type === MANUAL_STEP_TYPE) {
+        // A manual step, or code, swaps with the step next to it, whatever that is.
+        const type = findTop(nodes.current(), id)?.type;
+        if (type === MANUAL_STEP_TYPE || type === CODE_TYPE) {
           for (const step of await moveStep(build, nodes.current(), id, direction)) {
             const node = findTop(nodes.current(), step.id);
             if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
@@ -516,13 +543,13 @@ export function useComposePrompts({
       })
       .catch(failed("Couldn't remove that file. Try again."));
 
-  const addPiece = (kind: "tool" | "result") =>
+  const addPiece = (kind: "tool" | "result", name?: string) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         const created =
           kind === "tool"
-            ? await addTool(build, nodes.current(), { service: "Untitled tool" })
+            ? await addTool(build, nodes.current(), { service: name?.trim() || "Untitled tool" })
             : await addResult(build, nodes.current(), { summary: "Untitled result" });
         nodes.record(created.id, created);
         return created.id;
@@ -532,16 +559,42 @@ export function useComposePrompts({
         return null;
       });
 
-  const addAgentOrTeam = ({ kind, name, model }: { kind: "agent" | "team"; name: string | null; model: string }) =>
+  /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
+  const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
+    const refs: string[] = [];
+    for (const tool of tools) {
+      const existing = toolNodeFor(nodes.current(), tool);
+      if (existing) {
+        refs.push(existing);
+        continue;
+      }
+      const created = await addTool(build, nodes.current(), { service: toolName(tool) ?? tool.trim() });
+      nodes.record(created.id, created);
+      refs.push(created.id);
+    }
+    return refs;
+  };
+
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
+        const toolRefs = await toolRefsFor(build, tools ?? []);
+        // Only the keys given: an agent made without them is written exactly as before.
+        const setup = {
+          ...(instructions ? { instructions } : null),
+          ...(harness ? { harness } : null),
+          ...(models && models.length > 1 ? { models } : null),
+          ...(toolRefs.length ? { toolRefs } : null),
+        };
         if (kind === "agent") {
-          const created = await addAgent(build, nodes.current(), { name, model });
+          const created = await addAgent(build, nodes.current(), { name, model, ...setup });
           nodes.record(created.id, created);
+          noteTool(build, harness);
           return created.id;
         }
-        const { team } = await addTeam(build, nodes.current(), { name, model });
+        const { team } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        noteTool(build, harness);
         nodes.record(team.id, team);
         return team.id;
       })
@@ -574,6 +627,18 @@ export function useComposePrompts({
         return false;
       });
 
+  const setAgent = (id: string, { model, harness, models, tools }: AgentSetupInput) =>
+    void nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const toolRefs = await toolRefsFor(build, tools ?? []);
+        const node = findNode(nodes.current(), id);
+        if (!node) return;
+        nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs }));
+        noteTool(build, harness);
+      })
+      .catch(failed("Couldn't save that agent. Try again."));
+
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
 
@@ -597,6 +662,24 @@ export function useComposePrompts({
       })
       .catch((cause) => {
         failed(cause instanceof Error && /Deploy queue/.test(cause.message) ? "Manual steps need the Deploy queue item from UI-P61." : "Couldn't add that manual step. Try again.")(cause);
+        return null;
+      });
+
+  const addCodeSteps = ({ steps, tool, model }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        let first: string | null = null;
+        for (const step of steps) {
+          const created = await addCode(build, nodes.current(), { ...step, tool, model });
+          nodes.record(created.id, created);
+          first ??= created.id;
+        }
+        if (first) noteTool(build, tool);
+        return first;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /100,000/.test(cause.message) ? "Code is at most 100,000 characters. Upload it as a file instead." : "Couldn't add that code. Try again.")(cause);
         return null;
       });
 
@@ -633,5 +716,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps };
 }

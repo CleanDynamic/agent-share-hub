@@ -18,10 +18,13 @@ vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(..
 import {
   addAgent,
   addAgentPrompt,
+  addCode,
   addManualStep,
   addTeam,
+  setAgentSetup,
   setInstructions,
   setManualFields,
+  toolNodeFor,
   placeAfterMoves,
   addMadeFile,
   addUse,
@@ -548,5 +551,154 @@ describe("made files (TF-07)", () => {
       await addUse(tree[2] as BuildNode, use, steps, map, names);
       expect(payloadWritten().uses).toEqual([use]);
     });
+  });
+});
+
+
+describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
+  it("saves the harness by id, every model with its role and the tools as integration refs", async () => {
+    await addAgent(BUILD, [], {
+      model: "Opus 5.5",
+      harness: "Hermes Agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      toolRefs: ["t-gmail", "t-copilot", "t-gmail"],
+      instructions: "Triage my inbox",
+    });
+    expect(payloadWritten()).toEqual({
+      system_prompt: "Triage my inbox",
+      model: "Opus 5.5",
+      harness: "hermes-agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      tools: [{ tool_ref: "t-gmail" }, { tool_ref: "t-copilot" }],
+    });
+  });
+
+  it("writes an agent with none of them exactly as before", async () => {
+    await addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }], toolRefs: [] });
+    expect(payloadWritten()).toEqual({ system_prompt: "", model: "Opus 5.5" });
+  });
+
+  it("keeps a typed harness as typed", async () => {
+    await addAgent(BUILD, [], { model: "my-llm", harness: " My own runner " });
+    expect(payloadWritten()).toMatchObject({ harness: "My own runner" });
+  });
+
+  it("refuses a model row with no model, a fifth row, and a first row that is not the main model", async () => {
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: " ", role: "plans" }] })).rejects.toThrow(/needs its name/);
+    await expect(addTeam(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: "", role: "acts" }] })).rejects.toThrow(/needs its name/);
+    const five = Array.from({ length: 5 }, (_, i) => ({ model: i === 0 ? "Opus 5.5" : "Haiku 5.5", role: "other" }));
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: five })).rejects.toThrow(/4 models at most/);
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Sonnet 5.5", role: "main" }, { model: "Opus 5.5", role: "plans" }] })).rejects.toThrow(/main model/);
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", models: [{ model: "Opus 5.5", role: "main" }, { model: "Haiku 5.5", role: " " }] })).rejects.toThrow(/role/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("gives a team's leading agent the setup", async () => {
+    upsertNode.mockImplementation(async (row: Record<string, unknown>) => ({ ...row, id: row.type === "team" ? "tm" : "new" }));
+    await addTeam(BUILD, [], {
+      model: "Fable 5.1",
+      harness: "claude-code",
+      models: [
+        { model: "Fable 5.1", role: "plans" },
+        { model: "Sonnet 5.5", role: "acts" },
+      ],
+    });
+    expect(upsertNode.mock.calls[0][0].payload).toEqual({});
+    // The first row is always main, whatever role it was handed.
+    expect(upsertNode.mock.calls[1][0].payload).toEqual({
+      system_prompt: "",
+      model: "Fable 5.1",
+      harness: "claude-code",
+      models: [
+        { model: "Fable 5.1", role: "main" },
+        { model: "Sonnet 5.5", role: "acts" },
+      ],
+    });
+  });
+
+  it("reads the harness, the models and the tools back onto the step, and nothing for an old agent", () => {
+    const tree = [
+      node({
+        id: "ag",
+        type: "agent_config",
+        position: 1,
+        payload: { system_prompt: "x", model: "Opus 5.5", harness: "hermes-agent", models: [{ model: "Opus 5.5", role: "main" }, { model: "Haiku 5.5", role: "other" }], tools: [{ tool_ref: "t1" }] },
+      }),
+      node({ id: "old", type: "agent_config", position: 2, payload: { system_prompt: "y", model: "Opus 5.5" } }),
+    ];
+    const [agent, old] = buildSteps(tree);
+    expect(agent).toMatchObject({ harness: "Hermes Agent", models: [{ model: "Opus 5.5", role: "main" }, { model: "Haiku 5.5", role: "other" }], toolRefs: ["t1"] });
+    expect(agent.children[0].harness).toBeUndefined();
+    expect(old.harness).toBeNull();
+    expect(old.models).toBeUndefined();
+    expect(old.toolRefs).toBeUndefined();
+  });
+
+  it("changes the setup from Details, keeping what it is not given", async () => {
+    const agent = node({ id: "ag", type: "agent_config", payload: { system_prompt: "x", model: "Opus 5.5", harness: "hermes-agent", tools: [{ tool_ref: "t1" }] } }) as BuildNode;
+    await setAgentSetup(agent, { model: "Sonnet 5.5", models: [] });
+    expect(payloadWritten()).toEqual({ system_prompt: "x", model: "Sonnet 5.5", harness: "hermes-agent", tools: [{ tool_ref: "t1" }] });
+    upsertNode.mockClear();
+    await setAgentSetup(agent, { model: "Opus 5.5", harness: null, toolRefs: [] });
+    expect(payloadWritten()).toEqual({ system_prompt: "x", model: "Opus 5.5" });
+    await expect(setAgentSetup(node({}) as BuildNode, { model: "x" })).rejects.toThrow(/Only an agent/);
+  });
+
+  it("finds the build's integration node for a tool by the registry or by name", () => {
+    const tree = [
+      node({ id: "t1", type: "integration", payload: { service: "Gmail" } }),
+      node({ id: "t2", type: "integration", payload: { service: "My CRM" } }),
+    ];
+    expect(toolNodeFor(tree, "gmail")).toBe("t1");
+    expect(toolNodeFor(tree, "Google Mail")).toBe("t1");
+    expect(toolNodeFor(tree, "my crm")).toBe("t2");
+    expect(toolNodeFor(tree, "Vercel")).toBeNull();
+  });
+});
+
+
+describe("code is a step (CA-02 P7)", () => {
+  it("saves the source, its language and the optional file name, tool, model and entrypoint", async () => {
+    await addCode(BUILD, [node({ position: 2 })], { source: "export const a = 1;\n", language: "ts", filename: " app.ts ", tool: "Cursor", model: "Opus 5", entrypoint: true });
+    expect(upsertNode.mock.calls[0][0]).toMatchObject({ type: "code", parent_id: null, position: 3, title: null });
+    expect(payloadWritten()).toEqual({ source: "export const a = 1;\n", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5", entrypoint: true });
+    upsertNode.mockClear();
+    await addCode(BUILD, [], { source: "select 1;", language: "sql" });
+    expect(payloadWritten()).toEqual({ source: "select 1;", language: "sql" });
+  });
+
+  it("refuses empty source, source over 100,000 characters, a language outside the schema and a long file name or tool", async () => {
+    await expect(addCode(BUILD, [], { source: "  \n ", language: "ts" })).rejects.toThrow(/needs its lines/);
+    await expect(addCode(BUILD, [], { source: "x".repeat(100_001), language: "ts" })).rejects.toThrow("Code is at most 100,000 characters. Upload it as a file instead.");
+    await expect(addCode(BUILD, [], { source: "x", language: "rust" })).rejects.toThrow(/language/);
+    await expect(addCode(BUILD, [], { source: "x", language: "ts", filename: "f".repeat(121) })).rejects.toThrow(/120/);
+    await expect(addCode(BUILD, [], { source: "x", language: "ts", tool: "t".repeat(41) })).rejects.toThrow(/40/);
+    expect(upsertNode).not.toHaveBeenCalled();
+    await addCode(BUILD, [], { source: "x".repeat(100_000), language: "other" });
+    expect(upsertNode).toHaveBeenCalledTimes(1);
+  });
+
+  it("numbers code like any top-level step, with its source as its text and its uses", () => {
+    const tree = [
+      node({ id: "p1", type: "prompt", position: 1, payload: { text: "Plan the app", tool: "cursor" } }),
+      node({ id: "c1", type: "code", position: 2, payload: { source: "a\nb", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5", entrypoint: true, uses: [{ kind: "output", node_id: "p1" }] } }),
+      node({ id: "f1", type: "document", position: 3, payload: { title: "notes.md" } }),
+      node({ id: "c2", type: "code", position: 4, payload: { source: "select 1;", language: "sql" } }),
+    ];
+    const steps = buildSteps(tree);
+    expect(steps.map((step) => [step.id, step.kind, step.number, step.defaultTitle])).toEqual([
+      ["p1", "prompt", "1", "Prompt 1"],
+      ["c1", "code", "2", "Code 2"],
+      ["c2", "code", "3", "Code 3"],
+    ]);
+    expect(steps[1]).toMatchObject({ text: "a\nb", words: 2, language: "ts", filename: "app.ts", entrypoint: true, tool: "Cursor", model: "Opus 5", uses: [{ kind: "output", node_id: "p1" }] });
+    expect(steps[2]).toMatchObject({ filename: null, entrypoint: false });
+    expect(goesInto(steps, "p1").map((step) => step.id)).toEqual(["c1"]);
   });
 });

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
+import { MODEL_VERSIONS } from "@/lib/models/registry";
+
+import { LOGO_KEYS, SUGGESTED_TOOLS, TOOLS, TOOL_GROUPS, isPickable, projectFileOf, toolFor, toolName, toolsInGroup } from "./registry";
 
 const squash = (raw: string) => raw.toLowerCase().replace(/[\s._-]+/g, "");
 
 describe("tool registry", () => {
-  it("has 42 tools with unique ids", () => {
-    expect(TOOLS).toHaveLength(42);
+  it("has 43 tools with unique ids", () => {
+    expect(TOOLS).toHaveLength(43);
     expect(new Set(TOOLS.map((t) => t.id)).size).toBe(TOOLS.length);
   });
 
@@ -58,6 +60,53 @@ describe("tool registry", () => {
     expect(toolFor("cursor")?.projectFiles).toEqual([".cursor/rules/"]);
     expect(toolFor("github-copilot")?.projectFiles).toEqual([".github/copilot-instructions.md"]);
     expect(TOOLS.filter((t) => t.importsFile).map((t) => t.id)).toEqual(["n8n", "comfyui"]);
+  });
+});
+
+describe("what each tool is, offers and fits (CA-02)", () => {
+  const known = new Set(MODEL_VERSIONS.map((m) => m.id));
+
+  it("gives every tool a kind, models, steps and a status", () => {
+    for (const tool of TOOLS) {
+      expect(["chat", "coding", "builder", "agent", "automation", "image", "video", "audio", "notes", "design", "app"], tool.id).toContain(tool.kind);
+      expect(["fixed", "any", "tiers", "hidden", "none"], tool.id).toContain(tool.models.mode);
+      expect(Array.isArray(tool.steps), tool.id).toBe(true);
+      expect(["current", "retired"], tool.id).toContain(tool.status);
+      expect(tool.source === null || /^https:\/\//.test(tool.source), tool.id).toBe(true);
+      expect(tool.checked === null || tool.checked === "2026-10-19", tool.id).toBe(true);
+    }
+  });
+
+  it("names only models the model registry has", () => {
+    for (const tool of TOOLS) {
+      const ids = tool.models.mode === "fixed" ? tool.models.ids : tool.models.mode === "any" ? tool.models.suggested : [];
+      for (const id of ids) expect(known.has(id), `${tool.id}: ${id}`).toBe(true);
+    }
+  });
+
+  it("keeps a retired tool for old builds but never suggests it", () => {
+    expect(toolFor("sora")?.status).toBe("retired");
+    expect(toolFor("Sora")?.name).toBe("Sora");
+    expect(isPickable(toolFor("sora")!)).toBe(false);
+    for (const id of SUGGESTED_TOOLS) expect(toolFor(id)?.status, id).toBe("current");
+    expect(toolFor("sora")?.steps).toEqual([]);
+  });
+
+  it("never lists prompt for a tool that runs no model, or for an agent", () => {
+    for (const tool of TOOLS.filter((t) => t.models.mode === "none" || t.kind === "agent")) expect(tool.steps, tool.id).not.toContain("prompt");
+  });
+
+  it("lets every tool but Sora be named on a manual step", () => {
+    for (const tool of TOOLS) expect(tool.steps.includes("manual"), tool.id).toBe(tool.id !== "sora");
+  });
+
+  it("adds Muse Code beside Muse, Meta's consumer agent", () => {
+    expect(toolFor("muse-code")).toMatchObject({ name: "Muse Code", group: "coding", kind: "coding" });
+    expect(toolFor("muse")?.kind).toBe("agent");
+  });
+
+  it("gives Claude Code its plans and acts roles", () => {
+    expect(toolFor("claude-code")?.roles).toEqual(["main", "plans", "acts"]);
   });
 });
 

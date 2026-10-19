@@ -139,6 +139,203 @@ describe("step cards", () => {
   });
 });
 
+describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
+  const openMenu = (name: string | RegExp) => fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
+  const pickTool = (query: string, row: string | RegExp) => {
+    fireEvent.click(screen.getByRole("button", { name: /^Typed here · / }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a tool" }), { target: { value: query } });
+    fireEvent.click(screen.getByRole("option", { name: row }));
+  };
+
+  it("asks for a tool before it offers a model", () => {
+    list();
+    const button = screen.getByRole("button", { name: "Pick a tool first" });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(button.textContent).toContain("model");
+  });
+
+  it("offers the tool's own models under their lab, and saves the one picked", async () => {
+    const props = list();
+    pickTool("claude", "Claude");
+    openMenu("model");
+    expect(screen.getByText("Anthropic")).toBeTruthy();
+    expect(screen.queryByRole("menuitemradio", { name: "Grok 4.7" })).toBeNull();
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
+    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: "Plan it" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Plan it", tool: "claude", model: "Opus 5.5" });
+  });
+
+  it("clears a model the new tool does not offer, and says so once in a polite region", () => {
+    list();
+    pickTool("claude", "Claude");
+    openMenu("model");
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
+    pickTool("chatgpt", "ChatGPT");
+    expect(screen.getByRole("button", { name: "model" })).toBeTruthy();
+    const region = screen.getByTestId("model-cleared");
+    expect(region.getAttribute("aria-live")).toBe("polite");
+    expect(region.textContent).toBe("ChatGPT doesn't offer Opus 5.5. Model cleared.");
+  });
+
+  it("keeps a model the new tool offers", () => {
+    list();
+    pickTool("claude", "Claude");
+    openMenu("model");
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5" }));
+    pickTool("cursor", "Cursor");
+    expect(screen.getByRole("button", { name: "model Opus 5" })).toBeTruthy();
+    expect(screen.getByTestId("model-cleared").textContent).toBe("");
+  });
+
+  it("draws no model menu for a tool that runs prompts by itself, and saves no prompt", () => {
+    const props = list();
+    pickTool("hermes", /^Hermes Agent/);
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+    // Hermes Agent runs prompts by itself: no model menu, the line and the button instead.
+    expect(screen.getByText("Hermes Agent runs prompts by itself. Add it as an agent.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Add prompt" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(props.onAddPrompt).not.toHaveBeenCalled();
+  });
+
+  it("hands Add as an agent the tool and the text, and clears the field once the agent is saved", async () => {
+    const onAddAsAgent = vi.fn(() => Promise.resolve(true));
+    list({ onAddAsAgent });
+    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    fireEvent.change(field, { target: { value: "Triage my inbox" } });
+    pickTool("hermes", /^Hermes Agent/);
+    fireEvent.click(screen.getByRole("button", { name: "Add as an agent" }));
+    expect(onAddAsAgent).toHaveBeenCalledWith({ harness: "hermes-agent", instructions: "Triage my inbox" });
+    await waitFor(() => expect(field.value).toBe(""));
+  });
+
+  it("keeps the field's text when the agent is not saved", async () => {
+    const onAddAsAgent = vi.fn(() => Promise.resolve(false));
+    list({ onAddAsAgent });
+    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    fireEvent.change(field, { target: { value: "Triage my inbox" } });
+    pickTool("hermes", /^Hermes Agent/);
+    fireEvent.click(screen.getByRole("button", { name: "Add as an agent" }));
+    await waitFor(() => expect(onAddAsAgent).toHaveBeenCalled());
+    expect(field.value).toBe("Triage my inbox");
+  });
+
+  it("offers a typed model through Other model… for a tool that takes one", () => {
+    const props = list();
+    pickTool("claude code", "Claude Code");
+    openMenu("model");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Other model…" }));
+    const other = screen.getByRole("textbox", { name: "Other model" }) as HTMLInputElement;
+    expect(other.maxLength).toBe(40);
+    fireEvent.change(other, { target: { value: "my-local-llm" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: "Go" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: "Go", tool: "claude-code", model: "my-local-llm" });
+  });
+
+  it("offers a builder's tiers, and shows a hidden model's note in place of a menu", () => {
+    list();
+    pickTool("v0", "v0");
+    openMenu("model");
+    expect(screen.getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual(["No model", "v0 Mini", "v0 Pro", "v0 Max"]);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    pickTool("lovable", "Lovable");
+    expect(screen.getByText("Lovable picks the model that builds your app")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+  });
+});
+
+describe("code (CA-02 P7)", () => {
+  const codeStep = (over: Record<string, unknown> = {}) => {
+    const base = sandboxListProps("bakery");
+    const number = String(base.steps.length + 1);
+    return {
+      ...base.steps[0],
+      id: "c9",
+      kind: "code" as const,
+      number,
+      title: null,
+      defaultTitle: `Code ${number}`,
+      text: "1\n2\n3\n4\n5\n6\n7\n8",
+      words: 8,
+      model: null,
+      sessionId: null,
+      tool: null,
+      uses: [],
+      children: [],
+      runs: null,
+      language: "ts",
+      filename: "app.ts",
+      ...over,
+    };
+  };
+
+  it("shows Code, its file name, its line count and its first six lines in a mono well", () => {
+    const base = sandboxListProps("bakery");
+    const step = codeStep();
+    list({ steps: [...base.steps, step] });
+    const card = screen.getByRole("group", { name: `Code ${step.number}: Code ${step.number}` });
+    expect(card.getAttribute("data-kind")).toBe("code");
+    expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · app.ts · 8 lines");
+    const well = within(card).getByTestId("code-lines");
+    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6");
+    expect(well.style.fontFamily).toContain("--font-data");
+    expect(within(card).getByRole("button", { name: `Code ${step.number} options` })).toBeTruthy();
+  });
+
+  it("names the language when the code has no file name", () => {
+    const base = sandboxListProps("bakery");
+    list({ steps: [...base.steps, codeStep({ filename: null, language: "sql", text: "select 1;" })] });
+    expect(screen.getByTestId("code-eyebrow").textContent).toBe("Code · sql · 1 line");
+  });
+});
+
+describe("pasting code into Typed here (CA-02 P7)", () => {
+  const CODE = "const a = 1;\nconst b = 2;\nexport { a, b };";
+  const paste = (text: string) => {
+    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    fireEvent.paste(field);
+    fireEvent.change(field, { target: { value: text } });
+    return field;
+  };
+
+  it("offers to keep pasted code as code, and never converts it by itself", async () => {
+    const onKeepAsCode = vi.fn(() => Promise.resolve(true));
+    const props = list({ onKeepAsCode });
+    const field = paste(CODE);
+    expect(screen.getByText("This looks like code.")).toBeTruthy();
+    expect(field.value).toBe(CODE);
+    expect(props.onAddPrompt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
+    expect(onKeepAsCode).toHaveBeenCalledWith(CODE);
+    await waitFor(() => expect(field.value).toBe(""));
+  });
+
+  it("offers nothing for prose, for two lines, or for code typed rather than pasted", () => {
+    list({ onKeepAsCode: vi.fn(() => Promise.resolve(true)) });
+    paste("Write me a poem\nabout bread\nand butter");
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+    paste("const a = 1;\nconst b = 2;");
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+    cleanup();
+    list({ onKeepAsCode: vi.fn(() => Promise.resolve(true)) });
+    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: CODE } });
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+  });
+
+  it("keeps the text when the code is not saved, and still lets it go as a prompt", async () => {
+    const onKeepAsCode = vi.fn(() => Promise.resolve(false));
+    const props = list({ onKeepAsCode });
+    const field = paste(CODE);
+    fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
+    await waitFor(() => expect(onKeepAsCode).toHaveBeenCalled());
+    expect(field.value).toBe(CODE);
+    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: CODE, tool: null, model: null });
+  });
+});
+
 describe("the add field", () => {
   it("adds on Enter, not on Shift+Enter, and clears once saved", async () => {
     const props = list();

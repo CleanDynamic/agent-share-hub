@@ -18,11 +18,13 @@ import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
+import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import {
@@ -38,7 +40,10 @@ import {
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { MADE_FILE_NAME_MAX, type Runs, type Use } from "@/lib/build/graph";
+import { MADE_FILE_NAME_MAX, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+
+import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
+import { ModelPicker } from "./ModelPicker";
 
 export interface InputsView {
   uses: readonly UseRow[];
@@ -61,6 +66,8 @@ export interface PromptView extends InputsView {
   /** A prompt written by hand: it names its own model. */
   typed: boolean;
   model: string | null;
+  /** CA-02 P8: a typed prompt's tool, as saved (a name or as typed); absent for one from a session. */
+  tool?: string | null;
   text: string;
   words: number;
   /** The files it makes; empty for an agent's instructions. */
@@ -129,6 +136,8 @@ export interface AgentView extends InputsView {
   instructions: string;
   /** "Team 3 · Copy team" for an agent inside a team; null otherwise. */
   parent: string | null;
+  /** CA-02 P5, an agent only: what it ran in, its models with their roles and the tools it can use. */
+  setup?: AgentSetupValue;
 }
 
 export interface ResultView {
@@ -140,7 +149,24 @@ export interface ResultView {
   pictures: readonly { id: string; name: string }[];
 }
 
-export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView;
+/** CA-02 P7: lines of code. Shown in full, with Copy; never run. */
+export interface CodeView extends InputsView {
+  kind: "code";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  language: string | null;
+  filename: string | null;
+  source: string;
+  lines: number;
+  /** "Written with": the tool's name, or as typed, and the model. */
+  tool: string | null;
+  model: string | null;
+  makes: readonly MakesRow[];
+}
+
+export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView;
 
 export interface DetailsHandlers {
   onRename: (id: string, title: string) => void;
@@ -160,6 +186,8 @@ export interface DetailsHandlers {
   onManualPicture?: (id: string, file: File) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
+  /** CA-02 P5: change what an agent ran in, its models or its tools. Absent: they are shown, not edited. */
+  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[] }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
@@ -620,6 +648,36 @@ function MakesList({
   );
 }
 
+/* ── a saved pair that breaks the rules (CA-02 P8) ── */
+
+export const PAIR_COPY = {
+  notOffered: (tool: string, model: string) => `${tool} doesn't offer ${model}.`,
+  runsNoModel: (tool: string) => `${tool} doesn't run a model.`,
+  hidesModel: (tool: string) => `${tool} doesn't show which model it used.`,
+  change: "Change the model",
+  remove: "Remove the model",
+} as const;
+
+/**
+ * One quiet line and one text button, for a tool and model saved together that the tool's rules do not allow. Only
+ * the maker sees Details, so only the maker sees it; nothing changes until they press the button. An unknown tool
+ * or model says nothing.
+ */
+function PairNote({ tool, model, phone, onChange, onRemove }: { tool: string | null | undefined; model: string | null | undefined; phone: boolean; onChange: () => void; onRemove: () => void }) {
+  const check = pairCheck(tool, model);
+  if (check !== "not-offered" && check !== "tool-runs-no-model" && check !== "tool-hides-model") return null;
+  const name = toolName(tool) ?? (tool ?? "").trim();
+  const line = check === "not-offered" ? PAIR_COPY.notOffered(name, (model ?? "").trim()) : check === "tool-runs-no-model" ? PAIR_COPY.runsNoModel(name) : PAIR_COPY.hidesModel(name);
+  return (
+    <div data-testid="pair-note" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+      <span style={text(12, 400, t.text2)}>{line}</span>
+      <TextButton target={phone} underline style={text(12, 500, t.text)} onClick={check === "not-offered" ? onChange : onRemove}>
+        {check === "not-offered" ? PAIR_COPY.change : PAIR_COPY.remove}
+      </TextButton>
+    </div>
+  );
+}
+
 /* ── a prompt ── */
 
 /** The tool, from the session line: "Session 2 · Claude Code" and "Typed here · ChatGPT" both end in it. */
@@ -633,6 +691,8 @@ function Makes({ id, rows, phone, focus, h }: { id: string; rows: readonly Makes
 
 function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
   const open = h.onOpenPrompt ? () => h.onOpenPrompt?.(view.id) : undefined;
+  /** CA-02 P8: "Change the model" opens the model menu. */
+  const [openModel, setOpenModel] = useState(0);
   return (
     <>
       <Head eyebrow={`Prompt ${view.number}`}>
@@ -646,22 +706,18 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
         </div>
       </Head>
       {view.typed ? (
-        <FieldBlock label="Model">
-          <select
-            aria-label="Model"
-            value={view.model ?? ""}
-            onChange={(event) => h.onModel(view.id, event.target.value || null)}
-            style={{ ...wellField, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
-          >
-            <option value="">No model</option>
-            {MODEL_VERSIONS.map((version) => (
-              <option key={version.id} value={version.name}>
-                {version.name}
-              </option>
-            ))}
-          </select>
-          {!view.model ? <span style={quiet()}>Model is empty because there is no session to read it from.</span> : null}
-        </FieldBlock>
+        /* CA-02 P8: the menu follows the prompt's tool, as Typed here's does. A group, not a label: a label would name
+           the menu's button and the note's button after itself. */
+        <div role="group" aria-label="Model" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={quiet()}>Model</span>
+          <div>
+            <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => h.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool />
+          </div>
+          {!view.model && modelMenu(harnessTool(view.tool)).state !== "hidden" && modelMenu(harnessTool(view.tool)).state !== "none" ? (
+            <span style={quiet()}>Model is empty because there is no session to read it from.</span>
+          ) : null}
+          <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => h.onModel(view.id, null)} />
+        </div>
       ) : null}
       <div style={{ ...wellField, padding: 12 }}>
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -697,7 +753,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
       </Head>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
         <span style={quiet()}>Tool</span>
-        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} onChange={(value) => commit({ tool: value ?? "" })} />
+        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} step="manual" onChange={(value) => commit({ tool: value ?? "" })} />
       </div>
       <FieldBlock label="What was done">
         <CommitField key={`${view.id}:text`} label="What was done" value={view.text} max={140} multiline phone={phone} onCommit={(value) => commit({ text: value })} />
@@ -734,6 +790,58 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
   );
 }
 
+/* ── code (CA-02 P7) ── */
+
+export const CODE_DETAILS_COPY = {
+  copy: "Copy",
+  copied: "Copied",
+  copyFailed: "Couldn't copy that. Select the code and copy it by hand.",
+  writtenWith: "Written with",
+} as const;
+
+function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
+  const [said, setSaid] = useState("");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(view.source);
+      setSaid(CODE_DETAILS_COPY.copied);
+    } catch {
+      setSaid(CODE_DETAILS_COPY.copyFailed);
+    }
+  };
+  const written = [view.tool, view.model].filter(Boolean).join(" · ");
+  return (
+    <>
+      <Head eyebrow={`Code ${view.number}`}>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of code ${view.number}`} phone={phone} onRename={h.onRename} />
+        <span style={text(12, 400, t.text2)}>{[view.filename, view.language, `${view.lines} ${view.lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
+      </Head>
+      {written ? (
+        <div>
+          <KeyValue label={CODE_DETAILS_COPY.writtenWith}>{written}</KeyValue>
+        </div>
+      ) : null}
+      <pre
+        data-testid="details-code"
+        style={{ ...wellField, margin: 0, padding: 12, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", maxHeight: 480, overflowY: "auto" }}
+      >
+        {view.source}
+      </pre>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
+          {CODE_DETAILS_COPY.copy}
+        </Button>
+        <span aria-live="polite" style={quiet()}>
+          {said}
+        </span>
+      </div>
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
 /* ── a session ── */
 
 function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
@@ -751,7 +859,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <KeyValue label="Tool">{view.tool}</KeyValue>
         {view.pickTool && onSessionTool ? (
           <div style={{ padding: "10px 0", borderBottom: line }}>
-            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} onChange={(value) => onSessionTool(view.key, value)} />
+            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} step="session" onChange={(value) => onSessionTool(view.key, value)} />
           </div>
         ) : null}
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
@@ -905,7 +1013,47 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
   );
 }
 
-function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean } & DetailsHandlers) {
+/** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
+function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]> }) {
+  const [value, setValue] = useState(initial);
+  const [openModel, setOpenModel] = useState(0);
+  const change = (next: AgentSetupValue) => {
+    setValue(next);
+    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools });
+  };
+  const main = value.models[0]?.model ?? null;
+  return (
+    <>
+      <PairNote
+        tool={value.harness}
+        model={main}
+        phone={phone}
+        onChange={() => setOpenModel((n) => n + 1)}
+        // An agent always names a model: the harness's own name stands in for one it does not show or run.
+        onRemove={() => {
+          const own = hiddenModelName(value.harness) ?? toolName(value.harness) ?? value.harness;
+          if (own) change({ ...value, models: [{ model: own, role: "main" }, ...value.models.slice(1)] });
+        }}
+      />
+      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} labels="panel" />
+    </>
+  );
+}
+
+/** An agent's setup as read-only lines, where the panel cannot write it. */
+function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
+  return (
+    <div>
+      <KeyValue label="Runs in">{setup.harness ?? "My own code (API)"}</KeyValue>
+      {setup.models.map((row, index) => (
+        <KeyValue key={index} label={index === 0 ? "Model" : `Model ${index + 1}`}>{`${row.model ?? ""} · ${row.role}`}</KeyValue>
+      ))}
+      {setup.tools.length ? <KeyValue label="Tools it can use">{setup.tools.join(" · ")}</KeyValue> : null}
+    </div>
+  );
+}
+
+function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
   return (
     <>
@@ -915,11 +1063,18 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>
-      {view.model || view.parent ? (
+      {(view.model && !view.setup) || view.parent ? (
         <div>
           {view.parent ? <KeyValue label="In">{view.parent}</KeyValue> : null}
-          {view.model ? <KeyValue label="Model">{view.model}</KeyValue> : null}
+          {view.model && !view.setup ? <KeyValue label="Model">{view.model}</KeyValue> : null}
         </div>
+      ) : null}
+      {view.setup ? (
+        h.onAgentSetup ? (
+          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} />
+        ) : (
+          <AgentSetupLines setup={view.setup} />
+        )
       ) : null}
       {view.kind === "agent" ? (
         <FieldBlock label="Instructions">
@@ -998,10 +1153,11 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
+      {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
-      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
     </div>
   );

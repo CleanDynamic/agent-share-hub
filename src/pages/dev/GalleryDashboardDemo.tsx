@@ -15,7 +15,7 @@ import { useSearchParams } from "react-router-dom";
 import { DASHBOARD_FIXTURE_ALIASES, DASHBOARD_FIXTURE_NOW, DASHBOARD_FIXTURE_ROWS } from "@/dev/fixtures/gallery-dashboard";
 import type { DashboardActive, DashboardReport, DashboardSort, DashboardTab } from "@/lib/build/galleryParams";
 import type { Lab } from "@/lib/models/registry";
-import { LABS } from "@/lib/models/registry";
+import { TEXT_LABS } from "@/lib/models/registry";
 import { GalleryDashboardView } from "@/pages/site/gallery/GalleryDashboardView";
 import { dashboardCounts, filterDashboardRows } from "@/pages/site/gallery/dashboardModel";
 
@@ -39,7 +39,7 @@ export default function GalleryDashboardDemo(props: DesignPageProps) {
   const requested = searchParams.get("build");
   const [openId, setOpenId] = useState<string | null>(requested ? (DASHBOARD_FIXTURE_ALIASES[requested] ?? requested) : null);
 
-  const counts = useMemo(() => dashboardCounts(DASHBOARD_FIXTURE_ROWS, LABS, DASHBOARD_FIXTURE_NOW), []);
+  const counts = useMemo(() => dashboardCounts(DASHBOARD_FIXTURE_ROWS, TEXT_LABS, DASHBOARD_FIXTURE_NOW), []);
   const rows = useMemo(
     () => filterDashboardRows(DASHBOARD_FIXTURE_ROWS, { model, lab, audience, report, active, q: query }, DASHBOARD_FIXTURE_NOW),
     [model, lab, audience, report, active, query],

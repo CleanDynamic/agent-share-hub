@@ -34,7 +34,8 @@ import {
   type ChecklistRow,
   type NamedPiece,
 } from "./detailsModel";
-import type { AgentView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import type { AgentView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
 export interface MediaFacts {
@@ -101,6 +102,8 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
     typed,
     model,
+    // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
+    ...(typed ? { tool: step.tool } : null),
     text: step.text,
     words: step.words,
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
@@ -134,6 +137,26 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   };
 }
 
+function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CodeView {
+  return {
+    kind: "code",
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    language: step.language ?? null,
+    filename: step.filename ?? null,
+    source: step.text,
+    lines: lineCount(step.text),
+    tool: step.tool,
+    model: step.model ? modelLabel(step.model) : null,
+    uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
+    goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+    makes: makesRows(step.id, ctx.tree),
+  };
+}
+
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
@@ -149,6 +172,16 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     inside: insideCounts(step),
     instructions: step.kind === "agent" ? step.text : "",
     parent: parentLine(step.id, ctx.steps),
+    // CA-02 P5: what it ran in, its models and its tools, as the setup controls hold them.
+    ...(step.kind === "agent"
+      ? {
+          setup: {
+            harness: step.harness ?? null,
+            models: step.models && step.models.length > 1 ? step.models.map((row) => ({ ...row })) : [{ model: step.model, role: "main" }],
+            tools: (step.toolRefs ?? []).map((ref) => all.byId[ref]?.name).filter((name): name is string => Boolean(name)),
+          },
+        }
+      : null),
     // An agent's instructions are its own row; only what can be taken out is listed.
     insideRows: step.children.filter((child) => !child.id.endsWith(":instructions")).map((child) => ({ id: child.id, label: `${child.number} · ${stepTitle(child)}` })),
   };
@@ -249,6 +282,7 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
+    if (step.kind === "code") return codeView(step, ctx, all);
     return manualView(step, ctx, all);
   }
   const source = ctx.sources.find((candidate) => candidate.key === id);

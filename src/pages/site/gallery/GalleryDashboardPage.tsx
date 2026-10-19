@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { galleryHref, parseGalleryParams, type GalleryParams } from "@/lib/build";
 import { listGalleryDashboard, type GalleryDashboardParams } from "@/lib/build/gallery";
 import { countDraftBuilds } from "@/lib/build/sessions";
-import { LABS } from "@/lib/models/registry";
+import { TEXT_LABS } from "@/lib/models/registry";
 
 import { GalleryDashboardView } from "./GalleryDashboardView";
 import { dashboardCounts } from "./dashboardModel";
@@ -96,7 +96,7 @@ export function GalleryDashboardPage() {
   });
 
   const allRows = everything.data ?? [];
-  const counts = useMemo(() => dashboardCounts(allRows, LABS), [allRows]);
+  const counts = useMemo(() => dashboardCounts(allRows, TEXT_LABS), [allRows]);
 
   const drafts = useQuery({
     queryKey: ["build", "countDraftBuilds"],

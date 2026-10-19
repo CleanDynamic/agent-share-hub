@@ -95,9 +95,10 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the seven Add items in order; all seven are live (UI-P64 to UI-P70)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "result"]);
+  it("lists the eight Add items in order, Code after Manual step; all eight are live (UI-P64 to UI-P70, CA-02 P7)", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "code", "result"]);
+    expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
   });
 
   it("opens the Card from its button with the six sections' fields", () => {
@@ -171,7 +172,7 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
   });
 });
 
-describe("the Add menu holds exactly 7 items, all enabled (UI-P70)", () => {
+describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7)", () => {
   it("enables every item once each has something to open", async () => {
     view({
       onAddFile: vi.fn(),
@@ -180,13 +181,26 @@ describe("the Add menu holds exactly 7 items, all enabled (UI-P70)", () => {
       onAddPromptFocus: vi.fn(),
       onAddAgent: vi.fn(),
       onAddManual: vi.fn(),
+      onAddCode: vi.fn(),
       onAddSession: vi.fn(),
       addableSessions: [{ id: "x", label: "A chat", line: "today" }],
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(7);
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(7).fill(null));
+    expect(items).toHaveLength(8);
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(8).fill(null));
+  });
+
+  it("opens the code dialog from Add › Code, and leaves it disabled when nothing opens it", async () => {
+    const onAddCode = vi.fn();
+    view({ onAddCode });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /^Code/ }));
+    expect(onAddCode).toHaveBeenCalled();
+    cleanup();
+    view();
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    expect((await screen.findByRole("menuitem", { name: /^Code/ })).getAttribute("aria-disabled")).toBe("true");
   });
 
   it("opens the manual step dialog from Add › Manual step", async () => {

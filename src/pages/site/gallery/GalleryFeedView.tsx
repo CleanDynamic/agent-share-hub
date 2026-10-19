@@ -45,7 +45,7 @@ import type { PageFit } from "@/components/shell/siteFrameFit";
 import { engagementFor, type Engagement } from "@/hooks/useEngagement";
 import type { GalleryFeedCounts, GalleryFeedRow, GalleryFeedSort } from "@/lib/build/gallery";
 import { markFor } from "@/lib/models/marks";
-import { LABS, MODEL_VERSIONS, type ModelVersion } from "@/lib/models/registry";
+import { TEXT_LABS, offeredTextModels, type ModelVersion } from "@/lib/models/registry";
 import { TOOL_GROUPS, toolsInGroup, type Tool } from "@/lib/tools/registry";
 import { r } from "@/lib/theme/radius";
 
@@ -178,10 +178,10 @@ export function menusFor(props: GalleryFeedViewProps): FeedMenu[] {
         { key: "any", label: "Any model", count: counts?.all, selected: model === null, onSelect: () => onModelChange(null) },
       ],
     },
-    ...LABS.map((lab) => ({
+    ...TEXT_LABS.map((lab) => ({
       heading: lab,
       headingMark: markFor({ lab }) ? <ModelMark lab={lab} size={14} /> : undefined,
-      options: MODEL_VERSIONS.filter((version) => version.lab === lab).map((version) => ({
+      options: offeredTextModels(lab).map((version) => ({
         key: version.id,
         label: version.name,
         count: counts ? (counts.byModel[version.id] ?? 0) : undefined,

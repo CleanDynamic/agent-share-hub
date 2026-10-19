@@ -11,6 +11,7 @@
 
 import type { ReactNode } from "react";
 import { t } from "@/lib/theme/tokens";
+import { toolName } from "@/lib/tools/registry";
 import {
   Caption,
   Field,
@@ -43,6 +44,10 @@ function captionParts(props: NodeProps): string[] {
   const payload = payloadOf(props.node);
   const parts: string[] = [];
 
+  // CA-02 P9: the tool a typed prompt names, by its name, before the model it ran on.
+  const tool = str(payload, "tool")?.trim();
+  if (tool) parts.push(toolName(tool) ?? tool);
+
   for (const key of CAPTION_KEYS) {
     const value = str(payload, key);
     if (value) parts.push(value);
@@ -74,6 +79,7 @@ function InstructionBody(props: NodeProps): ReactNode {
 
   const handled = [
     "text",
+    "tool",
     VARIABLES_KEY,
     ...CAPTION_KEYS,
     ...REFERENCE_KEYS,

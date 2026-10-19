@@ -16,6 +16,9 @@ const graph = vi.hoisted(() => ({
   setManualFields: vi.fn(),
   removeUse: vi.fn(),
   addMadeFile: vi.fn(),
+  addTool: vi.fn(),
+  setAgentSetup: vi.fn(),
+  addCode: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -104,6 +107,65 @@ describe("adding an agent or a team (UI-P69)", () => {
     });
     expect(graph.addAgent).toHaveBeenCalledWith("b1", tree, { model: "Opus 5.5", parentId: "tm1" });
     expect(id).toBe("ag2");
+  });
+});
+
+describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
+  const integration = (id: string, service: string) => row({ id, type: "integration", payload: { service } });
+
+  it("hands the harness and the models on, and refers to the build's own integration node for a tool it has", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const tree = [integration("t-gmail", "Gmail")];
+    const { result } = hook(tree);
+    await act(async () => {
+      await result.current.addAgentOrTeam({
+        kind: "agent",
+        name: null,
+        model: "Opus 5.5",
+        harness: "hermes-agent",
+        models: [
+          { model: "Opus 5.5", role: "main" },
+          { model: "Haiku 5.5", role: "other" },
+        ],
+        tools: ["gmail"],
+        instructions: "Triage my inbox",
+      });
+    });
+    expect(graph.addAgent).toHaveBeenCalledWith("b1", tree, {
+      name: null,
+      model: "Opus 5.5",
+      instructions: "Triage my inbox",
+      harness: "hermes-agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      toolRefs: ["t-gmail"],
+    });
+    expect(graph.addTool).not.toHaveBeenCalled();
+  });
+
+  it("makes an integration node for a tool the build does not have yet", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    graph.addTool.mockResolvedValue({ id: "t-new" } as BuildNode);
+    const { result, record } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5", tools: ["github-copilot"] });
+    });
+    expect(graph.addTool).toHaveBeenCalledWith("b1", [], { service: "GitHub Copilot" });
+    expect(record).toHaveBeenCalledWith("t-new", { id: "t-new" });
+    expect(graph.addAgent).toHaveBeenCalledWith("b1", [], { name: null, model: "Opus 5.5", toolRefs: ["t-new"] });
+  });
+
+  it("changes an agent's setup from Details through setAgentSetup", async () => {
+    graph.setAgentSetup.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const agent = row({ id: "ag1", type: "agent_config", payload: { system_prompt: "", model: "Opus 5.5" } });
+    const { result } = hook([agent, integration("t-gmail", "Gmail")]);
+    await act(async () => {
+      result.current.setAgent("ag1", { model: "Sonnet 5.5", harness: "claude-code", models: [], tools: ["Gmail"] });
+    });
+    await vi.waitFor(() => expect(graph.setAgentSetup).toHaveBeenCalled());
+    expect(graph.setAgentSetup.mock.calls[0][1]).toEqual({ model: "Sonnet 5.5", harness: "claude-code", models: [], toolRefs: ["t-gmail"] });
   });
 });
 
@@ -391,5 +453,41 @@ describe("naming and removing a file a step makes (TF-08)", () => {
     });
     expect(deleteNode).not.toHaveBeenCalled();
     expect(graph.removeUse).not.toHaveBeenCalled();
+  });
+});
+
+describe("code steps (CA-02 P7)", () => {
+  it("adds one step for each piece, in order, written with the tool and model, and says which is first", async () => {
+    graph.addCode.mockResolvedValueOnce({ id: "c1" } as BuildNode).mockResolvedValueOnce({ id: "c2" } as BuildNode);
+    const { result, record } = hook();
+    let first: string | null = null;
+    await act(async () => {
+      first = await result.current.addCodeSteps({
+        steps: [
+          { source: "a", language: "ts", filename: "app.ts" },
+          { source: "select 1;", language: "sql", filename: "schema.sql" },
+        ],
+        tool: "cursor",
+        model: "Opus 5",
+      });
+    });
+    expect(graph.addCode.mock.calls.map((call) => call[2])).toEqual([
+      { source: "a", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5" },
+      { source: "select 1;", language: "sql", filename: "schema.sql", tool: "cursor", model: "Opus 5" },
+    ]);
+    expect(record).toHaveBeenCalledWith("c1", { id: "c1" });
+    expect(record).toHaveBeenCalledWith("c2", { id: "c2" });
+    expect(first).toBe("c1");
+  });
+
+  it("says why code over the limit was refused, and resolves null", async () => {
+    graph.addCode.mockRejectedValue(new Error("Code is at most 100,000 characters. Upload it as a file instead."));
+    const { result } = hook();
+    let first: string | null = "x";
+    await act(async () => {
+      first = await result.current.addCodeSteps({ steps: [{ source: "x", language: "ts", filename: null }], tool: null, model: null });
+    });
+    expect(first).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith("Code is at most 100,000 characters. Upload it as a file instead.");
   });
 });

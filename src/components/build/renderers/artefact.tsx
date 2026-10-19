@@ -15,6 +15,8 @@ import type { CSSProperties } from "react";
 import { hexToRgba } from "../tokens";
 import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
+import { modelLabel } from "@/lib/models/registry";
+import { toolName } from "@/lib/tools/registry";
 import { data as dataType, eyebrow, label as labelType, tabular } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
@@ -84,8 +86,13 @@ export function ArtefactRenderer(props: NodeProps) {
   const language = str(payload, "language");
   const filename = str(payload, "filename");
   const entrypoint = bool(payload, "entrypoint");
+  // CA-02 P7: code the composer saved names what it was written with; no other artefact carries these.
+  const writtenTool = str(payload, "tool")?.trim();
+  const writtenWith = [writtenTool ? (toolName(writtenTool) ?? writtenTool) : null, str(payload, "model") ? modelLabel(str(payload, "model")) : null].filter(Boolean).join(" · ");
   const url = str(payload, URL_KEY);
   const summary = str(payload, "summary");
+  // A file the composer adds keeps its name in `title` and none on the node; then the card above has no title to repeat (CA-02 P9).
+  const ownName = props.node.title?.trim() ? null : str(payload, "title")?.trim();
 
   // `title` duplicates the node's own title on the card above it.
   const gridFields = fields.filter(
@@ -107,6 +114,8 @@ export function ArtefactRenderer(props: NodeProps) {
     "entrypoint",
     "summary",
     "title",
+    "tool",
+    "model",
     ...gridFields.map((field) => field.key),
     ...remainingText.map((field) => field.key),
   ];
@@ -114,6 +123,10 @@ export function ArtefactRenderer(props: NodeProps) {
   return (
     <div data-visual-slot="renderer-artefact" style={{ minWidth: 0 }}>
       <Stack gap={12}>
+        {ownName ? (
+          <span style={{ ...dataType, fontFamily: MONO_STACK, fontSize: 12.5, color: t.text, wordBreak: "break-all" }}>{ownName}</span>
+        ) : null}
+
         {language || filename || entrypoint ? (
           <ChipRow>
             {language ? (
@@ -144,6 +157,8 @@ export function ArtefactRenderer(props: NodeProps) {
         ) : null}
 
         {source ? <MonoBlock text={source} collapseTo={24} /> : null}
+
+        {writtenWith ? <Caption>{`Written with ${writtenWith}`}</Caption> : null}
 
         {summary ? <Prose>{summary}</Prose> : null}
 

@@ -1,0 +1,156 @@
+// CA-02 P9 — five shapes of AI use, built and read back.
+//
+// Each shape in src/dev/fixtures/shapes.ts is a tree the composer would save. For each: buildSteps reads every step
+// with the right kind, number, tool, model and children; every `uses` edge survives the read; the build page's
+// renderers draw every part with its tool, models and roles; and every tool and model pair keeps the rules.
+
+import { createElement } from "react";
+import { cleanup, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/build", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/build")>()), signedMediaUrl: async () => "https://example.com/m" }));
+
+import { NodeCard } from "@/components/build/NodeCard";
+import { allNodes, SHAPES, SHAPE_KEYS, SHAPE_NODE_TYPES, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeKey } from "@/dev/fixtures/shapes";
+import { layoutMap } from "@/lib/build/mapLayout";
+import { pairCheck } from "@/lib/tools/modelRules";
+
+import { agentModelsOf, buildSteps, usesOf, type Step } from "./graph";
+import type { Build, NodeTree } from "./types";
+
+afterEach(cleanup);
+
+const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
+
+/** A step as the table below reads it: [id, kind, number, tool, model, children's ids]. */
+const row = (step: Step) => [step.id, step.kind, step.number, step.tool, step.model, step.children.map((child) => child.id)];
+
+const EXPECTED: Record<ShapeKey, unknown[]> = {
+  alone: [["a-p1", "prompt", "1", "Claude", "Opus 5.5", []]],
+  retrieval: [["r-p1", "prompt", "1", "Gemini Notebook", null, []]],
+  agent: [["g-a1", "agent", "1", null, "Opus 5.5", ["g-a1:instructions", "g-p1", "g-p2"]]],
+  team: [["t-team", "team", "1", null, null, ["t-lead", "t-research", "t-build", "t-review"]]],
+  code: [
+    ["c-p1", "prompt", "1", "Cursor", "Opus 5", []],
+    ["c-p2", "prompt", "2", "Cursor", "Composer 2.5", []],
+    ["c-c1", "code", "3", "Cursor", "Composer 2.5", []],
+    ["c-c2", "code", "4", "Cursor", "Composer 2.5", []],
+    ["c-m1", "manual", "5", "Vercel", null, []],
+  ],
+};
+
+describe.each(SHAPE_KEYS)("the %s shape", (key) => {
+  const { tree } = SHAPES[key];
+  const steps = buildSteps(tree);
+  const byId = new Map(allNodes(tree).map((entry) => [entry.id, entry]));
+
+  it("reads every step back with its kind, number, tool, model and children", () => {
+    expect(steps.map(row)).toEqual(EXPECTED[key]);
+  });
+
+  it("keeps every uses edge", () => {
+    const stepUses = new Map(flatten(steps).map((step) => [step.id, step.uses]));
+    for (const entry of allNodes(tree)) {
+      const saved = usesOf(entry);
+      if (saved.length === 0) continue;
+      // A result is not a step: its uses are read from the node, as the List and the Map read them.
+      const read = entry.type === "result" ? usesOf(entry) : stepUses.get(entry.id);
+      expect(read, entry.id).toEqual(saved);
+      for (const use of saved) expect(byId.has(use.node_id), `${entry.id} uses ${use.node_id}`).toBe(true);
+    }
+  });
+
+  it("keeps the rules for every tool and model pair", () => {
+    for (const entry of allNodes(tree)) {
+      const payload = (entry.payload ?? {}) as Record<string, unknown>;
+      const tool = (payload.tool ?? payload.harness) as string | undefined;
+      const model = payload.model as string | undefined;
+      if (!tool && !model) continue;
+      expect(pairCheck(tool, model), `${entry.id}: ${tool} with ${model}`).toBe("ok");
+      for (const extra of agentModelsOf(payload)) expect(pairCheck(tool, extra.model), `${entry.id}: ${tool} with ${extra.model}`).toBe("ok");
+    }
+  });
+
+  it("draws every part on the build page with its tool, models and roles", () => {
+    const build = { id: "shape-build", slug: `shape-${key}`, title: SHAPES[key].title } as Build;
+    const types = new Map(SHAPE_NODE_TYPES.map((type) => [type.key, type]));
+    for (const entry of allNodes(tree)) {
+      const { container } = render(
+        createElement(NodeCard, { node: entry, nodeType: types.get(entry.type), build, resolveNode: (id: string) => byId.get(id), resolveMedia: () => null }),
+      );
+      const text = container.textContent ?? "";
+      const payload = (entry.payload ?? {}) as Record<string, unknown>;
+      if (entry.type === "prompt" && payload.tool) expect(text, entry.id).toContain(steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === entry.id)?.tool ?? "");
+      if (typeof payload.model === "string" && entry.type !== "agent_config") expect(text, entry.id).toContain(payload.model);
+      if (entry.type === "agent_config") {
+        expect(text, entry.id).toContain(String(payload.model));
+        if (payload.harness) expect(text, entry.id).toContain("Runs in");
+        for (const extra of agentModelsOf(payload).length > 1 ? agentModelsOf(payload) : []) expect(text, entry.id).toContain(`${extra.model} · ${extra.role}`);
+        for (const ref of (payload.tools as { tool_ref: string }[] | undefined) ?? []) expect(text, entry.id).toContain(String((byId.get(ref.tool_ref)?.payload as { service?: string }).service));
+      }
+      if (entry.type === "code") {
+        expect(text, entry.id).toContain(String(payload.filename));
+        expect(text, entry.id).toContain("Written with Cursor · Composer 2.5");
+      }
+      if (entry.type === "manual_step") expect(text, entry.id).toContain(String(payload.tool));
+      if (entry.type === "document") expect(text, entry.id).toContain(String(payload.title));
+      cleanup();
+    }
+  });
+
+  it("gives the List, the Map and Details what they draw", () => {
+    const list = shapeListProps(key);
+    expect(list.steps.map((step) => step.id)).toEqual(steps.map((step) => step.id));
+    const map = shapeMapProps(key);
+    const layout = layoutMap(map.steps, map.groups, map.files, map.tools, map.results, map.suggestions);
+    for (const step of steps) expect(layout.boxes.some((box) => box.id === step.id), step.id).toBe(true);
+    const view = shapeDetailsProps(key).view;
+    expect(view && "id" in view ? view.id : null).toBe(SHAPES[key].selected);
+  });
+});
+
+describe("what each shape holds", () => {
+  it("names the agent's harness, its two models with their roles and its two tools", () => {
+    const [agent] = buildSteps(SHAPES.agent.tree);
+    expect(agent).toMatchObject({
+      harness: "Hermes Agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      toolRefs: ["g-t1", "g-t2"],
+    });
+  });
+
+  it("leads the team with an agent in Claude Code, Sonnet 5.5 acting", () => {
+    const [team] = buildSteps(SHAPES.team.tree);
+    expect(team.children.map((child) => [child.number, child.title, child.harness, child.model])).toEqual([
+      ["1.1", "Lead", "Claude Code", "Fable 5.1"],
+      ["1.2", "Research", "Claude Code", "Opus 5.5"],
+      ["1.3", "Build", "Claude Code", "Sonnet 5.5"],
+      ["1.4", "Review", "Claude Code", "Haiku 5.5"],
+    ]);
+    expect(team.children[0].models).toEqual([
+      { model: "Fable 5.1", role: "main" },
+      { model: "Sonnet 5.5", role: "acts" },
+    ]);
+    const result = SHAPES.team.tree.find((entry) => entry.type === "result") as NodeTree;
+    expect(usesOf(result).map((use) => use.node_id)).toEqual(["t-research", "t-build", "t-review"]);
+  });
+
+  it("feeds the retrieval prompt two files", () => {
+    const [prompt] = buildSteps(SHAPES.retrieval.tree);
+    expect(prompt.uses).toEqual([
+      { kind: "file", node_id: "r-f1" },
+      { kind: "file", node_id: "r-f2" },
+    ]);
+  });
+
+  it("keeps app.ts as the entrypoint and schema.sql as SQL", () => {
+    const steps = buildSteps(SHAPES.code.tree);
+    expect(steps.filter((step) => step.kind === "code").map((step) => [step.filename, step.language, step.entrypoint])).toEqual([
+      ["app.ts", "ts", true],
+      ["schema.sql", "sql", false],
+    ]);
+  });
+});

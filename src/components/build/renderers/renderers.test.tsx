@@ -927,3 +927,66 @@ describe("media resolved through resolveMedia", () => {
     );
   });
 });
+
+// --- CA-02 P5: what an agent ran in, its models and its tools -------------------
+
+describe("an agent that names its harness, its models and its tools (CA-02 P5)", () => {
+  const agentType = makeType({
+    key: "agent_config",
+    renderer: "agent_config",
+    label: "Agent",
+    category: "configuration",
+    schema: {
+      fields: [
+        { key: "system_prompt", label: "System prompt", type: "text", required: true },
+        { key: "model", label: "Model", type: "text", required: true },
+        { key: "tools", label: "Tools", type: "list" },
+      ],
+    },
+  });
+  const tools: Record<string, BuildNode> = {
+    "t-gmail": makeNode({ id: "t-gmail", type: "integration", title: null, payload: { service: "Gmail" } }),
+    "t-copilot": makeNode({ id: "t-copilot", type: "integration", title: null, payload: { service: "GitHub Copilot" } }),
+  };
+  const draw = (payload: Record<string, unknown>) =>
+    render(
+      <NodeCard
+        node={makeNode({ id: "ag1", type: "agent_config", title: "Inbox agent", payload: payload as BuildNode["payload"] })}
+        nodeType={agentType}
+        build={build}
+        resolveNode={(id) => tools[id]}
+        resolveMedia={noMedia}
+      />,
+    );
+
+  it("draws Runs in, one line per model with its role under the model line, and each tool", () => {
+    const { container } = draw({
+      system_prompt: "Triage my inbox",
+      model: "Opus 5.5",
+      harness: "hermes-agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "claude-haiku-5-5", role: "other" },
+      ],
+      tools: [{ tool_ref: "t-gmail" }, { tool_ref: "t-copilot" }],
+    });
+    const card = within(container);
+    expect(card.getByText("Runs in")).toBeTruthy();
+    expect(card.getByText("Hermes Agent")).toBeTruthy();
+    expect(card.getByText("Models")).toBeTruthy();
+    expect(card.getByText("Opus 5.5 · main")).toBeTruthy();
+    expect(card.getByText("Haiku 5.5 · other")).toBeTruthy();
+    expect(container.textContent).toContain("Gmail");
+    expect(container.textContent).toContain("GitHub Copilot");
+    // Read through their own lines, never again as raw leftovers.
+    expect(container.textContent).not.toContain("hermes-agent");
+    const text = container.textContent ?? "";
+    expect(text.indexOf("Opus 5.5")).toBeLessThan(text.indexOf("Runs in"));
+  });
+
+  it("draws an old agent exactly as before: no Runs in, no Models", () => {
+    const { container } = draw({ system_prompt: "Triage my inbox", model: "Opus 5.5" });
+    expect(container.textContent).not.toContain("Runs in");
+    expect(container.textContent).not.toContain("Models");
+  });
+});

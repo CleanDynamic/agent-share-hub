@@ -8,7 +8,13 @@
 
    A team is made holding one agent, which takes the model too, so the model is
    asked for both. When the team node type is not live (UI-P61's Deploy queue
-   item), "A team of agents" is disabled and says why. */
+   item), "A team of agents" is disabled and says why.
+
+   CA-02 P5: under the name, what the agent runs in, its models with their roles
+   and the tools it can use (`AgentSetupFields`). A team is led by its first
+   agent, so with a team chosen the dialog is titled for that agent. "Add as an
+   agent" (P4) opens it with the tool as the harness and the prompt's text as
+   the instructions. */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useId, useState, type CSSProperties } from "react";
@@ -16,18 +22,22 @@ import { useId, useState, type CSSProperties } from "react";
 import { Button } from "@/components/brand/Button";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { TITLE_MAX } from "@/lib/build/graph";
+import { TITLE_MAX, type AgentModel } from "@/lib/build/graph";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
+import { startingModel } from "@/lib/tools/modelRules";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { r } from "@/lib/theme/radius";
 import { t, tokenAlpha } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { fieldBase } from "./composeFields";
 
 export const AGENT_DIALOG_COPY = {
   title: "Add an agent or a team",
+  /** CA-02 P5: a team is led by its first agent, which this dialog describes. */
+  leadTitle: "The agent that leads the team",
   one: "One agent",
   oneLine: "Prompts that run by themselves",
   team: "A team of agents",
@@ -42,6 +52,20 @@ export interface AddAgentInput {
   /** Null when left empty: the default title shows. */
   name: string | null;
   model: string;
+  /** CA-02 P4: the text of the prompt field, when the dialog was opened by "Add as an agent". */
+  instructions?: string;
+  /** CA-02 P5: the tool it runs in, as an id or typed; null for its maker's own code. */
+  harness: string | null;
+  /** CA-02 P5: every model with its role, the main one first; only when there is more than one. */
+  models?: AgentModel[];
+  /** CA-02 P5: the tools it can use, as ids or typed names. */
+  tools: string[];
+}
+
+/** CA-02 P4: what "Add as an agent" opens the dialog with. */
+export interface AgentSeed {
+  harness: string | null;
+  instructions: string;
 }
 
 export interface AddAgentDialogProps {
@@ -52,6 +76,10 @@ export interface AddAgentDialogProps {
   /** False while the `team` node type is not live. */
   teamsAvailable: boolean;
   onAdd: (input: AddAgentInput) => void;
+  /** CA-02 P4: set when "Add as an agent" opened the dialog. */
+  seed?: AgentSeed | null;
+  /** The tools the build already uses, first in the pickers. */
+  inBuild?: readonly string[];
 }
 
 /** The model a new agent starts on. */
@@ -104,13 +132,43 @@ function Choice({
   );
 }
 
-function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd"> & { onCancel: () => void; phone: boolean }) {
+/** Where a new agent starts: its harness from "Add as an agent", else none, on the model that harness offers. */
+function firstSetup(seed: AgentSeed | null | undefined): AgentSetupValue {
+  const harness = seed?.harness ?? null;
+  return { harness, models: [{ model: startingModel(harness, DEFAULT_AGENT_MODEL), role: "main" }], tools: [] };
+}
+
+function Form({
+  nextNumber,
+  teamsAvailable,
+  onAdd,
+  onCancel,
+  phone,
+  seed,
+  inBuild = [],
+  onKind,
+}: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd" | "seed" | "inBuild"> & { onCancel: () => void; phone: boolean; onKind: (kind: "agent" | "team") => void }) {
   const [kind, setKind] = useState<"agent" | "team">("agent");
   const [name, setName] = useState("");
-  const [model, setModel] = useState(DEFAULT_AGENT_MODEL);
+  const [setup, setSetup] = useState<AgentSetupValue>(() => firstSetup(seed));
   const uid = useId();
+  const ready = setupReady(setup);
 
-  const submit = () => onAdd({ kind, name: name.trim() || null, model });
+  const choose = (next: "agent" | "team") => {
+    setKind(next);
+    onKind(next);
+  };
+  const submit = () => {
+    if (!ready) return;
+    onAdd({
+      kind,
+      name: name.trim() || null,
+      ...savedModels(setup),
+      harness: setup.harness,
+      tools: setup.tools,
+      ...(seed?.instructions ? { instructions: seed.instructions } : null),
+    });
+  };
   const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
   const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
 
@@ -123,7 +181,7 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
       style={{ display: "flex", flexDirection: "column", gap: 14 }}
     >
       <div role="radiogroup" aria-label="What to add" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <Choice checked={kind === "agent"} name={`${uid}-kind`} value="agent" title={AGENT_DIALOG_COPY.one} line={AGENT_DIALOG_COPY.oneLine} phone={phone} onChange={() => setKind("agent")} />
+        <Choice checked={kind === "agent"} name={`${uid}-kind`} value="agent" title={AGENT_DIALOG_COPY.one} line={AGENT_DIALOG_COPY.oneLine} phone={phone} onChange={() => choose("agent")} />
         <Choice
           checked={kind === "team"}
           disabled={!teamsAvailable}
@@ -132,7 +190,7 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
           title={AGENT_DIALOG_COPY.team}
           line={teamsAvailable ? AGENT_DIALOG_COPY.teamLine : AGENT_DIALOG_COPY.teamsMissing}
           phone={phone}
-          onChange={() => setKind("team")}
+          onChange={() => choose("team")}
         />
       </div>
 
@@ -151,24 +209,13 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
         />
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label htmlFor={`${uid}-model`} style={label}>
-          {kind === "team" ? "Model of its first agent" : "Model"}
-        </label>
-        <select id={`${uid}-model`} value={model} onChange={(event) => setModel(event.target.value)} style={control}>
-          {MODEL_VERSIONS.map((version) => (
-            <option key={version.id} value={version.name}>
-              {version.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <AgentSetupFields value={setup} onChange={setSetup} phone={phone} inBuild={inBuild} />
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button variant="secondary" size={phone ? 44 : 36} onClick={onCancel}>
           {AGENT_DIALOG_COPY.cancel}
         </Button>
-        <Button variant="primary" size={phone ? 44 : 36} type="submit">
+        <Button variant="primary" size={phone ? 44 : 36} type="submit" disabled={!ready}>
           {AGENT_DIALOG_COPY.add}
         </Button>
       </div>
@@ -176,9 +223,15 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
   );
 }
 
-export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd }: AddAgentDialogProps) {
+export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd, seed = null, inBuild = [] }: AddAgentDialogProps) {
   const phone = useIsPhone();
-  const close = () => onOpenChange(false);
+  const [kind, setKind] = useState<"agent" | "team">("agent");
+  const title = kind === "team" ? AGENT_DIALOG_COPY.leadTitle : AGENT_DIALOG_COPY.title;
+  const openChange = (next: boolean) => {
+    if (!next) setKind("agent");
+    onOpenChange(next);
+  };
+  const close = () => openChange(false);
   const add = (input: AddAgentInput) => {
     onAdd(input);
     close();
@@ -187,14 +240,14 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
   // Each opening starts clean: Radix unmounts the content on close, and the sheet's form is mounted only while open.
   if (phone) {
     return (
-      <BottomSheet open={open} onOpenChange={onOpenChange} title={AGENT_DIALOG_COPY.title}>
-        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone /> : null}
+      <BottomSheet open={open} onOpenChange={openChange} title={title}>
+        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone seed={seed} inBuild={inBuild} onKind={setKind} /> : null}
       </BottomSheet>
     );
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={openChange}>
       <Dialog.Portal>
         <Dialog.Overlay style={{ position: "fixed", inset: 0, background: t.scrim, zIndex: 50 }} />
         <Dialog.Content
@@ -220,8 +273,8 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
             fontFamily: FIGTREE,
           }}
         >
-          <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{AGENT_DIALOG_COPY.title}</Dialog.Title>
-          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} />
+          <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
+          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} seed={seed} inBuild={inBuild} onKind={setKind} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -35,7 +35,7 @@
 // name for, an unknown parameter, a query shorter than SEARCH_MIN — is dropped
 // on the way through, so parse followed by write is also a tidy.
 
-import { LABS, MODEL_VERSIONS, type Lab } from "@/lib/models/registry";
+import { MODEL_VERSIONS, TEXT_LABS, type Lab } from "@/lib/models/registry";
 
 import { GALLERY_LENSES, GALLERY_SHAPES, type GalleryFeedSort, type GalleryLens } from "./gallery";
 import { toolFor } from "@/lib/tools/registry";
@@ -138,7 +138,7 @@ function isTab(value: string | null | undefined): value is Exclude<DashboardTab,
 }
 
 function isLab(value: string | null | undefined): value is Lab {
-  return typeof value === "string" && (LABS as readonly string[]).includes(value);
+  return typeof value === "string" && (TEXT_LABS as readonly string[]).includes(value);
 }
 
 function isReport(value: string | null | undefined): value is DashboardReport {
