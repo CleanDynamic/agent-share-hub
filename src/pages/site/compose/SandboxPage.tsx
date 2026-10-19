@@ -75,10 +75,10 @@ export function SandboxPage() {
   const phone = useIsPhone();
   const fine = useFinePointer();
 
-  /* PT-05: the thread of the Post tab. Held here so the tab count, the status line and Publish can see it. */
+  /* PT-05: the thread of the post above the build. Held here so the status line and Publish can see it. */
   const thread = useComposeThread({ build, buildId, isOwner: compose.isOwner, ensureBuild });
   const { flush: flushThread, hold: threadHold } = thread;
-  /* PT-07: the preview draws the signed-in maker, and a phone opens it as a sheet from the title row. */
+  /* PT-07: the post draws the signed-in maker beside it, and its preview draws them too. */
   const { user, profile } = useAuth();
   const maker = useMemo<PreviewMaker>(
     () => ({
@@ -89,8 +89,6 @@ export function SandboxPage() {
     }),
     [user?.id, profile?.display_name, profile?.username, profile?.avatar_url],
   );
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const openPreview = useCallback(() => setPreviewOpen(true), []);
   const onPublish = useCallback(async () => {
     await flushThread();
     // A thread that cannot be saved is not published half-written.
@@ -557,12 +555,8 @@ export function SandboxPage() {
             thread={thread}
             phone={phone}
             draft={{ build, title: viewProps.title, maker }}
-            previewOpen={previewOpen}
-            onPreviewOpenChange={setPreviewOpen}
           />
         }
-        onPreview={openPreview}
-        postCount={thread.posts}
         threadNote={thread.hold}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}

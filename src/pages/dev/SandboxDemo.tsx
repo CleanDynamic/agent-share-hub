@@ -8,9 +8,10 @@
    opened team (V5-TeamMap) (UI-P69).
    `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
+   `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
    No board image is compared. */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
@@ -20,10 +21,42 @@ import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
+import { PostTab } from "@/pages/site/compose/PostTab";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
 
+import type { ThreadDoc } from "@/lib/build/thread";
+import type { ComposeThread } from "@/pages/site/compose/useComposeThread";
+
 import type { DesignPageProps } from "./KitPages";
+
+const EMPTY_POST: ThreadDoc = { type: "doc", content: [{ type: "paragraph" }] };
+const THREAD_POST: ThreadDoc = {
+  type: "doc",
+  content: [
+    { type: "paragraph", content: [{ type: "text", text: "A poster of a fox, from one photo and three prompts." }] },
+    { type: "postBreak" },
+    { type: "paragraph", content: [{ type: "text", text: "The second prompt is the one that fixed the colours." }] },
+  ],
+} as ThreadDoc;
+
+/** A thread that writes nowhere: the dev page has no build to save to. */
+function demoThread(doc: ThreadDoc): ComposeThread {
+  return {
+    buildId: undefined,
+    ensureBuild: () => Promise.reject(new Error("The dev page has no build to upload to.")),
+    status: "ready",
+    version: 1,
+    readDoc: () => doc,
+    onDoc: () => undefined,
+    posts: 1,
+    save: "idle",
+    hold: null,
+    flush: async () => undefined,
+    retry: () => undefined,
+    retryLoad: () => undefined,
+  };
+}
 
 export default function SandboxDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
@@ -39,6 +72,8 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const list = team?.list ?? sandboxListProps(which);
   const openedId = params.get("opened");
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
+  const postDoc = params.get("post") === "thread" ? THREAD_POST : EMPTY_POST;
+  const thread = useMemo(() => demoThread(postDoc), [postDoc]);
   return (
     <>
       <SandboxView
@@ -51,6 +86,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
         selection={<DetailsPanel {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
+        post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />
       <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>

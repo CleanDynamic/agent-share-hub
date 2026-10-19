@@ -13,12 +13,10 @@
    A phone keeps today's order: the title, the Build panel with Sources and Details behind two buttons, and the action
    bar.
 
-   PT-05: TWO TABS under the title row, "Upload steps": Build (everything above, unchanged) and Post (the thread
-   written as one page, the `post` slot). The tab is in the URL as `?tab=post`, so a refresh keeps it; below 768 the
-   tabs are a full-width Segmented, 50 high (items of 44). The Build side stays mounted while Post is shown, only hidden, so nothing
-   typed in it is lost. PT-07: a phone shows a Preview button in the title row on the Post tab, which opens the draft as a
-   sheet. The Card's Cover is now one line and a button that comes here; "a cover picture or video" in
-   Missing opens this tab too.
+   PT-05: THE POST SITS ABOVE THE BUILD, as X's composer sits above a timeline: the `post` slot (the thread written as
+   one page) heads the Build column, above the first prompt, with a hairline under it. There are no tabs: the post and
+   the build are one page. The Card's Cover is one line and a button that comes here; "a cover picture or video" in
+   Missing does too, scrolling to the post and putting the caret in it.
 
    MAP (UI-P94, `refined/{dusk,noon}/composer-map.html`). Sources folds to its rail as today, drawn as a module 52
    wide (padding `8px 0`): ghost 40-wide buttons, 36 high, 44 with a count under the glyph (10.5/500, tabular),
@@ -28,7 +26,7 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { X } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/brand/Button";
 import { ErrorState } from "@/components/brand/ErrorState";
@@ -37,7 +35,6 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Segmented } from "@/components/brand/Segmented";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
-import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
@@ -54,23 +51,6 @@ import type { ComposePublished, ComposeStatus } from "./ComposeView";
 import { type CardProps } from "./SandboxCard";
 
 export type SandboxLens = "list" | "map";
-
-export type ComposeTab = "build" | "post";
-
-const TAB_IDS: Record<ComposeTab, { tab: string; panel: string }> = {
-  build: { tab: "compose-tab-build", panel: "compose-panel-build" },
-  post: { tab: "compose-tab-post", panel: "compose-panel-post" },
-};
-
-/** "5 prompts", or nothing when there are none. */
-export function buildTabCount(prompts: number): string | undefined {
-  return prompts > 0 ? `${prompts} ${prompts === 1 ? "prompt" : "prompts"}` : undefined;
-}
-
-/** "4 posts", "1 post", or "No posts yet". */
-export function postTabCount(posts: number | null | undefined): string {
-  return posts && posts > 0 ? `${posts} ${posts === 1 ? "post" : "posts"}` : "No posts yet";
-}
 
 export interface SandboxMissingItem {
   key: PublishKey;
@@ -129,14 +109,10 @@ export interface SandboxViewProps extends CardProps {
   /** Go up to `depth` levels open: 0 is the build, 1 the first of the trail. */
   onTrail?: (depth: number) => void;
 
-  /** PT-05: the Post tab's body. Absent, the tab is empty. */
+  /** PT-05: the post, drawn above the build. Absent, nothing is drawn there. */
   post?: ReactNode;
-  /** Posts in the thread, as the Gallery counts them: "4 posts", or "No posts yet" when 0. */
-  postCount?: number | null;
   /** A sentence for the status line while the thread's save is waiting: "Post 3 is over 1,000 characters". */
   threadNote?: string | null;
-  /** PT-07: a phone's Preview button, in the title row while the Post tab is shown. It opens the preview sheet. */
-  onPreview?: () => void;
 
   /** The panels' insides (UI-P64 to UI-P66). Absent, each draws its empty state. */
   sources?: ReactNode;
@@ -479,20 +455,7 @@ export function SandboxView(props: SandboxViewProps) {
   /** Map: the Sources rail has been opened out over the map. */
   const [railOpen, setRailOpen] = useState(false);
   const buildRef = useRef<HTMLElement>(null);
-
-  /* PT-05: the tab lives in the address (?tab=post). Replacing, not pushing, so Back leaves the composer. */
-  const [params, setParams] = useSearchParams();
-  const tab: ComposeTab = params.get("tab") === "post" ? "post" : "build";
-  const setTab = (next: ComposeTab) =>
-    setParams(
-      (previous) => {
-        const out = new URLSearchParams(previous);
-        if (next === "post") out.set("tab", "post");
-        else out.delete("tab");
-        return out;
-      },
-      { replace: true },
-    );
+  const postRef = useRef<HTMLElement>(null);
 
   if (status === "loading") return <Skeletons phone={phone} />;
   if (status === "error") {
@@ -514,10 +477,16 @@ export function SandboxView(props: SandboxViewProps) {
     setCardOpen(true);
   };
 
-  /* The Card's Cover is the first picture of the post now: both ways in lead to the Post tab. */
+  /* The Card's Cover is the first picture of the post now: both ways in lead to the post, with the caret in it. */
   const openPost = () => {
     setCardOpen(false);
-    setTab("post");
+    window.setTimeout(() => {
+      const section = postRef.current;
+      if (!section) return;
+      section.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      const editable = section.querySelector<HTMLElement>('[contenteditable="true"]');
+      (editable ?? section).focus({ preventScroll: true });
+    }, 0);
   };
 
   const onMissing = (key: PublishKey) => {
@@ -577,7 +546,7 @@ export function SandboxView(props: SandboxViewProps) {
   const previewTo = props.slug ? `/b2/${props.slug}` : null;
 
   const lensSwitch =
-    props.mapAvailable && !phone && tab === "build" ? (
+    props.mapAvailable && !phone ? (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         <Segmented
           label="Build view"
@@ -637,7 +606,7 @@ export function SandboxView(props: SandboxViewProps) {
         flexDirection: "column",
         gap: 12,
         /* UI-P94: in Map, Build is a module beside the rail. */
-        ...(lens === "map" && !phone ? { ...moduleStyle(), flex: "999 1 560px" } : { flex: "999 1 480px" }),
+        ...(lens === "map" && !phone ? moduleStyle() : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
@@ -691,43 +660,37 @@ export function SandboxView(props: SandboxViewProps) {
     </section>
   );
 
-  const card = <SandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} onEditPost={openPost} />;
-
-  /* PT-05: the two tabs. Build keeps its panel mounted (hidden) while Post is shown. */
-  const tabs = phone ? (
-    <Segmented<ComposeTab>
-      label="Upload steps"
-      size={50}
-      fontSize={13}
-      fullWidth
-      value={tab}
-      onChange={setTab}
-      items={[
-        { value: "build", label: "Build" },
-        { value: "post", label: "Post" },
-      ]}
-    />
-  ) : (
-    <UnderlineTabs<ComposeTab>
-      label="Upload steps"
-      value={tab}
-      onChange={setTab}
-      tabs={[
-        { value: "build", label: "Build", count: buildTabCount(props.counts.prompts), id: TAB_IDS.build.tab, controls: TAB_IDS.build.panel },
-        { value: "post", label: "Post", count: postTabCount(props.postCount), id: TAB_IDS.post.tab, controls: TAB_IDS.post.panel },
-      ]}
-    />
-  );
-  /* A phone's Segmented is a pair of toggle buttons, not a tablist, so its panels are plain regions. */
-  const postPanel = (
+  /* PT-05: the post heads the Build column, above the first prompt, under nothing but its own hairline. Not while an
+     agent or team is open in the Map: the trail is about that one part. */
+  const postSection =
+    props.post && trail.length === 0 ? (
+      <section
+        ref={postRef}
+        aria-label="Post"
+        data-testid="sandbox-post"
+        tabIndex={-1}
+        style={{ outline: "none", minWidth: 0, paddingBottom: 16, borderBottom: `1px solid ${t.hairline}` }}
+      >
+        {props.post}
+      </section>
+    ) : null;
+  /* The column the post and the build share. */
+  const buildColumn = (
     <div
-      {...(phone ? { role: "region", "aria-label": "Post" } : { role: "tabpanel", id: TAB_IDS.post.panel, "aria-labelledby": TAB_IDS.post.tab })}
-      hidden={tab !== "post"}
-      style={{ minWidth: 0, display: tab === "post" ? "block" : "none" }}
+      style={{
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 20,
+        flex: lens === "map" && !phone ? "999 1 560px" : "999 1 480px",
+      }}
     >
-      {tab === "post" ? props.post : null}
+      {postSection}
+      {buildPanel}
     </div>
   );
+
+  const card = <SandboxCard {...props} phone={phone} open={cardOpen} onOpenChange={setCardOpen} field={cardField} onEditPost={openPost} />;
 
   if (phone) {
     return (
@@ -737,18 +700,9 @@ export function SandboxView(props: SandboxViewProps) {
             {heading}
             {statusLine}
           </div>
-          {tab === "post" && props.onPreview ? (
-            <Button variant="secondary" size={44} fontSize={13} onClick={props.onPreview}>
-              Preview
-            </Button>
-          ) : null}
         </div>
-        {tabs}
         {banner}
-        <div hidden={tab !== "build"} style={{ minWidth: 0, display: tab === "build" ? "block" : "none" }}>
-          {buildPanel}
-        </div>
-        {postPanel}
+        {buildColumn}
         <div
           role="group"
           aria-label="Actions"
@@ -811,25 +765,17 @@ export function SandboxView(props: SandboxViewProps) {
           </Button>
         </div>
       </div>
-      {tabs}
       {banner}
-      <div
-        role="tabpanel"
-        id={TAB_IDS.build.panel}
-        aria-labelledby={TAB_IDS.build.tab}
-        hidden={tab !== "build"}
-        style={{ position: "relative", display: tab === "build" ? "flex" : "none", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}
-      >
+      <div style={{ position: "relative", display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
         <SourcesFrame rail={rail} titled={!props.sources} counts={props.counts} open={railOpen && rail} onOpen={() => setRailOpen(true)} onClose={() => setRailOpen(false)}>
           {sourcesBody}
         </SourcesFrame>
-        {buildPanel}
+        {buildColumn}
         <section aria-label="Details" style={{ ...moduleStyle(), flex: "1 1 280px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
           <PanelTitle>Details</PanelTitle>
           {detailsBody}
         </section>
       </div>
-      {postPanel}
       {card}
     </div>
   );

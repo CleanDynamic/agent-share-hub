@@ -1,7 +1,7 @@
-// PT-05 — the Post tab's editor, run in jsdom: what it allows, what survives a save, the breaks, the outline, the
+// PT-05 — the composer's post, run in jsdom: what it allows, what survives a save, the breaks, the thread rail, the
 // count and the layout.
 
-import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import type { Editor } from "@tiptap/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -136,14 +136,14 @@ describe("the post break", () => {
     const rows = Array.from(document.querySelectorAll("[data-post-break]")) as HTMLElement[];
     expect(rows.map((row) => row.textContent)).toEqual(["Post 2 · readers reach this with Show more", "Post 3"]);
     expect(rows[0].getAttribute("role")).toBe("separator");
-    // 48 above the label is the editor's 12 gap, 24 of margin and 12 of padding; 32 below is the gap and 20.
-    expect([rows[0].style.marginTop, rows[0].style.paddingTop, rows[0].style.marginBottom]).toEqual(["24px", "12px", "20px"]);
-    expect(rows[0].style.gap).toBe("12px");
-    const rules = rows[0].querySelectorAll("span[aria-hidden]");
-    expect(rules).toHaveLength(2);
-    expect(rules[0].getAttribute("style")).toContain("border-top-style:dashed");
-    expect(rules[0].getAttribute("style")).toContain("border-top-color:var(--line)");
-    expect((rows[0].querySelector("span:not([aria-hidden])") as HTMLElement).style.fontSize).toBe("12px");
+    expect(rows[0].getAttribute("aria-label")).toBe("Post 2 starts here");
+    // A quiet line, as X has between posts: no rule, the label alone, 11.5 in --label.
+    expect(rows[0].style.minHeight).toBe("20px");
+    expect(rows[0].querySelectorAll("span[aria-hidden]")).toHaveLength(0);
+    expect(rows[0].getAttribute("style")).not.toContain("dashed");
+    const label = rows[0].firstElementChild as HTMLElement;
+    expect(label.style.fontSize).toBe("11.5px");
+    expect(label.getAttribute("style")).toContain("color:var(--label)");
   });
 
   it("is removed by Backspace at the start of the post after it, and the two posts become one", () => {
@@ -189,71 +189,52 @@ describe("the count", () => {
   });
 });
 
-describe("the outline", () => {
-  const four = doc(p("Alpha post"), brk, p("Beta post"), brk, p("Gamma post"));
-  const rowsOf = () => within(screen.getByRole("navigation", { name: "Posts" })).getAllByRole("button");
+describe("the thread rail", () => {
+  it("draws the maker's avatar beside the first post, and one more for every post after it, as X does", () => {
+    mount(doc(p("one"), brk, p("two"), brk, p("three")), {}, { draft: { build: null, title: "", maker: { id: "u1", name: "Sam Rivera", handle: "sam", avatar: null } } });
+    const rail = screen.getByTestId("thread-rail");
+    expect(rail.getAttribute("aria-hidden")).toBe("true");
+    const avatars = rail.querySelectorAll('[data-ui="avatar"]');
+    expect(avatars).toHaveLength(3);
+    expect(avatars[0].textContent).toBe("SR");
+    expect((avatars[0] as HTMLElement).style.width).toBe("36px");
+  });
 
-  it("lists the posts with their first words, the one the caret is in at 500", () => {
-    const { editor } = mount(four);
-    expect(rowsOf().map((row) => row.textContent)).toEqual(["1Alpha post", "2Beta post", "3Gamma post"]);
+  it("is one avatar for a one-post thread, 32 on a phone", () => {
+    mount(doc(p("only")), { phone: true });
+    const avatars = screen.getByTestId("thread-rail").querySelectorAll('[data-ui="avatar"]');
+    expect(avatars).toHaveLength(1);
+    expect((avatars[0] as HTMLElement).style.width).toBe("32px");
+  });
+
+  it("follows the posts as a break is added", () => {
+    const { editor } = mount(doc(p("one")));
     act(() => {
-      editor.commands.setTextSelection(startOf(editor, 2) + 1);
+      editor.commands.insertContentAt(editor.state.doc.content.size, [{ type: "postBreak" }, { type: "paragraph" }]);
     });
-    const after = rowsOf();
-    expect(after.map((row) => row.style.fontWeight)).toEqual(["400", "500", "400"]);
-    expect(after[1].getAttribute("aria-current")).toBe("true");
-    const nav = screen.getByRole("navigation", { name: "Posts" });
-    expect(within(nav).getByText("Post 1 shows in the Gallery. A post break starts the next post. Drag a post here to reorder.")).toBeTruthy();
-    expect(within(nav).getByRole("heading", { name: "Posts" })).toBeTruthy();
-  });
-
-  it("moves a post, its whole run of blocks, when its row is moved", () => {
-    const { editor, thread } = mount(doc(p("Alpha post"), p("Alpha two"), brk, p("Beta post"), brk, p("Gamma post")));
-    fireEvent.keyDown(rowsOf()[0], { key: "ArrowDown", altKey: true });
-    expect(postRuns(json(editor)).map((run) => run.blocks.length)).toEqual([1, 2, 1]);
-    expect(editor.getText()).toMatch(/Beta post[\s\S]*Alpha post[\s\S]*Alpha two[\s\S]*Gamma post/);
-    expect(thread.onDoc).toHaveBeenCalled();
-    expect(rowsOf().map((row) => row.textContent)).toEqual(["1Beta post", "2Alpha post", "3Gamma post"]);
-  });
-
-  it("does not move the first post up or the last down", () => {
-    const { editor } = mount(four);
-    const before = JSON.stringify(json(editor));
-    fireEvent.keyDown(rowsOf()[0], { key: "ArrowUp", altKey: true });
-    fireEvent.keyDown(rowsOf()[2], { key: "ArrowDown", altKey: true });
-    expect(JSON.stringify(json(editor))).toBe(before);
-  });
-
-  it("takes the caret to a post when its row is chosen", () => {
-    const { editor } = mount(four);
-    fireEvent.click(rowsOf()[2]);
-    expect(editor.state.selection.$from.parent.textContent).toBe("Gamma post");
-  });
-
-  it("is not drawn on a phone, nor is the preview slot", () => {
-    mount(four, { phone: true });
-    expect(screen.queryByRole("navigation", { name: "Posts" })).toBeNull();
-    expect(screen.queryByTestId("post-preview-slot")).toBeNull();
+    expect(screen.getByTestId("thread-rail").querySelectorAll('[data-ui="avatar"]')).toHaveLength(2);
   });
 });
 
 describe("the layout", () => {
-  it("is a wrapping row with 48 between, 12 above, the editor at most 628 wide and an empty slot for the preview", () => {
+  it("is X's composer: the avatar, the words beside it, then the toolbar under the words; no outline and no preview column", () => {
     mount(doc(p("")));
-    const row = screen.getByTestId("post-tab");
-    expect(row.style.flexWrap).toBe("wrap");
-    expect(row.style.gap).toBe("48px");
-    expect(row.style.paddingTop).toBe("12px");
-    const editorColumn = document.querySelector('[contenteditable="true"]')?.parentElement?.parentElement as HTMLElement;
-    expect(editorColumn.style.maxWidth).toBe("628px");
-    expect(editorColumn.style.flex).toBe("999 1 520px");
-    const nav = screen.getByRole("navigation", { name: "Posts" });
-    expect(nav.style.flex).toBe("1 1 170px");
-    expect(nav.style.maxWidth).toBe("190px");
-    // PT-07 fills the slot: the preview, in the same 280 to 320 column.
-    const preview = screen.getByRole("region", { name: "Preview" });
-    expect(preview.style.flex).toBe("1 1 280px");
-    expect(preview.style.maxWidth).toBe("320px");
+    const tab = screen.getByTestId("post-tab");
+    expect(tab.style.flexDirection).toBe("column");
+    const row = tab.firstElementChild as HTMLElement;
+    expect(row.style.gap).toBe("24px");
+    expect(row.firstElementChild).toBe(screen.getByTestId("thread-rail"));
+    expect(row.contains(document.querySelector('[contenteditable="true"]'))).toBe(true);
+    const toolbar = screen.getByTestId("post-toolbar");
+    expect((toolbar.parentElement as HTMLElement).style.marginLeft).toBe("60px");
+    expect(screen.queryByRole("navigation", { name: "Posts" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Preview" })).toBeNull();
+  });
+
+  it("gives the toolbar the whole width on a phone, with 12 between the avatar and the words", () => {
+    mount(doc(p("")), { phone: true });
+    expect((screen.getByTestId("post-tab").firstElementChild as HTMLElement).style.gap).toBe("12px");
+    expect((screen.getByTestId("post-toolbar").parentElement as HTMLElement).style.marginLeft).toBe("0px");
   });
 
   it("draws text in the published post's type", () => {
@@ -265,14 +246,19 @@ describe("the layout", () => {
     expect((document.querySelector('[data-size="small"]') as HTMLElement).style.fontSize).toBe("13px");
   });
 
-  it("puts the words in an empty last paragraph, in --label", () => {
+  it("asks What did you build? in an empty first post, in --label", () => {
     mount(doc(p("")));
-    const words = document.querySelector("[data-post-placeholder]") as HTMLElement;
-    expect(words.textContent).toBe("Type / for a picture, a list, a row of pictures or a new post");
-    expect(words.getAttribute("style")).toContain("color:var(--label)");
+    const words = Array.from(document.querySelectorAll("[data-post-placeholder]")) as HTMLElement[];
+    expect(words.map((word) => word.textContent)).toEqual(["What did you build?"]);
+    expect(words[0].getAttribute("style")).toContain("color:var(--label)");
   });
 
-  it("shows no words once the last paragraph has text", () => {
+  it("says Add another post in every empty post after the first, and nothing in an empty line under words", () => {
+    mount(doc(p("written"), p(""), brk, p(""), brk, p("three"), brk, p("")));
+    expect(Array.from(document.querySelectorAll("[data-post-placeholder]")).map((word) => word.textContent)).toEqual(["Add another post", "Add another post"]);
+  });
+
+  it("shows no words once the post has text", () => {
     mount(doc(p("written")));
     expect(document.querySelector("[data-post-placeholder]")).toBeNull();
   });
