@@ -23,7 +23,7 @@ describe("modelMenu", () => {
 
     const copilot = modelMenu("GitHub Copilot");
     if (copilot.state !== "options") throw new Error("expected options");
-    expect(copilot.groups.map((group) => group.lab)).toEqual(["OpenAI", "Anthropic", "Google", "xAI", "Moonshot", "Microsoft"]);
+    expect(copilot.groups.map((group) => group.lab)).toEqual(["OpenAI", "Anthropic", "Google", "xAI", "Moonshot", "Microsoft", "Alibaba"]);
     expect(modelMenu("claude-code")).toMatchObject({ state: "options", other: true });
   });
 

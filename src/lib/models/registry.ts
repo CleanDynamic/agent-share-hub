@@ -187,6 +187,9 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
   { id: "gpt-5-5-pro", name: "GPT-5.5 Pro", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-5-4", name: "GPT-5.4", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-5-4-mini", name: "GPT-5.4 mini", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
+  /* GPT-5.4 nano and GPT-5 mini are in GitHub Copilot's list (its 2026-10-14 release), not in Appendix A. */
+  { id: "gpt-5-4-nano", name: "GPT-5.4 nano", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
+  { id: "gpt-5-mini", name: "GPT-5 mini", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-5-3-codex", name: "GPT-5.3-Codex", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-oss-120b", name: "GPT-OSS-120b", lab: "OpenAI", modality: "text", status: "current", isNew: false, aliases: [] },
   { id: "gpt-image-2-5-sunburst", name: "GPT Image 2.5 Sunburst", lab: "OpenAI", modality: "image", status: "current", isNew: false, aliases: ["gpt-image-2.5-sunburst"] },
@@ -311,6 +314,8 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
   { id: "eleven-multilingual-v2", name: "Eleven Multilingual v2", lab: "ElevenLabs", modality: "audio", status: "current", isNew: false, aliases: ["eleven_multilingual_v2"] },
   { id: "scribe-v2", name: "Scribe v2", lab: "ElevenLabs", modality: "audio", status: "current", isNew: false, aliases: ["scribe_v2"] },
   { id: "eleven-music-v2-5", name: "Eleven Music v2.5", lab: "ElevenLabs", modality: "music", status: "current", isNew: false, aliases: ["music_v2_5"] },
+  /* Qwen2.5 is in GitHub Copilot's list (its 2026-10-14 release), not in Appendix A. */
+  { id: "qwen2-5", name: "Qwen2.5", lab: "Alibaba", modality: "text", status: "legacy", isNew: false, aliases: [] },
   /* Higgsfield and the models it hosts: the source is dated June 2026, so these are partial. */
   { id: "higgsfield-soul-2-0", name: "Higgsfield Soul 2.0", lab: "Higgsfield", modality: "image", status: "current", isNew: false, aliases: [] },
   { id: "seedance-2-5", name: "Seedance 2.5", lab: "ByteDance", modality: "video", status: "current", isNew: false, aliases: [] },

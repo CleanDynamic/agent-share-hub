@@ -194,7 +194,7 @@ export const TOOLS: readonly Tool[] = [
   {
     id: "claude-code", name: "Claude Code", group: "coding", logo: "claudecode-color", aliases: ["claudecode"], client: "claude-code", projectFiles: ["CLAUDE.md", "SKILL.md"],
     kind: "coding",
-    models: { mode: "fixed", ids: ["fable-5-1", "fable-5", "opus-5-5", "sonnet-5-5", "haiku-5-5", "opus-5", "sonnet-5"], other: true },
+    models: { mode: "fixed", ids: ["fable-5-1", "fable-5", "opus-5-5", "sonnet-5-5", "haiku-5-5", "opus-5", "sonnet-5", "opus-4-8", "opus-4-7", "opus-4-6", "sonnet-4-6", "sonnet-4-5", "haiku-4-5"], other: true },
     steps: ["prompt", "session", "agent", "code", "manual", "result"],
     roles: ["main", "plans", "acts"],
     status: "current",
@@ -204,7 +204,7 @@ export const TOOLS: readonly Tool[] = [
   {
     id: "github-copilot", name: "GitHub Copilot", group: "coding", logo: "githubcopilot", aliases: ["gh copilot"], projectFiles: [".github/copilot-instructions.md"],
     kind: "coding",
-    models: { mode: "fixed", ids: ["gpt-6-1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna", "gpt-5-5", "gpt-5-4", "gpt-5-4-mini", "gpt-5-3-codex", "fable-5-1", "fable-5", "opus-5-5", "opus-5", "opus-4-8", "sonnet-5-5", "sonnet-5", "sonnet-4-6", "haiku-5-5", "haiku-4-5", "gemini-4-argon", "gemini-3-8-flash", "gemini-3-7-flash", "grok-4-7", "grok-4-6", "grok-4-5", "kimi-k3", "mai-code-1-1-flash"], other: false },
+    models: { mode: "fixed", ids: ["gpt-6-1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5-6-sol", "gpt-5-6-terra", "gpt-5-6-luna", "gpt-5-5", "gpt-5-4", "gpt-5-4-mini", "gpt-5-3-codex", "fable-5-1", "fable-5", "opus-5-5", "opus-5", "opus-4-8", "sonnet-5-5", "sonnet-5", "sonnet-4-6", "haiku-5-5", "haiku-4-5", "gemini-4-argon", "gemini-3-8-flash", "gemini-3-7-flash", "grok-4-7", "grok-4-6", "grok-4-5", "kimi-k3", "mai-code-1-1-flash", "gpt-5-mini", "gpt-5-4-nano", "qwen2-5"], other: false },
     steps: ["prompt", "session", "agent", "code", "manual", "result"],
     status: "current",
     source: "https://github.com/rajbos/github-copilot-model-notifier/releases/tag/models-2026-10-14-081303",
