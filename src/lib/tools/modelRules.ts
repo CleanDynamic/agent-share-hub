@@ -146,3 +146,25 @@ export function hiddenModelName(toolRaw: string | null | undefined): string | nu
   const tool = toolOf(toolRaw);
   return tool && tool.models.mode === "hidden" ? tool.name : null;
 }
+
+/**
+ * The harness of an agent that runs in its maker's own code, as the menus read it: a name no tool has, so it offers
+ * every current text model and takes a typed one (CA-02 P5, "My own code (API)", saved as no harness).
+ */
+export const OWN_CODE = "My own code (API)";
+
+/** The tool an agent's model menu reads: its harness, or OWN_CODE when it has none. */
+export const harnessTool = (harness: string | null | undefined): string => (typed(harness) ? (harness as string) : OWN_CODE);
+
+/**
+ * The model a new agent starts on in this harness: the harness's own name when it hides its model, `preferred` when
+ * the harness offers it, else the first model it lists; null when it names tiers or runs no model (one must be picked).
+ */
+export function startingModel(harness: string | null | undefined, preferred: string): string | null {
+  const tool = harnessTool(harness);
+  const menu = modelMenu(tool);
+  if (menu.state === "hidden") return hiddenModelName(tool);
+  if (menu.state !== "options") return null;
+  if (pairCheck(tool, preferred) === "ok" || pairCheck(tool, preferred) === "unknown") return preferred;
+  return menu.groups[0]?.models[0]?.name ?? null;
+}

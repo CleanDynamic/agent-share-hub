@@ -37,15 +37,17 @@ export interface ToolPickerProps {
   phone: boolean;
   /** The Add item the tool is being named on (CA-02). */
   step: StepKey;
+  /** CA-02 P5: what the "No tool" row says, and the trigger while nothing is picked ("My own code (API)"). */
+  noneLabel?: string;
 }
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading";
 
 /** The words a row reads as. */
-function rowName(row: PickerRow): string {
+function rowName(row: PickerRow, noneLabel = "No tool"): string {
   switch (row.kind) {
     case "none":
-      return "No tool";
+      return noneLabel;
     case "tool":
       return row.tool.name;
     case "showAll":
@@ -62,7 +64,7 @@ function rowName(row: PickerRow): string {
 /** A row that is listed but cannot be picked. */
 const isDisabled = (row: PickerRow): boolean => row.kind === "tool" && row.unavailable === true && row.pickable !== true;
 
-export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step }: ToolPickerProps) {
+export function ToolPicker({ value, onChange, inBuild, allowNone = false, label, phone, step, noneLabel }: ToolPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -73,7 +75,7 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
 
   const chosen = toolFor(value);
   const typedValue = value && !chosen ? value.trim() : null;
-  const shown = chosen ? chosen.name : typedValue || "Pick a tool";
+  const shown = chosen ? chosen.name : typedValue || (allowNone && noneLabel ? noneLabel : "Pick a tool");
 
   const rows = pickerRows({ query, inBuild, expanded, allowNone, step });
   const pickable = rows.filter(isPickable);
@@ -226,11 +228,11 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
                   {row.kind === "tool" ? <ModelMark tool={row.tool.id} size={16} /> : null}
                   {row.kind === "tool" && row.line ? (
                     <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0, padding: "4px 0" }}>
-                      <span>{rowName(row)}</span>
+                      <span>{rowName(row, noneLabel)}</span>
                       <span style={text(11.5, 400, t.label)}>{row.line}</span>
                     </span>
                   ) : (
-                    <span style={{ minWidth: 0 }}>{rowName(row)}</span>
+                    <span style={{ minWidth: 0 }}>{rowName(row, noneLabel)}</span>
                   )}
                 </div>
               ),

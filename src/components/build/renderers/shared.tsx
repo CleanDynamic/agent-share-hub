@@ -807,6 +807,9 @@ export function SampleTable({
  * when the reference points outside the loaded tree — a tray node, or a node
  * on another build — rather than printing a raw uuid at full length.
  */
+/** The payload keys that name a node with no title, in the order they are tried. */
+const REF_NAME_KEYS = ["service", "title", "name"];
+
 export function NodeRef({
   id,
   resolveNode,
@@ -818,7 +821,9 @@ export function NodeRef({
 }) {
   if (!id) return null;
   const target = resolveNode(id);
-  const text = target?.title?.trim() || `Node ${id.slice(0, 8)}`;
+  // A tool or a file the composer made has no title of its own: its payload names it (CA-02 P5).
+  const named = target ? REF_NAME_KEYS.map((key) => str(payloadOf(target), key)?.trim()).find(Boolean) : undefined;
+  const text = target?.title?.trim() || named || `Node ${id.slice(0, 8)}`;
   return (
     <Chip colour={target ? colour : t.text2} tinted={Boolean(target)} title={id}>
       {text}

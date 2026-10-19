@@ -55,7 +55,7 @@ import {
 } from "./buildListModel";
 import { TextButton } from "./composeControls";
 import { ManualThumb } from "./ManualThumb";
-import { ModelPicker } from "./ModelPicker";
+import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -806,14 +806,14 @@ function ResultCard({ result, selected, onSelect }: { result: ListResult; select
 
 export const ADD_PROMPT_COPY = {
   /** CA-02 P4: the tool changed and does not offer the model that was chosen. */
-  cleared: (tool: string, model: string) => `${tool} doesn't offer ${model}. Model cleared.`,
+  cleared: MODEL_PICKER_COPY.cleared,
   /** CA-02 P4: a tool that runs prompts by itself, named on a prompt. */
   runsItself: TOOL_PICKER_COPY.runsItself,
   addAsAgent: "Add as an agent",
 } as const;
 
 /** How long the "Model cleared" line stays. */
-export const CLEARED_NOTE_MS = 6000;
+export const CLEARED_NOTE_MS = MODEL_CLEARED_MS;
 
 /** What "Add as an agent" hands the agent dialog: the tool as the harness, the field's text as the instructions. */
 export interface AddAsAgentInput {

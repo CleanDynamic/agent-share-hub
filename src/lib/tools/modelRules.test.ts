@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { offeredTextModels } from "@/lib/models/registry";
 
-import { DEFAULT_ROLES, SUGGESTED, fitsStep, hiddenModelName, modelMenu, modelRoles, nextModelAfterToolChange, pairCheck, type PairCheck } from "./modelRules";
+import { DEFAULT_ROLES, OWN_CODE, SUGGESTED, fitsStep, harnessTool, hiddenModelName, modelMenu, modelRoles, nextModelAfterToolChange, pairCheck, startingModel, type PairCheck } from "./modelRules";
 import type { StepKey } from "./registry";
 
 const ids = (menu: ReturnType<typeof modelMenu>) => (menu.state === "options" ? menu.groups.flatMap((group) => group.models.map((m) => m.id)) : []);
@@ -143,5 +143,22 @@ describe("roles and stand-ins", () => {
   it("names the model a hidden harness saves", () => {
     expect(hiddenModelName("manus")).toBe("Manus");
     expect(hiddenModelName("claude")).toBeNull();
+  });
+});
+
+describe("an agent's harness", () => {
+  it("reads no harness as the maker's own code, which takes any model", () => {
+    expect(harnessTool(null)).toBe(OWN_CODE);
+    expect(harnessTool("claude-code")).toBe("claude-code");
+    expect(modelMenu(harnessTool(null))).toMatchObject({ state: "options", other: true });
+    expect(nextModelAfterToolChange(harnessTool(null), "Opus 5.5")).toEqual({ model: "Opus 5.5", cleared: false });
+  });
+
+  it("starts an agent on the preferred model when the harness offers it, else on its first", () => {
+    expect(startingModel(null, "Sonnet 5.5")).toBe("Sonnet 5.5");
+    expect(startingModel("hermes-agent", "Sonnet 5.5")).toBe("Sonnet 5.5");
+    expect(startingModel("codex", "Sonnet 5.5")).toBe("GPT-6.1 Sol");
+    expect(startingModel("manus", "Sonnet 5.5")).toBe("Manus");
+    expect(startingModel("v0", "Sonnet 5.5")).toBeNull();
   });
 });

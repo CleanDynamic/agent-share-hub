@@ -16,6 +16,8 @@ const graph = vi.hoisted(() => ({
   setManualFields: vi.fn(),
   removeUse: vi.fn(),
   addMadeFile: vi.fn(),
+  addTool: vi.fn(),
+  setAgentSetup: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -104,6 +106,65 @@ describe("adding an agent or a team (UI-P69)", () => {
     });
     expect(graph.addAgent).toHaveBeenCalledWith("b1", tree, { model: "Opus 5.5", parentId: "tm1" });
     expect(id).toBe("ag2");
+  });
+});
+
+describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
+  const integration = (id: string, service: string) => row({ id, type: "integration", payload: { service } });
+
+  it("hands the harness and the models on, and refers to the build's own integration node for a tool it has", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const tree = [integration("t-gmail", "Gmail")];
+    const { result } = hook(tree);
+    await act(async () => {
+      await result.current.addAgentOrTeam({
+        kind: "agent",
+        name: null,
+        model: "Opus 5.5",
+        harness: "hermes-agent",
+        models: [
+          { model: "Opus 5.5", role: "main" },
+          { model: "Haiku 5.5", role: "other" },
+        ],
+        tools: ["gmail"],
+        instructions: "Triage my inbox",
+      });
+    });
+    expect(graph.addAgent).toHaveBeenCalledWith("b1", tree, {
+      name: null,
+      model: "Opus 5.5",
+      instructions: "Triage my inbox",
+      harness: "hermes-agent",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      toolRefs: ["t-gmail"],
+    });
+    expect(graph.addTool).not.toHaveBeenCalled();
+  });
+
+  it("makes an integration node for a tool the build does not have yet", async () => {
+    graph.addAgent.mockResolvedValue({ id: "ag1" } as BuildNode);
+    graph.addTool.mockResolvedValue({ id: "t-new" } as BuildNode);
+    const { result, record } = hook();
+    await act(async () => {
+      await result.current.addAgentOrTeam({ kind: "agent", name: null, model: "Opus 5.5", tools: ["github-copilot"] });
+    });
+    expect(graph.addTool).toHaveBeenCalledWith("b1", [], { service: "GitHub Copilot" });
+    expect(record).toHaveBeenCalledWith("t-new", { id: "t-new" });
+    expect(graph.addAgent).toHaveBeenCalledWith("b1", [], { name: null, model: "Opus 5.5", toolRefs: ["t-new"] });
+  });
+
+  it("changes an agent's setup from Details through setAgentSetup", async () => {
+    graph.setAgentSetup.mockResolvedValue({ id: "ag1" } as BuildNode);
+    const agent = row({ id: "ag1", type: "agent_config", payload: { system_prompt: "", model: "Opus 5.5" } });
+    const { result } = hook([agent, integration("t-gmail", "Gmail")]);
+    await act(async () => {
+      result.current.setAgent("ag1", { model: "Sonnet 5.5", harness: "claude-code", models: [], tools: ["Gmail"] });
+    });
+    await vi.waitFor(() => expect(graph.setAgentSetup).toHaveBeenCalled());
+    expect(graph.setAgentSetup.mock.calls[0][1]).toEqual({ model: "Sonnet 5.5", harness: "claude-code", models: [], toolRefs: ["t-gmail"] });
   });
 });
 

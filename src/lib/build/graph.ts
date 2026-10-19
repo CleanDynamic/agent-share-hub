@@ -16,7 +16,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
-import { toolName } from "@/lib/tools/registry";
+import { toolFor, toolName } from "@/lib/tools/registry";
 import { toolLabel, type MakingSession } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
@@ -48,6 +48,12 @@ export interface Runs {
   detail?: string;
 }
 
+/** One of an agent's models and what it does there (CA-02 P5). The first is always "main". */
+export interface AgentModel {
+  model: string;
+  role: string;
+}
+
 export interface Step {
   id: string;
   kind: StepKind;
@@ -70,6 +76,12 @@ export interface Step {
   children: Step[];
   /** A manual step's picture (its `media_id`), when it has one. */
   mediaId?: string | null;
+  /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null for its maker's own code. */
+  harness?: string | null;
+  /** CA-02 P5, an agent only: its models with their roles, when it has more than one. */
+  models?: AgentModel[];
+  /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
+  toolRefs?: string[];
 }
 
 export interface SessionGroup {
@@ -92,6 +104,11 @@ export const RUNS_COUNT_MAX = 20;
 export const UNTIL_DETAIL_MAX = 80;
 export const WHEN_DETAIL_MAX = 60;
 export const MANUAL_TOOL_MAX = 40;
+/** CA-02 P5: the longest harness name and role a maker can type. */
+export const HARNESS_MAX = 40;
+export const ROLE_MAX = 40;
+/** CA-02 P5: an agent names four models at most. */
+export const AGENT_MODELS_MAX = 4;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -213,6 +230,42 @@ const byPosition = <T extends Pick<BuildNode, "position">>(nodes: readonly T[]):
     .filter((node) => typeof node.position === "number")
     .sort((a, b) => (a.position as number) - (b.position as number));
 
+/** An agent's models, read defensively: entries without a model are skipped. */
+export function agentModelsOf(payload: Record<string, unknown>): AgentModel[] {
+  const raw = payload.models;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const model = stringOf(entry.model)?.trim();
+    if (!model) return [];
+    return [{ model, role: stringOf(entry.role)?.trim() || "main" }];
+  });
+}
+
+/** The integration nodes an agent's `tools` list names, in order. */
+export function toolRefsOf(payload: Record<string, unknown>): string[] {
+  const raw = payload.tools;
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const entry of raw) {
+    const ref = isRecord(entry) ? stringOf(entry.tool_ref) : null;
+    if (ref && !out.includes(ref)) out.push(ref);
+  }
+  return out;
+}
+
+/** The agent-only facts of a step (CA-02 P5); an old agent with none of them reads as it always did. */
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs"> {
+  const harness = stringOf(payload.harness)?.trim();
+  const models = agentModelsOf(payload);
+  const toolRefs = toolRefsOf(payload);
+  return {
+    harness: harness ? (toolName(harness) ?? harness) : null,
+    ...(models.length > 1 ? { models } : null),
+    ...(toolRefs.length ? { toolRefs } : null),
+  };
+}
+
 const dismissedOf = (payload: Payload): string[] =>
   Array.isArray(payload.dismissed) ? payload.dismissed.filter((key): key is string => typeof key === "string") : [];
 
@@ -237,6 +290,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     dismissed: dismissedOf(payload),
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
+    ...(kind === "agent" ? agentFacts(payload) : null),
   };
 }
 
@@ -255,6 +309,9 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     sessionId: null,
     tool: null,
     children: [],
+    harness: undefined,
+    models: undefined,
+    toolRefs: undefined,
   };
 }
 
@@ -535,35 +592,114 @@ async function requireLiveType(operation: string, key: string): Promise<void> {
 
 const titleOrNull = (value: string | null | undefined): string | null => value?.trim() || null;
 
+/** What an agent ran in, the models it used and the tools it could call (CA-02 P5). Every key is optional. */
+export interface AgentSetup {
+  /** A tool id or a typed name; null or absent for the maker's own code. */
+  harness?: string | null;
+  /** Every model with its role, the main one first. Stored only when there is more than one. */
+  models?: readonly AgentModel[];
+  /** The integration nodes the agent may call. */
+  toolRefs?: readonly string[];
+}
+
+/**
+ * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
+ * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
+ */
+function setupPayload(operation: string, model: string, { harness, models, toolRefs }: AgentSetup): Payload {
+  const main = model.trim();
+  if (!main) throw refuse(operation, "An agent needs a model.");
+  const out: Payload = { model: main };
+  const named = harness?.trim();
+  if (named) {
+    if (named.length > HARNESS_MAX) throw refuse(operation, `A harness is at most ${HARNESS_MAX} characters.`);
+    out.harness = toolFor(named)?.id ?? named;
+  }
+  if (models && models.length > 0) {
+    if (models.length > AGENT_MODELS_MAX) throw refuse(operation, `An agent names ${AGENT_MODELS_MAX} models at most.`);
+    const rows = models.map((row, index) => {
+      const name = row.model.trim();
+      if (!name) throw refuse(operation, "Each model needs its name.");
+      const role = index === 0 ? "main" : row.role.trim();
+      if (!role || role.length > ROLE_MAX) throw refuse(operation, `A role is 1 to ${ROLE_MAX} characters.`);
+      return { model: name, role };
+    });
+    if (rows[0].model !== main) throw refuse(operation, "The first model is the agent's main model.");
+    if (rows.length > 1) out.models = rows as unknown as Json;
+  }
+  const refs = [...new Set((toolRefs ?? []).filter((ref) => typeof ref === "string" && ref))];
+  if (refs.length) out.tools = refs.map((ref) => ({ tool_ref: ref })) as unknown as Json;
+  return out;
+}
+
 /**
  * An agent: top level, or inside a team when `parentId` names one (UI-P69).
- * A blank name saves as null, so the default "Agent {n}" shows.
+ * A blank name saves as null, so the default "Agent {n}" shows. CA-02 P5: it
+ * can name its harness, its models with their roles and the tools it calls.
  */
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId, instructions }: { name?: string | null; model: string; parentId?: string | null; instructions?: string },
+  { name, model, parentId, instructions, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string } & AgentSetup,
 ): Promise<BuildNode> {
-  if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
+  const keys = setupPayload("addAgent", model, setup);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", model: model.trim() } };
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys } as Json };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
-/** A team is never empty: it is made holding one agent, which `model` names. */
+/** A team is never empty: it is made holding one agent, which `model` and the setup describe: the agent that leads it. */
 export async function addTeam(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model }: { name?: string | null; model: string },
+  { name, model, instructions, ...setup }: { name?: string | null; model: string; instructions?: string } & AgentSetup,
 ): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
-  if (!model.trim()) throw refuse("addTeam", "An agent needs a model.");
+  const keys = setupPayload("addTeam", model, setup);
   const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
-  const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: "", model: model.trim() } });
+  const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: instructions ?? "", ...keys } as Json });
   return { team, agent };
+}
+
+/**
+ * Change what an agent ran in, its models or its tools (CA-02 P5, from Details). The keys given replace the stored
+ * ones; a key left out is kept. `model` is the main model, and a single model clears `models`.
+ */
+export async function setAgentSetup(node: BuildNode, { model, ...setup }: { model: string } & AgentSetup): Promise<BuildNode> {
+  if (node.type !== AGENT_TYPE) throw refuse("setAgentSetup", "Only an agent names what ran it.");
+  const keys = setupPayload("setAgentSetup", model, setup);
+  const payload = { ...payloadOf(node) };
+  payload.model = keys.model;
+  if ("harness" in setup) {
+    if (keys.harness) payload.harness = keys.harness;
+    else delete payload.harness;
+  }
+  if ("models" in setup) {
+    if (keys.models) payload.models = keys.models;
+    else delete payload.models;
+  }
+  if ("toolRefs" in setup) {
+    if (keys.tools) payload.tools = keys.tools;
+    else delete payload.tools;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/** The build's integration node for a tool, matched by the registry's tool or by its name in any case; null when there is none. */
+export function toolNodeFor(tree: readonly Pick<BuildNode, "id" | "type" | "parent_id" | "payload">[], tool: string): string | null {
+  const wanted = tool.trim();
+  if (!wanted) return null;
+  const known = toolFor(wanted);
+  for (const node of tree) {
+    if (node.type !== TOOL_TYPE || node.parent_id !== null) continue;
+    const service = stringOf(payloadOf(node).service)?.trim();
+    if (!service) continue;
+    if (known ? toolFor(service)?.id === known.id : service.toLowerCase() === wanted.toLowerCase()) return node.id;
+  }
+  return null;
 }
 
 /** An agent's instructions: `payload.system_prompt`, which is its sub-step n.1. */

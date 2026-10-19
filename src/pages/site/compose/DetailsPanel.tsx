@@ -38,7 +38,9 @@ import {
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { MADE_FILE_NAME_MAX, type Runs, type Use } from "@/lib/build/graph";
+import { MADE_FILE_NAME_MAX, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+
+import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 
 export interface InputsView {
   uses: readonly UseRow[];
@@ -129,6 +131,8 @@ export interface AgentView extends InputsView {
   instructions: string;
   /** "Team 3 · Copy team" for an agent inside a team; null otherwise. */
   parent: string | null;
+  /** CA-02 P5, an agent only: what it ran in, its models with their roles and the tools it can use. */
+  setup?: AgentSetupValue;
 }
 
 export interface ResultView {
@@ -160,6 +164,8 @@ export interface DetailsHandlers {
   onManualPicture?: (id: string, file: File) => void;
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
+  /** CA-02 P5: change what an agent ran in, its models or its tools. Absent: they are shown, not edited. */
+  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[] }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
@@ -905,7 +911,36 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
   );
 }
 
-function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean } & DetailsHandlers) {
+/** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
+function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]> }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <AgentSetupFields
+      value={value}
+      phone={phone}
+      inBuild={inBuild}
+      onChange={(next) => {
+        setValue(next);
+        if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools });
+      }}
+    />
+  );
+}
+
+/** An agent's setup as read-only lines, where the panel cannot write it. */
+function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
+  return (
+    <div>
+      <KeyValue label="Runs in">{setup.harness ?? "My own code (API)"}</KeyValue>
+      {setup.models.map((row, index) => (
+        <KeyValue key={index} label={index === 0 ? "Model" : `Model ${index + 1}`}>{`${row.model ?? ""} · ${row.role}`}</KeyValue>
+      ))}
+      {setup.tools.length ? <KeyValue label="Tools it can use">{setup.tools.join(" · ")}</KeyValue> : null}
+    </div>
+  );
+}
+
+function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
   return (
     <>
@@ -915,11 +950,18 @@ function AgentDetails({ view, phone, ...h }: { view: AgentView; phone: boolean }
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>
-      {view.model || view.parent ? (
+      {(view.model && !view.setup) || view.parent ? (
         <div>
           {view.parent ? <KeyValue label="In">{view.parent}</KeyValue> : null}
-          {view.model ? <KeyValue label="Model">{view.model}</KeyValue> : null}
+          {view.model && !view.setup ? <KeyValue label="Model">{view.model}</KeyValue> : null}
         </div>
+      ) : null}
+      {view.setup ? (
+        h.onAgentSetup ? (
+          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} />
+        ) : (
+          <AgentSetupLines setup={view.setup} />
+        )
       ) : null}
       {view.kind === "agent" ? (
         <FieldBlock label="Instructions">
@@ -1001,7 +1043,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
-      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} {...h} /> : null}
+      {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
     </div>
   );

@@ -27,6 +27,9 @@ import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 /** The longest model name a maker can type. */
 export const MODEL_TYPED_MAX = 40;
 
+/** How long the "Model cleared" line stays. */
+export const MODEL_CLEARED_MS = 6000;
+
 export const MODEL_PICKER_COPY = {
   model: "model",
   pickToolFirst: "Pick a tool first",
@@ -36,6 +39,8 @@ export const MODEL_PICKER_COPY = {
   otherPlaceholder: "The model's name",
   save: "Save",
   cancel: "Cancel",
+  /** The tool changed and does not offer the model that was chosen. */
+  cleared: (tool: string, model: string) => `${tool} doesn't offer ${model}. Model cleared.`,
 } as const;
 
 export interface ModelPickerProps {

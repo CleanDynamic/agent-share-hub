@@ -149,6 +149,16 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     inside: insideCounts(step),
     instructions: step.kind === "agent" ? step.text : "",
     parent: parentLine(step.id, ctx.steps),
+    // CA-02 P5: what it ran in, its models and its tools, as the setup controls hold them.
+    ...(step.kind === "agent"
+      ? {
+          setup: {
+            harness: step.harness ?? null,
+            models: step.models && step.models.length > 1 ? step.models.map((row) => ({ ...row })) : [{ model: step.model, role: "main" }],
+            tools: (step.toolRefs ?? []).map((ref) => all.byId[ref]?.name).filter((name): name is string => Boolean(name)),
+          },
+        }
+      : null),
     // An agent's instructions are its own row; only what can be taken out is listed.
     insideRows: step.children.filter((child) => !child.id.endsWith(":instructions")).map((child) => ({ id: child.id, label: `${child.number} · ${stepTitle(child)}` })),
   };

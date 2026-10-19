@@ -482,3 +482,54 @@ describe("Makes (TF-08)", () => {
     expect(screen.queryByLabelText("Name a file it makes")).toBeNull();
   });
 });
+
+describe("an agent's harness, models and tools (CA-02 P5)", () => {
+  const withSetup = () => {
+    const base = sandboxDetailsProps("agent", "bakery").view;
+    if (!base || base.kind !== "agent") throw new Error("expected an agent");
+    return {
+      ...base,
+      setup: {
+        harness: "Hermes Agent",
+        models: [
+          { model: "Opus 5.5", role: "main" },
+          { model: "Haiku 5.5", role: "other" },
+        ],
+        tools: ["Gmail", "GitHub Copilot"],
+      },
+    };
+  };
+
+  it("shows Runs in, each model with its role and the tools, with the same controls as the dialog", () => {
+    const onAgentSetup = vi.fn();
+    panel("agent", "bakery", { view: withSetup(), onAgentSetup });
+    expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Hermes Agent");
+    expect(screen.getByRole("button", { name: "model Opus 5.5" })).toBeTruthy();
+    expect((screen.getByRole("combobox", { name: "Role of model 2" }) as HTMLSelectElement).value).toBe("other");
+    expect(screen.getByRole("button", { name: "model 2 Haiku 5.5" })).toBeTruthy();
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Gmail", "GitHub Copilot"]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Gmail" }));
+    expect(onAgentSetup).toHaveBeenCalledWith("a5", {
+      model: "Opus 5.5",
+      models: [
+        { model: "Opus 5.5", role: "main" },
+        { model: "Haiku 5.5", role: "other" },
+      ],
+      harness: "Hermes Agent",
+      tools: ["GitHub Copilot"],
+    });
+  });
+
+  it("lists them as lines where it cannot write them", () => {
+    panel("agent", "bakery", { view: withSetup() });
+    expect(screen.getByText("Hermes Agent")).toBeTruthy();
+    expect(screen.getByText("Haiku 5.5 · other")).toBeTruthy();
+    expect(screen.getByText("Gmail · GitHub Copilot")).toBeTruthy();
+  });
+
+  it("shows an agent saved before CA-02 exactly as before", () => {
+    panel("agent");
+    expect(screen.queryByRole("button", { name: "Runs in" })).toBeNull();
+    expect(screen.getByText("Opus 5.5")).toBeTruthy();
+  });
+});

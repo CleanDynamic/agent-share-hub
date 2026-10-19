@@ -53,9 +53,12 @@ import {
   setNodeFields,
   setInstructions,
   setManualFields,
+  setAgentSetup,
   setRuns,
   setStepTitle,
+  toolNodeFor,
   usesOf,
+  type AgentModel,
   type Runs,
   type Step,
   type Use,
@@ -104,6 +107,23 @@ function errorCode(error: unknown): string {
   return "unknown";
 }
 
+/** CA-02 P5: what an agent ran in, its models and its tools, as the dialog and Details hand them over. */
+export interface AgentSetupInput {
+  /** The main model. */
+  model: string;
+  harness?: string | null;
+  /** Every model with its role, the main one first; only when there is more than one. */
+  models?: AgentModel[];
+  /** Tool ids or typed names: each becomes a reference to the build's integration node for it, made when missing. */
+  tools?: readonly string[];
+}
+
+export interface AgentInput extends AgentSetupInput {
+  kind: "agent" | "team";
+  name: string | null;
+  instructions?: string;
+}
+
 export interface ComposePrompts {
   rows: ComposePromptRow[];
   focus: PromptFocus | null;
@@ -145,7 +165,9 @@ export interface ComposePrompts {
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
-  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string; instructions?: string }) => Promise<string | null>;
+  addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
+  /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
+  setAgent: (id: string, setup: AgentSetupInput) => void;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -532,16 +554,42 @@ export function useComposePrompts({
         return null;
       });
 
-  const addAgentOrTeam = ({ kind, name, model, instructions }: { kind: "agent" | "team"; name: string | null; model: string; instructions?: string }) =>
+  /** The build's integration node for each tool, made when there is none yet (CA-02 P5). Runs inside the queue. */
+  const toolRefsFor = async (build: string, tools: readonly string[]): Promise<string[]> => {
+    const refs: string[] = [];
+    for (const tool of tools) {
+      const existing = toolNodeFor(nodes.current(), tool);
+      if (existing) {
+        refs.push(existing);
+        continue;
+      }
+      const created = await addTool(build, nodes.current(), { service: toolName(tool) ?? tool.trim() });
+      nodes.record(created.id, created);
+      refs.push(created.id);
+    }
+    return refs;
+  };
+
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
+        const toolRefs = await toolRefsFor(build, tools ?? []);
+        // Only the keys given: an agent made without them is written exactly as before.
+        const setup = {
+          ...(instructions ? { instructions } : null),
+          ...(harness ? { harness } : null),
+          ...(models && models.length > 1 ? { models } : null),
+          ...(toolRefs.length ? { toolRefs } : null),
+        };
         if (kind === "agent") {
-          const created = await addAgent(build, nodes.current(), { name, model, instructions });
+          const created = await addAgent(build, nodes.current(), { name, model, ...setup });
           nodes.record(created.id, created);
+          noteTool(build, harness);
           return created.id;
         }
-        const { team } = await addTeam(build, nodes.current(), { name, model });
+        const { team } = await addTeam(build, nodes.current(), { name, model, ...setup });
+        noteTool(build, harness);
         nodes.record(team.id, team);
         return team.id;
       })
@@ -573,6 +621,18 @@ export function useComposePrompts({
         failed("Couldn't add that prompt. Try again.")(cause);
         return false;
       });
+
+  const setAgent = (id: string, { model, harness, models, tools }: AgentSetupInput) =>
+    void nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const toolRefs = await toolRefsFor(build, tools ?? []);
+        const node = findNode(nodes.current(), id);
+        if (!node) return;
+        nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs }));
+        noteTool(build, harness);
+      })
+      .catch(failed("Couldn't save that agent. Try again."));
 
   const setInstructionsOf = (agentId: string, text: string) =>
     void writeStep(agentId, "Couldn't save the instructions. Try again.", (node) => setInstructions(node, text));
@@ -633,5 +693,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
 }

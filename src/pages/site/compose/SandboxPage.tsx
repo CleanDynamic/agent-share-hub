@@ -126,7 +126,7 @@ export function SandboxPage() {
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
   const inBuild = useMemo(() => {
-    const names = [...flatten(steps).map((step) => step.tool), ...groups.map((group) => group.tool)];
+    const names = [...flatten(steps).flatMap((step) => [step.tool, step.harness]), ...groups.map((group) => group.tool)];
     return names.filter((name): name is string => Boolean(name));
   }, [steps, groups]);
 
@@ -666,6 +666,10 @@ export function SandboxPage() {
               prompts.setInstructions(id, text);
               afterWrite();
             }}
+            onAgentSetup={(id, setup) => {
+              prompts.setAgent(id, setup);
+              afterWrite();
+            }}
             onRemoveInside={(id) => {
               prompts.removeInside(id);
               afterWrite();
@@ -746,6 +750,7 @@ export function SandboxPage() {
         nextNumber={steps.length + 1}
         teamsAvailable={teamsAvailable}
         seed={agentSeed}
+        inBuild={inBuild}
         onAdd={(input) => void onAddAgentOrTeam(input)}
       />
       <AddManualStepDialog
