@@ -20,7 +20,9 @@
    CA-03 P4: a team's first agent is its lead. The team's eyebrow says what the lead ran in ("Team · led by an agent
    in Claude Code"); the lead's row is "Lead agent"; the others sit under "Handed work to", each "Agent · {name}".
 
-   CA-03 P6: what an agent remembers is one quiet line under it, led by a 7px `--label` dot: "Remembers {memory}". */
+   CA-03 P6: what an agent remembers is one quiet line under it, led by a 7px `--label` dot: "Remembers {memory}".
+
+   CA-03 P7: an agent that can use a tool reading content it doesn't control has the warning module under it. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
@@ -40,7 +42,8 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, runsLabel, stepTitle } from "@/lib/build/graph";
+import { checkStatus, runsLabel, stepTitle, TOOL_TYPE } from "@/lib/build/graph";
+import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { markFor } from "@/lib/models/marks";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
@@ -66,6 +69,7 @@ import {
 import { TextButton } from "./composeControls";
 import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
+import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
@@ -501,7 +505,11 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 
 /* ── agents and teams (UI-P69) ── */
 
-function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[] }) {
+/** CA-03 P7: the outside tools an agent can use, its tools read from the List's names (an id to a service). */
+const outsideOf = (agent: Step, names: BuildListProps["names"]): string[] =>
+  readsOutsideContent(agent, (agent.toolRefs ?? []).flatMap((id) => (names[id] ? [{ id, type: TOOL_TYPE, payload: { service: names[id] } }] : [])));
+
+function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[] }) {
   return (
     <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
@@ -513,6 +521,7 @@ function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
+      <OutsideWarning names={outside} />
     </div>
   );
 }
@@ -635,6 +644,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
         </div>
       </div>
+      {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child, index) => {
           const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
@@ -650,6 +660,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
                 step={child}
                 eyebrow={isTeam ? (index === 0 ? TEAM_COPY.lead : TEAM_COPY.agent(stepTitle(child))) : undefined}
                 runs={isTeam ? runsLabel(child.runs) : undefined}
+                outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
               />
               {own.length > 0 ? (

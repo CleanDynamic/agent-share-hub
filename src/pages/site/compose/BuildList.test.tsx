@@ -725,3 +725,27 @@ describe("what an agent remembers, in the List (CA-03 P6)", () => {
     expect(screen.queryByTestId("memory-line")).toBeNull();
   });
 });
+
+describe("an agent that reads content it doesn't control (CA-03 P7)", () => {
+  it("has one module under it: a --cat-breakage dot, the sentence and the tools it can use", () => {
+    list(shapeListProps("agent"));
+    const card = screen.getByRole("group", { name: /^Agent 1/ });
+    const warning = within(card).getByTestId("outside-warning");
+    expect(warning.textContent).toBe("This agent reads content it doesn't control.It can use Hermes Agent and Gmail. Before you run it, check what it's allowed to change.");
+    expect(warning.querySelector("svg")).toBeNull();
+    expect(
+      /data-testid="outside-warning"[^>]*><span aria-hidden="true" style="[^"]*background:var\(--cat-breakage\)/.test(
+        renderToStaticMarkup(
+          <MemoryRouter>
+            <BuildList {...{ ...shapeListProps("agent"), onAddPrompt: () => Promise.resolve(true) }} />
+          </MemoryRouter>,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("says nothing for an agent with no such tool", () => {
+    list(shapeListProps("team"));
+    expect(screen.queryByTestId("outside-warning")).toBeNull();
+  });
+});

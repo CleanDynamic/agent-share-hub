@@ -42,6 +42,7 @@ import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { OutsideWarning } from "../compose/OutsideWarning";
 import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
@@ -676,6 +677,8 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         </div>
         {/* CA-03 P3: how it ran, one quiet line under it; "When I asked" shows nothing. */}
         {repeats ? <DotLine testId="runs-line">{entry.runs}</DotLine> : null}
+        {/* CA-03 P7: an agent that reads content it doesn't control says so. */}
+        <OutsideWarning names={entry.outside} />
         <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
         <SaveLines files={entry.makes} indent={0} />
         {entry.uses.length > 0 ? (
@@ -729,6 +732,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       </div>
       <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
       {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
+      <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (

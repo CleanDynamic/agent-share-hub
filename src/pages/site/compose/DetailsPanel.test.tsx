@@ -753,3 +753,15 @@ describe("what an agent remembers, in Details (CA-03 P6)", () => {
     expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Opus 5.5", harness: null, tools: [], memory: "the dishes it featured" });
   });
 });
+
+describe("an agent that reads content it doesn't control, in Details (CA-03 P7)", () => {
+  it("has the warning under its head, naming the tools", () => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { view: { ...base.view, outside: ["Gmail", "Notion", "Zapier"] } });
+    expect(screen.getByTestId("outside-warning").textContent).toBe("This agent reads content it doesn't control.It can use Gmail, Notion and Zapier. Before you run it, check what it's allowed to change.");
+    cleanup();
+    panel("agent", "bakery");
+    expect(screen.queryByTestId("outside-warning")).toBeNull();
+  });
+});

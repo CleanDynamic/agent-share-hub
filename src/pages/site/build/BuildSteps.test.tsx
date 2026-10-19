@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
+import { SHAPES } from "@/dev/fixtures/shapes";
 import { buildCounts, readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 
@@ -224,5 +225,14 @@ describe("NeedPanel", () => {
     expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
     expect(within(need).getByText("Copy for AI copies all 5 steps in order, with each new chat and paste-in written out.")).toBeTruthy();
+  });
+});
+
+describe("StepsList · an agent that reads content it doesn't control (CA-03 P7)", () => {
+  it("has the warning module under it, naming the tools", () => {
+    mountList(view("list", { steps: readerSteps(SHAPES.agent.tree, null) }));
+    const warning = screen.getByTestId("outside-warning");
+    expect(warning.textContent).toBe("This agent reads content it doesn't control.It can use Hermes Agent and Gmail. Before you run it, check what it's allowed to change.");
+    expect(warning.querySelector("svg")).toBeNull();
   });
 });

@@ -49,6 +49,7 @@ import {
   type ChecklistRow,
   type MakesRow,
 } from "./detailsModel";
+import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
@@ -150,6 +151,8 @@ export interface AgentView extends InputsView {
   parent: string | null;
   /** CA-02 P5, an agent only: what it ran in, its models with their roles and the tools it can use. */
   setup?: AgentSetupValue;
+  /** CA-03 P7, an agent only: the tools it can use that read content it doesn't control. */
+  outside?: readonly string[];
 }
 
 export interface ResultView {
@@ -1235,6 +1238,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
       <Head eyebrow={`${lead ? "Lead agent" : word} ${view.number}`}>
         <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
       </Head>
+      <OutsideWarning names={view.outside ?? []} />
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>

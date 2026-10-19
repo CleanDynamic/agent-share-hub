@@ -8,6 +8,7 @@
 // READERS NEVER SEE A SUGGESTION: nothing here reads `dismissed` or calls
 // suggest.ts. Only the uses the maker accepted are published.
 
+import { readsOutsideContent } from "./outsideContent";
 import { modelLabel } from "@/lib/models/registry";
 import { projectFileOf, toolFor } from "@/lib/tools/registry";
 import { EVIDENCE_NODE_TYPES } from "./cover";
@@ -118,6 +119,8 @@ export interface ReaderStep {
   madeIn: string | null;
   /** "runs by itself · last run 6 Oct, 07:00", when its session's date is known. */
   runsByItself: string | null;
+  /** CA-03 P7, an agent only: the tools it can use that read content it doesn't control. */
+  outside: string[];
   /** "3.3, until every claim has a source", then "then the result". Only for a step that repeats until a condition is met. */
   goesInto: string[];
   children: ReaderStep[];
@@ -249,6 +252,8 @@ interface Context {
   resultFrom: Set<string>;
   /** The registry ids of the tools the build uses: its sessions, its hand-typed and manual steps, and its tools. */
   toolIds: string[];
+  /** The placed tree, for what a step's references point at. */
+  tree: readonly NodeTree[];
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -338,6 +343,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     topSteps,
     resultFrom,
     toolIds,
+    tree,
   };
 }
 
@@ -460,6 +466,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     runs: isContainer ? runsLabel(step.runs) : null,
     madeIn: isContainer && madeIn.length > 0 ? `made in ${stepList(madeIn, false)}` : null,
     runsByItself: lastRun ? `runs by itself · last run ${lastRun}` : null,
+    outside: readsOutsideContent(step, context.tree),
     goesInto: loop,
     children: step.children.map((child) => readerStep(child, context, container)),
   };

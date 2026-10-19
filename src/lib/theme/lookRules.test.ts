@@ -73,6 +73,13 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/useComposePrompts.ts",
   // P6
   "src/components/build/renderers/configuration.tsx",
+  // P7
+  "src/lib/build/outsideContent.test.ts",
+  "src/lib/build/outsideContent.ts",
+  "src/lib/build/shapes.test.ts",
+  "src/lib/tools/registry.test.ts",
+  "src/lib/tools/registry.ts",
+  "src/pages/site/compose/OutsideWarning.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

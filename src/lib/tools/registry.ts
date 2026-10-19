@@ -7,6 +7,9 @@
 // Add items it can be named on (`steps`), and where that was read (`source`, `checked`). `kind` is for rules
 // (`tools/modelRules.ts`), not layout: the picker still groups by `group`. A retired tool still labels old builds but
 // is never offered for a new pick.
+//
+// CA-03 P7: `readsOutside` marks a tool that reads content its maker does not control. The list is held by a test, so a
+// change to it is deliberate.
 
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 
@@ -101,6 +104,11 @@ export interface Tool {
   partial?: true;
   /** True when no source confirmed the list: what is here is the best reading of the tool. */
   unverified?: true;
+  /**
+   * CA-03 P7: the tool reads content its maker does not control (email, web pages, other people's files), so what
+   * it reads can steer an agent that uses it.
+   */
+  readsOutside?: true;
 }
 
 /** Google AI Studio offers every current Google model, whatever it makes (Appendix B). */
@@ -130,6 +138,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "chat",
     models: { mode: "fixed", ids: ["gpt-5-6-sol", "gpt-5-6-luna", "gpt-5-6-sol-pro", "gpt-6-pro", "gpt-6-sol", "gpt-6-luna", "gpt-6-astra", "gpt-5-6-terra", "gpt-image-2-5-sunburst"], other: false },
     steps: ["prompt", "session", "agent", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://www.ai-toolbox.co/chatgpt-models/chatgpt-models-explained-complete-comparison-2026",
     checked: "2026-10-19",
@@ -139,6 +148,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "chat",
     models: { mode: "fixed", ids: ["gemini-3-8-flash", "gemini-3-7-flash", "gemini-3-5-flash-lite", "nano-banana-2", "nano-banana-pro", "veo-3-1"], other: false },
     steps: ["prompt", "session", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://presenc.ai/research/google-gemini-model-lineage-2026",
     checked: "2026-10-19",
@@ -158,6 +168,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "chat",
     models: { mode: "fixed", ids: ["grok-4-6", "grok-4-5", "grok-imagine-image-2-0", "grok-imagine-video-1-5"], other: false },
     steps: ["prompt", "session", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://www.ai-toolbox.co/grok-models/grok-models-explained-2026",
     checked: "2026-10-19",
@@ -167,6 +178,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "chat",
     models: { mode: "fixed", ids: ["fable-5-1", "opus-5-5", "sonnet-5-5", "haiku-5-5", "opus-5", "sonnet-5", "fable-5", "opus-4-7", "opus-4-6", "sonnet-4-6"], other: false },
     steps: ["prompt", "session", "agent", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://support.claude.com/en/articles/8664678-change-the-model-effort-and-thinking-settings",
     checked: "2026-10-19",
@@ -177,6 +189,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "chat",
     models: { mode: "fixed", ids: ["sonar-2", "gpt-5-6-terra", "gpt-5-6-sol", "gemini-3-7-flash", "sonnet-5", "opus-5", "kimi-k3", "glm-5-3", "grok-4-6", "nemotron-3-ultra"], other: false },
     steps: ["prompt", "session", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://www.perplexity.ai/help-center/en/articles/10354919-what-advanced-ai-models-are-included-in-my-subscription",
     checked: "2026-10-19",
@@ -315,6 +328,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "agent",
     models: { mode: "hidden", note: "Manus picks its own model" },
     steps: ["agent", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://en.wikipedia.org/wiki/Manus_(AI_agent)",
     checked: "2026-10-19",
@@ -325,6 +339,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "agent",
     models: { mode: "any", suggested: ["opus-5-5", "sonnet-5-5", "gpt-6-1-sol", "gemini-3-8-flash", "grok-4-7"] },
     steps: ["agent", "session", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://docs.openclaw.ai/providers/models",
     checked: "2026-10-19",
@@ -335,6 +350,7 @@ export const TOOLS: readonly Tool[] = [
     models: { mode: "any", suggested: ["opus-5-5", "sonnet-5-5", "gpt-6-1-sol", "gemini-3-8-flash", "grok-4-7", "deepseek-v4-pro", "kimi-k3", "glm-5-3"] },
     steps: ["agent", "session", "manual", "result"],
     roles: ["main", "vision", "web summaries", "compression", "fallback"],
+    readsOutside: true,
     status: "current",
     source: "https://hermes-agent.nousresearch.com/docs/integrations/providers",
     checked: "2026-10-19",
@@ -344,6 +360,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "agent",
     models: { mode: "hidden", note: "Muse runs on Muse Spark" },
     steps: ["agent", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://techcrunch.com/2026/09/08/meta-debuts-its-muse-ai-agent-will-consumers-trust-it/",
     checked: "2026-10-19",
@@ -353,6 +370,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["prompt", "agent", "file", "tool", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: null,
     checked: null,
@@ -363,6 +381,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["agent", "tool", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: null,
     checked: null,
@@ -373,6 +392,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "automation",
     models: { mode: "any", suggested: [] },
     steps: ["agent", "tool", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: null,
     checked: null,
@@ -466,6 +486,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "notes",
     models: { mode: "fixed", ids: ["opus-5", "gpt-5-6-sol", "kimi-k3"], other: true },
     steps: ["prompt", "agent", "tool", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://www.notion.com/releases/2026-09-15",
     checked: "2026-10-19",
@@ -476,6 +497,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "notes",
     models: { mode: "hidden", note: "Gemini Notebook picks its own model" },
     steps: ["prompt", "file", "manual", "result"],
+    readsOutside: true,
     status: "current",
     source: "https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/",
     checked: "2026-10-19",
@@ -523,6 +545,7 @@ export const TOOLS: readonly Tool[] = [
     kind: "app",
     models: { mode: "none" },
     steps: ["tool", "manual"],
+    readsOutside: true,
     status: "current",
     source: null,
     checked: null,

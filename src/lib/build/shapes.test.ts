@@ -154,3 +154,13 @@ describe("what each shape holds", () => {
     ]);
   });
 });
+
+describe("the outside-content warning on the build page (CA-03 P7)", () => {
+  it("reads it for the agent in Hermes Agent with Gmail, and not for the team in Claude Code", async () => {
+    const { readerSteps } = await import("./readerSteps");
+    const [agent] = readerSteps(SHAPES.agent.tree, null);
+    expect(agent.outside).toEqual(["Hermes Agent", "Gmail"]);
+    const [team] = readerSteps(SHAPES.team.tree, null);
+    expect(team.children.map((child) => child.outside)).toEqual([[], [], [], []]);
+  });
+});

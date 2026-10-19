@@ -34,6 +34,7 @@ import {
   type ChecklistRow,
   type NamedPiece,
 } from "./detailsModel";
+import { readsOutsideContent } from "@/lib/build/outsideContent";
 import type { AgentView, CheckView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
@@ -196,6 +197,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
             tools: (step.toolRefs ?? []).map((ref) => all.byId[ref]?.name).filter((name): name is string => Boolean(name)),
             ...(step.memory ? { memory: step.memory } : null),
           },
+          // CA-03 P7: the tools it can use that read content it doesn't control.
+          outside: readsOutsideContent(step, ctx.tree),
         }
       : null),
     // An agent's instructions are its own row; only what can be taken out is listed.
