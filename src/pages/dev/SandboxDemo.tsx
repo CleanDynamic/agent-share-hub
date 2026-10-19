@@ -9,7 +9,8 @@
    `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
-   `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code` draws one of CA-02's five shapes of AI use
+   `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code|shape-team-checks` draws one of CA-02's five
+   shapes of AI use, or CA-03's sixth
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).

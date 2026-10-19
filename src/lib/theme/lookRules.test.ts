@@ -85,6 +85,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/buildSummary.ts",
   "src/pages/site/build/buildModel.ts",
   "src/pages/site/build/BuildView.tsx",
+  // P9
+  "src/dev/fixtures/shapes.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
