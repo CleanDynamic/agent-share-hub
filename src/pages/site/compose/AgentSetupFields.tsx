@@ -97,9 +97,11 @@ export interface AgentSetupFieldsProps {
   phone: boolean;
   /** The tools the build already uses, first in the pickers. */
   inBuild: readonly string[];
+  /** CA-02 P8: opens the main model's menu each time it changes ("Change the model"). */
+  openMainModel?: number;
 }
 
-export function AgentSetupFields({ value, onChange, phone, inBuild }: AgentSetupFieldsProps) {
+export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
   const [cleared, setCleared] = useState<string | null>(null);
   const uid = useId();
   const tool = harnessTool(value.harness);
@@ -154,7 +156,15 @@ export function AgentSetupFields({ value, onChange, phone, inBuild }: AgentSetup
                   ))}
               </select>
             ) : null}
-            <ModelPicker tool={tool} value={row.model} onChange={(model) => setRow(index, { model })} phone={phone} allowNone={false} name={index === 0 ? undefined : `model ${index + 1}`} />
+            <ModelPicker
+              tool={tool}
+              value={row.model}
+              onChange={(model) => setRow(index, { model })}
+              phone={phone}
+              allowNone={false}
+              name={index === 0 ? undefined : `model ${index + 1}`}
+              openSignal={index === 0 ? openMainModel : undefined}
+            />
             {index > 0 ? (
               <IconButton
                 icon={X}

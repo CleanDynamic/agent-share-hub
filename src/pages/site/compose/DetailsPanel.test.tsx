@@ -96,7 +96,9 @@ describe("a prompt", () => {
     if (base.view?.kind !== "prompt") throw new Error("fixture");
     const props = panel("prompt", "bakery", { view: { ...base.view, typed: true, model: null } });
     expect(screen.getByText("Model is empty because there is no session to read it from.")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Model"), { target: { value: "Opus 5.5" } });
+    // CA-02 P8: the model menu follows the prompt's tool; with none named it offers every current text model.
+    fireEvent.keyDown(screen.getByRole("button", { name: "Model" }), { key: "Enter" });
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Opus 5.5" }));
     expect(props.onModel).toHaveBeenCalledWith("p3", "Opus 5.5");
   });
 });
@@ -565,5 +567,68 @@ describe("code (CA-02 P7)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy" }));
     expect(writeText).toHaveBeenCalledWith("export const a = 1;\nexport const b = 2;\n");
     expect(await screen.findByText("Copied")).toBeTruthy();
+  });
+});
+
+describe("a saved pair that breaks the rules (CA-02 P8)", () => {
+  const typed = (tool: string | null, model: string | null) => {
+    const base = sandboxDetailsProps("prompt", "bakery");
+    if (base.view?.kind !== "prompt") throw new Error("fixture");
+    return { ...base.view, typed: true, tool, model };
+  };
+
+  it("says a tool doesn't offer the model, and Change the model opens the menu of the tool's own", async () => {
+    const props = panel("prompt", "bakery", { view: typed("Claude", "Grok 4.7") });
+    expect(screen.getByTestId("pair-note").textContent).toContain("Claude doesn't offer Grok 4.7.");
+    // Nothing changes until the maker acts.
+    expect(props.onModel).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change the model" }));
+    const item = await screen.findByRole("menuitemradio", { name: "Opus 5.5" });
+    expect(screen.queryByRole("menuitemradio", { name: "Grok 4.7" })).toBeNull();
+    fireEvent.click(item);
+    expect(props.onModel).toHaveBeenCalledWith("p3", "Opus 5.5");
+  });
+
+  it("says a tool doesn't run a model, or doesn't show it, and Remove the model clears it", () => {
+    const props = panel("prompt", "bakery", { view: typed("Gmail", "Opus 5.5") });
+    expect(screen.getByTestId("pair-note").textContent).toContain("Gmail doesn't run a model.");
+    fireEvent.click(screen.getByRole("button", { name: "Remove the model" }));
+    expect(props.onModel).toHaveBeenCalledWith("p3", null);
+    cleanup();
+    panel("prompt", "bakery", { view: typed("Lovable", "Opus 5.5") });
+    expect(screen.getByTestId("pair-note").textContent).toContain("Lovable doesn't show which model it used.");
+  });
+
+  it("says nothing for a pair that keeps the rules, an unknown tool, or a prompt from a session", () => {
+    panel("prompt", "bakery", { view: typed("Claude", "Opus 5.5") });
+    expect(screen.queryByTestId("pair-note")).toBeNull();
+    cleanup();
+    panel("prompt", "bakery", { view: typed("My own script", "Grok 4.7") });
+    expect(screen.queryByTestId("pair-note")).toBeNull();
+    cleanup();
+    panel("prompt");
+    expect(screen.queryByTestId("pair-note")).toBeNull();
+  });
+
+  it("notes an agent whose harness doesn't offer its main model, and Change the model opens its menu", async () => {
+    const base = sandboxDetailsProps("agent", "bakery").view;
+    if (!base || base.kind !== "agent") throw new Error("fixture");
+    const onAgentSetup = vi.fn();
+    panel("agent", "bakery", { view: { ...base, setup: { harness: "Codex", models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
+    expect(screen.getByTestId("pair-note").textContent).toContain("Codex doesn't offer Opus 5.5.");
+    expect(onAgentSetup).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change the model" }));
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: "GPT-6.1 Sol" }));
+    expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "GPT-6.1 Sol", harness: "Codex", tools: [] });
+  });
+
+  it("puts a hidden harness's own name in place of a model it doesn't show", () => {
+    const base = sandboxDetailsProps("agent", "bakery").view;
+    if (!base || base.kind !== "agent") throw new Error("fixture");
+    const onAgentSetup = vi.fn();
+    panel("agent", "bakery", { view: { ...base, setup: { harness: "Manus", models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
+    expect(screen.getByTestId("pair-note").textContent).toContain("Manus doesn't show which model it used.");
+    fireEvent.click(screen.getByRole("button", { name: "Remove the model" }));
+    expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Manus", harness: "Manus", tools: [] });
   });
 });

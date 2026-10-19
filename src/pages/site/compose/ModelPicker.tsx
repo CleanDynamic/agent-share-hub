@@ -18,7 +18,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
-import { modelMenu } from "@/lib/tools/modelRules";
+import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
 import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
@@ -56,14 +56,16 @@ export interface ModelPickerProps {
   name?: string;
   /** Opens the menu now: the Details note's "Change the model" (CA-02 P8). */
   openSignal?: number;
+  /** With no tool, offer every current text model and a typed one instead of asking for a tool (Details, where the tool cannot be picked). */
+  anyWithoutTool?: boolean;
 }
 
 const labelStyle: CSSProperties = { ...text(11.5, 500, t.label), padding: "8px 10px 4px" };
 
 const quiet: CSSProperties = text(12, 400, t.text2);
 
-export function ModelPicker({ tool, value, onChange, phone, allowNone = true, name, openSignal }: ModelPickerProps) {
-  const menu = modelMenu(tool);
+export function ModelPicker({ tool, value, onChange, phone, allowNone = true, name, openSignal, anyWithoutTool = false }: ModelPickerProps) {
+  const menu = modelMenu(anyWithoutTool ? harnessTool(tool) : tool);
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState("");

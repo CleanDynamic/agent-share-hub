@@ -102,6 +102,8 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
     typed,
     model,
+    // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
+    ...(typed ? { tool: step.tool } : null),
     text: step.text,
     words: step.words,
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
