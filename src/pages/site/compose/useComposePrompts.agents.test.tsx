@@ -18,6 +18,7 @@ const graph = vi.hoisted(() => ({
   addMadeFile: vi.fn(),
   addTool: vi.fn(),
   setAgentSetup: vi.fn(),
+  addCode: vi.fn(),
 }));
 const media = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 const making = vi.hoisted(() => ({ addMadeWithTools: vi.fn(), addWrittenPrompt: vi.fn() }));
@@ -452,5 +453,41 @@ describe("naming and removing a file a step makes (TF-08)", () => {
     });
     expect(deleteNode).not.toHaveBeenCalled();
     expect(graph.removeUse).not.toHaveBeenCalled();
+  });
+});
+
+describe("code steps (CA-02 P7)", () => {
+  it("adds one step for each piece, in order, written with the tool and model, and says which is first", async () => {
+    graph.addCode.mockResolvedValueOnce({ id: "c1" } as BuildNode).mockResolvedValueOnce({ id: "c2" } as BuildNode);
+    const { result, record } = hook();
+    let first: string | null = null;
+    await act(async () => {
+      first = await result.current.addCodeSteps({
+        steps: [
+          { source: "a", language: "ts", filename: "app.ts" },
+          { source: "select 1;", language: "sql", filename: "schema.sql" },
+        ],
+        tool: "cursor",
+        model: "Opus 5",
+      });
+    });
+    expect(graph.addCode.mock.calls.map((call) => call[2])).toEqual([
+      { source: "a", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5" },
+      { source: "select 1;", language: "sql", filename: "schema.sql", tool: "cursor", model: "Opus 5" },
+    ]);
+    expect(record).toHaveBeenCalledWith("c1", { id: "c1" });
+    expect(record).toHaveBeenCalledWith("c2", { id: "c2" });
+    expect(first).toBe("c1");
+  });
+
+  it("says why code over the limit was refused, and resolves null", async () => {
+    graph.addCode.mockRejectedValue(new Error("Code is at most 100,000 characters. Upload it as a file instead."));
+    const { result } = hook();
+    let first: string | null = "x";
+    await act(async () => {
+      first = await result.current.addCodeSteps({ steps: [{ source: "x", language: "ts", filename: null }], tool: null, model: null });
+    });
+    expect(first).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith("Code is at most 100,000 characters. Upload it as a file instead.");
   });
 });

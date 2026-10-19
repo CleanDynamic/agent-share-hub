@@ -103,6 +103,8 @@ export interface SandboxViewProps extends CardProps {
   onAddAgent?: () => void;
   /** Add › Manual step: opens the Add dialog. Absent, the item stays disabled. */
   onAddManual?: () => void;
+  /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
+  onAddCode?: () => void;
 
   /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
   trail?: readonly { id: string; title: string }[];
@@ -121,10 +123,10 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "result";
+export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "result";
 
 /**
- * CONCEPT §5's seven, in order, with their one line each. `ready` is false
+ * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
  * until the prompt that writes that kind has run: the item is listed but
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
@@ -135,6 +137,7 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "file", name: "File", line: "Something the AI read", ready: true },
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
+  { key: "code", name: "Code", line: "Lines of code you wrote or ran", ready: true },
   { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
 
@@ -151,7 +154,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Session carries its submenu's rows. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -164,7 +167,7 @@ export interface AddEntry {
   sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
 }
 
-export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual }: AddMenuProps): AddEntry[] {
+export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "session") {
       return {
@@ -173,9 +176,17 @@ export function addEntries({ onAddFile, addableSessions, onAddSession, onAddProm
         sessions: (addableSessions ?? []).slice(0, 6).map((session) => ({ ...session, onSelect: () => onAddSession?.(session.id) })),
       };
     }
-    const handler =
-      item.key === "file" ? onAddFile : item.key === "prompt" ? onAddPromptFocus : item.key === "tool" ? onAddTool : item.key === "result" ? onAddResult : item.key === "agent" ? onAddAgent : item.key === "manual" ? onAddManual : undefined;
-    const wired = item.key === "file" || item.key === "prompt" || item.key === "tool" || item.key === "result" || item.key === "agent" || item.key === "manual";
+    const handlers: Partial<Record<AddKey, (() => void) | undefined>> = {
+      file: onAddFile,
+      prompt: onAddPromptFocus,
+      tool: onAddTool,
+      result: onAddResult,
+      agent: onAddAgent,
+      manual: onAddManual,
+      code: onAddCode,
+    };
+    const handler = handlers[item.key];
+    const wired = item.key in handlers;
     return { ...item, enabled: item.ready && (!wired || Boolean(handler)), onSelect: handler };
   });
 }
@@ -591,6 +602,7 @@ export function SandboxView(props: SandboxViewProps) {
       onAddResult={props.onAddResult}
       onAddAgent={props.onAddAgent}
       onAddManual={props.onAddManual}
+      onAddCode={props.onAddCode}
     />
   );
   const trailLink: CSSProperties = { ...bareButton, ...underlined, fontSize: 13.5, fontWeight: 500, color: t.text2 };

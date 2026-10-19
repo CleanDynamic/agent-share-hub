@@ -274,3 +274,16 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
     expect(markup()).toContain("width:24px;height:0;border-top:1px solid var(--text2)");
   });
 });
+
+describe("code (CA-02 P7)", () => {
+  it("draws a code step as a box labelled Code, named by its file, sized in lines", () => {
+    const base = sandboxMapProps("bakery");
+    const code = { ...base.steps[0], id: "c9", kind: "code" as const, number: String(base.steps.length + 1), title: null, defaultTitle: `Code ${base.steps.length + 1}`, text: "export const a = 1;\nexport const b = 2;\n", words: 8, model: null, sessionId: null, tool: "Cursor", uses: [], children: [], runs: null, language: "ts", filename: "app.ts" };
+    map({ steps: [...base.steps, code] });
+    const box = screen.getByTestId("map-box-c9");
+    expect(box.getAttribute("aria-label")).toBe(`Code ${code.number}, app.ts, 0 inputs`);
+    expect(within(box).getByTestId("map-code-label").textContent).toBe("Code");
+    expect(box.textContent).toContain("2 lines");
+    expect(box.textContent).not.toContain("words");
+  });
+});

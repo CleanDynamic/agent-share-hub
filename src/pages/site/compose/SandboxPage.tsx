@@ -47,6 +47,7 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { BuildList, type AddAsAgentInput } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
@@ -171,6 +172,35 @@ export function SandboxPage() {
   const [addManualOpen, setAddManualOpen] = useState(false);
   /** CA-02 P6: Add › Tool names its tool first. */
   const [addToolOpen, setAddToolOpen] = useState(false);
+  /** CA-02 P7: Add › Code, and "Keep it as code" with the text pasted into Typed here, which waits to hear it was saved. */
+  const [addCodeOpen, setAddCodeOpen] = useState(false);
+  const [codeSeed, setCodeSeed] = useState<string | null>(null);
+  const codeDone = useRef<((saved: boolean) => void) | null>(null);
+  const savingCode = useRef(false);
+  const settleCode = useCallback((saved: boolean) => {
+    codeDone.current?.(saved);
+    codeDone.current = null;
+  }, []);
+  const onKeepAsCode = useCallback(
+    (text: string) =>
+      new Promise<boolean>((resolve) => {
+        settleCode(false);
+        codeDone.current = resolve;
+        setCodeSeed(text);
+        setAddCodeOpen(true);
+      }),
+    [settleCode],
+  );
+  const onCodeDialog = useCallback(
+    (open: boolean) => {
+      setAddCodeOpen(open);
+      if (!open) {
+        setCodeSeed(null);
+        if (!savingCode.current) settleCode(false);
+      }
+    },
+    [settleCode],
+  );
   const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
   const manualAvailable = Boolean(manualType.data?.is_active);
   /** Ids of the agents and teams opened in the Map, outermost first. */
@@ -392,6 +422,18 @@ export function SandboxPage() {
     [prompts, afterStep, afterWrite],
   );
 
+  const onAddCode = useCallback(
+    async (input: AddCodeInput) => {
+      savingCode.current = true;
+      const id = await prompts.addCodeSteps(input).finally(() => {
+        savingCode.current = false;
+      });
+      settleCode(Boolean(id));
+      if (id) setSelectedId(id);
+    },
+    [prompts, settleCode],
+  );
+
   const onAddAgentPrompt = useCallback(
     async (agentId: string, text: string) => {
       const saved = await prompts.addPromptTo(agentId, text);
@@ -601,6 +643,7 @@ export function SandboxPage() {
         onAddResult={() => void addPiece("result")}
         onAddAgent={() => setAddAgentOpen(true)}
         onAddManual={() => setAddManualOpen(true)}
+        onAddCode={() => setAddCodeOpen(true)}
         trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
         onTrail={onTrail}
         map={
@@ -716,6 +759,7 @@ export function SandboxPage() {
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={prompts.addNow}
             onAddAsAgent={onAddAsAgent}
+            onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
             focusAdd={focusAdd}
           />
@@ -764,6 +808,7 @@ export function SandboxPage() {
         inBuild={inBuild}
         onAdd={(input) => void onAddManual(input)}
       />
+      <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow
         steps={steps}

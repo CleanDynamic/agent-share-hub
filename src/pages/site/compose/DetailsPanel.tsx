@@ -23,6 +23,7 @@ import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
+import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
 import {
@@ -144,7 +145,24 @@ export interface ResultView {
   pictures: readonly { id: string; name: string }[];
 }
 
-export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView;
+/** CA-02 P7: lines of code. Shown in full, with Copy; never run. */
+export interface CodeView extends InputsView {
+  kind: "code";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  language: string | null;
+  filename: string | null;
+  source: string;
+  lines: number;
+  /** "Written with": the tool's name, or as typed, and the model. */
+  tool: string | null;
+  model: string | null;
+  makes: readonly MakesRow[];
+}
+
+export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView;
 
 export interface DetailsHandlers {
   onRename: (id: string, title: string) => void;
@@ -740,6 +758,58 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
   );
 }
 
+/* ── code (CA-02 P7) ── */
+
+export const CODE_DETAILS_COPY = {
+  copy: "Copy",
+  copied: "Copied",
+  copyFailed: "Couldn't copy that. Select the code and copy it by hand.",
+  writtenWith: "Written with",
+} as const;
+
+function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
+  const [said, setSaid] = useState("");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(view.source);
+      setSaid(CODE_DETAILS_COPY.copied);
+    } catch {
+      setSaid(CODE_DETAILS_COPY.copyFailed);
+    }
+  };
+  const written = [view.tool, view.model].filter(Boolean).join(" · ");
+  return (
+    <>
+      <Head eyebrow={`Code ${view.number}`}>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of code ${view.number}`} phone={phone} onRename={h.onRename} />
+        <span style={text(12, 400, t.text2)}>{[view.filename, view.language, `${view.lines} ${view.lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
+      </Head>
+      {written ? (
+        <div>
+          <KeyValue label={CODE_DETAILS_COPY.writtenWith}>{written}</KeyValue>
+        </div>
+      ) : null}
+      <pre
+        data-testid="details-code"
+        style={{ ...wellField, margin: 0, padding: 12, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", maxHeight: 480, overflowY: "auto" }}
+      >
+        {view.source}
+      </pre>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
+          {CODE_DETAILS_COPY.copy}
+        </Button>
+        <span aria-live="polite" style={quiet()}>
+          {said}
+        </span>
+      </div>
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
 /* ── a session ── */
 
 function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
@@ -1040,6 +1110,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
+      {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

@@ -383,7 +383,8 @@ export function layoutMap(
       kind: "step",
       stepKind: step.kind,
       number: step.number,
-      title: step.title ?? step.defaultTitle,
+      // CA-02 P7: untitled code reads by its file name, or its language, under the box's "Code".
+      title: step.title ?? (step.kind === "code" ? (step.filename ?? step.language ?? step.defaultTitle) : step.defaultTitle),
       defaultTitle: step.title === null,
       text: step.text,
       words: step.words,

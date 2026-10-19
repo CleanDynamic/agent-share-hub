@@ -54,6 +54,7 @@ import {
   type ListSuggestion,
 } from "./buildListModel";
 import { TextButton } from "./composeControls";
+import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
@@ -105,6 +106,8 @@ export interface BuildListProps {
   onAddPrompt: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
   /** CA-02 P4: "Add as an agent" opens the agent dialog. Resolves true once the agent is saved, so the field can clear. */
   onAddAsAgent?: (input: AddAsAgentInput) => Promise<boolean>;
+  /** CA-02 P7: "Keep it as code" opens the code dialog with the field's text. Resolves true once the code is saved, so the field can clear. */
+  onKeepAsCode?: (text: string) => Promise<boolean>;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
   /** Changes to put the cursor in the add field ("Add › Prompt"). */
@@ -768,6 +771,103 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
   );
 }
 
+/** CA-02 P7: lines of code, as a module like a manual step's: "Code", its file name or language, its lines, and its first 6 in a mono well. */
+function CodeCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const { phone } = props;
+  const selected = props.selectedId === step.id;
+  const isDefault = step.title === null;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const renameNext = useRef(false);
+  const finish = (save: boolean) => {
+    setRenaming(false);
+    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
+  };
+  const lines = lineCount(step.text);
+  const named = step.filename ?? step.language ?? null;
+  return (
+    <div
+      role="group"
+      aria-label={`Code ${step.number}: ${stepTitle(step)}`}
+      data-testid="step-card"
+      data-kind="code"
+      data-selected={selected ? "true" : undefined}
+      tabIndex={0}
+      onClick={() => props.onSelect(step.id)}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          props.onSelect(step.id);
+        }
+      }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span data-testid="code-eyebrow" style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>
+            {["Code", named, `${lines} ${lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}
+          </span>
+          {renaming ? (
+            <RenameField label={`Title of code ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+          ) : (
+            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
+              {stepTitle(step)}
+            </h3>
+          )}
+        </div>
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Code ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Content
+              align="end"
+              sideOffset={4}
+              style={menuSurface()}
+              onClick={(event) => event.stopPropagation()}
+              onCloseAutoFocus={(event) => {
+                if (!renameNext.current) return;
+                event.preventDefault();
+                renameNext.current = false;
+                setDraft(step.title ?? "");
+                setRenaming(true);
+              }}
+            >
+              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+      <pre
+        data-testid="code-lines"
+        style={{
+          ...wellField,
+          margin: 0,
+          marginLeft: INDENT,
+          width: "auto",
+          padding: "8px 10px",
+          fontFamily: DM_MONO,
+          fontSize: 12,
+          lineHeight: 1.55,
+          whiteSpace: "pre",
+          overflowX: "auto",
+          color: t.text,
+        }}
+      >
+        {firstLines(step.text)}
+      </pre>
+      <MadeLine names={props.madeNames?.[step.id]} />
+      <div style={footRow(INDENT)}>
+        <UsesRow step={step} props={props} />
+      </div>
+    </div>
+  );
+}
+
 function ResultCard({ result, selected, onSelect }: { result: ListResult; selected: boolean; onSelect: (id: string) => void }) {
   return (
     <div
@@ -821,8 +921,10 @@ export interface AddAsAgentInput {
   instructions: string;
 }
 
-function AddPrompt({ phone, onAddPrompt, onAddAsAgent, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "focusAdd" | "inBuild">) {
+function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild">) {
   const [value, setValue] = useState("");
+  /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
+  const [pasted, setPasted] = useState(false);
   const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -857,7 +959,20 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, focusAdd, inBuild = [] }:
     setBusy(true);
     const saved = await onAddPrompt({ text: value, tool, model });
     setBusy(false);
-    if (saved) setValue("");
+    if (saved) {
+      setValue("");
+      setPasted(false);
+    }
+  };
+
+  /* Never converted by itself: the maker chooses to keep it as code, and the field keeps its text until it is saved. */
+  const offerCode = pasted && Boolean(onKeepAsCode) && looksLikeCode(value);
+  const asCode = async () => {
+    if (!onKeepAsCode) return;
+    if (await onKeepAsCode(value)) {
+      setValue("");
+      setPasted(false);
+    }
   };
 
   const asAgent = async () => {
@@ -879,7 +994,11 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, focusAdd, inBuild = [] }:
         rows={2}
         value={value}
         placeholder={LIST_COPY.placeholder}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setValue(event.target.value);
+          if (!event.target.value) setPasted(false);
+        }}
+        onPaste={() => setPasted(true)}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
@@ -888,6 +1007,14 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, focusAdd, inBuild = [] }:
         }}
         style={{ ...wellField, resize: "none", padding: 12, fontSize: phone ? 16 : 13.5 }}
       />
+      {offerCode ? (
+        <div data-testid="keep-as-code" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <Quiet>{CODE_COPY.looksLikeCode}</Quiet>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void asCode()}>
+            {CODE_COPY.keepAsCode}
+          </Button>
+        </div>
+      ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <Quiet>Typed here ·</Quiet>
         <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
@@ -939,6 +1066,8 @@ export function BuildList(props: BuildListProps) {
       <StepCard key={step.id} step={step} index={prompts.indexOf(step)} last={prompts.indexOf(step) === prompts.length - 1} props={props} />
     ) : step.kind === "manual" ? (
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "code" ? (
+      <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : (
       <ContainerCard key={step.id} step={step} props={props} />
     );
@@ -956,7 +1085,7 @@ export function BuildList(props: BuildListProps) {
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
-      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} onAddAsAgent={props.onAddAsAgent} focusAdd={props.focusAdd} inBuild={props.inBuild} />
+      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} onAddAsAgent={props.onAddAsAgent} onKeepAsCode={props.onKeepAsCode} focusAdd={props.focusAdd} inBuild={props.inBuild} />
     </div>
   );
 }

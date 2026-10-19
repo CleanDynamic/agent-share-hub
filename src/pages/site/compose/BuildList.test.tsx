@@ -246,6 +246,96 @@ describe("Typed here: the model menu follows the tool (CA-02 P4)", () => {
   });
 });
 
+describe("code (CA-02 P7)", () => {
+  const codeStep = (over: Record<string, unknown> = {}) => {
+    const base = sandboxListProps("bakery");
+    const number = String(base.steps.length + 1);
+    return {
+      ...base.steps[0],
+      id: "c9",
+      kind: "code" as const,
+      number,
+      title: null,
+      defaultTitle: `Code ${number}`,
+      text: "1\n2\n3\n4\n5\n6\n7\n8",
+      words: 8,
+      model: null,
+      sessionId: null,
+      tool: null,
+      uses: [],
+      children: [],
+      runs: null,
+      language: "ts",
+      filename: "app.ts",
+      ...over,
+    };
+  };
+
+  it("shows Code, its file name, its line count and its first six lines in a mono well", () => {
+    const base = sandboxListProps("bakery");
+    const step = codeStep();
+    list({ steps: [...base.steps, step] });
+    const card = screen.getByRole("group", { name: `Code ${step.number}: Code ${step.number}` });
+    expect(card.getAttribute("data-kind")).toBe("code");
+    expect(within(card).getByTestId("code-eyebrow").textContent).toBe("Code · app.ts · 8 lines");
+    const well = within(card).getByTestId("code-lines");
+    expect(well.textContent).toBe("1\n2\n3\n4\n5\n6");
+    expect(well.style.fontFamily).toContain("--font-data");
+    expect(within(card).getByRole("button", { name: `Code ${step.number} options` })).toBeTruthy();
+  });
+
+  it("names the language when the code has no file name", () => {
+    const base = sandboxListProps("bakery");
+    list({ steps: [...base.steps, codeStep({ filename: null, language: "sql", text: "select 1;" })] });
+    expect(screen.getByTestId("code-eyebrow").textContent).toBe("Code · sql · 1 line");
+  });
+});
+
+describe("pasting code into Typed here (CA-02 P7)", () => {
+  const CODE = "const a = 1;\nconst b = 2;\nexport { a, b };";
+  const paste = (text: string) => {
+    const field = screen.getByPlaceholderText("Paste or type a prompt…") as HTMLTextAreaElement;
+    fireEvent.paste(field);
+    fireEvent.change(field, { target: { value: text } });
+    return field;
+  };
+
+  it("offers to keep pasted code as code, and never converts it by itself", async () => {
+    const onKeepAsCode = vi.fn(() => Promise.resolve(true));
+    const props = list({ onKeepAsCode });
+    const field = paste(CODE);
+    expect(screen.getByText("This looks like code.")).toBeTruthy();
+    expect(field.value).toBe(CODE);
+    expect(props.onAddPrompt).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
+    expect(onKeepAsCode).toHaveBeenCalledWith(CODE);
+    await waitFor(() => expect(field.value).toBe(""));
+  });
+
+  it("offers nothing for prose, for two lines, or for code typed rather than pasted", () => {
+    list({ onKeepAsCode: vi.fn(() => Promise.resolve(true)) });
+    paste("Write me a poem\nabout bread\nand butter");
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+    paste("const a = 1;\nconst b = 2;");
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+    cleanup();
+    list({ onKeepAsCode: vi.fn(() => Promise.resolve(true)) });
+    fireEvent.change(screen.getByPlaceholderText("Paste or type a prompt…"), { target: { value: CODE } });
+    expect(screen.queryByText("This looks like code.")).toBeNull();
+  });
+
+  it("keeps the text when the code is not saved, and still lets it go as a prompt", async () => {
+    const onKeepAsCode = vi.fn(() => Promise.resolve(false));
+    const props = list({ onKeepAsCode });
+    const field = paste(CODE);
+    fireEvent.click(screen.getByRole("button", { name: "Keep it as code" }));
+    await waitFor(() => expect(onKeepAsCode).toHaveBeenCalled());
+    expect(field.value).toBe(CODE);
+    fireEvent.click(screen.getByRole("button", { name: "Add prompt" }));
+    expect(props.onAddPrompt).toHaveBeenCalledWith({ text: CODE, tool: null, model: null });
+  });
+});
+
 describe("the add field", () => {
   it("adds on Enter, not on Shift+Enter, and clears once saved", async () => {
     const props = list();

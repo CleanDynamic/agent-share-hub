@@ -18,6 +18,7 @@ vi.mock("./nodeTypes", () => ({ getNodeType: (...a: unknown[]) => getNodeType(..
 import {
   addAgent,
   addAgentPrompt,
+  addCode,
   addManualStep,
   addTeam,
   setAgentSetup,
@@ -658,5 +659,46 @@ describe("what an agent ran in, its models and its tools (CA-02 P5)", () => {
     expect(toolNodeFor(tree, "Google Mail")).toBe("t1");
     expect(toolNodeFor(tree, "my crm")).toBe("t2");
     expect(toolNodeFor(tree, "Vercel")).toBeNull();
+  });
+});
+
+
+describe("code is a step (CA-02 P7)", () => {
+  it("saves the source, its language and the optional file name, tool, model and entrypoint", async () => {
+    await addCode(BUILD, [node({ position: 2 })], { source: "export const a = 1;\n", language: "ts", filename: " app.ts ", tool: "Cursor", model: "Opus 5", entrypoint: true });
+    expect(upsertNode.mock.calls[0][0]).toMatchObject({ type: "code", parent_id: null, position: 3, title: null });
+    expect(payloadWritten()).toEqual({ source: "export const a = 1;\n", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5", entrypoint: true });
+    upsertNode.mockClear();
+    await addCode(BUILD, [], { source: "select 1;", language: "sql" });
+    expect(payloadWritten()).toEqual({ source: "select 1;", language: "sql" });
+  });
+
+  it("refuses empty source, source over 100,000 characters, a language outside the schema and a long file name or tool", async () => {
+    await expect(addCode(BUILD, [], { source: "  \n ", language: "ts" })).rejects.toThrow(/needs its lines/);
+    await expect(addCode(BUILD, [], { source: "x".repeat(100_001), language: "ts" })).rejects.toThrow("Code is at most 100,000 characters. Upload it as a file instead.");
+    await expect(addCode(BUILD, [], { source: "x", language: "rust" })).rejects.toThrow(/language/);
+    await expect(addCode(BUILD, [], { source: "x", language: "ts", filename: "f".repeat(121) })).rejects.toThrow(/120/);
+    await expect(addCode(BUILD, [], { source: "x", language: "ts", tool: "t".repeat(41) })).rejects.toThrow(/40/);
+    expect(upsertNode).not.toHaveBeenCalled();
+    await addCode(BUILD, [], { source: "x".repeat(100_000), language: "other" });
+    expect(upsertNode).toHaveBeenCalledTimes(1);
+  });
+
+  it("numbers code like any top-level step, with its source as its text and its uses", () => {
+    const tree = [
+      node({ id: "p1", type: "prompt", position: 1, payload: { text: "Plan the app", tool: "cursor" } }),
+      node({ id: "c1", type: "code", position: 2, payload: { source: "a\nb", language: "ts", filename: "app.ts", tool: "cursor", model: "Opus 5", entrypoint: true, uses: [{ kind: "output", node_id: "p1" }] } }),
+      node({ id: "f1", type: "document", position: 3, payload: { title: "notes.md" } }),
+      node({ id: "c2", type: "code", position: 4, payload: { source: "select 1;", language: "sql" } }),
+    ];
+    const steps = buildSteps(tree);
+    expect(steps.map((step) => [step.id, step.kind, step.number, step.defaultTitle])).toEqual([
+      ["p1", "prompt", "1", "Prompt 1"],
+      ["c1", "code", "2", "Code 2"],
+      ["c2", "code", "3", "Code 3"],
+    ]);
+    expect(steps[1]).toMatchObject({ text: "a\nb", words: 2, language: "ts", filename: "app.ts", entrypoint: true, tool: "Cursor", model: "Opus 5", uses: [{ kind: "output", node_id: "p1" }] });
+    expect(steps[2]).toMatchObject({ filename: null, entrypoint: false });
+    expect(goesInto(steps, "p1").map((step) => step.id)).toEqual(["c1"]);
   });
 });

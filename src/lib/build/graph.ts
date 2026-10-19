@@ -1,8 +1,8 @@
 // The build graph (UI-P62): the steps both the composer and the build page draw,
 // and the writes that change them. design/sandbox/DATA.md is the shape.
 //
-// A STEP IS A TOP-LEVEL NODE of type prompt, agent_config, team or manual_step,
-// numbered by position from 1. Files, tools, results and the cover's evidence
+// A STEP IS A TOP-LEVEL NODE of type prompt, agent_config, team, manual_step or
+// code (CA-02 P7), numbered by position from 1. Files, tools, results and the cover's evidence
 // node are not steps and are not numbered. Inside an agent, its instructions
 // are n.1 and its child prompts n.2 onward; inside a team, its agents are n.1
 // onward. There is no third level of numbers.
@@ -29,8 +29,10 @@ export const MANUAL_STEP_TYPE = "manual_step";
 export const FILE_TYPE = "document";
 export const TOOL_TYPE = "integration";
 export const RESULT_TYPE = "result";
+/** CA-02 P7: lines of code the maker wrote or ran. Never run here. */
+export const CODE_TYPE = "code";
 
-export type StepKind = "prompt" | "agent" | "team" | "manual";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -76,6 +78,11 @@ export interface Step {
   children: Step[];
   /** A manual step's picture (its `media_id`), when it has one. */
   mediaId?: string | null;
+  /** CA-02 P7, code only: its language (the schema's enum) and its file name. */
+  language?: string | null;
+  filename?: string | null;
+  /** CA-02 P7, code only: "start reading here". */
+  entrypoint?: boolean;
   /** CA-02 P5, an agent only: the tool it ran in, by name (or as typed); null for its maker's own code. */
   harness?: string | null;
   /** CA-02 P5, an agent only: its models with their roles, when it has more than one. */
@@ -104,6 +111,12 @@ export const RUNS_COUNT_MAX = 20;
 export const UNTIL_DETAIL_MAX = 80;
 export const WHEN_DETAIL_MAX = 60;
 export const MANUAL_TOOL_MAX = 40;
+/** CA-02 P7: the longest code a step holds, and its file name. */
+export const CODE_MAX = 100_000;
+export const CODE_FILENAME_MAX = 120;
+/** CA-02 P7: the code node type's `language` enum, as seeded in 20260823130000_node_type_registry_seed.sql. */
+export const CODE_LANGUAGES = ["ts", "tsx", "js", "jsx", "python", "sql", "json", "yaml", "bash", "html", "css", "other"] as const;
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
 /** CA-02 P5: the longest harness name and role a maker can type. */
 export const HARNESS_MAX = 40;
 export const ROLE_MAX = 40;
@@ -214,6 +227,7 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [AGENT_TYPE]: "agent",
   [TEAM_TYPE]: "team",
   [MANUAL_STEP_TYPE]: "manual",
+  [CODE_TYPE]: "code",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -221,6 +235,7 @@ const KIND_NAME: Record<StepKind, string> = {
   agent: "Agent",
   team: "Team",
   manual: "Manual step",
+  code: "Code",
 };
 
 const isStepNode = (node: Pick<BuildNode, "type">): boolean => node.type in KIND_OF_TYPE;
@@ -271,7 +286,7 @@ const dismissedOf = (payload: Payload): string[] =>
 
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
-  const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : (stringOf(payload.text) ?? "");
+  const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : (stringOf(payload.text) ?? "");
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {
@@ -291,6 +306,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
+    ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
   };
 }
 
@@ -755,6 +771,38 @@ export async function setManualFields(
     else delete payload.media_id;
   }
   return upsertNode(withPayload(node, payload));
+}
+
+/** The longest tool name code is written with, as a prompt's. */
+const CODE_TOOL_MAX = 40;
+
+/**
+ * Lines of code the maker wrote or ran (CA-02 P7), top level and numbered like any step. Refuses empty source and
+ * source over 100,000 characters; `language` is one of the schema's; `tool` and `model` ("Written with") follow a
+ * typed prompt's rules and are optional. Nothing here, or anywhere in the composer, runs it.
+ */
+export async function addCode(
+  buildId: string,
+  tree: readonly NodeTree[],
+  { source, language, filename, tool, model, entrypoint }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean },
+): Promise<BuildNode> {
+  if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
+  if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
+  if (!(CODE_LANGUAGES as readonly string[]).includes(language)) throw refuse("addCode", "That is not a language the build knows.");
+  const payload: Record<string, string | boolean> = { source, language };
+  const name = filename?.trim();
+  if (name) {
+    if (name.length > CODE_FILENAME_MAX) throw refuse("addCode", `A file name is at most ${CODE_FILENAME_MAX} characters.`);
+    payload.filename = name;
+  }
+  const named = tool?.trim();
+  if (named) {
+    if (named.length > CODE_TOOL_MAX) throw refuse("addCode", `A tool is at most ${CODE_TOOL_MAX} characters.`);
+    payload.tool = toolFor(named)?.id ?? named;
+  }
+  if (model?.trim()) payload.model = model.trim();
+  if (entrypoint) payload.entrypoint = true;
+  return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
 
 /** The top-level steps of a tree, in order: the rows that are numbered. */

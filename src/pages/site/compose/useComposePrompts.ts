@@ -37,6 +37,8 @@ import {
 import {
   addAgent,
   addAgentPrompt,
+  addCode,
+  CODE_TYPE,
   addManualStep,
   addResult,
   addTeam,
@@ -180,6 +182,8 @@ export interface ComposePrompts {
   setManual: (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) => void;
   /** UI-P70: store a picture and put it on a manual step, in place of any it had. */
   setManualPicture: (id: string, file: File) => Promise<boolean>;
+  /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
+  addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
 }
 
 export function useComposePrompts({
@@ -331,8 +335,9 @@ export function useComposePrompts({
       .run(async () => {
         const build = latest.current.buildId;
         if (!build) return;
-        // A manual step swaps with the step next to it, whatever that is.
-        if (findTop(nodes.current(), id)?.type === MANUAL_STEP_TYPE) {
+        // A manual step, or code, swaps with the step next to it, whatever that is.
+        const type = findTop(nodes.current(), id)?.type;
+        if (type === MANUAL_STEP_TYPE || type === CODE_TYPE) {
           for (const step of await moveStep(build, nodes.current(), id, direction)) {
             const node = findTop(nodes.current(), step.id);
             if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
@@ -660,6 +665,24 @@ export function useComposePrompts({
         return null;
       });
 
+  const addCodeSteps = ({ steps, tool, model }: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        let first: string | null = null;
+        for (const step of steps) {
+          const created = await addCode(build, nodes.current(), { ...step, tool, model });
+          nodes.record(created.id, created);
+          first ??= created.id;
+        }
+        if (first) noteTool(build, tool);
+        return first;
+      })
+      .catch((cause) => {
+        failed(cause instanceof Error && /100,000/.test(cause.message) ? "Code is at most 100,000 characters. Upload it as a file instead." : "Couldn't add that code. Try again.")(cause);
+        return null;
+      });
+
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
@@ -693,5 +716,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps };
 }

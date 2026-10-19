@@ -533,3 +533,37 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
     expect(screen.getByText("Opus 5.5")).toBeTruthy();
   });
 });
+
+describe("code (CA-02 P7)", () => {
+  const code: DetailsPanelProps["view"] = {
+    kind: "code",
+    id: "c4",
+    number: "4",
+    title: null,
+    defaultTitle: "Code 4",
+    language: "ts",
+    filename: "app.ts",
+    source: "export const a = 1;\nexport const b = 2;\n",
+    lines: 2,
+    tool: "Cursor",
+    model: "Opus 5",
+    uses: [],
+    options: [],
+    goesInto: [],
+    makes: [],
+  };
+
+  it("shows all of it in a mono well, what it was written with, and Copy", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    panel("prompt", "bakery", { view: code });
+    expect(screen.getAllByText("Code 4").length).toBeGreaterThan(0);
+    expect(screen.getByText("app.ts · ts · 2 lines")).toBeTruthy();
+    expect(screen.getByText("Cursor · Opus 5")).toBeTruthy();
+    const well = screen.getByTestId("details-code");
+    expect(well.textContent).toBe("export const a = 1;\nexport const b = 2;\n");
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(writeText).toHaveBeenCalledWith("export const a = 1;\nexport const b = 2;\n");
+    expect(await screen.findByText("Copied")).toBeTruthy();
+  });
+});

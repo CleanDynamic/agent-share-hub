@@ -34,7 +34,8 @@ import {
   type ChecklistRow,
   type NamedPiece,
 } from "./detailsModel";
-import type { AgentView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import type { AgentView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
 export interface MediaFacts {
@@ -127,6 +128,26 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     tool: step.tool ?? "",
     text: step.text,
     picture: step.mediaId ? { id: step.mediaId, name: facts?.name ?? "Picture" } : null,
+    uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
+    goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+    makes: makesRows(step.id, ctx.tree),
+  };
+}
+
+function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CodeView {
+  return {
+    kind: "code",
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    language: step.language ?? null,
+    filename: step.filename ?? null,
+    source: step.text,
+    lines: lineCount(step.text),
+    tool: step.tool,
+    model: step.model ? modelLabel(step.model) : null,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
@@ -259,6 +280,7 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
+    if (step.kind === "code") return codeView(step, ctx, all);
     return manualView(step, ctx, all);
   }
   const source = ctx.sources.find((candidate) => candidate.key === id);

@@ -48,6 +48,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { MAP_ARTWORK, type MapRoom } from "./mapArtwork";
+import { lineCount } from "./codeModel";
 
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
@@ -111,11 +112,17 @@ export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "titl
   const count = box.inputs.length;
   const inputs = `${count} ${count === 1 ? "input" : "inputs"}`;
   if (box.kind === "result") return `Result, ${box.title}, ${inputs}`;
-  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : "Prompt";
+  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : "Prompt";
   return `${word} ${box.number}, ${box.title}, ${inputs}`;
 }
 
 const ellipsis: CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 };
+
+/** "12 lines", for a code box. */
+const linesOf = (source: string): string => {
+  const n = lineCount(source);
+  return `${n} ${n === 1 ? "line" : "lines"}`;
+};
 
 /* ── the refined look's pieces (UI-P91) ── */
 
@@ -196,6 +203,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   const big = container && box.contents !== null;
   const piece = box.kind === "file" || box.kind === "tool";
   const manual = box.kind === "step" && box.stepKind === "manual";
+  /* CA-02 P7: code is a box labelled "Code", its text in mono and its size in lines. */
+  const code = box.kind === "step" && box.stepKind === "code";
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
@@ -273,8 +282,13 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
                 Result
               </span>
-            ) : manual || (!box.defaultTitle && box.number) ? (
+            ) : manual || code || (!box.defaultTitle && box.number) ? (
               <span style={refinedNumber}>{box.number}</span>
+            ) : null}
+            {code ? (
+              <span data-testid="map-code-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
+                Code
+              </span>
             ) : null}
             {manual ? (
               <span data-testid="manual-header" style={{ ...geist(10.5, 400, t.label), ...ellipsis }}>By hand{box.tool ? ` · ${box.tool}` : ""}</span>
@@ -289,7 +303,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
               {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
               {box.kind === "step" && !manual ? (
-                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{box.words} words</span>
+                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
             </>
           ) : (
@@ -308,6 +322,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                   padding: "0 12px",
                   boxSizing: "border-box",
                   ...geist(11, 400, t.text2),
+                  ...(code ? { fontFamily: DM_MONO, whiteSpace: "pre" } : null),
                   lineHeight: 1.5,
                   overflow: "hidden",
                   display: "-webkit-box",
@@ -319,7 +334,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                 {box.text}
               </span>
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
-                {box.kind === "step" && !manual ? `${box.words} words` : ""}
+                {box.kind === "step" && !manual ? (code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
             </>
           )}
