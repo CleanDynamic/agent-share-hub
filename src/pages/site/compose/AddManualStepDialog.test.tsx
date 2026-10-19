@@ -129,3 +129,26 @@ describe("the Add manual step dialog", () => {
     expect(screen.queryByTestId("add-manual-dialog")).toBeNull();
   });
 });
+
+describe("the manual step's tool picker fits a manual step (CA-02 P6)", () => {
+  it("offers every tool but a retired one, and never asks for a model", () => {
+    open();
+    fireEvent.click(toolButton());
+    fireEvent.click(screen.getByRole("option", { name: /^Show all/ }));
+    const names = screen.getAllByRole("option").map((option) => option.textContent);
+    expect(names).toContain("Hermes Agent");
+    expect(names).toContain("Gmail");
+    expect(names).toContain("Claude");
+    expect(names).not.toContain("Sora");
+    expect(names.every((name) => !name?.includes("Add it with"))).toBe(true);
+    expect(screen.queryByRole("button", { name: /^model/ })).toBeNull();
+  });
+
+  it("keeps the tool as picked: a listed one by its id, a typed one as typed", () => {
+    const props = open();
+    pickTool("Figma");
+    fireEvent.change(line(), { target: { value: "Exported the frames" } });
+    fireEvent.click(add());
+    expect(props.onAdd).toHaveBeenCalledWith({ tool: "figma", text: "Exported the frames", file: null });
+  });
+});

@@ -162,8 +162,8 @@ export interface ComposePrompts {
   addMadeFile: (stepId: string, name: string) => Promise<string | null>;
   /** TF-08: take a made file out of the build and out of the steps that use it. */
   removeMadeFile: (fileId: string) => void;
-  /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
-  addPiece: (kind: "tool" | "result") => Promise<string | null>;
+  /** UI-P66: add a tool or a result, then say which node it is (null if it failed). CA-02 P6: a tool comes named. */
+  addPiece: (kind: "tool" | "result", name?: string) => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
   addAgentOrTeam: (input: AgentInput) => Promise<string | null>;
   /** CA-02 P5: change what an agent ran in, its models or the tools it can use. */
@@ -538,13 +538,13 @@ export function useComposePrompts({
       })
       .catch(failed("Couldn't remove that file. Try again."));
 
-  const addPiece = (kind: "tool" | "result") =>
+  const addPiece = (kind: "tool" | "result", name?: string) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         const created =
           kind === "tool"
-            ? await addTool(build, nodes.current(), { service: "Untitled tool" })
+            ? await addTool(build, nodes.current(), { service: name?.trim() || "Untitled tool" })
             : await addResult(build, nodes.current(), { summary: "Untitled result" });
         nodes.record(created.id, created);
         return created.id;

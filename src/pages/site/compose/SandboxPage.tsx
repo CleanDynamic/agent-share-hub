@@ -46,6 +46,7 @@ import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
+import { AddToolDialog } from "./AddToolDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { BuildList, type AddAsAgentInput } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
@@ -168,6 +169,8 @@ export function SandboxPage() {
     [settleSeed],
   );
   const [addManualOpen, setAddManualOpen] = useState(false);
+  /** CA-02 P6: Add › Tool names its tool first. */
+  const [addToolOpen, setAddToolOpen] = useState(false);
   const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
   const manualAvailable = Boolean(manualType.data?.is_active);
   /** Ids of the agents and teams opened in the Map, outermost first. */
@@ -399,8 +402,8 @@ export function SandboxPage() {
   );
 
   const addPiece = useCallback(
-    async (kind: "tool" | "result") => {
-      const id = await prompts.addPiece(kind);
+    async (kind: "tool" | "result", name?: string) => {
+      const id = await prompts.addPiece(kind, name);
       if (id) setSelectedId(id);
     },
     [prompts],
@@ -594,7 +597,7 @@ export function SandboxPage() {
         threadNote={thread.hold}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
-        onAddTool={() => void addPiece("tool")}
+        onAddTool={() => setAddToolOpen(true)}
         onAddResult={() => void addPiece("result")}
         onAddAgent={() => setAddAgentOpen(true)}
         onAddManual={() => setAddManualOpen(true)}
@@ -761,6 +764,7 @@ export function SandboxPage() {
         inBuild={inBuild}
         onAdd={(input) => void onAddManual(input)}
       />
+      <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow
         steps={steps}
         groups={groups}
