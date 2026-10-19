@@ -89,7 +89,10 @@ export function withHarness(value: AgentSetupValue, harness: string | null): { v
   return { value: { ...value, harness, models: single ? models.slice(0, 1) : models }, cleared };
 }
 
-const labelStyle: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
+const dialogLabel: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
+
+/** The Details panel's own field label: 11.5 in `--label`. */
+const panelLabel: CSSProperties = text(11.5, 400, t.label);
 
 export interface AgentSetupFieldsProps {
   value: AgentSetupValue;
@@ -99,9 +102,12 @@ export interface AgentSetupFieldsProps {
   inBuild: readonly string[];
   /** CA-02 P8: opens the main model's menu each time it changes ("Change the model"). */
   openMainModel?: number;
+  /** The labels as the dialog draws them (DM Mono capitals, the default) or as the Details panel draws its own. */
+  labels?: "dialog" | "panel";
 }
 
-export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
+export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel, labels = "dialog" }: AgentSetupFieldsProps) {
+  const labelStyle = labels === "panel" ? panelLabel : dialogLabel;
   const [cleared, setCleared] = useState<string | null>(null);
   const uid = useId();
   const tool = harnessTool(value.harness);

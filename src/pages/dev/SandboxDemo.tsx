@@ -9,6 +9,8 @@
    `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
+   `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code` draws one of CA-02's five shapes of AI use
+   (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
    No board image is compared. */
 
 import { useMemo, useState } from "react";
@@ -16,6 +18,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 
+import { SHAPES, SHAPE_KEYS, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeKey } from "@/dev/fixtures/shapes";
 import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesProps, sandboxManualFixture, sandboxTeamFixture, sandboxViewProps, type SandboxDetails, type SandboxFixture, type SandboxMapFixture } from "@/dev/fixtures/sandbox";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
@@ -58,6 +61,12 @@ function demoThread(doc: ThreadDoc): ComposeThread {
   };
 }
 
+/** A CA-02 shape as the List and the Map take it, Details' selection marked in both. */
+function shapeFixture(key: ShapeKey, select: string | null) {
+  const selectedId = select ?? SHAPES[key].selected;
+  return { list: { ...shapeListProps(key), selectedId }, map: { ...shapeMapProps(key), selectedId } };
+}
+
 export default function SandboxDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
   const asBuild = params.get("build");
@@ -68,7 +77,8 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
-  const team = asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
+  const shape = SHAPE_KEYS.find((key) => asBuild === `shape-${key}`) ?? null;
+  const team = shape ? shapeFixture(shape, params.get("select")) : asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
   const list = team?.list ?? sandboxListProps(which);
   const openedId = params.get("opened");
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
@@ -79,12 +89,13 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
       <SandboxView
         fit={fit}
         {...sandboxViewProps(which, state)}
+        {...(shape ? { title: SHAPES[shape].title } : null)}
         lens={params.get("lens") === "map" ? "map" : "list"}
         mapAvailable={Boolean(team) || params.get("lens") === "map" || sandboxViewProps(which, state).mapAvailable}
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
         map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
-        selection={<DetailsPanel {...sandboxDetailsProps(details, which)} phone={phone} onOpenPrompt={setOpen} />}
+        selection={<DetailsPanel {...(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
         post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />

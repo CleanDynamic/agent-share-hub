@@ -18,7 +18,7 @@ import { Button } from "@/components/brand/Button";
 import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { hiddenModelName, pairCheck } from "@/lib/tools/modelRules";
+import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
@@ -713,7 +713,9 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
           <div>
             <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => h.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool />
           </div>
-          {!view.model ? <span style={quiet()}>Model is empty because there is no session to read it from.</span> : null}
+          {!view.model && modelMenu(harnessTool(view.tool)).state !== "hidden" && modelMenu(harnessTool(view.tool)).state !== "none" ? (
+            <span style={quiet()}>Model is empty because there is no session to read it from.</span>
+          ) : null}
           <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => h.onModel(view.id, null)} />
         </div>
       ) : null}
@@ -1033,7 +1035,7 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
           if (own) change({ ...value, models: [{ model: own, role: "main" }, ...value.models.slice(1)] });
         }}
       />
-      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
+      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} labels="panel" />
     </>
   );
 }
