@@ -74,6 +74,22 @@ export function agentEyebrow(made: readonly string[], model: string | null, word
 }
 
 /**
+ * CA-03 P4: a team's eyebrow. Its first agent is its lead: "Team · led by an agent in Claude Code" when the lead names
+ * the tool it ran in (its harness), else "Team"; then where it was made, as any container's eyebrow says it.
+ */
+export function teamEyebrow(made: readonly string[], leadHarness: string | null | undefined): string {
+  const base = agentEyebrow(made, null, "Team");
+  return leadHarness ? base.replace(/^Team/, `Team · led by an agent in ${leadHarness}`) : base;
+}
+
+/** CA-03 P4: the words over a team's agents. */
+export const TEAM_COPY = {
+  lead: "Lead agent",
+  handedTo: "Handed work to",
+  agent: (name: string) => `Agent · ${name}`,
+} as const;
+
+/**
  * The steps an agent or a team is made from: the numbers of the steps in its
  * output uses, in the order it lists them (UI-P69). Empty when it uses none.
  */

@@ -55,6 +55,9 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/detailsModel.test.ts",
   "src/pages/site/compose/detailsModel.ts",
   "src/pages/site/compose/refinedPieces.tsx",
+  // P4
+  "src/lib/build/mapLayout.test.ts",
+  "src/pages/site/compose/buildListModel.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { shapeListProps } from "@/dev/fixtures/shapes";
 import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 
 import type { BuildListProps } from "./BuildList";
@@ -417,18 +418,38 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.queryByTestId("agent-prompt-field")).toBeNull();
   });
 
-  it("draws a team's agents as inner cards headed 'Agent · {title} · {model}' with how each ran under it (CA-03 P3)", () => {
+  it("draws a team's agents as inner cards, its lead first and the rest each 'Agent · {name}', with how each ran under it (CA-03)", () => {
     const { list: props } = sandboxTeamFixture();
     list({ ...props });
     const card = screen.getByRole("group", { name: /^Team 3:/ });
     expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
     const inner = within(card).getAllByTestId("inner-card");
     expect(inner).toHaveLength(4);
-    expect(inner[1].textContent).toContain("Agent · Writer · Opus 5.5");
+    expect(inner[0].textContent).toMatch(/^Lead agent/);
+    expect(inner[1].textContent).toMatch(/^Agent · Writer/);
     expect(within(inner[1]).getByTestId("runs-line").textContent).toBe("Several at the same time · 3");
     expect(within(inner[2]).getByTestId("runs-line").textContent).toBe("Again until approved");
     // When I asked is the normal case and shows nothing.
     expect(within(inner[0]).queryByTestId("runs-line")).toBeNull();
+  });
+
+  it("names a team's lead by what it ran in, and puts the others under Handed work to (CA-03 P4)", () => {
+    list(shapeListProps("team"));
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · led by an agent in Claude Code");
+    const card = screen.getByRole("group", { name: /^Team 1:/ });
+    const inner = within(card).getAllByTestId("inner-card");
+    expect(inner.map((entry) => entry.firstElementChild?.textContent)).toEqual(["Lead agent", "Agent · Research", "Agent · Build", "Agent · Review"]);
+    const handed = within(card).getByTestId("handed-work-to");
+    expect(handed.textContent).toBe("Handed work to");
+    // It sits after the lead and before the first agent it handed work to.
+    expect(inner[0].compareDocumentPosition(handed) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(handed.compareDocumentPosition(inner[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("reads Team alone when the lead names no harness (CA-03 P4)", () => {
+    const { list: props } = sandboxTeamFixture();
+    list({ ...props });
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
   });
 
   it("adds an agent to a team from a ghost row", () => {

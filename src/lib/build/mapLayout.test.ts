@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { SessionGroup, Step } from "./graph";
-import { containsLine, joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapLayout } from "./mapLayout";
+import { containsLine, joinedTo, layoutMap, layoutOpened, MAP_SIZES, sideBySideGroups, type MapLayout } from "./mapLayout";
 
 const step = (over: Partial<Step> & Pick<Step, "id" | "number">): Step => ({
   kind: "prompt",
@@ -451,5 +451,100 @@ describe("a file a step makes (TF-08)", () => {
     const { boxes, wires } = joinedTo(layout, "bg");
     expect([...boxes].sort()).toEqual(["bg", "p2", "p4"]);
     expect(wires.size).toBe(2);
+  });
+});
+
+/* ── CA-03 P4: agents side by side ── */
+
+describe("agents side by side in an opened team (CA-03 P4)", () => {
+  const agent = (id: string, number: string, uses: string[] = []) => step({ id, number, kind: "agent", model: "Opus 5.5", uses: uses.map(out) });
+  const teamOf = (children: Step[], runs: Step["runs"] = null) => step({ id: "t1", number: "1", kind: "team", runs, children });
+  const open = (container: Step, after: Step[] = []) => layoutOpened(container, [container, ...after], [], [], []);
+  /** No two boxes on one another. */
+  const apart = (layout: ReturnType<typeof open>) => {
+    for (const a of layout.boxes)
+      for (const b of layout.boxes) {
+        if (a === b) continue;
+        const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+        expect(overlap, `${a.id} and ${b.id}`).toBe(false);
+      }
+  };
+
+  it("fans out from one box to three: the three in one column, their wires leaving one point on the lead", () => {
+    const lead = agent("lead", "1.1");
+    const helpers = ["a", "b", "c"].map((id, i) => agent(id, `1.${i + 2}`, ["lead"]));
+    const layout = open(teamOf([lead, ...helpers], { how: "parallel", count: 3 }));
+    expect(sideBySideGroups(teamOf([lead, ...helpers], { how: "parallel", count: 3 }))).toEqual([["a", "b", "c"]]);
+    const [l, a, b, c] = layout.boxes;
+    expect([a.column, b.column, c.column]).toEqual([1, 1, 1]);
+    expect(l.column).toBe(0);
+    expect(new Set([a.x, b.x, c.x]).size).toBe(1);
+    expect(a.y).toBeLessThan(b.y);
+    expect(b.y).toBeLessThan(c.y);
+    const out = layout.wires.filter((wire) => wire.from === "lead");
+    expect(out.map((wire) => wire.to)).toEqual(["a", "b", "c"]);
+    expect(new Set(out.map((wire) => `${wire.x1},${wire.y1}`)).size).toBe(1);
+    expect(layout.sideBySide).toEqual([{ ids: ["a", "b", "c"], x: a.x, y: a.y - MAP_SIZES.sideLabel }]);
+    apart(layout);
+  });
+
+  it("fans in from three to one: the three in one column, each wire joining at the step they feed", () => {
+    const a = agent("a", "1.1");
+    const b = agent("b", "1.2");
+    const c = agent("c", "1.3");
+    const join = agent("join", "1.4", ["a", "b", "c"]);
+    const layout = open(teamOf([a, b, c, join]));
+    expect(layout.boxes.map((box) => box.column)).toEqual([0, 0, 0, 1]);
+    const into = layout.wires.filter((wire) => wire.to === "join");
+    expect(into.map((wire) => wire.from)).toEqual(["a", "b", "c"]);
+    const joinBox = layout.boxes[3];
+    for (const wire of into) {
+      expect(wire.x2).toBe(joinBox.x);
+      expect(wire.loop).toBe(false);
+    }
+    expect(layout.sideBySide.map((group) => group.ids)).toEqual([["a", "b", "c"]]);
+    apart(layout);
+  });
+
+  it("does both: a lead fans out to three side by side, which fan in to one", () => {
+    const lead = agent("lead", "1.1");
+    const helpers = ["a", "b", "c"].map((id, i) => agent(id, `1.${i + 2}`, ["lead"]));
+    const join = agent("join", "1.5", ["a", "b", "c"]);
+    const layout = open(teamOf([lead, ...helpers, join]));
+    expect(layout.boxes.map((box) => box.column)).toEqual([0, 1, 1, 1, 2]);
+    expect(layout.wires.filter((wire) => wire.from === "lead").map((wire) => wire.to)).toEqual(["a", "b", "c"]);
+    expect(layout.wires.filter((wire) => wire.to === "join").map((wire) => wire.from)).toEqual(["a", "b", "c"]);
+    // Every box inside the frame, and the frame tall enough for the column.
+    for (const box of layout.boxes) expect(box.y + box.h).toBeLessThanOrEqual(layout.frame.y + layout.frame.h);
+    apart(layout);
+  });
+
+  it("joins the last column side by side at what the team goes into, outside the frame", () => {
+    const lead = agent("lead", "1.1");
+    const helpers = ["a", "b", "c"].map((id, i) => agent(id, `1.${i + 2}`, ["lead"]));
+    const container = teamOf([lead, ...helpers], { how: "parallel", count: 3 });
+    const next = step({ id: "p2", number: "2", uses: [out("t1")] });
+    const layout = layoutOpened(container, [container, next], [], [], []);
+    expect(layout.wires.filter((wire) => wire.to === "p2").map((wire) => wire.from)).toEqual(["a", "b", "c"]);
+  });
+
+  it("leaves a chain, a loop sent back and a team of one as they were", () => {
+    const chain = teamOf([agent("a", "1.1"), agent("b", "1.2", ["a"]), agent("c", "1.3", ["b"])]);
+    expect(sideBySideGroups(chain, [step({ id: "r", number: "2", uses: [out("a"), out("b"), out("c")] })])).toEqual([]);
+    const one = teamOf([agent("solo", "1.1")]);
+    const layout = open(one);
+    expect(layout.boxes.map((box) => [box.column, box.y])).toEqual([[0, MAP_SIZES.outerRise + MAP_SIZES.frameCaption + MAP_SIZES.framePad]]);
+    expect(layout.sideBySide).toEqual([]);
+    expect(sideBySideGroups(teamOf([agent("lead", "1.1"), agent("a", "1.2", ["lead"])], { how: "parallel", count: 2 }))).toEqual([]);
+  });
+
+  it("routes a loop inside a team above the row, by the same rise as before", () => {
+    const a = agent("a", "1.1", ["c"]);
+    const b = agent("b", "1.2", ["a"]);
+    const c = { ...agent("c", "1.3", ["b"]), runs: { how: "until" as const, detail: "approved" } };
+    const layout = open(teamOf([a, b, c]));
+    const loop = layout.wires.find((wire) => wire.loop);
+    expect(loop?.label).toBe("sent back until approved");
+    expect(Number(loop?.d.match(/V (-?[\d.]+) H/)?.[1])).toBe(layout.boxes[0].y - MAP_SIZES.loopRise / 2);
   });
 });

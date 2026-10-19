@@ -15,7 +15,10 @@
    add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`.
 
    CA-03 P3: how a step ran is one quiet line under it, led by a 7px `--label` dot ("On a schedule · Weekdays 07:30");
-   "When I asked" is the normal case and shows nothing. */
+   "When I asked" is the normal case and shows nothing.
+
+   CA-03 P4: a team's first agent is its lead. The team's eyebrow says what the lead ran in ("Team · led by an agent
+   in Claude Code"); the lead's row is "Lead agent"; the others sit under "Handed work to", each "Agent · {name}". */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
@@ -48,6 +51,8 @@ import { DM_MONO } from "@/lib/theme/type";
 import {
   agentEyebrow,
   inputLabel,
+  TEAM_COPY,
+  teamEyebrow,
   madeIn,
   madeLine,
   stepModel,
@@ -581,7 +586,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
 /** "Agent · ", the model's mark at 14 and its name: the eyebrow's words are the current look's. */
 function ContainerEyebrow({ step, made, isTeam }: { step: Step; made: readonly string[]; isTeam: boolean }) {
   const model = isTeam ? null : stepModel(step);
-  const lead = agentEyebrow(made, null, isTeam ? "Team" : "Agent");
+  const lead = isTeam ? teamEyebrow(made, step.children[0]?.harness) : agentEyebrow(made, null, "Agent");
   return (
     <span data-testid="container-eyebrow" style={{ ...text(11.5, 400, t.label), display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
       {model ? (
@@ -623,14 +628,19 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         </div>
       </div>
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
-        {step.children.map((child) => {
+        {step.children.map((child, index) => {
           const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
           const open = isTeam && openAgent === child.id;
           return (
             <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {isTeam && index === 1 ? (
+                <span data-testid="handed-work-to" style={{ ...text(11.5, 500, t.label), paddingTop: 4 }}>
+                  {TEAM_COPY.handedTo}
+                </span>
+              ) : null}
               <InnerCard
                 step={child}
-                eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
+                eyebrow={isTeam ? (index === 0 ? TEAM_COPY.lead : TEAM_COPY.agent(stepTitle(child))) : undefined}
                 runs={isTeam ? runsLabel(child.runs) : undefined}
                 made={props.madeNames?.[child.id]}
               />

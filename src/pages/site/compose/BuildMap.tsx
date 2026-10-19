@@ -64,6 +64,8 @@ export const MAP_COPY = {
   openedRows: "Left to right by order · boxes outside the frame are part of the build, not the team",
   outside: "Outside",
   bandCaption: "files and tools",
+  /** CA-03 P4: above a column of agents that run side by side. */
+  sideBySide: "Side by side",
 } as const;
 
 /** What the joined boxes keep and the rest drop to (UI-P68). */
@@ -499,6 +501,12 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
           {layout.outside.length > 0 ? (
             <span style={{ position: "absolute", left: layout.outside[0].x, top: layout.frame.y + 8, ...eyebrow() }}>{MAP_COPY.outside}</span>
           ) : null}
+          {/* CA-03 P4: agents that run side by side share one column, labelled once above it. */}
+          {layout.sideBySide.map((group) => (
+            <span key={group.ids.join(",")} data-testid="map-side-by-side" style={{ position: "absolute", left: group.x, top: group.y, ...geist(11.5, 500, t.label), whiteSpace: "nowrap" }}>
+              {MAP_COPY.sideBySide}
+            </span>
+          ))}
 
           <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
             <defs>

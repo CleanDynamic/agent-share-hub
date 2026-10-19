@@ -1201,9 +1201,11 @@ function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
 
 function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
+  /* CA-03 P4: a team's first agent is its lead. */
+  const lead = view.kind === "agent" && view.parent !== null && view.number.endsWith(".1");
   return (
     <>
-      <Head eyebrow={`${word} ${view.number}`}>
+      <Head eyebrow={`${lead ? "Lead agent" : word} ${view.number}`}>
         <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
       </Head>
       <FieldBlock label="Name">

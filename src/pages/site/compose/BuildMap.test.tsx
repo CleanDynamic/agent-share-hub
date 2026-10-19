@@ -162,6 +162,18 @@ describe("agents and teams (UI-P69)", () => {
     expect(props.onBack).toHaveBeenCalledTimes(1);
   });
 
+  it("labels a column of agents that run side by side, once, above it (CA-03 P4)", () => {
+    const base = team();
+    const parallel = { ...base, runs: { how: "parallel" as const, count: 3 }, children: base.children.map((child) => ({ ...child, uses: child.id === base.children[0].id ? child.uses : [{ kind: "output" as const, node_id: base.children[0].id }] })) };
+    teamMap({ opened: parallel });
+    const label = screen.getByTestId("map-side-by-side");
+    expect(label.textContent).toBe("Side by side");
+    expect(screen.getAllByTestId("map-side-by-side")).toHaveLength(1);
+    cleanup();
+    teamMap({ opened: team() });
+    expect(screen.queryByTestId("map-side-by-side")).toBeNull();
+  });
+
   it("opens an agent inside the opened team, which then replaces the view", () => {
     const props = teamMap({ opened: team() });
     fireEvent.doubleClick(screen.getByTestId("map-box-t3b"));

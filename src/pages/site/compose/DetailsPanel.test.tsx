@@ -279,6 +279,14 @@ describe("an agent inside a team (UI-P69)", () => {
     expect(screen.getByRole("radio", { name: "When I asked · each time work is sent to it" })).toBeTruthy();
   });
 
+  it("calls a team's first agent its Lead agent (CA-03 P4)", () => {
+    panel("agent", "bakery", { view: { ...inTeam(), id: "t3a", number: "3.1" } });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Lead agent 3.1");
+    cleanup();
+    panel("agent", "bakery", { view: inTeam() });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Agent 3.2");
+  });
+
   it("leaves both out for an agent that is not in a team", () => {
     panel("agent");
     expect(screen.queryByText("In")).toBeNull();
