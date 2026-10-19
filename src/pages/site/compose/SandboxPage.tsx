@@ -46,8 +46,8 @@ import { PostTab } from "./PostTab";
 import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
-import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput } from "./AddAgentDialog";
-import { BuildList } from "./BuildList";
+import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
+import { BuildList, type AddAsAgentInput } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
@@ -137,6 +137,36 @@ export function SandboxPage() {
   const teamType = useQuery({ queryKey: ["build", "getNodeType", "team"], queryFn: () => getNodeType("team"), staleTime: Infinity });
   const teamsAvailable = Boolean(teamType.data?.is_active);
   const [addAgentOpen, setAddAgentOpen] = useState(false);
+  /** CA-02 P4: "Add as an agent" opens the dialog with the tool and the field's text, and waits to hear it was saved. */
+  const [agentSeed, setAgentSeed] = useState<AgentSeed | null>(null);
+  const seedDone = useRef<((saved: boolean) => void) | null>(null);
+  /** True from Add until the agent's write settles, so closing the dialog on Add does not settle the field as unsaved. */
+  const savingSeed = useRef(false);
+  const settleSeed = useCallback((saved: boolean) => {
+    seedDone.current?.(saved);
+    seedDone.current = null;
+  }, []);
+  const onAddAsAgent = useCallback(
+    (input: AddAsAgentInput) =>
+      new Promise<boolean>((resolve) => {
+        settleSeed(false);
+        seedDone.current = resolve;
+        setAgentSeed({ harness: input.harness, instructions: input.instructions });
+        setAddAgentOpen(true);
+      }),
+    [settleSeed],
+  );
+  const onAgentDialog = useCallback(
+    (open: boolean) => {
+      setAddAgentOpen(open);
+      if (!open) {
+        setAgentSeed(null);
+        // A dialog closed without saving leaves the field as it was; Add settles it once the write lands.
+        if (!savingSeed.current) settleSeed(false);
+      }
+    },
+    [settleSeed],
+  );
   const [addManualOpen, setAddManualOpen] = useState(false);
   const manualType = useQuery({ queryKey: ["build", "getNodeType", "manual_step"], queryFn: () => getNodeType("manual_step"), staleTime: Infinity });
   const manualAvailable = Boolean(manualType.data?.is_active);
@@ -318,12 +348,16 @@ export function SandboxPage() {
 
   const onAddAgentOrTeam = useCallback(
     async (input: AddAgentInput) => {
-      const id = await prompts.addAgentOrTeam(input);
+      savingSeed.current = true;
+      const id = await prompts.addAgentOrTeam(input).finally(() => {
+        savingSeed.current = false;
+      });
+      settleSeed(Boolean(id));
       if (!id) return;
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, afterWrite],
+    [prompts, afterWrite, settleSeed],
   );
 
   const onAddAgentTo = useCallback(
@@ -674,6 +708,7 @@ export function SandboxPage() {
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
             onAddPrompt={prompts.addNow}
+            onAddAsAgent={onAddAsAgent}
             inBuild={inBuild}
             focusAdd={focusAdd}
           />
@@ -707,9 +742,10 @@ export function SandboxPage() {
       />
       <AddAgentDialog
         open={addAgentOpen}
-        onOpenChange={setAddAgentOpen}
+        onOpenChange={onAgentDialog}
         nextNumber={steps.length + 1}
         teamsAvailable={teamsAvailable}
+        seed={agentSeed}
         onAdd={(input) => void onAddAgentOrTeam(input)}
       />
       <AddManualStepDialog

@@ -27,15 +27,15 @@ import {
   useLayoutEffect,
 } from "react";
 
+import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
-import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
 import { runsLabel, stepTitle } from "@/lib/build/graph";
 import { markFor } from "@/lib/models/marks";
-import { MODEL_VERSIONS } from "@/lib/models/registry";
-import { toolName } from "@/lib/tools/registry";
+import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
+import { toolFor, toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL } from "@/lib/theme/refinedControl";
@@ -55,8 +55,10 @@ import {
 } from "./buildListModel";
 import { TextButton } from "./composeControls";
 import { ManualThumb } from "./ManualThumb";
+import { ModelPicker } from "./ModelPicker";
 import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
+import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
   bareButton,
@@ -101,6 +103,8 @@ export interface BuildListProps {
   onDismiss: (suggestion: ListSuggestion) => void;
   /** Resolves true once the prompt is saved, so the field can clear. */
   onAddPrompt: (input: { text: string; tool: string | null; model: string | null }) => Promise<boolean>;
+  /** CA-02 P4: "Add as an agent" opens the agent dialog. Resolves true once the agent is saved, so the field can clear. */
+  onAddAsAgent?: (input: AddAsAgentInput) => Promise<boolean>;
   /** The tools the build already uses, first in the tool picker. */
   inBuild?: readonly string[];
   /** Changes to put the cursor in the add field ("Add › Prompt"). */
@@ -800,66 +804,73 @@ function ResultCard({ result, selected, onSelect }: { result: ListResult; select
 
 /* ── the add field ── */
 
-function PickMenu({
-  label,
-  value,
-  options,
-  onChange,
-  none,
-  phone,
-}: {
-  label: string;
-  value: string | null;
-  options: readonly { value: string; label: string }[];
-  onChange: (value: string | null) => void;
-  none: string;
-  phone: boolean;
-}) {
-  return (
-    <Menu.Root>
-      <Menu.Trigger asChild>
-        <MenuButton label={label} value="" style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }} />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Content align="start" sideOffset={4} style={menuSurface()}>
-          <Menu.RadioGroup value={value ?? ""} onValueChange={(next) => onChange(next || null)}>
-            {[{ value: "", label: none }, ...options].map((option) => (
-              <Menu.RadioItem key={option.value || "none"} value={option.value} style={{ ...menuItem(true, phone), gap: 6 }}>
-                <span style={{ width: 14, display: "inline-flex" }}>
-                  <Menu.ItemIndicator>
-                    <Glyph name="check" size={14} />
-                  </Menu.ItemIndicator>
-                </span>
-                {option.label}
-              </Menu.RadioItem>
-            ))}
-          </Menu.RadioGroup>
-        </Menu.Content>
-      </Menu.Portal>
-    </Menu.Root>
-  );
+export const ADD_PROMPT_COPY = {
+  /** CA-02 P4: the tool changed and does not offer the model that was chosen. */
+  cleared: (tool: string, model: string) => `${tool} doesn't offer ${model}. Model cleared.`,
+  /** CA-02 P4: a tool that runs prompts by itself, named on a prompt. */
+  runsItself: TOOL_PICKER_COPY.runsItself,
+  addAsAgent: "Add as an agent",
+} as const;
+
+/** How long the "Model cleared" line stays. */
+export const CLEARED_NOTE_MS = 6000;
+
+/** What "Add as an agent" hands the agent dialog: the tool as the harness, the field's text as the instructions. */
+export interface AddAsAgentInput {
+  harness: string;
+  instructions: string;
 }
 
-function AddPrompt({ phone, onAddPrompt, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "focusAdd" | "inBuild">) {
+function AddPrompt({ phone, onAddPrompt, onAddAsAgent, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "focusAdd" | "inBuild">) {
   const [value, setValue] = useState("");
   const [tool, setTool] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cleared, setCleared] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (focusAdd > 0) field.current?.focus();
   }, [focusAdd]);
 
+  useEffect(() => {
+    if (!cleared) return;
+    const timer = window.setTimeout(() => setCleared(null), CLEARED_NOTE_MS);
+    return () => window.clearTimeout(timer);
+  }, [cleared]);
+
+  const toolLabel = tool ? (toolName(tool) ?? tool.trim()) : null;
+  const known = toolFor(tool);
+  /* A tool that runs prompts by itself saves no prompt: the field offers to add it as an agent instead. */
+  const redirect = known !== null && runsItself(known);
+
+  const changeTool = (next: string | null) => {
+    setTool(next);
+    const after = nextModelAfterToolChange(next, model);
+    if (after.cleared && model) setCleared(ADD_PROMPT_COPY.cleared(toolName(next) ?? (next ?? "").trim(), model));
+    else setCleared(null);
+    setModel(after.model);
+  };
+
   const submit = async () => {
-    if (!value.trim() || busy) return;
+    if (!value.trim() || busy || redirect) return;
     setBusy(true);
     const saved = await onAddPrompt({ text: value, tool, model });
     setBusy(false);
     if (saved) setValue("");
   };
 
-  const toolLabel = tool ? (toolName(tool) ?? tool.trim()) : null;
+  const asAgent = async () => {
+    if (!known || !onAddAsAgent) return;
+    // The field keeps its text until the agent is saved.
+    const saved = await onAddAsAgent({ harness: known.id, instructions: value });
+    if (saved) {
+      setValue("");
+      setTool(null);
+      setModel(null);
+    }
+  };
+
   return (
     <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
       <textarea
@@ -879,17 +890,21 @@ function AddPrompt({ phone, onAddPrompt, focusAdd, inBuild = [] }: Pick<BuildLis
       />
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <Quiet>Typed here ·</Quiet>
-        <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={setTool} inBuild={inBuild} allowNone phone={phone} />
-        <PickMenu
-          label={model ? `model ${model}` : "model"}
-          value={model}
-          options={MODEL_VERSIONS.map((version) => ({ value: version.name, label: version.name }))}
-          onChange={setModel}
-          none="No model"
-          phone={phone}
-        />
+        <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
+        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />}
         <span style={{ flexGrow: 1 }} />
-        <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
+        <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
+      </div>
+      {redirect && known ? (
+        <div data-testid="add-as-agent" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <Quiet>{ADD_PROMPT_COPY.runsItself(known.name)}</Quiet>
+          <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} disabled={!onAddAsAgent} onClick={() => void asAgent()}>
+            {ADD_PROMPT_COPY.addAsAgent}
+          </Button>
+        </div>
+      ) : null}
+      <div aria-live="polite" data-testid="model-cleared">
+        {cleared ? <Quiet>{cleared}</Quiet> : null}
       </div>
     </div>
   );
@@ -941,7 +956,7 @@ export function BuildList(props: BuildListProps) {
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
-      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} focusAdd={props.focusAdd} inBuild={props.inBuild} />
+      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} onAddAsAgent={props.onAddAsAgent} focusAdd={props.focusAdd} inBuild={props.inBuild} />
     </div>
   );
 }

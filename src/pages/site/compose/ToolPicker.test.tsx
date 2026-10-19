@@ -2,11 +2,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { StepKey } from "@/lib/tools/registry";
+
 import { ToolPicker } from "./ToolPicker";
 
 afterEach(cleanup);
 
-function Harness({ initial = null, onChange = () => undefined, allowNone = false }: { initial?: string | null; onChange?: (value: string | null) => void; allowNone?: boolean }) {
+function Harness({ initial = null, onChange = () => undefined, allowNone = false, step = "manual" }: { initial?: string | null; onChange?: (value: string | null) => void; allowNone?: boolean; step?: StepKey }) {
   const [value, setValue] = useState<string | null>(initial);
   return (
     <ToolPicker
@@ -19,6 +21,7 @@ function Harness({ initial = null, onChange = () => undefined, allowNone = false
       allowNone={allowNone}
       label="Tool"
       phone={false}
+      step={step}
     />
   );
 }
@@ -76,5 +79,29 @@ describe("ToolPicker", () => {
     fireEvent.keyDown(find(), { key: "Escape" });
     expect(screen.queryByRole("listbox")).toBeNull();
     await vi.waitFor(() => expect(document.activeElement).toBe(trigger()));
+  });
+
+  it("draws a tool that does not fit the step as unavailable, with where it goes (CA-02)", () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} step="prompt" />);
+    fireEvent.click(trigger());
+    fireEvent.change(find(), { target: { value: "gmail" } });
+    const gmail = screen.getByRole("option", { name: /Gmail/ });
+    expect(gmail.getAttribute("aria-disabled")).toBe("true");
+    expect(gmail.textContent).toContain("Add it with Add › Tool");
+    fireEvent.click(gmail);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("still lets a tool that runs prompts by itself be picked on a prompt", () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} step="prompt" />);
+    fireEvent.click(trigger());
+    fireEvent.change(find(), { target: { value: "hermes" } });
+    const hermes = screen.getByRole("option", { name: /Hermes Agent/ });
+    expect(hermes.getAttribute("aria-disabled")).toBeNull();
+    expect(hermes.textContent).toContain("Hermes Agent runs prompts by itself. Add it as an agent.");
+    fireEvent.click(hermes);
+    expect(onChange).toHaveBeenCalledWith("hermes-agent");
   });
 });

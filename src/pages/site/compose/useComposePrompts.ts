@@ -145,7 +145,7 @@ export interface ComposePrompts {
   /** UI-P66: add a tool or a result, then say which node it is (null if it failed). */
   addPiece: (kind: "tool" | "result") => Promise<string | null>;
   /** UI-P69: add an agent, or a team holding one agent; resolves the new step's id (null if it failed). */
-  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string }) => Promise<string | null>;
+  addAgentOrTeam: (input: { kind: "agent" | "team"; name: string | null; model: string; instructions?: string }) => Promise<string | null>;
   /** UI-P69: add an agent inside a team. */
   addAgentTo: (teamId: string, model: string) => Promise<string | null>;
   /** UI-P69: a further prompt inside an agent. Resolves true once it is saved. */
@@ -532,12 +532,12 @@ export function useComposePrompts({
         return null;
       });
 
-  const addAgentOrTeam = ({ kind, name, model }: { kind: "agent" | "team"; name: string | null; model: string }) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions }: { kind: "agent" | "team"; name: string | null; model: string; instructions?: string }) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         if (kind === "agent") {
-          const created = await addAgent(build, nodes.current(), { name, model });
+          const created = await addAgent(build, nodes.current(), { name, model, instructions });
           nodes.record(created.id, created);
           return created.id;
         }

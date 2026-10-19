@@ -697,7 +697,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
       </Head>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
         <span style={quiet()}>Tool</span>
-        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} onChange={(value) => commit({ tool: value ?? "" })} />
+        <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} step="manual" onChange={(value) => commit({ tool: value ?? "" })} />
       </div>
       <FieldBlock label="What was done">
         <CommitField key={`${view.id}:text`} label="What was done" value={view.text} max={140} multiline phone={phone} onCommit={(value) => commit({ text: value })} />
@@ -751,7 +751,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <KeyValue label="Tool">{view.tool}</KeyValue>
         {view.pickTool && onSessionTool ? (
           <div style={{ padding: "10px 0", borderBottom: line }}>
-            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} onChange={(value) => onSessionTool(view.key, value)} />
+            <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} step="session" onChange={(value) => onSessionTool(view.key, value)} />
           </div>
         ) : null}
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>

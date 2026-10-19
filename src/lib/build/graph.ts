@@ -542,12 +542,12 @@ const titleOrNull = (value: string | null | undefined): string | null => value?.
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId }: { name?: string | null; model: string; parentId?: string | null },
+  { name, model, parentId, instructions }: { name?: string | null; model: string; parentId?: string | null; instructions?: string },
 ): Promise<BuildNode> {
   if (!model.trim()) throw refuse("addAgent", "An agent needs a model.");
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: "", model: model.trim() } };
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", model: model.trim() } };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 

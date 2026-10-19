@@ -42,6 +42,14 @@ export interface AddAgentInput {
   /** Null when left empty: the default title shows. */
   name: string | null;
   model: string;
+  /** CA-02 P4: the text of the prompt field, when the dialog was opened by "Add as an agent". */
+  instructions?: string;
+}
+
+/** CA-02 P4: what "Add as an agent" opens the dialog with. */
+export interface AgentSeed {
+  harness: string | null;
+  instructions: string;
 }
 
 export interface AddAgentDialogProps {
@@ -52,6 +60,8 @@ export interface AddAgentDialogProps {
   /** False while the `team` node type is not live. */
   teamsAvailable: boolean;
   onAdd: (input: AddAgentInput) => void;
+  /** CA-02 P4: set when "Add as an agent" opened the dialog. */
+  seed?: AgentSeed | null;
 }
 
 /** The model a new agent starts on. */
@@ -104,13 +114,13 @@ function Choice({
   );
 }
 
-function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd"> & { onCancel: () => void; phone: boolean }) {
+function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone, seed }: Pick<AddAgentDialogProps, "nextNumber" | "teamsAvailable" | "onAdd" | "seed"> & { onCancel: () => void; phone: boolean }) {
   const [kind, setKind] = useState<"agent" | "team">("agent");
   const [name, setName] = useState("");
   const [model, setModel] = useState(DEFAULT_AGENT_MODEL);
   const uid = useId();
 
-  const submit = () => onAdd({ kind, name: name.trim() || null, model });
+  const submit = () => onAdd({ kind, name: name.trim() || null, model, ...(seed?.instructions ? { instructions: seed.instructions } : null) });
   const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
   const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
 
@@ -176,7 +186,7 @@ function Form({ nextNumber, teamsAvailable, onAdd, onCancel, phone }: Pick<AddAg
   );
 }
 
-export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd }: AddAgentDialogProps) {
+export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable, onAdd, seed = null }: AddAgentDialogProps) {
   const phone = useIsPhone();
   const close = () => onOpenChange(false);
   const add = (input: AddAgentInput) => {
@@ -188,7 +198,7 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
   if (phone) {
     return (
       <BottomSheet open={open} onOpenChange={onOpenChange} title={AGENT_DIALOG_COPY.title}>
-        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone /> : null}
+        {open ? <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone seed={seed} /> : null}
       </BottomSheet>
     );
   }
@@ -221,7 +231,7 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
           }}
         >
           <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{AGENT_DIALOG_COPY.title}</Dialog.Title>
-          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} />
+          <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} seed={seed} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

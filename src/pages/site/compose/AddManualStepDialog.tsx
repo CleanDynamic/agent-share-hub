@@ -89,7 +89,7 @@ function Form({ after, available, onAdd, onCancel, phone, inBuild = [] }: Pick<A
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={label}>Tool</span>
         <div>
-          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} />
+          <ToolPicker label="Tool" value={picked} onChange={setPicked} inBuild={inBuild} phone={phone} step="manual" />
         </div>
       </div>
 
