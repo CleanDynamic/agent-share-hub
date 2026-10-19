@@ -1,4 +1,4 @@
-// PT-07 — the preview beside the editor, and the phone's toolbar.
+// PT-07 — the preview (its column drawing, and the sheet the composer opens it in) and the composer's toolbar.
 
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -6,7 +6,7 @@ import type { Editor } from "@tiptap/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PostPreview } from "@/components/post/PostPreview";
-import { PhoneToolbar, STYLE_HEIGHT, TextSizeRow, TOOL_SIZE } from "@/components/post/editor/PhoneToolbar";
+import { DESKTOP_TOOL_SIZE, PostToolbar, STYLE_HEIGHT, TOOL_SIZE } from "@/components/post/editor/PostToolbar";
 import { LINK_SENTENCE } from "@/components/post/editor/FormatBar";
 import { POST_LIMIT_SENTENCE } from "@/lib/build/threadEditor";
 import { PREVIEW_NOTE, previewScale } from "@/lib/build/postPreview";
@@ -28,6 +28,11 @@ const DRAFT: PostDraft = {
 
 const json = (editor: Editor) => editor.getJSON() as ThreadDoc;
 const preview = () => screen.getByRole("region", { name: "Preview" });
+
+/** The preview as a column, drawn on its own: the composer opens it as a sheet, the column is its other drawing. */
+function column(content: ThreadDoc, draft: PostDraft = DRAFT) {
+  return render(<PostPreview doc={content} build={draft.build} title={draft.title} maker={draft.maker} media={new Map()} src={new Map()} />);
+}
 
 /** Adds a break and a post after the last block, through the editor, as typing would. */
 function addPost(editor: Editor, words: string) {
@@ -58,20 +63,20 @@ afterEach(() => {
 });
 
 describe("the preview", () => {
-  it("sits in the column beside the editor, headed Preview with a Phone and Desktop switch 22 high on one line", () => {
-    mountPostTab(doc(p("Hello")), {}, { draft: DRAFT });
-    const column = preview();
-    expect([column.style.flex, column.style.maxWidth, column.style.gap]).toEqual(["1 1 280px", "320px", "16px"]);
-    const head = within(column).getByRole("heading", { name: "Preview" });
+  it("is a column headed Preview with a Phone and Desktop switch 22 high on one line", () => {
+    column(doc(p("Hello")));
+    const region = preview();
+    expect([region.style.flex, region.style.maxWidth, region.style.gap]).toEqual(["1 1 280px", "320px", "16px"]);
+    const head = within(region).getByRole("heading", { name: "Preview" });
     expect([head.style.fontSize, head.style.fontWeight]).toEqual(["13.5px", "500"]);
     expect((head.parentElement as HTMLElement).style.flexWrap).toBe("nowrap");
-    const switcher = within(column).getByRole("group", { name: "Preview width" });
+    const switcher = within(region).getByRole("group", { name: "Preview width" });
     expect(switcher.style.height).toBe("22px");
     expect(within(switcher).getAllByRole("button").map((button) => button.textContent)).toEqual(["Phone", "Desktop"]);
   });
 
   it("draws the maker, the tool marks, the age now, post 1 closed, and the build line with Draft in place of the plaque", () => {
-    mountPostTab(doc(p("First post words"), brk, p("Second post words")), {}, { draft: DRAFT });
+    column(doc(p("First post words"), brk, p("Second post words")));
     const item = within(preview()).getByRole("article");
     expect(within(item).getByTestId("feed-author-name").textContent).toBe("Ada Lovelace");
     expect(item.textContent).toContain("@ada · now");
@@ -88,7 +93,7 @@ describe("the preview", () => {
   });
 
   it("says the note under a 1px line, 12 down, in 12px", () => {
-    mountPostTab(doc(p("Hello")), {}, { draft: DRAFT });
+    column(doc(p("Hello")));
     const note = screen.getByText(PREVIEW_NOTE);
     expect(PREVIEW_NOTE).toBe("Updates as you type. Everything above the first post break is what people see before Show more.");
     expect([note.style.fontSize, note.style.paddingTop]).toEqual(["12px", "12px"]);
@@ -105,38 +110,44 @@ describe("the preview", () => {
 
   it("shows post 1 and the right count of more posts as breaks are added and removed, as the editor changes", () => {
     const { editor } = mountPostTab(doc(p("Alpha words")), {}, { draft: DRAFT });
-    const toggle = () => within(preview()).queryByRole("button", { name: /Show more/ });
-    expect(toggle()).toBeNull();
-    expect(within(preview()).getByText("Alpha words")).toBeTruthy();
+    const sheet = () => screen.getByRole("dialog", { name: "Preview" });
+    const look = () => {
+      fireEvent.click(within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Preview" }));
+      return within(sheet()).queryByRole("button", { name: /Show more/ });
+    };
+    const close = () => fireEvent.click(within(sheet()).getByRole("button", { name: "Close" }));
+    expect(look()).toBeNull();
+    expect(within(sheet()).getByText("Alpha words")).toBeTruthy();
+    close();
 
     addPost(editor, "Beta words");
-    expect(toggle()?.textContent).toContain("1 more post");
-    expect(toggle()?.textContent).not.toContain("posts");
+    expect(look()?.textContent).toContain("1 more post");
+    close();
 
     addPost(editor, "Gamma words");
     addPost(editor, "Delta words");
-    expect(toggle()?.textContent).toContain("3 more posts");
-    expect(within(preview()).getByText("Alpha words")).toBeTruthy();
+    expect(look()?.textContent).toContain("3 more posts");
+    close();
 
     removeFirstBreak(editor);
-    expect(toggle()?.textContent).toContain("2 more posts");
+    expect(look()?.textContent).toContain("2 more posts");
     expect(json(editor).content.filter((block) => block.type === "postBreak")).toHaveLength(2);
   });
 
   it("opens the rest in place with Show more, asking for nothing", () => {
-    mountPostTab(doc(p("First"), brk, p("Second")), {}, { draft: DRAFT });
+    column(doc(p("First"), brk, p("Second")));
     fireEvent.click(within(preview()).getByRole("button", { name: /Show more/ }));
     expect(within(preview()).getByRole("button", { name: /Show less/ })).toBeTruthy();
     expect(within(preview()).getByText("Second")).toBeTruthy();
   });
 
   it("follows the title as typed, and says Untitled build before there is one", () => {
-    mountPostTab(doc(p("Hello")), {}, { draft: { ...DRAFT, title: "" } });
+    column(doc(p("Hello")), { ...DRAFT, title: "" });
     expect(within(preview()).getByTestId("feed-build-title").textContent).toBe("Untitled build");
   });
 
   it("switches between Phone and Desktop; Desktop is laid out at 628 and scaled to the column", () => {
-    mountPostTab(doc(p("Hello")), {}, { draft: DRAFT });
+    column(doc(p("Hello")));
     expect(preview().getAttribute("data-preview-width")).toBe("phone");
     expect(within(preview()).getByRole("button", { name: "Phone" }).getAttribute("aria-pressed")).toBe("true");
     expect(preview().querySelector("[data-preview-scaler]")).toBeNull();
@@ -168,7 +179,7 @@ describe("the preview", () => {
     height.mockImplementation(function (this: HTMLElement) {
       return this.style.width === "628px" ? 400 : 0;
     });
-    mountPostTab(doc(p("Hello")), {}, { draft: DRAFT });
+    column(doc(p("Hello")));
     fireEvent.click(within(preview()).getByRole("button", { name: "Desktop" }));
     const scaler = preview().querySelector("[data-preview-scaler]") as HTMLElement;
     expect(scaler.getAttribute("data-scale")).toBe("0.500");
@@ -183,14 +194,29 @@ describe("the preview", () => {
     expect(screen.getByTestId("post-preview").getAttribute("data-preview-width")).toBe("phone");
   });
 
-  it("is not in the column on a phone", () => {
+  it("is not drawn beside the composer on either width: X's composer has no preview column", () => {
+    mountPostTab(doc(p("Hello")), {}, { draft: DRAFT });
+    expect(screen.queryByRole("region", { name: "Preview" })).toBeNull();
+    cleanup();
     mountPostTab(doc(p("Hello")), { phone: true }, { draft: DRAFT });
     expect(screen.queryByRole("region", { name: "Preview" })).toBeNull();
   });
 });
 
-describe("the preview sheet on a phone", () => {
-  it("opens as a sheet titled Preview holding the phone item", () => {
+describe("the preview sheet", () => {
+  it("opens from the toolbar's Preview on both widths, as a sheet titled Preview holding the phone item", () => {
+    for (const phone of [false, true]) {
+      mountPostTab(doc(p("First"), brk, p("Second")), { phone }, { draft: DRAFT });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      fireEvent.click(within(screen.getByTestId("post-toolbar")).getByRole("button", { name: "Preview" }));
+      const sheet = screen.getByRole("dialog", { name: "Preview" });
+      expect(within(sheet).getByTestId("post-preview").getAttribute("data-preview-width")).toBe("phone");
+      expect(within(sheet).getByTestId("feed-author-name").textContent).toBe("Ada Lovelace");
+      cleanup();
+    }
+  });
+
+  it("is held by the caller when it passes previewOpen", () => {
     mountPostTab(doc(p("First"), brk, p("Second")), { phone: true }, { draft: DRAFT, previewOpen: true, onPreviewOpenChange: vi.fn() });
     const sheet = screen.getByRole("dialog", { name: "Preview" });
     expect(within(sheet).getByRole("article")).toBeTruthy();
@@ -211,35 +237,69 @@ describe("the preview sheet on a phone", () => {
   });
 });
 
-describe("the phone toolbar", () => {
-  const toolbar = () => screen.getByRole("group", { name: "Format" });
+describe("the toolbar", () => {
+  const toolbar = () => screen.getByTestId("post-toolbar");
+  const tools = () => within(toolbar()).getAllByRole("button");
+  const press = (name: string) => fireEvent.click(within(toolbar()).getByRole("button", { name }));
+  const mountDesk = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, {}, { draft: DRAFT, ...extra });
   const mountPhone = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, { phone: true }, { draft: DRAFT, ...extra });
 
-  it("has eight named buttons, in order, each 44 square", () => {
-    mountPhone();
-    const buttons = within(toolbar()).getAllByRole("button");
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Text size", "Bold", "Italic", "Underline", "Bulleted list", "Numbered list", "Link", "Add"]);
-    for (const button of buttons) expect([button.style.width, button.style.height]).toEqual([`${TOOL_SIZE}px`, `${TOOL_SIZE}px`]);
-    expect(TOOL_SIZE).toBe(44);
+  it("is X's row of buttons, in order, each named and 34 square on a desktop", () => {
+    mountDesk();
+    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
+    for (const button of tools()) {
+      expect([button.style.width, button.style.height]).toEqual([`${DESKTOP_TOOL_SIZE}px`, `${DESKTOP_TOOL_SIZE}px`]);
+      expect(button.getAttribute("title")).toBe(button.getAttribute("aria-label"));
+    }
+    expect(DESKTOP_TOOL_SIZE).toBe(34);
     expect(within(toolbar()).getByRole("button", { name: "Text size" }).textContent).toBe("Aa");
   });
 
-  it("spreads across the width with 8px at the sides, 4 above and 12 below, on the module with a top border and the sheet shadow", () => {
-    const { editor } = mountPhone();
-    const row = within(toolbar()).getByRole("button", { name: "Bold" }).parentElement as HTMLElement;
-    expect([row.style.justifyContent, row.style.padding]).toEqual(["space-between", "4px 8px 12px"]);
-    expect([toolbar().style.left, toolbar().style.right, toolbar().style.position]).toEqual(["0px", "0px", "fixed"]);
-    // jsdom drops colours written as var(); the toolbar's skin is read from the markup.
-    const html = renderToStaticMarkup(<PhoneToolbar editor={editor} onInsertPicture={vi.fn()} notice={vi.fn()} />);
-    expect(html).toContain("background:var(--module)");
-    expect(html).toContain("border-top:1px solid var(--hairline)");
-    expect(html).toContain("box-shadow:var(--sheet-shadow)");
+  it("is 44 square on a phone, with the same buttons", () => {
+    mountPhone();
+    expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
+    for (const button of tools()) expect([button.style.width, button.style.height]).toEqual([`${TOOL_SIZE}px`, `${TOOL_SIZE}px`]);
+    expect(TOOL_SIZE).toBe(44);
   });
 
-  it("is not drawn on a desktop, nor is the desktop's format bar drawn on a phone", () => {
-    mountPostTab(doc(p("hello world")), {}, { draft: DRAFT });
-    expect(screen.queryByRole("group", { name: "Format" })).toBeNull();
-    cleanup();
+  it("sits under the words behind a hairline, in the page, never docked", () => {
+    const { editor } = mountPhone();
+    expect(toolbar().style.position).toBe("");
+    // jsdom drops colours written as var(); the line is read from the markup.
+    const html = renderToStaticMarkup(<PostToolbar editor={editor} phone onInsertPicture={vi.fn()} notice={vi.fn()} />);
+    expect(html).toContain("border-top:1px solid var(--hairline)");
+    expect(html).not.toContain("position:fixed");
+  });
+
+  it("asks for files with Picture or video and Row of pictures", () => {
+    const onInsertPicture = vi.fn();
+    const { editor } = mountDesk(doc(p("")), { onInsertPicture });
+    press("Row of pictures");
+    expect(onInsertPicture).toHaveBeenCalledWith("row", editor);
+    press("Picture or video");
+    expect(onInsertPicture).toHaveBeenCalledWith("single", editor);
+  });
+
+  it("makes a bulleted and a numbered list, and sinks the one that is on", () => {
+    const { editor } = mountDesk(doc(p("text")));
+    act(() => {
+      editor.commands.setTextSelection(2);
+    });
+    press("Bulleted list");
+    expect(json(editor).content[0].type).toBe("bulletList");
+    expect(within(toolbar()).getByRole("button", { name: "Bulleted list" }).getAttribute("aria-pressed")).toBe("true");
+    press("Numbered list");
+    expect(json(editor).content[0].type).toBe("orderedList");
+  });
+
+  it("keeps the editor focused: a press is a cancelled mouse-down", () => {
+    mountDesk();
+    const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+    within(toolbar()).getByRole("button", { name: "Bulleted list" }).dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("leaves the desktop's format bar off a phone", () => {
     const { editor } = mountPhone();
     act(() => {
       editor.commands.setTextSelection({ from: 1, to: 6 });
@@ -247,51 +307,31 @@ describe("the phone toolbar", () => {
     expect(screen.queryByRole("toolbar", { name: "Format" })).toBeNull();
   });
 
-  it("toggles Bold, Italic, Underline and the two lists on the block, and sinks the buttons that are on", () => {
-    const { editor } = mountPhone(doc(p("hello world")));
-    act(() => {
-      editor.commands.setTextSelection({ from: 1, to: 6 });
-    });
-    const press = (name: string) => fireEvent.click(within(toolbar()).getByRole("button", { name }));
-    press("Bold");
-    expect(editor.isActive("bold")).toBe(true);
-    expect(within(toolbar()).getByRole("button", { name: "Bold" }).getAttribute("aria-pressed")).toBe("true");
-    press("Italic");
-    press("Underline");
-    expect(editor.isActive("italic") && editor.isActive("underline")).toBe(true);
-    press("Bulleted list");
-    expect(json(editor).content[0].type).toBe("bulletList");
-    press("Numbered list");
-    expect(json(editor).content[0].type).toBe("orderedList");
-  });
-
-  it("keeps the editor focused: a press is a cancelled mouse-down", () => {
-    mountPhone();
-    const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
-    within(toolbar()).getByRole("button", { name: "Bold" }).dispatchEvent(event);
-    expect(event.defaultPrevented).toBe(true);
-  });
-
   describe("Text size", () => {
-    it("opens a row of Title, Heading, Body, Small and Code, 52 high, the current one selected", () => {
+    it("opens a row of Title, Heading, Body, Small and Code, the current one selected", () => {
       const { editor } = mountPhone();
       act(() => {
         editor.commands.setTextSelection(3);
       });
-      fireEvent.click(within(toolbar()).getByRole("button", { name: "Text size" }));
+      press("Text size");
       const row = screen.getByRole("group", { name: "Text size" });
       const buttons = within(row).getAllByRole("button");
       expect(buttons.map((button) => button.textContent)).toEqual(["Title", "Heading", "Body", "Small", "Code"]);
       for (const button of buttons) expect(button.style.height).toBe(`${STYLE_HEIGHT}px`);
       expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["false", "false", "true", "false", "false"]);
-      expect(row.style.padding).toBe("12px 8px 8px");
       expect(row.style.overflowX).toBe("auto");
-      expect(renderToStaticMarkup(<TextSizeRow editor={editor} current="Body" onDone={vi.fn()} />)).toContain("border-bottom:1px solid var(--hairline)");
       // Each in its own phone size.
       expect(within(row).getByText("Title").style.fontSize).toBe("24px");
       expect(within(row).getByText("Heading").style.fontSize).toBe("18px");
       expect(within(row).getByText("Body").style.fontSize).toBe("16px");
       expect(within(row).getByText("Small").style.fontSize).toBe("13px");
+    });
+
+    it("is 34 high on a desktop, with no Bold, Italic or Link: the bar over a selection has those", () => {
+      mountDesk();
+      press("Text size");
+      for (const button of within(screen.getByRole("group", { name: "Text size" })).getAllByRole("button")) expect(button.style.height).toBe("34px");
+      expect(screen.queryByRole("group", { name: "Format" })).toBeNull();
     });
 
     it("applies the style to the block, then closes", () => {
@@ -300,7 +340,7 @@ describe("the phone toolbar", () => {
         editor.commands.setTextSelection(startOf(editor, 1) + 1);
       });
       const apply = (name: string) => {
-        if (!screen.queryByRole("group", { name: "Text size" })) fireEvent.click(within(toolbar()).getByRole("button", { name: "Text size" }));
+        if (!screen.queryByRole("group", { name: "Text size" })) press("Text size");
         fireEvent.click(within(screen.getByRole("group", { name: "Text size" })).getByRole("button", { name }));
       };
       apply("Title");
@@ -320,21 +360,38 @@ describe("the phone toolbar", () => {
 
     it("closes when Text size is pressed again", () => {
       mountPhone();
-      const button = within(toolbar()).getByRole("button", { name: "Text size" });
-      fireEvent.click(button);
-      expect(button.getAttribute("aria-expanded")).toBe("true");
-      fireEvent.click(button);
+      press("Text size");
+      expect(within(toolbar()).getByRole("button", { name: "Text size" }).getAttribute("aria-expanded")).toBe("true");
+      press("Text size");
       expect(screen.queryByRole("group", { name: "Text size" })).toBeNull();
+    });
+
+    it("holds Bold, Italic, Underline and Link on a phone, and toggles the marks", () => {
+      const { editor } = mountPhone(doc(p("hello world")));
+      act(() => {
+        editor.commands.setTextSelection({ from: 1, to: 6 });
+      });
+      press("Text size");
+      const marks = screen.getByRole("group", { name: "Format" });
+      expect(within(marks).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual(["Bold", "Italic", "Underline", "Link"]);
+      fireEvent.click(within(marks).getByRole("button", { name: "Bold" }));
+      expect(editor.isActive("bold")).toBe(true);
+      press("Text size");
+      fireEvent.click(within(screen.getByRole("group", { name: "Format" })).getByRole("button", { name: "Italic" }));
+      press("Text size");
+      fireEvent.click(within(screen.getByRole("group", { name: "Format" })).getByRole("button", { name: "Underline" }));
+      expect(editor.isActive("italic") && editor.isActive("underline")).toBe(true);
     });
   });
 
-  describe("Link", () => {
+  describe("Link on a phone", () => {
     it("refuses an address that is not http, https or mailto, and links the selection otherwise", () => {
       const { editor } = mountPhone(doc(p("hello world")));
       act(() => {
         editor.commands.setTextSelection({ from: 1, to: 6 });
       });
-      fireEvent.click(within(toolbar()).getByRole("button", { name: "Link" }));
+      press("Text size");
+      fireEvent.click(within(screen.getByRole("group", { name: "Format" })).getByRole("button", { name: "Link" }));
       const form = screen.getByRole("form", { name: "Link" });
       const field = within(form).getByRole("textbox", { name: "Link address" }) as HTMLInputElement;
       expect(field.style.fontSize).toBe("16px");
@@ -349,114 +406,37 @@ describe("the phone toolbar", () => {
     });
   });
 
-  describe("Add", () => {
-    const open = () => {
-      fireEvent.click(within(toolbar()).getByRole("button", { name: "Add" }));
-      return screen.getByRole("dialog", { name: "Add" });
-    };
-
-    it("opens a sheet of Picture or video, Row of pictures, Bulleted list, Numbered list and New post", () => {
-      mountPhone();
-      const sheet = open();
-      expect(within(sheet).getAllByRole("button").filter((button) => button.getAttribute("aria-label") !== "Close").map((button) => button.querySelector("span")?.textContent)).toEqual([
-        "Picture or video",
-        "Row of pictures",
-        "Bulleted list",
-        "Numbered list",
-        "New post",
-      ]);
+  describe("Add another post", () => {
+    it("is off while the post the caret is in is empty, as X's + is", () => {
+      mountDesk(doc(p("")));
+      expect((within(toolbar()).getByRole("button", { name: "Add another post" }) as HTMLButtonElement).disabled).toBe(true);
     });
 
-    it("asks for files with Picture or video and Row of pictures", async () => {
-      const onInsertPicture = vi.fn();
-      const { editor } = mountPhone(doc(p("")), { onInsertPicture });
-      fireEvent.click(within(open()).getByRole("button", { name: /Row of pictures/ }));
-      await waitFor(() => expect(onInsertPicture).toHaveBeenCalledWith("row", editor));
-      fireEvent.click(within(open()).getByRole("button", { name: /Picture or video/ }));
-      await waitFor(() => expect(onInsertPicture).toHaveBeenCalledWith("single", editor));
+    it("adds a post after the one the caret is in, not in the middle of it, and puts the caret there", () => {
+      const { editor } = mountDesk(doc(p("one"), p("one more"), brk, p("two")));
+      act(() => {
+        editor.commands.setTextSelection(2);
+      });
+      press("Add another post");
+      expect(json(editor).content.map((block) => block.type)).toEqual(["paragraph", "paragraph", "postBreak", "paragraph", "postBreak", "paragraph"]);
+      expect(editor.state.selection.$from.index(0)).toBe(3);
+      expect((within(toolbar()).getByRole("button", { name: "Add another post" }) as HTMLButtonElement).disabled).toBe(true);
     });
 
-    it("makes a list, and starts a new post after the block the caret is in", async () => {
-      const { editor } = mountPhone(doc(p("text")));
-      fireEvent.click(within(open()).getByRole("button", { name: /Bulleted list/ }));
-      await waitFor(() => expect(json(editor).content[0].type).toBe("bulletList"));
-      fireEvent.click(within(open()).getByRole("button", { name: /Numbered list/ }));
-      await waitFor(() => expect(json(editor).content[0].type).toBe("orderedList"));
-      fireEvent.click(within(open()).getByRole("button", { name: /New post/ }));
-      await waitFor(() => expect(json(editor).content.map((block) => block.type)).toEqual(["orderedList", "postBreak", "paragraph"]));
+    it("makes the empty line after a list the new post's first line", () => {
+      const { editor } = mountDesk(doc({ type: "bulletList", content: [{ type: "listItem", content: [p("item")] }] } as never, p("")));
+      act(() => {
+        editor.commands.setTextSelection(3);
+      });
+      press("Add another post");
+      expect(json(editor).content.map((block) => block.type)).toEqual(["bulletList", "postBreak", "paragraph"]);
     });
 
     it("says why when the thread already holds ten posts", async () => {
       const posts = Array.from({ length: 9 }, (_, index) => [brk, p(`post ${index + 2}`)]).flat();
-      mountPhone(doc(p("post 1"), ...posts));
-      fireEvent.click(within(open()).getByRole("button", { name: /New post/ }));
+      mountDesk(doc(p("post 1"), ...posts));
+      press("Add another post");
       expect(await screen.findByText(POST_LIMIT_SENTENCE)).toBeTruthy();
-    });
-  });
-
-  describe("above the keyboard", () => {
-    function viewport(height: number, offsetTop = 0) {
-      const listeners: Record<string, Set<() => void>> = {};
-      const mock = {
-        height,
-        offsetTop,
-        addEventListener: (type: string, fn: () => void) => (listeners[type] ??= new Set()).add(fn),
-        removeEventListener: (type: string, fn: () => void) => listeners[type]?.delete(fn),
-      };
-      vi.stubGlobal("visualViewport", mock);
-      Object.defineProperty(window, "visualViewport", { configurable: true, value: mock });
-      return {
-        set(next: { height?: number; offsetTop?: number }) {
-          Object.assign(mock, next);
-          act(() => {
-            for (const type of ["resize", "scroll"]) listeners[type]?.forEach((fn) => fn());
-          });
-        },
-      };
-    }
-
-    beforeEach(() => {
-      Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
-    });
-    afterEach(() => {
-      Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
-    });
-
-    it("sits at the bottom when nothing covers the page", () => {
-      viewport(800);
-      mountPhone();
-      expect(toolbar().style.bottom).toBe("0px");
-    });
-
-    it("rides up by what the keyboard covers, and follows it as it opens, resizes and closes", () => {
-      const keyboard = viewport(800);
-      mountPhone();
-      keyboard.set({ height: 500 });
-      expect(toolbar().style.bottom).toBe("300px");
-      keyboard.set({ height: 440 });
-      expect(toolbar().style.bottom).toBe("360px");
-      keyboard.set({ height: 800 });
-      expect(toolbar().style.bottom).toBe("0px");
-    });
-
-    it("counts the visual viewport's scroll, as a page scrolled under the keyboard moves it", () => {
-      const keyboard = viewport(500);
-      mountPhone();
-      expect(toolbar().style.bottom).toBe("300px");
-      keyboard.set({ offsetTop: 120 });
-      expect(toolbar().style.bottom).toBe("180px");
-    });
-
-    it("never goes below the bottom, and needs no visualViewport", () => {
-      const keyboard = viewport(900);
-      mountPhone();
-      expect(toolbar().style.bottom).toBe("0px");
-      keyboard.set({ height: 800, offsetTop: 50 });
-      expect(toolbar().style.bottom).toBe("0px");
-      cleanup();
-      Object.defineProperty(window, "visualViewport", { configurable: true, value: undefined });
-      mountPhone();
-      expect(toolbar().style.bottom).toBe("0px");
     });
   });
 });

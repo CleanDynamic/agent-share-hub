@@ -178,7 +178,13 @@ export function SlashMenu({
 
   // Tell assistive technology the editor has a list open.
   useEffect(() => {
-    const dom = editor?.view.dom;
+    let dom: HTMLElement | undefined;
+    try {
+      dom = editor?.view.dom;
+    } catch {
+      // A phone width rebuilds the editor; until the new one is mounted it has no view to mark.
+      return;
+    }
     if (!dom) return;
     if (open) {
       dom.setAttribute("aria-expanded", "true");

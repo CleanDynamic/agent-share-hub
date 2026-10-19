@@ -34,8 +34,11 @@ import { PictureView, type PictureOptions } from "./PictureView";
 import { picturePlugin, type PictureHost } from "./pictures";
 import { applyStyle, styleString } from "./styleString";
 
-/** The words in the editor's empty last paragraph. */
-export const PLACEHOLDER = "Type / for a picture, a list, a row of pictures or a new post";
+/** The words in an empty first post, as X's composer asks "What's happening?". */
+export const PLACEHOLDER = "What did you build?";
+
+/** The words in an empty post after the first. */
+export const NEXT_PLACEHOLDER = "Add another post";
 
 /** What a break reads after "Post 2", for the first break only. */
 export const FIRST_BREAK_NOTE = "readers reach this with Show more";
@@ -87,10 +90,10 @@ export function removeBreakBefore(editor: Editor): boolean {
     .run();
 }
 
-// 48 above and 32 below the label, in steps of the spacing scale: the editor's 12 gap, then 24 and 12 above, 20 below.
-const breakRow = { display: "flex", alignItems: "center", gap: 12, marginTop: 24, paddingTop: 12, marginBottom: 20, userSelect: "none" } as const;
-const breakRule = { flexGrow: 1, flexShrink: 1, flexBasis: 0, height: 0, borderTopWidth: 1, borderTopStyle: "dashed", borderTopColor: t.line } as const;
-const breakLabel = { fontFamily: FIGTREE, fontSize: 12, fontWeight: 400, lineHeight: "normal", color: t.text2, whiteSpace: "nowrap", borderRadius: 4, padding: "2px 6px" } as const;
+// A quiet line between posts, as X's thread composer has: no rule, just the post's number in --label. The avatar and the
+// thread line beside the next post are drawn by the composer's rail (ThreadRail), which reads where each break ends.
+const breakRow = { display: "flex", alignItems: "center", minHeight: 20, paddingTop: 4, userSelect: "none" } as const;
+const breakLabel = { fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 400, lineHeight: "normal", color: t.label, whiteSpace: "nowrap", borderRadius: 4, padding: "2px 6px", marginLeft: -6 } as const;
 
 /** The number a break's decoration carries, or 0. */
 function numberOf(decorations: readonly { spec?: { postNumber?: number } }[]): number {
@@ -105,15 +108,9 @@ function breakView(initial: readonly { spec?: { postNumber?: number } }[]) {
   dom.contentEditable = "false";
   applyStyle(dom, breakRow);
 
-  const before = document.createElement("span");
-  before.setAttribute("aria-hidden", "true");
-  applyStyle(before, breakRule);
   const label = document.createElement("span");
   applyStyle(label, breakLabel);
-  const after = document.createElement("span");
-  after.setAttribute("aria-hidden", "true");
-  applyStyle(after, breakRule);
-  dom.append(before, label, after);
+  dom.append(label);
 
   let shown = -1;
   const show = (number: number) => {
@@ -123,7 +120,7 @@ function breakView(initial: readonly { spec?: { postNumber?: number } }[]) {
     dom.setAttribute("aria-label", `Post ${number} starts here`);
     const name = document.createElement("span");
     name.textContent = `Post ${number}`;
-    applyStyle(name, { fontWeight: 500, color: t.text });
+    applyStyle(name, { fontWeight: 500, color: t.text2 });
     label.replaceChildren(name);
     if (number === 2) label.append(` · ${FIRST_BREAK_NOTE}`);
   };
@@ -371,18 +368,18 @@ function counterElement(length: number): HTMLElement {
   return dom;
 }
 
-function placeholderElement(): HTMLElement {
+function placeholderElement(words: string): HTMLElement {
   const dom = document.createElement("span");
   dom.setAttribute("data-post-placeholder", "");
   dom.setAttribute("aria-hidden", "true");
   dom.contentEditable = "false";
   // Zero wide, so it takes no room and the caret sits at the start of the line; the words spill out over the empty line.
   applyStyle(dom, { display: "inline-block", width: 0, whiteSpace: "nowrap", pointerEvents: "none", userSelect: "none", color: t.label });
-  dom.textContent = PLACEHOLDER;
+  dom.textContent = words;
   return dom;
 }
 
-/** The count under a post's last block once it passes 900, and the words in an empty last paragraph. */
+/** The count under a post's last block once it passes 900, and the words in a post that is one empty paragraph. */
 const PostChrome = Extension.create({
   name: "postChrome",
   addProseMirrorPlugins() {
@@ -412,10 +409,27 @@ const PostChrome = Extension.create({
             });
             close();
 
-            const last = doc.lastChild;
-            if (last && last.type.name === "paragraph" && last.content.size === 0) {
-              found.push(Decoration.widget(doc.content.size - last.nodeSize + 1, placeholderElement, { side: -1, key: "post-placeholder", ignoreSelection: true }));
-            }
+            // A post that is one empty paragraph asks for its words: the first as X asks, the rest as "Add another post".
+            let post = 0;
+            let blocks = 0;
+            let empty = -1;
+            const ask = () => {
+              if (blocks !== 1 || empty < 0) return;
+              const words = post === 0 ? PLACEHOLDER : NEXT_PLACEHOLDER;
+              found.push(Decoration.widget(empty + 1, () => placeholderElement(words), { side: -1, key: `post-placeholder-${post}`, ignoreSelection: true }));
+            };
+            doc.forEach((node, offset) => {
+              if (node.type.name === "postBreak") {
+                ask();
+                post += 1;
+                blocks = 0;
+                empty = -1;
+                return;
+              }
+              blocks += 1;
+              empty = node.type.name === "paragraph" && node.content.size === 0 ? offset : -1;
+            });
+            ask();
             return DecorationSet.create(doc, found);
           },
         },
@@ -464,7 +478,7 @@ export function editorAttributes(): Record<string, string> {
       display: "flex",
       flexDirection: "column",
       gap: BLOCK_GAP,
-      minHeight: 240,
+      minHeight: 48,
       outline: "none",
       whiteSpace: "pre-wrap",
       overflowWrap: "anywhere",
