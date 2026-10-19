@@ -12,7 +12,17 @@
    28-high chip with Accept (a 20-high control) and Dismiss (text), and on the right Show full prompt and the words.
    An agent is a module with "Agent ·" and its model's mark at 14, its run rule as a tag, and inside, on a
    `--hairline-module` edge, its instructions as a tile and "Add a prompt to this agent" dashed and text only. The
-   add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`. */
+   add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`.
+
+   CA-03 P3: how a step ran is one quiet line under it, led by a 7px `--label` dot ("On a schedule · Weekdays 07:30");
+   "When I asked" is the normal case and shows nothing.
+
+   CA-03 P4: a team's first agent is its lead. The team's eyebrow says what the lead ran in ("Team · led by an agent
+   in Claude Code"); the lead's row is "Lead agent"; the others sit under "Handed work to", each "Agent · {name}".
+
+   CA-03 P6: what an agent remembers is one quiet line under it, led by a 7px `--label` dot: "Remembers {memory}".
+
+   CA-03 P7: an agent that can use a tool reading content it doesn't control has the warning module under it. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
@@ -32,7 +42,8 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { runsLabel, stepTitle } from "@/lib/build/graph";
+import { checkStatus, runsLabel, stepTitle, TOOL_TYPE } from "@/lib/build/graph";
+import { readsOutsideContent } from "@/lib/build/outsideContent";
 import { markFor } from "@/lib/models/marks";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
@@ -45,6 +56,8 @@ import { DM_MONO } from "@/lib/theme/type";
 import {
   agentEyebrow,
   inputLabel,
+  TEAM_COPY,
+  teamEyebrow,
   madeIn,
   madeLine,
   stepModel,
@@ -56,8 +69,9 @@ import {
 import { TextButton } from "./composeControls";
 import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
+import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
@@ -68,7 +82,6 @@ import {
   menuItem,
   menuSurface,
   moduleStyle,
-  tagStyle,
   text,
   tileStyle,
   tnum,
@@ -80,6 +93,10 @@ export const LIST_COPY = {
   hint: "Click a prompt to see its details · double-click to read all of it",
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
+  /** CA-03 P5: a check's eyebrow. */
+  check: CHECK_COPY.eyebrow,
+  /** CA-03 P6. */
+  remembers: (memory: string) => `Remembers ${memory}`,
 } as const;
 
 export interface BuildListProps {
@@ -488,17 +505,23 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 
 /* ── agents and teams (UI-P69) ── */
 
-function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[] }) {
+/** CA-03 P7: the outside tools an agent can use, its tools read from the List's names (an id to a service). */
+const outsideOf = (agent: Step, names: BuildListProps["names"]): string[] =>
+  readsOutsideContent(agent, (agent.toolRefs ?? []).flatMap((id) => (names[id] ? [{ id, type: TOOL_TYPE, payload: { service: names[id] } }] : [])));
+
+function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[] }) {
   return (
     <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
         <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
-        {runs ? <span style={tagStyle}>{runs}</span> : null}
       </div>
+      {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
+      {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
+      <OutsideWarning names={outside} />
     </div>
   );
 }
@@ -579,7 +602,7 @@ function AgentPromptField({ agent, props, onDone }: { agent: Step; props: BuildL
 /** "Agent · ", the model's mark at 14 and its name: the eyebrow's words are the current look's. */
 function ContainerEyebrow({ step, made, isTeam }: { step: Step; made: readonly string[]; isTeam: boolean }) {
   const model = isTeam ? null : stepModel(step);
-  const lead = agentEyebrow(made, null, isTeam ? "Team" : "Agent");
+  const lead = isTeam ? teamEyebrow(made, step.children[0]?.harness) : agentEyebrow(made, null, "Agent");
   return (
     <span data-testid="container-eyebrow" style={{ ...text(11.5, 400, t.label), display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
       {model ? (
@@ -617,19 +640,27 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
+          {runsLabel(step.runs) ? <DotLine testId="runs-line">{runsLabel(step.runs)}</DotLine> : null}
+          {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
         </div>
-        <span style={tagStyle}>{runsLabel(step.runs)}</span>
       </div>
+      {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
-        {step.children.map((child) => {
+        {step.children.map((child, index) => {
           const own = isTeam ? child.children.filter((grand) => !grand.id.endsWith(":instructions")) : [];
           const open = isTeam && openAgent === child.id;
           return (
             <div key={child.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {isTeam && index === 1 ? (
+                <span data-testid="handed-work-to" style={{ ...text(11.5, 500, t.label), paddingTop: 4 }}>
+                  {TEAM_COPY.handedTo}
+                </span>
+              ) : null}
               <InnerCard
                 step={child}
-                eyebrow={isTeam ? `Agent · ${stepTitle(child)}${stepModel(child) ? ` · ${stepModel(child)}` : ""}` : undefined}
+                eyebrow={isTeam ? (index === 0 ? TEAM_COPY.lead : TEAM_COPY.agent(stepTitle(child))) : undefined}
                 runs={isTeam ? runsLabel(child.runs) : undefined}
+                outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
               />
               {own.length > 0 ? (
@@ -849,7 +880,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           margin: 0,
           marginLeft: INDENT,
           width: "auto",
-          padding: "8px 10px",
+          padding: "8px 12px",
           fontFamily: DM_MONO,
           fontSize: 12,
           lineHeight: 1.55,
@@ -861,6 +892,89 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         {firstLines(step.text)}
       </pre>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <div style={footRow(INDENT)}>
+        <UsesRow step={step} props={props} />
+      </div>
+    </div>
+  );
+}
+
+/** CA-03 P5: how the build checked its work: what it tested as its text, and one status line with a 7px dot. */
+function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const { phone } = props;
+  const selected = props.selectedId === step.id;
+  const isDefault = step.title === null;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const renameNext = useRef(false);
+  const finish = (save: boolean) => {
+    setRenaming(false);
+    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
+  };
+  const status = step.check ? checkStatus(step.check) : null;
+  return (
+    <div
+      role="group"
+      aria-label={`Check ${step.number}: ${stepTitle(step)}`}
+      data-testid="step-card"
+      data-kind="check"
+      data-selected={selected ? "true" : undefined}
+      tabIndex={0}
+      onClick={() => props.onSelect(step.id)}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          props.onSelect(step.id);
+        }
+      }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span data-testid="check-eyebrow" style={text(11.5, 400, t.label)}>
+            {LIST_COPY.check}
+          </span>
+          {renaming ? (
+            <RenameField label={`Title of check ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+          ) : (
+            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
+              {stepTitle(step)}
+            </h3>
+          )}
+        </div>
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Check ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Content
+              align="end"
+              sideOffset={4}
+              style={menuSurface()}
+              onClick={(event) => event.stopPropagation()}
+              onCloseAutoFocus={(event) => {
+                if (!renameNext.current) return;
+                event.preventDefault();
+                renameNext.current = false;
+                setDraft(step.title ?? "");
+                setRenaming(true);
+              }}
+            >
+              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      {status ? (
+        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT }}>
+          <span style={tnum}>{status.line}</span>
+        </DotLine>
+      ) : null}
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
       </div>
@@ -1018,7 +1132,8 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <Quiet>Typed here ·</Quiet>
         <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />}
+        {/* CA-03: Typed here has no field label, so its menu keeps the word "model" while empty. */}
+        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
         <span style={{ flexGrow: 1 }} />
         <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
       </div>
@@ -1068,6 +1183,8 @@ export function BuildList(props: BuildListProps) {
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
       <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "check" ? (
+      <CheckCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : (
       <ContainerCard key={step.id} step={step} props={props} />
     );

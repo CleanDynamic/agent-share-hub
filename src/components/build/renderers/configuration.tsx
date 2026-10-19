@@ -44,6 +44,12 @@ import {
 
 // --- agent_config ------------------------------------------------------------
 
+/** CA-03 P6: the words this renderer shows of its own. A field it has no value for reads "·", as the build page's other empty cells. */
+export const CONFIGURATION_COPY = {
+  memory: "What it remembers",
+  none: "·",
+} as const;
+
 const AGENT_PARAM_KEYS = ["model", "temperature", "max_tokens", "top_p"];
 const AGENT_TEST_KEYS = ["test_passing", "test_total", "test_run_at"];
 
@@ -133,7 +139,7 @@ export function AgentConfigRenderer(props: NodeProps) {
         ) : null}
 
         {memory ? (
-          <Field label={labelFor(props.nodeType, "memory", "Memory")}>
+          <Field label={CONFIGURATION_COPY.memory}>
             <Prose style={{ color: t.text2 }}>{memory}</Prose>
           </Field>
         ) : null}
@@ -189,11 +195,11 @@ export function ConfigCard(props: NodeProps) {
       const value = num(payload, field.key);
       return {
         label: field.label,
-        value: (typeof value === "number" ? formatNumber(value) : "—") as ReactNode,
+        value: (typeof value === "number" ? formatNumber(value) : CONFIGURATION_COPY.none) as ReactNode,
       };
     }
     if (field.format === "timestamp") {
-      return { label: field.label, value: (formatDate(str(payload, field.key)) ?? "—") as ReactNode };
+      return { label: field.label, value: (formatDate(str(payload, field.key)) ?? CONFIGURATION_COPY.none) as ReactNode };
     }
     if (field.type === "enum") {
       return { label: field.label, value: <Chip>{str(payload, field.key)}</Chip> as ReactNode };

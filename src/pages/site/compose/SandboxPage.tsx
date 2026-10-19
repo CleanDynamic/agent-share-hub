@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, canCheck, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { sessionToolsOf, type MakingSession } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
@@ -47,6 +47,8 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { buildSummary } from "@/lib/build/buildSummary";
+import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
 import { BuildList, type AddAsAgentInput } from "./BuildList";
@@ -170,6 +172,8 @@ export function SandboxPage() {
     [settleSeed],
   );
   const [addManualOpen, setAddManualOpen] = useState(false);
+  /** CA-03 P5: Add › Check. */
+  const [addCheckOpen, setAddCheckOpen] = useState(false);
   /** CA-02 P6: Add › Tool names its tool first. */
   const [addToolOpen, setAddToolOpen] = useState(false);
   /** CA-02 P7: Add › Code, and "Keep it as code" with the text pasted into Typed here, which waits to hear it was saved. */
@@ -422,6 +426,17 @@ export function SandboxPage() {
     [prompts, afterStep, afterWrite],
   );
 
+  const onAddCheck = useCallback(
+    async (input: AddCheckInput) => {
+      // A check uses the step it tested: the selected one, else the last agent, team or code.
+      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null) });
+      if (!id) return;
+      setSelectedId(id);
+      afterWrite();
+    },
+    [prompts, steps, afterStep, afterWrite],
+  );
+
   const onAddCode = useCallback(
     async (input: AddCodeInput) => {
       savingCode.current = true;
@@ -607,7 +622,7 @@ export function SandboxPage() {
 
   return (
     <>
-      <SeoHead title="Compose — buildgallery" description="Write your build." path="/compose" noIndex />
+      <SeoHead title="Compose · buildgallery" description="Write your build." path="/compose" noIndex />
       <input
         ref={picker}
         type="file"
@@ -644,6 +659,9 @@ export function SandboxPage() {
         onAddAgent={() => setAddAgentOpen(true)}
         onAddManual={() => setAddManualOpen(true)}
         onAddCode={() => setAddCodeOpen(true)}
+        onAddCheck={() => setAddCheckOpen(true)}
+        checkable={canCheck(steps)}
+        summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
         onTrail={onTrail}
         map={
@@ -808,6 +826,7 @@ export function SandboxPage() {
         inBuild={inBuild}
         onAdd={(input) => void onAddManual(input)}
       />
+      <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow

@@ -34,19 +34,58 @@ export interface RunsChoice {
   how: RunsHow;
   label: string;
   field: RunsField | null;
+  /** CA-03: listed under "More ways it ran" until it is chosen. */
+  more: boolean;
 }
 
-/** CONCEPT §3: five choices, in this order. */
+/** CA-03 P3: the group's title, and the words around its choices. */
+export const RUNS_COPY = {
+  title: "How did it run?",
+  more: "More ways it ran",
+  /** An agent in a team runs when work is sent to it. */
+  inTeam: "each time work is sent to it",
+  atMost: "At most",
+  times: "times",
+  time: "Time",
+  timeHint: "HH:MM",
+  presets: "Repeats",
+} as const;
+
+/** CA-03 P3: the three always shown, then the two under "More ways it ran". Stored as before (`payload.runs.how`). */
 export const RUNS_CHOICES: readonly RunsChoice[] = [
-  { how: "once", label: "Runs once", field: null },
-  { how: "parallel", label: "Runs several at once", field: { kind: "count", label: "How many", min: RUNS_COUNT_MIN, max: RUNS_COUNT_MAX } },
-  { how: "until", label: "Repeats until a condition is met", field: { kind: "text", label: "The condition", max: UNTIL_DETAIL_MAX, placeholder: "until every claim has a source" } },
-  { how: "schedule", label: "Runs on a schedule", field: { kind: "text", label: "When", max: WHEN_DETAIL_MAX, placeholder: "Mondays 07:00" } },
-  { how: "event", label: "Runs when something happens", field: { kind: "text", label: "What", max: WHEN_DETAIL_MAX, placeholder: "When a new email arrives" } },
+  { how: "once", label: "When I asked", field: null, more: false },
+  { how: "schedule", label: "On a schedule", field: { kind: "text", label: "When", max: WHEN_DETAIL_MAX, placeholder: "Weekdays 07:30" }, more: false },
+  { how: "event", label: "When something happened", field: { kind: "text", label: "What happened", max: WHEN_DETAIL_MAX, placeholder: "a new supplier email" }, more: false },
+  { how: "until", label: "Again until a condition was met", field: { kind: "text", label: "The condition", max: UNTIL_DETAIL_MAX, placeholder: "until the review has no changes" }, more: true },
+  { how: "parallel", label: "Several at the same time", field: { kind: "count", label: "How many", min: RUNS_COUNT_MIN, max: RUNS_COUNT_MAX }, more: true },
 ];
 
-/** "3 at once", for the count beside the number field. */
-export const atOnce = (count: number): string => `${count} at once`;
+/** "3 at the same time", for the count beside the number field. */
+export const atOnce = (count: number): string => `${count} at the same time`;
+
+/* ── a schedule's presets (CA-03 P3): written into the detail as text, nothing new stored ── */
+
+export const SCHEDULE_PRESETS = ["Every day", "Weekdays", "Weekly"] as const;
+export type SchedulePreset = (typeof SCHEDULE_PRESETS)[number];
+
+/** A 24-hour time, "07:30". */
+export const isClockTime = (value: string): boolean => /^([01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
+
+/** A schedule's detail read as a preset and a time, when it is one ("Weekdays 07:30"); anything typed reads as typed. */
+export function scheduleParts(detail: string | null | undefined): { preset: SchedulePreset | null; time: string } {
+  const text = (detail ?? "").trim();
+  for (const preset of SCHEDULE_PRESETS) {
+    if (text === preset) return { preset, time: "" };
+    if (text.startsWith(`${preset} `) && isClockTime(text.slice(preset.length + 1))) return { preset, time: text.slice(preset.length + 1) };
+  }
+  return { preset: null, time: isClockTime(text) ? text : "" };
+}
+
+/** The detail a preset and a time write: "Weekdays 07:30", the preset alone, or the time alone. */
+export function scheduleDetail(preset: SchedulePreset | null, time: string): string {
+  const at = isClockTime(time) ? time.trim() : "";
+  return [preset, at].filter(Boolean).join(" ");
+}
 
 /** A name for a file, tool or result row: the node's text fields. */
 export interface NamedPiece {

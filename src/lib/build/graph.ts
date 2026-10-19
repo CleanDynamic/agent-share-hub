@@ -31,8 +31,13 @@ export const TOOL_TYPE = "integration";
 export const RESULT_TYPE = "result";
 /** CA-02 P7: lines of code the maker wrote or ran. Never run here. */
 export const CODE_TYPE = "code";
+/**
+ * CA-03 P5: how the build tested itself. The `eval_run` type that already exists (category evidence); a check is one
+ * whose payload says what it tested (`tested`), so an eval run saved before CA-03 reads exactly as it did, not as a step.
+ */
+export const CHECK_TYPE = "eval_run";
 
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -89,6 +94,21 @@ export interface Step {
   models?: AgentModel[];
   /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
   toolRefs?: string[];
+  /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
+  memory?: string;
+  /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
+  check?: CheckFacts;
+}
+
+/** CA-03 P5: what a check says, read from its payload. */
+export interface CheckFacts {
+  tested: string;
+  passing: string;
+  onFail: string | null;
+  passed: number | null;
+  total: number | null;
+  /** The last run, as saved ("2026-10-12"). */
+  runAt: string | null;
 }
 
 export interface SessionGroup {
@@ -122,6 +142,8 @@ export const HARNESS_MAX = 40;
 export const ROLE_MAX = 40;
 /** CA-02 P5: an agent names four models at most. */
 export const AGENT_MODELS_MAX = 4;
+/** CA-03 P6: the longest "What it remembers". */
+export const MEMORY_MAX = 200;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -205,20 +227,52 @@ export function parseRuns(value: unknown): Runs | null {
   return runs;
 }
 
-/** The words that say how a step runs. */
+/** CA-03 P3: "Again until a condition was met" can say how many times at most, written into its detail. */
+export const AT_MOST_MIN = 1;
+export const AT_MOST_MAX = 20;
+
+const AT_MOST = /\s*·\s*at most (\d+) times?$/;
+
+/** An "until" detail split into its condition and its "at most" count. A detail saved without one reads as it was. */
+export function untilParts(detail: string | null | undefined): { condition: string; atMost: number | null } {
+  const text = (detail ?? "").trim();
+  const match = AT_MOST.exec(text);
+  if (!match) return { condition: text, atMost: null };
+  const n = Number(match[1]);
+  return { condition: text.slice(0, match.index).trim(), atMost: Number.isInteger(n) ? n : null };
+}
+
+/** An "until" detail from its condition and its count: "until the review has no changes · at most 3 times". */
+export function untilDetail(condition: string, atMost: number | null): string {
+  const said = condition.trim();
+  if (atMost === null) return said;
+  const times = `at most ${atMost} ${atMost === 1 ? "time" : "times"}`;
+  return said ? `${said} · ${times}` : times;
+}
+
+/** "until every claim has a source", whether or not the maker typed the "until". */
+export function untilClause(detail: string): string {
+  const said = detail.trim();
+  return /^until\b/i.test(said) ? said : `until ${said}`;
+}
+
+/**
+ * The words that say how a step ran (CA-03 P3), as the List, the Map and the build page show them. "When I asked"
+ * is the normal case and shows nothing: an empty string. Nothing stored changes; only the words.
+ */
 export function runsLabel(runs: Runs | null | undefined): string {
   const detail = runs?.detail ? ` · ${runs.detail}` : "";
   switch (runs?.how) {
     case "parallel":
-      return typeof runs.count === "number" ? `Runs several at once · ${runs.count}` : "Runs several at once";
+      return typeof runs.count === "number" ? `Several at the same time · ${runs.count}` : "Several at the same time";
     case "until":
-      return `Repeats until a condition is met${detail}`;
+      return runs.detail ? `Again ${untilClause(runs.detail)}` : "Again until a condition was met";
     case "schedule":
-      return `Runs on a schedule${detail}`;
+      return `On a schedule${detail}`;
     case "event":
-      return `Runs when something happens${detail}`;
+      return `When something happened${detail}`;
     default:
-      return "Runs once";
+      return "";
   }
 }
 
@@ -228,6 +282,7 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [TEAM_TYPE]: "team",
   [MANUAL_STEP_TYPE]: "manual",
   [CODE_TYPE]: "code",
+  [CHECK_TYPE]: "check",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -236,9 +291,28 @@ const KIND_NAME: Record<StepKind, string> = {
   team: "Team",
   manual: "Manual step",
   code: "Code",
+  check: "Check",
 };
 
-const isStepNode = (node: Pick<BuildNode, "type">): boolean => node.type in KIND_OF_TYPE;
+/** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
+const isCheckPayload = (payload: unknown): boolean => isRecord(payload) && typeof payload.tested === "string" && payload.tested.trim().length > 0;
+
+const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
+  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload));
+
+const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
+
+/** A check's facts, read defensively. */
+function checkFacts(payload: Payload): CheckFacts {
+  return {
+    tested: stringOf(payload.tested)?.trim() ?? "",
+    passing: stringOf(payload.passing)?.trim() ?? "",
+    onFail: stringOf(payload.on_fail)?.trim() || null,
+    passed: numberOf(payload.passed),
+    total: numberOf(payload.total),
+    runAt: stringOf(payload.run_at)?.trim() || null,
+  };
+}
 
 const byPosition = <T extends Pick<BuildNode, "position">>(nodes: readonly T[]): T[] =>
   [...nodes]
@@ -269,15 +343,17 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
   return out;
 }
 
-/** The agent-only facts of a step (CA-02 P5); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs"> {
+/** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
+  const memory = stringOf(payload.memory)?.trim();
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
+    ...(memory ? { memory } : null),
   };
 }
 
@@ -286,7 +362,8 @@ const dismissedOf = (payload: Payload): string[] =>
 
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
-  const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : (stringOf(payload.text) ?? "");
+  const text =
+    kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : kind === "check" ? (stringOf(payload.tested) ?? "") : (stringOf(payload.text) ?? "");
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {
@@ -307,6 +384,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
+    ...(kind === "check" ? { check: checkFacts(payload) } : null),
   };
 }
 
@@ -328,6 +406,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     harness: undefined,
     models: undefined,
     toolRefs: undefined,
+    memory: undefined,
   };
 }
 
@@ -572,8 +651,8 @@ export async function dismissSuggestion(node: BuildNode, key: string): Promise<B
 }
 
 /**
- * How an agent or a team runs (CONCEPT §3). "Runs once" is no `runs` at all.
- * Several at once needs a count of 2 to 20; the others take one short line.
+ * How an agent or a team runs (CONCEPT §3). "When I asked" (once) is no `runs` at all.
+ * Several at the same time needs a count of 2 to 20; the others take one short line.
  */
 export async function setRuns(node: BuildNode, runs: Runs | null): Promise<BuildNode> {
   if (node.type !== AGENT_TYPE && node.type !== TEAM_TYPE) throw refuse("setRuns", "Only an agent or a team has a way it runs.");
@@ -586,7 +665,7 @@ export async function setRuns(node: BuildNode, runs: Runs | null): Promise<Build
     if (runs.how === "parallel") {
       const count = runs.count;
       if (typeof count !== "number" || !Number.isInteger(count) || count < RUNS_COUNT_MIN || count > RUNS_COUNT_MAX) {
-        throw refuse("setRuns", `Several at once runs ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
+        throw refuse("setRuns", `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
       }
       next.count = count;
     } else {
@@ -616,13 +695,15 @@ export interface AgentSetup {
   models?: readonly AgentModel[];
   /** The integration nodes the agent may call. */
   toolRefs?: readonly string[];
+  /** CA-03 P6: what it remembers, up to 200 characters; empty leaves the key out. */
+  memory?: string | null;
 }
 
 /**
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -645,6 +726,11 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   }
   const refs = [...new Set((toolRefs ?? []).filter((ref) => typeof ref === "string" && ref))];
   if (refs.length) out.tools = refs.map((ref) => ({ tool_ref: ref })) as unknown as Json;
+  const remembers = memory?.trim();
+  if (remembers) {
+    if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers is at most ${MEMORY_MAX} characters.`);
+    out.memory = remembers;
+  }
   return out;
 }
 
@@ -700,6 +786,10 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
   if ("toolRefs" in setup) {
     if (keys.tools) payload.tools = keys.tools;
     else delete payload.tools;
+  }
+  if ("memory" in setup) {
+    if (keys.memory) payload.memory = keys.memory;
+    else delete payload.memory;
   }
   return upsertNode(withPayload(node, payload));
 }
@@ -805,8 +895,107 @@ export async function addCode(
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
 
+/** CA-03 P5: the longest answers a check takes, and its largest count of runs. */
+export const CHECK_TEXT_MAX = 280;
+export const CHECK_FAIL_MAX = 600;
+export const CHECK_RUNS_MAX = 10_000;
+
+/** "2026-10-12": a real day, as a check's last run is saved. */
+export const isIsoDay = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const day = new Date(`${value}T12:00:00Z`);
+  return !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === value;
+};
+
+export interface CheckInput {
+  tested: string;
+  passing: string;
+  onFail?: string | null;
+  passed: number;
+  total: number;
+  /** "2026-10-12", or nothing. */
+  runAt?: string | null;
+  /** The step it tested: the check uses its output. */
+  testedStep?: string | null;
+}
+
+/**
+ * CA-03 P5: how the build tested itself, a step like any other (it takes part in `uses`; it usually uses the step it
+ * tested). Saved on `eval_run` with its own keys where they fit (`passed`, `total`, `run_at`) and three text keys:
+ * `tested` and `passing` (1 to 280 characters each) and `on_fail` (up to 600). Passed and total are whole numbers
+ * from 0 to 10,000, and passed is never more than the total. A check is evidence the maker gives; it never touches
+ * `reproduction_count`, the lamp or the plaque.
+ */
+export async function addCheck(buildId: string, tree: readonly NodeTree[], input: CheckInput): Promise<BuildNode> {
+  const payload = checkPayload("addCheck", input, tree);
+  await requireLiveType("addCheck", CHECK_TYPE);
+  return placeTopNode(buildId, tree, { type: CHECK_TYPE, title: null, payload });
+}
+
+/** A check's payload, checked; exported for the dialog, which says the same refusals before anything is written. */
+export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
+  const tested = input.tested.trim();
+  const passing = input.passing.trim();
+  if (!tested) return "Say what it tested.";
+  if (tested.length > CHECK_TEXT_MAX) return `What it tested is at most ${CHECK_TEXT_MAX} characters.`;
+  if (!passing) return "Say what counts as passing.";
+  if (passing.length > CHECK_TEXT_MAX) return `What counts as passing is at most ${CHECK_TEXT_MAX} characters.`;
+  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `When it failed is at most ${CHECK_FAIL_MAX} characters.`;
+  for (const n of [input.passed, input.total]) {
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+  }
+  if (input.passed > input.total) return "Passed can't be more than the total.";
+  const day = (input.runAt ?? "").trim();
+  if (day && !isIsoDay(day)) return "Last run is a date, written as 2026-10-12.";
+  return null;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "12 Oct", from a saved day; the day as saved when it is not one. */
+export const checkDay = (day: string): string => (isIsoDay(day) ? `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1]}` : day);
+
+/**
+ * CA-03 P5: a check's one status line, "Passed 14 of 14 runs · since 12 Oct", and whether every run passed (the dot is
+ * `--evidence` then, `--cat-breakage` otherwise). Null when it has no runs to count.
+ */
+export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt">): { allPassed: boolean; line: string } | null {
+  if (check.passed === null || check.total === null) return null;
+  const since = check.runAt ? ` · since ${checkDay(check.runAt)}` : "";
+  return { allPassed: check.passed === check.total, line: `Passed ${check.passed} of ${check.total} ${check.total === 1 ? "run" : "runs"}${since}` };
+}
+
+/** CA-03 P5: what a check can test: an agent, a team or code. */
+const CHECKABLE: ReadonlySet<StepKind> = new Set(["agent", "team", "code"]);
+
+/** Whether the build has something a check can test, so Add › Check is offered. */
+export const canCheck = (steps: readonly Pick<Step, "kind">[]): boolean => steps.some((step) => CHECKABLE.has(step.kind));
+
+/** The step a new check tested: the selected top-level step when it is work (not a check), else the last agent, team or code. */
+export function testedStepOf(steps: readonly Step[], selectedTopId: string | null): string | null {
+  const selected = steps.find((step) => step.id === selectedTopId);
+  if (selected && selected.kind !== "check") return selected.id;
+  return [...steps].reverse().find((step) => CHECKABLE.has(step.kind))?.id ?? null;
+}
+
+function checkPayload(operation: string, input: CheckInput, tree: readonly NodeTree[]): Json {
+  const why = checkRefusal(input);
+  if (why) throw refuse(operation, why);
+  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: input.passed, total: input.total };
+  const onFail = (input.onFail ?? "").trim();
+  if (onFail) out.on_fail = onFail;
+  const day = (input.runAt ?? "").trim();
+  if (day) out.run_at = day;
+  if (input.testedStep) {
+    const isStep = topSteps(tree).some((node) => node.id === input.testedStep);
+    if (!isStep) throw refuse(operation, "That is not a step of this build.");
+    out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
+  }
+  return out as Json;
+}
+
 /** The top-level steps of a tree, in order: the rows that are numbered. */
-export function topSteps<T extends Pick<BuildNode, "parent_id" | "position" | "type">>(tree: readonly T[]): T[] {
+export function topSteps<T extends Pick<BuildNode, "parent_id" | "position" | "type"> & { payload?: unknown }>(tree: readonly T[]): T[] {
   return byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
 }
 

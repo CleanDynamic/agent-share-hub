@@ -34,7 +34,11 @@
    THE MAKER'S PARTS (UI-P94, `refined/{dusk,noon}/composer-map.html`). The composer's Map adds to UI-P91's recipes:
    input rows 20 high (2 apart, so each square stays on its wire end's 22 pitch), the state line 18 (10.5 `--label`),
    the text 36 (11 `--text2`, two lines), the foot 20; the legend's samples are 1px `--text2`. The result box has no
-   evidence border in the refined look: its head says "Result" in `--evidence` 10.5/500 before the title. */
+   evidence border in the refined look: its head says "Result" in `--evidence` 10.5/500 before the title.
+
+   CA-03 P2: an agent's or a team's box has its name inside it, at the top: its number, then the title 13/500
+   `--text`. Every other line in it is 12 `--text2`, never `--label` (each measured at 4.5:1 or more on the box's fill
+   in `contrast.test.ts`). The Map's captions and dates are the composer's one eyebrow style, `EYEBROW`. */
 
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
@@ -49,6 +53,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { MAP_ARTWORK, type MapRoom } from "./mapArtwork";
 import { lineCount } from "./codeModel";
+import { EYEBROW } from "./refinedStyles";
 
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
@@ -59,6 +64,8 @@ export const MAP_COPY = {
   openedRows: "Left to right by order · boxes outside the frame are part of the build, not the team",
   outside: "Outside",
   bandCaption: "files and tools",
+  /** CA-03 P4: above a column of agents that run side by side. */
+  sideBySide: "Side by side",
 } as const;
 
 /** What the joined boxes keep and the rest drop to (UI-P68). */
@@ -112,7 +119,7 @@ export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "titl
   const count = box.inputs.length;
   const inputs = `${count} ${count === 1 ? "input" : "inputs"}`;
   if (box.kind === "result") return `Result, ${box.title}, ${inputs}`;
-  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : "Prompt";
+  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : box.stepKind === "check" ? "Check" : "Prompt";
   return `${word} ${box.number}, ${box.title}, ${inputs}`;
 }
 
@@ -205,6 +212,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   const manual = box.kind === "step" && box.stepKind === "manual";
   /* CA-02 P7: code is a box labelled "Code", its text in mono and its size in lines. */
   const code = box.kind === "step" && box.stepKind === "code";
+  /* CA-03 P5: a check is a box labelled "Check", what counts as passing as its text and its status in the foot. */
+  const check = box.kind === "step" && box.stepKind === "check";
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
@@ -261,16 +270,17 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
         </>
       ) : big ? (
         <>
-          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(10.5, 500, t.label) }}>
-            {box.stepKind === "team" ? "Team" : "Agent"} {box.number}
+          {/* CA-03: the name inside the box, at the top; room on the right for Open. */}
+          <span data-testid="map-container-head" style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 64px 0 12px", minWidth: 0 }}>
+            <span style={{ ...refinedNumber, fontSize: 12, color: t.text2 }}>{box.number}</span>
+            <span data-testid="map-container-title" style={{ ...geist(13, 500, t.text), ...ellipsis }}>{box.title}</span>
           </span>
-          {/* The named inputs down the left, the title, counts and how it runs beside them. */}
+          {/* The named inputs down the left; what it holds and how it runs beside them. */}
           <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
             <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
             <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-              <span style={{ ...geist(13.5, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
-              <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
-              <span style={{ ...geist(11.5, 400, t.text2), ...ellipsis }}>{box.runs}</span>
+              <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
+              {box.runs ? <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.runs}</span> : null}
             </span>
           </span>
         </>
@@ -282,12 +292,17 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
                 Result
               </span>
-            ) : manual || code || (!box.defaultTitle && box.number) ? (
+            ) : manual || code || check || (!box.defaultTitle && box.number) ? (
               <span style={refinedNumber}>{box.number}</span>
             ) : null}
             {code ? (
               <span data-testid="map-code-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
                 Code
+              </span>
+            ) : null}
+            {check ? (
+              <span data-testid="map-check-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
+                Check
               </span>
             ) : null}
             {manual ? (
@@ -303,7 +318,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
               {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
               {box.kind === "step" && !manual ? (
-                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{code ? linesOf(box.text) : `${box.words} words`}</span>
+                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
             </>
           ) : (
@@ -317,7 +332,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {/* The text, two lines in 36; it gives up a pixel or two when the box `layoutMap` sized is shorter. */}
               <span
                 style={{
-                  flex: "0 1 36px",
+                  /* CA-03: a check's text is one line, so its status in the foot never meets it. */
+                  flex: check ? "0 1 18px" : "0 1 36px",
                   minHeight: 0,
                   padding: "0 12px",
                   boxSizing: "border-box",
@@ -326,15 +342,15 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                   lineHeight: 1.5,
                   overflow: "hidden",
                   display: "-webkit-box",
-                  WebkitLineClamp: 2,
+                  WebkitLineClamp: check ? 1 : 2,
                   WebkitBoxOrient: "vertical",
                   overflowWrap: "anywhere",
                 }}
               >
                 {box.text}
               </span>
-              <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
-                {box.kind === "step" && !manual ? (code ? linesOf(box.text) : `${box.words} words`) : ""}
+              <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
+                {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
             </>
           )}
@@ -430,14 +446,14 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
   const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${1.2}px solid ${t.label}`, verticalAlign: "middle" };
   const caption: CSSProperties = geist(12, 400, t.text2);
   const count: CSSProperties = { fontVariantNumeric: "tabular-nums" };
-  /* The frame's captions: an eyebrow in the refined look, Geist 10.5/500 `--label` .06em. */
-  const eyebrow = (): CSSProperties => ({ ...geist(10.5, 500, t.label), textTransform: "uppercase", letterSpacing: "0.06em" });
+  /* The frame's captions: the composer's one eyebrow style. */
+  const eyebrow = (): CSSProperties => EYEBROW;
   const Box = RefinedBoxView;
 
   return (
     <div ref={root} tabIndex={-1} onKeyDown={onKeyDown} data-testid="opened-map" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, outline: "none" }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 16 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span aria-hidden="true" style={sample} />
             goes into <span style={count}>{layout.wires.length}</span>
@@ -476,13 +492,15 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
               <span style={{ ...eyebrow(), ...ellipsis }}>
                 Inside {word} {container.number} · {stepTitle(container)}
               </span>
-              <span
-                style={
-                  { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
-                }
-              >
-                {runsLabel(container.runs)}
-              </span>
+              {runsLabel(container.runs) ? (
+                <span
+                  style={
+                    { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
+                  }
+                >
+                  {runsLabel(container.runs)}
+                </span>
+              ) : null}
             </div>
             {layout.band.length > 0 ? (
               <span style={{ position: "absolute", left: 16, top: layout.bandY - layout.frame.y + 2, ...eyebrow() }}>{MAP_COPY.bandCaption}</span>
@@ -491,6 +509,12 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
           {layout.outside.length > 0 ? (
             <span style={{ position: "absolute", left: layout.outside[0].x, top: layout.frame.y + 8, ...eyebrow() }}>{MAP_COPY.outside}</span>
           ) : null}
+          {/* CA-03 P4: agents that run side by side share one column, labelled once above it. */}
+          {layout.sideBySide.map((group) => (
+            <span key={group.ids.join(",")} data-testid="map-side-by-side" style={{ position: "absolute", left: group.x, top: group.y, ...geist(11.5, 500, t.label), whiteSpace: "nowrap" }}>
+              {MAP_COPY.sideBySide}
+            </span>
+          ))}
 
           <svg width={layout.width} height={layout.height} aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}>
             <defs>
@@ -731,7 +755,7 @@ export function BuildMap(props: BuildMapProps) {
               <span
                 key={column.index}
                 data-testid="map-column-date"
-                style={{ position: "absolute", left: column.x, top: 0, ...(geist(10.5, 500, t.label)), textTransform: "uppercase", letterSpacing: "0.06em" }}
+                style={{ position: "absolute", left: column.x, top: 0, ...EYEBROW }}
               >
                 {columnDate(column.date)}
               </span>

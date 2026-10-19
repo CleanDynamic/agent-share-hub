@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 
 import { SandboxView as SandboxView } from "./SandboxView";
-import { ADD_ITEMS, countsLine, type SandboxViewProps } from "./SandboxView";
+import { ADD_ITEMS, addEntries, countsLine, type SandboxViewProps } from "./SandboxView";
 
 function stubWidth(px: number) {
   vi.stubGlobal("matchMedia", (query: string) => {
@@ -95,10 +95,22 @@ describe("SandboxView frame", () => {
     expect(screen.queryByRole("group", { name: "Build view" })).toBeNull();
   });
 
-  it("lists the eight Add items in order, Code after Manual step; all eight are live (UI-P64 to UI-P70, CA-02 P7)", () => {
-    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Result"]);
-    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "code", "result"]);
+  it("lists the nine Add items in order, Code after Manual step and Check after Code; all nine are live (UI-P64 to UI-P70, CA-02 P7, CA-03 P5)", () => {
+    expect(ADD_ITEMS.map((item) => item.name)).toEqual(["Prompt", "Session", "Agent or team", "File", "Tool", "Manual step", "Code", "Check", "Result"]);
+    expect(ADD_ITEMS.filter((item) => item.ready).map((item) => item.key)).toEqual(["prompt", "session", "agent", "file", "tool", "manual", "code", "check", "result"]);
     expect(ADD_ITEMS.find((item) => item.key === "code")?.line).toBe("Lines of code you wrote or ran");
+    expect(ADD_ITEMS.find((item) => item.key === "check")).toEqual({ key: "check", name: "Check", line: "How it tested its own work", ready: true });
+  });
+
+  it("lists Check but disables it until the build has an agent, a team or code (CA-03 P5)", () => {
+    const onAddCheck = vi.fn();
+    const off = addEntries({ onAddCheck, checkable: false }).find((item) => item.key === "check");
+    expect(off).toMatchObject({ name: "Check", line: "Add an agent or code first", enabled: false });
+    const on = addEntries({ onAddCheck, checkable: true }).find((item) => item.key === "check");
+    expect(on).toMatchObject({ name: "Check", line: "How it tested its own work", enabled: true });
+    on?.onSelect?.();
+    expect(onAddCheck).toHaveBeenCalledTimes(1);
+    expect(addEntries({ checkable: true }).find((item) => item.key === "check")?.enabled).toBe(false);
   });
 
   it("opens the Card from its button with the six sections' fields", () => {
@@ -172,9 +184,11 @@ describe("the Build panel's head when an agent or a team is opened (UI-P69)", ()
   });
 });
 
-describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7)", () => {
+describe("the Add menu holds exactly 9 items, all enabled (UI-P70, CA-02 P7, CA-03 P5)", () => {
   it("enables every item once each has something to open", async () => {
     view({
+      onAddCheck: vi.fn(),
+      checkable: true,
       onAddFile: vi.fn(),
       onAddTool: vi.fn(),
       onAddResult: vi.fn(),
@@ -187,8 +201,16 @@ describe("the Add menu holds exactly 8 items, all enabled (UI-P70, CA-02 P7)", (
     });
     fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
     const items = await screen.findAllByRole("menuitem");
-    expect(items).toHaveLength(8);
-    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(8).fill(null));
+    expect(items).toHaveLength(9);
+    expect(items.map((item) => item.getAttribute("aria-disabled"))).toEqual(Array(9).fill(null));
+  });
+
+  it("lists Check disabled, saying why, when the build has nothing to check (CA-03 P5)", async () => {
+    view({ onAddCheck: vi.fn(), checkable: false });
+    fireEvent.keyDown(screen.getByTestId("sandbox-add"), { key: "Enter" });
+    const check = await screen.findByRole("menuitem", { name: /^Check/ });
+    expect(check.getAttribute("aria-disabled")).toBe("true");
+    expect(check.textContent).toBe("CheckAdd an agent or code first");
   });
 
   it("opens the code dialog from Add › Code, and leaves it disabled when nothing opens it", async () => {
@@ -331,6 +353,14 @@ describe("the post above the build", () => {
   it("puts a thread's waiting sentence in the status line", () => {
     viewAt("/compose/x", { threadNote: "Post 3 is over 1,000 characters", missing: [] });
     expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · Post 3 is over 1,000 characters");
+  });
+
+  it("adds what kind of build it is after the save state (CA-03 P8)", () => {
+    viewAt("/compose/x", { summary: "A team of 4 agents · checks its own work", missing: [] });
+    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · A team of 4 agents · checks its own work");
+    cleanup();
+    viewAt("/compose/x", { summary: undefined, missing: [] });
+    expect(screen.queryByTestId("sandbox-summary")).toBeNull();
   });
 });
 

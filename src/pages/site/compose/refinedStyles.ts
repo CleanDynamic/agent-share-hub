@@ -25,6 +25,20 @@ export const text = (px: number, weight: 400 | 500, color: string, extra: CSSPro
 
 export const tnum: CSSProperties = { fontVariantNumeric: "tabular-nums" };
 
+/**
+ * CA-03: the eyebrow, as the board draws it over a Details title ("Prompt 3"): Geist 10.5/500, `--label`, capitals by
+ * CSS, .06em. The one upper-case style on the composer: the Map's captions and dates spend it too.
+ */
+export const EYEBROW: CSSProperties = {
+  fontFamily: FIGTREE,
+  fontSize: 10.5,
+  fontWeight: 500,
+  lineHeight: "normal",
+  color: t.label,
+  letterSpacing: ".06em",
+  textTransform: "uppercase",
+};
+
 export const ellipsis: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
 /** The indent that lines text up under a step's title: the 24 tile and its 12 gap. */
@@ -120,11 +134,52 @@ export const menuSurface = (width?: number): CSSProperties => ({
   color: t.text,
 });
 
+/**
+ * CA-03: a dialog, on the window recipe: `--window`, 1px `--window-border`, radius 12, `--window-shadow`, padding 20,
+ * over the scrim. Its title is 15/500.
+ */
+export const windowStyle = (width: number): CSSProperties => ({
+  width,
+  maxWidth: "calc(100vw - 32px)",
+  maxHeight: "90dvh",
+  overflowY: "auto",
+  boxSizing: "border-box",
+  padding: 20,
+  borderRadius: 12,
+  background: t.window,
+  border: `1px solid ${t.windowBorder}`,
+  boxShadow: t.windowShadow,
+  color: t.text,
+  fontFamily: FIGTREE,
+});
+
+export const dialogTitle: CSSProperties = { ...text(15, 500, t.text), margin: "0 0 16px" };
+
+/** CA-03: a field you type in, on the well: 30 high (44 on a phone), 13 (16 on a phone, so iOS does not zoom). */
+export const typedField = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
+  ...wellField,
+  height: phone ? 44 : 30,
+  padding: "0 8px",
+  fontSize: phone ? 16 : 13,
+  ...extra,
+});
+
+/** CA-03: a well you type several lines in: the same, growing with its rows. */
+export const typedArea = (phone: boolean, extra: CSSProperties = {}): CSSProperties => ({
+  ...wellField,
+  ...(phone ? { minHeight: 44 } : null),
+  padding: "6px 8px",
+  fontSize: phone ? 16 : 13,
+  lineHeight: "20px",
+  resize: "vertical",
+  ...extra,
+});
+
 export const menuItem = (enabled: boolean, phone: boolean): CSSProperties => ({
   display: "flex",
   alignItems: "center",
   minHeight: phone ? 44 : 32,
-  padding: "0 10px",
+  padding: "0 12px",
   borderRadius: 6,
   ...text(13, 400, t.text),
   cursor: enabled ? "pointer" : "default",

@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
+import type { Step } from "@/lib/build/graph";
 import { layoutMap } from "@/lib/build/mapLayout";
 
 import { boxName, BuildMap, columnDate, type BuildMapProps } from "./BuildMap";
@@ -121,10 +122,11 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.getAllByTestId("map-lane").map((lane) => lane.textContent)).toContain("Team 3runs by itself");
     const box = screen.getByTestId("map-box-t3");
     expect(box.style.height).toBe("112px");
-    expect(box.textContent).toContain("Team 3");
-    expect(box.textContent).toContain("Copy team");
+    // CA-03: the box's name sits inside it, at the top: its number, then its title.
+    expect(within(box).getByTestId("map-container-head").textContent).toBe("3Copy team");
     expect(box.textContent).toContain("4 agents · 1 file");
-    expect(box.textContent).toContain("Runs once");
+    // CA-03 P3: When I asked is the normal case and says nothing.
+    expect(box.textContent).not.toMatch(/Runs once|When I asked/);
     expect(screen.getByRole("button", { name: "Open Team 3" })).toBeTruthy();
     expect(screen.getByText("Open shows what is inside the team")).toBeTruthy();
   });
@@ -159,6 +161,18 @@ describe("agents and teams (UI-P69)", () => {
     const props = teamMap({ opened: team() });
     fireEvent.keyDown(screen.getByTestId("opened-map"), { key: "Escape" });
     expect(props.onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels a column of agents that run side by side, once, above it (CA-03 P4)", () => {
+    const base = team();
+    const parallel = { ...base, runs: { how: "parallel" as const, count: 3 }, children: base.children.map((child) => ({ ...child, uses: child.id === base.children[0].id ? child.uses : [{ kind: "output" as const, node_id: base.children[0].id }] })) };
+    teamMap({ opened: parallel });
+    const label = screen.getByTestId("map-side-by-side");
+    expect(label.textContent).toBe("Side by side");
+    expect(screen.getAllByTestId("map-side-by-side")).toHaveLength(1);
+    cleanup();
+    teamMap({ opened: team() });
+    expect(screen.queryByTestId("map-side-by-side")).toBeNull();
   });
 
   it("opens an agent inside the opened team, which then replaces the view", () => {
@@ -261,13 +275,19 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
     expect(markup()).toMatch(/data-testid="map-result-label" style="[^"]*color:var\(--evidence\)/);
   });
 
-  it("titles the agent 13.5/500 under its 'Agent n' head", () => {
+  it("puts the agent's name inside its box at the top, 13/500 --text, and every other line 12 --text2 (CA-03)", () => {
     refinedMap();
     const agent = screen.getByTestId("map-box-a5");
-    expect(within(agent).getByText("Agent 5").style.fontSize).toBe("10.5px");
-    const title = within(agent).getByText("Order checker");
-    expect(title.style.fontSize).toBe("13.5px");
+    const title = within(agent).getByTestId("map-container-title");
+    expect(title.textContent).toBe("Order checker");
+    expect(title.style.fontSize).toBe("13px");
     expect(title.style.fontWeight).toBe("500");
+    expect(markup()).toMatch(/data-testid="map-container-title" style="[^"]*;color:var\(--text\)[;"]/);
+    // What it holds and how it runs: the two lines beside its inputs.
+    const lines = within(agent).getAllByText((_, element) => element?.tagName === "SPAN" && element.children.length === 0 && (element as HTMLElement).style.fontSize === "12px" && element.parentElement !== title.parentElement);
+    expect(lines.length).toBe(2);
+    for (const line of lines) expect(line.style.color === "" || line.style.color === "var(--text2)").toBe(true);
+    expect(markup()).not.toMatch(/data-testid="map-box-a5"[^>]*>(?:(?!<\/button>).)*color:var\(--label\)/s);
   });
 
   it("draws the legend's samples 1px in --text2", () => {
@@ -285,5 +305,39 @@ describe("code (CA-02 P7)", () => {
     expect(within(box).getByTestId("map-code-label").textContent).toBe("Code");
     expect(box.textContent).toContain("2 lines");
     expect(box.textContent).not.toContain("words");
+  });
+});
+
+describe("a check on the Map (CA-03 P5)", () => {
+  it("is a box labelled Check, titled by what it tested, wired to the step it uses", () => {
+    const base = sandboxMapProps("bakery");
+    const last = base.steps[base.steps.length - 1];
+    const check: Step = {
+      id: "k1",
+      kind: "check",
+      number: String(base.steps.length + 1),
+      title: null,
+      defaultTitle: `Check ${base.steps.length + 1}`,
+      text: "Places a test order",
+      words: 4,
+      model: null,
+      sessionId: null,
+      tool: null,
+      runs: null,
+      uses: [{ kind: "output", node_id: last.id }],
+      children: [],
+      check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 14, total: 14, runAt: null },
+    };
+    render(
+      <MemoryRouter>
+        <BuildMap {...base} steps={[...base.steps, check]} selectedId={null} onSelect={vi.fn()} onClear={vi.fn()} onConnect={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const box = screen.getByTestId("map-box-k1");
+    expect(within(box).getByTestId("map-check-label").textContent).toBe("Check");
+    expect(box.getAttribute("aria-label")).toBe(`Check ${check.number}, Places a test order, 1 input`);
+    expect(box.textContent).toContain("Passed 14 of 14 runs");
+    const layout = layoutMap([...base.steps, check], base.groups, base.files, base.tools, base.results, []);
+    expect(layout.wires.some((wire) => wire.from === last.id && wire.to === "k1")).toBe(true);
   });
 });

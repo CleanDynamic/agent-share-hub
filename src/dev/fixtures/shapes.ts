@@ -11,6 +11,10 @@
                  research, build and review, each feeding the one result.
    5. code       Two prompts in Cursor, two code steps (app.ts, the entrypoint, and schema.sql), a manual step
                  "Deployed to Vercel", and the result.
+   6. team-checks  CA-03 P9, a team that checks itself: a lead in Claude Code (Fable 5.1 plans, Sonnet 5.5 acts) and
+                 three agents for Research, Build and Review side by side, Review sent round again until the review
+                 has no changes, Build allowed Gmail and Google Sheets and remembering what it reviewed, a code step
+                 order-form.tsx, a check that passed 14 of 14, and one result.
 
    The views (`shapeListProps`, `shapeMapProps`, `shapeDetailsProps`) are derived the way SandboxPage derives them,
    so `/dev/kit/pages/sandbox?build=shape-<key>` draws them for a screenshot. */
@@ -26,9 +30,9 @@ import { dividers, type ListResult } from "@/pages/site/compose/buildListModel";
 import { pieces, resolveView } from "@/pages/site/compose/detailsView";
 import { sourceFiles } from "@/pages/site/compose/sourcesModel";
 
-export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code";
+export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code" | "team-checks";
 
-export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code"];
+export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code", "team-checks"];
 
 export interface Shape {
   key: ShapeKey;
@@ -171,12 +175,95 @@ const code: NodeTree[] = [
   node("c-r1", "result", { summary: "The booking app, live", url: "https://bookings.example.com", uses: [out("c-m1")] }, 6),
 ];
 
+/* ── 6. a team that checks itself (CA-03 P9) ── */
+
+const ORDER_FORM_TSX = `import { useState } from "react";
+
+export function OrderForm({ price }: { price: number }) {
+  const [loaves, setLoaves] = useState(1);
+  const total = Math.round(loaves * price * 100) / 100;
+  return <output>{total.toFixed(2)}</output>;
+}
+`;
+
+const checksLead = node(
+  "k-lead",
+  "agent_config",
+  {
+    system_prompt: "Plan the order page and hand research, build and review to the three agents at once.",
+    model: "Fable 5.1",
+    harness: "claude-code",
+    models: [
+      { model: "Fable 5.1", role: "main" },
+      { model: "Sonnet 5.5", role: "acts" },
+    ],
+  },
+  1,
+  { parent: "k-team", title: "Lead" },
+);
+
+const teamChecks: NodeTree[] = [
+  node("k-t1", "integration", { service: "Gmail" }, 1),
+  node("k-t2", "integration", { service: "Google Sheets" }, 2),
+  node("k-team", "team", { runs: { how: "parallel", count: 3 } }, 3, {
+    title: "Bakery order page team",
+    children: [
+      checksLead,
+      node("k-research", "agent_config", { system_prompt: "Find how three bakeries take orders online and what they ask for.", model: "Opus 5.5", harness: "claude-code", uses: [out("k-lead")] }, 2, { parent: "k-team", title: "Research" }),
+      node(
+        "k-build",
+        "agent_config",
+        {
+          system_prompt: "Build the order form from the plan, and send each order to the shop's sheet and inbox.",
+          model: "Sonnet 5.5",
+          harness: "claude-code",
+          tools: [{ tool_ref: "k-t1" }, { tool_ref: "k-t2" }],
+          memory: "which page sections it already reviewed",
+          uses: [out("k-lead")],
+        },
+        3,
+        { parent: "k-team", title: "Build" },
+      ),
+      node(
+        "k-review",
+        "agent_config",
+        {
+          system_prompt: "Review the order page against the plan and list what to change.",
+          model: "Haiku 5.5",
+          harness: "claude-code",
+          runs: { how: "until", detail: "the review has no changes · at most 3 times" },
+          uses: [out("k-lead")],
+        },
+        4,
+        { parent: "k-team", title: "Review" },
+      ),
+    ],
+  }),
+  node("k-c1", "code", { source: ORDER_FORM_TSX, language: "tsx", filename: "order-form.tsx", entrypoint: true, tool: "claude-code", model: "Sonnet 5.5", uses: [out("k-team")] }, 4),
+  node(
+    "k-check",
+    "eval_run",
+    {
+      tested: "Places a test order for 2 sourdough loaves",
+      passing: "The total shows £9.00",
+      on_fail: "The total showed £8.99. The Build agent fixed the rounding and ran it again.",
+      passed: 14,
+      total: 14,
+      run_at: "2026-10-12",
+      uses: [out("k-c1")],
+    },
+    5,
+  ),
+  node("k-r1", "result", { summary: "The bakery's order page, taking orders", uses: [out("k-c1")] }, 6),
+];
+
 export const SHAPES: Readonly<Record<ShapeKey, Shape>> = {
   alone: { key: "alone", title: "A fox postcard poem", tree: alone, selected: "a-p1" },
   retrieval: { key: "retrieval", title: "What the landlord must fix", tree: retrieval, selected: "r-p1" },
   agent: { key: "agent", title: "Issue triage from email", tree: agent, selected: "g-a1" },
   team: { key: "team", title: "A landing page by a team", tree: team, selected: "t-lead" },
   code: { key: "code", title: "A booking app", tree: code, selected: "c-c1" },
+  "team-checks": { key: "team-checks", title: "A bakery order page that checks itself", tree: teamChecks, selected: "k-build" },
 };
 
 /** Every node of a tree, parents first. */
@@ -216,6 +303,17 @@ export const SHAPE_NODE_TYPES: readonly NodeType[] = [
   { key: "result", label: "Result", category: "evidence", icon: "BarChart3", renderer: "evidence", copyable: false, is_active: true, sort: 1, schema: { fields: [{ key: "summary", label: "Summary", type: "text", required: true }, { key: "media_id", label: "Media", type: "string", format: "media_id" }] } },
   { key: "manual_step", label: "Manual step", category: "narrative", icon: "Hand", renderer: "narrative", copyable: false, is_active: true, sort: 6, schema: { fields: [{ key: "tool", label: "Tool", type: "string", required: true }, { key: "text", label: "What was done", type: "text", required: true }, { key: "media_id", label: "Picture", type: "string", format: "media_id" }] } },
   { key: "team", label: "Team", category: "configuration", icon: "Users", renderer: "configuration", copyable: true, is_active: true, sort: 6, schema: { fields: [] } },
+  {
+    key: "eval_run",
+    label: "Eval run",
+    category: "evidence",
+    icon: "Gauge",
+    renderer: "evidence",
+    copyable: false,
+    is_active: true,
+    sort: 3,
+    schema: { fields: [{ key: "harness", label: "Harness", type: "string" }, { key: "dataset_ref", label: "Dataset", type: "string", format: "node_id" }, { key: "score", label: "Score", type: "number" }, { key: "passed", label: "Passed", type: "number" }, { key: "total", label: "Total", type: "number" }, { key: "run_at", label: "Run at", type: "string", format: "timestamp" }] },
+  },
 ] as unknown as NodeType[];
 
 const noop = () => undefined;

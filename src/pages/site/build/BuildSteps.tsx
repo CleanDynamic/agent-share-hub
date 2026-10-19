@@ -42,6 +42,8 @@ import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
+import { OutsideWarning } from "../compose/OutsideWarning";
+import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
@@ -591,6 +593,18 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { view, phone, announce } = ctx;
   const ringed = ctx.ringed === step.id;
 
+  if (step.kind === "check" && step.check) {
+    /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
+       count or the word for one. */
+    return (
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={moduleStyle(ringed)}>
+        <Title entry={entry} right={null} />
+        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
+        <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+      </article>
+    );
+  }
+
   if (entry.manual) {
     /* Done by hand: nothing to copy. The tile's fill tells it from a prompt. */
     return (
@@ -636,7 +650,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
   const { view, phone, announce } = ctx;
   const instructions = isInstructions(entry);
-  const repeats = entry.runs && step.runs && step.runs.how !== "once";
+  const repeats = Boolean(entry.runs && step.runs && step.runs.how !== "once");
   const nested = entry.children.filter((child) => !isInstructions(child));
   const ringed = ctx.ringed === step.id;
   return (
@@ -658,10 +672,13 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <NumberTile wide>{step.number}</NumberTile>
           <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
           {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
-          {repeats ? <Chip>{entry.runs}</Chip> : null}
           <span style={{ flexGrow: 1 }} />
           <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
         </div>
+        {/* CA-03 P3: how it ran, one quiet line under it; "When I asked" shows nothing. */}
+        {repeats ? <DotLine testId="runs-line">{entry.runs}</DotLine> : null}
+        {/* CA-03 P7: an agent that reads content it doesn't control says so. */}
+        <OutsideWarning names={entry.outside} />
         <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
         <SaveLines files={entry.makes} indent={0} />
         {entry.uses.length > 0 ? (
@@ -710,11 +727,12 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
         <NumberTile>{step.number}</NumberTile>
         <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
-        {entry.runs ? <Chip>{entry.runs}</Chip> : null}
         <span style={{ flexGrow: 1 }} />
         <CopyButton label={team ? "Copy the team" : "Copy the agent"} what="" text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />
       </div>
       <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{line}</div>
+      {entry.runs ? <DotLine testId="runs-line" style={{ paddingLeft: INDENT }}>{entry.runs}</DotLine> : null}
+      <OutsideWarning names={entry.outside} style={{ marginLeft: INDENT }} />
       <SaveLines files={entry.makes} />
       <div style={{ marginLeft: INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {entry.children.map((child) => (

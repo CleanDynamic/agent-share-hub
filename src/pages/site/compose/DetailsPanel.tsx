@@ -8,39 +8,52 @@
    mark at 24 beside its two meta lines (12/18 `--text2`); the text in a well (13/21); Read all of it (secondary 26)
    and the word count; Uses and Goes into as hairline lists (a `larr` or `rarr` lead in `--label`, the title
    12.5/500, the meta 11.5 `--label`, a ghost 24 `x` to remove); Add an input as a 12.5/500 `--text2` text button with
-   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour. */
+   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour.
+
+   CA-03 P2: the eyebrow is the board's (Geist 10.5/500 `--label`, capitals, .06em: `EYEBROW`); every field label is
+   the composer's (13/500, 6 above its control); a label and its value read label over value (12 `--text2` over 13
+   `--text`, a hairline between pairs); How it runs is a list of choice rows; a session's prompts tick with the brand
+   checkbox; fields you type in are 30 high. 16 between groups, 6 between a label and its control, 8 in a row. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Pencil, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { Eyebrow } from "@/components/brand/Eyebrow";
+import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { Segmented } from "@/components/brand/Segmented";
 import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
-import { TextButton } from "./composeControls";
+import { ChoiceRows } from "./ChoiceRows";
+import { FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
   firstRows,
+  isClockTime,
   RUNS_CHOICES,
+  RUNS_COPY,
+  SCHEDULE_PRESETS,
+  scheduleDetail,
+  scheduleParts,
+  type RunsChoice,
   type GoesRow,
   type InputOption,
   type UseRow,
   type ChecklistRow,
   type MakesRow,
 } from "./detailsModel";
-import { ToolMark } from "./refinedPieces";
+import { OutsideWarning } from "./OutsideWarning";
+import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
-import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
-import { MADE_FILE_NAME_MAX, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
+import { AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -138,6 +151,8 @@ export interface AgentView extends InputsView {
   parent: string | null;
   /** CA-02 P5, an agent only: what it ran in, its models with their roles and the tools it can use. */
   setup?: AgentSetupValue;
+  /** CA-03 P7, an agent only: the tools it can use that read content it doesn't control. */
+  outside?: readonly string[];
 }
 
 export interface ResultView {
@@ -166,7 +181,17 @@ export interface CodeView extends InputsView {
   makes: readonly MakesRow[];
 }
 
-export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView;
+/** CA-03 P5: how the build checked its work. */
+export interface CheckView extends InputsView {
+  kind: "check";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  check: CheckFacts;
+}
+
+export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView;
 
 export interface DetailsHandlers {
   onRename: (id: string, title: string) => void;
@@ -187,7 +212,7 @@ export interface DetailsHandlers {
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
   /** CA-02 P5: change what an agent ran in, its models or its tools. Absent: they are shown, not edited. */
-  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[] }) => void;
+  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[]; memory?: string }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
@@ -268,12 +293,12 @@ function ShowMore({ hidden, phone, onClick }: { hidden: number; phone: boolean; 
   );
 }
 
-/** A row of key and value: a 90 label column, a hairline under it. */
+/** A label and its value (CA-03): the label 12 `--text2` over the value 13 `--text`, a hairline under the pair. */
 function KeyValue({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "10px 0", borderBottom: line }}>
-      <span style={quiet()}>{label}</span>
-      <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
+    <div data-testid="label-value" style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderBottom: line, minWidth: 0 }}>
+      <span style={text(12, 400, t.text2)}>{label}</span>
+      <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
     </div>
   );
 }
@@ -308,7 +333,7 @@ function CommitField({
     }
     if (event.key === "Escape") setDraft(value);
   };
-  const style: CSSProperties = { ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) };
+  const style: CSSProperties = multiline ? typedArea(phone, ring(state.focusVisible)) : typedField(phone, ring(state.focusVisible));
   const common = {
     "aria-label": label,
     value: draft,
@@ -318,13 +343,14 @@ function CommitField({
     onKeyDown,
     ...handlers,
   };
-  return multiline ? <textarea rows={2} {...common} style={{ ...style, resize: "vertical", lineHeight: "21px" }} /> : <input type="text" {...common} style={style} />;
+  return multiline ? <textarea rows={2} {...common} style={style} /> : <input type="text" {...common} style={style} />;
 }
 
+/** A field label over its control: the composer's `Field` look, the label wrapping the control it names. */
 function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={quiet()}>{label}</span>
+      <span style={FIELD_LABEL}>{label}</span>
       {children}
     </label>
   );
@@ -334,9 +360,9 @@ function FieldBlock({ label, children }: { label: string; children: ReactNode })
 function Head({ eyebrow, children }: { eyebrow: ReactNode; children?: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <Eyebrow as="p" style={{ margin: 0 }}>
+      <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap" }}>
         {eyebrow}
-      </Eyebrow>
+      </p>
       {children}
     </div>
   );
@@ -372,7 +398,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
             if (event.key === "Enter") finish(true);
             if (event.key === "Escape") finish(false);
           }}
-          style={{ ...wellField, padding: "4px 8px", fontSize: phone ? 16 : 16, fontWeight: 500, minHeight: phone ? 44 : 32 }}
+          style={typedField(phone, { fontSize: 16, fontWeight: 500 })}
         />
       ) : (
         <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
@@ -441,7 +467,7 @@ function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; opti
             </Menu.Item>
           ) : null}
           {menu.visible.map((option) => (
-            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 10px" }}>
+            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 12px" }}>
               <span style={text(12.5, 500, t.text)}>{option.label}</span>
               {option.sub ? <span style={quiet()}>{option.sub}</span> : null}
             </Menu.Item>
@@ -533,7 +559,7 @@ function MadeName({ row, phone, onRename }: { row: MakesRow; phone: boolean; onR
         if (event.key === "Escape") setDraft(row.name);
       }}
       {...handlers}
-      style={{ ...wellField, flexGrow: 1, minWidth: 0, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+      style={typedField(phone, { flexGrow: 1, minWidth: 0, ...ring(state.focusVisible) })}
     />
   );
 }
@@ -623,7 +649,7 @@ function MakesList({
             onBlur={() => {
               if (!draft.trim()) close();
             }}
-            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+            style={typedField(phone)}
           />
           {taken ? <span style={quiet()}>{MAKES_COPY.taken}</span> : null}
         </div>
@@ -709,7 +735,7 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
         /* CA-02 P8: the menu follows the prompt's tool, as Typed here's does. A group, not a label: a label would name
            the menu's button and the note's button after itself. */
         <div role="group" aria-label="Model" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={quiet()}>Model</span>
+          <span style={FIELD_LABEL}>Model</span>
           <div>
             <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => h.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool />
           </div>
@@ -752,7 +778,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
         <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
       </Head>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
-        <span style={quiet()}>Tool</span>
+        <span style={FIELD_LABEL}>Tool</span>
         <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} step="manual" onChange={(value) => commit({ tool: value ?? "" })} />
       </div>
       <FieldBlock label="What was done">
@@ -842,6 +868,21 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
   );
 }
 
+/* ── a check (CA-03 P5) ── */
+
+function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean } & DetailsHandlers) {
+  return (
+    <>
+      <Head eyebrow={`Check ${view.number}`}>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
+      </Head>
+      <CheckBlock check={view.check} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
 /* ── a session ── */
 
 function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
@@ -858,7 +899,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
       <div>
         <KeyValue label="Tool">{view.tool}</KeyValue>
         {view.pickTool && onSessionTool ? (
-          <div style={{ padding: "10px 0", borderBottom: line }}>
+          <div style={{ padding: "8px 0", borderBottom: line }}>
             <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} step="session" onChange={(value) => onSessionTool(view.key, value)} />
           </div>
         ) : null}
@@ -872,7 +913,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <div role="group" aria-label="Prompts in this session">
           {shown.visible.map((row) => (
             <label key={row.ordinal} style={{ ...listRow(phone ? 44 : 40), cursor: "pointer" }}>
-              <input type="checkbox" checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} style={{ margin: 0, width: 16, height: 16, flexShrink: 0 }} />
+              <Checkbox checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} />
               <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
             </label>
           ))}
@@ -924,91 +965,224 @@ function ToolDetails({ view, phone, onFields, onSelect }: { view: ToolView; phon
 
 /* ── an agent or a team ── */
 
+/** A small label over a control that is not one input (CA-03): the field label's look, in a group. */
+function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <span id={id} style={FIELD_LABEL}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * CA-03 P3: How did it run? Choice rows, the first three always shown and the other two under "More ways it ran"
+ * (shown straight away when one of them is chosen). A schedule offers three presets and a time, written into its
+ * detail as text ("Weekdays 07:30"); typing in the field still works and wins. "Again until" takes an optional "At
+ * most" count, written into the same detail ("until the review has no changes · at most 3 times"). Nothing new is
+ * stored: `payload.runs` keeps its shape.
+ */
 function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns">) {
   const how = view.runs?.how ?? "once";
   const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
   const name = `runs-${view.id}`;
   const field = choice.field;
+  const saved = view.runs?.detail ?? "";
   const [count, setCount] = useState(view.runs?.count ?? 2);
-  const [detail, setDetail] = useState(view.runs?.detail ?? "");
+  const [detail, setDetail] = useState(saved);
+  const [condition, setCondition] = useState(how === "until" ? untilParts(saved).condition : "");
+  const [atMost, setAtMost] = useState(how === "until" && untilParts(saved).atMost !== null ? String(untilParts(saved).atMost) : "");
+  const [time, setTime] = useState(how === "schedule" ? scheduleParts(saved).time : "");
+  const [moreAsked, setMoreAsked] = useState(false);
+  const showMore = moreAsked || choice.more;
+  const preset = how === "schedule" ? scheduleParts(detail).preset : null;
+  const ids = `${name}-field`;
 
-  const pick = (next: (typeof RUNS_CHOICES)[number]) => {
+  const pick = (next: RunsChoice) => {
+    setDetail("");
+    setCondition("");
+    setAtMost("");
+    setTime("");
     if (next.how === "once") onRuns(view.id, null);
     else if (next.how === "parallel") onRuns(view.id, { how: "parallel", count: view.runs?.count ?? count });
-    else onRuns(view.id, { how: next.how, detail: how === next.how ? detail : "" });
+    else onRuns(view.id, { how: next.how, detail: "" });
+  };
+
+  /** Write a detail when it changed. */
+  const write = (next: string) => {
+    if (next.trim() !== saved.trim()) onRuns(view.id, { how, detail: next.trim() });
+  };
+
+  const atMostNumber = (): number | null => {
+    const n = Number(atMost);
+    return atMost.trim() && Number.isFinite(n) ? Math.min(AT_MOST_MAX, Math.max(AT_MOST_MIN, Math.round(n))) : null;
+  };
+  const writeUntil = () => {
+    const n = atMostNumber();
+    setAtMost(n === null ? "" : String(n));
+    write(untilDetail(condition, n));
+  };
+  const room = UNTIL_DETAIL_MAX - (atMost.trim() ? ` · at most ${AT_MOST_MAX} times`.length : 0);
+
+  const enterBlurs = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (event.key === "Enter") (event.target as HTMLInputElement).blur();
   };
 
   return (
-    <Section title="How it runs">
-      <div role="radiogroup" aria-label="How it runs" style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>
-        {RUNS_CHOICES.map((entry) => {
-          const chosen = entry.how === how;
-          const label = entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label;
-          return (
-            <label
-              key={entry.how}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                minHeight: phone ? 44 : 32,
-                padding: "0 8px",
-                boxSizing: "border-box",
-                borderRadius: 6,
-                border: "1px solid transparent",
-                ...(chosen ? SELECTED : null),
-                cursor: "pointer",
-                ...text(12.5, chosen ? 500 : 400, chosen ? t.text : t.text2),
-              }}
-            >
-              <input type="radio" name={name} checked={chosen} onChange={() => pick(entry)} style={{ margin: 0 }} />
-              {label}
-            </label>
-          );
-        })}
-      </div>
-      {field?.kind === "count" ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8 }}>
-          <input
-            type="number"
-            aria-label={field.label}
-            min={field.min}
-            max={field.max}
-            step={1}
-            value={count}
-            onChange={(event) => setCount(Number(event.target.value))}
-            onBlur={() => {
-              const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
-              setCount(next);
-              if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
-            }}
-            style={{ ...wellField, width: 72, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
-          />
-          <span style={quiet()}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
-        </div>
-      ) : null}
-      {field?.kind === "text" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
-          <input
-            type="text"
-            aria-label={field.label}
-            maxLength={field.max}
-            placeholder={field.placeholder}
-            value={detail}
-            onChange={(event) => setDetail(event.target.value)}
-            onBlur={() => {
-              if (detail.trim() !== (view.runs?.detail ?? "")) onRuns(view.id, { how, detail: detail.trim() });
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-            }}
-            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
-          />
-          <span style={{ ...quiet(), ...tnum }}>
-            {detail.length} / {field.max}
+    <Section title={RUNS_COPY.title}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
+        <ChoiceRows
+          label={RUNS_COPY.title}
+          name={name}
+          phone={phone}
+          value={how}
+          onChange={(next) => pick(RUNS_CHOICES.find((entry) => entry.how === next) ?? RUNS_CHOICES[0])}
+          rows={RUNS_CHOICES.filter((entry) => !entry.more || showMore).map((entry) => ({
+            value: entry.how,
+            label: entry.how === "once" && view.parent ? `${entry.label} · ${RUNS_COPY.inTeam}` : entry.label,
+          }))}
+        />
+        {showMore ? null : (
+          <span>
+            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setMoreAsked(true)}>
+              {RUNS_COPY.more}
+            </TextButton>
           </span>
-        </div>
-      ) : null}
+        )}
+
+        {field?.kind === "count" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label={field.label}
+              value={Number.isFinite(count) ? String(count) : ""}
+              onChange={(event) => setCount(Number(event.target.value.replace(/[^0-9]/g, "")))}
+              onBlur={() => {
+                const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
+                setCount(next);
+                if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
+              }}
+              onKeyDown={enterBlurs}
+              style={typedField(phone, { width: 72, ...tnum })}
+            />
+            <span style={{ ...quiet(), ...tnum }}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
+          </div>
+        ) : null}
+
+        {how === "schedule" && field?.kind === "text" ? (
+          <div role="group" aria-labelledby={`${ids}-when`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <GroupLabel id={`${ids}-when`}>{field.label}</GroupLabel>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <Segmented
+                label={RUNS_COPY.presets}
+                semantics="radio"
+                size={phone ? 50 : 28}
+                value={preset ?? ""}
+                items={SCHEDULE_PRESETS.map((entry) => ({ value: entry, label: entry }))}
+                onChange={(next) => {
+                  const chosen = SCHEDULE_PRESETS.find((entry) => entry === next) ?? null;
+                  const written = scheduleDetail(chosen, time);
+                  setDetail(written);
+                  write(written);
+                }}
+              />
+              <input
+                type="text"
+                aria-label={RUNS_COPY.time}
+                placeholder={RUNS_COPY.timeHint}
+                maxLength={5}
+                value={time}
+                onChange={(event) => setTime(event.target.value.replace(/[^0-9:]/g, ""))}
+                onBlur={() => {
+                  if (time.trim() && !isClockTime(time)) return;
+                  const written = scheduleDetail(preset, time);
+                  if (!written) return;
+                  setDetail(written);
+                  write(written);
+                }}
+                onKeyDown={enterBlurs}
+                style={typedField(phone, { width: 72, ...tnum })}
+              />
+            </div>
+            <input
+              type="text"
+              aria-label={field.label}
+              maxLength={field.max}
+              placeholder={field.placeholder}
+              value={detail}
+              onChange={(event) => setDetail(event.target.value)}
+              onBlur={() => {
+                setTime(scheduleParts(detail).time);
+                write(detail);
+              }}
+              onKeyDown={enterBlurs}
+              style={typedField(phone)}
+            />
+            <span style={{ ...quiet(), ...tnum }}>
+              {detail.length} / {field.max}
+            </span>
+          </div>
+        ) : null}
+
+        {how === "event" && field?.kind === "text" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <FieldBlock label={field.label}>
+              <input
+                type="text"
+                aria-label={field.label}
+                maxLength={field.max}
+                placeholder={field.placeholder}
+                value={detail}
+                onChange={(event) => setDetail(event.target.value)}
+                onBlur={() => write(detail)}
+                onKeyDown={enterBlurs}
+                style={typedField(phone)}
+              />
+            </FieldBlock>
+            <span style={{ ...quiet(), ...tnum }}>
+              {detail.length} / {field.max}
+            </span>
+          </div>
+        ) : null}
+
+        {how === "until" && field?.kind === "text" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <FieldBlock label={field.label}>
+              <input
+                type="text"
+                aria-label={field.label}
+                maxLength={room}
+                placeholder={field.placeholder}
+                value={condition}
+                onChange={(event) => setCondition(event.target.value)}
+                onBlur={writeUntil}
+                onKeyDown={enterBlurs}
+                style={typedField(phone)}
+              />
+            </FieldBlock>
+            <span style={{ ...quiet(), ...tnum, marginTop: -2 }}>
+              {condition.length} / {room}
+            </span>
+            <div role="group" aria-labelledby={`${ids}-most`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <GroupLabel id={`${ids}-most`}>{RUNS_COPY.atMost}</GroupLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label={RUNS_COPY.atMost}
+                  maxLength={2}
+                  value={atMost}
+                  onChange={(event) => setAtMost(event.target.value.replace(/[^0-9]/g, ""))}
+                  onBlur={writeUntil}
+                  onKeyDown={enterBlurs}
+                  style={typedField(phone, { width: 56, ...tnum })}
+                />
+                <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </Section>
   );
 }
@@ -1019,7 +1193,8 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
   const [openModel, setOpenModel] = useState(0);
   const change = (next: AgentSetupValue) => {
     setValue(next);
-    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools });
+    // What it remembers goes only when it is there or was just cleared: an agent without one is written as before.
+    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools, ...(next.memory !== undefined ? { memory: next.memory } : null) });
   };
   const main = value.models[0]?.model ?? null;
   return (
@@ -1035,7 +1210,7 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
           if (own) change({ ...value, models: [{ model: own, role: "main" }, ...value.models.slice(1)] });
         }}
       />
-      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} labels="panel" />
+      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
     </>
   );
 }
@@ -1049,17 +1224,21 @@ function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
         <KeyValue key={index} label={index === 0 ? "Model" : `Model ${index + 1}`}>{`${row.model ?? ""} · ${row.role}`}</KeyValue>
       ))}
       {setup.tools.length ? <KeyValue label="Tools it can use">{setup.tools.join(" · ")}</KeyValue> : null}
+      {setup.memory ? <KeyValue label="What it remembers">{setup.memory}</KeyValue> : null}
     </div>
   );
 }
 
 function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; phone: boolean; inBuild?: readonly string[] } & DetailsHandlers) {
   const word = view.kind === "agent" ? "Agent" : "Team";
+  /* CA-03 P4: a team's first agent is its lead. */
+  const lead = view.kind === "agent" && view.parent !== null && view.number.endsWith(".1");
   return (
     <>
-      <Head eyebrow={`${word} ${view.number}`}>
+      <Head eyebrow={`${lead ? "Lead agent" : word} ${view.number}`}>
         <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
       </Head>
+      <OutsideWarning names={view.outside ?? []} />
       <FieldBlock label="Name">
         <CommitField key={`${view.id}:name`} label="Name" value={view.name ?? ""} placeholder={view.defaultName} max={80} phone={phone} onCommit={(value) => h.onRename(view.id, value)} />
       </FieldBlock>
@@ -1154,6 +1333,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
+      {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStepsFixture, type BuildStepsSample } from "@/dev/fixtures/buildSteps";
+import { SHAPES } from "@/dev/fixtures/shapes";
 import { buildCounts, readerSteps, whatYouNeed, type ReaderFile } from "@/lib/build/readerSteps";
 import type { NodeTree } from "@/lib/build/types";
 
@@ -34,7 +35,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("StepsList — a pasted chat given its tool (TF-13)", () => {
+describe("StepsList · a pasted chat given its tool (TF-13)", () => {
   const pasted = {
     id: "p1", build_id: "b", parent_id: null, position: 1, type: "prompt", title: null, note: null,
     payload: { text: "Compare two laptops." }, source_ref: { source: "transcript", session_id: "x", index: 0, import_session_id: "s9" },
@@ -134,6 +135,15 @@ describe("StepsList", () => {
     expect(result.querySelector('[data-ui="glyph"], svg')).not.toBeNull();
   });
 
+  it("says how each step ran as one quiet line with a 7px --label dot, and nothing for When I asked (CA-03 P3)", () => {
+    mountList(view("team"));
+    const lines = screen.getAllByTestId("runs-line").map((line) => line.textContent);
+    expect(lines).toEqual(["On a schedule · Mondays 07:00", "Several at the same time · 3", "Again until every claim has a source"]);
+    const dot = screen.getAllByTestId("runs-line")[0].firstElementChild as HTMLElement;
+    expect([dot.style.width, dot.style.height, dot.style.borderRadius]).toEqual(["7px", "7px", "50%"]);
+    expect(screen.getByTestId("build-steps").textContent).not.toMatch(/Runs once|When I asked/);
+  });
+
   it("a team reads Uses, never Paste in, and keeps Copy the team", () => {
     mountList(view("team"));
     expect(screen.getByText("The team these made")).toBeTruthy();
@@ -215,5 +225,14 @@ describe("NeedPanel", () => {
     expect(within(need).getByRole("link", { name: "Download CLAUDE.md" })).toBeTruthy();
     expect(within(need).getByText("4 sessions over 3 days")).toBeTruthy();
     expect(within(need).getByText("Copy for AI copies all 5 steps in order, with each new chat and paste-in written out.")).toBeTruthy();
+  });
+});
+
+describe("StepsList · an agent that reads content it doesn't control (CA-03 P7)", () => {
+  it("has the warning module under it, naming the tools", () => {
+    mountList(view("list", { steps: readerSteps(SHAPES.agent.tree, null) }));
+    const warning = screen.getByTestId("outside-warning");
+    expect(warning.textContent).toBe("This agent reads content it doesn't control.It can use Hermes Agent and Gmail. Before you run it, check what it's allowed to change.");
+    expect(warning.querySelector("svg")).toBeNull();
   });
 });

@@ -142,3 +142,11 @@ describe("projectFileOf", () => {
     expect(projectFileOf("workflow.json", ["n8n"])).toBeNull();
   });
 });
+
+describe("tools that read content their maker doesn't control (CA-03 P7)", () => {
+  it("are exactly these, so a change to the list is deliberate", () => {
+    expect(TOOLS.filter((tool) => tool.readsOutside).map((tool) => tool.id).sort()).toEqual(
+      ["gmail", "notion", "perplexity", "chatgpt", "gemini", "claude", "grok", "manus", "openclaw", "hermes-agent", "muse", "n8n", "zapier", "make", "gemini-notebook"].sort(),
+    );
+  });
+});

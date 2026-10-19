@@ -4,6 +4,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { ModelMark } from "@/components/brand/ModelMark";
+import { checkStatus, type CheckFacts } from "@/lib/build/graph";
 import { markFor } from "@/lib/models/marks";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -56,4 +57,55 @@ export function ToolMark({ tool, model, size }: { tool?: string | null; model?: 
 /** "Uses", "Goes into", "words": the quiet 11.5 `--label` words of a row. */
 export function Quiet({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return <span style={{ ...text(11.5, 400, t.label), ...style }}>{children}</span>;
+}
+
+/**
+ * CA-03: one quiet line led by a 7px dot: how a step ran ("On a schedule · Weekdays 07:30"), what an agent remembers,
+ * how a check went. State is a small mark, not a coloured card: the dot carries it, in `--label` for a plain fact,
+ * `--evidence` for a pass and `--cat-breakage` for a failure; the words are 12 `--text2`.
+ */
+export function DotLine({ dot = t.label, children, style, testId }: { dot?: string; children: ReactNode; style?: CSSProperties; testId?: string }) {
+  return (
+    <span data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, ...text(12, 400, t.text2), lineHeight: "18px", ...style }}>
+      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{children}</span>
+    </span>
+  );
+}
+
+/** CA-03: a label over its value, as the reference's lists draw them: 12 `--text2` over 13 `--text`, a hairline under. */
+export function LabelValue({ label, children, testId }: { label: string; children: ReactNode; testId?: string }) {
+  return (
+    <div data-testid={testId ?? "label-value"} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderBottom: `1px solid ${t.hairlineModule}`, minWidth: 0 }}>
+      <span style={text(12, 400, t.text2)}>{label}</span>
+      <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
+    </div>
+  );
+}
+
+/** CA-03 P5: the words a check is shown with, in the composer and on the build page. */
+export const CHECK_COPY = {
+  eyebrow: "Check · how it checked its work",
+  tested: "What it tested",
+  passing: "What counts as passing",
+  failed: "When it failed",
+} as const;
+
+/** CA-03 P5: a check's one status line (a 7px `--evidence` or `--cat-breakage` dot) and its three answers, label over value. */
+export function CheckBlock({ check, style }: { check: CheckFacts; style?: CSSProperties }) {
+  const status = checkStatus(check);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...style }}>
+      {status ? (
+        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage}>
+          <span style={tnum}>{status.line}</span>
+        </DotLine>
+      ) : null}
+      <div>
+        <LabelValue label={CHECK_COPY.tested}>{check.tested}</LabelValue>
+        {check.passing ? <LabelValue label={CHECK_COPY.passing}>{check.passing}</LabelValue> : null}
+        {check.onFail ? <LabelValue label={CHECK_COPY.failed}>{check.onFail}</LabelValue> : null}
+      </div>
+    </div>
+  );
 }

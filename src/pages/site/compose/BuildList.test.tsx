@@ -6,6 +6,8 @@ import { MemoryRouter } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { shapeListProps } from "@/dev/fixtures/shapes";
+import type { Step } from "@/lib/build/graph";
 import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 
 import type { BuildListProps } from "./BuildList";
@@ -417,16 +419,38 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.queryByTestId("agent-prompt-field")).toBeNull();
   });
 
-  it("draws a team's agents as inner cards headed 'Agent · {title} · {model}' with a runs chip", () => {
+  it("draws a team's agents as inner cards, its lead first and the rest each 'Agent · {name}', with how each ran under it (CA-03)", () => {
     const { list: props } = sandboxTeamFixture();
     list({ ...props });
     const card = screen.getByRole("group", { name: /^Team 3:/ });
     expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
     const inner = within(card).getAllByTestId("inner-card");
     expect(inner).toHaveLength(4);
-    expect(inner[1].textContent).toContain("Agent · Writer · Opus 5.5");
-    expect(inner[1].textContent).toContain("Runs several at once · 3");
-    expect(inner[2].textContent).toContain("Repeats until a condition is met · approved");
+    expect(inner[0].textContent).toMatch(/^Lead agent/);
+    expect(inner[1].textContent).toMatch(/^Agent · Writer/);
+    expect(within(inner[1]).getByTestId("runs-line").textContent).toBe("Several at the same time · 3");
+    expect(within(inner[2]).getByTestId("runs-line").textContent).toBe("Again until approved");
+    // When I asked is the normal case and shows nothing.
+    expect(within(inner[0]).queryByTestId("runs-line")).toBeNull();
+  });
+
+  it("names a team's lead by what it ran in, and puts the others under Handed work to (CA-03 P4)", () => {
+    list(shapeListProps("team"));
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · led by an agent in Claude Code");
+    const card = screen.getByRole("group", { name: /^Team 1:/ });
+    const inner = within(card).getAllByTestId("inner-card");
+    expect(inner.map((entry) => entry.firstElementChild?.textContent)).toEqual(["Lead agent", "Agent · Research", "Agent · Build", "Agent · Review"]);
+    const handed = within(card).getByTestId("handed-work-to");
+    expect(handed.textContent).toBe("Handed work to");
+    // It sits after the lead and before the first agent it handed work to.
+    expect(inner[0].compareDocumentPosition(handed) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(handed.compareDocumentPosition(inner[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("reads Team alone when the lead names no harness (CA-03 P4)", () => {
+    const { list: props } = sandboxTeamFixture();
+    list({ ...props });
+    expect(screen.getByTestId("container-eyebrow").textContent).toBe("Team · made in prompt 2");
   });
 
   it("adds an agent to a team from a ghost row", () => {
@@ -563,10 +587,14 @@ describe("the refined look (UI-P93)", () => {
     expect(markup()).toContain("height:28px;padding:0 4px 0 8px;box-sizing:border-box;border-radius:6px;border:1px dashed var(--line)");
   });
 
-  it("draws the agent's run rule as a tag and Add a prompt to this agent as a dashed, text-only row", () => {
+  it("draws how the agent ran as a quiet line with a 7px --label dot, and Add a prompt to this agent as a dashed, text-only row", () => {
     list();
     const agent = screen.getByRole("group", { name: /^Agent 5/ });
-    expect(within(agent).getByText("Repeats until a condition is met · every item has a price")).toBeTruthy();
+    const runs = within(agent).getByTestId("runs-line");
+    expect(runs.textContent).toBe("Again until every item has a price");
+    const dot = runs.firstElementChild as HTMLElement;
+    expect([dot.style.width, dot.style.height]).toEqual(["7px", "7px"]);
+    expect(markup()).toMatch(/width:7px;height:7px;border-radius:50%;background:var\(--label\)/);
     const add = within(agent).getByRole("button", { name: "Add a prompt to this agent" });
     expect(add.querySelector("svg")).toBeNull();
     expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);
@@ -629,5 +657,95 @@ describe("the refined look (UI-P93)", () => {
     const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
     fireEvent.drop(screen.getByRole("group", { name: /^Prompt 2:/ }), { dataTransfer: { types: ["Files"], files: [file] } });
     expect(onDropOnStep).not.toHaveBeenCalled();
+  });
+});
+
+describe("a check in the List (CA-03 P5)", () => {
+  const checkStep = (passed: number, total: number, runAt: string | null): Step => ({
+    id: "k1",
+    kind: "check",
+    number: "9",
+    title: null,
+    defaultTitle: "Check 9",
+    text: "Places a test order for 2 sourdough loaves",
+    words: 7,
+    model: null,
+    sessionId: null,
+    tool: null,
+    runs: null,
+    uses: [],
+    children: [],
+    check: { tested: "Places a test order for 2 sourdough loaves", passing: "The total shows £9.00", onFail: null, passed, total, runAt },
+  });
+  const withCheck = (step: Step) => {
+    const base = sandboxListProps("bakery");
+    return { ...base, steps: [...base.steps, step] };
+  };
+  /** jsdom drops a var() background, so the dot's colour is read from the server markup. */
+  const dotOf = (step: Step) =>
+    /data-testid="check-status"[^>]*><span aria-hidden="true" style="[^"]*background:var\(--([a-z-]+)\)/.exec(
+      renderToStaticMarkup(
+        <MemoryRouter>
+          <BuildList {...withCheck(step)} />
+        </MemoryRouter>,
+      ),
+    )?.[1];
+
+  it("reads 'Check · how it checked its work', what it tested, and a passing status with an --evidence dot", () => {
+    list(withCheck(checkStep(14, 14, "2026-10-12")));
+    const card = screen.getByRole("group", { name: /^Check 9/ });
+    expect(within(card).getByTestId("check-eyebrow").textContent).toBe("Check · how it checked its work");
+    expect(card.textContent).toContain("Places a test order for 2 sourdough loaves");
+    const status = within(card).getByTestId("check-status");
+    expect(status.textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
+    expect(dotOf(checkStep(14, 14, "2026-10-12"))).toBe("evidence");
+  });
+
+  it("marks a failing run with a --cat-breakage dot, and leaves out since without a last run", () => {
+    list(withCheck(checkStep(13, 14, null)));
+    const status = within(screen.getByRole("group", { name: /^Check 9/ })).getByTestId("check-status");
+    expect(status.textContent).toBe("Passed 13 of 14 runs");
+    expect(dotOf(checkStep(13, 14, null))).toBe("cat-breakage");
+  });
+});
+
+describe("what an agent remembers, in the List (CA-03 P6)", () => {
+  it("is one quiet line under the agent with a 7px --label dot: Remembers {memory}", () => {
+    const base = sandboxListProps("bakery");
+    const steps = base.steps.map((step) => (step.kind === "agent" ? { ...step, memory: "which dishes it featured" } : step));
+    list({ ...base, steps });
+    const agent = screen.getByRole("group", { name: /^Agent 5/ });
+    const line = within(agent).getByTestId("memory-line");
+    expect(line.textContent).toBe("Remembers which dishes it featured");
+    expect((line.firstElementChild as HTMLElement).style.width).toBe("7px");
+  });
+
+  it("says nothing for an agent that remembers nothing", () => {
+    list();
+    expect(screen.queryByTestId("memory-line")).toBeNull();
+  });
+});
+
+describe("an agent that reads content it doesn't control (CA-03 P7)", () => {
+  it("has one module under it: a --cat-breakage dot, the sentence and the tools it can use", () => {
+    list(shapeListProps("agent"));
+    const card = screen.getByRole("group", { name: /^Agent 1/ });
+    const warning = within(card).getByTestId("outside-warning");
+    expect(warning.textContent).toBe("This agent reads content it doesn't control.It can use Hermes Agent and Gmail. Before you run it, check what it's allowed to change.");
+    expect(warning.querySelector("svg")).toBeNull();
+    expect(
+      /data-testid="outside-warning"[^>]*><span aria-hidden="true" style="[^"]*background:var\(--cat-breakage\)/.test(
+        renderToStaticMarkup(
+          <MemoryRouter>
+            <BuildList {...{ ...shapeListProps("agent"), onAddPrompt: () => Promise.resolve(true) }} />
+          </MemoryRouter>,
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("says nothing for an agent with no such tool", () => {
+    list(shapeListProps("team"));
+    expect(screen.queryByTestId("outside-warning")).toBeNull();
   });
 });

@@ -7,7 +7,7 @@
 
 import { hexToRgba } from "../tokens";
 import { t } from "@/lib/theme/tokens";
-import { body as bodyType } from "@/lib/theme/type";
+import { body as bodyType, FIGTREE } from "@/lib/theme/type";
 import { MEDIA_WIDTH, MediaFigure } from "../MediaFigure";
 import {
   Caption,
@@ -53,7 +53,44 @@ const FIGURE_WIDTH = MEDIA_WIDTH.tree;
 /** Figures worth leading with, in the order they should read. */
 const STAT_KEYS = ["value", "score", "passed", "total", "duration"];
 
-/** renderer key: "evidence" — result, eval_run, screenshot, recording. */
+/** CA-03 P5: the three answers a check gives, as the build page labels them. */
+export const CHECK_RENDERER_COPY = {
+  tested: "What it tested",
+  passing: "What counts as passing",
+  failed: "When it failed",
+} as const;
+
+const CHECK_KEYS: readonly { key: string; label: string }[] = [
+  { key: "tested", label: CHECK_RENDERER_COPY.tested },
+  { key: "passing", label: CHECK_RENDERER_COPY.passing },
+  { key: "on_fail", label: CHECK_RENDERER_COPY.failed },
+];
+
+/**
+ * A check's answers (CA-03 P5), each present one as a label over its value, a hairline between them, as the
+ * reference's lists draw label and value. Nothing here speaks of the lamp, a reproduction or verification: a check is
+ * the maker's own evidence.
+ */
+function CheckAnswers({ payload }: { payload: ReturnType<typeof payloadOf> }) {
+  const present = CHECK_KEYS.filter(({ key }) => str(payload, key));
+  if (present.length === 0) return null;
+  return (
+    <div data-testid="check-answers" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      {present.map(({ key, label }, index) => (
+        <div
+          key={key}
+          data-testid={`check-answer-${key}`}
+          style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderTop: index === 0 ? "none" : `1px solid ${t.hairline}`, minWidth: 0 }}
+        >
+          <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{label}</span>
+          <span style={{ fontFamily: FIGTREE, fontSize: 13, color: t.text, overflowWrap: "anywhere" }}>{str(payload, key)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** renderer key: "evidence" · result, eval_run, screenshot, recording. */
 export function EvidenceRenderer(props: NodeProps) {
   const payload = payloadOf(props.node);
   const fields = fieldsOf(props.nodeType).filter((field) => isPresent(payload[field.key]));
@@ -107,6 +144,9 @@ export function EvidenceRenderer(props: NodeProps) {
     "metric",
     "media_id",
     "caption",
+    // CA-03 P5: a check's answers, drawn below; and the step it tested, which the build's steps already show.
+    ...CHECK_KEYS.map(({ key }) => key),
+    "uses",
     ...STAT_KEYS,
     ...referenceFields.map((field) => field.key),
     ...gridFields.map((field) => field.key),
@@ -158,6 +198,8 @@ export function EvidenceRenderer(props: NodeProps) {
                 : str(payload, field.key),
           }))}
         />
+
+        <CheckAnswers payload={payload} />
 
         <Rest node={props.node} nodeType={props.nodeType} handled={handled} />
       </Stack>
@@ -299,7 +341,7 @@ export function ComparisonTableRenderer(props: NodeProps) {
                             : {}),
                         }}
                       >
-                        {cells[columnIndex] || <span style={{ color: t.text2 }}>—</span>}
+                        {cells[columnIndex] || <span style={{ color: t.text2 }}>·</span>}
                       </td>
                     ))}
                   </tr>

@@ -8,6 +8,7 @@
 // READERS NEVER SEE A SUGGESTION: nothing here reads `dismissed` or calls
 // suggest.ts. Only the uses the maker accepted are published.
 
+import { readsOutsideContent } from "./outsideContent";
 import { modelLabel } from "@/lib/models/registry";
 import { projectFileOf, toolFor } from "@/lib/tools/registry";
 import { EVIDENCE_NODE_TYPES } from "./cover";
@@ -22,6 +23,7 @@ import {
   goesInto,
   madeByOf,
   runsLabel,
+  untilClause,
   sessionGroups,
   stepTitle,
   type SessionGroup,
@@ -111,12 +113,14 @@ export interface ReaderStep {
   uses: string[];
   /** "By hand in {tool}", its line and its picture. Nothing to copy. */
   manual: { headline: string; line: string; mediaId: string | null } | null;
-  /** "Runs on a schedule · Mondays 07:00", for an agent or a team. */
+  /** "On a schedule · Mondays 07:00", for an agent or a team; empty when it ran when asked (CA-03). */
   runs: string | null;
   /** "made in steps 1 and 2", from an agent's or a team's output uses. */
   madeIn: string | null;
   /** "runs by itself · last run 6 Oct, 07:00", when its session's date is known. */
   runsByItself: string | null;
+  /** CA-03 P7, an agent only: the tools it can use that read content it doesn't control. */
+  outside: string[];
   /** "3.3, until every claim has a source", then "then the result". Only for a step that repeats until a condition is met. */
   goesInto: string[];
   children: ReaderStep[];
@@ -248,6 +252,8 @@ interface Context {
   resultFrom: Set<string>;
   /** The registry ids of the tools the build uses: its sessions, its hand-typed and manual steps, and its tools. */
   toolIds: string[];
+  /** The placed tree, for what a step's references point at. */
+  tree: readonly NodeTree[];
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -337,6 +343,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     topSteps,
     resultFrom,
     toolIds,
+    tree,
   };
 }
 
@@ -438,7 +445,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   let loop: string[] = [];
   if (step.runs?.how === "until" && !isTop(step)) {
     const targets = goesInto(context.topSteps, step.id).filter((target) => (context.index.get(target.id) ?? -1) < here);
-    loop = targets.map((target) => (step.runs?.detail ? `${target.number}, until ${step.runs.detail}` : target.number));
+    loop = targets.map((target) => (step.runs?.detail ? `${target.number}, ${untilClause(step.runs.detail)}` : target.number));
     if (context.resultFrom.has(step.id)) loop.push("then the result");
   }
 
@@ -459,6 +466,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     runs: isContainer ? runsLabel(step.runs) : null,
     madeIn: isContainer && madeIn.length > 0 ? `made in ${stepList(madeIn, false)}` : null,
     runsByItself: lastRun ? `runs by itself · last run ${lastRun}` : null,
+    outside: readsOutsideContent(step, context.tree),
     goesInto: loop,
     children: step.children.map((child) => readerStep(child, context, container)),
   };
@@ -526,12 +534,13 @@ export function readerMap(tree: readonly NodeTree[], making: Making | null | und
 
 /* ── What you need ── */
 
+/** CA-03 P3: the same words the composer asks with. */
 const HOW_WORDS: Record<string, string> = {
-  once: "Runs once",
-  parallel: "Runs several at once",
-  until: "Repeats until a condition is met",
+  once: "When I asked",
+  parallel: "Several at the same time",
+  until: "Again until a condition was met",
   schedule: "On a schedule",
-  event: "When something happens",
+  event: "When something happened",
 };
 
 /** The agents a run starts: one for each, and several for one that runs several at once. */
@@ -619,7 +628,7 @@ export function whatYouNeed(
     .filter((entry) => entry.step.kind === "agent" || entry.step.kind === "team")
     .map((entry) => {
       const how = entry.step.runs;
-      const when = how?.how === "parallel" && how.count ? `${how.count} at once` : (how?.detail ?? null);
+      const when = how?.how === "parallel" && how.count ? `${how.count} at the same time` : (how?.detail ?? null);
       const n = agentsPerRun(entry.step);
       return {
         title: HOW_WORDS[how?.how ?? "once"],

@@ -6,6 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Runs } from "@/lib/build/graph";
 import { sandboxDetailsProps, type SandboxDetails } from "@/dev/fixtures/sandbox";
 
 import type { DetailsPanelProps, SessionView } from "./DetailsPanel";
@@ -149,27 +150,29 @@ describe("a session whose client names no tool (TF-13)", () => {
 describe("an agent", () => {
   it("is a real radio group of five, and the chosen one is checked", () => {
     panel("agent");
-    const group = screen.getByRole("radiogroup", { name: "How it runs" });
+    const group = screen.getByRole("radiogroup", { name: "How did it run?" });
     const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
+    // The fixture's agent repeats until a condition is met, so the two under More ways it ran show straight away.
     expect(radios).toHaveLength(5);
-    expect(radios.map((radio) => radio.checked)).toEqual([false, false, true, false, false]);
+    expect(radios.map((radio) => radio.checked)).toEqual([false, false, false, true, false]);
     expect((screen.getByLabelText("The condition") as HTMLInputElement).value).toBe("every item has a price");
     expect(screen.getByText("22 / 80")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "More ways it ran" })).toBeNull();
   });
 
-  it("sets Runs several at once to 3", () => {
+  it("sets Several at the same time to 2", () => {
     const props = panel("agent");
-    fireEvent.click(screen.getByRole("radio", { name: "Runs several at once" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Several at the same time" }));
     expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "parallel", count: 2 });
   });
 
-  it("shows the count as '3 at once' and hands it over when the field is left", () => {
+  it("shows the count as '3 at the same time' and hands it over when the field is left", () => {
     const base = sandboxDetailsProps("agent", "bakery");
     if (base.view?.kind !== "agent") throw new Error("fixture");
     const props = panel("agent", "bakery", { view: { ...base.view, runs: { how: "parallel", count: 2 } } });
     const field = screen.getByLabelText("How many");
     fireEvent.change(field, { target: { value: "3" } });
-    expect(screen.getByText("3 at once")).toBeTruthy();
+    expect(screen.getByText("3 at the same time")).toBeTruthy();
     fireEvent.blur(field);
     expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "parallel", count: 3 });
     fireEvent.change(field, { target: { value: "99" } });
@@ -177,10 +180,78 @@ describe("an agent", () => {
     expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "parallel", count: 20 });
   });
 
-  it("goes back to once with no field", () => {
+  it("goes back to When I asked with no field", () => {
     const props = panel("agent");
-    fireEvent.click(screen.getByRole("radio", { name: "Runs once" }));
+    fireEvent.click(screen.getByRole("radio", { name: "When I asked" }));
     expect(props.onRuns).toHaveBeenLastCalledWith("a5", null);
+  });
+
+  /* CA-03 P3 */
+  const withRuns = (runs: Runs | null) => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    return { ...base.view, runs };
+  };
+
+  it("shows three ways it ran, and the other two under More ways it ran", () => {
+    panel("agent", "bakery", { view: withRuns(null) });
+    const group = screen.getByRole("radiogroup", { name: "How did it run?" });
+    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual(["When I asked", "On a schedule", "When something happened"]);
+    fireEvent.click(screen.getByRole("button", { name: "More ways it ran" }));
+    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual([
+      "When I asked",
+      "On a schedule",
+      "When something happened",
+      "Again until a condition was met",
+      "Several at the same time",
+    ]);
+  });
+
+  it("writes a schedule's preset and time into its detail, as text", () => {
+    const props = panel("agent", "bakery", { view: withRuns({ how: "schedule" }) });
+    const time = screen.getByLabelText("Time");
+    fireEvent.change(time, { target: { value: "07:30" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Weekdays" }));
+    expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "schedule", detail: "Weekdays 07:30" });
+    expect((screen.getByRole("textbox", { name: "When" }) as HTMLInputElement).value).toBe("Weekdays 07:30");
+  });
+
+  it("lets what is typed in a schedule's field win over the presets", () => {
+    const props = panel("agent", "bakery", { view: withRuns({ how: "schedule", detail: "Weekdays 07:30" }) });
+    expect(screen.getByRole("radio", { name: "Weekdays" }).getAttribute("aria-checked")).toBe("true");
+    expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe("07:30");
+    const when = screen.getByRole("textbox", { name: "When" });
+    fireEvent.change(when, { target: { value: "the first Monday of the month" } });
+    fireEvent.blur(when);
+    expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "schedule", detail: "the first Monday of the month" });
+  });
+
+  it("reads an old saved schedule back unchanged, with no preset chosen", () => {
+    const props = panel("agent", "bakery", { view: withRuns({ how: "schedule", detail: "Mondays 07:00" }) });
+    expect((screen.getByRole("textbox", { name: "When" }) as HTMLInputElement).value).toBe("Mondays 07:00");
+    expect(screen.getAllByRole("radio", { name: /Every day|Weekdays|Weekly/ }).map((radio) => radio.getAttribute("aria-checked"))).toEqual(["false", "false", "false"]);
+    fireEvent.blur(screen.getByRole("textbox", { name: "When" }));
+    expect(props.onRuns).not.toHaveBeenCalled();
+  });
+
+  it("writes At most into an until's detail, and reads an old detail back unchanged", () => {
+    const props = panel("agent", "bakery", { view: withRuns({ how: "until", detail: "until the review has no changes" }) });
+    expect((screen.getByLabelText("The condition") as HTMLInputElement).value).toBe("until the review has no changes");
+    fireEvent.blur(screen.getByLabelText("The condition"));
+    expect(props.onRuns).not.toHaveBeenCalled();
+    const most = screen.getByRole("textbox", { name: "At most" });
+    fireEvent.change(most, { target: { value: "3" } });
+    fireEvent.blur(most);
+    expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "until", detail: "until the review has no changes · at most 3 times" });
+    fireEvent.change(most, { target: { value: "40" } });
+    fireEvent.blur(most);
+    expect(props.onRuns).toHaveBeenLastCalledWith("a5", { how: "until", detail: "until the review has no changes · at most 20 times" });
+  });
+
+  it("reads a saved At most back into its field", () => {
+    panel("agent", "bakery", { view: withRuns({ how: "until", detail: "until the review has no changes · at most 3 times" }) });
+    expect((screen.getByLabelText("The condition") as HTMLInputElement).value).toBe("until the review has no changes");
+    expect((screen.getByRole("textbox", { name: "At most" }) as HTMLInputElement).value).toBe("3");
   });
 
   it("renames and removes what is inside", () => {
@@ -201,17 +272,25 @@ describe("an agent inside a team (UI-P69)", () => {
     return { ...base.view, id: "t3b", number: "3.2", name: "Writer", defaultName: "Agent 3.2", runs: null, parent: "Team 3 · Copy team" };
   };
 
-  it("adds 'In: Team {n} · {title}' and words Runs once as 'each time work is sent to it'", () => {
+  it("adds 'In: Team {n} · {title}' and words When I asked as 'each time work is sent to it'", () => {
     panel("agent", "bakery", { view: inTeam() });
     expect(screen.getByText("In")).toBeTruthy();
     expect(screen.getByText("Team 3 · Copy team")).toBeTruthy();
-    expect(screen.getByRole("radio", { name: "Runs once · each time work is sent to it" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "When I asked · each time work is sent to it" })).toBeTruthy();
+  });
+
+  it("calls a team's first agent its Lead agent (CA-03 P4)", () => {
+    panel("agent", "bakery", { view: { ...inTeam(), id: "t3a", number: "3.1" } });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Lead agent 3.1");
+    cleanup();
+    panel("agent", "bakery", { view: inTeam() });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Agent 3.2");
   });
 
   it("leaves both out for an agent that is not in a team", () => {
     panel("agent");
     expect(screen.queryByText("In")).toBeNull();
-    expect(screen.getByRole("radio", { name: "Runs once" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "When I asked" })).toBeTruthy();
   });
 
   it("edits the instructions and hands them over when the field is left", () => {
@@ -507,7 +586,8 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
     panel("agent", "bakery", { view: withSetup(), onAgentSetup });
     expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Hermes Agent");
     expect(screen.getByRole("button", { name: "model Opus 5.5" })).toBeTruthy();
-    expect((screen.getByRole("combobox", { name: "Role of model 2" }) as HTMLSelectElement).value).toBe("other");
+    // CA-03: the role is a menu showing the role alone.
+    expect(screen.getByRole("button", { name: "Role of model 2" }).textContent).toBe("other");
     expect(screen.getByRole("button", { name: "model 2 Haiku 5.5" })).toBeTruthy();
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Gmail", "GitHub Copilot"]);
     fireEvent.click(screen.getByRole("button", { name: "Remove Gmail" }));
@@ -630,5 +710,58 @@ describe("a saved pair that breaks the rules (CA-02 P8)", () => {
     expect(screen.getByTestId("pair-note").textContent).toContain("Manus doesn't show which model it used.");
     fireEvent.click(screen.getByRole("button", { name: "Remove the model" }));
     expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Manus", harness: "Manus", tools: [] });
+  });
+});
+
+describe("a check (CA-03 P5)", () => {
+  const view = {
+    kind: "check" as const,
+    id: "k1",
+    number: "9",
+    title: null,
+    defaultTitle: "Check 9",
+    check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: "It showed £8.99.", passed: 14, total: 14, runAt: "2026-10-12" },
+    uses: [{ use: { kind: "output" as const, node_id: "c1" }, label: "Output of 3", sub: "order-form.tsx" }],
+    options: [],
+    goesInto: [],
+  };
+
+  it("shows its three answers label over value, its status and what it uses", () => {
+    panel("agent", "bakery", { view });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Check 9");
+    expect(screen.getByTestId("check-status").textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
+    expect(screen.getAllByTestId("label-value").map((row) => [row.children[0].textContent, row.children[1].textContent])).toEqual([
+      ["What it tested", "Places a test order"],
+      ["What counts as passing", "The total shows £9.00"],
+      ["When it failed", "It showed £8.99."],
+    ]);
+    expect(screen.getByText("Output of 3")).toBeTruthy();
+    expect(screen.getByTestId("details-panel").textContent).not.toMatch(/verified|reproduc/i);
+  });
+});
+
+describe("what an agent remembers, in Details (CA-03 P6)", () => {
+  it("hands it over with the setup when the field is left, and only then", () => {
+    const onAgentSetup = vi.fn();
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { view: { ...base.view, setup: { harness: null, models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
+    const field = screen.getByLabelText("What it remembers");
+    fireEvent.change(field, { target: { value: "the dishes it featured" } });
+    expect(onAgentSetup).not.toHaveBeenCalled();
+    fireEvent.blur(field);
+    expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Opus 5.5", harness: null, tools: [], memory: "the dishes it featured" });
+  });
+});
+
+describe("an agent that reads content it doesn't control, in Details (CA-03 P7)", () => {
+  it("has the warning under its head, naming the tools", () => {
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { view: { ...base.view, outside: ["Gmail", "Notion", "Zapier"] } });
+    expect(screen.getByTestId("outside-warning").textContent).toBe("This agent reads content it doesn't control.It can use Gmail, Notion and Zapier. Before you run it, check what it's allowed to change.");
+    cleanup();
+    panel("agent", "bakery");
+    expect(screen.queryByTestId("outside-warning")).toBeNull();
   });
 });

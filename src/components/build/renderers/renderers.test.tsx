@@ -6,7 +6,7 @@
 // the comparison_table node, which the demo seed does not contain — its
 // payload is written to the schema the migration declares.
 
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { cleanup as cleanupAll, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
@@ -988,5 +988,60 @@ describe("an agent that names its harness, its models and its tools (CA-02 P5)",
     const { container } = draw({ system_prompt: "Triage my inbox", model: "Opus 5.5" });
     expect(container.textContent).not.toContain("Runs in");
     expect(container.textContent).not.toContain("Models");
+  });
+});
+
+// --- a check (CA-03 P5) ------------------------------------------------------
+
+describe("a check, drawn by the evidence renderer", () => {
+  const evalRun = makeType({
+    key: "eval_run",
+    renderer: "evidence",
+    category: "evidence",
+    schema: {
+      fields: [
+        { key: "harness", label: "Harness", type: "string" },
+        { key: "passed", label: "Passed", type: "number" },
+        { key: "total", label: "Total", type: "number" },
+        { key: "run_at", label: "Run at", type: "string", format: "timestamp" },
+      ],
+    },
+  } as Partial<NodeType> & { key: string; renderer: string });
+
+  it("draws what it tested, what counts as passing and when it failed under the existing fields, label over value", () => {
+    const node = makeNode({
+      type: "eval_run",
+      payload: { tested: "Places a test order", passing: "The total shows £9.00", on_fail: "It showed £8.99.", passed: 14, total: 14, run_at: "2026-10-12", uses: [{ kind: "output", node_id: "c1" }] },
+    });
+    const { container } = render(<NodeCard node={node} nodeType={evalRun} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
+    const answers = screen.getByTestId("check-answers");
+    expect(within(answers).getByTestId("check-answer-tested").textContent).toBe("What it testedPlaces a test order");
+    expect(within(answers).getByTestId("check-answer-passing").textContent).toBe("What counts as passingThe total shows £9.00");
+    expect(within(answers).getByTestId("check-answer-on_fail").textContent).toBe("When it failedIt showed £8.99.");
+    // Under the existing fields: the passed figure comes first.
+    expect(container.textContent?.indexOf("14/14")).toBeLessThan(container.textContent?.indexOf("What it tested") ?? 0);
+    // Each key once: the answers are not drawn again among the rest.
+    expect(container.textContent?.split("Places a test order").length).toBe(2);
+    expect(container.textContent).not.toMatch(/verified|reproduc|lamp/i);
+    expect(container.querySelector('[data-ui="plaque"]')).toBeNull();
+  });
+
+  it("draws only the answers it has, and none for an eval run saved before CA-03", () => {
+    render(<NodeCard node={makeNode({ type: "eval_run", payload: { tested: "Loads", passing: "No errors", passed: 1, total: 1 } })} nodeType={evalRun} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
+    expect(screen.queryByTestId("check-answer-on_fail")).toBeNull();
+    expect(screen.getByTestId("check-answer-passing")).toBeTruthy();
+    cleanupAll();
+    render(<NodeCard node={makeNode({ type: "eval_run", payload: { harness: "pytest", passed: 3, total: 4 } })} nodeType={evalRun} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
+    expect(screen.queryByTestId("check-answers")).toBeNull();
+  });
+});
+
+describe("what an agent remembers, on the build page (CA-03 P6)", () => {
+  it("labels the existing memory field What it remembers", () => {
+    const type = makeType({ key: "agent_config", renderer: "agent_config", category: "configuration", schema: { fields: [{ key: "memory", label: "Memory", type: "text" }] } } as Partial<NodeType> & { key: string; renderer: string });
+    const node = makeNode({ type: "agent_config", payload: { system_prompt: "x", model: "Opus 5.5", memory: "which page sections it already reviewed" } });
+    const { container } = render(<NodeCard node={node} nodeType={type} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
+    expect(container.textContent).toContain("What it rememberswhich page sections it already reviewed");
+    expect(container.textContent).not.toMatch(/Memory/);
   });
 });

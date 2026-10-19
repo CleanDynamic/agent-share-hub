@@ -25,16 +25,23 @@ function open(over: Partial<AddAgentDialogProps> = {}) {
   return props;
 }
 
+/** CA-03: a row's role is a menu: open it and read its choices. The menu stays open for a pick. */
+function roleChoices(name: string): (string | null)[] {
+  fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" });
+  return screen.getAllByRole("menuitemradio").map((item) => item.textContent);
+}
+
 describe("the Add dialog", () => {
   it("is a dialog with a real radio group: one agent, or a team of agents, one agent chosen to start", () => {
     open();
     expect(screen.getByRole("dialog", { name: AGENT_DIALOG_COPY.title })).toBeTruthy();
     const group = screen.getByRole("radiogroup", { name: "What to add" });
     expect(group).toBeTruthy();
-    const one = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) }) as HTMLInputElement;
-    const team = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) }) as HTMLInputElement;
-    expect(one.checked).toBe(true);
-    expect(team.checked).toBe(false);
+    // CA-03: the segmented radio group, as the List and Map switch is drawn: its radios say which is chosen.
+    const one = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.one) });
+    const team = screen.getByRole("radio", { name: new RegExp(AGENT_DIALOG_COPY.team) });
+    expect(one.getAttribute("aria-checked")).toBe("true");
+    expect(team.getAttribute("aria-checked")).toBe("false");
   });
 
   it("is 420 wide", () => {
@@ -153,9 +160,9 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
     openModel(`model ${DEFAULT_AGENT_MODEL}`);
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Fable 5.1" }));
     fireEvent.click(screen.getByRole("button", { name: "Add a model" }));
-    const role = screen.getByRole("combobox", { name: "Role of model 2" }) as HTMLSelectElement;
-    expect([...role.options].map((option) => option.value)).toEqual(["plans", "acts", "other"]);
-    fireEvent.change(role, { target: { value: "acts" } });
+    expect(roleChoices("Role of model 2")).toEqual(["plans", "acts", "other"]);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "acts" }));
+    expect(screen.getByRole("button", { name: "Role of model 2" }).textContent).toBe("acts");
     expect((screen.getByRole("button", { name: "Add" }) as HTMLButtonElement).disabled).toBe(true);
     openModel("model 2");
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Sonnet 5.5" }));
@@ -182,8 +189,7 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
   it("offers the default roles without a harness", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Add a model" }));
-    const role = screen.getByRole("combobox", { name: "Role of model 2" }) as HTMLSelectElement;
-    expect([...role.options].map((option) => option.value)).toEqual(["plans", "acts", "reviews", "other"]);
+    expect(roleChoices("Role of model 2")).toEqual(["plans", "acts", "reviews", "other"]);
   });
 
   it("keeps one row for a harness that names tiers, and clears a model that is not one", () => {
@@ -224,5 +230,32 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
     expect(screen.getByText("Manus picks its own model")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ model: "Manus", harness: "manus" }));
+  });
+});
+
+describe("what it remembers (CA-03 P6)", () => {
+  it("sits under Tools it can use: optional, one row growing to three, up to 200 characters", () => {
+    open();
+    const field = screen.getByLabelText("What it remembers") as HTMLTextAreaElement;
+    expect(field.placeholder).toBe("Which dishes it featured, in a notes file it keeps");
+    expect(field.maxLength).toBe(200);
+    expect(field.rows).toBe(1);
+    fireEvent.change(field, { target: { value: "x".repeat(120) } });
+    expect(field.rows).toBe(3);
+    const tools = screen.getByRole("group", { name: "Tools it can use" });
+    expect(tools.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is saved with the agent when it says something, and left out when it is empty", () => {
+    const props = open();
+    const field = screen.getByLabelText("What it remembers");
+    fireEvent.change(field, { target: { value: "  which page sections it already reviewed " } });
+    fireEvent.blur(field);
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ memory: "which page sections it already reviewed" }));
+    cleanup();
+    const again = open();
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(vi.mocked(again.onAdd).mock.calls[0][0]).not.toHaveProperty("memory");
   });
 });

@@ -62,6 +62,7 @@ import type {
   CompletenessView,
 } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
+import { buildSummary } from "@/lib/build/buildSummary";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
@@ -119,15 +120,15 @@ export function heroRow(tier: WidthTier): CSSProperties {
     display: "grid",
     gridTemplateColumns: tier === "stacked" ? "minmax(0, 1fr)" : `minmax(0, 1fr) ${sideTrack(420)}`,
     gridAutoRows: tier === "stacked" ? `minmax(${HERO_ROW}px, auto)` : undefined,
-    gap: 9,
+    gap: 8,
     flexShrink: 0,
   };
 }
 
 export function bottomRow(tier: WidthTier): CSSProperties {
   return tier === "full"
-    ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 9, flexGrow: 1, minHeight: 0 }
-    : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 9, flexGrow: 1 };
+    ? { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr) 280px", gap: 8, flexGrow: 1, minHeight: 0 }
+    : { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gridAutoRows: `minmax(${BOTTOM_ROW}px, auto)`, gap: 8, flexGrow: 1 };
 }
 
 /** The timeline's cell: its own track at 1280 and up, the row's full width below. */
@@ -196,7 +197,7 @@ export function RunFailed({ failure }: { failure: NonNullable<BuildProofView["wr
       panel="Reproduction"
       onRetry={failure.onRetry}
       error={failure.error}
-      style={{ marginTop: 9 }}
+      style={{ marginTop: 8 }}
       data-testid="build-run-error"
     />
   );
@@ -236,7 +237,7 @@ export function PartRow({
         boxSizing: "content-box",
         /* A part is a control: 46 drawn on a phone, held at the 44px touch floor; 40 → 33 above it. */
         ...(phone ? { minHeight: 44 } : { height: 33 }),
-        padding: "0 7px",
+        padding: "0 8px",
         borderRadius: r.control,
         /* Longhands: a shorthand holding a var() is one declaration some engines drop whole. */
         borderWidth: part.gap ? 1.5 : 0,
@@ -250,7 +251,7 @@ export function PartRow({
       }}
     >
       <span style={{ ...display(20), color: t.label }}>{String(part.number).padStart(2, "0")}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: phone ? 6 : 5, minWidth: 0 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: phone ? 6 : 4, minWidth: 0 }}>
         <span
           aria-hidden="true"
           style={{
@@ -311,7 +312,7 @@ export function AnatomyDialog({
             maxHeight: "88dvh",
             overflowY: "auto",
             boxSizing: "border-box",
-            padding: "12px 13px 14px",
+            padding: "12px 12px 16px",
             borderRadius: r.panel,
             background: t.solid,
             border: `1px solid ${t.glassBorder}`,
@@ -320,7 +321,7 @@ export function AnatomyDialog({
             fontFamily: FIGTREE,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <Dialog.Title style={{ margin: 0, fontFamily: FIGTREE, fontSize: 15, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
             <Dialog.Close asChild>
               <IconButton icon={X} label="Close" size={34} />
@@ -377,8 +378,8 @@ export function AnatomyPanel({ anatomy, phone, onSelect }: { anatomy: BuildAnato
                  negative margins keep the line where the reference draws it (7
                  under the list and 7 in since the density pass). The padding is
                  the touch target and does not take the table (UI-P59). */
-              margin: "-8px 0 -15px",
-              padding: "15px 0 15px 7px",
+              margin: "-8px 0 -16px",
+              padding: "16px 0 16px 8px",
               border: 0,
               background: "transparent",
               fontFamily: FIGTREE,
@@ -450,7 +451,7 @@ export function TimelinePanel({ timeline, phone, onPlay }: { timeline: BuildTime
           subtitle={timelineSubtitle(duration, events.length)}
           right={<IconButton icon={Play} label="Play the build" size={phone ? 38 : 34} onClick={onPlay} disabled={events.length === 0} />}
         />
-        <div style={{ marginTop: 9 }}>
+        <div style={{ marginTop: 8 }}>
           {events.length > 0 ? (
             <Timeline events={events} size={phone ? "phone" : "desktop"} label="Kept steps" />
           ) : (
@@ -472,7 +473,7 @@ export function ProofSkeleton({ phone }: { phone: boolean }) {
   const orb = phone ? 118 : 128;
   return (
     <Panel surface="glass" padding={phone ? "16px" : "16px 18px"} style={phone ? { minHeight: 440 } : { height: "100%" }}>
-      <div style={{ display: "flex", gap: phone ? 10 : 12, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <Skeleton width={orb} height={orb} radius="50%" />
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flexGrow: 1, minWidth: 0 }}>
           <Skeleton width={90} height={11} />
@@ -482,8 +483,8 @@ export function ProofSkeleton({ phone }: { phone: boolean }) {
         </div>
       </div>
       {/* The phone's action: drawn 48, rendered 44 (the touch floor). */}
-      {phone ? <Skeleton height={44} radius={r.control} style={{ marginTop: 10 }} /> : null}
-      <Skeleton height={phone ? 161 : 107} radius={r.control} style={{ marginTop: 10 }} />
+      {phone ? <Skeleton height={44} radius={r.control} style={{ marginTop: 8 }} /> : null}
+      <Skeleton height={phone ? 161 : 107} radius={r.control} style={{ marginTop: 8 }} />
     </Panel>
   );
 }
@@ -496,7 +497,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
     Array.from({ length: count }, (_, i) => <Skeleton key={i} height={height} radius={r.control} style={i ? { marginTop: gap } : undefined} />);
   if (phone) {
     return (
-      <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+      <LoadingRegion what="the build" announce data-testid="build-loading" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Skeleton height={382} radius={18} />
         <Skeleton height={76} radius={18} />
         <ProofSkeleton phone />
@@ -505,12 +506,12 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
           <PanelHead headingLevel={2} title="Anatomy" subtitle={"\u00a0"} />
           <div style={{ marginTop: 6 }}>{rows(46, MOCK_ROWS, 2)}</div>
           {/* "Show n more parts" */}
-          <Skeleton width={120} height={13} style={{ margin: "10px 0 0 7px" }} />
+          <Skeleton width={120} height={13} style={{ margin: "8px 0 0 8px" }} />
         </Panel>
         <Skeleton height={317} radius={r.panel} />
         <Panel surface="glass" padding="14px 16px">
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 9 }}>{rows(43, 4, 0)}</div>
+          <div style={{ marginTop: 8 }}>{rows(43, 4, 0)}</div>
         </Panel>
       </LoadingRegion>
     );
@@ -521,7 +522,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
       what="the build"
       announce
       data-testid="build-loading"
-      style={{ display: "flex", flexDirection: "column", gap: 9, lineHeight: "normal", ...boardHeight(fit) }}
+      style={{ display: "flex", flexDirection: "column", gap: 8, lineHeight: "normal", ...boardHeight(fit) }}
     >
       <div style={{ ...heroRow(tier), ...(board ? { height: HERO_ROW } : { minHeight: HERO_ROW }) }}>
         <div style={{ minHeight: 0 }}>
@@ -539,7 +540,7 @@ export function BuildViewSkeleton({ fit = "content" }: { fit?: PageFit }) {
         <Skeleton height="100%" radius={r.panel} />
         <Panel surface="glass" padding="14px 16px" style={{ height: "100%", ...dropped(tier) }}>
           <PanelHead headingLevel={2} title="Watch it get built" subtitle={"\u00a0"} />
-          <div style={{ marginTop: 9 }}>{rows(41, 5, 0)}</div>
+          <div style={{ marginTop: 8 }}>{rows(41, 5, 0)}</div>
         </Panel>
       </div>
     </LoadingRegion>
@@ -560,7 +561,7 @@ export function BuildViewFailed({ onRetry, error }: { onRetry: () => void; error
 export function BuildViewNotice({ line, detail, action }: { line: string; detail?: string; action: ReactNode }) {
   return (
     <Panel padding="24px 24px">
-      <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
+      <div data-testid="build-notice" role="status" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
         <h1 style={{ ...display(30), margin: 0, color: t.text }}>{line}</h1>
         {detail ? <p style={{ margin: 0, fontFamily: FIGTREE, fontSize: 13, lineHeight: 1.55, color: t.text2, maxWidth: "68ch" }}>{detail}</p> : null}
         {action}
@@ -794,6 +795,7 @@ function Hero({
         </span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
           <h1 style={{ ...text(20, 500, t.text), margin: 0, letterSpacing: "-0.015em", overflowWrap: "anywhere" }}>{hero.title}</h1>
+          <SummaryLine summary={hero.summary} />
           {hero.outcome ? (
             <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p>
           ) : null}
@@ -890,6 +892,7 @@ function ThreadHero({
               </span>
             ) : null}
           </div>
+          <SummaryLine summary={hero.summary} />
           {hero.outcome ? <p style={{ ...text(13, 400, t.text2), margin: 0, maxWidth: 680, lineHeight: "20px" }}>{hero.outcome}</p> : null}
           {/* An original build's author row carries the credit; a rebuild keeps its source line. */}
           {rebuilt ? <p style={{ ...text(12, 400, t.label), margin: 0 }}><Credit credit={hero.credit} /></p> : null}
@@ -1250,7 +1253,23 @@ function PhoneBuild(props: BuildViewProps) {
 
 export function BuildView(props: BuildViewProps) {
   const phone = useIsPhone();
-  return phone ? <PhoneBuild {...props} /> : <DesktopBuild {...props} />;
+  // CA-03 P8: the line under the title, from what the build holds.
+  const summary = props.hero.summary ?? (props.steps ? buildSummary(props.steps.steps.map((entry) => entry.step)) : "");
+  const view = { ...props, hero: { ...props.hero, summary } };
+  return phone ? <PhoneBuild {...view} /> : <DesktopBuild {...view} />;
+}
+
+/**
+ * CA-03 P8: what kind of build it is, directly under the title: 12.5 `--text2`, one line, cut with an ellipsis at the
+ * column's width and said in full in its `title`. Nothing when the build holds nothing but a title.
+ */
+function SummaryLine({ summary }: { summary: string | undefined }) {
+  if (!summary) return null;
+  return (
+    <p data-testid="build-summary" title={summary} style={{ ...text(12.5, 400, t.text2), margin: 0, minWidth: 0, maxWidth: "100%", ...ellipsis }}>
+      {summary}
+    </p>
+  );
 }
 
 export default BuildView;

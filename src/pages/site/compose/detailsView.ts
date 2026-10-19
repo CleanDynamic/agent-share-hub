@@ -34,7 +34,8 @@ import {
   type ChecklistRow,
   type NamedPiece,
 } from "./detailsModel";
-import type { AgentView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
+import { readsOutsideContent } from "@/lib/build/outsideContent";
+import type { AgentView, CheckView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
 
@@ -157,6 +158,21 @@ function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>):
   };
 }
 
+/** CA-03 P5: a check: what it tested, what counts as passing, when it failed, and its runs. */
+function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CheckView {
+  return {
+    kind: "check",
+    id: step.id,
+    number: step.number,
+    title: step.title,
+    defaultTitle: step.defaultTitle,
+    check: step.check ?? { tested: step.text, passing: "", onFail: null, passed: null, total: null, runAt: null },
+    uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
+    options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
+    goesInto: goesIntoRows(ctx.steps, step.id, ctx.intoResult),
+  };
+}
+
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
@@ -179,7 +195,10 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
             harness: step.harness ?? null,
             models: step.models && step.models.length > 1 ? step.models.map((row) => ({ ...row })) : [{ model: step.model, role: "main" }],
             tools: (step.toolRefs ?? []).map((ref) => all.byId[ref]?.name).filter((name): name is string => Boolean(name)),
+            ...(step.memory ? { memory: step.memory } : null),
           },
+          // CA-03 P7: the tools it can use that read content it doesn't control.
+          outside: readsOutsideContent(step, ctx.tree),
         }
       : null),
     // An agent's instructions are its own row; only what can be taken out is listed.
@@ -283,6 +302,7 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);
     if (step.kind === "code") return codeView(step, ctx, all);
+    if (step.kind === "check") return checkView(step, ctx, all);
     return manualView(step, ctx, all);
   }
   const source = ctx.sources.find((candidate) => candidate.key === id);

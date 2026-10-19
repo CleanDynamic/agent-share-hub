@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildFixture } from "@/dev/fixtures/build";
 import { buildStepsFixture } from "@/dev/fixtures/buildSteps";
+import type { NodeTree } from "@/lib/build/types";
 import BuildDemo from "@/pages/dev/BuildDemo";
 import BuildStepsDemo from "@/pages/dev/BuildStepsDemo";
 
@@ -179,5 +180,96 @@ describe("BuildView on a phone", () => {
     expect(within(screen.getByTestId("build-hero")).queryByTestId("build-action-dock")).toBeNull();
     expect(screen.getByRole("tablist", { name: "Sections of this build" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "How to look at the build" })).toBeNull();
+  });
+});
+
+describe("a check on the build page (CA-03 P5)", () => {
+  const check = {
+    id: "k1",
+    build_id: "b",
+    parent_id: null,
+    position: 99,
+    type: "eval_run",
+    title: null,
+    note: null,
+    payload: { tested: "Places a test order for 2 sourdough loaves", passing: "The total shows £9.00", on_fail: "The total showed £8.99.", passed: 13, total: 14, run_at: "2026-10-12" },
+    source_ref: null,
+    event_id: null,
+    is_gap: false,
+    created_at: "2026-10-12T09:00:00.000Z",
+    children: [],
+  } as unknown as NodeTree;
+
+  const withSteps = (extra: NodeTree[]): BuildViewProps => {
+    const { title, outcome, ...steps } = buildStepsFixture("list", extra);
+    const base = buildFixture("desktop");
+    return { ...base, hero: { ...base.hero, title, outcome }, viewer: { ...base.viewer, tabs: stepTabs(false), tab: "anatomy" }, steps };
+  };
+  const proofMarkup = (props: BuildViewProps) => {
+    const { container, unmount } = mount(props);
+    const proof = container.querySelector('[data-testid="build-proof"]')?.outerHTML ?? "";
+    const plaque = container.querySelector('[data-ui="plaque"]')?.outerHTML ?? "";
+    unmount();
+    return { proof, plaque };
+  };
+
+  it("draws it as a step: what it tested, what counts as passing, when it failed, and its status", () => {
+    mount(withSteps([check]));
+    const card = screen.getAllByTestId("step-card").find((entry) => entry.getAttribute("data-kind") === "check")!;
+    expect(card.textContent).toContain("Check · how it checked its work");
+    expect(within(card).getByTestId("check-status").textContent).toBe("Passed 13 of 14 runs · since 12 Oct");
+    expect(within(card).getAllByTestId("label-value").map((row) => row.textContent)).toEqual([
+      "What it testedPlaces a test order for 2 sourdough loaves",
+      "What counts as passingThe total shows £9.00",
+      "When it failedThe total showed £8.99.",
+    ]);
+    expect(card.textContent).not.toMatch(/verified|reproduc|ran it/i);
+    expect(card.querySelector('[data-ui="plaque"]')).toBeNull();
+  });
+
+  it("never changes the plaque, the reproduction count or the proof panel", () => {
+    const without = proofMarkup(withSteps([]));
+    const withCheck = proofMarkup(withSteps([check]));
+    expect(withCheck.plaque).not.toBe("");
+    expect(withCheck.plaque).toBe(without.plaque);
+    expect(withCheck.proof).toBe(without.proof);
+  });
+});
+
+describe("the summary line under the title (CA-03 P8)", () => {
+  it("says what kind of build it is, on one line, with its full text in the title", () => {
+    mount(stepsProps());
+    const line = screen.getByTestId("build-summary");
+    expect(line.textContent).not.toBe("");
+    expect(line.getAttribute("title")).toBe(line.textContent);
+    const markup = renderToStaticMarkup(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <BuildView {...stepsProps()} />
+      </MemoryRouter>,
+    );
+    const tag = /<p data-testid="build-summary"[^>]*>/.exec(markup)?.[0] ?? "";
+    expect(tag).toContain("font-size:12.5px");
+    expect(tag).toContain("color:var(--text2)");
+    expect(tag).toContain("white-space:nowrap");
+    expect(tag).toContain("text-overflow:ellipsis");
+  });
+
+  it("draws nothing for a build with nothing but a title", () => {
+    const props = stepsProps();
+    mount({ ...props, steps: props.steps ? { ...props.steps, steps: [] } : props.steps });
+    expect(screen.queryByTestId("build-summary")).toBeNull();
+  });
+
+  it("leaves the plaque where it was and as it was", () => {
+    const plaqueOf = (props: BuildViewProps) => {
+      const { container, unmount } = mount(props);
+      const plaque = container.querySelector('[data-ui="plaque"]')?.outerHTML ?? "";
+      unmount();
+      return plaque;
+    };
+    const props = stepsProps();
+    const without = plaqueOf({ ...props, hero: { ...props.hero, summary: "" } });
+    expect(without).not.toBe("");
+    expect(plaqueOf(props)).toBe(without);
   });
 });

@@ -11,7 +11,11 @@
      over 100,000 characters, is refused by name.
    - "Add", the one primary, and "Cancel".
 
-   NOTHING HERE RUNS CODE. */
+   NOTHING HERE RUNS CODE.
+
+   CA-03 P2: the labels are the composer's `Field`; the language is a menu (`PickMenu`) showing the language's name
+   ("TypeScript"), never a native select, and the value it saves is the schema's enum as before ("ts"). Only code and
+   file names are in the data face. The dialog is the window recipe with a 15/500 title. */
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -23,13 +27,14 @@ import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { CODE_FILENAME_MAX, CODE_LANGUAGES, CODE_MAX, type CodeLanguage } from "@/lib/build/graph";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
-import { r } from "@/lib/theme/radius";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { fieldBase } from "./composeFields";
 import { CODE_COPY, codeLanguageFor, isCodeLanguage, lineCount, readCodeFile } from "./codeModel";
+import { Field } from "./composeControls";
 import { ModelPicker } from "./ModelPicker";
+import { PickMenu } from "./PickMenu";
+import { dialogTitle, tnum, typedArea, typedField, windowStyle } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const CODE_DIALOG_COPY = {
@@ -46,6 +51,21 @@ export const CODE_DIALOG_COPY = {
   remove: (name: string) => `Remove ${name}`,
   add: "Add",
   cancel: "Cancel",
+  /** CA-03: how each saved language is shown. What is saved does not change. */
+  languages: {
+    ts: "TypeScript",
+    tsx: "TypeScript (TSX)",
+    js: "JavaScript",
+    jsx: "JavaScript (JSX)",
+    python: "Python",
+    sql: "SQL",
+    json: "JSON",
+    yaml: "YAML",
+    bash: "Bash",
+    html: "HTML",
+    css: "CSS",
+    other: "Other",
+  } satisfies Record<CodeLanguage, string>,
 } as const;
 
 /** One code step the dialog hands back. */
@@ -92,9 +112,8 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
   const tooLong = source.length > CODE_MAX;
   const ready = (typed || files.length > 0) && !tooLong && filename.length <= CODE_FILENAME_MAX;
 
-  const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
-  const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
   const quiet: CSSProperties = { fontFamily: FIGTREE, fontSize: 12.5, color: t.text2 };
+  const count: CSSProperties = { fontFamily: FIGTREE, fontSize: 11.5, color: t.text2, ...tnum };
 
   const onTab = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Tab" || event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return;
@@ -124,12 +143,10 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
         event.preventDefault();
         submit();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
+      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label htmlFor={`${uid}-code`} style={label}>
-          {CODE_DIALOG_COPY.code}
-        </label>
+      <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
         <textarea
           id={`${uid}-code`}
           data-testid="code-well"
@@ -141,41 +158,36 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
           placeholder={CODE_DIALOG_COPY.placeholder}
           onChange={(event) => setSource(event.target.value)}
           onKeyDown={onTab}
-          style={{ ...fieldBase, padding: 10, fontFamily: DM_MONO, fontSize: phone ? 16 : 13, lineHeight: 1.55, resize: "vertical", whiteSpace: "pre", overflowX: "auto", tabSize: 2 }}
+          style={typedArea(phone, { padding: 8, fontFamily: DM_MONO, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", tabSize: 2 })}
         />
         {tooLong ? (
           <span role="alert" style={quiet}>
             {CODE_COPY.tooLong}
           </span>
         ) : typed ? (
-          <span style={{ ...quiet, fontFamily: DM_MONO, fontSize: 11, alignSelf: "flex-end" }}>{`${lineCount(source)} ${lineCount(source) === 1 ? "line" : "lines"}`}</span>
+          <span style={{ ...count, alignSelf: "flex-end" }}>{`${lineCount(source)} ${lineCount(source) === 1 ? "line" : "lines"}`}</span>
         ) : null}
-      </div>
+      </Field>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 120px" }}>
-          <label htmlFor={`${uid}-language`} style={label}>
-            {CODE_DIALOG_COPY.language}
-          </label>
-          <select
-            id={`${uid}-language`}
-            value={language}
-            onChange={(event) => {
-              if (isCodeLanguage(event.target.value)) setChosen(event.target.value);
-            }}
-            style={control}
-          >
-            {CODE_LANGUAGES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 120px", minWidth: 0 }}>
+          <Field id={`${uid}-language`} label={CODE_DIALOG_COPY.language}>
+            <span>
+              <PickMenu
+                id={`${uid}-language`}
+                label={CODE_DIALOG_COPY.language}
+                options={CODE_LANGUAGES.map((value) => ({ value, label: CODE_DIALOG_COPY.languages[value] }))}
+                value={language}
+                onChange={(next) => {
+                  if (isCodeLanguage(next)) setChosen(next);
+                }}
+                phone={phone}
+              />
+            </span>
+          </Field>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: "2 1 180px" }}>
-          <label htmlFor={`${uid}-filename`} style={label}>
-            {CODE_DIALOG_COPY.filename}
-          </label>
+        <div style={{ flex: "2 1 180px", minWidth: 0 }}>
+          <Field id={`${uid}-filename`} label={CODE_DIALOG_COPY.filename}>
           <input
             id={`${uid}-filename`}
             type="text"
@@ -184,13 +196,13 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
             placeholder={CODE_DIALOG_COPY.filenamePlaceholder}
             autoComplete="off"
             onChange={(event) => setFilename(event.target.value)}
-            style={control}
+            style={typedField(phone, { fontFamily: DM_MONO })}
           />
+          </Field>
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={label}>{CODE_DIALOG_COPY.writtenWith}</span>
+      <Field id={`${uid}-written`} label={CODE_DIALOG_COPY.writtenWith} group>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <ToolPicker
             label={CODE_DIALOG_COPY.writtenWithTool}
@@ -206,10 +218,9 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
           />
           <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />
         </div>
-      </div>
+      </Field>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={label}>{CODE_DIALOG_COPY.upload}</span>
+      <Field id={`${uid}-upload`} label={CODE_DIALOG_COPY.upload} group>
         <input
           ref={picker}
           type="file"
@@ -224,7 +235,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
           }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <Button variant="secondary" size={phone ? 44 : 32} fontSize={13} onClick={() => picker.current?.click()}>
+          <Button variant="secondary" size={phone ? 44 : 30} fontSize={13} onClick={() => picker.current?.click()}>
             {CODE_DIALOG_COPY.upload}
           </Button>
           <span style={quiet}>{CODE_DIALOG_COPY.uploadLine}</span>
@@ -234,7 +245,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
             {files.map((file, index) => (
               <li key={`${file.filename}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 32 }}>
                 <span style={{ fontFamily: DM_MONO, fontSize: 12.5, color: t.text, overflowWrap: "anywhere", flexGrow: 1 }}>{file.filename}</span>
-                <span style={{ ...quiet, fontFamily: DM_MONO, fontSize: 11 }}>{`${file.language} · ${lineCount(file.source)} lines`}</span>
+                <span style={count}>{`${CODE_DIALOG_COPY.languages[file.language]} · ${lineCount(file.source)} lines`}</span>
                 <IconButton
                   icon={X}
                   glyph="x"
@@ -242,7 +253,7 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
                   size={26}
                   label={CODE_DIALOG_COPY.remove(file.filename ?? "")}
                   onClick={() => setFiles((list) => list.filter((_, i) => i !== index))}
-                  style={{ width: phone ? 44 : 24, height: phone ? 44 : 24, color: t.label }}
+                  style={{ width: phone ? 44 : 26, height: phone ? 44 : 26, flexShrink: 0 }}
                 />
               </li>
             ))}
@@ -257,13 +268,13 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
             ))}
           </div>
         ) : null}
-      </div>
+      </Field>
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 36} onClick={onCancel}>
+        <Button variant="secondary" size={phone ? 44 : 30} onClick={onCancel}>
           {CODE_DIALOG_COPY.cancel}
         </Button>
-        <Button variant="primary" size={phone ? 44 : 36} type="submit" disabled={!ready}>
+        <Button variant="primary" size={phone ? 44 : 30} type="submit" disabled={!ready}>
           {CODE_DIALOG_COPY.add}
         </Button>
       </div>
@@ -294,27 +305,9 @@ export function AddCodeDialog({ open, onOpenChange, onAdd, inBuild, seed = null 
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="add-code-dialog"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 51,
-            width: 420,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "90dvh",
-            overflowY: "auto",
-            boxSizing: "border-box",
-            padding: 20,
-            borderRadius: r.panel,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowFloat,
-            color: t.text,
-            fontFamily: FIGTREE,
-          }}
+          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
         >
-          <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{CODE_DIALOG_COPY.title}</Dialog.Title>
+          <Dialog.Title style={dialogTitle}>{CODE_DIALOG_COPY.title}</Dialog.Title>
           <Form inBuild={inBuild} seed={seed} onAdd={add} onCancel={close} phone={false} />
         </Dialog.Content>
       </Dialog.Portal>

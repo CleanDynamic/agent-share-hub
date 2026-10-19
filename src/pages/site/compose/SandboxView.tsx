@@ -105,6 +105,12 @@ export interface SandboxViewProps extends CardProps {
   onAddManual?: () => void;
   /** CA-02 P7: Add › Code opens the code dialog. Absent, the item stays disabled. */
   onAddCode?: () => void;
+  /** CA-03 P5: Add › Check opens the check dialog. Absent, or with nothing yet to check, the item stays disabled. */
+  onAddCheck?: () => void;
+  /** CA-03 P5: the build has an agent, a team or code: something a check can test. */
+  checkable?: boolean;
+  /** CA-03 P8: one line that says what kind of build it is, for the status line. Absent until it has more than one step. */
+  summary?: string;
 
   /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
   trail?: readonly { id: string; title: string }[];
@@ -123,7 +129,7 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "result";
+export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -138,8 +144,15 @@ export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; read
   { key: "tool", name: "Tool", line: "An app or connector it used", ready: true },
   { key: "manual", name: "Manual step", line: "Work done outside AI", ready: true },
   { key: "code", name: "Code", line: "Lines of code you wrote or ran", ready: true },
+  { key: "check", name: "Check", line: "How it tested its own work", ready: true },
   { key: "result", name: "Result", line: "The finished thing", ready: true },
 ];
+
+/** CA-03 P5: the Add menu's own words. */
+export const ADD_COPY = {
+  /** Check, while the build has nothing a check could test. */
+  checkFirst: "Add an agent or code first",
+} as const;
 
 export const LIST_HINT = "Click a prompt to see its details · double-click to read all of it";
 
@@ -154,7 +167,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode">;
+export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Session carries its submenu's rows. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -167,8 +180,12 @@ export interface AddEntry {
   sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
 }
 
-export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode }: AddMenuProps): AddEntry[] {
+export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
+    if (item.key === "check") {
+      // Listed always; offered once the build has an agent, a team or code to check.
+      return { ...item, line: checkable ? item.line : ADD_COPY.checkFirst, enabled: item.ready && checkable && Boolean(onAddCheck), onSelect: onAddCheck };
+    }
     if (item.key === "session") {
       return {
         ...item,
@@ -209,7 +226,7 @@ const addItem = (enabled: boolean): CSSProperties => ({
   justifyContent: "center",
   gap: 2,
   minHeight: 44,
-  padding: "6px 10px",
+  padding: "6px 12px",
 });
 
 function AddMenu({ phone, ...props }: AddMenuProps & { phone: boolean }) {
@@ -526,6 +543,8 @@ export function SandboxView(props: SandboxViewProps) {
         </>
       ) : null}
       {props.threadNote ? ` · ${props.threadNote}` : null}
+      {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
+      {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
       {needs ? (
         <>
           {" · Missing: "}
@@ -603,6 +622,8 @@ export function SandboxView(props: SandboxViewProps) {
       onAddAgent={props.onAddAgent}
       onAddManual={props.onAddManual}
       onAddCode={props.onAddCode}
+      onAddCheck={props.onAddCheck}
+      checkable={props.checkable}
     />
   );
   const trailLink: CSSProperties = { ...bareButton, ...underlined, fontSize: 13.5, fontWeight: 500, color: t.text2 };

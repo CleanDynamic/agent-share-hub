@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { runsLabel, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { checkStatus, runsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -60,6 +60,8 @@ export const MAP_SIZES = {
   stackOffset: 5,
   /** Room above the opened frame for a wire that comes back over it. */
   outerRise: 24,
+  /** CA-03 P4: room above a column of agents side by side, for its label. */
+  sideLabel: 20,
 } as const;
 
 export interface MapPiece {
@@ -126,6 +128,8 @@ export interface MapBox {
   runs: string | null;
   /** More than one copy runs at once (opened view): how many. */
   stack: number | null;
+  /** CA-03 P5, a check only: "Passed 14 of 14 runs", and whether every run passed. */
+  status?: { line: string; allPassed: boolean } | null;
 }
 
 export interface MapLane {
@@ -383,8 +387,9 @@ export function layoutMap(
       kind: "step",
       stepKind: step.kind,
       number: step.number,
-      // CA-02 P7: untitled code reads by its file name, or its language, under the box's "Code".
-      title: step.title ?? (step.kind === "code" ? (step.filename ?? step.language ?? step.defaultTitle) : step.defaultTitle),
+      // CA-02 P7: untitled code reads by its file name, or its language, under the box's "Code"; CA-03 P5: an untitled
+      // check by what it tested, under the box's "Check".
+      title: step.title ?? (step.kind === "code" ? (step.filename ?? step.language ?? step.defaultTitle) : step.kind === "check" ? step.text : step.defaultTitle),
       defaultTitle: step.title === null,
       text: step.text,
       words: step.words,
@@ -402,6 +407,7 @@ export function layoutMap(
       contents: container ? containsLine(step) : null,
       runs: container ? runsLabel(step.runs) : null,
       stack: null,
+      ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
     });
   });
 
@@ -569,12 +575,51 @@ export interface OpenedLayout {
   frame: { x: number; y: number; w: number; h: number };
   /** Where "files and tools" is captioned inside the frame. */
   bandY: number;
+  /** CA-03 P4: each column of agents side by side, and where its "Side by side" label sits (its top left). */
+  sideBySide: { ids: string[]; x: number; y: number }[];
   width: number;
   height: number;
 }
 
 /** The sub-steps a container opens onto: an agent's instructions and prompts, a team's agents. */
 export const insideOf = (container: Step): Step[] => container.children;
+
+/**
+ * CA-03 P4: the agents of a team that run side by side, as groups of ids in order, each of two or more. A team that
+ * runs several at the same time has every agent after its lead side by side. Otherwise, two or more agents are side
+ * by side when the same later step uses each of them (an agent after them in the team, a step of the build, or a
+ * result) and none of them uses another: a chain is not side by side. An agent's own prompts never are.
+ */
+export function sideBySideGroups(container: Step, steps: readonly Step[] = [], results: readonly { fromId: string | null }[] = []): string[][] {
+  if (container.kind !== "team") return [];
+  const agents = container.children.filter((child) => child.kind === "agent");
+  if (container.runs?.how === "parallel") {
+    const helpers = agents.slice(1).map((agent) => agent.id);
+    return helpers.length >= 2 ? [helpers] : [];
+  }
+  const ids = new Set(agents.map((agent) => agent.id));
+  const feeds = (user: Pick<Step, "uses">) => user.uses.filter((use) => use.kind === "output" && ids.has(use.node_id)).map((use) => use.node_id);
+  const at = new Map(agents.map((agent, index) => [agent.id, index]));
+  const users: string[][] = [
+    // Inside the team only an earlier agent feeds a later one: a use of a later agent is a loop sent back.
+    ...agents.map((user, index) => feeds(user).filter((id) => (at.get(id) ?? index) < index)),
+    ...flatSteps(steps).filter((step) => !ids.has(step.id) && step.id !== container.id).map(feeds),
+    ...results.map((result) => (result.fromId && ids.has(result.fromId) ? [result.fromId] : [])),
+  ];
+  const groups: string[][] = [];
+  const taken = new Set<string>();
+  for (const fed of users) {
+    const candidates = agents.filter((agent) => fed.includes(agent.id) && !taken.has(agent.id));
+    // None of them may use another of them.
+    const free = candidates.filter((agent) => !agent.uses.some((use) => use.kind === "output" && candidates.some((other) => other.id === use.node_id)));
+    if (free.length < 2) continue;
+    groups.push(free.map((agent) => agent.id));
+    free.forEach((agent) => taken.add(agent.id));
+  }
+  return groups;
+}
+
+const flatSteps = (list: readonly Step[]): Step[] => list.flatMap((step) => [step, ...flatSteps(step.children)]);
 
 /**
  * Lay out what is inside one agent or team.
@@ -601,15 +646,30 @@ export function layoutOpened(
   const insideAt = new Map(inside.map((child, at) => [child.id, at]));
   const stackOf = (child: Step): number | null => (child.runs?.how === "parallel" && typeof child.runs.count === "number" && child.runs.count > 1 ? child.runs.count : null);
 
-  /* ── columns: one lane, so each box is after the one before ── */
+  /* ── columns: one lane, so each box is after the one before; agents side by side share one column (CA-03 P4) ── */
+  const groups = sideBySideGroups(container, steps, results);
+  const groupOf = new Map<string, number>();
+  groups.forEach((group, index) => group.forEach((id) => groupOf.set(id, index)));
+  const groupColumn = new Map<number, number>();
   const column: number[] = [];
+  /** Each box's place, top to bottom, in its column. */
+  const slot: number[] = [];
   inside.forEach((child, at) => {
-    let next = at === 0 ? 0 : column[at - 1] + 1;
+    const group = groupOf.get(child.id);
+    if (group !== undefined && groupColumn.has(group)) {
+      column.push(groupColumn.get(group)!);
+      slot.push(groups[group].indexOf(child.id));
+      return;
+    }
+    let next = at === 0 ? 0 : Math.max(...column) + 1;
     for (const use of child.uses) {
       const from = use.kind === "output" ? insideAt.get(use.node_id) : undefined;
-      if (from !== undefined && from < at) next = Math.max(next, column[from] + 1);
+      const sameGroup = from !== undefined && group !== undefined && groupOf.get(inside[from].id) === group;
+      if (from !== undefined && from < at && !sameGroup) next = Math.max(next, column[from] + 1);
     }
+    if (group !== undefined) groupColumn.set(group, next);
     column.push(next);
+    slot.push(0);
   });
 
   /* ── what is used inside, and what is outside ── */
@@ -693,12 +753,20 @@ export function layoutOpened(
   // Space above the frame for a wire from outside that comes back over it.
   const frameTop = S.outerRise;
   const loops = inside.some((child, at) => child.uses.some((use) => (insideAt.get(use.node_id) ?? -1) > at));
-  const tallest = boxes.reduce((most, box) => Math.max(most, box.h + stackExtra(box)), S.body);
-  const rowY = frameTop + S.frameCaption + (loops ? S.loopRise : 0) + S.framePad;
-  for (const box of boxes) {
+  const rowY = frameTop + S.frameCaption + (loops ? S.loopRise : 0) + (groups.length > 0 ? S.sideLabel : 0) + S.framePad;
+  // Boxes side by side stack down their column, a lane's gap apart.
+  const columnHeight = Array.from({ length: columnCount }, () => 0);
+  const order = boxes.map((box, at) => ({ box, at })).sort((a, b) => a.box.column - b.box.column || slot[a.at] - slot[b.at]);
+  for (const { box } of order) {
     box.x = columnX[box.column];
-    box.y = rowY;
+    box.y = rowY + columnHeight[box.column] + (columnHeight[box.column] > 0 ? S.laneGap : 0);
+    columnHeight[box.column] = box.y - rowY + box.h + stackExtra(box);
   }
+  const tallest = Math.max(S.body, ...columnHeight);
+  const sideBySide = groups.map((ids) => {
+    const at = groupColumn.get(groups.indexOf(ids)) ?? 0;
+    return { ids, x: columnX[at] ?? innerLeft, y: rowY - S.sideLabel };
+  });
 
   /* ── the band of files and tools ── */
   const bandY = rowY + tallest + S.framePad;
@@ -816,7 +884,7 @@ export function layoutOpened(
       if (!from) return;
       const sentBack = input.from !== child.id && (insideAt.get(input.from) ?? -1) > at;
       const detail = sentBack ? inside[insideAt.get(input.from)!].runs?.detail : undefined;
-      wire(from, box, index, sentBack && detail ? `sent back until ${detail}` : sentBack ? "sent back" : undefined);
+      wire(from, box, index, sentBack && detail ? `sent back ${untilClause(detail)}` : sentBack ? "sent back" : undefined);
     });
   });
   // Inside an agent, each prompt follows the one before it.
@@ -827,16 +895,16 @@ export function layoutOpened(
       wire(boxes[at - 1], box, null);
     });
   }
-  // The container's output leaves its last box for what goes into it.
-  const last = boxes[boxes.length - 1];
-  if (last) {
-    for (const box of outside) {
-      if (!box.inputs.some((input) => input.from === container.id)) continue;
-      wire(last, box, 0);
-    }
+  // The container's output leaves its last box for what goes into it; from a last column side by side, every box in
+  // it, joining at the step they feed (CA-03 P4).
+  const lastColumn = boxes.reduce((most, box) => Math.max(most, box.column), -1);
+  const lasts = groups.length > 0 ? boxes.filter((box) => box.column === lastColumn) : boxes.slice(-1);
+  for (const box of outside) {
+    if (!box.inputs.some((input) => input.from === container.id)) continue;
+    for (const last of lasts) wire(last, box, 0);
   }
 
   const width = outside.length > 0 ? outsideX + Math.max(...outside.map((box) => box.w)) : frame.x + frame.w;
   const height = Math.max(frame.y + frame.h + 8, outsideY - S.laneGap);
-  return { boxes, band, outside, wires, frame, bandY, width, height };
+  return { boxes, band, outside, wires, frame, bandY, sideBySide, width, height };
 }
