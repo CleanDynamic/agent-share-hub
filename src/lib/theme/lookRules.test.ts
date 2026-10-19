@@ -1,0 +1,388 @@
+// CA-03 P1 — the look's rules as a test.
+//
+// Every source file CA-03 adds or changes is listed in CA03_FILES and read here as text. The rules are the prompt's
+// "Never do these" and "Components: one way to draw each thing", where a regular expression can see them. Each
+// failure names the file and the line.
+//
+// WHAT IS READ. Comments are blanked first (line breaks kept, so line numbers hold): a comment that says "no
+// gradients" is not a gradient. Strings, JSX text and code are read as they are.
+//
+// THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids.
+//
+// Two readings, said once here:
+//   - `outline: "none"` (or 0) is the absence of an outline, which is what keeps the browser's own ring off; any
+//     other outline value must come from `ring()`.
+//   - The one upper-case style is `EYEBROW` in refinedStyles.ts, the Details eyebrow; everything else that is upper
+//     case on the page spends it.
+
+import fs from "node:fs";
+import path from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+import { SPACE_REFINED } from "./space";
+
+/** Every source file CA-03 adds or changes, from the repository root. */
+export const CA03_FILES: readonly string[] = [];
+
+const ROOT = path.resolve(__dirname, "../../..");
+
+/* ── reading a file ── */
+
+/**
+ * The source with every comment replaced by spaces, line breaks kept. A small lexer: strings ('…', "…", `…` with
+ * `${}` inside), line and block comments, and code. A quote string never crosses a line, so an apostrophe in JSX
+ * text costs at most the rest of its own line.
+ */
+export function stripComments(source: string): string {
+  let out = "";
+  let i = 0;
+  const stack: ("code" | "template")[] = ["code"];
+  let braces: number[] = [0];
+  const blank = (s: string) => s.replace(/[^\n]/g, " ");
+  while (i < source.length) {
+    const c = source[i];
+    const next = source[i + 1];
+    const mode = stack[stack.length - 1];
+    if (mode === "template") {
+      if (c === "\\") {
+        out += source.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      if (c === "`") {
+        out += c;
+        stack.pop();
+        i += 1;
+        continue;
+      }
+      if (c === "$" && next === "{") {
+        out += "${";
+        stack.push("code");
+        braces.push(0);
+        i += 2;
+        continue;
+      }
+      out += c;
+      i += 1;
+      continue;
+    }
+    // code
+    if (c === "/" && next === "/") {
+      const end = source.indexOf("\n", i);
+      const stop = end < 0 ? source.length : end;
+      out += blank(source.slice(i, stop));
+      i = stop;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      const stop = end < 0 ? source.length : end + 2;
+      out += blank(source.slice(i, stop));
+      i = stop;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      let j = i + 1;
+      while (j < source.length && source[j] !== c && source[j] !== "\n") j += source[j] === "\\" ? 2 : 1;
+      out += source.slice(i, j + 1);
+      i = j + 1;
+      continue;
+    }
+    if (c === "`") {
+      out += c;
+      stack.push("template");
+      i += 1;
+      continue;
+    }
+    if (c === "{") braces[braces.length - 1] += 1;
+    if (c === "}") {
+      if (stack.length > 1 && braces[braces.length - 1] === 0) {
+        // The end of a `${…}`.
+        stack.pop();
+        braces = braces.slice(0, -1);
+        out += c;
+        i += 1;
+        continue;
+      }
+      braces[braces.length - 1] -= 1;
+    }
+    out += c;
+    i += 1;
+  }
+  return out;
+}
+
+const lineOf = (text: string, index: number): number => text.slice(0, index).split("\n").length;
+
+export interface Finding {
+  rule: string;
+  line: number;
+  text: string;
+}
+
+const found = (rule: string, code: string, index: number): Finding => ({
+  rule,
+  line: lineOf(code, index),
+  text: code.split("\n")[lineOf(code, index) - 1].trim().slice(0, 140),
+});
+
+function every(pattern: RegExp, code: string): RegExpExecArray[] {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  return [...code.matchAll(new RegExp(pattern.source, flags))];
+}
+
+/* ── rule 2: what never appears ── */
+
+const FORBIDDEN: readonly { rule: string; pattern: RegExp }[] = [
+  { rule: "no gradient (linear)", pattern: /linear-gradient/ },
+  { rule: "no gradient (radial)", pattern: /radial-gradient/ },
+  { rule: "no gradient (conic)", pattern: /conic-gradient/ },
+  { rule: "no glass (backdrop-filter)", pattern: /backdrop-filter|backdropFilter/ },
+  { rule: "no gradient text", pattern: /background-clip:\s*text|backgroundClip/ },
+  // Spelt in two parts: type.test.ts holds the whole source to never naming the retired face.
+  { rule: "no Inter", pattern: /"Int(?:er)"/ },
+  { rule: "no Space Grotesk", pattern: /Space Grotesk/ },
+  { rule: "no Instrument Serif", pattern: /Instrument Serif/ },
+  { rule: "no italic", pattern: /fontStyle:\s*"italic"|font-style:\s*italic/ },
+  { rule: "no fade-in on scroll", pattern: /IntersectionObserver/ },
+  { rule: "no cursor-following light", pattern: /mousemove/ },
+  { rule: "no untouched shadcn", pattern: /from "@\/components\/ui\// },
+  { rule: "no emoji", pattern: /\p{Extended_Pictographic}/u },
+  { rule: "no em dash in copy", pattern: /—/ },
+];
+
+/* ── rule 4: spacing only from SPACE_REFINED ── */
+
+const SPACING_KEY = /\b(gap|rowGap|columnGap|padding(?:Top|Right|Bottom|Left|Inline|Block)?|margin(?:Top|Right|Bottom|Left|Inline|Block)?)\s*:\s*/;
+
+/** The numbers a spacing value spells: `12`, `"4px 8px"`, `"0 12px 8px"`, a ternary of either. */
+function spacingNumbers(value: string): number[] {
+  const out: number[] = [];
+  for (const match of value.matchAll(/(-?\d+(?:\.\d+)?)(px)?/g)) out.push(Math.abs(Number(match[1])));
+  return out;
+}
+
+const SPACE_OK = new Set<number>([0, 1, ...SPACE_REFINED]);
+
+function spacingFindings(code: string): Finding[] {
+  const out: Finding[] = [];
+  for (const match of every(SPACING_KEY, code)) {
+    const start = (match.index ?? 0) + match[0].length;
+    const rest = code.slice(start, start + 120);
+    // A number, a string of px values, or a ternary of those; anything else (a variable, a sum) is not read.
+    const value = /^(?:-?\d+(?:\.\d+)?|"[^"\n]*"|'[^'\n]*'|[\w.]+\s*\?\s*(?:-?\d+(?:\.\d+)?|"[^"\n]*")\s*:\s*(?:-?\d+(?:\.\d+)?|"[^"\n]*"))(?=\s*[,}\n)])/.exec(rest);
+    if (!value) continue;
+    const literal = value[0].replace(/^[\w.]+\s*\?/, "");
+    if (/var\(|calc\(|clamp\(|%|auto|em\b|vw|vh/.test(literal)) continue;
+    const bad = spacingNumbers(literal).filter((n) => !SPACE_OK.has(n));
+    if (bad.length) out.push(found(`spacing ${bad.join(", ")} is not in SPACE_REFINED`, code, match.index ?? 0));
+  }
+  return out;
+}
+
+/* ── rule 5: the Components table ── */
+
+function componentFindings(code: string, file: string): Finding[] {
+  const out: Finding[] = [];
+  for (const match of every(/<select\b/, code)) out.push(found("a native <select>", code, match.index ?? 0));
+
+  for (const match of every(/type=\{?["'](radio|checkbox)["']\}?/, code)) {
+    const at = match.index ?? 0;
+    const before = code.slice(Math.max(0, at - 400), at);
+    const tagStart = before.lastIndexOf("<");
+    const tag = before.slice(tagStart) + code.slice(at, code.indexOf(">", at) + 1);
+    const hidden = /VisuallyHidden|VISUALLY_HIDDEN/.test(tag) || /<VisuallyHidden>\s*$/.test(before.slice(0, tagStart));
+    if (!hidden) out.push(found(`a visible ${match[1]} input`, code, at));
+  }
+
+  for (const match of every(/textTransform:\s*["']uppercase["']/, code)) {
+    const at = match.index ?? 0;
+    const owner = code.slice(0, at).lastIndexOf("export const ");
+    const isEyebrow = file.endsWith("src/pages/site/compose/refinedStyles.ts") && code.slice(owner, owner + 30).startsWith("export const EYEBROW");
+    if (!isEyebrow) out.push(found("upper case outside the Details eyebrow", code, at));
+  }
+
+  // DM_MONO in a style object that also sets textTransform, or in a <label>'s style.
+  for (const match of every(/DM_MONO/, code)) {
+    const at = match.index ?? 0;
+    const open = code.lastIndexOf("{", at);
+    const close = code.indexOf("}", at);
+    if (open >= 0 && close > 0 && /textTransform/.test(code.slice(open, close))) out.push(found("the data face with upper case", code, at));
+    const tagAt = code.lastIndexOf("<", at);
+    if (tagAt >= 0 && /^<label\b/.test(code.slice(tagAt)) && !code.slice(tagAt, at).includes(">")) out.push(found("the data face on a label", code, at));
+  }
+
+  // A lucide icon drawn as JSX on its own, rather than handed to IconButton's `icon`.
+  const lucide = /import\s*\{([^}]*)\}\s*from\s*"lucide-react"/.exec(code);
+  if (lucide) {
+    const names = lucide[1].split(",").map((name) => name.trim().split(/\s+as\s+/).pop() ?? "").filter(Boolean);
+    for (const name of names) for (const match of every(new RegExp(`<${name}[\\s/>]`), code)) out.push(found(`the lucide icon ${name} drawn on its own`, code, match.index ?? 0));
+  }
+
+  // An opacity in a hover style.
+  for (const match of every(/hover[^\n]*opacity|opacity[^\n]*hover/i, code)) out.push(found("opacity on hover", code, match.index ?? 0));
+
+  // An outline that is not ring()'s: only `none` or 0 may be written by hand.
+  for (const match of every(/\boutline(?:Offset|Color|Width|Style)?\s*:\s*([^,}\n]+)/, code)) {
+    const value = match[1].trim();
+    if (/^["']none["']$|^0$/.test(value)) continue;
+    out.push(found("an outline other than ring()", code, match.index ?? 0));
+  }
+  return out;
+}
+
+/**
+ * What may stay, each with its reason. Only an exact piece of a line, and only for the rule named: nothing here
+ * excuses anything new.
+ */
+export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "no gradient (radial)",
+    text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",
+    why: "The map well's dot grid. RULES.md (UI-P99) makes it part of the well recipe for maps and media; it was there before CA-03.",
+  },
+];
+
+/** Every finding for one file's source. Pure, so the rules can be tested on snippets. */
+export function lookFindings(source: string, file = "snippet.tsx"): Finding[] {
+  const code = stripComments(source);
+  const out: Finding[] = [];
+  for (const { rule, pattern } of FORBIDDEN) for (const match of every(pattern, code)) out.push(found(rule, code, match.index ?? 0));
+  out.push(...spacingFindings(code), ...componentFindings(code, file));
+  return out.filter((finding) => !ALLOWED.some((allowed) => allowed.rule === finding.rule && finding.text.includes(allowed.text)));
+}
+
+/* ── rule 3: no buzzwords in copy ── */
+
+export const BUZZWORDS = [
+  "seamless", "effortless", "powerful", "unlock", "supercharge", "elevate", "leverage", "robust", "cutting-edge",
+  "next-level", "game-changer", "revolutionary", "magic", "streamline", "empower",
+] as const;
+
+const BUZZ = new RegExp(`(?<![\\w-])(${BUZZWORDS.map((word) => word.replace(/-/g, "\\-")).join("|")})(?![\\w-])`, "i");
+
+/** Every string a *_COPY value holds: strings, the strings in objects and arrays, and what a function returns. */
+export function copyStrings(value: unknown, depth = 0): string[] {
+  if (depth > 6) return [];
+  if (typeof value === "string") return [value];
+  if (typeof value === "function") {
+    const samples: unknown[][] = [[], [2], ["Gmail"], ["Gmail", "Notion"], [2, 3], [["Gmail", "Notion"]]];
+    const said: string[] = [];
+    for (const args of samples) {
+      try {
+        said.push(...copyStrings((value as (...a: unknown[]) => unknown)(...args), depth + 1));
+      } catch {
+        /* a sample the function does not take */
+      }
+    }
+    return said;
+  }
+  if (Array.isArray(value)) return value.flatMap((entry) => copyStrings(entry, depth + 1));
+  if (value && typeof value === "object") return Object.values(value).flatMap((entry) => copyStrings(entry, depth + 1));
+  return [];
+}
+
+export const buzzwordIn = (text: string): string | null => BUZZ.exec(text)?.[1] ?? null;
+
+/* ── the rules on snippets: each fires, and the allowed forms pass ── */
+
+describe("the look rules, on snippets", () => {
+  const rules = (source: string, file?: string) => lookFindings(source, file).map((finding) => finding.rule);
+
+  it("finds every forbidden form, with its line", () => {
+    const source = [
+      "const a = { background: 'linear-gradient(red, blue)' };",
+      "const b = { backdropFilter: 'blur(4px)' };",
+      "const c = { fontStyle: \"italic\" };",
+      "const d = 'Built with care — by you';",
+      "const e = 'Launch \u{1F680}';",
+      "import { Button } from \"@/components/ui/button\";",
+      "new IntersectionObserver(() => {});",
+    ].join("\n");
+    const findings = lookFindings(source);
+    expect(findings.map((finding) => [finding.rule, finding.line])).toEqual([
+      ["no gradient (linear)", 1],
+      ["no glass (backdrop-filter)", 2],
+      ["no italic", 3],
+      ["no fade-in on scroll", 7],
+      ["no untouched shadcn", 6],
+      ["no emoji", 5],
+      ["no em dash in copy", 4],
+    ]);
+  });
+
+  it("reads past comments, keeping the line numbers", () => {
+    const source = "// a linear-gradient — in a comment\n/* backdrop-filter\n */ const x = { padding: 10 };";
+    expect(lookFindings(source).map((finding) => [finding.rule, finding.line])).toEqual([["spacing 10 is not in SPACE_REFINED", 3]]);
+    expect(stripComments("const u = 'https://example.com'; // x").trim()).toBe("const u = 'https://example.com';");
+    expect(stripComments("const s = `a ${b} // not a comment`;")).toContain("// not a comment");
+  });
+
+  it("holds spacing to SPACE_REFINED, 0 and 1", () => {
+    expect(rules("const s = { gap: 8, padding: \"4px 12px\", margin: 0, paddingTop: 1, rowGap: 16 };")).toEqual([]);
+    expect(rules("const s = { gap: 14 };")).toEqual(["spacing 14 is not in SPACE_REFINED"]);
+    expect(rules("const s = { padding: \"7px 10px\" };")).toEqual(["spacing 7, 10 is not in SPACE_REFINED"]);
+    expect(rules("const s = { padding: phone ? 10 : 8 };")).toEqual(["spacing 10 is not in SPACE_REFINED"]);
+    expect(rules("const s = { margin: \"-12px -4px\" };")).toEqual([]);
+    expect(rules("const s = { padding: size / 2, gap: MAP.row - row };")).toEqual([]);
+  });
+
+  it("holds to the Components table", () => {
+    expect(rules("<select value={a} />")).toEqual(["a native <select>"]);
+    expect(rules("<input type=\"radio\" checked />")).toEqual(["a visible radio input"]);
+    expect(rules("<VisuallyHidden><input type=\"radio\" checked /></VisuallyHidden>")).toEqual([]);
+    expect(rules("<input type=\"checkbox\" style={VISUALLY_HIDDEN} />")).toEqual([]);
+    expect(rules("const s = { textTransform: \"uppercase\" };")).toEqual(["upper case outside the Details eyebrow"]);
+    expect(rules("export const EYEBROW = { textTransform: \"uppercase\" };", "src/pages/site/compose/refinedStyles.ts")).toEqual([]);
+    expect(rules("const s = { fontFamily: DM_MONO, textTransform: \"none\" };")).toEqual(["the data face with upper case"]);
+    expect(rules("<label style={{ fontFamily: DM_MONO }}>Name</label>")).toEqual(["the data face on a label"]);
+    expect(rules("import { X } from \"lucide-react\";\nconst a = <X size={12} />;")).toEqual(["the lucide icon X drawn on its own"]);
+    expect(rules("import { X } from \"lucide-react\";\nconst a = <IconButton icon={X} glyph=\"x\" label=\"Remove\" />;")).toEqual([]);
+    expect(rules("const s = state.hovered ? { opacity: 0.8 } : {};")).toEqual(["opacity on hover"]);
+    expect(rules("const s = { outline: \"2px solid red\" };")).toEqual(["an outline other than ring()"]);
+    expect(rules("const s = { outline: \"none\", ...ring(focus) };")).toEqual([]);
+  });
+
+  it("lets the map well's dot grid stay, and no other gradient", () => {
+    expect(rules("const w = { background: `radial-gradient(${t.dotGrid} 1px, transparent 1px) 0 0 / 16px 16px, ${t.well}` };")).toEqual([]);
+    expect(rules("const w = { background: `radial-gradient(${t.lit} 1px, transparent 1px)` };")).toEqual(["no gradient (radial)"]);
+  });
+
+  it("finds a buzzword as a whole word only", () => {
+    expect(buzzwordIn("A seamless way in")).toBe("seamless");
+    expect(buzzwordIn("Unlock it")).toBe("Unlock");
+    expect(buzzwordIn("The robustness of it")).toBeNull();
+    expect(buzzwordIn("A next-level build")).toBe("next-level");
+    expect(copyStrings({ a: "one", b: ["two"], c: (n: number) => `${n} three` })).toEqual(expect.arrayContaining(["one", "two", "2 three"]));
+  });
+});
+
+/* ── the rules, on every file CA-03 adds or changes ── */
+
+if (CA03_FILES.length > 0) describe.each(CA03_FILES.map((file) => [file]))("%s", (file) => {
+  const source = fs.readFileSync(path.join(ROOT, file), "utf8");
+
+  it("keeps the look's rules", () => {
+    const findings = lookFindings(source, file).map((finding) => `${file}:${finding.line} ${finding.rule} · ${finding.text}`);
+    expect(findings).toEqual([]);
+  });
+
+  it("uses no buzzword in its copy", async () => {
+    if (!/export const \w+_COPY\b/.test(source)) return;
+    const module = (await import(/* @vite-ignore */ path.join(ROOT, file))) as Record<string, unknown>;
+    const hits: string[] = [];
+    for (const [name, value] of Object.entries(module)) {
+      if (!name.endsWith("_COPY")) continue;
+      for (const said of copyStrings(value)) {
+        const word = buzzwordIn(said);
+        if (word) hits.push(`${file} ${name}: "${word}" in "${said}"`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+});
+
+it("lists only files that exist", () => {
+  for (const file of CA03_FILES) expect(fs.existsSync(path.join(ROOT, file)), file).toBe(true);
+});
