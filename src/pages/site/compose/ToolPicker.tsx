@@ -43,6 +43,9 @@ export interface ToolPickerProps {
 
 const isPickable = (row: PickerRow): boolean => row.kind !== "heading";
 
+/** Over the Add dialogs, whose content sits at 51 over a scrim at 50. */
+export const FLOATING_Z = 52;
+
 /** The words a row reads as. */
 function rowName(row: PickerRow, noneLabel = "No tool"): string {
   switch (row.kind) {
@@ -185,7 +188,8 @@ export function ToolPicker({ value, onChange, inBuild, allowNone = false, label,
             event.preventDefault();
             field.current?.focus();
           }}
-          style={{ ...menuSurface(280), display: "flex", flexDirection: "column", gap: 4 }}
+          /* Above a dialog's content (51): the picker opens inside the Add dialogs. */
+          style={{ ...menuSurface(280), zIndex: FLOATING_Z, display: "flex", flexDirection: "column", gap: 4 }}
         >
           <input
             ref={field}

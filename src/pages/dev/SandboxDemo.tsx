@@ -11,9 +11,16 @@
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
    `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code` draws one of CA-02's five shapes of AI use
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
+   `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
+   The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
    No board image is compared. */
 
 import { useMemo, useState } from "react";
+
+import { AddAgentDialog } from "@/pages/site/compose/AddAgentDialog";
+import { AddCodeDialog } from "@/pages/site/compose/AddCodeDialog";
+import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
+import { AddToolDialog } from "@/pages/site/compose/AddToolDialog";
 import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
@@ -61,6 +68,12 @@ function demoThread(doc: ThreadDoc): ComposeThread {
   };
 }
 
+/** A typed prompt saved as Claude with Grok 4.7, which Claude does not offer (CA-02 P8). */
+function brokenPair() {
+  const base = sandboxDetailsProps("prompt", "bakery");
+  return base.view?.kind === "prompt" ? { ...base, onModel: () => undefined, view: { ...base.view, typed: true, tool: "Claude", model: "Grok 4.7", sessionLine: "Typed here · Claude", detailLine: "Grok 4.7" } } : base;
+}
+
 /** A CA-02 shape as the List and the Map take it, Details' selection marked in both. */
 function shapeFixture(key: ShapeKey, select: string | null) {
   const selectedId = select ?? SHAPES[key].selected;
@@ -74,6 +87,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const mapOf: SandboxMapFixture = asBuild === "big" ? "big" : which;
   const asked = params.get("details");
   const details: SandboxDetails = (["session", "agent", "file", "tool", "result"] as const).find((kind) => kind === asked) ?? "prompt";
+  const [dialog, setDialog] = useState<"agent" | "manual" | "tool" | "code" | null>(null);
   const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -95,10 +109,18 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
         map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
-        selection={<DetailsPanel {...(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
+        selection={<DetailsPanel {...(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
+        onAddAgent={() => setDialog("agent")}
+        onAddManual={() => setDialog("manual")}
+        onAddTool={() => setDialog("tool")}
+        onAddCode={() => setDialog("code")}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
         post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />
+      <AddAgentDialog open={dialog === "agent"} onOpenChange={(next) => setDialog(next ? "agent" : null)} nextNumber={list.steps.length + 1} teamsAvailable onAdd={() => undefined} />
+      <AddManualStepDialog open={dialog === "manual"} onOpenChange={(next) => setDialog(next ? "manual" : null)} after={null} available onAdd={() => undefined} />
+      <AddToolDialog open={dialog === "tool"} onOpenChange={(next) => setDialog(next ? "tool" : null)} onAdd={() => undefined} />
+      <AddCodeDialog open={dialog === "code"} onOpenChange={(next) => setDialog(next ? "code" : null)} onAdd={() => undefined} />
       <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>
   );

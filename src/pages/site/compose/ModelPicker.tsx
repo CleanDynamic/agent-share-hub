@@ -22,6 +22,7 @@ import { harnessTool, modelMenu } from "@/lib/tools/modelRules";
 import { t } from "@/lib/theme/tokens";
 
 import { TextButton } from "./composeControls";
+import { FLOATING_Z } from "./ToolPicker";
 import { menuItem, menuSurface, text, wellField } from "./refinedStyles";
 
 /** The longest model name a maker can type. */
@@ -124,7 +125,7 @@ export function ModelPicker({ tool, value, onChange, phone, allowNone = true, na
           align="start"
           sideOffset={4}
           collisionPadding={16}
-          style={{ ...menuSurface(), maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}
+          style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}
         >
           {typing ? (
             <form
