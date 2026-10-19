@@ -739,3 +739,17 @@ describe("a check (CA-03 P5)", () => {
     expect(screen.getByTestId("details-panel").textContent).not.toMatch(/verified|reproduc/i);
   });
 });
+
+describe("what an agent remembers, in Details (CA-03 P6)", () => {
+  it("hands it over with the setup when the field is left, and only then", () => {
+    const onAgentSetup = vi.fn();
+    const base = sandboxDetailsProps("agent", "bakery");
+    if (base.view?.kind !== "agent") throw new Error("fixture");
+    panel("agent", "bakery", { view: { ...base.view, setup: { harness: null, models: [{ model: "Opus 5.5", role: "main" }], tools: [] } }, onAgentSetup });
+    const field = screen.getByLabelText("What it remembers");
+    fireEvent.change(field, { target: { value: "the dishes it featured" } });
+    expect(onAgentSetup).not.toHaveBeenCalled();
+    fireEvent.blur(field);
+    expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Opus 5.5", harness: null, tools: [], memory: "the dishes it featured" });
+  });
+});

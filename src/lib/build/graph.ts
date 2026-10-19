@@ -94,6 +94,8 @@ export interface Step {
   models?: AgentModel[];
   /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
   toolRefs?: string[];
+  /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
+  memory?: string;
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
   check?: CheckFacts;
 }
@@ -140,6 +142,8 @@ export const HARNESS_MAX = 40;
 export const ROLE_MAX = 40;
 /** CA-02 P5: an agent names four models at most. */
 export const AGENT_MODELS_MAX = 4;
+/** CA-03 P6: the longest "What it remembers". */
+export const MEMORY_MAX = 200;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -339,15 +343,17 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
   return out;
 }
 
-/** The agent-only facts of a step (CA-02 P5); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs"> {
+/** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
+  const memory = stringOf(payload.memory)?.trim();
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
+    ...(memory ? { memory } : null),
   };
 }
 
@@ -400,6 +406,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     harness: undefined,
     models: undefined,
     toolRefs: undefined,
+    memory: undefined,
   };
 }
 
@@ -688,13 +695,15 @@ export interface AgentSetup {
   models?: readonly AgentModel[];
   /** The integration nodes the agent may call. */
   toolRefs?: readonly string[];
+  /** CA-03 P6: what it remembers, up to 200 characters; empty leaves the key out. */
+  memory?: string | null;
 }
 
 /**
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -717,6 +726,11 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   }
   const refs = [...new Set((toolRefs ?? []).filter((ref) => typeof ref === "string" && ref))];
   if (refs.length) out.tools = refs.map((ref) => ({ tool_ref: ref })) as unknown as Json;
+  const remembers = memory?.trim();
+  if (remembers) {
+    if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers is at most ${MEMORY_MAX} characters.`);
+    out.memory = remembers;
+  }
   return out;
 }
 
@@ -772,6 +786,10 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
   if ("toolRefs" in setup) {
     if (keys.tools) payload.tools = keys.tools;
     else delete payload.tools;
+  }
+  if ("memory" in setup) {
+    if (keys.memory) payload.memory = keys.memory;
+    else delete payload.memory;
   }
   return upsertNode(withPayload(node, payload));
 }

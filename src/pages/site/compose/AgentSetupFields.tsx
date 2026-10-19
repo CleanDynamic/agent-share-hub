@@ -14,13 +14,16 @@
    CA-03 P2: every label is the composer's `Field` (13/500, sentence case, 6 above its control), in the dialog and in
    Details alike. One row per model: its model menu, then its role menu (rows after the first; the first shows "Main"
    as quiet text in that place, so the columns line up), then the remove button, centred on one line, 8 apart. The
-   role is a menu, never a native select. */
+   role is a menu, never a native select.
+
+   CA-03 P6: under Tools it can use, What it remembers: optional, one well that grows from one row to three, up to 200
+   characters, saved as `payload.memory`. It hands its words over when the field is left, not on every key. */
 
 import { X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
-import { AGENT_MODELS_MAX, type AgentModel } from "@/lib/build/graph";
+import { AGENT_MODELS_MAX, MEMORY_MAX, type AgentModel } from "@/lib/build/graph";
 import { harnessTool, hiddenModelName, modelMenu, modelRoles, nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import { t } from "@/lib/theme/tokens";
@@ -28,7 +31,7 @@ import { t } from "@/lib/theme/tokens";
 import { Field, TextButton } from "./composeControls";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { PickMenu } from "./PickMenu";
-import { chipStyle, text } from "./refinedStyles";
+import { chipStyle, text, typedArea } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
 export const AGENT_SETUP_COPY = {
@@ -40,6 +43,10 @@ export const AGENT_SETUP_COPY = {
   toolsLine: "Optional",
   /** CA-03: where the first row's role menu would be. */
   main: "Main",
+  /** CA-03 P6. */
+  memory: "What it remembers",
+  memoryHint: "Optional",
+  memoryPlaceholder: "Which dishes it featured, in a notes file it keeps",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
   removeTool: (name: string) => `Remove ${name}`,
@@ -58,6 +65,8 @@ export interface AgentSetupValue {
   models: SetupModelRow[];
   /** Tool ids or typed names, in the order they were added. */
   tools: string[];
+  /** CA-03 P6: what it remembers; absent or empty when it says nothing. */
+  memory?: string;
 }
 
 /** Whether every model row names a model: an agent is never saved without one. */
@@ -108,8 +117,12 @@ export interface AgentSetupFieldsProps {
   openMainModel?: number;
 }
 
+/** One row to three, as the words need: a line per 44 characters or per line break. */
+export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 44)), 0)));
+
 export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
   const [cleared, setCleared] = useState<string | null>(null);
+  const [memory, setMemory] = useState(value.memory ?? "");
   const uid = useId();
   const tool = harnessTool(value.harness);
   const menu = modelMenu(tool);
@@ -240,6 +253,21 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
             step="tool"
           />
         </div>
+      </Field>
+
+      <Field id={`${uid}-memory`} label={AGENT_SETUP_COPY.memory} hint={AGENT_SETUP_COPY.memoryHint}>
+        <textarea
+          id={`${uid}-memory`}
+          rows={memoryRows(memory)}
+          maxLength={MEMORY_MAX}
+          value={memory}
+          placeholder={AGENT_SETUP_COPY.memoryPlaceholder}
+          onChange={(event) => setMemory(event.target.value)}
+          onBlur={() => {
+            if (memory.trim() !== (value.memory ?? "").trim()) onChange({ ...value, memory: memory.trim() });
+          }}
+          style={typedArea(phone, { resize: "none" })}
+        />
       </Field>
     </div>
   );

@@ -232,3 +232,30 @@ describe("what the agent runs in, its models and its tools (CA-02 P5)", () => {
     expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ model: "Manus", harness: "manus" }));
   });
 });
+
+describe("what it remembers (CA-03 P6)", () => {
+  it("sits under Tools it can use: optional, one row growing to three, up to 200 characters", () => {
+    open();
+    const field = screen.getByLabelText("What it remembers") as HTMLTextAreaElement;
+    expect(field.placeholder).toBe("Which dishes it featured, in a notes file it keeps");
+    expect(field.maxLength).toBe(200);
+    expect(field.rows).toBe(1);
+    fireEvent.change(field, { target: { value: "x".repeat(120) } });
+    expect(field.rows).toBe(3);
+    const tools = screen.getByRole("group", { name: "Tools it can use" });
+    expect(tools.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is saved with the agent when it says something, and left out when it is empty", () => {
+    const props = open();
+    const field = screen.getByLabelText("What it remembers");
+    fireEvent.change(field, { target: { value: "  which page sections it already reviewed " } });
+    fireEvent.blur(field);
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(props.onAdd).toHaveBeenCalledWith(expect.objectContaining({ memory: "which page sections it already reviewed" }));
+    cleanup();
+    const again = open();
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(vi.mocked(again.onAdd).mock.calls[0][0]).not.toHaveProperty("memory");
+  });
+});

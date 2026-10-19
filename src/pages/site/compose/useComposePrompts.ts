@@ -121,6 +121,8 @@ export interface AgentSetupInput {
   models?: AgentModel[];
   /** Tool ids or typed names: each becomes a reference to the build's integration node for it, made when missing. */
   tools?: readonly string[];
+  /** CA-03 P6: what it remembers; empty takes it off. */
+  memory?: string | null;
 }
 
 export interface AgentInput extends AgentSetupInput {
@@ -580,7 +582,7 @@ export function useComposePrompts({
     return refs;
   };
 
-  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools }: AgentInput) =>
+  const addAgentOrTeam = ({ kind, name, model, instructions, harness, models, tools, memory }: AgentInput) =>
     nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
@@ -591,6 +593,7 @@ export function useComposePrompts({
           ...(harness ? { harness } : null),
           ...(models && models.length > 1 ? { models } : null),
           ...(toolRefs.length ? { toolRefs } : null),
+          ...(memory?.trim() ? { memory } : null),
         };
         if (kind === "agent") {
           const created = await addAgent(build, nodes.current(), { name, model, ...setup });
@@ -632,14 +635,14 @@ export function useComposePrompts({
         return false;
       });
 
-  const setAgent = (id: string, { model, harness, models, tools }: AgentSetupInput) =>
+  const setAgent = (id: string, { model, harness, models, tools, memory }: AgentSetupInput) =>
     void nodes
       .run(async () => {
         const build = await latest.current.ensureBuild();
         const toolRefs = await toolRefsFor(build, tools ?? []);
         const node = findNode(nodes.current(), id);
         if (!node) return;
-        nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs }));
+        nodes.record(node.id, await setAgentSetup(rowOf(node), { model, harness: harness ?? null, models: models ?? [], toolRefs, ...(memory !== undefined ? { memory } : null) }));
         noteTool(build, harness);
       })
       .catch(failed("Couldn't save that agent. Try again."));

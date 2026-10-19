@@ -209,7 +209,7 @@ export interface DetailsHandlers {
   /** UI-P69: write an agent's instructions. Absent, they are only shown. */
   onInstructions?: (id: string, text: string) => void;
   /** CA-02 P5: change what an agent ran in, its models or its tools. Absent: they are shown, not edited. */
-  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[] }) => void;
+  onAgentSetup?: (id: string, setup: { model: string; harness: string | null; models?: AgentModel[]; tools: string[]; memory?: string }) => void;
   onRemoveInside: (id: string) => void;
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
@@ -1190,7 +1190,8 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
   const [openModel, setOpenModel] = useState(0);
   const change = (next: AgentSetupValue) => {
     setValue(next);
-    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools });
+    // What it remembers goes only when it is there or was just cleared: an agent without one is written as before.
+    if (setupReady(next)) onAgentSetup(id, { ...savedModels(next), harness: next.harness, tools: next.tools, ...(next.memory !== undefined ? { memory: next.memory } : null) });
   };
   const main = value.models[0]?.model ?? null;
   return (
@@ -1220,6 +1221,7 @@ function AgentSetupLines({ setup }: { setup: AgentSetupValue }) {
         <KeyValue key={index} label={index === 0 ? "Model" : `Model ${index + 1}`}>{`${row.model ?? ""} · ${row.role}`}</KeyValue>
       ))}
       {setup.tools.length ? <KeyValue label="Tools it can use">{setup.tools.join(" · ")}</KeyValue> : null}
+      {setup.memory ? <KeyValue label="What it remembers">{setup.memory}</KeyValue> : null}
     </div>
   );
 }

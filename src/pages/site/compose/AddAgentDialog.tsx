@@ -62,6 +62,8 @@ export interface AddAgentInput {
   models?: AgentModel[];
   /** CA-02 P5: the tools it can use, as ids or typed names. */
   tools: string[];
+  /** CA-03 P6: what it remembers; only when it says. */
+  memory?: string;
 }
 
 /** CA-02 P4: what "Add as an agent" opens the dialog with. */
@@ -122,6 +124,7 @@ function Form({
       harness: setup.harness,
       tools: setup.tools,
       ...(seed?.instructions ? { instructions: seed.instructions } : null),
+      ...(setup.memory?.trim() ? { memory: setup.memory.trim() } : null),
     });
   };
 

@@ -194,6 +194,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
             harness: step.harness ?? null,
             models: step.models && step.models.length > 1 ? step.models.map((row) => ({ ...row })) : [{ model: step.model, role: "main" }],
             tools: (step.toolRefs ?? []).map((ref) => all.byId[ref]?.name).filter((name): name is string => Boolean(name)),
+            ...(step.memory ? { memory: step.memory } : null),
           },
         }
       : null),

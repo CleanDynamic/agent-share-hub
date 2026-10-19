@@ -1035,3 +1035,13 @@ describe("a check, drawn by the evidence renderer", () => {
     expect(screen.queryByTestId("check-answers")).toBeNull();
   });
 });
+
+describe("what an agent remembers, on the build page (CA-03 P6)", () => {
+  it("labels the existing memory field What it remembers", () => {
+    const type = makeType({ key: "agent_config", renderer: "agent_config", category: "configuration", schema: { fields: [{ key: "memory", label: "Memory", type: "text" }] } } as Partial<NodeType> & { key: string; renderer: string });
+    const node = makeNode({ type: "agent_config", payload: { system_prompt: "x", model: "Opus 5.5", memory: "which page sections it already reviewed" } });
+    const { container } = render(<NodeCard node={node} nodeType={type} build={build} resolveNode={noResolve} resolveMedia={noMedia} />);
+    expect(container.textContent).toContain("What it rememberswhich page sections it already reviewed");
+    expect(container.textContent).not.toMatch(/Memory/);
+  });
+});

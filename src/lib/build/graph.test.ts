@@ -826,3 +826,40 @@ describe("a check is a step (CA-03 P5)", () => {
     expect(testedStepOf(steps, null)).toBe("c1");
   });
 });
+
+describe("what an agent remembers (CA-03 P6)", () => {
+  it("saves it as payload.memory, trimmed, and leaves the key out when it is empty", async () => {
+    await addAgent(BUILD, [], { model: "Opus 5.5", memory: "  which page sections it already reviewed " });
+    expect(payloadWritten()).toEqual({ system_prompt: "", model: "Opus 5.5", memory: "which page sections it already reviewed" });
+    upsertNode.mockClear();
+    await addAgent(BUILD, [], { model: "Opus 5.5", memory: "   " });
+    expect(payloadWritten()).toEqual({ system_prompt: "", model: "Opus 5.5" });
+    expect("memory" in payloadWritten()).toBe(false);
+  });
+
+  it("refuses more than 200 characters", async () => {
+    await expect(addAgent(BUILD, [], { model: "Opus 5.5", memory: "x".repeat(201) })).rejects.toThrow("What it remembers is at most 200 characters.");
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("changes it from Details, takes it off when emptied, and keeps it when the setup leaves it out", async () => {
+    const agent = node({ type: "agent_config", payload: { system_prompt: "x", model: "Opus 5.5", memory: "old" } }) as BuildNode;
+    await setAgentSetup(agent, { model: "Opus 5.5", memory: "the dishes it featured" });
+    expect(payloadWritten().memory).toBe("the dishes it featured");
+    upsertNode.mockClear();
+    await setAgentSetup(agent, { model: "Opus 5.5", memory: "" });
+    expect("memory" in payloadWritten()).toBe(false);
+    upsertNode.mockClear();
+    await setAgentSetup(agent, { model: "Opus 5.5", harness: null });
+    expect(payloadWritten().memory).toBe("old");
+  });
+
+  it("reads it back on the step, and an agent without one reads as before", () => {
+    const [withMemory, without] = buildSteps([
+      node({ id: "a1", type: "agent_config", position: 1, payload: { system_prompt: "x", model: "Opus 5.5", memory: "the dishes it featured" } }),
+      node({ id: "a2", type: "agent_config", position: 2, payload: { system_prompt: "y", model: "Opus 5.5" } }),
+    ] as NodeTree[]);
+    expect(withMemory.memory).toBe("the dishes it featured");
+    expect("memory" in without).toBe(false);
+  });
+});

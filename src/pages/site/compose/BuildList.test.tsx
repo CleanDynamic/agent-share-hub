@@ -708,3 +708,20 @@ describe("a check in the List (CA-03 P5)", () => {
     expect(dotOf(checkStep(13, 14, null))).toBe("cat-breakage");
   });
 });
+
+describe("what an agent remembers, in the List (CA-03 P6)", () => {
+  it("is one quiet line under the agent with a 7px --label dot: Remembers {memory}", () => {
+    const base = sandboxListProps("bakery");
+    const steps = base.steps.map((step) => (step.kind === "agent" ? { ...step, memory: "which dishes it featured" } : step));
+    list({ ...base, steps });
+    const agent = screen.getByRole("group", { name: /^Agent 5/ });
+    const line = within(agent).getByTestId("memory-line");
+    expect(line.textContent).toBe("Remembers which dishes it featured");
+    expect((line.firstElementChild as HTMLElement).style.width).toBe("7px");
+  });
+
+  it("says nothing for an agent that remembers nothing", () => {
+    list();
+    expect(screen.queryByTestId("memory-line")).toBeNull();
+  });
+});

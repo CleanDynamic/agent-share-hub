@@ -18,7 +18,9 @@
    "When I asked" is the normal case and shows nothing.
 
    CA-03 P4: a team's first agent is its lead. The team's eyebrow says what the lead ran in ("Team · led by an agent
-   in Claude Code"); the lead's row is "Lead agent"; the others sit under "Handed work to", each "Agent · {name}". */
+   in Claude Code"); the lead's row is "Lead agent"; the others sit under "Handed work to", each "Agent · {name}".
+
+   CA-03 P6: what an agent remembers is one quiet line under it, led by a 7px `--label` dot: "Remembers {memory}". */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
@@ -89,6 +91,8 @@ export const LIST_COPY = {
   showFull: "Show full prompt",
   /** CA-03 P5: a check's eyebrow. */
   check: CHECK_COPY.eyebrow,
+  /** CA-03 P6. */
+  remembers: (memory: string) => `Remembers ${memory}`,
 } as const;
 
 export interface BuildListProps {
@@ -506,6 +510,7 @@ function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?
         <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
       </div>
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
+      {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
     </div>
@@ -627,6 +632,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
           {runsLabel(step.runs) ? <DotLine testId="runs-line">{runsLabel(step.runs)}</DotLine> : null}
+          {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
         </div>
       </div>
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
