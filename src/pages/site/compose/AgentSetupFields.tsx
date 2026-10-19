@@ -117,8 +117,8 @@ export interface AgentSetupFieldsProps {
   openMainModel?: number;
 }
 
-/** One row to three, as the words need: a line per 44 characters or per line break. */
-export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 44)), 0)));
+/** One row to three, as the words need: a line per 32 characters (the Details column is the narrowest) or line break. */
+export const memoryRows = (text: string): number => Math.min(3, Math.max(1, text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 32)), 0)));
 
 export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
   const [cleared, setCleared] = useState<string | null>(null);

@@ -332,7 +332,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {/* The text, two lines in 36; it gives up a pixel or two when the box `layoutMap` sized is shorter. */}
               <span
                 style={{
-                  flex: "0 1 36px",
+                  /* CA-03: a check's text is one line, so its status in the foot never meets it. */
+                  flex: check ? "0 1 18px" : "0 1 36px",
                   minHeight: 0,
                   padding: "0 12px",
                   boxSizing: "border-box",
@@ -341,14 +342,14 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                   lineHeight: 1.5,
                   overflow: "hidden",
                   display: "-webkit-box",
-                  WebkitLineClamp: 2,
+                  WebkitLineClamp: check ? 1 : 2,
                   WebkitBoxOrient: "vertical",
                   overflowWrap: "anywhere",
                 }}
               >
                 {box.text}
               </span>
-              <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
                 {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
             </>

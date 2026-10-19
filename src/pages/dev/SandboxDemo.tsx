@@ -10,7 +10,7 @@
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
    `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code|shape-team-checks` draws one of CA-02's five
-   shapes of AI use, or CA-03's sixth
+   shapes of AI use, or CA-03's sixth; `&check=failed` draws its check with one run failed
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
    `?details=pair` is a typed prompt saved as Claude with Grok 4.7, for the note on a pair that breaks the rules (CA-02 P8).
    The Add menu opens the agent, manual step, tool and code dialogs here, writing nothing (CA-02 P10).
@@ -21,7 +21,7 @@ import { useMemo, useState } from "react";
 import { AddAgentDialog } from "@/pages/site/compose/AddAgentDialog";
 import { AddCheckDialog } from "@/pages/site/compose/AddCheckDialog";
 import { AddCodeDialog } from "@/pages/site/compose/AddCodeDialog";
-import { canCheck } from "@/lib/build/graph";
+import { canCheck, type Runs, type Step } from "@/lib/build/graph";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
 import { AddToolDialog } from "@/pages/site/compose/AddToolDialog";
@@ -34,7 +34,7 @@ import { sandboxDetailsProps, sandboxMapProps, sandboxListProps, sandboxSourcesP
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
 import { BuildList } from "@/pages/site/compose/BuildList";
-import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
+import { DetailsPanel, type DetailsPanelProps } from "@/pages/site/compose/DetailsPanel";
 import { PostTab } from "@/pages/site/compose/PostTab";
 import { SandboxView } from "@/pages/site/compose/SandboxView";
 import { SourcesPanel } from "@/pages/site/compose/SourcesPanel";
@@ -79,9 +79,17 @@ function brokenPair() {
 }
 
 /** A CA-02 shape as the List and the Map take it, Details' selection marked in both. */
-function shapeFixture(key: ShapeKey, select: string | null) {
+/** CA-03 P10: `&check=failed` draws a shape's check as if one of its runs failed, for the List's failing state. */
+const failedCheck = (steps: readonly Step[]): Step[] => steps.map((step) => (step.check && step.check.total ? { ...step, check: { ...step.check, passed: step.check.total - 1 } } : step));
+
+function shapeFixture(key: ShapeKey, select: string | null, failed = false) {
   const selectedId = select ?? SHAPES[key].selected;
-  return { list: { ...shapeListProps(key), selectedId }, map: { ...shapeMapProps(key), selectedId } };
+  const list = shapeListProps(key);
+  const map = shapeMapProps(key);
+  return {
+    list: { ...list, steps: failed ? failedCheck(list.steps) : list.steps, selectedId },
+    map: { ...map, steps: failed ? failedCheck(map.steps) : map.steps, selectedId },
+  };
 }
 
 export default function SandboxDemo({ fit = "board", state = "populated" }: DesignPageProps) {
@@ -96,10 +104,17 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const phone = useIsPhone();
   const fine = useFinePointer();
   const shape = SHAPE_KEYS.find((key) => asBuild === `shape-${key}`) ?? null;
-  const team = shape ? shapeFixture(shape, params.get("select")) : asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
+  const team = shape ? shapeFixture(shape, params.get("select"), params.get("check") === "failed") : asBuild === "team" ? sandboxTeamFixture() : asBuild === "manual" ? sandboxManualFixture() : null;
   const list = team?.list ?? sandboxListProps(which);
   const openedId = params.get("opened");
   const opened = team && openedId ? (team.map.steps.flatMap((step) => [step, ...step.children]).find((step) => step.id === openedId) ?? null) : null;
+  /* CA-03 P10: How did it run? keeps what you pick here, writing nothing, so its fields can be seen. */
+  const [runsPicked, setRunsPicked] = useState<{ id: string; runs: Runs | null } | null>(null);
+  const withRuns = (props: DetailsPanelProps): DetailsPanelProps => ({
+    ...props,
+    view: props.view && runsPicked && "runs" in props.view && props.view.id === runsPicked.id ? { ...props.view, runs: runsPicked.runs } : props.view,
+    onRuns: (id, runs) => setRunsPicked({ id, runs }),
+  });
   const postDoc = params.get("post") === "thread" ? THREAD_POST : EMPTY_POST;
   const thread = useMemo(() => demoThread(postDoc), [postDoc]);
   return (
@@ -113,7 +128,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         list={<BuildList {...list} phone={phone} onOpenPrompt={setOpen} />}
         map={<BuildMap {...(team?.map ?? sandboxMapProps(mapOf))} opened={opened} onOpenPrompt={setOpen} />}
         trail={opened ? [{ id: opened.id, title: opened.title ?? opened.defaultTitle }] : []}
-        selection={<DetailsPanel {...(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
+        selection={<DetailsPanel {...withRuns(shape ? shapeDetailsProps(shape, params.get("select") ?? undefined) : asked === "pair" ? brokenPair() : sandboxDetailsProps(details, which))} phone={phone} onOpenPrompt={setOpen} />}
         onAddAgent={() => setDialog("agent")}
         onAddManual={() => setDialog("manual")}
         onAddTool={() => setDialog("tool")}
