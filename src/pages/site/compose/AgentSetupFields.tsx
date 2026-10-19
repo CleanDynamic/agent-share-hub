@@ -9,21 +9,25 @@
      tiers offers them.
    - Tools it can use: optional, the tool picker for a tool, several allowed, shown as removable chips.
 
-   Controlled: the caller holds the value and decides when it is written. */
+   Controlled: the caller holds the value and decides when it is written.
+
+   CA-03 P2: every label is the composer's `Field` (13/500, sentence case, 6 above its control), in the dialog and in
+   Details alike. One row per model: its model menu, then its role menu (rows after the first; the first shows "Main"
+   as quiet text in that place, so the columns line up), then the remove button, centred on one line, 8 apart. The
+   role is a menu, never a native select. */
 
 import { X } from "lucide-react";
-import { useEffect, useId, useState, type CSSProperties } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { IconButton } from "@/components/brand/IconButton";
 import { AGENT_MODELS_MAX, type AgentModel } from "@/lib/build/graph";
 import { harnessTool, hiddenModelName, modelMenu, modelRoles, nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
 import { t } from "@/lib/theme/tokens";
-import { DM_MONO } from "@/lib/theme/type";
 
-import { fieldBase } from "./composeFields";
-import { TextButton } from "./composeControls";
+import { Field, TextButton } from "./composeControls";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
+import { PickMenu } from "./PickMenu";
 import { chipStyle, text } from "./refinedStyles";
 import { ToolPicker } from "./ToolPicker";
 
@@ -34,6 +38,8 @@ export const AGENT_SETUP_COPY = {
   addModel: "Add a model",
   tools: "Tools it can use",
   toolsLine: "Optional",
+  /** CA-03: where the first row's role menu would be. */
+  main: "Main",
   role: (n: number) => `Role of model ${n}`,
   removeModel: (n: number) => `Remove model ${n}`,
   removeTool: (name: string) => `Remove ${name}`,
@@ -89,10 +95,8 @@ export function withHarness(value: AgentSetupValue, harness: string | null): { v
   return { value: { ...value, harness, models: single ? models.slice(0, 1) : models }, cleared };
 }
 
-const dialogLabel: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
-
-/** The Details panel's own field label: 11.5 in `--label`. */
-const panelLabel: CSSProperties = text(11.5, 400, t.label);
+/** The role column's width, so the remove buttons line up under each other. */
+const ROLE_WIDTH = 96;
 
 export interface AgentSetupFieldsProps {
   value: AgentSetupValue;
@@ -102,19 +106,16 @@ export interface AgentSetupFieldsProps {
   inBuild: readonly string[];
   /** CA-02 P8: opens the main model's menu each time it changes ("Change the model"). */
   openMainModel?: number;
-  /** The labels as the dialog draws them (DM Mono capitals, the default) or as the Details panel draws its own. */
-  labels?: "dialog" | "panel";
 }
 
-export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel, labels = "dialog" }: AgentSetupFieldsProps) {
-  const labelStyle = labels === "panel" ? panelLabel : dialogLabel;
+export function AgentSetupFields({ value, onChange, phone, inBuild, openMainModel }: AgentSetupFieldsProps) {
   const [cleared, setCleared] = useState<string | null>(null);
   const uid = useId();
   const tool = harnessTool(value.harness);
   const menu = modelMenu(tool);
   const several = menu.state === "options";
   const roles = roleChoices(value.harness);
-  const control: CSSProperties = { ...fieldBase, padding: "4px 8px", minHeight: phone ? 44 : 28, fontSize: phone ? 16 : 12.5, width: "auto" };
+  const removeSide = phone ? 44 : 26;
 
   useEffect(() => {
     if (!cleared) return;
@@ -126,113 +127,120 @@ export function AgentSetupFields({ value, onChange, phone, inBuild, openMainMode
     onChange({ ...value, models: value.models.map((entry, i) => (i === index ? { ...entry, ...row } : entry)) });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-        <span style={labelStyle}>{AGENT_SETUP_COPY.runsIn}</span>
-        <ToolPicker
-          label={AGENT_SETUP_COPY.runsIn}
-          value={value.harness}
-          onChange={(next) => {
-            const result = withHarness(value, next);
-            setCleared(result.cleared);
-            onChange(result.value);
-          }}
-          inBuild={inBuild}
-          allowNone
-          noneLabel={AGENT_SETUP_COPY.ownCode}
-          phone={phone}
-          step="agent"
-        />
-      </div>
-
-      <div role="group" aria-labelledby={`${uid}-models`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span id={`${uid}-models`} style={labelStyle}>
-          {AGENT_SETUP_COPY.models}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Field id={`${uid}-runs-in`} label={AGENT_SETUP_COPY.runsIn} group>
+        <span>
+          <ToolPicker
+            label={AGENT_SETUP_COPY.runsIn}
+            value={value.harness}
+            onChange={(next) => {
+              const result = withHarness(value, next);
+              setCleared(result.cleared);
+              onChange(result.value);
+            }}
+            inBuild={inBuild}
+            allowNone
+            noneLabel={AGENT_SETUP_COPY.ownCode}
+            phone={phone}
+            step="agent"
+          />
         </span>
-        {value.models.map((row, index) => (
-          <div key={index} data-testid="agent-model-row" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {index > 0 ? (
-              <select aria-label={AGENT_SETUP_COPY.role(index + 1)} value={row.role} onChange={(event) => setRow(index, { role: event.target.value })} style={control}>
-                {roles
-                  .filter((role) => role !== "main" || row.role === "main")
-                  .map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-              </select>
-            ) : null}
-            <ModelPicker
-              tool={tool}
-              value={row.model}
-              onChange={(model) => setRow(index, { model })}
-              phone={phone}
-              allowNone={false}
-              name={index === 0 ? undefined : `model ${index + 1}`}
-              openSignal={index === 0 ? openMainModel : undefined}
-            />
-            {index > 0 ? (
-              <IconButton
-                icon={X}
-                glyph="x"
-                boxed={false}
-                label={AGENT_SETUP_COPY.removeModel(index + 1)}
-                size={26}
-                onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })}
-                style={{ width: phone ? 44 : 24, height: phone ? 44 : 24, color: t.label }}
-              />
-            ) : null}
-          </div>
-        ))}
-        {several && value.models.length < AGENT_MODELS_MAX ? (
-          <span>
-            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
-              {AGENT_SETUP_COPY.addModel}
-            </TextButton>
-          </span>
-        ) : null}
-        <div aria-live="polite" data-testid="agent-model-cleared">
-          {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
-        </div>
-      </div>
+      </Field>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
-        <span style={labelStyle}>{AGENT_SETUP_COPY.tools}</span>
-        {value.tools.length > 0 ? (
-          <div role="list" aria-label={AGENT_SETUP_COPY.tools} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {value.tools.map((entry) => {
-              const name = toolName(entry) ?? entry;
-              return (
-                <span key={entry} role="listitem" style={{ ...chipStyle, paddingRight: 2, height: phone ? 44 : 24 }}>
-                  {name}
-                  <IconButton
-                    icon={X}
-                    glyph="x"
-                    boxed={false}
-                    label={AGENT_SETUP_COPY.removeTool(name)}
-                    size={26}
-                    onClick={() => onChange({ ...value, tools: value.tools.filter((other) => other !== entry) })}
-                    style={{ width: phone ? 44 : 20, height: phone ? 44 : 20, color: t.label }}
+      <Field id={`${uid}-models`} label={AGENT_SETUP_COPY.models} group>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {value.models.map((row, index) => (
+            <div key={index} data-testid="agent-model-row" style={{ display: "grid", gridTemplateColumns: several ? `minmax(0, 1fr) ${ROLE_WIDTH}px ${removeSide}px` : "minmax(0, 1fr)", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <ModelPicker
+                block
+                tool={tool}
+                value={row.model}
+                onChange={(model) => setRow(index, { model })}
+                phone={phone}
+                allowNone={false}
+                name={index === 0 ? undefined : `model ${index + 1}`}
+                openSignal={index === 0 ? openMainModel : undefined}
+              />
+              {several ? (
+                index > 0 ? (
+                  <PickMenu
+                    label={AGENT_SETUP_COPY.role(index + 1)}
+                    options={roles.filter((role) => role !== "main" || row.role === "main").map((role) => ({ value: role }))}
+                    value={row.role}
+                    onChange={(role) => setRow(index, { role })}
+                    phone={phone}
+                    style={{ width: "100%", justifyContent: "space-between" }}
                   />
-                </span>
-              );
-            })}
+                ) : (
+                  <span data-testid="agent-model-main" style={{ ...text(12.5, 400, t.text2), paddingLeft: 12 }}>
+                    {AGENT_SETUP_COPY.main}
+                  </span>
+                )
+              ) : null}
+              {index > 0 ? (
+                <IconButton
+                  icon={X}
+                  glyph="x"
+                  boxed={false}
+                  label={AGENT_SETUP_COPY.removeModel(index + 1)}
+                  size={26}
+                  onClick={() => onChange({ ...value, models: value.models.filter((_, i) => i !== index) })}
+                  style={{ width: removeSide, height: removeSide, flexShrink: 0 }}
+                />
+              ) : null}
+            </div>
+          ))}
+          {several && value.models.length < AGENT_MODELS_MAX ? (
+            <span>
+              <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onChange({ ...value, models: [...value.models, { model: null, role: nextRole(value.harness) }] })}>
+                {AGENT_SETUP_COPY.addModel}
+              </TextButton>
+            </span>
+          ) : null}
+          <div aria-live="polite" data-testid="agent-model-cleared">
+            {cleared ? <span style={text(12, 400, t.text2)}>{cleared}</span> : null}
           </div>
-        ) : null}
-        <ToolPicker
-          label={AGENT_SETUP_COPY.tools}
-          value={null}
-          onChange={(next) => {
-            if (!next) return;
-            const id = toolFor(next)?.id ?? next;
-            if (value.tools.some((entry) => (toolFor(entry)?.id ?? entry).toLowerCase() === id.toLowerCase())) return;
-            onChange({ ...value, tools: [...value.tools, id] });
-          }}
-          inBuild={inBuild}
-          phone={phone}
-          step="tool"
-        />
-      </div>
+        </div>
+      </Field>
+
+      <Field id={`${uid}-tools`} label={AGENT_SETUP_COPY.tools} group>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+          {value.tools.length > 0 ? (
+            <div role="list" aria-label={AGENT_SETUP_COPY.tools} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {value.tools.map((entry) => {
+                const name = toolName(entry) ?? entry;
+                return (
+                  <span key={entry} role="listitem" style={{ ...chipStyle, paddingRight: 2, height: phone ? 44 : 24 }}>
+                    {name}
+                    <IconButton
+                      icon={X}
+                      glyph="x"
+                      boxed={false}
+                      label={AGENT_SETUP_COPY.removeTool(name)}
+                      size={26}
+                      onClick={() => onChange({ ...value, tools: value.tools.filter((other) => other !== entry) })}
+                      style={{ width: phone ? 44 : 20, height: phone ? 44 : 20, color: t.label }}
+                    />
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
+          <ToolPicker
+            label={AGENT_SETUP_COPY.tools}
+            value={null}
+            onChange={(next) => {
+              if (!next) return;
+              const id = toolFor(next)?.id ?? next;
+              if (value.tools.some((entry) => (toolFor(entry)?.id ?? entry).toLowerCase() === id.toLowerCase())) return;
+              onChange({ ...value, tools: [...value.tools, id] });
+            }}
+            inBuild={inBuild}
+            phone={phone}
+            step="tool"
+          />
+        </div>
+      </Field>
     </div>
   );
 }

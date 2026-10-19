@@ -14,25 +14,27 @@
    and the tools it can use (`AgentSetupFields`). A team is led by its first
    agent, so with a team chosen the dialog is titled for that agent. "Add as an
    agent" (P4) opens it with the tool as the harness and the prompt's text as
-   the instructions. */
+   the instructions.
+
+   CA-03 P2: "One agent" or "A team of agents" is the segmented radio group, as the List and Map switch is drawn,
+   with the chosen one's line under it in quiet text. Labels are the composer's `Field`; the name is a 30-high well;
+   the dialog is the window recipe with a 15/500 title. */
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { useId, useState, type CSSProperties } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { Segmented } from "@/components/brand/Segmented";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { TITLE_MAX, type AgentModel } from "@/lib/build/graph";
 import { MODEL_VERSIONS } from "@/lib/models/registry";
 import { startingModel } from "@/lib/tools/modelRules";
-import { ring } from "@/lib/theme/controls";
-import { useInteractive } from "@/lib/theme/interactive";
-import { r } from "@/lib/theme/radius";
-import { t, tokenAlpha } from "@/lib/theme/tokens";
-import { DM_MONO, FIGTREE } from "@/lib/theme/type";
+import { t } from "@/lib/theme/tokens";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
-import { fieldBase } from "./composeFields";
+import { Field } from "./composeControls";
+import { dialogTitle, text, typedField, windowStyle } from "./refinedStyles";
 
 export const AGENT_DIALOG_COPY = {
   title: "Add an agent or a team",
@@ -85,53 +87,6 @@ export interface AddAgentDialogProps {
 /** The model a new agent starts on. */
 export const DEFAULT_AGENT_MODEL = MODEL_VERSIONS[0].name;
 
-function Choice({
-  checked,
-  disabled,
-  name,
-  value,
-  title,
-  line,
-  phone,
-  onChange,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  name: string;
-  value: string;
-  title: string;
-  line: string;
-  phone: boolean;
-  onChange: () => void;
-}) {
-  const { state, handlers } = useInteractive<HTMLLabelElement>();
-  return (
-    <label
-      {...handlers}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        minHeight: phone ? 44 : 40,
-        padding: "6px 10px",
-        boxSizing: "border-box",
-        borderRadius: r.control,
-        border: `1px solid ${checked ? t.text : t.line}`,
-        background: checked ? tokenAlpha("action", 0.12) : "transparent",
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "default" : "pointer",
-        ...(state.focusVisible ? ring(true) : null),
-      }}
-    >
-      <input type="radio" name={name} value={value} checked={checked} disabled={disabled} onChange={onChange} style={{ margin: 0 }} />
-      <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <span style={{ fontFamily: FIGTREE, fontSize: 13.5, fontWeight: 600, color: t.text }}>{title}</span>
-        <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{line}</span>
-      </span>
-    </label>
-  );
-}
-
 /** Where a new agent starts: its harness from "Add as an agent", else none, on the model that harness offers. */
 function firstSetup(seed: AgentSeed | null | undefined): AgentSetupValue {
   const harness = seed?.harness ?? null;
@@ -169,8 +124,6 @@ function Form({
       ...(seed?.instructions ? { instructions: seed.instructions } : null),
     });
   };
-  const label: CSSProperties = { fontFamily: DM_MONO, fontSize: 11.5, color: t.text2, textTransform: "uppercase", letterSpacing: "0.06em" };
-  const control: CSSProperties = { ...fieldBase, padding: "7px 10px", minHeight: phone ? 44 : 34, fontSize: phone ? 16 : 13.5 };
 
   return (
     <form
@@ -178,26 +131,25 @@ function Form({
         event.preventDefault();
         submit();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      style={{ display: "flex", flexDirection: "column", gap: 16 }}
     >
-      <div role="radiogroup" aria-label="What to add" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <Choice checked={kind === "agent"} name={`${uid}-kind`} value="agent" title={AGENT_DIALOG_COPY.one} line={AGENT_DIALOG_COPY.oneLine} phone={phone} onChange={() => choose("agent")} />
-        <Choice
-          checked={kind === "team"}
-          disabled={!teamsAvailable}
-          name={`${uid}-kind`}
-          value="team"
-          title={AGENT_DIALOG_COPY.team}
-          line={teamsAvailable ? AGENT_DIALOG_COPY.teamLine : AGENT_DIALOG_COPY.teamsMissing}
-          phone={phone}
-          onChange={() => choose("team")}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <Segmented
+          label="What to add"
+          semantics="radio"
+          size={phone ? 50 : 30}
+          fullWidth
+          value={kind}
+          onChange={(next) => choose(next)}
+          items={[
+            { value: "agent", label: AGENT_DIALOG_COPY.one },
+            { value: "team", label: AGENT_DIALOG_COPY.team, disabled: !teamsAvailable },
+          ]}
         />
+        <span style={text(12, 400, t.text2)}>{!teamsAvailable ? AGENT_DIALOG_COPY.teamsMissing : kind === "team" ? AGENT_DIALOG_COPY.teamLine : AGENT_DIALOG_COPY.oneLine}</span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label htmlFor={`${uid}-name`} style={label}>
-          Name
-        </label>
+      <Field id={`${uid}-name`} label="Name">
         <input
           id={`${uid}-name`}
           type="text"
@@ -205,9 +157,9 @@ function Form({
           maxLength={TITLE_MAX}
           placeholder={`${kind === "team" ? "Team" : "Agent"} ${nextNumber}`}
           onChange={(event) => setName(event.target.value)}
-          style={control}
+          style={typedField(phone)}
         />
-      </div>
+      </Field>
 
       <AgentSetupFields value={setup} onChange={setSetup} phone={phone} inBuild={inBuild} />
 
@@ -253,27 +205,9 @@ export function AddAgentDialog({ open, onOpenChange, nextNumber, teamsAvailable,
         <Dialog.Content
           aria-describedby={undefined}
           data-testid="add-agent-dialog"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 51,
-            width: 420,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "90dvh",
-            overflowY: "auto",
-            boxSizing: "border-box",
-            padding: 20,
-            borderRadius: r.panel,
-            background: t.solid,
-            border: `1px solid ${t.line}`,
-            boxShadow: t.shadowFloat,
-            color: t.text,
-            fontFamily: FIGTREE,
-          }}
+          style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 51, ...windowStyle(420) }}
         >
-          <Dialog.Title style={{ margin: "0 0 14px", fontFamily: FIGTREE, fontSize: 16, fontWeight: 600, color: t.text }}>{title}</Dialog.Title>
+          <Dialog.Title style={dialogTitle}>{title}</Dialog.Title>
           <Form nextNumber={nextNumber} teamsAvailable={teamsAvailable} onAdd={add} onCancel={close} phone={false} seed={seed} inBuild={inBuild} onKind={setKind} />
         </Dialog.Content>
       </Dialog.Portal>

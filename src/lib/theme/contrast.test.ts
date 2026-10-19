@@ -13,6 +13,7 @@
 import { describe, expect, it } from "vitest";
 import type { TokenName } from "./semantics";
 import { resolveToken as resolveRefined, type ThemeKey } from "./resolve";
+import { MAP_ARTWORK } from "@/pages/site/compose/mapArtwork";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
@@ -194,6 +195,27 @@ describe("the colour contract", () => {
       } else {
         expect(measured, `${cat} on module is pinned below ${TEXT_FLOOR}`).toBeGreaterThanOrEqual(pinned);
         expect(measured, `${cat} now reaches ${TEXT_FLOOR}: remove it from NOON_BELOW_TEXT_FLOOR`).toBeLessThan(TEXT_FLOOR);
+      }
+    }
+  });
+});
+
+/* ── CA-03 P2: the lines inside a Map box ─────────────────────────────────── */
+
+describe("the lines inside a Map box, on the box's own fill", () => {
+  /* A box's fill is artwork (`mapArtwork.ts`), not a token: Noon's is flat, Dusk's a shade from one value to another.
+     Each line is measured against every value its fill passes through. Its title is `--text`; every other line in an
+     agent's or a team's box is `--text2` (CA-03), never `--label`. */
+  const fills = (theme: ThemeKey): string[] => {
+    const paint = String(MAP_ARTWORK[theme].box.background);
+    return paint.match(/#[0-9a-f]{6}/gi) ?? [];
+  };
+
+  it.each(["noon", "dusk"] as const)("%s: the title and every other line reach 4.5:1", (theme) => {
+    expect(fills(theme).length).toBeGreaterThan(0);
+    for (const fill of fills(theme)) {
+      for (const ink of ["text", "text2"]) {
+        expect(round(contrast(resolveRefined(theme, ink), fill)), `${ink} on ${fill}`).toBeGreaterThanOrEqual(TEXT_FLOOR);
       }
     }
   });

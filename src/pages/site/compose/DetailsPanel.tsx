@@ -8,25 +8,30 @@
    mark at 24 beside its two meta lines (12/18 `--text2`); the text in a well (13/21); Read all of it (secondary 26)
    and the word count; Uses and Goes into as hairline lists (a `larr` or `rarr` lead in `--label`, the title
    12.5/500, the meta 11.5 `--label`, a ghost 24 `x` to remove); Add an input as a 12.5/500 `--text2` text button with
-   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour. */
+   no icon. Fields are the well recipe; a chosen way of running is the selected recipe, never a colour.
+
+   CA-03 P2: the eyebrow is the board's (Geist 10.5/500 `--label`, capitals, .06em: `EYEBROW`); every field label is
+   the composer's (13/500, 6 above its control); a label and its value read label over value (12 `--text2` over 13
+   `--text`, a hairline between pairs); How it runs is a list of choice rows; a session's prompts tick with the brand
+   checkbox; fields you type in are 30 high. 16 between groups, 6 between a label and its control, 8 in a row. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Pencil, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { Eyebrow } from "@/components/brand/Eyebrow";
+import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
-import { SELECTED } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
-import { TextButton } from "./composeControls";
+import { ChoiceRows } from "./ChoiceRows";
+import { FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
   firstRows,
@@ -39,7 +44,7 @@ import {
 } from "./detailsModel";
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
-import { bareButton, menuItem, menuSurface, text, tnum, wellField } from "./refinedStyles";
+import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
 import { MADE_FILE_NAME_MAX, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
@@ -268,12 +273,12 @@ function ShowMore({ hidden, phone, onClick }: { hidden: number; phone: boolean; 
   );
 }
 
-/** A row of key and value: a 90 label column, a hairline under it. */
+/** A label and its value (CA-03): the label 12 `--text2` over the value 13 `--text`, a hairline under the pair. */
 function KeyValue({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "90px minmax(0, 1fr)", gap: 8, alignItems: "baseline", padding: "10px 0", borderBottom: line }}>
-      <span style={quiet()}>{label}</span>
-      <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
+    <div data-testid="label-value" style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 0", borderBottom: line, minWidth: 0 }}>
+      <span style={text(12, 400, t.text2)}>{label}</span>
+      <span style={{ ...text(13, 400, t.text), overflowWrap: "anywhere" }}>{children}</span>
     </div>
   );
 }
@@ -308,7 +313,7 @@ function CommitField({
     }
     if (event.key === "Escape") setDraft(value);
   };
-  const style: CSSProperties = { ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) };
+  const style: CSSProperties = multiline ? typedArea(phone, ring(state.focusVisible)) : typedField(phone, ring(state.focusVisible));
   const common = {
     "aria-label": label,
     value: draft,
@@ -318,13 +323,14 @@ function CommitField({
     onKeyDown,
     ...handlers,
   };
-  return multiline ? <textarea rows={2} {...common} style={{ ...style, resize: "vertical", lineHeight: "21px" }} /> : <input type="text" {...common} style={style} />;
+  return multiline ? <textarea rows={2} {...common} style={style} /> : <input type="text" {...common} style={style} />;
 }
 
+/** A field label over its control: the composer's `Field` look, the label wrapping the control it names. */
 function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={quiet()}>{label}</span>
+      <span style={FIELD_LABEL}>{label}</span>
       {children}
     </label>
   );
@@ -334,9 +340,9 @@ function FieldBlock({ label, children }: { label: string; children: ReactNode })
 function Head({ eyebrow, children }: { eyebrow: ReactNode; children?: ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-      <Eyebrow as="p" style={{ margin: 0 }}>
+      <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap" }}>
         {eyebrow}
-      </Eyebrow>
+      </p>
       {children}
     </div>
   );
@@ -372,7 +378,7 @@ function Title({ id, title, fallback, editable, label, phone, onRename }: { id: 
             if (event.key === "Enter") finish(true);
             if (event.key === "Escape") finish(false);
           }}
-          style={{ ...wellField, padding: "4px 8px", fontSize: phone ? 16 : 16, fontWeight: 500, minHeight: phone ? 44 : 32 }}
+          style={typedField(phone, { fontSize: 16, fontWeight: 500 })}
         />
       ) : (
         <h3 data-default-title={title ? undefined : "true"} style={titleStyle(!title)}>
@@ -441,7 +447,7 @@ function AddInput({ id, options, phone, onAddUse, onAttach }: { id: string; opti
             </Menu.Item>
           ) : null}
           {menu.visible.map((option) => (
-            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 10px" }}>
+            <Menu.Item key={option.key} onSelect={() => onAddUse(id, option.use)} style={{ ...menuItem(true, phone), flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, padding: "4px 12px" }}>
               <span style={text(12.5, 500, t.text)}>{option.label}</span>
               {option.sub ? <span style={quiet()}>{option.sub}</span> : null}
             </Menu.Item>
@@ -533,7 +539,7 @@ function MadeName({ row, phone, onRename }: { row: MakesRow; phone: boolean; onR
         if (event.key === "Escape") setDraft(row.name);
       }}
       {...handlers}
-      style={{ ...wellField, flexGrow: 1, minWidth: 0, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13, ...ring(state.focusVisible) }}
+      style={typedField(phone, { flexGrow: 1, minWidth: 0, ...ring(state.focusVisible) })}
     />
   );
 }
@@ -623,7 +629,7 @@ function MakesList({
             onBlur={() => {
               if (!draft.trim()) close();
             }}
-            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+            style={typedField(phone)}
           />
           {taken ? <span style={quiet()}>{MAKES_COPY.taken}</span> : null}
         </div>
@@ -709,7 +715,7 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
         /* CA-02 P8: the menu follows the prompt's tool, as Typed here's does. A group, not a label: a label would name
            the menu's button and the note's button after itself. */
         <div role="group" aria-label="Model" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={quiet()}>Model</span>
+          <span style={FIELD_LABEL}>Model</span>
           <div>
             <ModelPicker tool={view.tool ?? null} value={view.model} onChange={(model) => h.onModel(view.id, model)} phone={phone} name="Model" openSignal={openModel} anyWithoutTool />
           </div>
@@ -752,7 +758,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
         <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
       </Head>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
-        <span style={quiet()}>Tool</span>
+        <span style={FIELD_LABEL}>Tool</span>
         <ToolPicker key={`${view.id}:tool`} label="Tool" value={view.tool} inBuild={inBuild} phone={phone} step="manual" onChange={(value) => commit({ tool: value ?? "" })} />
       </div>
       <FieldBlock label="What was done">
@@ -858,7 +864,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
       <div>
         <KeyValue label="Tool">{view.tool}</KeyValue>
         {view.pickTool && onSessionTool ? (
-          <div style={{ padding: "10px 0", borderBottom: line }}>
+          <div style={{ padding: "8px 0", borderBottom: line }}>
             <ToolPicker key={`${view.key}:tool`} label="Pick its tool" value={view.pickTool.value} inBuild={inBuild} allowNone phone={phone} step="session" onChange={(value) => onSessionTool(view.key, value)} />
           </div>
         ) : null}
@@ -872,7 +878,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <div role="group" aria-label="Prompts in this session">
           {shown.visible.map((row) => (
             <label key={row.ordinal} style={{ ...listRow(phone ? 44 : 40), cursor: "pointer" }}>
-              <input type="checkbox" checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} style={{ margin: 0, width: 16, height: 16, flexShrink: 0 }} />
+              <Checkbox checked={row.stepId !== null} onChange={(event) => onToggleSessionPrompt(view, row, event.target.checked)} />
               <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.label}</span>
             </label>
           ))}
@@ -940,49 +946,30 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
 
   return (
     <Section title="How it runs">
-      <div role="radiogroup" aria-label="How it runs" style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 8 }}>
-        {RUNS_CHOICES.map((entry) => {
-          const chosen = entry.how === how;
-          const label = entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label;
-          return (
-            <label
-              key={entry.how}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                minHeight: phone ? 44 : 32,
-                padding: "0 8px",
-                boxSizing: "border-box",
-                borderRadius: 6,
-                border: "1px solid transparent",
-                ...(chosen ? SELECTED : null),
-                cursor: "pointer",
-                ...text(12.5, chosen ? 500 : 400, chosen ? t.text : t.text2),
-              }}
-            >
-              <input type="radio" name={name} checked={chosen} onChange={() => pick(entry)} style={{ margin: 0 }} />
-              {label}
-            </label>
-          );
-        })}
+      <div style={{ paddingTop: 8 }}>
+        <ChoiceRows
+          label="How it runs"
+          name={name}
+          phone={phone}
+          value={how}
+          onChange={(next) => pick(RUNS_CHOICES.find((entry) => entry.how === next) ?? RUNS_CHOICES[0])}
+          rows={RUNS_CHOICES.map((entry) => ({ value: entry.how, label: entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label }))}
+        />
       </div>
       {field?.kind === "count" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8 }}>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             aria-label={field.label}
-            min={field.min}
-            max={field.max}
-            step={1}
-            value={count}
-            onChange={(event) => setCount(Number(event.target.value))}
+            value={Number.isFinite(count) ? String(count) : ""}
+            onChange={(event) => setCount(Number(event.target.value.replace(/[^0-9]/g, "")))}
             onBlur={() => {
               const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
               setCount(next);
               if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
             }}
-            style={{ ...wellField, width: 72, padding: "6px 8px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+            style={typedField(phone, { width: 72, ...tnum })}
           />
           <span style={quiet()}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
         </div>
@@ -1002,7 +989,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
             onKeyDown={(event) => {
               if (event.key === "Enter") (event.target as HTMLInputElement).blur();
             }}
-            style={{ ...wellField, padding: "7px 10px", minHeight: phone ? 44 : 32, fontSize: phone ? 16 : 13 }}
+            style={typedField(phone)}
           />
           <span style={{ ...quiet(), ...tnum }}>
             {detail.length} / {field.max}
@@ -1035,7 +1022,7 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
           if (own) change({ ...value, models: [{ model: own, role: "main" }, ...value.models.slice(1)] });
         }}
       />
-      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} labels="panel" />
+      <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
     </>
   );
 }

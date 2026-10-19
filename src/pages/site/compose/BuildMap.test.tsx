@@ -121,8 +121,8 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.getAllByTestId("map-lane").map((lane) => lane.textContent)).toContain("Team 3runs by itself");
     const box = screen.getByTestId("map-box-t3");
     expect(box.style.height).toBe("112px");
-    expect(box.textContent).toContain("Team 3");
-    expect(box.textContent).toContain("Copy team");
+    // CA-03: the box's name sits inside it, at the top: its number, then its title.
+    expect(within(box).getByTestId("map-container-head").textContent).toBe("3Copy team");
     expect(box.textContent).toContain("4 agents · 1 file");
     expect(box.textContent).toContain("Runs once");
     expect(screen.getByRole("button", { name: "Open Team 3" })).toBeTruthy();
@@ -261,13 +261,19 @@ describe("the maker's Map in the refined look (UI-P94)", () => {
     expect(markup()).toMatch(/data-testid="map-result-label" style="[^"]*color:var\(--evidence\)/);
   });
 
-  it("titles the agent 13.5/500 under its 'Agent n' head", () => {
+  it("puts the agent's name inside its box at the top, 13/500 --text, and every other line 12 --text2 (CA-03)", () => {
     refinedMap();
     const agent = screen.getByTestId("map-box-a5");
-    expect(within(agent).getByText("Agent 5").style.fontSize).toBe("10.5px");
-    const title = within(agent).getByText("Order checker");
-    expect(title.style.fontSize).toBe("13.5px");
+    const title = within(agent).getByTestId("map-container-title");
+    expect(title.textContent).toBe("Order checker");
+    expect(title.style.fontSize).toBe("13px");
     expect(title.style.fontWeight).toBe("500");
+    expect(markup()).toMatch(/data-testid="map-container-title" style="[^"]*;color:var\(--text\)[;"]/);
+    // What it holds and how it runs: the two lines beside its inputs.
+    const lines = within(agent).getAllByText((_, element) => element?.tagName === "SPAN" && element.children.length === 0 && (element as HTMLElement).style.fontSize === "12px" && element.parentElement !== title.parentElement);
+    expect(lines.length).toBe(2);
+    for (const line of lines) expect(line.style.color === "" || line.style.color === "var(--text2)").toBe(true);
+    expect(markup()).not.toMatch(/data-testid="map-box-a5"[^>]*>(?:(?!<\/button>).)*color:var\(--label\)/s);
   });
 
   it("draws the legend's samples 1px in --text2", () => {

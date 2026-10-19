@@ -507,7 +507,8 @@ describe("an agent's harness, models and tools (CA-02 P5)", () => {
     panel("agent", "bakery", { view: withSetup(), onAgentSetup });
     expect(screen.getByRole("button", { name: "Runs in" }).textContent).toBe("Hermes Agent");
     expect(screen.getByRole("button", { name: "model Opus 5.5" })).toBeTruthy();
-    expect((screen.getByRole("combobox", { name: "Role of model 2" }) as HTMLSelectElement).value).toBe("other");
+    // CA-03: the role is a menu showing the role alone.
+    expect(screen.getByRole("button", { name: "Role of model 2" }).textContent).toBe("other");
     expect(screen.getByRole("button", { name: "model 2 Haiku 5.5" })).toBeTruthy();
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Gmail", "GitHub Copilot"]);
     fireEvent.click(screen.getByRole("button", { name: "Remove Gmail" }));

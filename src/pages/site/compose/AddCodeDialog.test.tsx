@@ -20,7 +20,13 @@ function open(over: Partial<AddCodeDialogProps> = {}) {
 }
 
 const well = () => screen.getByLabelText("Code") as HTMLTextAreaElement;
-const language = () => screen.getByLabelText("Language") as HTMLSelectElement;
+/** CA-03: the language is a menu showing the language's name; the value it saves is the enum, as before. */
+const language = () => screen.getByRole("button", { name: "Language" });
+const shown = () => language().textContent;
+const pickLanguage = (name: string) => {
+  fireEvent.keyDown(language(), { key: "Enter" });
+  fireEvent.click(screen.getByRole("menuitemradio", { name }));
+};
 const filename = () => screen.getByLabelText("File name, optional") as HTMLInputElement;
 const add = () => screen.getByRole("button", { name: "Add" }) as HTMLButtonElement;
 const upload = (...files: File[]) => fireEvent.change(screen.getByTestId("code-files"), { target: { files } });
@@ -48,13 +54,16 @@ describe("Add › Code (CA-02 P7)", () => {
   it("prefills the language from the text, lets a .tsx name override it, and keeps a hand-picked one", () => {
     open();
     fireEvent.change(well(), { target: { value: "def main():\n    print('hi')\n" } });
-    expect(language().value).toBe("python");
+    expect(shown()).toBe("Python");
     fireEvent.change(filename(), { target: { value: "App.tsx" } });
-    expect(language().value).toBe("tsx");
-    fireEvent.change(language(), { target: { value: "other" } });
+    expect(shown()).toBe("TypeScript (TSX)");
+    pickLanguage("Other");
     fireEvent.change(filename(), { target: { value: "main.py" } });
-    expect(language().value).toBe("other");
-    expect([...language().options].map((o) => o.value)).toEqual(["ts", "tsx", "js", "jsx", "python", "sql", "json", "yaml", "bash", "html", "css", "other"]);
+    expect(shown()).toBe("Other");
+    fireEvent.keyDown(language(), { key: "Enter" });
+    expect(screen.getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual(
+      ["ts", "tsx", "js", "jsx", "python", "sql", "json", "yaml", "bash", "html", "css", "other"].map((value) => CODE_DIALOG_COPY.languages[value as keyof typeof CODE_DIALOG_COPY.languages]),
+    );
     expect(filename().maxLength).toBe(120);
   });
 
@@ -95,7 +104,7 @@ describe("Add › Code (CA-02 P7)", () => {
       new File(["x".repeat(100_001)], "huge.js", { type: "text/javascript" }),
     );
     await waitFor(() => expect(screen.getByRole("list", { name: "Upload files" })).toBeTruthy());
-    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sqlsql · 1 lines", "app.tsts · 1 lines"]);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["schema.sqlSQL · 1 lines", "app.tsTypeScript · 1 lines"]);
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("blob.ts: That file isn't text.");
     expect(alert.textContent).toContain("photo.png: That file isn't text.");
@@ -115,7 +124,7 @@ describe("Add › Code (CA-02 P7)", () => {
   it("starts with the text Keep it as code hands it", () => {
     open({ seed: "const a = 1;\nconst b = 2;\nconst c = 3;" });
     expect(well().value).toBe("const a = 1;\nconst b = 2;\nconst c = 3;");
-    expect(language().value).toBe("js");
+    expect(shown()).toBe("JavaScript");
   });
 
   it("is a bottom sheet on a phone", () => {

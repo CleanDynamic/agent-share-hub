@@ -34,7 +34,11 @@
    THE MAKER'S PARTS (UI-P94, `refined/{dusk,noon}/composer-map.html`). The composer's Map adds to UI-P91's recipes:
    input rows 20 high (2 apart, so each square stays on its wire end's 22 pitch), the state line 18 (10.5 `--label`),
    the text 36 (11 `--text2`, two lines), the foot 20; the legend's samples are 1px `--text2`. The result box has no
-   evidence border in the refined look: its head says "Result" in `--evidence` 10.5/500 before the title. */
+   evidence border in the refined look: its head says "Result" in `--evidence` 10.5/500 before the title.
+
+   CA-03 P2: an agent's or a team's box has its name inside it, at the top: its number, then the title 13/500
+   `--text`. Every other line in it is 12 `--text2`, never `--label` (each measured at 4.5:1 or more on the box's fill
+   in `contrast.test.ts`). The Map's captions and dates are the composer's one eyebrow style, `EYEBROW`. */
 
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
@@ -49,6 +53,7 @@ import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
 import { MAP_ARTWORK, type MapRoom } from "./mapArtwork";
 import { lineCount } from "./codeModel";
+import { EYEBROW } from "./refinedStyles";
 
 export const MAP_COPY = {
   key: "click to select · double-click to read all of it · drag from a dot to connect",
@@ -261,16 +266,17 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
         </>
       ) : big ? (
         <>
-          <span style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px", ...geist(10.5, 500, t.label) }}>
-            {box.stepKind === "team" ? "Team" : "Agent"} {box.number}
+          {/* CA-03: the name inside the box, at the top; room on the right for Open. */}
+          <span data-testid="map-container-head" style={{ height: MAP_SIZES.head, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, padding: "0 64px 0 12px", minWidth: 0 }}>
+            <span style={{ ...refinedNumber, fontSize: 12, color: t.text2 }}>{box.number}</span>
+            <span data-testid="map-container-title" style={{ ...geist(13, 500, t.text), ...ellipsis }}>{box.title}</span>
           </span>
-          {/* The named inputs down the left, the title, counts and how it runs beside them. */}
+          {/* The named inputs down the left; what it holds and how it runs beside them. */}
           <span style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
             <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
             <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-              <span style={{ ...geist(13.5, 500, box.defaultTitle ? t.text2 : t.text), ...ellipsis }}>{box.title}</span>
-              <span style={{ ...geist(11, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
-              <span style={{ ...geist(11.5, 400, t.text2), ...ellipsis }}>{box.runs}</span>
+              <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
+              <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.runs}</span>
             </span>
           </span>
         </>
@@ -430,14 +436,14 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
   const sample: CSSProperties = { display: "inline-block", width: 24, height: 0, borderTop: `${1.2}px solid ${t.label}`, verticalAlign: "middle" };
   const caption: CSSProperties = geist(12, 400, t.text2);
   const count: CSSProperties = { fontVariantNumeric: "tabular-nums" };
-  /* The frame's captions: an eyebrow in the refined look, Geist 10.5/500 `--label` .06em. */
-  const eyebrow = (): CSSProperties => ({ ...geist(10.5, 500, t.label), textTransform: "uppercase", letterSpacing: "0.06em" });
+  /* The frame's captions: the composer's one eyebrow style. */
+  const eyebrow = (): CSSProperties => EYEBROW;
   const Box = RefinedBoxView;
 
   return (
     <div ref={root} tabIndex={-1} onKeyDown={onKeyDown} data-testid="opened-map" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, outline: "none" }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, ...caption }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 16 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <span aria-hidden="true" style={sample} />
             goes into <span style={count}>{layout.wires.length}</span>
@@ -731,7 +737,7 @@ export function BuildMap(props: BuildMapProps) {
               <span
                 key={column.index}
                 data-testid="map-column-date"
-                style={{ position: "absolute", left: column.x, top: 0, ...(geist(10.5, 500, t.label)), textTransform: "uppercase", letterSpacing: "0.06em" }}
+                style={{ position: "absolute", left: column.x, top: 0, ...EYEBROW }}
               >
                 {columnDate(column.date)}
               </span>

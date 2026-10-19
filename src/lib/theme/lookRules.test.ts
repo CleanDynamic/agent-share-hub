@@ -23,7 +23,27 @@ import { describe, expect, it } from "vitest";
 import { SPACE_REFINED } from "./space";
 
 /** Every source file CA-03 adds or changes, from the repository root. */
-export const CA03_FILES: readonly string[] = [];
+export const CA03_FILES: readonly string[] = [
+  // P2
+  "src/components/brand/Segmented.tsx",
+  "src/lib/theme/contrast.test.ts",
+  "src/pages/site/compose/AddAgentDialog.test.tsx",
+  "src/pages/site/compose/AddAgentDialog.tsx",
+  "src/pages/site/compose/AddCodeDialog.test.tsx",
+  "src/pages/site/compose/AddCodeDialog.tsx",
+  "src/pages/site/compose/AddManualStepDialog.tsx",
+  "src/pages/site/compose/AgentSetupFields.tsx",
+  "src/pages/site/compose/BuildList.tsx",
+  "src/pages/site/compose/BuildMap.test.tsx",
+  "src/pages/site/compose/BuildMap.tsx",
+  "src/pages/site/compose/ChoiceRows.tsx",
+  "src/pages/site/compose/composeControls.tsx",
+  "src/pages/site/compose/DetailsPanel.test.tsx",
+  "src/pages/site/compose/DetailsPanel.tsx",
+  "src/pages/site/compose/ModelPicker.tsx",
+  "src/pages/site/compose/PickMenu.tsx",
+  "src/pages/site/compose/refinedStyles.ts",
+];
 
 const ROOT = path.resolve(__dirname, "../../..");
 
@@ -191,7 +211,9 @@ function componentFindings(code: string, file: string): Finding[] {
     const at = match.index ?? 0;
     const before = code.slice(Math.max(0, at - 400), at);
     const tagStart = before.lastIndexOf("<");
-    const tag = before.slice(tagStart) + code.slice(at, code.indexOf(">", at) + 1);
+    // An input closes itself: read to its "/>", past any arrow function in its props.
+    const close = code.indexOf("/>", at);
+    const tag = before.slice(tagStart) + code.slice(at, close < 0 ? code.indexOf(">", at) + 1 : close + 2);
     const hidden = /VisuallyHidden|VISUALLY_HIDDEN/.test(tag) || /<VisuallyHidden>\s*$/.test(before.slice(0, tagStart));
     if (!hidden) out.push(found(`a visible ${match[1]} input`, code, at));
   }
@@ -333,6 +355,7 @@ describe("the look rules, on snippets", () => {
     expect(rules("<input type=\"radio\" checked />")).toEqual(["a visible radio input"]);
     expect(rules("<VisuallyHidden><input type=\"radio\" checked /></VisuallyHidden>")).toEqual([]);
     expect(rules("<input type=\"checkbox\" style={VISUALLY_HIDDEN} />")).toEqual([]);
+    expect(rules("<input type=\"radio\" onChange={() => pick(a)} style={VISUALLY_HIDDEN} />")).toEqual([]);
     expect(rules("const s = { textTransform: \"uppercase\" };")).toEqual(["upper case outside the Details eyebrow"]);
     expect(rules("export const EYEBROW = { textTransform: \"uppercase\" };", "src/pages/site/compose/refinedStyles.ts")).toEqual([]);
     expect(rules("const s = { fontFamily: DM_MONO, textTransform: \"none\" };")).toEqual(["the data face with upper case"]);

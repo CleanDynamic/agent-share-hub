@@ -68,13 +68,26 @@ export function TextButton({
 }
 
 
-export function Field({ id, label, hint, right, children }: { id: string; label: string; hint?: string; right?: ReactNode; children: ReactNode }) {
+/** A field's label (CA-03, the Components table): Geist 13/500 `--text`, sentence case, 6 above its control. */
+export const FIELD_LABEL: CSSProperties = { fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, lineHeight: "normal", color: t.text };
+
+/**
+ * A label over its control. With `group`, the control is not one input (a picker, a row of menus): the label names a
+ * `role="group"` around it instead of pointing at an input.
+ */
+export function Field({ id, label, hint, right, group = false, children }: { id: string; label: string; hint?: string; right?: ReactNode; group?: boolean; children: ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+    <div role={group ? "group" : undefined} aria-labelledby={group ? id : undefined} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <label htmlFor={id} style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 500, color: t.text }}>
-          {label}
-        </label>
+        {group ? (
+          <span id={id} style={FIELD_LABEL}>
+            {label}
+          </span>
+        ) : (
+          <label htmlFor={id} style={FIELD_LABEL}>
+            {label}
+          </label>
+        )}
         {hint ? <span style={{ fontFamily: FIGTREE, fontSize: 12, color: t.text2 }}>{hint}</span> : null}
         {right ? <span style={{ marginLeft: "auto" }}>{right}</span> : null}
       </div>

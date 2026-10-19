@@ -849,7 +849,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           margin: 0,
           marginLeft: INDENT,
           width: "auto",
-          padding: "8px 10px",
+          padding: "8px 12px",
           fontFamily: DM_MONO,
           fontSize: 12,
           lineHeight: 1.55,
@@ -1018,7 +1018,8 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <Quiet>Typed here ·</Quiet>
         <ToolPicker label={`Typed here · ${toolLabel ?? "pick a tool"}`} value={tool} onChange={changeTool} inBuild={inBuild} allowNone phone={phone} step="prompt" />
-        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} />}
+        {/* CA-03: Typed here has no field label, so its menu keeps the word "model" while empty. */}
+        {redirect ? null : <ModelPicker tool={tool} value={model} onChange={setModel} phone={phone} placeholder={MODEL_PICKER_COPY.model} />}
         <span style={{ flexGrow: 1 }} />
         <IconButton icon={ArrowUp} glyph="up" label="Add prompt" size={28} disabled={!value.trim() || busy || redirect} onClick={() => void submit()} style={phone ? { width: 44, height: 44 } : undefined} />
       </div>
