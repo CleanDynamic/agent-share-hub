@@ -87,6 +87,7 @@ function Segment({
   semantics,
   fullWidth,
   disabled = false,
+  tabStop,
   onSelect,
   children,
 }: {
@@ -98,6 +99,8 @@ function Segment({
   semantics: "buttons" | "radio";
   fullWidth: boolean;
   disabled?: boolean;
+  /** The radio group's one tab stop: the current segment, or the first that can be chosen when none is. */
+  tabStop: boolean;
   onSelect: () => void;
   children: ReactNode;
 }) {
@@ -145,7 +148,7 @@ function Segment({
       role={radio ? "radio" : undefined}
       aria-pressed={radio ? undefined : current}
       aria-checked={radio ? current : undefined}
-      tabIndex={radio ? (current ? 0 : -1) : undefined}
+      tabIndex={radio ? (tabStop ? 0 : -1) : undefined}
       aria-label={ariaLabel}
       aria-disabled={readOnly || undefined}
       disabled={disabled || undefined}
@@ -169,6 +172,7 @@ export function Segmented<V extends string = string>({
   fullWidth = false,
 }: SegmentedProps<V>) {
   const radio = semantics === "radio";
+  const stop = items.some((item) => item.value === value) ? value : items.find((item) => !item.disabled)?.value;
 
   /* The radio group's keys: right and down step on, left and up step back, both
      wrapping, and the choice moves with the focus — the pattern a screen reader
@@ -221,6 +225,7 @@ export function Segmented<V extends string = string>({
           semantics={semantics}
           fullWidth={fullWidth}
           disabled={item.disabled}
+          tabStop={item.value === stop}
           onSelect={() => onChange?.(item.value)}
         >
           {item.label}

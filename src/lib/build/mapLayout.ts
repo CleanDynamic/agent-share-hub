@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { runsLabel, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { runsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -816,7 +816,7 @@ export function layoutOpened(
       if (!from) return;
       const sentBack = input.from !== child.id && (insideAt.get(input.from) ?? -1) > at;
       const detail = sentBack ? inside[insideAt.get(input.from)!].runs?.detail : undefined;
-      wire(from, box, index, sentBack && detail ? `sent back until ${detail}` : sentBack ? "sent back" : undefined);
+      wire(from, box, index, sentBack && detail ? `sent back ${untilClause(detail)}` : sentBack ? "sent back" : undefined);
     });
   });
   // Inside an agent, each prompt follows the one before it.

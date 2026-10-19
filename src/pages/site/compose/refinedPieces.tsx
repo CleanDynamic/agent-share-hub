@@ -57,3 +57,17 @@ export function ToolMark({ tool, model, size }: { tool?: string | null; model?: 
 export function Quiet({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return <span style={{ ...text(11.5, 400, t.label), ...style }}>{children}</span>;
 }
+
+/**
+ * CA-03: one quiet line led by a 7px dot: how a step ran ("On a schedule · Weekdays 07:30"), what an agent remembers,
+ * how a check went. State is a small mark, not a coloured card: the dot carries it, in `--label` for a plain fact,
+ * `--evidence` for a pass and `--cat-breakage` for a failure; the words are 12 `--text2`.
+ */
+export function DotLine({ dot = t.label, children, style, testId }: { dot?: string; children: ReactNode; style?: CSSProperties; testId?: string }) {
+  return (
+    <span data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, ...text(12, 400, t.text2), lineHeight: "18px", ...style }}>
+      <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{children}</span>
+    </span>
+  );
+}

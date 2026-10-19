@@ -124,7 +124,8 @@ describe("agents and teams (UI-P69)", () => {
     // CA-03: the box's name sits inside it, at the top: its number, then its title.
     expect(within(box).getByTestId("map-container-head").textContent).toBe("3Copy team");
     expect(box.textContent).toContain("4 agents · 1 file");
-    expect(box.textContent).toContain("Runs once");
+    // CA-03 P3: When I asked is the normal case and says nothing.
+    expect(box.textContent).not.toMatch(/Runs once|When I asked/);
     expect(screen.getByRole("button", { name: "Open Team 3" })).toBeTruthy();
     expect(screen.getByText("Open shows what is inside the team")).toBeTruthy();
   });

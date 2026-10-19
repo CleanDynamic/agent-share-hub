@@ -37,6 +37,9 @@ import {
   parseRuns,
   removeUse,
   runsLabel,
+  untilClause,
+  untilDetail,
+  untilParts,
   sessionGroups,
   setNodeFields,
   setRuns,
@@ -271,13 +274,37 @@ describe("uses and goes into", () => {
 });
 
 describe("runs", () => {
+  it("splits an until detail into its condition and its at most, and writes it back (CA-03 P3)", () => {
+    expect(untilParts("until the review has no changes · at most 3 times")).toEqual({ condition: "until the review has no changes", atMost: 3 });
+    expect(untilParts("until done · at most 1 time")).toEqual({ condition: "until done", atMost: 1 });
+    expect(untilDetail("until the review has no changes", 3)).toBe("until the review has no changes · at most 3 times");
+    expect(untilDetail("until done", 1)).toBe("until done · at most 1 time");
+    expect(untilDetail("until done", null)).toBe("until done");
+    expect(untilClause("every claim has a source")).toBe("until every claim has a source");
+    expect(untilClause("Until approved")).toBe("Until approved");
+  });
+
+  it("reads an old saved until detail back unchanged (CA-03 P3)", () => {
+    for (const saved of ["every item has a price", "until every claim has a source", "approved", "a · b"]) {
+      const { condition, atMost } = untilParts(saved);
+      expect(atMost).toBeNull();
+      expect(untilDetail(condition, atMost)).toBe(saved);
+    }
+  });
+
   it("labels each way and reads a bad value as null", () => {
-    expect(runsLabel(null)).toBe("Runs once");
-    expect(runsLabel({ how: "once" })).toBe("Runs once");
-    expect(runsLabel({ how: "parallel", count: 3 })).toBe("Runs several at once · 3");
-    expect(runsLabel({ how: "until" })).toBe("Repeats until a condition is met");
-    expect(runsLabel({ how: "schedule", detail: "Mondays 07:00" })).toBe("Runs on a schedule · Mondays 07:00");
-    expect(runsLabel({ how: "event" })).toBe("Runs when something happens");
+    // CA-03 P3: "When I asked" is the normal case and says nothing.
+    expect(runsLabel(null)).toBe("");
+    expect(runsLabel({ how: "once" })).toBe("");
+    expect(runsLabel({ how: "parallel", count: 3 })).toBe("Several at the same time · 3");
+    expect(runsLabel({ how: "parallel" })).toBe("Several at the same time");
+    expect(runsLabel({ how: "until" })).toBe("Again until a condition was met");
+    expect(runsLabel({ how: "until", detail: "until the review has no changes · at most 3 times" })).toBe("Again until the review has no changes · at most 3 times");
+    expect(runsLabel({ how: "until", detail: "every claim has a source" })).toBe("Again until every claim has a source");
+    expect(runsLabel({ how: "schedule", detail: "Weekdays 07:30" })).toBe("On a schedule · Weekdays 07:30");
+    expect(runsLabel({ how: "schedule" })).toBe("On a schedule");
+    expect(runsLabel({ how: "event", detail: "a new supplier email" })).toBe("When something happened · a new supplier email");
+    expect(runsLabel({ how: "event" })).toBe("When something happened");
     expect(parseRuns({ how: "sometimes" })).toBeNull();
     expect(parseRuns("once")).toBeNull();
     expect(parseRuns({ how: "once", count: 4, detail: "x" })).toEqual({ how: "once" });

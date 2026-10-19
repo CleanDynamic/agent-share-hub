@@ -276,7 +276,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
             <span style={{ width: "46%", flexShrink: 0 }}>{inputRows}</span>
             <span style={{ flexGrow: 1, minWidth: 0, boxSizing: "border-box", padding: "4px 12px 8px 4px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
               <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.contents || "nothing inside yet"}</span>
-              <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.runs}</span>
+              {box.runs ? <span style={{ ...geist(12, 400, t.text2), ...ellipsis }}>{box.runs}</span> : null}
             </span>
           </span>
         </>
@@ -482,13 +482,15 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
               <span style={{ ...eyebrow(), ...ellipsis }}>
                 Inside {word} {container.number} · {stepTitle(container)}
               </span>
-              <span
-                style={
-                  { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
-                }
-              >
-                {runsLabel(container.runs)}
-              </span>
+              {runsLabel(container.runs) ? (
+                <span
+                  style={
+                    { height: 20, padding: "0 6px", boxSizing: "border-box", borderRadius: 4, display: "inline-flex", alignItems: "center", background: t.tagFill, ...geist(11.5, 400, t.onTag), whiteSpace: "nowrap" }
+                  }
+                >
+                  {runsLabel(container.runs)}
+                </span>
+              ) : null}
             </div>
             {layout.band.length > 0 ? (
               <span style={{ position: "absolute", left: 16, top: layout.bandY - layout.frame.y + 2, ...eyebrow() }}>{MAP_COPY.bandCaption}</span>

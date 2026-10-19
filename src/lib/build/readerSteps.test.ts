@@ -80,7 +80,7 @@ const bakery = (): NodeTree[] => [
   node("r1", { position: 8, type: "result", payload: { summary: "crumb-bakery.vercel.app", url: "https://crumb-bakery.vercel.app", uses: [{ kind: "output", node_id: "p5" }] } }),
 ];
 
-describe("readerSteps — a pasted chat given its tool (TF-13)", () => {
+describe("readerSteps · a pasted chat given its tool (TF-13)", () => {
   const pasted = (tools: Record<string, string>): Making => ({
     excluded_models: [],
     sessions: [{ id: "s9", started_at: "2026-10-07T09:00:00Z", client: "unknown", model: null, prompts: 1, turns: 2 }],
@@ -99,7 +99,7 @@ describe("readerSteps — a pasted chat given its tool (TF-13)", () => {
   });
 });
 
-describe("readerSteps — B1 the bakery", () => {
+describe("readerSteps · B1 the bakery", () => {
   const steps = readerSteps(bakery(), bakeryMaking, media);
 
   it("starts each session with a new chat", () => {
@@ -249,7 +249,7 @@ const team = (): NodeTree[] => {
   ];
 };
 
-describe("readerSteps — B3 the team", () => {
+describe("readerSteps · B3 the team", () => {
   const steps = readerSteps(team(), teamMaking, media);
   const [, , tm] = steps;
 
@@ -262,7 +262,7 @@ describe("readerSteps — B3 the team", () => {
     expect(JSON.stringify(tm)).not.toMatch(/Paste in/);
   });
   it("carries its runs, where it was made and when it last ran", () => {
-    expect(tm.runs).toBe("Runs on a schedule · Mondays 07:00");
+    expect(tm.runs).toBe("On a schedule · Mondays 07:00");
     expect(tm.madeIn).toBe("made in steps 1 and 2");
     expect(tm.runsByItself).toBe("runs by itself · last run 29 Sep, 09:00");
   });
@@ -288,9 +288,9 @@ describe("readerSteps — B3 the team", () => {
   });
   it("Copy for AI writes each sub-step with its uses and its whole text", () => {
     const md = stepsMarkdown({ title: "Weekly research brief" }, steps);
-    expect(md).toContain("## Step 3 · Research team\n\nRuns on a schedule · Mondays 07:00 · made in steps 1 and 2.");
+    expect(md).toContain("## Step 3 · Research team\n\nOn a schedule · Mondays 07:00 · made in steps 1 and 2.");
     expect(md).toContain("### 3.3 Writer · Opus 5.5\n\nUses what 3.2 gives it × 3, template.md and what 3.4 sends back.");
-    expect(md).toContain("### 3.4 Checker · Haiku 5.5\n\nRepeats until a condition is met · every claim has a source.");
+    expect(md).toContain("### 3.4 Checker · Haiku 5.5\n\nAgain until every claim has a source.");
     expect(md).toContain("Goes into 3.3, until every claim has a source, then the result.");
     for (const text of ["Split the topic into three questions.", "Answer with sources.", "Combine the answers.", "Check every claim."]) {
       expect(md).toContain(text);
@@ -300,7 +300,7 @@ describe("readerSteps — B3 the team", () => {
 
 /* ── B4: one typed prompt, and the rest ── */
 
-describe("readerSteps — B4 and the edges", () => {
+describe("readerSteps · B4 and the edges", () => {
   it("a typed prompt is a new chat in its own tool, with no model recorded", () => {
     const tree = [prompt("p1", 1, "A fox in loose watercolour.", null, { title: "Fox poster", payload: { tool: "chatgpt" } })];
     const [step] = readerSteps(tree, { sessions: [], excluded_models: [] });
@@ -345,7 +345,7 @@ describe("readerSteps — B4 and the edges", () => {
   });
 });
 
-describe("readerSteps — a file a step makes (TF-08)", () => {
+describe("readerSteps · a file a step makes (TF-08)", () => {
   const tree = [
     prompt("p1", 1, "Write a brand guide.", null),
     prompt("p2", 2, "Use the guide.", null, { payload: { uses: [{ kind: "file", node_id: "bg" }] } }),

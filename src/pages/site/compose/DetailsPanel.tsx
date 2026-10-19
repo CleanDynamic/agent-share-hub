@@ -23,6 +23,7 @@ import { Button } from "@/components/brand/Button";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { Segmented } from "@/components/brand/Segmented";
 import { harnessTool, hiddenModelName, modelMenu, pairCheck } from "@/lib/tools/modelRules";
 import { toolName } from "@/lib/tools/registry";
 import { ring } from "@/lib/theme/controls";
@@ -35,7 +36,13 @@ import { FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
   firstRows,
+  isClockTime,
   RUNS_CHOICES,
+  RUNS_COPY,
+  SCHEDULE_PRESETS,
+  scheduleDetail,
+  scheduleParts,
+  type RunsChoice,
   type GoesRow,
   type InputOption,
   type UseRow,
@@ -45,7 +52,7 @@ import {
 import { ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { MADE_FILE_NAME_MAX, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -930,72 +937,224 @@ function ToolDetails({ view, phone, onFields, onSelect }: { view: ToolView; phon
 
 /* ── an agent or a team ── */
 
+/** A small label over a control that is not one input (CA-03): the field label's look, in a group. */
+function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <span id={id} style={FIELD_LABEL}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * CA-03 P3: How did it run? Choice rows, the first three always shown and the other two under "More ways it ran"
+ * (shown straight away when one of them is chosen). A schedule offers three presets and a time, written into its
+ * detail as text ("Weekdays 07:30"); typing in the field still works and wins. "Again until" takes an optional "At
+ * most" count, written into the same detail ("until the review has no changes · at most 3 times"). Nothing new is
+ * stored: `payload.runs` keeps its shape.
+ */
 function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns">) {
   const how = view.runs?.how ?? "once";
   const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
   const name = `runs-${view.id}`;
   const field = choice.field;
+  const saved = view.runs?.detail ?? "";
   const [count, setCount] = useState(view.runs?.count ?? 2);
-  const [detail, setDetail] = useState(view.runs?.detail ?? "");
+  const [detail, setDetail] = useState(saved);
+  const [condition, setCondition] = useState(how === "until" ? untilParts(saved).condition : "");
+  const [atMost, setAtMost] = useState(how === "until" && untilParts(saved).atMost !== null ? String(untilParts(saved).atMost) : "");
+  const [time, setTime] = useState(how === "schedule" ? scheduleParts(saved).time : "");
+  const [moreAsked, setMoreAsked] = useState(false);
+  const showMore = moreAsked || choice.more;
+  const preset = how === "schedule" ? scheduleParts(detail).preset : null;
+  const ids = `${name}-field`;
 
-  const pick = (next: (typeof RUNS_CHOICES)[number]) => {
+  const pick = (next: RunsChoice) => {
+    setDetail("");
+    setCondition("");
+    setAtMost("");
+    setTime("");
     if (next.how === "once") onRuns(view.id, null);
     else if (next.how === "parallel") onRuns(view.id, { how: "parallel", count: view.runs?.count ?? count });
-    else onRuns(view.id, { how: next.how, detail: how === next.how ? detail : "" });
+    else onRuns(view.id, { how: next.how, detail: "" });
+  };
+
+  /** Write a detail when it changed. */
+  const write = (next: string) => {
+    if (next.trim() !== saved.trim()) onRuns(view.id, { how, detail: next.trim() });
+  };
+
+  const atMostNumber = (): number | null => {
+    const n = Number(atMost);
+    return atMost.trim() && Number.isFinite(n) ? Math.min(AT_MOST_MAX, Math.max(AT_MOST_MIN, Math.round(n))) : null;
+  };
+  const writeUntil = () => {
+    const n = atMostNumber();
+    setAtMost(n === null ? "" : String(n));
+    write(untilDetail(condition, n));
+  };
+  const room = UNTIL_DETAIL_MAX - (atMost.trim() ? ` · at most ${AT_MOST_MAX} times`.length : 0);
+
+  const enterBlurs = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (event.key === "Enter") (event.target as HTMLInputElement).blur();
   };
 
   return (
-    <Section title="How it runs">
-      <div style={{ paddingTop: 8 }}>
+    <Section title={RUNS_COPY.title}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8 }}>
         <ChoiceRows
-          label="How it runs"
+          label={RUNS_COPY.title}
           name={name}
           phone={phone}
           value={how}
           onChange={(next) => pick(RUNS_CHOICES.find((entry) => entry.how === next) ?? RUNS_CHOICES[0])}
-          rows={RUNS_CHOICES.map((entry) => ({ value: entry.how, label: entry.how === "once" && view.parent ? `${entry.label} · each time work is sent to it` : entry.label }))}
+          rows={RUNS_CHOICES.filter((entry) => !entry.more || showMore).map((entry) => ({
+            value: entry.how,
+            label: entry.how === "once" && view.parent ? `${entry.label} · ${RUNS_COPY.inTeam}` : entry.label,
+          }))}
         />
-      </div>
-      {field?.kind === "count" ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 8 }}>
-          <input
-            type="text"
-            inputMode="numeric"
-            aria-label={field.label}
-            value={Number.isFinite(count) ? String(count) : ""}
-            onChange={(event) => setCount(Number(event.target.value.replace(/[^0-9]/g, "")))}
-            onBlur={() => {
-              const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
-              setCount(next);
-              if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
-            }}
-            style={typedField(phone, { width: 72, ...tnum })}
-          />
-          <span style={quiet()}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
-        </div>
-      ) : null}
-      {field?.kind === "text" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
-          <input
-            type="text"
-            aria-label={field.label}
-            maxLength={field.max}
-            placeholder={field.placeholder}
-            value={detail}
-            onChange={(event) => setDetail(event.target.value)}
-            onBlur={() => {
-              if (detail.trim() !== (view.runs?.detail ?? "")) onRuns(view.id, { how, detail: detail.trim() });
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-            }}
-            style={typedField(phone)}
-          />
-          <span style={{ ...quiet(), ...tnum }}>
-            {detail.length} / {field.max}
+        {showMore ? null : (
+          <span>
+            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setMoreAsked(true)}>
+              {RUNS_COPY.more}
+            </TextButton>
           </span>
-        </div>
-      ) : null}
+        )}
+
+        {field?.kind === "count" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              aria-label={field.label}
+              value={Number.isFinite(count) ? String(count) : ""}
+              onChange={(event) => setCount(Number(event.target.value.replace(/[^0-9]/g, "")))}
+              onBlur={() => {
+                const next = Math.min(field.max, Math.max(field.min, Math.round(Number.isFinite(count) ? count : field.min)));
+                setCount(next);
+                if (next !== view.runs?.count) onRuns(view.id, { how: "parallel", count: next });
+              }}
+              onKeyDown={enterBlurs}
+              style={typedField(phone, { width: 72, ...tnum })}
+            />
+            <span style={{ ...quiet(), ...tnum }}>{atOnce(Math.min(field.max, Math.max(field.min, Number.isFinite(count) ? count : field.min)))}</span>
+          </div>
+        ) : null}
+
+        {how === "schedule" && field?.kind === "text" ? (
+          <div role="group" aria-labelledby={`${ids}-when`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <GroupLabel id={`${ids}-when`}>{field.label}</GroupLabel>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <Segmented
+                label={RUNS_COPY.presets}
+                semantics="radio"
+                size={phone ? 50 : 28}
+                value={preset ?? ""}
+                items={SCHEDULE_PRESETS.map((entry) => ({ value: entry, label: entry }))}
+                onChange={(next) => {
+                  const chosen = SCHEDULE_PRESETS.find((entry) => entry === next) ?? null;
+                  const written = scheduleDetail(chosen, time);
+                  setDetail(written);
+                  write(written);
+                }}
+              />
+              <input
+                type="text"
+                aria-label={RUNS_COPY.time}
+                placeholder={RUNS_COPY.timeHint}
+                maxLength={5}
+                value={time}
+                onChange={(event) => setTime(event.target.value.replace(/[^0-9:]/g, ""))}
+                onBlur={() => {
+                  if (time.trim() && !isClockTime(time)) return;
+                  const written = scheduleDetail(preset, time);
+                  if (!written) return;
+                  setDetail(written);
+                  write(written);
+                }}
+                onKeyDown={enterBlurs}
+                style={typedField(phone, { width: 72, ...tnum })}
+              />
+            </div>
+            <input
+              type="text"
+              aria-label={field.label}
+              maxLength={field.max}
+              placeholder={field.placeholder}
+              value={detail}
+              onChange={(event) => setDetail(event.target.value)}
+              onBlur={() => {
+                setTime(scheduleParts(detail).time);
+                write(detail);
+              }}
+              onKeyDown={enterBlurs}
+              style={typedField(phone)}
+            />
+            <span style={{ ...quiet(), ...tnum }}>
+              {detail.length} / {field.max}
+            </span>
+          </div>
+        ) : null}
+
+        {how === "event" && field?.kind === "text" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <FieldBlock label={field.label}>
+              <input
+                type="text"
+                aria-label={field.label}
+                maxLength={field.max}
+                placeholder={field.placeholder}
+                value={detail}
+                onChange={(event) => setDetail(event.target.value)}
+                onBlur={() => write(detail)}
+                onKeyDown={enterBlurs}
+                style={typedField(phone)}
+              />
+            </FieldBlock>
+            <span style={{ ...quiet(), ...tnum }}>
+              {detail.length} / {field.max}
+            </span>
+          </div>
+        ) : null}
+
+        {how === "until" && field?.kind === "text" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <FieldBlock label={field.label}>
+              <input
+                type="text"
+                aria-label={field.label}
+                maxLength={room}
+                placeholder={field.placeholder}
+                value={condition}
+                onChange={(event) => setCondition(event.target.value)}
+                onBlur={writeUntil}
+                onKeyDown={enterBlurs}
+                style={typedField(phone)}
+              />
+            </FieldBlock>
+            <span style={{ ...quiet(), ...tnum, marginTop: -2 }}>
+              {condition.length} / {room}
+            </span>
+            <div role="group" aria-labelledby={`${ids}-most`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <GroupLabel id={`${ids}-most`}>{RUNS_COPY.atMost}</GroupLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label={RUNS_COPY.atMost}
+                  maxLength={2}
+                  value={atMost}
+                  onChange={(event) => setAtMost(event.target.value.replace(/[^0-9]/g, ""))}
+                  onBlur={writeUntil}
+                  onKeyDown={enterBlurs}
+                  style={typedField(phone, { width: 56, ...tnum })}
+                />
+                <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </Section>
   );
 }

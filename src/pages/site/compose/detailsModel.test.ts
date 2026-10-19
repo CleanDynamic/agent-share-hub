@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SessionGroup, Step } from "@/lib/build/graph";
 
-import { firstRows, goesIntoRows, inputOptions, insideCounts, RUNS_CHOICES, inputRows, fileSize, type NamedPiece } from "./detailsModel";
+import { firstRows, goesIntoRows, inputOptions, insideCounts, isClockTime, RUNS_CHOICES, RUNS_COPY, inputRows, fileSize, scheduleDetail, scheduleParts, type NamedPiece } from "./detailsModel";
 
 const step = (over: Partial<Step> & Pick<Step, "id" | "number">): Step => ({
   kind: "prompt",
@@ -24,17 +24,34 @@ const file: NamedPiece = { id: "f1", name: "menu.pdf", note: "File · added by y
 const tool: NamedPiece = { id: "t1", name: "Gmail", note: "Tool" };
 
 describe("how it runs", () => {
-  it("has the five choices of CONCEPT §3, in order, with their one field", () => {
-    expect(RUNS_CHOICES.map((choice) => choice.label)).toEqual([
-      "Runs once",
-      "Runs several at once",
-      "Repeats until a condition is met",
-      "Runs on a schedule",
-      "Runs when something happens",
+  it("asks How did it run? with the three always shown, then the two under More ways it ran (CA-03 P3)", () => {
+    expect(RUNS_COPY.title).toBe("How did it run?");
+    expect(RUNS_CHOICES.map((choice) => [choice.how, choice.label, choice.more])).toEqual([
+      ["once", "When I asked", false],
+      ["schedule", "On a schedule", false],
+      ["event", "When something happened", false],
+      ["until", "Again until a condition was met", true],
+      ["parallel", "Several at the same time", true],
     ]);
-    expect(RUNS_CHOICES.map((choice) => choice.field?.kind ?? null)).toEqual([null, "count", "text", "text", "text"]);
-    expect(RUNS_CHOICES[1].field).toMatchObject({ min: 2, max: 20 });
-    expect(RUNS_CHOICES.slice(2).map((choice) => (choice.field as { max: number }).max)).toEqual([80, 60, 60]);
+    expect(RUNS_CHOICES.map((choice) => choice.field?.kind ?? null)).toEqual([null, "text", "text", "text", "count"]);
+    expect(RUNS_CHOICES[4].field).toMatchObject({ min: 2, max: 20 });
+    expect(RUNS_CHOICES.slice(1, 4).map((choice) => (choice.field as { max: number }).max)).toEqual([60, 60, 80]);
+  });
+
+  it("writes a schedule's preset and time as text, and reads them back (CA-03 P3)", () => {
+    expect(scheduleDetail("Weekdays", "07:30")).toBe("Weekdays 07:30");
+    expect(scheduleDetail("Every day", "")).toBe("Every day");
+    expect(scheduleDetail(null, "18:05")).toBe("18:05");
+    expect(scheduleDetail("Weekly", "7:30")).toBe("Weekly");
+    expect(scheduleDetail("Weekly", "24:00")).toBe("Weekly");
+    expect(scheduleParts("Weekdays 07:30")).toEqual({ preset: "Weekdays", time: "07:30" });
+    expect(scheduleParts("Weekly")).toEqual({ preset: "Weekly", time: "" });
+    expect(isClockTime("23:59")).toBe(true);
+    expect(isClockTime("9:00")).toBe(false);
+  });
+
+  it("reads an old saved schedule as typed, with no preset (CA-03 P3)", () => {
+    for (const saved of ["Mondays 07:00", "every morning", "Weekdays at 7"]) expect(scheduleParts(saved)).toEqual({ preset: null, time: "" });
   });
 });
 

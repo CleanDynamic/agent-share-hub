@@ -417,7 +417,7 @@ describe("agents and teams (UI-P69)", () => {
     expect(screen.queryByTestId("agent-prompt-field")).toBeNull();
   });
 
-  it("draws a team's agents as inner cards headed 'Agent · {title} · {model}' with a runs chip", () => {
+  it("draws a team's agents as inner cards headed 'Agent · {title} · {model}' with how each ran under it (CA-03 P3)", () => {
     const { list: props } = sandboxTeamFixture();
     list({ ...props });
     const card = screen.getByRole("group", { name: /^Team 3:/ });
@@ -425,8 +425,10 @@ describe("agents and teams (UI-P69)", () => {
     const inner = within(card).getAllByTestId("inner-card");
     expect(inner).toHaveLength(4);
     expect(inner[1].textContent).toContain("Agent · Writer · Opus 5.5");
-    expect(inner[1].textContent).toContain("Runs several at once · 3");
-    expect(inner[2].textContent).toContain("Repeats until a condition is met · approved");
+    expect(within(inner[1]).getByTestId("runs-line").textContent).toBe("Several at the same time · 3");
+    expect(within(inner[2]).getByTestId("runs-line").textContent).toBe("Again until approved");
+    // When I asked is the normal case and shows nothing.
+    expect(within(inner[0]).queryByTestId("runs-line")).toBeNull();
   });
 
   it("adds an agent to a team from a ghost row", () => {
@@ -563,10 +565,14 @@ describe("the refined look (UI-P93)", () => {
     expect(markup()).toContain("height:28px;padding:0 4px 0 8px;box-sizing:border-box;border-radius:6px;border:1px dashed var(--line)");
   });
 
-  it("draws the agent's run rule as a tag and Add a prompt to this agent as a dashed, text-only row", () => {
+  it("draws how the agent ran as a quiet line with a 7px --label dot, and Add a prompt to this agent as a dashed, text-only row", () => {
     list();
     const agent = screen.getByRole("group", { name: /^Agent 5/ });
-    expect(within(agent).getByText("Repeats until a condition is met · every item has a price")).toBeTruthy();
+    const runs = within(agent).getByTestId("runs-line");
+    expect(runs.textContent).toBe("Again until every item has a price");
+    const dot = runs.firstElementChild as HTMLElement;
+    expect([dot.style.width, dot.style.height]).toEqual(["7px", "7px"]);
+    expect(markup()).toMatch(/width:7px;height:7px;border-radius:50%;background:var\(--label\)/);
     const add = within(agent).getByRole("button", { name: "Add a prompt to this agent" });
     expect(add.querySelector("svg")).toBeNull();
     expect(markup()).toMatch(/border:1px dashed var\(--line\)[^"]*"[^>]*>Add a prompt to this agent</);

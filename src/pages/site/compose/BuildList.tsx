@@ -12,7 +12,10 @@
    28-high chip with Accept (a 20-high control) and Dismiss (text), and on the right Show full prompt and the words.
    An agent is a module with "Agent ·" and its model's mark at 14, its run rule as a tag, and inside, on a
    `--hairline-module` edge, its instructions as a tile and "Add a prompt to this agent" dashed and text only. The
-   add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`. */
+   add field is a module: a two-row well, the tool and model menu buttons and the boxed 28 `up`.
+
+   CA-03 P3: how a step ran is one quiet line under it, led by a 7px `--label` dot ("On a schedule · Weekdays 07:30");
+   "When I asked" is the normal case and shows nothing. */
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { ArrowUp, MoreHorizontal } from "lucide-react";
@@ -57,7 +60,7 @@ import { TextButton } from "./composeControls";
 import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
@@ -68,7 +71,6 @@ import {
   menuItem,
   menuSurface,
   moduleStyle,
-  tagStyle,
   text,
   tileStyle,
   tnum,
@@ -495,8 +497,8 @@ function InnerCard({ step, eyebrow, runs, nested, made }: { step: Step; eyebrow?
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
         <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
-        {runs ? <span style={tagStyle}>{runs}</span> : null}
       </div>
+      {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
     </div>
@@ -617,8 +619,8 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
+          {runsLabel(step.runs) ? <DotLine testId="runs-line">{runsLabel(step.runs)}</DotLine> : null}
         </div>
-        <span style={tagStyle}>{runsLabel(step.runs)}</span>
       </div>
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
         {step.children.map((child) => {

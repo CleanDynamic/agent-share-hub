@@ -22,6 +22,7 @@ import {
   goesInto,
   madeByOf,
   runsLabel,
+  untilClause,
   sessionGroups,
   stepTitle,
   type SessionGroup,
@@ -111,7 +112,7 @@ export interface ReaderStep {
   uses: string[];
   /** "By hand in {tool}", its line and its picture. Nothing to copy. */
   manual: { headline: string; line: string; mediaId: string | null } | null;
-  /** "Runs on a schedule · Mondays 07:00", for an agent or a team. */
+  /** "On a schedule · Mondays 07:00", for an agent or a team; empty when it ran when asked (CA-03). */
   runs: string | null;
   /** "made in steps 1 and 2", from an agent's or a team's output uses. */
   madeIn: string | null;
@@ -438,7 +439,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   let loop: string[] = [];
   if (step.runs?.how === "until" && !isTop(step)) {
     const targets = goesInto(context.topSteps, step.id).filter((target) => (context.index.get(target.id) ?? -1) < here);
-    loop = targets.map((target) => (step.runs?.detail ? `${target.number}, until ${step.runs.detail}` : target.number));
+    loop = targets.map((target) => (step.runs?.detail ? `${target.number}, ${untilClause(step.runs.detail)}` : target.number));
     if (context.resultFrom.has(step.id)) loop.push("then the result");
   }
 
@@ -526,12 +527,13 @@ export function readerMap(tree: readonly NodeTree[], making: Making | null | und
 
 /* ── What you need ── */
 
+/** CA-03 P3: the same words the composer asks with. */
 const HOW_WORDS: Record<string, string> = {
-  once: "Runs once",
-  parallel: "Runs several at once",
-  until: "Repeats until a condition is met",
+  once: "When I asked",
+  parallel: "Several at the same time",
+  until: "Again until a condition was met",
   schedule: "On a schedule",
-  event: "When something happens",
+  event: "When something happened",
 };
 
 /** The agents a run starts: one for each, and several for one that runs several at once. */
@@ -619,7 +621,7 @@ export function whatYouNeed(
     .filter((entry) => entry.step.kind === "agent" || entry.step.kind === "team")
     .map((entry) => {
       const how = entry.step.runs;
-      const when = how?.how === "parallel" && how.count ? `${how.count} at once` : (how?.detail ?? null);
+      const when = how?.how === "parallel" && how.count ? `${how.count} at the same time` : (how?.detail ?? null);
       const n = agentsPerRun(entry.step);
       return {
         title: HOW_WORDS[how?.how ?? "once"],

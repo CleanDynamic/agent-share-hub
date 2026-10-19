@@ -205,20 +205,52 @@ export function parseRuns(value: unknown): Runs | null {
   return runs;
 }
 
-/** The words that say how a step runs. */
+/** CA-03 P3: "Again until a condition was met" can say how many times at most, written into its detail. */
+export const AT_MOST_MIN = 1;
+export const AT_MOST_MAX = 20;
+
+const AT_MOST = /\s*·\s*at most (\d+) times?$/;
+
+/** An "until" detail split into its condition and its "at most" count. A detail saved without one reads as it was. */
+export function untilParts(detail: string | null | undefined): { condition: string; atMost: number | null } {
+  const text = (detail ?? "").trim();
+  const match = AT_MOST.exec(text);
+  if (!match) return { condition: text, atMost: null };
+  const n = Number(match[1]);
+  return { condition: text.slice(0, match.index).trim(), atMost: Number.isInteger(n) ? n : null };
+}
+
+/** An "until" detail from its condition and its count: "until the review has no changes · at most 3 times". */
+export function untilDetail(condition: string, atMost: number | null): string {
+  const said = condition.trim();
+  if (atMost === null) return said;
+  const times = `at most ${atMost} ${atMost === 1 ? "time" : "times"}`;
+  return said ? `${said} · ${times}` : times;
+}
+
+/** "until every claim has a source", whether or not the maker typed the "until". */
+export function untilClause(detail: string): string {
+  const said = detail.trim();
+  return /^until\b/i.test(said) ? said : `until ${said}`;
+}
+
+/**
+ * The words that say how a step ran (CA-03 P3), as the List, the Map and the build page show them. "When I asked"
+ * is the normal case and shows nothing: an empty string. Nothing stored changes; only the words.
+ */
 export function runsLabel(runs: Runs | null | undefined): string {
   const detail = runs?.detail ? ` · ${runs.detail}` : "";
   switch (runs?.how) {
     case "parallel":
-      return typeof runs.count === "number" ? `Runs several at once · ${runs.count}` : "Runs several at once";
+      return typeof runs.count === "number" ? `Several at the same time · ${runs.count}` : "Several at the same time";
     case "until":
-      return `Repeats until a condition is met${detail}`;
+      return runs.detail ? `Again ${untilClause(runs.detail)}` : "Again until a condition was met";
     case "schedule":
-      return `Runs on a schedule${detail}`;
+      return `On a schedule${detail}`;
     case "event":
-      return `Runs when something happens${detail}`;
+      return `When something happened${detail}`;
     default:
-      return "Runs once";
+      return "";
   }
 }
 
@@ -572,8 +604,8 @@ export async function dismissSuggestion(node: BuildNode, key: string): Promise<B
 }
 
 /**
- * How an agent or a team runs (CONCEPT §3). "Runs once" is no `runs` at all.
- * Several at once needs a count of 2 to 20; the others take one short line.
+ * How an agent or a team runs (CONCEPT §3). "When I asked" (once) is no `runs` at all.
+ * Several at the same time needs a count of 2 to 20; the others take one short line.
  */
 export async function setRuns(node: BuildNode, runs: Runs | null): Promise<BuildNode> {
   if (node.type !== AGENT_TYPE && node.type !== TEAM_TYPE) throw refuse("setRuns", "Only an agent or a team has a way it runs.");
@@ -586,7 +618,7 @@ export async function setRuns(node: BuildNode, runs: Runs | null): Promise<Build
     if (runs.how === "parallel") {
       const count = runs.count;
       if (typeof count !== "number" || !Number.isInteger(count) || count < RUNS_COUNT_MIN || count > RUNS_COUNT_MAX) {
-        throw refuse("setRuns", `Several at once runs ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
+        throw refuse("setRuns", `Several at the same time is ${RUNS_COUNT_MIN} to ${RUNS_COUNT_MAX} at a time.`);
       }
       next.count = count;
     } else {
