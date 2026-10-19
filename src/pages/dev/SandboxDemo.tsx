@@ -18,7 +18,9 @@
 import { useMemo, useState } from "react";
 
 import { AddAgentDialog } from "@/pages/site/compose/AddAgentDialog";
+import { AddCheckDialog } from "@/pages/site/compose/AddCheckDialog";
 import { AddCodeDialog } from "@/pages/site/compose/AddCodeDialog";
+import { canCheck } from "@/lib/build/graph";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
 import { AddToolDialog } from "@/pages/site/compose/AddToolDialog";
 import { useSearchParams } from "react-router-dom";
@@ -87,7 +89,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const mapOf: SandboxMapFixture = asBuild === "big" ? "big" : which;
   const asked = params.get("details");
   const details: SandboxDetails = (["session", "agent", "file", "tool", "result"] as const).find((kind) => kind === asked) ?? "prompt";
-  const [dialog, setDialog] = useState<"agent" | "manual" | "tool" | "code" | null>(null);
+  const [dialog, setDialog] = useState<"agent" | "manual" | "tool" | "code" | "check" | null>(null);
   const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
@@ -114,6 +116,8 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         onAddManual={() => setDialog("manual")}
         onAddTool={() => setDialog("tool")}
         onAddCode={() => setDialog("code")}
+        onAddCheck={() => setDialog("check")}
+        checkable={canCheck(list.steps)}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
         post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />
@@ -121,6 +125,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
       <AddManualStepDialog open={dialog === "manual"} onOpenChange={(next) => setDialog(next ? "manual" : null)} after={null} available onAdd={() => undefined} />
       <AddToolDialog open={dialog === "tool"} onOpenChange={(next) => setDialog(next ? "tool" : null)} onAdd={() => undefined} />
       <AddCodeDialog open={dialog === "code"} onOpenChange={(next) => setDialog(next ? "code" : null)} onAdd={() => undefined} />
+      <AddCheckDialog open={dialog === "check"} onOpenChange={(next) => setDialog(next ? "check" : null)} onAdd={() => undefined} />
       <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>
   );

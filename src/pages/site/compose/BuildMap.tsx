@@ -119,7 +119,7 @@ export function boxName(box: Pick<MapBox, "kind" | "stepKind" | "number" | "titl
   const count = box.inputs.length;
   const inputs = `${count} ${count === 1 ? "input" : "inputs"}`;
   if (box.kind === "result") return `Result, ${box.title}, ${inputs}`;
-  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : "Prompt";
+  const word = box.stepKind === "agent" ? "Agent" : box.stepKind === "team" ? "Team" : box.stepKind === "manual" ? "Manual step" : box.stepKind === "code" ? "Code" : box.stepKind === "check" ? "Check" : "Prompt";
   return `${word} ${box.number}, ${box.title}, ${inputs}`;
 }
 
@@ -212,6 +212,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   const manual = box.kind === "step" && box.stepKind === "manual";
   /* CA-02 P7: code is a box labelled "Code", its text in mono and its size in lines. */
   const code = box.kind === "step" && box.stepKind === "code";
+  /* CA-03 P5: a check is a box labelled "Check", what counts as passing as its text and its status in the foot. */
+  const check = box.kind === "step" && box.stepKind === "check";
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
@@ -290,12 +292,17 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               <span data-testid="map-result-label" style={{ ...geist(10.5, 500, t.evidence), flexShrink: 0 }}>
                 Result
               </span>
-            ) : manual || code || (!box.defaultTitle && box.number) ? (
+            ) : manual || code || check || (!box.defaultTitle && box.number) ? (
               <span style={refinedNumber}>{box.number}</span>
             ) : null}
             {code ? (
               <span data-testid="map-code-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
                 Code
+              </span>
+            ) : null}
+            {check ? (
+              <span data-testid="map-check-label" style={{ ...geist(10.5, 500, t.label), flexShrink: 0 }}>
+                Check
               </span>
             ) : null}
             {manual ? (
@@ -311,7 +318,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
               {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
               {box.kind === "step" && !manual ? (
-                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{code ? linesOf(box.text) : `${box.words} words`}</span>
+                <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
             </>
           ) : (
@@ -342,7 +349,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
                 {box.text}
               </span>
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "flex", alignItems: "center", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>
-                {box.kind === "step" && !manual ? (code ? linesOf(box.text) : `${box.words} words`) : ""}
+                {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>
             </>
           )}

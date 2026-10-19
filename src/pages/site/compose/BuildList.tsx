@@ -38,7 +38,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { runsLabel, stepTitle } from "@/lib/build/graph";
+import { checkStatus, runsLabel, stepTitle } from "@/lib/build/graph";
 import { markFor } from "@/lib/models/marks";
 import { nextModelAfterToolChange } from "@/lib/tools/modelRules";
 import { toolFor, toolName } from "@/lib/tools/registry";
@@ -65,7 +65,7 @@ import { TextButton } from "./composeControls";
 import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
@@ -87,6 +87,8 @@ export const LIST_COPY = {
   hint: "Click a prompt to see its details · double-click to read all of it",
   placeholder: "Paste or type a prompt…",
   showFull: "Show full prompt",
+  /** CA-03 P5: a check's eyebrow. */
+  check: CHECK_COPY.eyebrow,
 } as const;
 
 export interface BuildListProps {
@@ -880,6 +882,89 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   );
 }
 
+/** CA-03 P5: how the build checked its work: what it tested as its text, and one status line with a 7px dot. */
+function CheckCard({ step, index, last, props }: { step: Step; index: number; last: boolean; props: BuildListProps }) {
+  const { phone } = props;
+  const selected = props.selectedId === step.id;
+  const isDefault = step.title === null;
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState("");
+  const renameNext = useRef(false);
+  const finish = (save: boolean) => {
+    setRenaming(false);
+    if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
+  };
+  const status = step.check ? checkStatus(step.check) : null;
+  return (
+    <div
+      role="group"
+      aria-label={`Check ${step.number}: ${stepTitle(step)}`}
+      data-testid="step-card"
+      data-kind="check"
+      data-selected={selected ? "true" : undefined}
+      tabIndex={0}
+      onClick={() => props.onSelect(step.id)}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          props.onSelect(step.id);
+        }
+      }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer" }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
+        <NumberTile>{step.number}</NumberTile>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+          <span data-testid="check-eyebrow" style={text(11.5, 400, t.label)}>
+            {LIST_COPY.check}
+          </span>
+          {renaming ? (
+            <RenameField label={`Title of check ${step.number}`} draft={draft} placeholder={step.defaultTitle} phone={phone} onDraft={setDraft} onFinish={finish} />
+          ) : (
+            <h3 data-default-title={isDefault ? "true" : undefined} style={{ ...text(14, 500, isDefault ? t.text2 : t.text), margin: 0, overflowWrap: "anywhere" }}>
+              {stepTitle(step)}
+            </h3>
+          )}
+        </div>
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Check ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Content
+              align="end"
+              sideOffset={4}
+              style={menuSurface()}
+              onClick={(event) => event.stopPropagation()}
+              onCloseAutoFocus={(event) => {
+                if (!renameNext.current) return;
+                event.preventDefault();
+                renameNext.current = false;
+                setDraft(step.title ?? "");
+                setRenaming(true);
+              }}
+            >
+              <MenuRow phone={phone} onSelect={() => (renameNext.current = true)}>Rename</MenuRow>
+              <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
+              <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+            </Menu.Content>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
+      <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
+      {status ? (
+        <DotLine testId="check-status" dot={status.allPassed ? t.evidence : t.catBreakage} style={{ paddingLeft: INDENT }}>
+          <span style={tnum}>{status.line}</span>
+        </DotLine>
+      ) : null}
+      <div style={footRow(INDENT)}>
+        <UsesRow step={step} props={props} />
+      </div>
+    </div>
+  );
+}
+
 function ResultCard({ result, selected, onSelect }: { result: ListResult; selected: boolean; onSelect: (id: string) => void }) {
   return (
     <div
@@ -1081,6 +1166,8 @@ export function BuildList(props: BuildListProps) {
       <ManualCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : step.kind === "code" ? (
       <CodeCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
+    ) : step.kind === "check" ? (
+      <CheckCard key={step.id} step={step} index={steps.indexOf(step)} last={steps.indexOf(step) === steps.length - 1} props={props} />
     ) : (
       <ContainerCard key={step.id} step={step} props={props} />
     );

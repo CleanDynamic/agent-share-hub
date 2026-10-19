@@ -37,7 +37,9 @@ import {
 import {
   addAgent,
   addAgentPrompt,
+  addCheck,
   addCode,
+  CHECK_TYPE,
   CODE_TYPE,
   addManualStep,
   addResult,
@@ -61,6 +63,7 @@ import {
   toolNodeFor,
   usesOf,
   type AgentModel,
+  type CheckInput,
   type Runs,
   type Step,
   type Use,
@@ -184,6 +187,8 @@ export interface ComposePrompts {
   setManualPicture: (id: string, file: File) => Promise<boolean>;
   /** CA-02 P7: add code steps, one for each piece, in order, written with the tool and model given. Resolves the first one's id, or null if none was added. */
   addCodeSteps: (input: { steps: readonly { source: string; language: string; filename: string | null }[]; tool: string | null; model: string | null }) => Promise<string | null>;
+  /** CA-03 P5: add a check, using the step it tested. Resolves its id, or null if it failed. */
+  addCheckStep: (input: CheckInput) => Promise<string | null>;
 }
 
 export function useComposePrompts({
@@ -335,9 +340,9 @@ export function useComposePrompts({
       .run(async () => {
         const build = latest.current.buildId;
         if (!build) return;
-        // A manual step, or code, swaps with the step next to it, whatever that is.
+        // A manual step, code or a check swaps with the step next to it, whatever that is.
         const type = findTop(nodes.current(), id)?.type;
-        if (type === MANUAL_STEP_TYPE || type === CODE_TYPE) {
+        if (type === MANUAL_STEP_TYPE || type === CODE_TYPE || type === CHECK_TYPE) {
           for (const step of await moveStep(build, nodes.current(), id, direction)) {
             const node = findTop(nodes.current(), step.id);
             if (node) nodes.record(node.id, { ...rowOf(node), position: step.position });
@@ -683,6 +688,21 @@ export function useComposePrompts({
         return null;
       });
 
+  const addCheckStep = (input: CheckInput) =>
+    nodes
+      .run(async () => {
+        const build = await latest.current.ensureBuild();
+        const created = await addCheck(build, nodes.current(), input);
+        nodes.record(created.id, created);
+        return created.id;
+      })
+      .catch((cause) => {
+        // A refusal is said in its own plain words; anything else, once.
+        const said = cause instanceof Error ? /(Say what|at most|whole numbers|can't be more|is a date)[^.]*\./.exec(cause.message)?.[0] : undefined;
+        failed(said ?? "Couldn't add that check. Try again.")(cause);
+        return null;
+      });
+
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
@@ -716,5 +736,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep };
 }

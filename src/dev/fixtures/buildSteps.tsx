@@ -140,10 +140,13 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
 };
 
-/** The steps for one of the boards. The Map is UI-P74, so `mapAvailable` only decides whether the switch shows. */
-export function buildStepsFixture(which: BuildStepsSample = "list"): BuildStepsView & { title: string; outcome: string } {
+/**
+ * The steps for one of the boards. The Map is UI-P74, so `mapAvailable` only decides whether the switch shows.
+ * `extra` adds placed nodes after the sample's own (CA-03 P5: a check).
+ */
+export function buildStepsFixture(which: BuildStepsSample = "list", extra: readonly NodeTree[] = []): BuildStepsView & { title: string; outcome: string } {
   const { tree: make, making, title, outcome } = SAMPLES[which];
-  const tree = make();
+  const tree = [...make(), ...extra];
   const steps = readerSteps(tree, making, media);
   return {
     title,

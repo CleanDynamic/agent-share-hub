@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { runsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { checkStatus, runsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -128,6 +128,8 @@ export interface MapBox {
   runs: string | null;
   /** More than one copy runs at once (opened view): how many. */
   stack: number | null;
+  /** CA-03 P5, a check only: "Passed 14 of 14 runs", and whether every run passed. */
+  status?: { line: string; allPassed: boolean } | null;
 }
 
 export interface MapLane {
@@ -385,8 +387,9 @@ export function layoutMap(
       kind: "step",
       stepKind: step.kind,
       number: step.number,
-      // CA-02 P7: untitled code reads by its file name, or its language, under the box's "Code".
-      title: step.title ?? (step.kind === "code" ? (step.filename ?? step.language ?? step.defaultTitle) : step.defaultTitle),
+      // CA-02 P7: untitled code reads by its file name, or its language, under the box's "Code"; CA-03 P5: an untitled
+      // check by what it tested, under the box's "Check".
+      title: step.title ?? (step.kind === "code" ? (step.filename ?? step.language ?? step.defaultTitle) : step.kind === "check" ? step.text : step.defaultTitle),
       defaultTitle: step.title === null,
       text: step.text,
       words: step.words,
@@ -404,6 +407,7 @@ export function layoutMap(
       contents: container ? containsLine(step) : null,
       runs: container ? runsLabel(step.runs) : null,
       stack: null,
+      ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
     });
   });
 

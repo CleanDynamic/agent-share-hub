@@ -37,6 +37,11 @@ import {
   parseRuns,
   removeUse,
   runsLabel,
+  addCheck,
+  canCheck,
+  checkStatus,
+  testedStepOf,
+  topSteps,
   untilClause,
   untilDetail,
   untilParts,
@@ -727,5 +732,97 @@ describe("code is a step (CA-02 P7)", () => {
     expect(steps[1]).toMatchObject({ text: "a\nb", words: 2, language: "ts", filename: "app.ts", entrypoint: true, tool: "Cursor", model: "Opus 5", uses: [{ kind: "output", node_id: "p1" }] });
     expect(steps[2]).toMatchObject({ filename: null, entrypoint: false });
     expect(goesInto(steps, "p1").map((step) => step.id)).toEqual(["c1"]);
+  });
+});
+
+describe("a check is a step (CA-03 P5)", () => {
+  const work = node({ id: "c1", type: "code", position: 1, payload: { source: "x", language: "ts" } });
+
+  it("saves what it tested, what counts as passing, when it failed, its runs, its last run and the step it tested", async () => {
+    await addCheck(BUILD, [work], {
+      tested: " Places a test order for 2 sourdough loaves ",
+      passing: "The total shows £9.00",
+      onFail: "The total showed £8.99. The Build agent fixed the rounding and ran it again.",
+      passed: 14,
+      total: 14,
+      runAt: "2026-10-12",
+      testedStep: "c1",
+    });
+    expect(getNodeType).toHaveBeenCalledWith("eval_run");
+    expect(upsertNode.mock.calls[0][0]).toMatchObject({ type: "eval_run", parent_id: null, position: 2, title: null });
+    expect(payloadWritten()).toEqual({
+      tested: "Places a test order for 2 sourdough loaves",
+      passing: "The total shows £9.00",
+      on_fail: "The total showed £8.99. The Build agent fixed the rounding and ran it again.",
+      passed: 14,
+      total: 14,
+      run_at: "2026-10-12",
+      uses: [{ kind: "output", node_id: "c1" }],
+    });
+    upsertNode.mockClear();
+    await addCheck(BUILD, [], { tested: "It loads", passing: "No errors", passed: 0, total: 0 });
+    expect(payloadWritten()).toEqual({ tested: "It loads", passing: "No errors", passed: 0, total: 0 });
+  });
+
+  it("refuses in plain words, before anything is written", async () => {
+    const base = { tested: "It loads", passing: "No errors", passed: 1, total: 2 };
+    await expect(addCheck(BUILD, [], { ...base, passed: 3 })).rejects.toThrow("Passed can't be more than the total.");
+    await expect(addCheck(BUILD, [], { ...base, tested: " " })).rejects.toThrow("Say what it tested.");
+    await expect(addCheck(BUILD, [], { ...base, passing: "" })).rejects.toThrow("Say what counts as passing.");
+    await expect(addCheck(BUILD, [], { ...base, tested: "x".repeat(281) })).rejects.toThrow("What it tested is at most 280 characters.");
+    await expect(addCheck(BUILD, [], { ...base, passing: "x".repeat(281) })).rejects.toThrow("What counts as passing is at most 280 characters.");
+    await expect(addCheck(BUILD, [], { ...base, onFail: "x".repeat(601) })).rejects.toThrow("When it failed is at most 600 characters.");
+    await expect(addCheck(BUILD, [], { ...base, passed: 1.5 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
+    await expect(addCheck(BUILD, [], { ...base, total: 10_001 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
+    await expect(addCheck(BUILD, [], { ...base, passed: -1 })).rejects.toThrow("Runs are whole numbers from 0 to 10,000.");
+    await expect(addCheck(BUILD, [], { ...base, runAt: "2026-02-30" })).rejects.toThrow("Last run is a date, written as 2026-10-12.");
+    await expect(addCheck(BUILD, [work], { ...base, testedStep: "gone" })).rejects.toThrow("That is not a step of this build.");
+    expect(upsertNode).not.toHaveBeenCalled();
+    await addCheck(BUILD, [], { ...base, tested: "x".repeat(280), passing: "y".repeat(280), onFail: "z".repeat(600), passed: 10_000, total: 10_000 });
+    expect(upsertNode).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops once when the eval_run type is not live", async () => {
+    getNodeType.mockResolvedValue({ key: "eval_run", is_active: false });
+    await expect(addCheck(BUILD, [], { tested: "It loads", passing: "No errors", passed: 1, total: 1 })).rejects.toThrow(/Deploy queue/);
+    expect(upsertNode).not.toHaveBeenCalled();
+  });
+
+  it("reads a check as a step: numbered, its kind, what it tested as its text, its facts and its uses", () => {
+    const tree = [
+      work,
+      node({ id: "k1", type: "eval_run", position: 2, payload: { tested: "Places a test order", passing: "The total shows £9.00", passed: 13, total: 14, run_at: "2026-10-12", uses: [{ kind: "output", node_id: "c1" }] } }),
+    ] as NodeTree[];
+    const [, check] = buildSteps(tree);
+    expect(check).toMatchObject({
+      id: "k1",
+      kind: "check",
+      number: "2",
+      defaultTitle: "Check 2",
+      text: "Places a test order",
+      uses: [{ kind: "output", node_id: "c1" }],
+      check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 13, total: 14, runAt: "2026-10-12" },
+    });
+    expect(goesInto(buildSteps(tree), "c1").map((step) => step.id)).toEqual(["k1"]);
+  });
+
+  it("leaves an eval run saved before CA-03, with nothing it tested, as it was: not a step", () => {
+    const tree = [work, node({ id: "e1", type: "eval_run", position: 2, payload: { harness: "pytest", passed: 3, total: 4 } })] as NodeTree[];
+    expect(buildSteps(tree).map((step) => step.id)).toEqual(["c1"]);
+    expect(topSteps(tree).map((entry) => entry.id)).toEqual(["c1"]);
+  });
+
+  it("says its status: every run passed or not, and since when", () => {
+    expect(checkStatus({ passed: 14, total: 14, runAt: "2026-10-12" })).toEqual({ allPassed: true, line: "Passed 14 of 14 runs · since 12 Oct" });
+    expect(checkStatus({ passed: 13, total: 14, runAt: null })).toEqual({ allPassed: false, line: "Passed 13 of 14 runs" });
+    expect(checkStatus({ passed: null, total: 14, runAt: null })).toBeNull();
+  });
+
+  it("is offered once there is an agent, a team or code, and tests the selected step or the last of those", () => {
+    const steps = buildSteps([work, node({ id: "p2", type: "prompt", position: 2, payload: { text: "x" } })] as NodeTree[]);
+    expect(canCheck(steps)).toBe(true);
+    expect(canCheck(buildSteps([node({ id: "p1", type: "prompt", position: 1, payload: { text: "x" } })] as NodeTree[]))).toBe(false);
+    expect(testedStepOf(steps, "p2")).toBe("p2");
+    expect(testedStepOf(steps, null)).toBe("c1");
   });
 });

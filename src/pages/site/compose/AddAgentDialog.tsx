@@ -131,7 +131,8 @@ function Form({
         event.preventDefault();
         submit();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 16 }}
+      /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
+      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <Segmented

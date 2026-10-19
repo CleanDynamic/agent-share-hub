@@ -58,6 +58,19 @@ export const CA03_FILES: readonly string[] = [
   // P4
   "src/lib/build/mapLayout.test.ts",
   "src/pages/site/compose/buildListModel.ts",
+  // P5
+  "src/components/build/renderers/evidence.tsx",
+  "src/components/build/renderers/renderers.test.tsx",
+  "src/dev/fixtures/buildSteps.tsx",
+  "src/pages/dev/SandboxDemo.tsx",
+  "src/pages/site/build/BuildView.test.tsx",
+  "src/pages/site/compose/AddCheckDialog.test.tsx",
+  "src/pages/site/compose/AddCheckDialog.tsx",
+  "src/pages/site/compose/detailsView.ts",
+  "src/pages/site/compose/SandboxPage.tsx",
+  "src/pages/site/compose/SandboxView.test.tsx",
+  "src/pages/site/compose/SandboxView.tsx",
+  "src/pages/site/compose/useComposePrompts.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -274,6 +287,11 @@ function componentFindings(code: string, file: string): Finding[] {
  * excuses anything new.
  */
 export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
+  {
+    rule: "no glass (backdrop-filter)",
+    text: 'not.toContain("backdrop-filter")',
+    why: "A test that asserts there is no glass names what it looks for.",
+  },
   {
     rule: "no gradient (radial)",
     text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",

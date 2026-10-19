@@ -143,7 +143,8 @@ function Form({ onAdd, onCancel, phone, inBuild = [], seed }: Pick<AddCodeDialog
         event.preventDefault();
         submit();
       }}
-      style={{ display: "flex", flexDirection: "column", gap: 16 }}
+      /* The global field rule makes a field inherit its size on a desktop, so the form sets the fields' 13 here. */
+      style={{ display: "flex", flexDirection: "column", gap: 16, fontSize: phone ? 16 : 13 }}
     >
       <Field id={`${uid}-code`} label={CODE_DIALOG_COPY.code}>
         <textarea

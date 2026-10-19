@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { sandboxManualFixture, sandboxMapProps, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
+import type { Step } from "@/lib/build/graph";
 import { layoutMap } from "@/lib/build/mapLayout";
 
 import { boxName, BuildMap, columnDate, type BuildMapProps } from "./BuildMap";
@@ -304,5 +305,39 @@ describe("code (CA-02 P7)", () => {
     expect(within(box).getByTestId("map-code-label").textContent).toBe("Code");
     expect(box.textContent).toContain("2 lines");
     expect(box.textContent).not.toContain("words");
+  });
+});
+
+describe("a check on the Map (CA-03 P5)", () => {
+  it("is a box labelled Check, titled by what it tested, wired to the step it uses", () => {
+    const base = sandboxMapProps("bakery");
+    const last = base.steps[base.steps.length - 1];
+    const check: Step = {
+      id: "k1",
+      kind: "check",
+      number: String(base.steps.length + 1),
+      title: null,
+      defaultTitle: `Check ${base.steps.length + 1}`,
+      text: "Places a test order",
+      words: 4,
+      model: null,
+      sessionId: null,
+      tool: null,
+      runs: null,
+      uses: [{ kind: "output", node_id: last.id }],
+      children: [],
+      check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: null, passed: 14, total: 14, runAt: null },
+    };
+    render(
+      <MemoryRouter>
+        <BuildMap {...base} steps={[...base.steps, check]} selectedId={null} onSelect={vi.fn()} onClear={vi.fn()} onConnect={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const box = screen.getByTestId("map-box-k1");
+    expect(within(box).getByTestId("map-check-label").textContent).toBe("Check");
+    expect(box.getAttribute("aria-label")).toBe(`Check ${check.number}, Places a test order, 1 input`);
+    expect(box.textContent).toContain("Passed 14 of 14 runs");
+    const layout = layoutMap([...base.steps, check], base.groups, base.files, base.tools, base.results, []);
+    expect(layout.wires.some((wire) => wire.from === last.id && wire.to === "k1")).toBe(true);
   });
 });

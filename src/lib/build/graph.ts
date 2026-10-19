@@ -31,8 +31,13 @@ export const TOOL_TYPE = "integration";
 export const RESULT_TYPE = "result";
 /** CA-02 P7: lines of code the maker wrote or ran. Never run here. */
 export const CODE_TYPE = "code";
+/**
+ * CA-03 P5: how the build tested itself. The `eval_run` type that already exists (category evidence); a check is one
+ * whose payload says what it tested (`tested`), so an eval run saved before CA-03 reads exactly as it did, not as a step.
+ */
+export const CHECK_TYPE = "eval_run";
 
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code";
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -89,6 +94,19 @@ export interface Step {
   models?: AgentModel[];
   /** CA-02 P5, an agent only: the integration nodes it was allowed to call. */
   toolRefs?: string[];
+  /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
+  check?: CheckFacts;
+}
+
+/** CA-03 P5: what a check says, read from its payload. */
+export interface CheckFacts {
+  tested: string;
+  passing: string;
+  onFail: string | null;
+  passed: number | null;
+  total: number | null;
+  /** The last run, as saved ("2026-10-12"). */
+  runAt: string | null;
 }
 
 export interface SessionGroup {
@@ -260,6 +278,7 @@ const KIND_OF_TYPE: Record<string, StepKind> = {
   [TEAM_TYPE]: "team",
   [MANUAL_STEP_TYPE]: "manual",
   [CODE_TYPE]: "code",
+  [CHECK_TYPE]: "check",
 };
 
 const KIND_NAME: Record<StepKind, string> = {
@@ -268,9 +287,28 @@ const KIND_NAME: Record<StepKind, string> = {
   team: "Team",
   manual: "Manual step",
   code: "Code",
+  check: "Check",
 };
 
-const isStepNode = (node: Pick<BuildNode, "type">): boolean => node.type in KIND_OF_TYPE;
+/** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
+const isCheckPayload = (payload: unknown): boolean => isRecord(payload) && typeof payload.tested === "string" && payload.tested.trim().length > 0;
+
+const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
+  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload));
+
+const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
+
+/** A check's facts, read defensively. */
+function checkFacts(payload: Payload): CheckFacts {
+  return {
+    tested: stringOf(payload.tested)?.trim() ?? "",
+    passing: stringOf(payload.passing)?.trim() ?? "",
+    onFail: stringOf(payload.on_fail)?.trim() || null,
+    passed: numberOf(payload.passed),
+    total: numberOf(payload.total),
+    runAt: stringOf(payload.run_at)?.trim() || null,
+  };
+}
 
 const byPosition = <T extends Pick<BuildNode, "position">>(nodes: readonly T[]): T[] =>
   [...nodes]
@@ -318,7 +356,8 @@ const dismissedOf = (payload: Payload): string[] =>
 
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
-  const text = kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : (stringOf(payload.text) ?? "");
+  const text =
+    kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : kind === "check" ? (stringOf(payload.tested) ?? "") : (stringOf(payload.text) ?? "");
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {
@@ -339,6 +378,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
+    ...(kind === "check" ? { check: checkFacts(payload) } : null),
   };
 }
 
@@ -837,8 +877,107 @@ export async function addCode(
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
 
+/** CA-03 P5: the longest answers a check takes, and its largest count of runs. */
+export const CHECK_TEXT_MAX = 280;
+export const CHECK_FAIL_MAX = 600;
+export const CHECK_RUNS_MAX = 10_000;
+
+/** "2026-10-12": a real day, as a check's last run is saved. */
+export const isIsoDay = (value: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const day = new Date(`${value}T12:00:00Z`);
+  return !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === value;
+};
+
+export interface CheckInput {
+  tested: string;
+  passing: string;
+  onFail?: string | null;
+  passed: number;
+  total: number;
+  /** "2026-10-12", or nothing. */
+  runAt?: string | null;
+  /** The step it tested: the check uses its output. */
+  testedStep?: string | null;
+}
+
+/**
+ * CA-03 P5: how the build tested itself, a step like any other (it takes part in `uses`; it usually uses the step it
+ * tested). Saved on `eval_run` with its own keys where they fit (`passed`, `total`, `run_at`) and three text keys:
+ * `tested` and `passing` (1 to 280 characters each) and `on_fail` (up to 600). Passed and total are whole numbers
+ * from 0 to 10,000, and passed is never more than the total. A check is evidence the maker gives; it never touches
+ * `reproduction_count`, the lamp or the plaque.
+ */
+export async function addCheck(buildId: string, tree: readonly NodeTree[], input: CheckInput): Promise<BuildNode> {
+  const payload = checkPayload("addCheck", input, tree);
+  await requireLiveType("addCheck", CHECK_TYPE);
+  return placeTopNode(buildId, tree, { type: CHECK_TYPE, title: null, payload });
+}
+
+/** A check's payload, checked; exported for the dialog, which says the same refusals before anything is written. */
+export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | null {
+  const tested = input.tested.trim();
+  const passing = input.passing.trim();
+  if (!tested) return "Say what it tested.";
+  if (tested.length > CHECK_TEXT_MAX) return `What it tested is at most ${CHECK_TEXT_MAX} characters.`;
+  if (!passing) return "Say what counts as passing.";
+  if (passing.length > CHECK_TEXT_MAX) return `What counts as passing is at most ${CHECK_TEXT_MAX} characters.`;
+  if ((input.onFail ?? "").trim().length > CHECK_FAIL_MAX) return `When it failed is at most ${CHECK_FAIL_MAX} characters.`;
+  for (const n of [input.passed, input.total]) {
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+  }
+  if (input.passed > input.total) return "Passed can't be more than the total.";
+  const day = (input.runAt ?? "").trim();
+  if (day && !isIsoDay(day)) return "Last run is a date, written as 2026-10-12.";
+  return null;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "12 Oct", from a saved day; the day as saved when it is not one. */
+export const checkDay = (day: string): string => (isIsoDay(day) ? `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1]}` : day);
+
+/**
+ * CA-03 P5: a check's one status line, "Passed 14 of 14 runs · since 12 Oct", and whether every run passed (the dot is
+ * `--evidence` then, `--cat-breakage` otherwise). Null when it has no runs to count.
+ */
+export function checkStatus(check: Pick<CheckFacts, "passed" | "total" | "runAt">): { allPassed: boolean; line: string } | null {
+  if (check.passed === null || check.total === null) return null;
+  const since = check.runAt ? ` · since ${checkDay(check.runAt)}` : "";
+  return { allPassed: check.passed === check.total, line: `Passed ${check.passed} of ${check.total} ${check.total === 1 ? "run" : "runs"}${since}` };
+}
+
+/** CA-03 P5: what a check can test: an agent, a team or code. */
+const CHECKABLE: ReadonlySet<StepKind> = new Set(["agent", "team", "code"]);
+
+/** Whether the build has something a check can test, so Add › Check is offered. */
+export const canCheck = (steps: readonly Pick<Step, "kind">[]): boolean => steps.some((step) => CHECKABLE.has(step.kind));
+
+/** The step a new check tested: the selected top-level step when it is work (not a check), else the last agent, team or code. */
+export function testedStepOf(steps: readonly Step[], selectedTopId: string | null): string | null {
+  const selected = steps.find((step) => step.id === selectedTopId);
+  if (selected && selected.kind !== "check") return selected.id;
+  return [...steps].reverse().find((step) => CHECKABLE.has(step.kind))?.id ?? null;
+}
+
+function checkPayload(operation: string, input: CheckInput, tree: readonly NodeTree[]): Json {
+  const why = checkRefusal(input);
+  if (why) throw refuse(operation, why);
+  const out: Payload = { tested: input.tested.trim(), passing: input.passing.trim(), passed: input.passed, total: input.total };
+  const onFail = (input.onFail ?? "").trim();
+  if (onFail) out.on_fail = onFail;
+  const day = (input.runAt ?? "").trim();
+  if (day) out.run_at = day;
+  if (input.testedStep) {
+    const isStep = topSteps(tree).some((node) => node.id === input.testedStep);
+    if (!isStep) throw refuse(operation, "That is not a step of this build.");
+    out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
+  }
+  return out as Json;
+}
+
 /** The top-level steps of a tree, in order: the rows that are numbered. */
-export function topSteps<T extends Pick<BuildNode, "parent_id" | "position" | "type">>(tree: readonly T[]): T[] {
+export function topSteps<T extends Pick<BuildNode, "parent_id" | "position" | "type"> & { payload?: unknown }>(tree: readonly T[]): T[] {
   return byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
 }
 

@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { shapeListProps } from "@/dev/fixtures/shapes";
+import type { Step } from "@/lib/build/graph";
 import { sandboxListProps, sandboxManualFixture, sandboxTeamFixture } from "@/dev/fixtures/sandbox";
 
 import type { BuildListProps } from "./BuildList";
@@ -656,5 +657,54 @@ describe("the refined look (UI-P93)", () => {
     const file = new File(["x"], "brief.pdf", { type: "application/pdf" });
     fireEvent.drop(screen.getByRole("group", { name: /^Prompt 2:/ }), { dataTransfer: { types: ["Files"], files: [file] } });
     expect(onDropOnStep).not.toHaveBeenCalled();
+  });
+});
+
+describe("a check in the List (CA-03 P5)", () => {
+  const checkStep = (passed: number, total: number, runAt: string | null): Step => ({
+    id: "k1",
+    kind: "check",
+    number: "9",
+    title: null,
+    defaultTitle: "Check 9",
+    text: "Places a test order for 2 sourdough loaves",
+    words: 7,
+    model: null,
+    sessionId: null,
+    tool: null,
+    runs: null,
+    uses: [],
+    children: [],
+    check: { tested: "Places a test order for 2 sourdough loaves", passing: "The total shows £9.00", onFail: null, passed, total, runAt },
+  });
+  const withCheck = (step: Step) => {
+    const base = sandboxListProps("bakery");
+    return { ...base, steps: [...base.steps, step] };
+  };
+  /** jsdom drops a var() background, so the dot's colour is read from the server markup. */
+  const dotOf = (step: Step) =>
+    /data-testid="check-status"[^>]*><span aria-hidden="true" style="[^"]*background:var\(--([a-z-]+)\)/.exec(
+      renderToStaticMarkup(
+        <MemoryRouter>
+          <BuildList {...withCheck(step)} />
+        </MemoryRouter>,
+      ),
+    )?.[1];
+
+  it("reads 'Check · how it checked its work', what it tested, and a passing status with an --evidence dot", () => {
+    list(withCheck(checkStep(14, 14, "2026-10-12")));
+    const card = screen.getByRole("group", { name: /^Check 9/ });
+    expect(within(card).getByTestId("check-eyebrow").textContent).toBe("Check · how it checked its work");
+    expect(card.textContent).toContain("Places a test order for 2 sourdough loaves");
+    const status = within(card).getByTestId("check-status");
+    expect(status.textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
+    expect(dotOf(checkStep(14, 14, "2026-10-12"))).toBe("evidence");
+  });
+
+  it("marks a failing run with a --cat-breakage dot, and leaves out since without a last run", () => {
+    list(withCheck(checkStep(13, 14, null)));
+    const status = within(screen.getByRole("group", { name: /^Check 9/ })).getByTestId("check-status");
+    expect(status.textContent).toBe("Passed 13 of 14 runs");
+    expect(dotOf(checkStep(13, 14, null))).toBe("cat-breakage");
   });
 });

@@ -42,7 +42,7 @@ import { controlPaint, CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
 import { DM_MONO, FIGTREE } from "@/lib/theme/type";
 
-import { DotLine } from "../compose/refinedPieces";
+import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
@@ -591,6 +591,18 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const { step } = entry;
   const { view, phone, announce } = ctx;
   const ringed = ctx.ringed === step.id;
+
+  if (step.kind === "check" && step.check) {
+    /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
+       count or the word for one. */
+    return (
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={moduleStyle(ringed)}>
+        <Title entry={entry} right={null} />
+        <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
+        <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+      </article>
+    );
+  }
 
   if (entry.manual) {
     /* Done by hand: nothing to copy. The tile's fill tells it from a prompt. */

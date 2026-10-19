@@ -49,10 +49,10 @@ import {
   type ChecklistRow,
   type MakesRow,
 } from "./detailsModel";
-import { ToolMark } from "./refinedPieces";
+import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -178,7 +178,17 @@ export interface CodeView extends InputsView {
   makes: readonly MakesRow[];
 }
 
-export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView;
+/** CA-03 P5: how the build checked its work. */
+export interface CheckView extends InputsView {
+  kind: "check";
+  id: string;
+  number: string;
+  title: string | null;
+  defaultTitle: string;
+  check: CheckFacts;
+}
+
+export type DetailsView = PromptView | ManualView | SessionView | FileView | ToolView | AgentView | ResultView | CodeView | CheckView;
 
 export interface DetailsHandlers {
   onRename: (id: string, title: string) => void;
@@ -855,6 +865,21 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
   );
 }
 
+/* ── a check (CA-03 P5) ── */
+
+function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean } & DetailsHandlers) {
+  return (
+    <>
+      <Head eyebrow={`Check ${view.number}`}>
+        <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
+      </Head>
+      <CheckBlock check={view.check} />
+      <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
+      <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
+    </>
+  );
+}
+
 /* ── a session ── */
 
 function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
@@ -1302,6 +1327,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
+      {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}

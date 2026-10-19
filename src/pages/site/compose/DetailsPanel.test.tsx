@@ -712,3 +712,30 @@ describe("a saved pair that breaks the rules (CA-02 P8)", () => {
     expect(onAgentSetup).toHaveBeenCalledWith("a5", { model: "Manus", harness: "Manus", tools: [] });
   });
 });
+
+describe("a check (CA-03 P5)", () => {
+  const view = {
+    kind: "check" as const,
+    id: "k1",
+    number: "9",
+    title: null,
+    defaultTitle: "Check 9",
+    check: { tested: "Places a test order", passing: "The total shows £9.00", onFail: "It showed £8.99.", passed: 14, total: 14, runAt: "2026-10-12" },
+    uses: [{ use: { kind: "output" as const, node_id: "c1" }, label: "Output of 3", sub: "order-form.tsx" }],
+    options: [],
+    goesInto: [],
+  };
+
+  it("shows its three answers label over value, its status and what it uses", () => {
+    panel("agent", "bakery", { view });
+    expect(screen.getByTestId("details-eyebrow").textContent).toBe("Check 9");
+    expect(screen.getByTestId("check-status").textContent).toBe("Passed 14 of 14 runs · since 12 Oct");
+    expect(screen.getAllByTestId("label-value").map((row) => [row.children[0].textContent, row.children[1].textContent])).toEqual([
+      ["What it tested", "Places a test order"],
+      ["What counts as passing", "The total shows £9.00"],
+      ["When it failed", "It showed £8.99."],
+    ]);
+    expect(screen.getByText("Output of 3")).toBeTruthy();
+    expect(screen.getByTestId("details-panel").textContent).not.toMatch(/verified|reproduc/i);
+  });
+});
