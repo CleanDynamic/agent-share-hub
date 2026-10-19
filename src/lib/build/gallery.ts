@@ -1759,7 +1759,8 @@ export async function listGalleryDashboard(
   params: GalleryDashboardParams = {}
 ): Promise<DashboardRow[]> {
   const version = params.model ? MODEL_VERSIONS.find((v) => v.id === params.model) ?? null : null;
-  const labNames = params.lab ? MODEL_VERSIONS.filter((v) => v.lab === params.lab).map((v) => v.name) : [];
+  // A lab is its text models, legacy and retired included, so a build made on an older one still counts.
+  const labNames = params.lab ? MODEL_VERSIONS.filter((v) => v.lab === params.lab && v.modality === "text").map((v) => v.name) : [];
   const audience = params.audience?.trim() || undefined;
 
   let query = feedBase(DASHBOARD_BUILD_COLUMNS, audience, null);

@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { CONNECTOR_TOOLS } from "@/lib/connect/connector";
 import { markFor } from "./marks";
-import { LABS, MODEL_VERSIONS } from "./registry";
+import { LABS, MODEL_VERSIONS, type Lab } from "./registry";
+
+/** The labs the site has a logo for; the rest show their name alone. */
+const LABS_WITH_MARKS: readonly Lab[] = ["Anthropic", "OpenAI", "Google", "xAI", "DeepSeek", "Meta", "Perplexity", "Cursor", "Cognition", "Midjourney", "Kuaishou", "Suno", "ElevenLabs", "Higgsfield"];
 
 describe("markFor", () => {
   it("names each tool by its own mark", () => {
@@ -29,7 +32,8 @@ describe("markFor", () => {
   });
 
   it("marks every named model", () => {
-    for (const m of MODEL_VERSIONS.filter((v) => v.lab !== "TypeSafe")) expect(markFor({ model: m.name }), m.name).not.toBeNull();
+    for (const m of MODEL_VERSIONS.filter((v) => LABS_WITH_MARKS.includes(v.lab))) expect(markFor({ model: m.name }), m.name).not.toBeNull();
+    for (const m of MODEL_VERSIONS.filter((v) => !LABS_WITH_MARKS.includes(v.lab))) expect(markFor({ model: m.name }), m.name).toBeNull();
   });
 
   it("resolves an alias to the same mark as the name", () => {
@@ -45,7 +49,8 @@ describe("markFor", () => {
     expect(markFor({ lab: "Google" })).toBe("google-color");
     expect(markFor({ lab: "xAI" })).toBe("xai");
     expect(markFor({ lab: "DeepSeek" })).toBe("deepseek-color");
-    for (const lab of LABS.filter((l) => l !== "TypeSafe")) expect(markFor({ lab }), lab).not.toBeNull();
+    for (const lab of LABS_WITH_MARKS) expect(markFor({ lab }), lab).not.toBeNull();
+    for (const lab of LABS.filter((l) => !LABS_WITH_MARKS.includes(l))) expect(markFor({ lab }), lab).toBeNull();
   });
 
   it("puts the tool before the model and the model before the lab", () => {

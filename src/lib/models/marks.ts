@@ -32,6 +32,24 @@ const MODEL_MARKS: Readonly<Record<Lab, MarkKey | null>> = {
   DeepSeek: "deepseek-color",
   Meta: "meta-color",
   TypeSafe: null,
+  Moonshot: null,
+  "Z.ai": null,
+  NVIDIA: null,
+  Perplexity: "perplexity-color",
+  Cursor: "cursor",
+  Cognition: "devin-color",
+  Microsoft: null,
+  Base44: null,
+  Midjourney: "midjourney",
+  Kuaishou: "kling-color",
+  Suno: "suno",
+  ElevenLabs: "elevenlabs",
+  ByteDance: null,
+  Alibaba: null,
+  MiniMax: null,
+  "Black Forest Labs": null,
+  Ideogram: null,
+  Higgsfield: "higgsfield",
 };
 
 const LAB_MARKS: Readonly<Record<string, MarkKey>> = {
@@ -41,6 +59,14 @@ const LAB_MARKS: Readonly<Record<string, MarkKey>> = {
   xai: "xai",
   deepseek: "deepseek-color",
   meta: "meta-color",
+  perplexity: "perplexity-color",
+  cursor: "cursor",
+  cognition: "devin-color",
+  midjourney: "midjourney",
+  kuaishou: "kling-color",
+  suno: "suno",
+  elevenlabs: "elevenlabs",
+  higgsfield: "higgsfield",
 };
 
 export function markFor({ tool, model, lab }: MarkQuery): MarkKey | null {

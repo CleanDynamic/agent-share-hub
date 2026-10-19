@@ -35,7 +35,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { Panel, PanelHead } from "@/components/brand/Panel";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
 import { VISUALLY_HIDDEN } from "@/components/brand/VisuallyHidden";
-import { LABS, MODEL_VERSIONS } from "@/lib/models/registry";
+import { TEXT_LABS, offeredTextModels } from "@/lib/models/registry";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { move } from "@/lib/theme/motion";
@@ -172,9 +172,9 @@ function AddModel({ session, phone, onSetModel }: { session: ComposeSession; pho
               <option value="" disabled>
                 Choose a model
               </option>
-              {LABS.map((lab) => (
+              {TEXT_LABS.map((lab) => (
                 <optgroup key={lab} label={lab}>
-                  {MODEL_VERSIONS.filter((version) => version.lab === lab).map((version) => (
+                  {offeredTextModels(lab).map((version) => (
                     <option key={version.id} value={version.name}>
                       {version.name}
                     </option>
