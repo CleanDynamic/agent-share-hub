@@ -47,6 +47,7 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
@@ -660,6 +661,7 @@ export function SandboxPage() {
         onAddCode={() => setAddCodeOpen(true)}
         onAddCheck={() => setAddCheckOpen(true)}
         checkable={canCheck(steps)}
+        summary={steps.length > 1 ? buildSummary(steps) || undefined : undefined}
         trail={trailSteps.map((step) => ({ id: step.id, title: step.title ?? step.defaultTitle }))}
         onTrail={onTrail}
         map={

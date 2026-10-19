@@ -115,6 +115,8 @@ export interface BuildHeroView {
   /** builds.made_with and builds.models_used, for the marks in the author row. */
   madeWith?: readonly string[];
   modelsUsed?: readonly string[];
+  /** CA-03 P8: one line that says what kind of build it is; `BuildView` works it out from the steps when absent. */
+  summary?: string;
 }
 
 export interface BuildHeroMaker {

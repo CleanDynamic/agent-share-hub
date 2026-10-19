@@ -80,6 +80,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/tools/registry.test.ts",
   "src/lib/tools/registry.ts",
   "src/pages/site/compose/OutsideWarning.tsx",
+  // P8
+  "src/lib/build/buildSummary.test.ts",
+  "src/lib/build/buildSummary.ts",
+  "src/pages/site/build/buildModel.ts",
+  "src/pages/site/build/BuildView.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -305,6 +310,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no gradient (radial)",
     text: "radial-gradient(${t.dotGrid} 1px, transparent 1px)",
     why: "The map well's dot grid. RULES.md (UI-P99) makes it part of the well recipe for maps and media; it was there before CA-03.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: 'export const MISSING = "—";',
+    why: "The build page's mark for a fact the maker left empty, there before CA-03 and drawn site-wide; CA-03 only adds a field to the file that holds it.",
   },
 ];
 

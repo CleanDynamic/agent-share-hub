@@ -21,6 +21,7 @@ import { AddAgentDialog } from "@/pages/site/compose/AddAgentDialog";
 import { AddCheckDialog } from "@/pages/site/compose/AddCheckDialog";
 import { AddCodeDialog } from "@/pages/site/compose/AddCodeDialog";
 import { canCheck } from "@/lib/build/graph";
+import { buildSummary } from "@/lib/build/buildSummary";
 import { AddManualStepDialog } from "@/pages/site/compose/AddManualStepDialog";
 import { AddToolDialog } from "@/pages/site/compose/AddToolDialog";
 import { useSearchParams } from "react-router-dom";
@@ -118,6 +119,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
         onAddCode={() => setDialog("code")}
         onAddCheck={() => setDialog("check")}
         checkable={canCheck(list.steps)}
+        summary={list.steps.length > 1 ? buildSummary(list.steps) || undefined : undefined}
         sources={<SourcesPanel {...sandboxSourcesProps(which, state)} phone={phone} fine={fine} />}
         post={<PostTab thread={thread} phone={phone} draft={{ build: null, title: sandboxViewProps(which, state).title, maker: { id: "dev-maker", name: "Sam Rivera", handle: "sam", avatar: null } }} />}
       />

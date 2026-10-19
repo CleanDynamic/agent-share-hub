@@ -109,6 +109,8 @@ export interface SandboxViewProps extends CardProps {
   onAddCheck?: () => void;
   /** CA-03 P5: the build has an agent, a team or code: something a check can test. */
   checkable?: boolean;
+  /** CA-03 P8: one line that says what kind of build it is, for the status line. Absent until it has more than one step. */
+  summary?: string;
 
   /** UI-P69: the agents and teams opened in the Map, outermost first. Empty: the build itself. */
   trail?: readonly { id: string; title: string }[];
@@ -541,6 +543,8 @@ export function SandboxView(props: SandboxViewProps) {
         </>
       ) : null}
       {props.threadNote ? ` · ${props.threadNote}` : null}
+      {/* CA-03 P8: what kind of build it is, once it has more than one step. */}
+      {props.summary ? <span data-testid="sandbox-summary">{` · ${props.summary}`}</span> : null}
       {needs ? (
         <>
           {" · Missing: "}

@@ -354,6 +354,14 @@ describe("the post above the build", () => {
     viewAt("/compose/x", { threadNote: "Post 3 is over 1,000 characters", missing: [] });
     expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · Post 3 is over 1,000 characters");
   });
+
+  it("adds what kind of build it is after the save state (CA-03 P8)", () => {
+    viewAt("/compose/x", { summary: "A team of 4 agents · checks its own work", missing: [] });
+    expect(screen.getByTestId("sandbox-status").textContent).toBe("Draft · saved just now · A team of 4 agents · checks its own work");
+    cleanup();
+    viewAt("/compose/x", { summary: undefined, missing: [] });
+    expect(screen.queryByTestId("sandbox-summary")).toBeNull();
+  });
 });
 
 describe("the Card and the post", () => {

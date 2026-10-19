@@ -235,3 +235,41 @@ describe("a check on the build page (CA-03 P5)", () => {
     expect(withCheck.proof).toBe(without.proof);
   });
 });
+
+describe("the summary line under the title (CA-03 P8)", () => {
+  it("says what kind of build it is, on one line, with its full text in the title", () => {
+    mount(stepsProps());
+    const line = screen.getByTestId("build-summary");
+    expect(line.textContent).not.toBe("");
+    expect(line.getAttribute("title")).toBe(line.textContent);
+    const markup = renderToStaticMarkup(
+      <MemoryRouter initialEntries={[REFINED]}>
+        <BuildView {...stepsProps()} />
+      </MemoryRouter>,
+    );
+    const tag = /<p data-testid="build-summary"[^>]*>/.exec(markup)?.[0] ?? "";
+    expect(tag).toContain("font-size:12.5px");
+    expect(tag).toContain("color:var(--text2)");
+    expect(tag).toContain("white-space:nowrap");
+    expect(tag).toContain("text-overflow:ellipsis");
+  });
+
+  it("draws nothing for a build with nothing but a title", () => {
+    const props = stepsProps();
+    mount({ ...props, steps: props.steps ? { ...props.steps, steps: [] } : props.steps });
+    expect(screen.queryByTestId("build-summary")).toBeNull();
+  });
+
+  it("leaves the plaque where it was and as it was", () => {
+    const plaqueOf = (props: BuildViewProps) => {
+      const { container, unmount } = mount(props);
+      const plaque = container.querySelector('[data-ui="plaque"]')?.outerHTML ?? "";
+      unmount();
+      return plaque;
+    };
+    const props = stepsProps();
+    const without = plaqueOf({ ...props, hero: { ...props.hero, summary: "" } });
+    expect(without).not.toBe("");
+    expect(plaqueOf(props)).toBe(without);
+  });
+});
