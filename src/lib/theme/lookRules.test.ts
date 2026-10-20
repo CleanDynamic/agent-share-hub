@@ -149,6 +149,8 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/agentNotes.ui.test.tsx",
   // CA-05 P10
   "src/pages/site/compose/trainedModel.ui.test.tsx",
+  // CA-05 P11
+  "src/lib/build/everything.test.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

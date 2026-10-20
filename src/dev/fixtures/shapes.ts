@@ -33,9 +33,9 @@ import { dividers, type ListResult } from "@/pages/site/compose/buildListModel";
 import { pieces, resolveView } from "@/pages/site/compose/detailsView";
 import { sourceFiles, sourceSessions } from "@/pages/site/compose/sourcesModel";
 
-export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code" | "team-checks" | "one-sitting" | "runs-on-github";
+export type ShapeKey = "alone" | "retrieval" | "agent" | "team" | "code" | "team-checks" | "one-sitting" | "runs-on-github" | "everything";
 
-export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code", "team-checks", "one-sitting", "runs-on-github"];
+export const SHAPE_KEYS: readonly ShapeKey[] = ["alone", "retrieval", "agent", "team", "code", "team-checks", "one-sitting", "runs-on-github", "everything"];
 
 export interface Shape {
   key: ShapeKey;
@@ -355,6 +355,148 @@ const onGithub: NodeTree[] = [
   node("w-p1", "prompt", { text: "Review this pull request for bugs and say what to fix.", session: G1 }, 2),
 ];
 
+/* ── 9. everything at once (CA-05 P11) ──
+   Every item of CA-04 and CA-05 in one build, saved the way the composer saves it.
+
+   Session 1, Claude, 12 Oct: a welcome email with two words a reader changes, code sent with it, a long session
+   (150,000 words) that cost £3.40 and 1.2 million tokens with the start reused, shown to readers, run in the
+   background. Session 2, Claude Code, 14 Oct, at the same time as session 3: started with a command, in its own copy
+   of the code, with a setup (instructions, a skill read only when needed, a server that needs a sign-in, a rule), a
+   goal, an agent on Ollama that tidies its notes, an agent that checks and changes its checklist each round, and a
+   check with a test file, 40 cases and three runs. Session 3, Claude Code: a workflow and a prompt. Session 4,
+   Ollama: a prompt on Muse Spark Open at 4-bit on the maker's computer. The result is a trained model.
+
+   NOT HERE: the chat marked as summarised and the helpers a session started. The formats on disk do not record
+   them (design/audits/composer/ca-05/p4-not-in-the-file.md), so nothing is drawn for them. */
+
+const E1 = "typed-0b1c2d3e-0000-4000-8000-000000000004";
+const E2 = "typed-0b1c2d3e-0000-4000-8000-000000000005";
+const E3 = "typed-0b1c2d3e-0000-4000-8000-000000000006";
+const E4 = "typed-0b1c2d3e-0000-4000-8000-000000000007";
+
+const EMAIL = "Write a welcome email for Ada's Bakery and sign it Ada.";
+const BAKERY_AT = EMAIL.indexOf("Ada's Bakery");
+const SIGN_AT = EMAIL.lastIndexOf("Ada");
+
+const everythingMaking: Making = {
+  sessions: [],
+  excluded_models: [],
+  sessions_meta: {
+    [E1]: { tool: "claude", model: "Opus 5.5", date: "2026-10-12", words: 150_000, cost: 3.4, currency: "GBP", tokens: 1_200_000, cached: 900_000, showCost: true, background: true },
+    [E2]: {
+      tool: "claude-code",
+      model: "Sonnet 5.5",
+      date: "2026-10-14",
+      goal: { condition: "the order form passes its tests", atMost: 40, reached: "reached", turns: 12 },
+      startedWith: "claude --model opus --permission-mode plan --worktree fix-totals --max-turns 8",
+      parallelWith: [E3],
+      ownCopy: "fix-totals",
+    },
+    [E3]: { tool: "claude-code", model: "Sonnet 5.5", date: "2026-10-14", parallelWith: [E2], ownCopy: "fix-receipts" },
+    [E4]: { tool: "ollama", model: "Muse Spark Open", date: "2026-10-16" },
+  },
+};
+
+const everythingFile = node("e-f1", "document", { title: "menu.pdf", summary: "The bakery's menu, with prices" }, 1, { parent: "e-c1" });
+const everythingCode = node("e-c1", "code", { source: "export const Welcome = () => null;", language: "tsx", filename: "welcome.tsx" }, 1, { parent: "e-p1", children: [everythingFile] });
+const casesFile = node("e-tf", "document", { title: "cases.csv", media_id: "m-cases", rows: 40 }, 1, { parent: "e-chk" });
+const trainedFile = node("e-tr", "document", { title: "ratings.csv", media_id: "m-ratings", rows: 1200 }, 1, { parent: "e-r1" });
+
+const everything: NodeTree[] = [
+  node(
+    "e-p1",
+    "prompt",
+    {
+      text: EMAIL,
+      tool: "claude",
+      model: "Opus 5.5",
+      session: E1,
+      changes: [
+        { start: BAKERY_AT, end: BAKERY_AT + "Ada's Bakery".length },
+        { start: SIGN_AT, end: SIGN_AT + 3 },
+      ],
+    },
+    1,
+    { children: [everythingCode] },
+  ),
+  node("e-p2", "prompt", { text: "Make it shorter, and keep the sign-off.", tool: "claude", model: "Opus 5.5", session: E1 }, 2),
+  node("e-x1", "document", { title: "CLAUDE.md", setup: { session: E2, kind: "instructions", loaded: "start" } }, 3),
+  node("e-x2", "document", { title: "SKILL.md", path: "order-forms/SKILL.md", setup: { session: E2, kind: "skill", loaded: "when-needed" }, skill: { name: "order-forms", description: "Builds an order form for a small shop, with a total that always adds up." } }, 4),
+  node(
+    "e-x3",
+    "integration",
+    { service: "github", setup: { session: E2, kind: "server", loaded: "start" }, server: { type: "http", url: "https://api.githubcopilot.com/mcp/", headers: { Authorization: "${Authorization}" } }, connection: "mcp", runs_at: "web", tools_used: { create_pull_request: 2 } },
+    5,
+  ),
+  node("e-x4", "code", { source: "npm test", language: "bash", setup: { session: E2, kind: "rule", loaded: "start" }, rule: { when: "After a tool runs" } }, 6),
+  node(
+    "e-a1",
+    "agent_config",
+    {
+      system_prompt: "Greet each customer by name, using what you remember of their last order.",
+      model: "Muse Spark Open",
+      harness: "ollama",
+      modelRun: { precision: "4-bit", where: "computer" },
+      memory: "Each customer's last order, in a notes file",
+      memory_tidy: "Every Sunday, keeps the 50 most useful notes",
+      session: E2,
+    },
+    7,
+    { title: "Greeter" },
+  ),
+  node(
+    "e-a2",
+    "agent_config",
+    {
+      system_prompt: "Review the greeting against the checklist and list what to change.",
+      model: "Sonnet 5.5",
+      harness: "claude-code",
+      runs: { how: "until", detail: "the review has no changes · at most 3 times" },
+      changes_each_round: "its checklist",
+      uses: [out("e-a1")],
+      session: E2,
+    },
+    8,
+    { title: "Reviewer" },
+  ),
+  node(
+    "e-chk",
+    "eval_run",
+    {
+      tested: "Greets 40 customers by name",
+      passing: "Every greeting names the customer",
+      on_fail: "Three greetings had the wrong name. The Reviewer fixed the checklist and it ran again.",
+      passed: 40,
+      total: 40,
+      run_at: "2026-10-15",
+      runs: [
+        { at: "2026-10-13", passed: 31, total: 40 },
+        { at: "2026-10-14", passed: 37, total: 40 },
+        { at: "2026-10-15", passed: 40, total: 40 },
+      ],
+      uses: [out("e-a2")],
+      session: E2,
+    },
+    9,
+    { children: [casesFile] },
+  ),
+  node(
+    "e-w1",
+    "code",
+    {
+      source: WORKFLOW,
+      language: "yaml",
+      filename: "claude.yml",
+      setup: { session: E3, kind: "workflow", loaded: "start" },
+      workflow: { events: [{ name: "pull_request", types: ["opened"] }], prompt: "Review this pull request for bugs and say what to fix." },
+    },
+    10,
+  ),
+  node("e-p3", "prompt", { text: "Review this pull request for bugs and say what to fix.", tool: "claude-code", model: "Sonnet 5.5", session: E3 }, 11),
+  node("e-p4", "prompt", { text: "Say hello to a new customer in one line.", tool: "ollama", model: "Muse Spark Open", modelRun: { precision: "4-bit", where: "computer" }, session: E4 }, 12),
+  node("e-r1", "result", { summary: "Bakery greeter v2", kind: "trained-model", base_model: "muse-spark-open", method: "Rated answers, ranked by me", uses: [out("e-a2")] }, 13, { children: [trainedFile] }),
+];
+
 export const SHAPES: Readonly<Record<ShapeKey, Shape>> = {
   alone: { key: "alone", title: "A fox postcard poem", tree: alone, selected: "a-p1" },
   retrieval: { key: "retrieval", title: "What the landlord must fix", tree: retrieval, selected: "r-p1" },
@@ -364,6 +506,7 @@ export const SHAPES: Readonly<Record<ShapeKey, Shape>> = {
   "team-checks": { key: "team-checks", title: "A bakery order page that checks itself", tree: teamChecks, selected: "k-build" },
   "one-sitting": { key: "one-sitting", title: "A bakery order page, one sitting then agents", tree: oneSitting, selected: S2, making: oneSittingMaking },
   "runs-on-github": { key: "runs-on-github", title: "A pull request reviewer on GitHub", tree: onGithub, selected: G1, making: onGithubMaking },
+  everything: { key: "everything", title: "Everything at once", tree: everything, selected: E2, making: everythingMaking },
 };
 
 /** Every node of a tree, parents first. */
@@ -438,7 +581,7 @@ function listFacts(tree: readonly NodeTree[], steps: readonly Step[]) {
       results.push({
         id: entry.id,
         title: strOf(entry.payload, "summary") ?? strOf(entry.payload, "url") ?? "Result",
-        holds: strOf(entry.payload, "media_id") ? "a picture" : strOf(entry.payload, "url") ? "a link" : "text",
+        holds: strOf(entry.payload, "kind") === "trained-model" ? "a trained model" : strOf(entry.payload, "media_id") ? "a picture" : strOf(entry.payload, "url") ? "a link" : "text",
         from: outputs[0] ? (numberOf.get(outputs[0].node_id) ?? null) : null,
       });
     }
@@ -540,6 +683,13 @@ export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key
     // CA-04: the session, its setup, its goal and how a tool was connected are editable on the dev page; nothing is written.
     onSessionMeta: noop,
     onSessionGoal: noop,
+    // CA-05: what a session carries, a check's runs, how a model was run, an agent's lines and a trained model's file.
+    onSessionExtras: noop,
+    onSessionTogether: noop,
+    onCheckRuns: noop,
+    onModelRun: noop,
+    onAgentNotes: noop,
+    onTrainedOn: noop,
     onAddToSetup: noop,
     onNotShared: noop,
     onToolConnection: noop,
