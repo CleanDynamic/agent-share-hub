@@ -879,6 +879,7 @@ export type Database = {
           monetisation_type: string | null
           outcome: string | null
           parent_build_id: string | null
+          post_doc: Json | null
           price_gbp: number | null
           prompt_count: number
           published_at: string | null
@@ -923,6 +924,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
           published_at?: string | null
@@ -967,6 +969,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
           published_at?: string | null
