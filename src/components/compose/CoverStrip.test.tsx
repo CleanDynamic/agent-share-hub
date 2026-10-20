@@ -140,7 +140,7 @@ function Harness({ stacked = false }: { stacked?: boolean }) {
       queryClient.setQueryData<BuildRecord | null>(
         composeBuildQueryKey(BUILD_ID),
         (previous) =>
-          previous ? { ...previous, build: { ...previous.build, ...next } } : previous
+          previous ? { ...previous, build: { ...previous.build, ...next } as Build } : previous
       );
     },
     [queryClient]

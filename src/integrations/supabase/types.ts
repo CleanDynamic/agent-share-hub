@@ -879,6 +879,7 @@ export type Database = {
           monetisation_type: string | null
           outcome: string | null
           parent_build_id: string | null
+          post_doc: Json | null
           price_gbp: number | null
           prompt_count: number
           published_at: string | null
@@ -923,6 +924,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
           published_at?: string | null
@@ -967,6 +969,7 @@ export type Database = {
           monetisation_type?: string | null
           outcome?: string | null
           parent_build_id?: string | null
+          post_doc?: Json | null
           price_gbp?: number | null
           prompt_count?: number
           published_at?: string | null
@@ -4089,6 +4092,7 @@ export type Database = {
           bounty_solutions_submitted: number
           bounty_solver_acceptance_rate: number | null
           bounty_total_reward_earned: number
+          colour_swatches: Json
           created_at: string
           curator_application_status: string | null
           derived_bio: string | null
@@ -4127,6 +4131,7 @@ export type Database = {
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
           bounty_total_reward_earned?: number
+          colour_swatches?: Json
           created_at?: string
           curator_application_status?: string | null
           derived_bio?: string | null
@@ -4165,6 +4170,7 @@ export type Database = {
           bounty_solutions_submitted?: number
           bounty_solver_acceptance_rate?: number | null
           bounty_total_reward_earned?: number
+          colour_swatches?: Json
           created_at?: string
           curator_application_status?: string | null
           derived_bio?: string | null
