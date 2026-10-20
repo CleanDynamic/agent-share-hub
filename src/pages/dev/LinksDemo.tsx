@@ -10,14 +10,18 @@ import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
-import { PartWindow } from "@/components/build/PartWindow";
+import { allParts, PartWindow } from "@/components/build/PartWindow";
+import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
+import { groupKey } from "@/lib/build/graph";
+import { dividers } from "@/pages/site/compose/buildListModel";
+import { useColourPicking } from "@/pages/site/compose/useColourPicking";
 import { useIsPhone } from "@/components/shell/useMinWidth";
 import { linksBuild, linksPost } from "@/dev/fixtures/postLinks";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { refGroups } from "@/lib/build/postRefs";
 import type { ThreadDoc } from "@/lib/build/thread";
-import { BuildList } from "@/pages/site/compose/BuildList";
+import { BuildList, partName } from "@/pages/site/compose/BuildList";
 import { BuildMap } from "@/pages/site/compose/BuildMap";
 import { DetailsPanel } from "@/pages/site/compose/DetailsPanel";
 import { PostTab } from "@/pages/site/compose/PostTab";
@@ -47,20 +51,48 @@ function demoThread(doc: ThreadDoc): ComposeThread {
 export default function LinksDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
   const phone = useIsPhone();
-  const build = useMemo(() => linksBuild(), []);
-  const source: ShapeSource = useMemo(() => ({ tree: build.tree, making: build.making, selected: "o-p2" }), [build]);
+  const fixture = useMemo(() => linksBuild(), []);
+  /* CA-06 P5: a colour Done keeps is laid over the fixture for the visit; nothing is written. */
+  const [kept, setKept] = useState<Record<string, string | null>>({});
+  const [preview, setPreview] = useState<ColourPreview | null>(null);
+  const saved = useMemo(
+    () => Object.entries(kept).reduce((at, [to, colour]) => previewColours(at.steps, at.groups, { to, colour, alsoTiles: false }), { steps: fixture.steps, groups: fixture.groups }),
+    [fixture, kept],
+  );
+  const shown = useMemo(() => previewColours(saved.steps, saved.groups, preview), [saved, preview]);
+  const build = { ...fixture, steps: shown.steps, groups: shown.groups };
+  const source: ShapeSource = useMemo(() => ({ tree: fixture.tree, making: fixture.making, selected: "o-p2" }), [fixture]);
   const [lens, setLens] = useState<SandboxLens>(params.get("lens") === "map" ? "map" : "list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openPromptId, setOpenPromptId] = useState<string | null>(null);
   const [trail, setTrail] = useState<readonly string[]>([]);
   const registry = useRef<PartRegistry>(new Map()).current;
-  const groups = useMemo(() => refGroups({ steps: build.steps, groups: build.groups }), [build]);
+  const groups = useMemo(() => refGroups({ steps: shown.steps, groups: shown.groups }), [shown]);
+  const { onColour, picker } = useColourPicking({
+    preview,
+    setPreview,
+    savedSteps: saved.steps,
+    savedGroups: saved.groups,
+    write: (to, colour) => setKept((previous) => ({ ...previous, [to]: colour })),
+    phone,
+  });
   const links = usePostLinks({ steps: build.steps, groups: build.groups, refGroups: groups, registry, lens: phone ? "list" : lens, phone, setSelectedId, setOpenPromptId, setTrail });
   const thread = useMemo(() => demoThread(linksPost), []);
-  const list = shapeListProps("one-sitting", source);
-  const map = shapeMapProps("one-sitting", source);
+  const list = { ...shapeListProps("one-sitting", source), steps: shown.steps };
+  const map = { ...shapeMapProps("one-sitting", source), steps: shown.steps, groups: shown.groups };
   const opened = trail.length ? (build.steps.find((step) => step.id === trail[trail.length - 1]) ?? null) : null;
-  const { counts } = sessionFacts(build.tree);
+  const { counts } = sessionFacts(fixture.tree);
+  const detailsColour = useMemo(() => {
+    const group = shown.groups.find((candidate) => groupKey(candidate) === selectedId);
+    if (group) {
+      const what = `Session ${group.number}`;
+      return { what, colour: group.colour ?? null, onPick: (anchor: HTMLElement) => onColour(`session:${groupKey(group)}`, anchor, what, group.colour ?? null) };
+    }
+    const step = allParts(shown.steps).find((candidate) => candidate.id === selectedId);
+    if (!step) return null;
+    const what = partName(step);
+    return { what, colour: step.colour ?? null, onPick: (anchor: HTMLElement) => onColour(`node:${step.id}`, anchor, what, step.colour ?? null) };
+  }, [selectedId, shown, onColour]);
 
   return (
     <PartRegistryProvider registry={registry}>
@@ -83,6 +115,8 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
             mentioned={links.mentioned}
             onBackToPost={links.backToMention}
             reveal={links.reveal}
+            onColour={onColour}
+            dividers={dividers(shown.steps, shown.groups, counts, {})}
           />
         }
         map={
@@ -101,7 +135,7 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
             }}
           />
         }
-        selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} onOpenPrompt={setOpenPromptId} /> : undefined}
+        selection={selectedId ? <DetailsPanel {...shapeDetailsProps("one-sitting", selectedId, source)} phone={phone} onSelect={setSelectedId} onOpenPrompt={setOpenPromptId} colour={detailsColour} /> : undefined}
         post={
           <PostTab
             thread={thread}
@@ -127,6 +161,7 @@ export default function LinksDemo({ fit = "board", state = "populated" }: Design
         onBackToPost={links.backToPost}
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
+      {picker}
       <PartWindow
         steps={build.steps}
         groups={build.groups}

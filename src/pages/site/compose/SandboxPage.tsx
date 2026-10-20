@@ -76,6 +76,8 @@ import { PartRegistryProvider, type PartRegistry } from "@/components/build/part
 import { allParts, PartWindow } from "@/components/build/PartWindow";
 import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
+import { useColourPicking } from "./useColourPicking";
+import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -128,7 +130,9 @@ export function SandboxPage() {
   }, []);
 
   const made = (build as { making?: unknown } | null)?.making;
-  const { counts, hasAgent, sessionCount, steps, groups } = useMemo(() => {
+  /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
+  const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
+  const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
     const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
@@ -140,6 +144,7 @@ export function SandboxPage() {
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made]);
+  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -613,9 +618,6 @@ export function SandboxPage() {
 
   /* ── colour (CA-06 P4) ── */
 
-  /** The part whose colour button was pressed, and the button: the colour picker opens on it (P5). */
-  const [colourFor, setColourFor] = useState<{ to: string; anchor: HTMLElement; what: string; colour: string | null } | null>(null);
-  const onColour = useCallback((to: string, anchor: HTMLElement, what: string, colour: string | null) => setColourFor({ to, anchor, what, colour }), []);
   /** Writes a part's colour, or takes it off: a tile's `payload.colour`, a session's `sessions_meta[key].colour`. */
   const writeColour = useCallback(
     (to: string, colour: string | null) => {
@@ -629,6 +631,8 @@ export function SandboxPage() {
     },
     [onSessionColour, prompts, afterWrite],
   );
+  /* CA-06 P5: the picker the colour buttons open. */
+  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone });
   /** Details' colour: the selected tile's or session's, with its button. */
   const detailsColour = useMemo(() => {
     if (!selectedId) return null;
@@ -1374,6 +1378,7 @@ export function SandboxPage() {
         onBackToPost={links.backToPost}
         onCloseAutoFocus={links.onCloseAutoFocus}
       />
+      {colourPicker}
       <PartWindow
         steps={steps}
         groups={groups}

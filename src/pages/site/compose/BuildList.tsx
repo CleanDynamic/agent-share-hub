@@ -188,7 +188,7 @@ export interface BuildListProps {
   reveal?: { id: string; n: number } | null;
   /**
    * CA-06 P4: the colour button on a tile and a session's head (in a tile's menu on a phone) opens the colour picker.
-   * `to` is the part, `what` names it ("Prompt 3"), `anchor` is the button. Absent: no button.
+   * `to` is the part, `what` names it for the picker ("Prompt 3 · Launch email"), `anchor` is the button. Absent: no button.
    */
   onColour?: (to: string, anchor: HTMLElement, what: string, colour: string | null) => void;
 }
@@ -242,6 +242,9 @@ function useCardRef(id: string, nestRef: (el: HTMLDivElement | null) => void) {
 export const partName = (step: Pick<Step, "kind" | "number" | "title" | "defaultTitle">): string =>
   `${REF_KIND[step.kind] ?? "Prompt"} ${step.number || stepTitle(step)}`;
 
+/** What the colour picker's head says it colours: "Prompt 7 · Launch email", or the name alone without a title. */
+const pickerName = (step: Step): string => (step.title && step.number ? `${partName(step)} · ${step.title}` : partName(step));
+
 /** CA-06 P4: a coloured tile's edge, through the one helper. */
 const colourEdge = (colour: string | undefined): CSSProperties | null => (colour ? borderFor(colour) : null);
 
@@ -249,7 +252,7 @@ const colourEdge = (colour: string | undefined): CSSProperties | null => (colour
 function CardColour({ step, phone, inMenu = false }: { step: Step; phone: boolean; inMenu?: boolean }) {
   const { onColour } = useContext(ListRefsContext);
   if (!onColour || (phone && inMenu)) return null;
-  return <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "node", id: step.id }), anchor, partName(step), step.colour ?? null)} />;
+  return <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "node", id: step.id }), anchor, pickerName(step), step.colour ?? null)} />;
 }
 
 /** "Colour…" in a tile's menu, on a phone. The picker opens as a sheet there, so it needs no anchor but the menu's button. */
@@ -261,7 +264,7 @@ function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; an
       phone={phone}
       onSelect={() => {
         const at = anchor();
-        if (at) onColour(refTo({ kind: "node", id: step.id }), at, partName(step), step.colour ?? null);
+        if (at) onColour(refTo({ kind: "node", id: step.id }), at, pickerName(step), step.colour ?? null);
       }}
     >
       Colour…

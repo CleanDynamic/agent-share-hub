@@ -192,6 +192,13 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/theme/partColour.test.ts",
   "src/pages/site/compose/SourcesPanel.tsx",
   "src/pages/site/compose/colour.ui.test.tsx",
+  // CA-06 P5
+  "src/components/brand/ColourPicker.test.tsx",
+  "src/components/brand/ColourPicker.tsx",
+  "src/components/brand/useColourSwatches.ts",
+  "src/lib/build/colourPreview.ts",
+  "src/lib/theme/colourWheel.ts",
+  "src/pages/site/compose/useColourPicking.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
