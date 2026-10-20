@@ -35,6 +35,7 @@ import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { PostThread } from "@/components/post/PostThread";
 import { PostRefsProvider } from "@/components/post/RefLinks";
+import { MediaViewerProvider } from "@/components/post/media/MediaViewer";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import {
   BETWEEN,
@@ -980,13 +981,16 @@ function ThreadHero({
         </div>
 
         <div data-testid="build-posts" style={{ gridColumn: 2, gridRow: 2, minWidth: 0, maxWidth: THREAD_COLUMN }}>
-          {thread.refs ? (
-            <PostRefsProvider value={thread.refs}>
+          {/* CA-07: a picture in the post opens full screen. */}
+          <MediaViewerProvider>
+            {thread.refs ? (
+              <PostRefsProvider value={thread.refs}>
+                <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
+              </PostRefsProvider>
+            ) : (
               <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
-            </PostRefsProvider>
-          ) : (
-            <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
-          )}
+            )}
+          </MediaViewerProvider>
         </div>
       </div>
 

@@ -10,15 +10,19 @@
 // picture arrives. The editor's node view (GridView) draws the same frame with its own controls in each cell
 // (`GridFrame`); readers get `PostMediaGrid`.
 
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
-import { mediaAttrsOf, type PostMediaAttrs } from "@/lib/build/thread";
+import { mediaAttrsOf, type MediaWarning, type PostMediaAttrs } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
 
 import { croppedRatio, type CropSource } from "./cropStyle";
-import { GridTile } from "./GridTile";
+import { AltSheet } from "./AltSheet";
+import { GridTile, tileKind, tileLabel } from "./GridTile";
+import { useMediaViewer } from "./MediaViewer";
+import { PICTURE_INK, PICTURE_SHADE } from "./shade";
 
 /** A single picture is held between these shapes (width over height). */
 export const MIN_RATIO = 3 / 4;
@@ -137,42 +141,117 @@ export interface PostMediaGridProps {
   mediaById: ReadonlyMap<string, GalleryMedia>;
   srcByPath: MediaSrcMap;
   phone?: boolean;
-  /** Draws a tile's content in place of GridTile: the reader's warning cover, the viewer's opener (Part 7). */
-  renderTile?: (index: number, tile: ReactNode, attrs: PostMediaAttrs) => ReactNode;
-  /** The ALT badge opens the description (Part 7). Absent: it is a mark. */
-  onAlt?: (index: number, badge: HTMLElement) => void;
 }
 
-/** A reader's grid. */
-export function PostMediaGrid({ pictures, mediaById, srcByPath, renderTile, onAlt }: PostMediaGridProps) {
+/** Every sentence a reader's grid says. */
+export const READER_COPY = {
+  warning: (warn: readonly MediaWarning[]) => `Content warning: ${warn.map((name) => WARNING_NAMES[name]).join(", ")}`,
+  flagged: "The maker flagged this picture.",
+  show: "Show",
+} as const;
+
+const WARNING_NAMES: Record<MediaWarning, string> = { nudity: "Nudity", violence: "Violence", sensitive: "Sensitive" };
+
+/** A reader's grid: the ALT badge opens the description, a flagged picture is covered, and (inside a MediaViewerProvider) a picture opens full screen. */
+export function PostMediaGrid({ pictures, mediaById, srcByPath }: PostMediaGridProps) {
   const attrs = pictures.map(mediaAttrsOf);
+  const viewer = useMediaViewer();
+  const [alt, setAlt] = useState<{ index: number; from: HTMLElement } | null>(null);
   if (attrs.length === 0) return null;
   const layout = gridLayout(sourcesOf(attrs, mediaById));
+  const items = attrs.map((one) => ({ attrs: one, media: mediaById.get(one.mediaId) }));
   return (
-    <GridFrame
-      layout={layout}
-      count={attrs.length}
-      renderCell={(index, style, cell) => {
-        const tile = (
-          <GridTile
-            attrs={attrs[index]}
-            media={mediaById.get(attrs[index].mediaId)}
-            srcByPath={srcByPath}
-            cellRatio={cell.ratio}
-            align={cell.align}
-            index={index}
-            count={attrs.length}
-            reader
-            onAlt={onAlt ? (badge) => onAlt(index, badge) : undefined}
-          />
-        );
-        return (
+    <>
+      <GridFrame
+        layout={layout}
+        count={attrs.length}
+        renderCell={(index, style, cell) => (
           <div key={index} data-grid-tile={index} style={style}>
-            {renderTile ? renderTile(index, tile, attrs[index]) : tile}
+            <ReaderTile
+              attrs={attrs[index]}
+              media={items[index].media}
+              srcByPath={srcByPath}
+              cell={cell}
+              index={index}
+              count={attrs.length}
+              onAlt={(from) => setAlt({ index, from })}
+              onOpen={viewer ? (from) => viewer({ items, index, srcByPath, returnTo: from }) : undefined}
+            />
           </div>
-        );
-      }}
-    />
+        )}
+      />
+      <AltSheet alt={alt ? attrs[alt.index]?.alt ?? null : null} returnTo={alt?.from ?? null} onClose={() => setAlt(null)} />
+    </>
+  );
+}
+
+function ReaderTile({
+  attrs,
+  media,
+  srcByPath,
+  cell,
+  index,
+  count,
+  onAlt,
+  onOpen,
+}: {
+  attrs: PostMediaAttrs;
+  media: GalleryMedia | undefined;
+  srcByPath: MediaSrcMap;
+  cell: GridCell;
+  index: number;
+  count: number;
+  onAlt: (from: HTMLElement) => void;
+  onOpen?: (from: HTMLElement) => void;
+}) {
+  const [shown, setShown] = useState(false);
+  const covered = attrs.warn.length > 0 && !shown;
+  const label = tileLabel(attrs.alt, tileKind(media), index, count);
+  return (
+    <GridTile
+      attrs={attrs}
+      media={media}
+      srcByPath={srcByPath}
+      cellRatio={cell.ratio}
+      align={cell.align}
+      index={index}
+      count={count}
+      reader
+      badges={!covered}
+      onAlt={onAlt}
+      pictureStyle={covered ? { filter: "blur(28px)", transform: "scale(1.1)" } : undefined}
+    >
+      {covered ? (
+        <span data-warning-cover="" style={{ position: "absolute", inset: 0, zIndex: 2, background: PICTURE_SHADE, color: PICTURE_INK, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: 16, textAlign: "center", boxSizing: "border-box" }}>
+          <span style={{ fontFamily: FIGTREE, fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>{READER_COPY.warning(attrs.warn)}</span>
+          <span style={{ fontFamily: FIGTREE, fontSize: 13, fontWeight: 400, lineHeight: 1.4 }}>{READER_COPY.flagged}</span>
+          <button
+            type="button"
+            onClick={(event) => {
+              // A Gallery card is a link; Show belongs to the picture.
+              event.preventDefault();
+              event.stopPropagation();
+              setShown(true);
+            }}
+            style={{ marginTop: 4, height: 32, padding: "0 16px", borderRadius: 999, border: `1px solid ${PICTURE_INK}`, background: "transparent", color: PICTURE_INK, fontFamily: FIGTREE, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            {READER_COPY.show}
+          </button>
+        </span>
+      ) : onOpen ? (
+        <button
+          type="button"
+          aria-label={label}
+          data-open-viewer=""
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpen(event.currentTarget);
+          }}
+          style={{ position: "absolute", inset: 0, zIndex: 0, padding: 0, border: 0, background: "transparent", cursor: "zoom-in" }}
+        />
+      ) : null}
+    </GridTile>
   );
 }
 

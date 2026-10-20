@@ -121,8 +121,6 @@ function Thread({ start, px, phone }: { start: PostThreadMode; px: number; phone
         mode={mode}
         onOpen={() => setMode("open")}
         onClose={() => setMode("closed")}
-        // The Gallery asks for the cap; the build page does not.
-        capTall={start !== "page"}
         phone={phone}
       />
     </div>

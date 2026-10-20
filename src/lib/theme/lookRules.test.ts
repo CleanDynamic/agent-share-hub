@@ -237,6 +237,12 @@ export const CA03_FILES: readonly string[] = [
   // CA-07 P6
   "src/components/post/media/gridLinks.test.tsx",
   "src/lib/build/gridSteps.ts",
+  // CA-07 P7
+  "src/components/gallery/FeedPost.tsx",
+  "src/components/post/PostThread.tsx",
+  "src/components/post/media/AltSheet.tsx",
+  "src/components/post/media/MediaViewer.tsx",
+  "src/components/post/media/readers.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

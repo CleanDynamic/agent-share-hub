@@ -38,7 +38,6 @@ export interface PostBodyProps {
   post: Post;
   mediaById: ReadonlyMap<string, GalleryMedia>;
   srcByPath: MediaSrcMap;
-  capTall?: boolean;
   phone?: boolean;
   /** Draw Title and Heading as h2 and h3 instead of p. Never an h1. */
   realHeadings?: boolean;
