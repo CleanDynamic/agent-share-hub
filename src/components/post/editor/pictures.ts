@@ -62,6 +62,8 @@ export interface PictureStore {
   /** An upload landed as `mediaId`: its preview is kept under the file's id until the real file is signed. */
   handOff(uploadId: string, mediaId: string): void;
   setSteps(steps: StepRefs | null): void;
+  /** Dev pages only: rows and their files as they are, with nothing signed. */
+  seed(rows: readonly GalleryMedia[], src: MediaSrcMap, progress?: ReadonlyMap<string, number>): void;
 }
 
 /** Where a landed upload's preview waits for its signed file. */
@@ -120,6 +122,9 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       if (preview) previews.set(uploadId, preview);
       else previews.delete(uploadId);
       set({ previews });
+    },
+    seed(rows, src, progress) {
+      set({ rows: new Map([...snapshot.rows, ...rows.map((row) => [row.id, row] as const)]), src: new Map([...snapshot.src, ...src]), progress: new Map([...snapshot.progress, ...(progress ?? [])]) });
     },
     setSteps(steps) {
       if (steps !== snapshot.steps) set({ steps });

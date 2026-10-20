@@ -132,7 +132,9 @@ function SortableTile({
   gridPos,
   onKey,
   sortable,
+  cover = false,
 }: {
+  cover?: boolean;
   picture: Picture;
   index: number;
   count: number;
@@ -207,6 +209,7 @@ function SortableTile({
         preview={preview}
         badges={!uploadId}
         pictureStyle={uploadId ? { opacity: failed ? FAILED_OPACITY : UPLOADING_OPACITY } : undefined}
+        cover={cover}
       >
         {!uploadId ? (
           <button
@@ -486,7 +489,7 @@ export function GridView(props: NodeViewProps) {
   );
   const layout = gridLayout(sources);
   const tile = (picture: Picture, index: number, cell: GridCell, style: CSSProperties) => (
-    <SortableTile key={picture.key} picture={picture} index={index} count={count} cell={cell} style={style} host={host} phone={phone} gridPos={gridPos} onKey={onKey} sortable={sortable} />
+    <SortableTile key={picture.key} picture={picture} index={index} count={count} cell={cell} style={style} host={host} phone={phone} gridPos={gridPos} onKey={onKey} sortable={sortable} cover={strip} />
   );
 
   return (

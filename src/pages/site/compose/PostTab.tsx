@@ -38,6 +38,8 @@ import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import type { Build } from "@/lib/build/types";
+import type { GalleryMedia } from "@/lib/build";
+import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -56,6 +58,8 @@ export interface PostTabProps {
   onPreviewOpenChange?: (open: boolean) => void;
   /** CA-06: what the post's words can link to. Absent: no @, and a typed @ is only an @. */
   references?: PostReferences;
+  /** Dev pages only (CA-07): the pictures' rows and files, put in the store as they are, with nothing fetched or signed. */
+  devMedia?: { rows: readonly GalleryMedia[]; src: MediaSrcMap; progress?: ReadonlyMap<string, number> };
 }
 
 /** CA-06: the build's tiles and sessions, as @ lists them. */
@@ -221,7 +225,7 @@ function ThreadRail({ editor, maker, size, focused, onTops }: { editor: Editor |
   );
 }
 
-function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange, references }: PostTabProps) {
+function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange, references, devMedia }: PostTabProps) {
   const [notice, setNotice] = useState<string | null>(null);
   // The preview draws the document as the editor has it, on every change, not as it was last saved.
   const [liveDoc, setLiveDoc] = useState<ThreadDoc>(() => thread.readDoc());
@@ -262,6 +266,9 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
   host.openEdit.current = setEditRequest;
 
+  useEffect(() => {
+    if (devMedia) host.store.seed(devMedia.rows, devMedia.src, devMedia.progress);
+  }, [host, devMedia]);
   // The thread's pictures are in the store before the node views ask for them.
   const buildId = thread.buildId;
   useEffect(() => {

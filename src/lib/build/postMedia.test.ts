@@ -21,7 +21,7 @@ describe("the files", () => {
     expect(sentence).toContain("26.0MB");
     expect(sentence).toContain("25.0MB");
     expect(sentence).toContain("not uploaded");
-    expect(sentence).not.toContain("—");
+    expect(sentence).not.toContain("\u2014");
   });
 
   it("refuses what is neither a picture nor a video, naming the file", () => {
@@ -49,7 +49,7 @@ describe("a new picture", () => {
 describe("text", () => {
   it("is cut at a number of characters, an emoji counting one", () => {
     expect(limitText("abcdef", 3)).toBe("abc");
-    expect(limitText("🛠🛠🛠", 2)).toBe("🛠🛠");
+    expect(limitText("\u{1F6E0}\u{1F6E0}\u{1F6E0}", 2)).toBe("\u{1F6E0}\u{1F6E0}");
     expect(limitText("ab", 3)).toBe("ab");
   });
 });

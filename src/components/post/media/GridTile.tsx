@@ -88,11 +88,16 @@ export interface GridTileProps {
   badges?: boolean;
   /** Extra style on the picture itself (a content warning's blur). */
   pictureStyle?: CSSProperties;
+  /**
+   * The cell's shape is not known ahead (the phone's strip, where a tile is held to 78% of the column): the crop is
+   * drawn at its own shape in a box the cell's height, centred, and the cell cuts what overflows.
+   */
+  cover?: boolean;
 }
 
 const fill: CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", objectFit: "cover" };
 
-export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, count, preview = null, reader = false, onAlt, children, badges = true, pictureStyle }: GridTileProps) {
+export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, count, preview = null, reader = false, onAlt, children, badges = true, pictureStyle, cover = false }: GridTileProps) {
   const kind = tileKind(media, preview);
   const [loadedLength, setLoadedLength] = useState<number | null>(null);
   const alt = typeof attrs.alt === "string" ? attrs.alt : "";
@@ -142,7 +147,13 @@ export function GridTile({ attrs, media, srcByPath, cellRatio, align, index, cou
       ) : kind === "video" && still ? (
         <img src={still} alt={label} loading="lazy" decoding="async" style={{ ...fill, ...pictureStyle }} />
       ) : still ? (
-        <img src={still} alt={label} loading="lazy" decoding="async" data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
+        cover ? (
+          <span data-tile-cover="" style={{ position: "absolute", top: 0, bottom: 0, left: "50%", transform: "translateX(-50%)", aspectRatio: String(cellRatio), overflow: "hidden" }}>
+            <img src={still} alt={label} loading="lazy" decoding="async" data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
+          </span>
+        ) : (
+          <img src={still} alt={label} loading="lazy" decoding="async" data-tile-img="" style={{ ...cropStyle(size, cellRatio, align), ...pictureStyle }} />
+        )
       ) : (
         // Not signed yet: the cell's own tile, at the reserved size, named for a screen reader.
         <span role="img" aria-label={label} data-tile-empty="" style={fill} />

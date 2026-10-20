@@ -243,6 +243,10 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/media/AltSheet.tsx",
   "src/components/post/media/MediaViewer.tsx",
   "src/components/post/media/readers.test.tsx",
+  // CA-07 P8
+  "src/lib/build/postMedia.ts",
+  "src/lib/build/postMedia.test.ts",
+  "src/pages/dev/PostThreadDemo.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
