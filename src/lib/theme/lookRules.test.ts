@@ -151,6 +151,11 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/trainedModel.ui.test.tsx",
   // CA-05 P11
   "src/lib/build/everything.test.ts",
+  // CA-06 P1
+  "src/components/post/editor/extensions.ts",
+  "src/lib/build/onePrompt.composer.snapshot.test.tsx",
+  "src/lib/build/thread.ts",
+  "src/lib/build/threadRefs.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -381,6 +386,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no em dash in copy",
     text: 'export const MISSING = "—";',
     why: "The build page's mark for a fact the maker left empty, there before CA-03 and drawn site-wide; CA-03 only adds a field to the file that holds it.",
+  },
+  {
+    rule: "an outline other than ring()",
+    text: "outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3",
+    why: "A selected row of pictures in the post editor (PT-06), drawn by a ProseMirror decoration with the selected recipe's edge. It was there before CA-06, which only adds the reference mark to the file.",
   },
 ];
 

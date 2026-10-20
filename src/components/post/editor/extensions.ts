@@ -4,7 +4,7 @@
 // (levels 1 and 2: a Title and a Heading), codeBlock, bulletList, orderedList,
 // listItem, hardBreak, postBreak, and postMedia and postMediaRow, which PT-06
 // draws as the published post draws them, with a size control, a caption and
-// a row of buttons. The marks are bold, italic, underline and link.
+// a row of buttons. The marks are bold, italic, underline, link and ref (CA-06: words that point at a part).
 // Blockquote, horizontal rule, strike, inline code and the other heading levels
 // are switched off, so a table, an image or a quote pasted in arrives as plain
 // paragraphs: the schema has nowhere else to put it.
@@ -16,7 +16,7 @@
 // for them, so styles go on as style attributes and node views build their
 // elements by hand. No class names.
 
-import { Extension, mergeAttributes, Node as TipNode, ReactNodeViewRenderer, type Editor } from "@tiptap/react";
+import { Extension, Mark, mergeAttributes, Node as TipNode, ReactNodeViewRenderer, type Editor } from "@tiptap/react";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
@@ -26,7 +26,7 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, ROW_GAP, postType } from "@/components/post/postType";
 import { stepWidth } from "@/lib/build/postMedia";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
-import { linkAllowed, POST_BODY_MAX } from "@/lib/build/thread";
+import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
@@ -348,6 +348,31 @@ const PostLink = Link.extend({
   },
 });
 
+/**
+ * CA-06 P1: words that point at a tile or a session. Only `to` is stored. Not inclusive, so typing at either edge
+ * writes plain words; it excludes a web link, so a word is never both. Drawn as a span the keyboard can reach; the
+ * fill and the target's number are decorations (PostRefLook, P3), so they follow the target without touching the text.
+ */
+export const PostRef = Mark.create({
+  name: "ref",
+  inclusive: false,
+  excludes: "link",
+  spanning: true,
+
+  addAttributes() {
+    return {
+      to: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-ref"),
+        renderHTML: (attributes: Record<string, unknown>) => (attributes.to ? { "data-ref": attributes.to as string } : {}),
+      },
+    };
+  },
+
+  parseHTML: () => [{ tag: "span[data-ref]", getAttrs: (element) => (parseRefTo((element as HTMLElement).getAttribute("data-ref")) ? null : false) }],
+  renderHTML: ({ HTMLAttributes }) => ["span", mergeAttributes(HTMLAttributes, { role: "link", tabindex: "0" }), 0],
+});
+
 // --- what is drawn around the text ---------------------------------------------
 
 function counterElement(length: number): HTMLElement {
@@ -518,6 +543,7 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     postHeading(phone),
     paragraphSize(phone),
     PostLink,
+    PostRef,
     PostBreak,
     PostMediaNode.configure({ host: controls.pictures, phone }),
     PostMediaRowNode,
