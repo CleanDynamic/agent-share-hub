@@ -1031,10 +1031,20 @@ function NeedGroupBlock({ group, onOpen }: { group: NeedGroup; onOpen: (row: Nee
               <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>{row.title}</span>
             )}
             {row.detail ? <span style={text(11.5, 400, t.label)}>{row.detail}</span> : null}
+            {row.extra ? <span data-testid="need-extra" style={text(11.5, 400, t.label)}>{row.extra}</span> : null}
           </div>
           {group.key === "files" && row.download ? <DownloadButton href={row.download} name={row.title} /> : null}
         </div>
       ))}
+      {group.note ? (
+        <div data-testid="need-note" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 0", borderBottom: `1px solid ${t.hairline}` }}>
+          <Eyebrow as="div">{group.note.title}</Eyebrow>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: t.catBreakage, flexShrink: 0, marginTop: 6 }} />
+            <span style={{ ...text(12.5, 400, t.text), lineHeight: "18px" }}>{group.note.line}</span>
+          </div>
+        </div>
+      ) : null}
       {more > 0 ? (
         <button type="button" onClick={() => setAll(true)} style={{ ...bareButton, ...text(12.5, 500, t.text), padding: "8px 0 0", textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: t.line }}>
           Show {more} more

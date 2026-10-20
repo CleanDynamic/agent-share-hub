@@ -31,11 +31,12 @@ import {
   untilClause,
   sessionGroups,
   stepTitle,
+  toolConnectionOf,
   type SessionGroup,
   type Step,
 } from "./graph";
 import { copyTogether } from "./copyTogether";
-import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, type SetupKind, type SetupRule, type SetupServer } from "./setup";
+import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupKind, type SetupRule, type SetupServer } from "./setup";
 import { sessionsMetaOf, type Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
@@ -122,6 +123,8 @@ export interface ReaderFile {
 export interface ReaderTool {
   id: string;
   name: string;
+  /** CA-04 P5: an MCP server, and where it ran; null when the maker did not say it was one. */
+  mcp?: { runsAt: "web" | "local" | null; signIn: boolean; session: string | null } | null;
 }
 
 export interface ReaderStep {
@@ -161,6 +164,8 @@ export interface ReaderStep {
 export interface NeedRow {
   title: string;
   detail: string;
+  /** CA-04 P5: one more line, for a tool connected by MCP: "MCP server · at a web address · sign in with your GitHub account". */
+  extra?: string;
   /** A file's download. */
   download?: string | null;
   /** An "Other parts" row's node, so the page can open it. */
@@ -173,6 +178,8 @@ export interface NeedGroup {
   key: NeedKey;
   label: string;
   rows: NeedRow[];
+  /** CA-04 P5: "Before you connect", under Tools and models, only when the build has an MCP server. */
+  note?: { title: string; line: string };
 }
 
 export interface ReaderResult {
@@ -337,7 +344,17 @@ function readTools(tree: readonly NodeTree[]): Map<string, ReaderTool> {
   const tools = new Map<string, ReaderTool>();
   const visit = (nodes: readonly NodeTree[]) => {
     for (const node of nodes) {
-      if (node.type === TOOL_TYPE) tools.set(node.id, { id: node.id, name: text(node, "service") ?? "Tool" });
+      if (node.type === TOOL_TYPE) {
+        const { connection, runsAt } = toolConnectionOf(node);
+        const server = isRecord(node.payload) && isRecord(node.payload.server) ? node.payload.server : null;
+        // Signing in is needed when its setup kept a placeholder for a header or an env value.
+        const signIn = Boolean(server && [server.env, server.headers].some((values) => isRecord(values) && Object.keys(values).length > 0));
+        tools.set(node.id, {
+          id: node.id,
+          name: text(node, "service") ?? "Tool",
+          ...(connection === "mcp" ? { mcp: { runsAt, signIn, session: setupOfNode(node)?.session ?? null } } : null),
+        });
+      }
       visit(node.children ?? []);
     }
   };
@@ -675,7 +692,12 @@ export function whatYouNeed(
 
   for (const tool of context.tools.values()) {
     const numbers = used.get(tool.id) ?? [];
-    tools.push({ title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" });
+    const row: NeedRow = { title: tool.name, detail: numbers.length > 0 ? `tool · ${stepList(numbers)}` : "tool" };
+    if (tool.mcp) {
+      const where = tool.mcp.runsAt === "web" ? "at a web address" : tool.mcp.runsAt === "local" ? "on your computer" : null;
+      row.extra = ["MCP server", where, tool.mcp.signIn ? `sign in with your ${tool.name} account` : null].filter(Boolean).join(" · ");
+    }
+    tools.push(row);
   }
   for (const node of walkTree(tree)) {
     if (node.type !== PREREQUISITE_TYPE || node.is_gap) continue;
@@ -685,7 +707,23 @@ export function whatYouNeed(
       detail: [text(node, "requirement"), stepList(numbers)].filter(Boolean).join(" · ") || "prerequisite",
     });
   }
-  if (tools.length > 0) groups.push({ key: "tools", label: "Tools and models", rows: tools });
+  if (tools.length > 0) {
+    // CA-04 P5: a build that uses an MCP server says to read its tool descriptions first, and when it was used.
+    const servers = [...context.tools.values()].filter((tool) => tool.mcp);
+    const day = servers
+      .map((tool) => (tool.mcp?.session ? context.groups.find((group) => groupKey(group) === tool.mcp?.session)?.startedAt : null) ?? null)
+      .concat((making?.sessions ?? []).map((session) => session.started_at ?? null))
+      .map((iso) => shortDate(iso))
+      .find((date): date is string => Boolean(date));
+    groups.push({
+      key: "tools",
+      label: "Tools and models",
+      rows: tools,
+      ...(servers.length > 0
+        ? { note: { title: "Before you connect", line: `This build uses an MCP server. Read its tool descriptions before you connect it.${day ? ` It was used on ${day}.` : ""}` } }
+        : null),
+    });
+  }
 
   /* Files */
   const files: NeedRow[] = [...context.files.values()].map((file) => {

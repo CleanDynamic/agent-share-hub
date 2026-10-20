@@ -52,8 +52,8 @@ import {
 import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
-import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
+import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -154,6 +154,11 @@ export interface ToolView {
   service: string;
   scopes: string;
   usedBy: readonly GoesRow[];
+  /** CA-04 P5: how it was connected, and where an MCP server ran; null while unsaid. Absent in older fixtures. */
+  connection?: ToolConnection | null;
+  runsAt?: ToolRunsAt | null;
+  /** CA-04 P5: the tools it was seen calling, with how many times; read, never typed. */
+  toolsUsed?: readonly { name: string; count: number }[];
 }
 
 export interface AgentView extends InputsView {
@@ -241,6 +246,8 @@ export interface DetailsHandlers {
   onSessionTool?: (sessionId: string, tool: string | null) => void;
   /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
   onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
+  /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
+  onToolConnection?: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
   /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
   onAddToSetup?: (sessionKey: string) => void;
   /** CA-04 P4: mark a setup item Not shared. Absent: the button is not shown. */
@@ -1116,7 +1123,65 @@ function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; ph
   );
 }
 
-function ToolDetails({ view, phone, onFields, onSelect }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onSelect">) {
+export const CONNECTION_COPY = {
+  title: "How it was connected",
+  app: "Built into the app",
+  mcp: "MCP server",
+  code: "My own code",
+  where: "Where it ran",
+  web: "At a web address",
+  local: "On my computer",
+  tools: "Tools it used",
+} as const;
+
+/** CA-04 P5: How it was connected (choice rows), where an MCP server ran (one more line), and the tools it called. */
+function ConnectionBlock({ view, phone, onToolConnection }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onToolConnection">) {
+  const used = view.toolsUsed ?? [];
+  return (
+    <>
+      {onToolConnection ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <GroupLabel id={`${view.id}-connection`}>{CONNECTION_COPY.title}</GroupLabel>
+          <ChoiceRows<ToolConnection>
+            label={CONNECTION_COPY.title}
+            name={`connection-${view.id}`}
+            phone={phone}
+            value={view.connection ?? ("" as ToolConnection)}
+            onChange={(next) => onToolConnection(view.id, next, next === "mcp" ? (view.runsAt ?? null) : null)}
+            rows={TOOL_CONNECTIONS.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
+          />
+          {view.connection === "mcp" ? (
+            <div style={{ paddingLeft: 24 }}>
+              <Segmented<ToolRunsAt | "">
+                label={CONNECTION_COPY.where}
+                semantics="radio"
+                size={phone ? 50 : 28}
+                value={view.runsAt ?? ""}
+                items={TOOL_RUNS_AT.map((value) => ({ value, label: CONNECTION_COPY[value] }))}
+                onChange={(next) => onToolConnection(view.id, "mcp", next === "web" || next === "local" ? next : null)}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {used.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <GroupLabel id={`${view.id}-used`}>{CONNECTION_COPY.tools}</GroupLabel>
+          <div role="list" aria-labelledby={`${view.id}-used`} style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {used.map((tool) => (
+              <span key={tool.name} role="listitem" data-testid="tool-used" style={chipStyle}>
+                {tool.name}
+                <span style={{ ...text(11, 400, t.label), ...tnum }}>{tool.count}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function ToolDetails({ view, phone, onFields, onSelect, onToolConnection }: { view: ToolView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onSelect" | "onToolConnection">) {
   return (
     <>
       <Head eyebrow="Tool" />
@@ -1126,6 +1191,7 @@ function ToolDetails({ view, phone, onFields, onSelect }: { view: ToolView; phon
       <FieldBlock label="What it was used for">
         <CommitField key={`${view.id}:scopes`} label="What it was used for" value={view.scopes} placeholder="read, label, draft" phone={phone} max={140} onCommit={(value) => onFields(view.id, { scopes: value })} />
       </FieldBlock>
+      <ConnectionBlock view={view} phone={phone} onToolConnection={onToolConnection} />
       <RowList title="Used by" rows={view.usedBy} phone={phone} onSelect={onSelect} />
     </>
   );
@@ -1504,7 +1570,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
       {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
-      {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
+      {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
     </div>

@@ -64,6 +64,9 @@ import {
   nestStep,
   NEST_COPY,
   dismissSentWith,
+  setToolConnection,
+  type ToolConnection,
+  type ToolRunsAt,
   toolNodeFor,
   usesOf,
   type AgentModel,
@@ -215,6 +218,8 @@ export interface ComposePrompts {
   keepSentWith: (suggestion: CodeSuggestion) => void;
   /** CA-04 P2: Ignore on one: it is not offered again. */
   ignoreSentWith: (stepId: string, key: string) => void;
+  /** CA-04 P5: how a tool was connected, and where an MCP server ran. */
+  setConnection: (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) => void;
 }
 
 export function useComposePrompts({
@@ -781,6 +786,9 @@ export function useComposePrompts({
       .catch(failed("Couldn't keep that inside. Try again."));
   const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Couldn't ignore that. Try again.", (node) => dismissSentWith(node, key));
 
+  const setConnection = (id: string, connection: ToolConnection | null, runsAt: ToolRunsAt | null) =>
+    void writeStep(id, "Couldn't save how it was connected. Try again.", (node) => setToolConnection(node, connection, runsAt));
+
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
@@ -814,5 +822,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

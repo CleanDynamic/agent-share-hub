@@ -16,6 +16,8 @@ import {
   RESULT_TYPE,
   stepTitle,
   TOOL_TYPE,
+  toolConnectionOf,
+  toolsUsedOf,
   type SessionGroup,
   type Step,
 } from "@/lib/build/graph";
@@ -306,6 +308,9 @@ function toolView(node: NodeTree, ctx: ViewContext): ToolView {
     service: text(payload.service) || "Untitled tool",
     scopes: text(payload.scopes),
     usedBy: usedBy(ctx.steps, { kind: "tool", node_id: node.id }),
+    // CA-04 P5: how it was connected, and the tools it was seen calling.
+    ...toolConnectionOf(node),
+    toolsUsed: toolsUsedOf(node),
   };
 }
 

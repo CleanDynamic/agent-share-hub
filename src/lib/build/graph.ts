@@ -1385,6 +1385,48 @@ function compact(fields: Record<string, string | undefined>): Json {
   return out;
 }
 
+// --- how a tool was connected (CA-04 P5) ------------------------------------
+
+export type ToolConnection = "app" | "mcp" | "code";
+export type ToolRunsAt = "web" | "local";
+export const TOOL_CONNECTIONS: readonly ToolConnection[] = ["app", "mcp", "code"];
+export const TOOL_RUNS_AT: readonly ToolRunsAt[] = ["web", "local"];
+
+/** How a tool was connected, and where an MCP server ran, as saved; null for what was never said. */
+export function toolConnectionOf(node: Pick<BuildNode, "payload">): { connection: ToolConnection | null; runsAt: ToolRunsAt | null } {
+  const payload = payloadOf(node);
+  const connection = TOOL_CONNECTIONS.includes(payload.connection as ToolConnection) ? (payload.connection as ToolConnection) : null;
+  const runsAt = connection === "mcp" && TOOL_RUNS_AT.includes(payload.runs_at as ToolRunsAt) ? (payload.runs_at as ToolRunsAt) : null;
+  return { connection, runsAt };
+}
+
+/** The tools an MCP server's tool was seen calling, with how many times (`payload.tools_used`), most used first. Never typed. */
+export function toolsUsedOf(node: Pick<BuildNode, "payload">): { name: string; count: number }[] {
+  const raw = payloadOf(node).tools_used;
+  if (!isRecord(raw)) return [];
+  return Object.entries(raw)
+    .filter((entry): entry is [string, number] => typeof entry[1] === "number" && Number.isFinite(entry[1]) && entry[1] > 0)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/**
+ * Say how a tool was connected: built into the app, an MCP server, or the maker's own code (`payload.connection`), and
+ * for an MCP server whether it ran at a web address or on the maker's computer (`payload.runs_at`). Null takes the
+ * answer off; `runs_at` goes when the tool is not an MCP server.
+ */
+export async function setToolConnection(node: BuildNode, connection: ToolConnection | null, runsAt: ToolRunsAt | null = null): Promise<BuildNode> {
+  if (node.type !== TOOL_TYPE) throw refuse("setToolConnection", "Only a tool is connected.");
+  if (connection !== null && !TOOL_CONNECTIONS.includes(connection)) throw refuse("setToolConnection", "That is not a way to connect a tool.");
+  if (runsAt !== null && !TOOL_RUNS_AT.includes(runsAt)) throw refuse("setToolConnection", "That is not where a server runs.");
+  const payload = { ...payloadOf(node) };
+  if (connection) payload.connection = connection;
+  else delete payload.connection;
+  if (connection === "mcp" && runsAt) payload.runs_at = runsAt;
+  else delete payload.runs_at;
+  return upsertNode(withPayload(node, payload));
+}
+
 // --- fields of a file, a tool and a result (UI-P66) ---------------------------
 
 const FIELDS: Record<string, { keys: readonly string[]; required: string }> = {

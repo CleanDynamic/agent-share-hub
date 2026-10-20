@@ -1011,6 +1011,7 @@ export function SandboxPage() {
             onAddPicture={(id, file) => void addPicture(id, file)}
             onUseAsCover={(mediaId) => void setAsCover(mediaId)}
             onAddToSetup={pickForSetup}
+            onToolConnection={prompts.setConnection}
             onNotShared={onNotShared}
             focusSetup={focusSetup}
           />
