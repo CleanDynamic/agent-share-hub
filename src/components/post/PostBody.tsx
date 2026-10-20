@@ -7,6 +7,8 @@
 //
 // LINKS. Only http, https and mailto render as links (linkAllowed, the same
 // test checkThread applies on save). Any other href draws its text plain.
+// CA-06: words that point at a part are a RefLink, drawn as one only inside a
+// PostRefsProvider (the build page); anywhere else they are plain words.
 //
 // HEADINGS ARE PARAGRAPHS. The page's own h1 stays the only h1, so a Title or
 // Heading in a post is a p with the heading style. `realHeadings` turns them
@@ -16,10 +18,11 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { GalleryMedia } from "@/lib/build";
-import { linkAllowed, type Post, type ThreadPostMedia, type ThreadPostMediaRow } from "@/lib/build/thread";
+import { linkAllowed, parseRefTo, type Post, type ThreadPostMedia, type ThreadPostMediaRow } from "@/lib/build/thread";
 
 import { PostMedia } from "./PostMedia";
 import { PostMediaRow } from "./PostMediaRow";
+import { RefLink } from "./RefLinks";
 import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, postType, type PostTypeScale } from "./postType";
 
 export interface PostBodyProps {
@@ -69,6 +72,10 @@ function renderText(node: Loose, key: number): ReactNode {
       );
     }
   }
+  // CA-06: words that point at a part. A web link and a reference never share words (checkThread).
+  const ref = link ? undefined : marks.find((mark) => mark.type === "ref");
+  const to = ref ? attrsOf(ref).to : undefined;
+  if (ref && parseRefTo(to)) out = <RefLink to={to as string}>{out}</RefLink>;
   return <Fragment key={key}>{out}</Fragment>;
 }
 

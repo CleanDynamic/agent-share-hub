@@ -26,6 +26,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.E2E_PORT ?? 5173);
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+// As the audit config does: a sandbox that ships Chromium at a fixed place points at it instead of downloading one.
+const CHROMIUM = process.env.PW_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -48,6 +50,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     navigationTimeout: 45_000,
     actionTimeout: 15_000,
+    launchOptions: CHROMIUM ? { executablePath: CHROMIUM } : {},
   },
 
   projects: [

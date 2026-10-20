@@ -40,6 +40,9 @@ import {
 } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { bothRefs, usePartRef } from "@/components/build/partNav";
+import { REF_COPY } from "@/components/post/RefLinks";
+import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
@@ -175,6 +178,11 @@ export interface BuildListProps {
   onIgnoreSentWith?: (stepId: string, key: string) => void;
   /** CA-04 P4: "Setup {n}" on a session's head selects the session and scrolls Details to its Setup. */
   onOpenSetup?: (sessionKey: string) => void;
+  /** CA-06 P3: the parts the post links to, by `to`. Each shows "Mentioned in the post · Back to the post". */
+  mentioned?: ReadonlySet<string>;
+  onBackToPost?: (to: string) => void;
+  /** CA-06 P3: a part a link brought in: a team opens the agent that holds it. `n` changes on every visit. */
+  reveal?: { id: string; n: number } | null;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -203,6 +211,48 @@ function MenuRow({ children, disabled, onSelect, phone }: { children: ReactNode;
     <Menu.Item disabled={disabled} onSelect={onSelect} style={menuItem(!disabled, phone)}>
       {children}
     </Menu.Item>
+  );
+}
+
+/* ── links from the post (CA-06 P3) ── */
+
+interface ListRefs {
+  mentioned: ReadonlySet<string>;
+  onBack?: (to: string) => void;
+  reveal: { id: string; n: number } | null;
+}
+
+const ListRefsContext = createContext<ListRefs>({ mentioned: new Set(), reveal: null });
+
+/** A tile's element, registered for the post's links as well as for moving tiles. */
+function useCardRef(id: string, nestRef: (el: HTMLDivElement | null) => void) {
+  return bothRefs<HTMLDivElement>(nestRef, usePartRef(refTo({ kind: "node", id })));
+}
+
+/** "Mentioned in the post · Back to the post", under a part the post links to. */
+function MentionedLine({ to, phone }: { to: string; phone: boolean }) {
+  const { mentioned, onBack } = useContext(ListRefsContext);
+  if (!mentioned.has(to)) return null;
+  return (
+    <DotLine testId="mentioned-line">
+      {REF_COPY.mentioned}
+      {onBack ? (
+        <>
+          {" · "}
+          <TextButton
+            target={phone}
+            underline
+            style={text(12, 500, t.text2)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onBack(to);
+            }}
+          >
+            {REF_COPY.backToPost}
+          </TextButton>
+        </>
+      ) : null}
+    </DotLine>
   );
 }
 
@@ -275,12 +325,13 @@ const tileName = (step: Step) => sentWithLabel(step);
 /** A tile inside another: its eyebrow says what it is sent with; it has no number. It can hold more tiles. */
 function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   const selected = props.selectedId === step.id;
   const named = step.kind === "code" ? (step.filename ?? step.language ?? null) : null;
   const kind = step.kind === "manual" ? "Manual step" : step.kind === "file" ? "File" : step.kind === "code" ? "Code" : step.kind === "check" ? "Check" : step.kind === "agent" ? "Agent" : step.kind === "team" ? "Team" : "Prompt";
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`${kind} sent with ${step.inside?.label ?? "a step"}: ${stepTitle(step)}`}
       data-testid="sent-with-tile"
@@ -324,6 +375,7 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
       ) : step.text ? (
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       ) : null}
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} indent={0} />
       <span>
         <NestButtons step={step} phone={props.phone} />
@@ -624,12 +676,13 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
   };
 
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   const takesDrops = Boolean(props.fine && props.onDropOnStep);
   const carriesFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
 
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`Prompt ${step.number}: ${title}`}
       data-testid="step-card"
@@ -708,6 +761,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         <ChangedText text={step.text} changes={step.changes} />
       </p>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <SentWithSuggestions step={step} props={props} />
       <div style={footRow(INDENT)}>
@@ -746,9 +800,12 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
 const outsideOf = (agent: Step, names: BuildListProps["names"]): string[] =>
   readsOutsideContent(agent, (agent.toolRefs ?? []).flatMap((id) => (names[id] ? [{ id, type: TOOL_TYPE, payload: { service: names[id] } }] : [])));
 
-function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[] }) {
+function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = false }: { step: Step; eyebrow?: string; runs?: string; nested?: boolean; made?: readonly string[]; outside?: readonly string[]; phone?: boolean }) {
+  // An agent's instructions are its own text, not a part of their own.
+  const to = step.id.endsWith(":instructions") ? null : refTo({ kind: "node", id: step.id });
+  const part = usePartRef(to);
   return (
-    <div data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+    <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
@@ -760,6 +817,7 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: 
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
+      {to ? <MentionedLine to={to} phone={phone} /> : null}
     </div>
   );
 }
@@ -863,11 +921,19 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
   const [adding, setAdding] = useState(false);
   /** One agent of a team shows its own prompts at a time. */
   const [openAgent, setOpenAgent] = useState<string | null>(null);
+  /* CA-06 P3: a link to an agent's own prompt opens that agent first. */
+  const { reveal } = useContext(ListRefsContext);
+  useEffect(() => {
+    if (!reveal || !isTeam) return;
+    const holder = step.children.find((child) => child.children.some((grand) => grand.id === reveal.id));
+    if (holder) setOpenAgent(holder.id);
+  }, [reveal, isTeam, step.children]);
   const goes = props.intoResult.has(step.id);
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`${isTeam ? "Team" : "Agent"} ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -904,6 +970,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
                 runs={isTeam ? stepRunsLabel(child) : undefined}
                 outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
+                phone={props.phone}
               />
               {own.length > 0 ? (
                 <div style={{ paddingLeft: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -920,7 +987,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
                       {open ? `Hide its ${own.length === 1 ? "prompt" : `${own.length} prompts`}` : `Show its ${own.length === 1 ? "prompt" : `${own.length} prompts`}`}
                     </TextButton>
                   </span>
-                  {open ? own.map((grand) => <InnerCard key={grand.id} step={grand} nested made={props.madeNames?.[grand.id]} />) : null}
+                  {open ? own.map((grand) => <InnerCard key={grand.id} step={grand} nested made={props.madeNames?.[grand.id]} phone={props.phone} />) : null}
                 </div>
               ) : null}
             </div>
@@ -944,6 +1011,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           <GoesInto />
         </div>
       ) : null}
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <NestFoot step={step} phone={props.phone} />
     </div>
   );
@@ -971,13 +1039,14 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
   };
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`Manual step ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1049,6 +1118,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
       </div>
       <p style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere" }}>{step.text}</p>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
@@ -1073,6 +1143,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -1081,7 +1152,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
   const named = step.filename ?? step.language ?? null;
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`Code ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1158,6 +1229,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
         {firstLines(step.text)}
       </pre>
       <MadeLine names={props.madeNames?.[step.id]} />
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
@@ -1176,6 +1248,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   const [draft, setDraft] = useState("");
   const renameNext = useRef(false);
   const nest = useNestTile(step.id);
+  const cardRef = useCardRef(step.id, nest.setRef);
   const finish = (save: boolean) => {
     setRenaming(false);
     if (save && draft.trim() !== (step.title ?? "")) props.onRename(step.id, draft);
@@ -1183,7 +1256,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
   const status = step.check ? checkStatus(step.check) : null;
   return (
     <div
-      ref={nest.setRef}
+      ref={cardRef}
       role="group"
       aria-label={`Check ${step.number}: ${stepTitle(step)}`}
       data-testid="step-card"
@@ -1248,6 +1321,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
         </DotLine>
       ) : null}
       {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
+      <MentionedLine to={refTo({ kind: "node", id: step.id })} phone={props.phone} />
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />
@@ -1515,6 +1589,16 @@ interface Run {
   steps: Step[];
 }
 
+/** A session's head and its tiles, registered for the post's links by the session's key. */
+function SessionRun({ head, phone: _phone, children }: { head: SourceSession | null; phone: boolean; children: ReactNode }) {
+  const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
+  return (
+    <div ref={part} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {children}
+    </div>
+  );
+}
+
 function runsOf(steps: readonly Step[], dividers: BuildListProps["dividers"]): Run[] {
   const runs: Run[] = [];
   for (const step of steps) {
@@ -1612,10 +1696,11 @@ export function BuildList(props: BuildListProps) {
     <div data-testid="build-list" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0, fontSize: 13.5 }}>
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hint}</p>
       {runsOf(steps, props.dividers).map((run) => (
-        <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+        <SessionRun key={run.key} head={run.head} phone={props.phone}>
           {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
+          {run.head ? <MentionedLine to={refTo({ kind: "session", id: run.head.key })} phone={props.phone} /> : null}
           {run.steps.map(placed)}
-        </div>
+        </SessionRun>
       ))}
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
@@ -1639,14 +1724,19 @@ export function BuildList(props: BuildListProps) {
       />
     </div>
   );
-  if (!nest) return body;
+  const refs: ListRefs = { mentioned: props.mentioned ?? NO_MENTIONS, onBack: props.onBackToPost, reveal: props.reveal ?? null };
+  if (!nest) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
   return (
-    <ListNestContext.Provider value={nest}>
-      <NestList phone={props.phone} canTake={nest.canNest} label={label} onDrop={onDrop}>
-        {body}
-      </NestList>
-    </ListNestContext.Provider>
+    <ListRefsContext.Provider value={refs}>
+      <ListNestContext.Provider value={nest}>
+        <NestList phone={props.phone} canTake={nest.canNest} label={label} onDrop={onDrop}>
+          {body}
+        </NestList>
+      </ListNestContext.Provider>
+    </ListRefsContext.Provider>
   );
 }
+
+const NO_MENTIONS: ReadonlySet<string> = new Set();
 
 export default BuildList;

@@ -33,7 +33,12 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
-import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
+import { PartWindow } from "@/components/build/PartWindow";
+import { focusable } from "@/components/build/partNav";
+import { flashOutline } from "@/components/post/RefLinks";
+import { groupKey } from "@/lib/build/graph";
+import { parseRefTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
@@ -985,6 +990,63 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
   const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
 
+  /* CA-06 P3: a link in the post opens its part's window once the part is in view: a prompt the full prompt
+     window, anything else the part window. */
+  const [part, setPart] = useState<string | null>(null);
+  const [fromPost, setFromPost] = useState(false);
+  const shown = useRef<string | null>(null);
+  const backing = useRef(false);
+  /** Back to the post was pressed: the post takes focus as the window lets it go. */
+  const backTo = view.onBackToPost;
+  const openKey = view.focus?.open ? `${view.focus.open}:${view.focus.n}` : null;
+  useEffect(() => {
+    const asked = view.focus;
+    if (!asked?.open) return;
+    const target = parseRefTo(asked.open);
+    if (!target) return;
+    shown.current = asked.id;
+    setFromPost(Boolean(asked.fromPost));
+    if (target.kind === "node" && windowPrompts(raw).some((step) => step.id === target.id)) setOpen(target.id);
+    else setPart(asked.open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+  const back = () => {
+    backing.current = true;
+    setOpen(null);
+    setPart(null);
+    setFromPost(false);
+  };
+  /** A window a link opened, closed some other way: focus on the part, outlined again. */
+  const onCloseAutoFocus = (event: Event) => {
+    const id = shown.current;
+    shown.current = null;
+    if (backing.current) {
+      event.preventDefault();
+      backing.current = false;
+      backTo?.();
+      return;
+    }
+    if (!id) return;
+    event.preventDefault();
+    const el = document.getElementById(stepDomId(id));
+    if (!el) return;
+    focusable(el).focus({ preventScroll: true });
+    flashOutline(el);
+  };
+  /** A row in a team's or a session's window: that part, in view and open. */
+  const goPart = (to: string) => {
+    const target = parseRefTo(to);
+    if (!target) return;
+    const group = target.kind === "session" ? view.groups?.find((candidate) => groupKey(candidate) === target.id) : undefined;
+    const id = group ? steps.find((entry) => group.stepNumbers.includes(entry.step.number))?.step.id : target.id;
+    if (!id) return;
+    setPart(null);
+    go(id);
+    shown.current = id;
+    if (target.kind === "node" && windowPrompts(raw).some((step) => step.id === id)) setOpen(id);
+    else setPart(to);
+  };
+
   return (
     <div data-testid="build-steps" style={column(16)}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
@@ -1043,8 +1105,28 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           const entry = flat.get(step.id);
           return entry && hasBeforeYouSend(entry) ? <BeforeYouSend entry={entry} toolOf={toolOf} onSelect={setOpen} /> : null;
         }}
-        onClose={() => setOpen(null)}
+        onClose={() => {
+          setOpen(null);
+          setFromPost(false);
+        }}
         onNavigate={setOpen}
+        fromPost={fromPost}
+        onBackToPost={back}
+        onCloseAutoFocus={onCloseAutoFocus}
+      />
+      <PartWindow
+        steps={raw}
+        groups={view.groups ?? []}
+        names={names}
+        open={part}
+        fromPost={fromPost}
+        onBackToPost={back}
+        onClose={() => {
+          setPart(null);
+          setFromPost(false);
+        }}
+        onGo={goPart}
+        onCloseAutoFocus={onCloseAutoFocus}
       />
     </div>
   );

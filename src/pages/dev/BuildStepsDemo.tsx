@@ -4,6 +4,8 @@
    the tabs), whatever BUILD_PAGE_STEPS_ENABLED says. `?build=list` is B1-PageList,
    `?build=team` B3-PageTeam and `?build=one` B4-PageOne; the default is the list.
    `&tab=watch|understand|broke|rebuilds` draws that tab's body under the strip.
+   CA-06 P7: `?build=links` is "A post with links" as a reader gets it: the maker's thread over the build, its links
+   going to the parts they name.
    The first screen is the build page's sample, with each build's own title.
 
    UI-P91: `&part=steps` is the Map board (`refined/{dusk,noon}/build-map.html`): no frame and no first
@@ -20,9 +22,14 @@ import { NeedPanel } from "@/pages/site/build/BuildSteps";
 import { t } from "@/lib/theme/tokens";
 import { landTab, stepTabs, type BuildTabKey } from "@/pages/site/build/buildModel";
 
+import { linksMaking, linksPost, linksTree } from "@/dev/fixtures/postLinks";
+import { splitThread } from "@/lib/build/thread";
+import type { BuildThreadView } from "@/pages/site/build/buildModel";
+import { useReaderPostLinks, type ReaderFocus } from "@/pages/site/build/useReaderPostLinks";
+
 import type { DesignPageProps } from "./KitPages";
 
-const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github", "everything"];
+const SAMPLES: readonly BuildStepsSample[] = ["list", "team", "one", "one-sitting", "runs-on-github", "everything", "links"];
 
 export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const [params] = useSearchParams();
@@ -31,8 +38,23 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   const first = params.get("tab") as BuildTabKey | null;
   const [tab, setTab] = useState<BuildTabKey>(landTab(first && SAMPLE_TABS.includes(first) ? first : "anatomy", true));
 
-  const { title, outcome, ...steps } = buildStepsFixture(which);
+  const { title, outcome, ...fixtureSteps } = buildStepsFixture(which);
   const props = buildFixture(viewport);
+  /* CA-06 P7: `?build=links` has the maker's thread over it, its links working as they do for a reader. */
+  const [focus, setFocus] = useState<ReaderFocus | null>(null);
+  const links = useReaderPostLinks({ tree: linksTree, making: linksMaking, enabled: which === "links", onFocus: setFocus });
+  const steps = links ? { ...fixtureSteps, focus, onBackToPost: links.onBackToPost, groups: links.groups } : fixtureSteps;
+  const thread: BuildThreadView | null = links
+    ? {
+        posts: splitThread(linksPost),
+        mediaById: new Map(),
+        srcByPath: new Map(),
+        published: "14 Oct",
+        build: { id: "fixture-build", slug: "bakery-order-page", title, rebuild_count: 0 },
+        engagement: { counts: null, liked: false, saved: false },
+        refs: { lookup: links.lookup, onGo: links.onGo },
+      }
+    : null;
   const viewer = {
     ...props.viewer,
     tabs: stepTabs(tab === "rebuilds"),
@@ -55,7 +77,7 @@ export default function BuildStepsDemo({ viewport }: DesignPageProps) {
   // CA-04 P4: Download is a menu once the build has a session setup.
   const hasSetup = steps.steps.some((entry) => entry.chat?.kind === "new" && entry.chat.setup.length > 0);
   const actions = hasSetup ? { ...props.actions, onDownloadSetup: () => undefined } : props.actions;
-  return <BuildView fit="content" {...props} actions={actions} hero={{ ...props.hero, title, outcome }} viewer={viewer} steps={steps} />;
+  return <BuildView fit="content" {...props} actions={actions} hero={{ ...props.hero, title, outcome, ...(thread ? { thread, maker: { name: "Sam Rivera", handle: "sam", avatarUrl: null, userId: "dev-maker" } } : null) }} viewer={viewer} steps={steps} />;
 }
 
 /** The Map board's crop: the frame, and the surface 6 in from every edge, padding 32 48, its two columns 32 apart. */

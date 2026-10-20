@@ -10,6 +10,7 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
+import { normaliseHex } from "@/lib/theme/partColour";
 import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
@@ -57,6 +58,8 @@ export interface SessionMeta extends SessionExtras {
   date: string;
   goal?: unknown;
   runs?: unknown;
+  /** CA-06 P4: the maker's colour for the session, "#RRGGBB". Absent when it has none. */
+  colour?: string;
 }
 
 /** CA-04 P6: what a session worked until. Stored in `making.sessions_meta[key].goal`. */
@@ -161,6 +164,9 @@ export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
     if (typeof entry.model === "string" && entry.model.trim()) meta.model = entry.model.trim();
     if (entry.goal !== undefined) meta.goal = entry.goal;
     if (entry.runs !== undefined) meta.runs = entry.runs;
+    // CA-06 P4: kept only as a colour reads; anything else is left where it is, never shown.
+    const colour = normaliseHex(entry.colour);
+    if (colour) meta.colour = colour;
     // CA-05: cost, tokens, background, started with, at the same time as, own copy.
     Object.assign(meta, extrasOf(entry));
     out[key] = meta;

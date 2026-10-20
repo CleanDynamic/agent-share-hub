@@ -14,48 +14,11 @@ import { describe, expect, it } from "vitest";
 import type { TokenName } from "./semantics";
 import { resolveToken as resolveRefined, type ThemeKey } from "./resolve";
 import { MAP_ARTWORK } from "@/pages/site/compose/mapArtwork";
+import { contrast, luminance, over, parse } from "./luminance";
 
 /* ── measurement ──────────────────────────────────────────────────────────── */
 
-type Rgba = [number, number, number, number];
-
-function parse(colour: string): Rgba {
-  const hex = /^#([0-9a-f]{6})$/i.exec(colour.trim());
-  if (hex) {
-    const n = parseInt(hex[1], 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
-  }
-  const rgb = /^rgba?\(([\d.]+),([\d.]+),([\d.]+)(?:,([\d.]*))?\)$/.exec(
-    colour.replace(/\s/g, ""),
-  );
-  if (!rgb) throw new Error(`unparseable colour: ${colour}`);
-  return [+rgb[1], +rgb[2], +rgb[3], rgb[4] === undefined ? 1 : +rgb[4]];
-}
-
-/** Source-over composite. A translucent token has no ratio until it has a ground. */
-function over(fg: string, bg: string): string {
-  const f = parse(fg);
-  const b = parse(bg);
-  const [r, g, bl] = [0, 1, 2].map((i) => Math.round(f[i] * f[3] + b[i] * (1 - f[3])));
-  return `rgb(${r},${g},${bl})`;
-}
-
-/** WCAG 2.x relative luminance. Throws on a translucent input: composite first. */
-function luminance(colour: string): number {
-  const [r, g, b, a] = parse(colour);
-  if (a !== 1) throw new Error(`luminance needs an opaque colour, got ${colour}`);
-  const [lr, lg, lb] = [r, g, b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
-}
-
-function contrast(a: string, b: string): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
+// CA-06 P4: the maths lives in luminance.ts now, so a link's fill can be chosen with it at run time.
 const round = (n: number) => Math.round(n * 100) / 100;
 
 const TEXT_FLOOR = 4.5;

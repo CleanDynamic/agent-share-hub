@@ -72,6 +72,9 @@ import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { refGroups } from "@/lib/build/postRefs";
+import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
+import { PartWindow } from "@/components/build/PartWindow";
+import { usePostLinks } from "./usePostLinks";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -355,6 +358,21 @@ export function SandboxPage() {
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen), [groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
+
+  /* ── links in the post (CA-06 P3) ── */
+
+  const registry = useRef<PartRegistry>(new Map()).current;
+  const links = usePostLinks({
+    steps,
+    groups,
+    refGroups: postRefGroups,
+    registry,
+    lens: phone ? "list" : lens,
+    phone,
+    setSelectedId,
+    setOpenPromptId,
+    setTrail,
+  });
 
   /* ── sessions (CA-04 P1) ── */
 
@@ -1053,6 +1071,7 @@ export function SandboxPage() {
           else void onPicked(files);
         }}
       />
+      <PartRegistryProvider registry={registry}>
       <SandboxView
         {...viewProps}
         save={mergeSave(viewProps.save, thread.save)}
@@ -1063,7 +1082,7 @@ export function SandboxPage() {
             thread={thread}
             phone={phone}
             draft={{ build, title: viewProps.title, maker }}
-            references={{ groups: postRefGroups }}
+            references={{ groups: postRefGroups, lookup: links.lookup, onGo: links.goTo, onMentions: links.onMentions }}
           />
         }
         threadNote={thread.hold}
@@ -1217,6 +1236,9 @@ export function SandboxPage() {
             }}
             onIgnoreSentWith={prompts.ignoreSentWith}
             onOpenSetup={onOpenSetup}
+            mentioned={links.mentioned}
+            onBackToPost={links.backToMention}
+            reveal={links.reveal}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
@@ -1258,6 +1280,7 @@ export function SandboxPage() {
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
       />
+      </PartRegistryProvider>
       <AddAgentDialog
         open={addAgentOpen}
         onOpenChange={onAgentDialog}
@@ -1288,7 +1311,26 @@ export function SandboxPage() {
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onNavigate={setOpenPromptId}
-        onClose={() => setOpenPromptId(null)}
+        onClose={() => {
+          setOpenPromptId(null);
+          links.closeWindows();
+        }}
+        fromPost={links.fromPost}
+        onBackToPost={links.backToPost}
+        onCloseAutoFocus={links.onCloseAutoFocus}
+      />
+      <PartWindow
+        steps={steps}
+        groups={groups}
+        names={listFacts.names}
+        open={links.openPart}
+        fromPost={links.fromPost}
+        onBackToPost={links.backToPost}
+        onClose={links.closeWindows}
+        onGo={links.goFromWindow}
+        onDownload={(id) => void download(id)}
+        setupCounts={setupCounts}
+        onCloseAutoFocus={links.onCloseAutoFocus}
       />
     </>
   );

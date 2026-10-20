@@ -166,6 +166,20 @@ export const CA03_FILES: readonly string[] = [
   "src/components/post/editor/usePostEditor.ts",
   "src/lib/build/postRefs.ts",
   "src/pages/site/compose/PostTab.tsx",
+  // CA-06 P3
+  "e2e/tier3/post-links.spec.ts",
+  "src/components/build/PartWindow.tsx",
+  "src/components/build/partNav.tsx",
+  "src/components/post/PostBody.tsx",
+  "src/components/post/RefLinks.test.tsx",
+  "src/components/post/RefLinks.tsx",
+  "src/dev/fixtures/postLinks.ts",
+  "src/lib/theme/luminance.ts",
+  "src/lib/theme/partColour.ts",
+  "src/pages/dev/LinksDemo.tsx",
+  "src/pages/site/build/BuildPage.tsx",
+  "src/pages/site/build/useReaderPostLinks.ts",
+  "src/pages/site/compose/usePostLinks.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -401,6 +415,41 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "an outline other than ring()",
     text: "outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3",
     why: "A selected row of pictures in the post editor (PT-06), drawn by a ProseMirror decoration with the selected recipe's edge. It was there before CA-06, which only adds the reference mark to the file.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "const observer = useRef<IntersectionObserver | null>(null);",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "if (typeof IntersectionObserver === \"undefined\") {",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "const watch = new IntersectionObserver(",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "flexDirection: \"column\", gap: 7 }}>",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "flexDirection: \"column\", gap: 7, minWidth: 0 }} data-node-id={node.id}>",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: "padding: \"12px 17px\", marginBottom: 9",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "padding: \"12px 17px\", marginBottom: 9",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
   },
 ];
 

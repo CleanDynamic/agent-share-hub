@@ -34,6 +34,7 @@ import { Row } from "@/components/brand/Row";
 import { StripedBar, type StripedBarTick } from "@/components/brand/StripedBar";
 import { UnderlineTabs } from "@/components/brand/UnderlineTabs";
 import { PostThread } from "@/components/post/PostThread";
+import { PostRefsProvider } from "@/components/post/RefLinks";
 import { ScrollRow } from "@/components/shell/ScrollRow";
 import {
   BETWEEN,
@@ -979,7 +980,13 @@ function ThreadHero({
         </div>
 
         <div data-testid="build-posts" style={{ gridColumn: 2, gridRow: 2, minWidth: 0, maxWidth: THREAD_COLUMN }}>
-          <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
+          {thread.refs ? (
+            <PostRefsProvider value={thread.refs}>
+              <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
+            </PostRefsProvider>
+          ) : (
+            <PostThread posts={thread.posts} mediaById={thread.mediaById} srcByPath={thread.srcByPath} mode="page" phone={phone} resetKey={thread.build.id} />
+          )}
         </div>
       </div>
 

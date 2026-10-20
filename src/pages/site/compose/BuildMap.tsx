@@ -43,6 +43,7 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
+import { usePartRef, usePartRegister } from "@/components/build/partNav";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { groupKey, inputRefusal, stepRunsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
@@ -217,6 +218,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
+  /* CA-06 P3: a link in the post finds this box. */
+  const part = usePartRef(box.kind === "step" || box.kind === "file" ? `node:${box.id}` : null);
   /* CA-04 P2: the tiles sent with a step are rows inside its box: kind and name, 12 `--text2`. */
   const sentRows = box.sentWith?.length ? (
     <span data-testid={`map-sent-with-${box.id}`} style={{ display: "flex", flexDirection: "column", flexShrink: 0, padding: "0 12px" }}>
@@ -243,6 +246,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   );
   return (
     <button
+      ref={part}
       type="button"
       data-testid={`map-box-${box.id}`}
       data-kind={box.kind}
@@ -604,6 +608,7 @@ export function BuildMap(props: BuildMapProps) {
   const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, made, madeNames, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
   const reader = mode === "reader";
   const room = useResolvedTheme();
+  const register = usePartRegister();
   // Readers never see a suggestion: only the uses the maker accepted are published.
   const suggestions = useMemo(() => (reader ? [] : asked), [reader, asked]);
   const layout = useMemo(() => layoutMap(steps, groups, files, tools, results, suggestions), [steps, groups, files, tools, results, suggestions]);
@@ -737,6 +742,7 @@ export function BuildMap(props: BuildMapProps) {
           {layout.lanes.map((lane) =>
             <div
               key={lane.key}
+              ref={(el) => register(`session:${lane.key}`, el)}
               data-testid="map-lane"
               data-dashed={lane.dashed ? "true" : undefined}
               style={{

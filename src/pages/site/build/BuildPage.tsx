@@ -24,6 +24,8 @@
                       where next asks for nothing until the reader nears it */
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+
+import { useReaderPostLinks, type ReaderFocus } from "./useReaderPostLinks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -553,12 +555,33 @@ export function BuildPage() {
     () => (reader?.steps ?? []).flatMap((entry) => (entry.chat?.kind === "new" ? entry.chat.setup : [])),
     [reader],
   );
-  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
+  const [focus, setFocus] = useState<ReaderFocus | null>(null);
+
+  /* CA-06 P3 — the post's links: what each points at, and what clicking one does. */
+  const postMaking = useMemo(() => (build ? asMaking(build.making) : null), [build]);
+  const postLinks = useReaderPostLinks({
+    tree,
+    making: postMaking,
+    enabled: reader !== null,
+    onFocus: useCallback((next: (current: ReaderFocus | null) => ReaderFocus) => {
+      setTab("anatomy");
+      setFocus(next);
+    }, []),
+  });
 
   /* #node-<id> in the address selects that part, as the old page scrolled to it. With the steps drawn it
      scrolls to that step's card and rings it, or to the part's row in What you need. */
   const { hash } = location;
   useEffect(() => {
+    // CA-06 P3: #session-<key> is that session's first step, where its head is.
+    if (record && hash.startsWith("#session-") && postLinks) {
+      const id = postLinks.firstStep(decodeURIComponent(hash.slice("#session-".length)));
+      if (id) {
+        setTab("anatomy");
+        setFocus((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+      }
+      return;
+    }
     if (!record || !hash.startsWith("#node-")) return;
     const id = hash.slice("#node-".length);
     if (reader) {
@@ -575,7 +598,7 @@ export function BuildPage() {
       setSelectedId(id);
       setTab("anatomy");
     }
-  }, [record, hash, nodesById, reader]);
+  }, [record, hash, nodesById, reader, postLinks]);
 
   const ordered = useMemo(() => partsInOrder(tree), [tree]);
   const selected = (selectedId ? nodesById.get(selectedId) : undefined) ?? ordered[0] ?? null;
@@ -939,6 +962,8 @@ export function BuildPage() {
           ) : null;
         },
         focus,
+        onBackToPost: postLinks?.onBackToPost,
+        groups: postLinks?.groups,
       }
     : undefined;
 
@@ -1012,6 +1037,7 @@ export function BuildPage() {
                 published: shortDate(build.published_at),
                 build: { id: build.id, slug: build.slug, title: build.title, rebuild_count: build.rebuild_count },
                 engagement: engagementFor(engagement, build.id),
+                ...(postLinks ? { refs: { lookup: postLinks.lookup, onGo: postLinks.onGo } } : null),
                 follow: canFollow
                   ? {
                       following: following.data ?? false,

@@ -11,9 +11,10 @@ import type { Making } from "@/lib/build/making";
 import type { NodeTree } from "@/lib/build/types";
 import type { BuildStepsView } from "@/pages/site/build/buildModel";
 import { SHAPES } from "./shapes";
+import { linksMaking, linksTree } from "./postLinks";
 
 /** CA-04 P7: "one-sitting" and "runs-on-github" are the shapes of the same names (src/dev/fixtures/shapes.ts). */
-export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything";
+export type BuildStepsSample = "list" | "team" | "one" | "one-sitting" | "runs-on-github" | "everything" | "links";
 
 
 const node = (id: string, over: Partial<NodeTree>): NodeTree =>
@@ -143,6 +144,13 @@ const SAMPLES: Record<BuildStepsSample, { tree: () => NodeTree[]; making: Making
   list: { tree: bakery, making: bakeryMaking, title: "Bakery homepage", outcome: "A homepage for a neighbourhood bakery, from brand brief to live site, made across four AI tools." },
   team: { tree: team, making: teamMaking, title: "Weekly research brief", outcome: "A team of agents that writes a one-page brief every Monday." },
   one: { tree: fox, making: foxMaking, title: "Watercolour fox poster", outcome: "A poster-size fox in loose watercolour, made with one prompt." },
+  /* CA-06 P7: "A post with links", as a reader gets it. */
+  links: {
+    tree: () => linksTree,
+    making: linksMaking,
+    title: SHAPES["one-sitting"].title,
+    outcome: "An order page planned in one sitting in Claude, then built by a team in Claude Code.",
+  },
   "one-sitting": {
     tree: () => SHAPES["one-sitting"].tree,
     making: SHAPES["one-sitting"].making as Making,

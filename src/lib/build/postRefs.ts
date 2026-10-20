@@ -79,8 +79,6 @@ const threeLines = (text: string): string =>
 export interface RefInput {
   steps: readonly Step[];
   groups: readonly SessionGroup[];
-  /** A session's colour by its key (CA-06 P4). */
-  sessionColours?: Readonly<Record<string, string>>;
 }
 
 /** The session a link can name: one that is stored, so never an old build's run of typed prompts. */
@@ -95,7 +93,7 @@ function countTiles(steps: readonly Step[]): number {
 }
 
 /** The picker's groups, in the build's order: each session's own row, then its tiles, nested tiles under their parent. */
-export function refGroups({ steps, groups, sessionColours = {} }: RefInput): RefGroup[] {
+export function refGroups({ steps, groups }: RefInput): RefGroup[] {
   const shown = shownGroups(groups);
   const out: RefGroup[] = [];
   const byKey = new Map<string, RefGroup>();
@@ -114,7 +112,7 @@ export function refGroups({ steps, groups, sessionColours = {} }: RefInput): Ref
         title: "The whole session",
         kind: "Session",
         depth: 0,
-        colour: sessionColours[key] ?? null,
+        colour: group.colour ?? null,
         name: label.toLowerCase(),
         eyebrow: `Session ${group.number}`,
         body: facts.join(" · "),

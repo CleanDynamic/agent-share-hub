@@ -22,6 +22,7 @@ import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
+import { normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
@@ -182,6 +183,8 @@ export interface SessionGroup {
   extras?: SessionExtras;
   /** CA-05 P2: the session's own text in words, kept only when it is long enough to say so. */
   longWords?: number;
+  /** CA-06 P4: the maker's colour for the session (`sessions_meta[key].colour`). Absent when it has none. */
+  colour?: string;
 }
 
 /** Where the date would be, for prompts written by hand. */
@@ -531,6 +534,8 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
     ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
+    // CA-06 P4: the maker's colour, when it reads as one.
+    ...(normaliseHex(payload.colour) ? { colour: normaliseHex(payload.colour) as string } : null),
   };
 }
 
@@ -734,6 +739,7 @@ export function sessionGroups(
     // CA-05: what its entry carries beyond that, and how long its own text is.
     const extras = extrasOf(meta[key]);
     if (Object.keys(extras).length > 0) group.extras = extras;
+    if (meta[key]?.colour) group.colour = meta[key].colour;
     const words = group.stepNumbers.reduce((sum, number) => sum + (stepsByNumber.get(number) ? sessionWords(stepsByNumber.get(number) as Step) : 0), 0);
     if (words > LONG_SESSION_WORDS) group.longWords = words;
   }
