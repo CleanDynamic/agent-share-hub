@@ -32,6 +32,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
+import { CodeStepDialog } from "./CodeStepDialog";
 import { FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
@@ -819,22 +820,12 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
 /* ── code (CA-02 P7) ── */
 
 export const CODE_DETAILS_COPY = {
-  copy: "Copy",
-  copied: "Copied",
-  copyFailed: "Couldn't copy that. Select the code and copy it by hand.",
+  view: "View file",
   writtenWith: "Written with",
 } as const;
 
 function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: boolean; focus: DetailsPanelProps["focusMakes"] } & DetailsHandlers) {
-  const [said, setSaid] = useState("");
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(view.source);
-      setSaid(CODE_DETAILS_COPY.copied);
-    } catch {
-      setSaid(CODE_DETAILS_COPY.copyFailed);
-    }
-  };
+  const [viewing, setViewing] = useState(false);
   const written = [view.tool, view.model].filter(Boolean).join(" · ");
   return (
     <>
@@ -847,20 +838,13 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
           <KeyValue label={CODE_DETAILS_COPY.writtenWith}>{written}</KeyValue>
         </div>
       ) : null}
-      <pre
-        data-testid="details-code"
-        style={{ ...wellField, margin: 0, padding: 12, fontFamily: DM_MONO, fontSize: 12.5, lineHeight: 1.55, whiteSpace: "pre", overflowX: "auto", maxHeight: 480, overflowY: "auto" }}
-      >
-        {view.source}
-      </pre>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => void copy()} style={phone ? undefined : { height: 26 }}>
-          {CODE_DETAILS_COPY.copy}
+      {/* No code on the page: the file opens in the same window as the list's title does. */}
+      <div>
+        <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => setViewing(true)} style={phone ? undefined : { height: 26 }}>
+          {CODE_DETAILS_COPY.view}
         </Button>
-        <span aria-live="polite" style={quiet()}>
-          {said}
-        </span>
       </div>
+      <CodeStepDialog open={viewing} onOpenChange={setViewing} title={view.title ?? view.defaultTitle} filename={view.filename} language={view.language} source={view.source} />
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <Makes id={view.id} rows={view.makes} phone={phone} focus={focus} h={h} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />

@@ -635,18 +635,21 @@ describe("code (CA-02 P7)", () => {
     makes: [],
   };
 
-  it("shows all of it in a mono well, what it was written with, and Copy", async () => {
+  it("shows no code, says what it was written with, and View file opens the whole file with Copy", async () => {
     const writeText = vi.fn(() => Promise.resolve());
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
     panel("prompt", "bakery", { view: code });
     expect(screen.getAllByText("Code 4").length).toBeGreaterThan(0);
     expect(screen.getByText("app.ts · ts · 2 lines")).toBeTruthy();
     expect(screen.getByText("Cursor · Opus 5")).toBeTruthy();
-    const well = screen.getByTestId("details-code");
-    expect(well.textContent).toBe("export const a = 1;\nexport const b = 2;\n");
-    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    expect(screen.queryByTestId("details-code")).toBeNull();
+    expect(screen.queryByText(/export const a/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "View file" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("export const a = 1;");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Copy" }));
     expect(writeText).toHaveBeenCalledWith("export const a = 1;\nexport const b = 2;\n");
-    expect(await screen.findByText("Copied")).toBeTruthy();
+    expect(await within(dialog).findByRole("button", { name: "Copied" })).toBeTruthy();
   });
 });
 
