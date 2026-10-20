@@ -32,6 +32,7 @@ import { FIGTREE } from "@/lib/theme/type";
 
 import { PictureView, type PictureOptions } from "./PictureView";
 import { picturePlugin, type PictureHost } from "./pictures";
+import { opensOnAt } from "./references";
 import { applyStyle, styleString } from "./styleString";
 
 /** The words in an empty first post, as X's composer asks "What's happening?". */
@@ -51,6 +52,8 @@ export interface PostEditorControls {
   openLink: { current: (() => boolean) | null };
   /** The pictures: the store the node views read, and what the editor's uploads call back into (PT-06). */
   pictures: PictureHost;
+  /** CA-06 P2: a typed @ opens the reference picker: true when it did. Null while the post links to nothing. */
+  openRefs?: { current: ((typed: true) => boolean) | null };
 }
 
 // --- breaks -------------------------------------------------------------------
@@ -356,7 +359,8 @@ const PostLink = Link.extend({
 export const PostRef = Mark.create({
   name: "ref",
   inclusive: false,
-  excludes: "link",
+  // Itself too: words point at one part, so a second ref replaces the first.
+  excludes: "ref link",
   spanning: true,
 
   addAttributes() {
@@ -483,6 +487,12 @@ function postKeys(controls: PostEditorControls) {
           key: new PluginKey("postSlashKeys"),
           props: {
             handleKeyDown: (_view: EditorView, event: KeyboardEvent) => controls.slashKey.current?.(event) ?? false,
+            // CA-06 P2: @ at the start of a block or after a space opens the reference picker in its place.
+            handleTextInput: (view: EditorView, from: number, to: number, typed: string) => {
+              if (typed !== "@" || from !== to || !controls.openRefs?.current) return false;
+              if (!opensOnAt({ state: view.state } as Pick<Editor, "state">, from)) return false;
+              return controls.openRefs.current(true);
+            },
           },
         }),
       ];

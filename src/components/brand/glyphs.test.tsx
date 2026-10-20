@@ -49,6 +49,7 @@ const TABLE: Record<GlyphName, string> = {
   italic: "M9.5 3.5h-3M9.5 12.5h-3M9 3.5l-2 9",
   link: "M7 9a2.5 2.5 0 0 0 3.5 0l2-2A2.5 2.5 0 0 0 9 3.5l-.75.75M9 7a2.5 2.5 0 0 0-3.5 0l-2 2A2.5 2.5 0 0 0 7 12.5l.75-.75",
   grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
+  at: "M10.25 8a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM10.25 5.75v3a1.5 1.5 0 0 0 3 0V8A5.25 5.25 0 1 0 11 12.3",
 };
 
 const REFINED_URL = "/dev/kit/components";
@@ -57,8 +58,8 @@ const at = (url: string, node: React.ReactElement) => <MemoryRouter initialEntri
 const svgOf = (container: HTMLElement) => container.querySelector("svg") as SVGSVGElement;
 
 describe("the glyph table", () => {
-  it("is the 24 glyphs of the UI-P82 table and the ten added for posts, in its order", () => {
-    expect(GLYPH_NAMES).toHaveLength(34);
+  it("is the 24 glyphs of the UI-P82 table, the ten added for posts and CA-06's @, in its order", () => {
+    expect(GLYPH_NAMES).toHaveLength(35);
     expect(GLYPH_NAMES).toEqual(Object.keys(TABLE));
   });
 

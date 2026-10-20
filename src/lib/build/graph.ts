@@ -127,6 +127,8 @@ export interface Step {
   sentWith?: Step[];
   /** CA-04 P2, a tile inside another: the step it is sent with, as its eyebrow names it ("prompt 2", "order-form.tsx"). */
   inside?: { id: string; label: string };
+  /** CA-06 P4: the maker's colour for this tile (`payload.colour`, "#RRGGBB"). Absent when it has none; never its parent's. */
+  colour?: string;
 }
 
 /** CA-03 P5: what a check says, read from its payload. */

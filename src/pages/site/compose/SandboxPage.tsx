@@ -71,6 +71,7 @@ import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
+import { refGroups } from "@/lib/build/postRefs";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -323,6 +324,8 @@ export function SandboxPage() {
     return Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)]));
   }, [tree]);
   const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
+  /** CA-06 P2: what the post's words can link to: each session, then its tiles. */
+  const postRefGroups = useMemo(() => refGroups({ steps, groups }), [steps, groups]);
 
   /* ── Sources ── */
 
@@ -1060,6 +1063,7 @@ export function SandboxPage() {
             thread={thread}
             phone={phone}
             draft={{ build, title: viewProps.title, maker }}
+            references={{ groups: postRefGroups }}
           />
         }
         threadNote={thread.hold}

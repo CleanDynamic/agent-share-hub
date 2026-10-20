@@ -21,13 +21,14 @@ const tidy = (markup: string) =>
 
 describe("the one-prompt build's post", () => {
   it("draws the toolbar as before, but for @", async () => {
-    mountPostTab(doc(p("Paste this into Claude and it writes the landing page.")));
+    // The composer always gives the post its build's parts (CA-06 P2), so the toolbar has @.
+    mountPostTab(doc(p("Paste this into Claude and it writes the landing page.")), {}, { references: { groups: [] } });
     const toolbar = document.querySelector('[data-testid="post-toolbar"]') as HTMLElement;
     await expect(tidy(toolbar.outerHTML)).toMatchFileSnapshot("__snapshots__/one-prompt.post-toolbar.html");
   });
 
   it("draws the editor as before", async () => {
-    const { dom } = mountPostTab(doc(p("Paste this into Claude and it writes the landing page.")));
+    const { dom } = mountPostTab(doc(p("Paste this into Claude and it writes the landing page.")), {}, { references: { groups: [] } });
     await expect(tidy(dom.outerHTML)).toMatchFileSnapshot("__snapshots__/one-prompt.post-editor.html");
   });
 });

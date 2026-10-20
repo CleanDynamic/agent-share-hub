@@ -30,6 +30,7 @@ import { text, wellField } from "@/pages/site/compose/refinedStyles";
 
 import { currentStyle, LINK_SENTENCE, setTextStyle, TEXT_STYLES, type TextStyleName } from "./FormatBar";
 import { gapPos } from "./pictures";
+import { REFERENCE_COPY } from "./ReferencePicker";
 import type { InsertPicture } from "./SlashMenu";
 
 /** A phone's button is 44 square: the touch size. */
@@ -355,6 +356,7 @@ export function PostToolbar({
   onInsertPicture,
   notice,
   onPreview,
+  onReference,
 }: {
   editor: Editor | null;
   /** Below 768px: 44 square buttons, and Bold, Italic, Underline and Link in the Text size row. */
@@ -363,6 +365,8 @@ export function PostToolbar({
   notice: (sentence: string) => void;
   /** Opens the draft as the Gallery will draw it. Absent: no Preview button. */
   onPreview?: () => void;
+  /** CA-06 P2: @, the picker of the build's tiles and sessions. Absent: no @ button. */
+  onReference?: () => void;
 }) {
   const tools = useEditorState({ editor, selector: ({ editor: current }) => readTools(current) }) ?? NONE;
   const [panel, setPanel] = useState<"size" | "link" | null>(null);
@@ -412,6 +416,11 @@ export function PostToolbar({
           <ToolButton label="Text size" size={size} expanded={panel === "size" || panel === "link"} onClick={() => setPanel((open) => (open ? null : "size"))}>
             <span style={{ ...letter, fontWeight: 500 }}>Aa</span>
           </ToolButton>
+          {onReference ? (
+            <ToolButton label={REFERENCE_COPY.button} size={size} onClick={run(onReference)}>
+              <Tool glyph="at" />
+            </ToolButton>
+          ) : null}
         </div>
         {onPreview ? (
           <ToolButton label="Preview" size={size} onClick={onPreview}>

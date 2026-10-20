@@ -156,6 +156,16 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/onePrompt.composer.snapshot.test.tsx",
   "src/lib/build/thread.ts",
   "src/lib/build/threadRefs.test.tsx",
+  // CA-06 P2
+  "src/components/brand/glyphs.test.tsx",
+  "src/components/brand/glyphs.ts",
+  "src/components/post/editor/PostToolbar.tsx",
+  "src/components/post/editor/ReferencePicker.tsx",
+  "src/components/post/editor/references.test.tsx",
+  "src/components/post/editor/references.ts",
+  "src/components/post/editor/usePostEditor.ts",
+  "src/lib/build/postRefs.ts",
+  "src/pages/site/compose/PostTab.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

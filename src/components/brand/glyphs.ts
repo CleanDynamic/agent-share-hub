@@ -44,6 +44,8 @@ export const GLYPHS = {
   italic: "M9.5 3.5h-3M9.5 12.5h-3M9 3.5l-2 9",
   link: "M7 9a2.5 2.5 0 0 0 3.5 0l2-2A2.5 2.5 0 0 0 9 3.5l-.75.75M9 7a2.5 2.5 0 0 0-3.5 0l-2 2A2.5 2.5 0 0 0 7 12.5l.75-.75",
   grip: "M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01",
+  /** CA-06 P2: "Link to a tile or session", drawn in its neighbours' style. */
+  at: "M10.25 8a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0zM10.25 5.75v3a1.5 1.5 0 0 0 3 0V8A5.25 5.25 0 1 0 11 12.3",
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;
