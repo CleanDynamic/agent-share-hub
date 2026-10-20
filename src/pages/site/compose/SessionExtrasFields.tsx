@@ -46,7 +46,7 @@ export const EXTRAS_COPY = {
   ownCopyHint: "fix-totals",
 } as const;
 
-function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal" | "numeric"; onCommit: (value: string) => void }) {
+export function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal" | "numeric"; onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState(value);
   const commit = () => {
     if (draft.trim() !== value.trim()) onCommit(draft);

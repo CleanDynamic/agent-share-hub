@@ -45,7 +45,7 @@ import { IconButton } from "@/components/brand/IconButton";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
-import { checkStatus, runsLabel, sentWithLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { checkStatus, sentWithLabel, stepRunsLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
 import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
@@ -104,6 +104,8 @@ export const LIST_COPY = {
   check: CHECK_COPY.eyebrow,
   /** CA-03 P6. */
   remembers: (memory: string) => `Remembers ${memory}`,
+  /** CA-05 P9. */
+  tidies: (how: string) => `Tidies its notes: ${how}`,
 } as const;
 
 export interface BuildListProps {
@@ -754,6 +756,7 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [] }: { step: 
       </div>
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
+      {step.kind === "agent" && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
       <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", ...clamp2 }}>{step.text}</p>
       {madeLine(made ?? []) ? <Quiet>{madeLine(made ?? [])}</Quiet> : null}
       <OutsideWarning names={outside} />
@@ -878,8 +881,9 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <ContainerEyebrow step={step} made={made} isTeam={isTeam} />
           <h3 style={{ ...text(14, 500, step.title ? t.text : t.text2), margin: 0, overflowWrap: "anywhere" }}>{stepTitle(step)}</h3>
-          {runsLabel(step.runs) ? <DotLine testId="runs-line">{runsLabel(step.runs)}</DotLine> : null}
+          {stepRunsLabel(step) ? <DotLine testId="runs-line">{stepRunsLabel(step)}</DotLine> : null}
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
+          {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
       </div>
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
@@ -897,7 +901,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
               <InnerCard
                 step={child}
                 eyebrow={isTeam ? (index === 0 ? TEAM_COPY.lead : TEAM_COPY.agent(stepTitle(child))) : undefined}
-                runs={isTeam ? runsLabel(child.runs) : undefined}
+                runs={isTeam ? stepRunsLabel(child) : undefined}
                 outside={isTeam ? outsideOf(child, props.names) : []}
                 made={props.madeNames?.[child.id]}
               />

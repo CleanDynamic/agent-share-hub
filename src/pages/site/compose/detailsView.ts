@@ -214,6 +214,8 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     defaultName: step.defaultTitle,
     model: step.model ? modelLabel(step.model) : null,
     ...(step.modelRun ? { modelRun: step.modelRun } : null),
+    ...(step.kind === "agent" && step.memoryTidy ? { memoryTidy: step.memoryTidy } : null),
+    ...(step.kind === "agent" && step.changesEachRound ? { changesEachRound: step.changesEachRound } : null),
     runs: step.runs,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),

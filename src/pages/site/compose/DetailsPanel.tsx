@@ -60,6 +60,7 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
 import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
+import { ChangesEachRoundField, MemoryTidyField } from "./AgentNotesFields";
 import { ModelRunFields } from "./ModelRunFields";
 import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
 import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
@@ -204,6 +205,9 @@ export interface AgentView extends InputsView {
   sessionGoal?: boolean;
   /** CA-05 P8, an agent only: how its main model was run, when the maker said. */
   modelRun?: ModelRun | null;
+  /** CA-05 P9, an agent only: how it tidies its notes, and what it changes each round. */
+  memoryTidy?: string;
+  changesEachRound?: string;
 }
 
 export interface ResultView {
@@ -274,6 +278,8 @@ export interface DetailsHandlers {
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
   onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P9: how an agent tidies its notes and what it changes each round; an empty string takes a line off. Absent: the wells are not shown. */
+  onAgentNotes?: (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) => void;
   /** CA-05 P8: say how a model was run (null takes it off). Absent: How it was run and Where are not shown. */
   onModelRun?: (id: string, run: ModelRun | null) => void;
   /** CA-05 P7: the runs of a check, newest first. Absent: Runs is not shown. */
@@ -1376,7 +1382,7 @@ function GroupLabel({ id, children }: { id: string; children: ReactNode }) {
  * most" count, written into the same detail ("until the review has no changes · at most 3 times"). Nothing new is
  * stored: `payload.runs` keeps its shape.
  */
-function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns">) {
+function RunsGroup({ view, phone, onRuns, onAgentNotes }: { view: AgentView; phone: boolean } & Pick<DetailsHandlers, "onRuns" | "onAgentNotes">) {
   // CA-04 P6: in a session that worked until a goal, "Until a goal was reached" is chosen for you.
   const how = view.runs?.how ?? (view.sessionGoal ? "goal" : "once");
   const choice = RUNS_CHOICES.find((entry) => entry.how === how) ?? RUNS_CHOICES[0];
@@ -1591,6 +1597,8 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
                 <span style={text(12.5, 400, t.text2)}>{RUNS_COPY.times}</span>
               </div>
             </div>
+            {/* CA-05 P9: what an agent changes each round, when it runs again until a condition was met. */}
+            {view.kind === "agent" && onAgentNotes ? <ChangesEachRoundField id={view.id} value={view.changesEachRound ?? ""} phone={phone} onCommit={(said) => onAgentNotes(view.id, { changesEachRound: said })} /> : null}
           </div>
         ) : null}
       </div>
@@ -1599,7 +1607,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
 }
 
 /** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
-function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, onModelRun }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]>; modelRun?: ModelRun | null; onModelRun?: DetailsHandlers["onModelRun"] }) {
+function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, onModelRun, memoryTidy, onAgentNotes }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]>; modelRun?: ModelRun | null; onModelRun?: DetailsHandlers["onModelRun"]; memoryTidy?: string; onAgentNotes?: DetailsHandlers["onAgentNotes"] }) {
   const [value, setValue] = useState(initial);
   const [openModel, setOpenModel] = useState(0);
   const change = (next: AgentSetupValue) => {
@@ -1622,6 +1630,8 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, 
         }}
       />
       <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
+      {/* CA-05 P9: under What it remembers. */}
+      {onAgentNotes ? <MemoryTidyField id={id} value={memoryTidy ?? ""} phone={phone} onCommit={(said) => onAgentNotes(id, { memoryTidy: said })} /> : null}
       {/* CA-05 P8: a model on the maker's own computer, or with open weights, says how it was run. */}
       {onModelRun && asksHowRun(value.harness, main) ? <ModelRunFields id={id} run={modelRun ?? null} phone={phone} onChange={(run) => onModelRun(id, run)} /> : null}
     </>
@@ -1663,7 +1673,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
       ) : null}
       {view.setup ? (
         h.onAgentSetup ? (
-          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} modelRun={view.modelRun} onModelRun={h.onModelRun} />
+          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} modelRun={view.modelRun} onModelRun={h.onModelRun} memoryTidy={view.memoryTidy} onAgentNotes={h.onAgentNotes} />
         ) : (
           <AgentSetupLines setup={view.setup} />
         )
@@ -1677,7 +1687,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
           )}
         </FieldBlock>
       ) : null}
-      <RunsGroup view={view} phone={phone} onRuns={h.onRuns} />
+      <RunsGroup view={view} phone={phone} onRuns={h.onRuns} onAgentNotes={h.onAgentNotes} />
       <Section title={`Inside ${view.inside}`}>
         {view.insideRows.map((row) => (
           <div key={row.id} style={listRow(44)}>

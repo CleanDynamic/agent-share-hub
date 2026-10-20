@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { checkStatus, groupKey, groupKind, groupOfStep, runsLabel, shownGroups, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { checkStatus, groupKey, groupKind, groupOfStep, shownGroups, stepRunsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -509,7 +509,7 @@ export function layoutMap(
       tool: step.kind === "manual" ? step.tool : null,
       span: spanOf(step),
       contents: container ? containsLine(step) : null,
-      runs: container ? runsLabel(step.runs) : null,
+      runs: container ? stepRunsLabel(step) : null,
       stack: null,
       ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
       ...(sent.length > 0 ? { sentWith: sent } : null),
@@ -836,7 +836,7 @@ export function layoutOpened(
       suggested: 0,
       span: 1,
       contents: null,
-      runs: child.kind === "agent" ? runsLabel(child.runs) : null,
+      runs: child.kind === "agent" ? stepRunsLabel(child) : null,
       stack: stackOf(child),
     };
   });

@@ -27,7 +27,7 @@ import {
   madeByOf,
   promptNumbersOf,
   shownGroups,
-  runsLabel,
+  stepRunsLabel,
   untilClause,
   sessionGroups,
   stepTitle,
@@ -595,7 +595,7 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
       step.kind === "manual"
         ? { headline: `By hand in ${step.tool ?? "another tool"}`, line: step.text, mediaId: step.mediaId ?? null }
         : null,
-    runs: isContainer ? runsLabel(step.runs) : null,
+    runs: isContainer ? stepRunsLabel(step) : null,
     madeIn: isContainer && madeIn.length > 0 ? `made in ${stepList(madeIn, false)}` : null,
     runsByItself: lastRun ? `runs by itself · last run ${lastRun}` : null,
     outside: readsOutsideContent(step, context.tree),

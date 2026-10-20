@@ -107,6 +107,10 @@ export interface Step {
   toolRefs?: string[];
   /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
   memory?: string;
+  /** CA-05 P9, an agent only: how it tidies its notes (`payload.memory_tidy`), when it says. */
+  memoryTidy?: string;
+  /** CA-05 P9, an agent only: what it changes each round of "Again until a condition was met" (`payload.changes_each_round`), when it says. */
+  changesEachRound?: string;
   /** CA-05 P8: how its model was run (size, where), when the maker said; for a prompt, an agent or code. */
   modelRun?: ModelRun;
   /** CA-05 P7, a file tile only: the cases in it, when it is a test file and they were counted exactly. */
@@ -200,6 +204,9 @@ export const ROLE_MAX = 40;
 export const AGENT_MODELS_MAX = 4;
 /** CA-03 P6: the longest "What it remembers". */
 export const MEMORY_MAX = 200;
+/** CA-05 P9: the longest "How it tidies its notes" and "What it changes each round". */
+export const MEMORY_TIDY_MAX = 120;
+export const CHANGES_EACH_ROUND_MAX = 120;
 export const MANUAL_TEXT_MAX = 140;
 
 const NODE_TYPE_MISSING = "That needs the Deploy queue item from UI-P61.";
@@ -339,6 +346,25 @@ export function runsLabel(runs: Runs | null | undefined): string {
   }
 }
 
+/** The lead word of "changes its checklist each round": a determiner is lowered so the clause reads on from "changes". */
+const DETERMINERS = /^(its|their|his|her|our|my|your|the|this|these|a|an)\b/i;
+
+/** CA-05 P9: "changes its checklist each round", from what the maker typed ("Its checklist"). */
+export function changesEachRoundClause(text: string): string {
+  const said = text.trim();
+  return `changes ${DETERMINERS.test(said) ? said.charAt(0).toLowerCase() + said.slice(1) : said} each round`;
+}
+
+/**
+ * How a step runs, as its line reads it: the way it runs (`runsLabel`), and for an agent that runs again until a
+ * condition was met, what it changes each round: "Again until the review has no changes · at most 3 times · changes
+ * its checklist each round".
+ */
+export function stepRunsLabel(step: Pick<Step, "runs" | "changesEachRound">): string {
+  const base = runsLabel(step.runs);
+  return base && step.runs?.how === "until" && step.changesEachRound ? `${base} · ${changesEachRoundClause(step.changesEachRound)}` : base;
+}
+
 const KIND_OF_TYPE: Record<string, StepKind> = {
   [PROMPT_TYPE]: "prompt",
   [AGENT_TYPE]: "agent",
@@ -442,16 +468,20 @@ export function toolRefsOf(payload: Record<string, unknown>): string[] {
 }
 
 /** The agent-only facts of a step (CA-02 P5, CA-03 P6); an old agent with none of them reads as it always did. */
-function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory"> {
+function agentFacts(payload: Payload): Pick<Step, "harness" | "models" | "toolRefs" | "memory" | "memoryTidy" | "changesEachRound"> {
   const harness = stringOf(payload.harness)?.trim();
   const models = agentModelsOf(payload);
   const toolRefs = toolRefsOf(payload);
   const memory = stringOf(payload.memory)?.trim();
+  const memoryTidy = stringOf(payload.memory_tidy)?.trim().slice(0, MEMORY_TIDY_MAX);
+  const changesEachRound = stringOf(payload.changes_each_round)?.trim().slice(0, CHANGES_EACH_ROUND_MAX);
   return {
     harness: harness ? (toolName(harness) ?? harness) : null,
     ...(models.length > 1 ? { models } : null),
     ...(toolRefs.length ? { toolRefs } : null),
     ...(memory ? { memory } : null),
+    ...(memoryTidy ? { memoryTidy } : null),
+    ...(changesEachRound ? { changesEachRound } : null),
   };
 }
 
@@ -522,6 +552,8 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     models: undefined,
     toolRefs: undefined,
     memory: undefined,
+    memoryTidy: undefined,
+    changesEachRound: undefined,
     modelRun: undefined,
   };
 }
@@ -927,13 +959,17 @@ export interface AgentSetup {
   toolRefs?: readonly string[];
   /** CA-03 P6: what it remembers, up to 200 characters; empty leaves the key out. */
   memory?: string | null;
+  /** CA-05 P9: how it tidies its notes, up to 120 characters; empty leaves the key out. */
+  memoryTidy?: string | null;
+  /** CA-05 P9: what it changes each round, up to 120 characters; empty leaves the key out. */
+  changesEachRound?: string | null;
 }
 
 /**
  * The payload keys an agent's setup writes, checked. `model` is the main model and stays required: everything that
  * reads an agent reads it. A row of `models` with no model is refused; so is a fifth row.
  */
-function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory }: AgentSetup): Payload {
+function setupPayload(operation: string, model: string, { harness, models, toolRefs, memory, memoryTidy, changesEachRound }: AgentSetup): Payload {
   const main = model.trim();
   if (!main) throw refuse(operation, "An agent needs a model.");
   const out: Payload = { model: main };
@@ -960,6 +996,16 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
   if (remembers) {
     if (remembers.length > MEMORY_MAX) throw refuse(operation, `What it remembers is at most ${MEMORY_MAX} characters.`);
     out.memory = remembers;
+  }
+  const tidy = memoryTidy?.trim();
+  if (tidy) {
+    if (tidy.length > MEMORY_TIDY_MAX) throw refuse(operation, `How it tidies its notes is at most ${MEMORY_TIDY_MAX} characters.`);
+    out.memory_tidy = tidy;
+  }
+  const changes = changesEachRound?.trim();
+  if (changes) {
+    if (changes.length > CHANGES_EACH_ROUND_MAX) throw refuse(operation, `What it changes each round is at most ${CHANGES_EACH_ROUND_MAX} characters.`);
+    out.changes_each_round = changes;
   }
   return out;
 }
@@ -1021,6 +1067,14 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
     if (keys.memory) payload.memory = keys.memory;
     else delete payload.memory;
   }
+  if ("memoryTidy" in setup) {
+    if (keys.memory_tidy) payload.memory_tidy = keys.memory_tidy;
+    else delete payload.memory_tidy;
+  }
+  if ("changesEachRound" in setup) {
+    if (keys.changes_each_round) payload.changes_each_round = keys.changes_each_round;
+    else delete payload.changes_each_round;
+  }
   return upsertNode(withPayload(node, payload));
 }
 
@@ -1038,6 +1092,26 @@ export async function setModelRun(node: BuildNode, run: ModelRun | null): Promis
   }
   if (kept) payload.modelRun = kept as unknown as Json;
   else delete payload.modelRun;
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-05 P9: two optional lines of an agent, each up to 120 characters: how it tidies its notes (`payload.memory_tidy`)
+ * and, for one that runs again until a condition was met, what it changes each round (`payload.changes_each_round`).
+ * A key left out is kept; an empty one takes its key off.
+ */
+export async function setAgentNotes(node: BuildNode, notes: { memoryTidy?: string | null; changesEachRound?: string | null }): Promise<BuildNode> {
+  if (node.type !== AGENT_TYPE) throw refuse("setAgentNotes", "Only an agent has these lines.");
+  const payload = { ...payloadOf(node) };
+  const apply = (key: "memory_tidy" | "changes_each_round", value: string | null | undefined, max: number, label: string) => {
+    if (value === undefined) return;
+    const said = (value ?? "").trim();
+    if (said.length > max) throw refuse("setAgentNotes", `${label} is at most ${max} characters.`);
+    if (said) payload[key] = said;
+    else delete payload[key];
+  };
+  apply("memory_tidy", notes.memoryTidy, MEMORY_TIDY_MAX, "How it tidies its notes");
+  apply("changes_each_round", notes.changesEachRound, CHANGES_EACH_ROUND_MAX, "What it changes each round");
   return upsertNode(withPayload(node, payload));
 }
 
