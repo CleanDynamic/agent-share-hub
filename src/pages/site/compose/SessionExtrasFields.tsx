@@ -9,11 +9,13 @@ import { Checkbox } from "@/components/brand/Checkbox";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
-import { COST_MAX, costField, type SessionExtras } from "@/lib/build/sessionFacts";
+import { COST_MAX, costField, STARTED_WITH_MAX, type SessionExtras } from "@/lib/build/sessionFacts";
+import { settingLines, worktreeOf } from "@/lib/build/startedWith";
+import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
 import { Field } from "./composeControls";
-import { text, typedField } from "./refinedStyles";
+import { text, typedArea, typedField } from "./refinedStyles";
 
 export const EXTRAS_COPY = {
   optional: "Optional",
@@ -27,6 +29,8 @@ export const EXTRAS_COPY = {
   how: "How did you work?",
   watching: "With me watching",
   background: "In the background",
+  startedWith: "Started with",
+  startedWithHint: "claude --model opus --permission-mode plan",
 } as const;
 
 function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal"; onCommit: (value: string) => void }) {
@@ -108,5 +112,46 @@ export function SessionFactsFields({ id, extras, phone, onChange }: { id: string
         />
       </Field>
     </>
+  );
+}
+
+/** P3: Started with: the command that opened the session in a code well, and the settings it names in plain words. */
+export function StartedWithField({ id, extras, phone, onChange }: { id: string; extras: SessionExtras; phone: boolean; onChange: (change: SessionExtras) => void }) {
+  const command = extras.startedWith ?? "";
+  const [draft, setDraft] = useState(command);
+  const { state, handlers } = useInteractive<HTMLTextAreaElement>({
+    onBlur: () => {
+      if (draft.trim() === command.trim()) return;
+      const said = draft.trim();
+      // A command that names a worktree also names the session's own copy of the code, unless the maker said one.
+      const copy = said && !extras.ownCopy ? worktreeOf(said) : null;
+      onChange({ ...extras, startedWith: said || undefined, ...(copy ? { ownCopy: copy } : null) });
+    },
+  });
+  const lines = settingLines(draft.trim());
+  return (
+    <Field id={`${id}-started`} label={EXTRAS_COPY.startedWith} hint={EXTRAS_COPY.optional}>
+      <textarea
+        id={`${id}-started`}
+        aria-label={EXTRAS_COPY.startedWith}
+        rows={2}
+        maxLength={STARTED_WITH_MAX}
+        value={draft}
+        placeholder={EXTRAS_COPY.startedWithHint}
+        spellCheck={false}
+        onChange={(event) => setDraft(event.target.value)}
+        {...handlers}
+        style={{ ...typedArea(phone, ring(state.focusVisible)), fontFamily: DM_MONO, fontSize: phone ? 16 : 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+      />
+      {lines.length > 0 ? (
+        <ul data-testid="started-with-settings" style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
+          {lines.map((line) => (
+            <li key={line} style={text(12.5, 400, t.text2)}>
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </Field>
   );
 }

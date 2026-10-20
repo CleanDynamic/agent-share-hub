@@ -616,7 +616,7 @@ function Head({ children, detail, tool, model }: { children: ReactNode; detail?:
 const SETUP_INDENT = 28;
 
 /** A chat's head, with Setup at its end when the session has one: closed until asked, then its rows under the head. */
-function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }> }) {
+function ChatHead({ chat, copy }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }>; copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean } }) {
   const [open, setOpen] = useState(false);
   const setup = chat.setup;
   return (
@@ -627,7 +627,7 @@ function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { k
             {chat.headline}
           </Head>
         </div>
-        {setup.length > 0 ? (
+        {setup.length > 0 || chat.startedWith ? (
           <span style={{ paddingTop: 8, flexShrink: 0 }} data-testid="setup-toggle">
             <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
           </span>
@@ -643,6 +643,21 @@ function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { k
       {chat.facts ? <DotLine testId="facts-line">{chat.facts}</DotLine> : null}
       {open ? (
         <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
+          {/* CA-05 P3: the command that opened the session, as written, and the settings it names in plain words. */}
+          {chat.startedWith ? (
+            <div data-testid="started-with" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span style={{ ...text(12, 400, t.label), flexGrow: 1 }}>Started with</span>
+                {copy ? <CopyButton what="the command" text={chat.startedWith.command} onCopy={copy.onCopy} announce={copy.announce} phone={copy.phone} /> : null}
+              </div>
+              <code style={{ ...text(12, 400, t.text), fontFamily: DM_MONO, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{chat.startedWith.command}</code>
+              {chat.startedWith.settings.map((line) => (
+                <span key={line} style={text(11.5, 400, t.label)}>
+                  {line}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {setup.map((item) => (
             <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -912,7 +927,7 @@ interface Group {
   entries: ReaderStep[];
 }
 
-function groupsOf(steps: readonly ReaderStep[]): Group[] {
+function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }): Group[] {
   const groups: Group[] = [];
   for (const entry of steps) {
     const chat = entry.chat?.kind === "new" ? entry.chat : null;
@@ -920,7 +935,7 @@ function groupsOf(steps: readonly ReaderStep[]): Group[] {
       groups.push({
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
-        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts ? <ChatHead chat={chat} /> : (
+        head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>
@@ -981,7 +996,7 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
         </Suspense>
       ) : (
-        groupsOf(steps).map((group) => (
+        groupsOf(steps, { onCopy: view.onCopy, announce, phone }).map((group) => (
           <div key={group.key} style={column(8)}>
             {group.head}
             {group.entries.map((entry) =>

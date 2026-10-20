@@ -41,6 +41,7 @@ import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type Setup
 import { goalLine, sessionsMetaOf, type Making } from "./making";
 import { runsWhenLine } from "./runsFrom";
 import { sessionFactsLine } from "./sessionFacts";
+import { settingLines } from "./startedWith";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -75,6 +76,8 @@ export type ReaderChat =
       runsWhen?: string;
       /** CA-05 P2: length, cost and nobody watching, as a reader gets them: the cost only when the maker ticked Show readers. */
       facts?: string;
+      /** CA-05 P3: the command that opened the session, as pasted, and the settings it names in plain words. */
+      startedWith?: { command: string; settings: string[] };
     }
   | {
       kind: "same";
@@ -486,6 +489,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
+    ...(group.extras?.startedWith ? { startedWith: { command: group.extras.startedWith, settings: settingLines(group.extras.startedWith) } } : null),
   };
 }
 
@@ -890,6 +894,11 @@ export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
   return out;
 }
 
+/** CA-05 P3: the command a session was started with, then the settings it names. */
+function startedSentences(started: { command: string; settings: string[] }): string[] {
+  return ["Started with:", fenced(started.command), ...started.settings.map((line) => `${line}.`)];
+}
+
 function inputSentences(entry: ReaderStep): string[] {
   const out: string[] = [];
   for (const paste of entry.pasteIns) out.push(`Paste in what step ${paste.number} gave you (${paste.title}).`);
@@ -948,6 +957,7 @@ export function stepsMarkdown(
     if (entry.chat?.kind === "new" && step.kind !== "prompt") {
       lines.push(chatSentence(entry.chat), "");
       if (entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+      if (entry.chat.startedWith) lines.push(...startedSentences(entry.chat.startedWith), "");
     }
 
     const saves = saveSentences(entry);
@@ -966,6 +976,7 @@ export function stepsMarkdown(
     }
     if (entry.chat && step.kind === "prompt") lines.push(chatSentence(entry.chat), "");
     if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
+    if (entry.chat?.kind === "new" && step.kind === "prompt" && entry.chat.startedWith) lines.push(...startedSentences(entry.chat.startedWith), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
