@@ -32,6 +32,7 @@ import { Glyph } from "@/components/brand/Glyph";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
+import { ChangedText } from "@/components/build/ChangedText";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
@@ -47,6 +48,7 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { bracketed, changesLine } from "@/lib/build/changes";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
@@ -80,7 +82,7 @@ export function teamText(entry: ReaderStep): string {
   const parts: string[] = [];
   const visit = (list: readonly ReaderStep[]) => {
     for (const child of list) {
-      if (child.step.text) parts.push(`${child.step.number} ${child.title}\n\n${child.step.text}`);
+      if (child.step.text) parts.push(`${child.step.number} ${child.title}\n\n${bracketed(child.step.text, child.step.changes)}`);
       visit(child.children.filter((grand) => !isInstructions(grand)));
     }
   };
@@ -89,7 +91,7 @@ export function teamText(entry: ReaderStep): string {
 }
 
 /** The words a copy puts on the clipboard for a step: CA-04 P2, a step and what is sent with it, together. */
-export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : entry.step.text);
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : bracketed(entry.step.text, entry.step.changes));
 
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
@@ -399,8 +401,13 @@ function StepText({ step, onRead, alone = false, indent = INDENT }: { step: Step
           ...(long ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" } : null),
         }}
       >
-        {step.text}
+        <ChangedText text={step.text} changes={step.changes} />
       </p>
+      {step.changes?.length ? (
+        <p data-testid="changes-line" style={{ ...text(11.5, 400, t.label), margin: 0, paddingLeft: indent }}>
+          {changesLine(step.changes.length)}
+        </p>
+      ) : null}
       {long ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingLeft: indent }}>
           <ReadAll onRead={onRead} />
@@ -780,7 +787,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           <h4 style={{ ...text(13.5, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0 }}>{entry.title}</h4>
           {!instructions && step.model ? <span style={text(12, 400, t.label)}>{modelOf(step)}</span> : null}
           <span style={{ flexGrow: 1 }} />
-          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />
+          <CopyButton label="Copy" what={`${step.number} ${entry.title}`} text={bracketed(step.text, step.changes)} onCopy={view.onCopy} announce={announce} phone={phone} />
         </div>
         {/* CA-03 P3: how it ran, one quiet line under it; "When I asked" shows nothing. */}
         {repeats ? <DotLine testId="runs-line">{entry.runs}</DotLine> : null}

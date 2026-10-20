@@ -46,6 +46,7 @@ import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
 import { checkStatus, runsLabel, sentWithLabel, stepTitle, TOOL_TYPE, withSentWith } from "@/lib/build/graph";
+import { ChangedText } from "@/components/build/ChangedText";
 import { copyTogether } from "@/lib/build/copyTogether";
 import { codeInPrompt, SENT_WITH_COPY, type CodeSuggestion } from "@/lib/build/sentWithSuggest";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
@@ -698,7 +699,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ref={textRef}
         style={{ ...text(13.5, 400, t.text), lineHeight: "22px", margin: 0, paddingLeft: INDENT, overflowWrap: "anywhere", ...clamp2 }}
       >
-        {step.text}
+        <ChangedText text={step.text} changes={step.changes} />
       </p>
       <MadeLine names={props.madeNames?.[step.id]} />
       <SentWithList step={step} props={props} />

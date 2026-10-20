@@ -130,6 +130,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     ...(typed ? { tool: step.tool } : null),
     text: step.text,
     words: step.words,
+    ...(step.changes ? { changes: step.changes } : null),
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),

@@ -118,6 +118,12 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/goal.ui.test.tsx",
   // CA-04 P7
   "src/pages/dev/BuildStepsDemo.tsx",
+  // CA-05 P1
+  "src/components/build/ChangedText.tsx",
+  "src/components/build/FullPromptWindow.changes.test.tsx",
+  "src/lib/build/changes.copy.test.ts",
+  "src/lib/build/changes.test.ts",
+  "src/lib/build/changes.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

@@ -21,6 +21,7 @@ import { Eyebrow } from "@/components/brand/Eyebrow";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { ModelTag } from "@/components/brand/ModelTag";
+import { bracketed } from "@/lib/build/changes";
 import type { ReaderStep } from "@/lib/build/readerSteps";
 import { BETWEEN, useMinWidth } from "@/components/shell/useMinWidth";
 import { ring } from "@/lib/theme/controls";
@@ -143,7 +144,7 @@ export default function ReaderMap({ view, announce, onRead, start }: ReaderMapPr
   const select = useCallback((id: string) => setSelectedId(id), []);
 
   const copy = async () => {
-    if (entry && (await view.onCopy(entry.step.text))) announce("Copied");
+    if (entry && (await view.onCopy(bracketed(entry.step.text, entry.step.changes)))) announce("Copied");
   };
 
   /* The same tags, in the same order, as the current look's chips: the chat, the model, the date. The chat's and the

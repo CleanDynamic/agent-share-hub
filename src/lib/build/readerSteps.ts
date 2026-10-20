@@ -35,6 +35,7 @@ import {
   type SessionGroup,
   type Step,
 } from "./graph";
+import { bracketed } from "./changes";
 import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
@@ -907,7 +908,7 @@ function subSteps(entry: ReaderStep, lines: string[]): void {
     if (child.runs && child.step.runs) lines.push(`${child.runs}.`, "");
     if (child.uses.length > 0) lines.push(`Uses ${join(child.uses)}.`, "");
     if (child.goesInto.length > 0) lines.push(`Goes into ${child.goesInto.join(", ")}.`, "");
-    if (child.step.text) lines.push(fenced(child.step.text), "");
+    if (child.step.text) lines.push(fenced(bracketed(child.step.text, child.step.changes)), "");
     const saves = saveSentences(child);
     if (saves.length > 0) lines.push(...saves, "");
     // An agent inside a team shows its instructions in its own row; what follows is its own prompts.
@@ -958,7 +959,7 @@ export function stepsMarkdown(
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
-    const message = step.sentWith?.length ? copyTogether(step) : step.text;
+    const message = step.sentWith?.length ? copyTogether(step) : bracketed(step.text, step.changes);
     if (message) lines.push(fenced(message), "");
     if (saves.length > 0) lines.push(...saves, "");
   }

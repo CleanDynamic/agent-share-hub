@@ -20,6 +20,8 @@ import { Pencil, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
+import { ChangedText } from "@/components/build/ChangedText";
+import { changesLine, type ChangeRange } from "@/lib/build/changes";
 import { Checkbox } from "@/components/brand/Checkbox";
 import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -86,6 +88,8 @@ export interface PromptView extends InputsView {
   tool?: string | null;
   text: string;
   words: number;
+  /** CA-05 P1: the words a reader changes, when the maker marked any. */
+  changes?: readonly ChangeRange[];
   /** The files it makes; empty for an agent's instructions. */
   makes: readonly MakesRow[];
 }
@@ -791,9 +795,10 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
       ) : null}
       <div style={{ ...wellField, padding: 12 }}>
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {view.text}
+          <ChangedText text={view.text} changes={view.changes} />
         </p>
       </div>
+      {view.changes?.length ? <span data-testid="changes-line" style={quiet()}>{changesLine(view.changes.length)}</span> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <ReadAll phone={phone} disabled={!open} onClick={() => open?.()} />
         <span style={{ flexGrow: 1 }} />

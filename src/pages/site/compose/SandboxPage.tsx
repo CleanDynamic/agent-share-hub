@@ -1171,6 +1171,7 @@ export function SandboxPage() {
         openId={openPromptId}
         mode="maker"
         onTitle={prompts.rename}
+        onChanges={prompts.setChanges}
         onNavigate={setOpenPromptId}
         onClose={() => setOpenPromptId(null)}
       />

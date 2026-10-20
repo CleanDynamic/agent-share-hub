@@ -22,6 +22,7 @@ import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
+import { changesOf, type ChangeRange } from "./changes";
 
 export const AGENT_TYPE = "agent_config";
 export const TEAM_TYPE = "team";
@@ -104,6 +105,8 @@ export interface Step {
   toolRefs?: string[];
   /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
   memory?: string;
+  /** CA-05 P1, a prompt only: the words a reader changes (`payload.changes`), as character ranges of `text`. Absent when none. */
+  changes?: ChangeRange[];
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
   check?: CheckFacts;
   /**
@@ -437,6 +440,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     dismissed: dismissedOf(payload),
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
+    ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
