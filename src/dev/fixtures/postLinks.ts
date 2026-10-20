@@ -19,6 +19,12 @@ export const LINKS_S2 = Object.keys(one.making?.sessions_meta ?? {})[1] as strin
 /** The three colours the maker chose: the second session, prompt 2 and the code sent with it. */
 export const LINKS_COLOURS = { session: "#7FA7D9", prompt: "#C9A86B", code: "#B79AD6" } as const;
 
+/** `&swatches=filled`: Recent and Favourites as a maker who has used the picker a while keeps them on their profile. */
+export const LINKS_SWATCHES: { recent: string[]; favourites: string[] } = {
+  recent: ["#8FBFB8", "#C9A86B", "#6995CE", "#B79AD6", "#D98C8C"],
+  favourites: ["#7FA7D9", "#C9A86B", "#7FB88A", "#B79AD6", "#E0B36A", "#5E8C78", "#A55F7B", "#3E6D9C"],
+};
+
 const colour = (entry: NodeTree, hex: string): NodeTree => ({ ...entry, payload: { ...(entry.payload as Record<string, unknown>), colour: hex } as Json });
 
 function recolour(tree: readonly NodeTree[]): NodeTree[] {

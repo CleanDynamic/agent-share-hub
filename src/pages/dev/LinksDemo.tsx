@@ -6,6 +6,8 @@
    on the Map. */
 
 import { useMemo, useRef, useState } from "react";
+
+import { configureSwatchSaving } from "@/components/brand/useColourSwatches";
 import { useSearchParams } from "react-router-dom";
 
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
@@ -16,7 +18,7 @@ import { groupKey } from "@/lib/build/graph";
 import { dividers } from "@/pages/site/compose/buildListModel";
 import { useColourPicking } from "@/pages/site/compose/useColourPicking";
 import { useIsPhone } from "@/components/shell/useMinWidth";
-import { linksBuild, linksPost } from "@/dev/fixtures/postLinks";
+import { linksBuild, linksPost, LINKS_SWATCHES } from "@/dev/fixtures/postLinks";
 import { sandboxViewProps } from "@/dev/fixtures/sandbox";
 import { sessionFacts, shapeDetailsProps, shapeListProps, shapeMapProps, type ShapeSource } from "@/dev/fixtures/shapes";
 import { refGroups } from "@/lib/build/postRefs";
@@ -50,6 +52,9 @@ function demoThread(doc: ThreadDoc): ComposeThread {
 
 export default function LinksDemo({ fit = "board", state = "populated" }: DesignPageProps) {
   const [params] = useSearchParams();
+  // The dev page keeps the maker's colours in memory: nothing is read from or written to a profile.
+  const filled = params.get("swatches") === "filled";
+  useState(() => configureSwatchSaving(null, filled ? LINKS_SWATCHES : { recent: [], favourites: [] }));
   const phone = useIsPhone();
   const fixture = useMemo(() => linksBuild(), []);
   /* CA-06 P5: a colour Done keeps is laid over the fixture for the visit; nothing is written. */

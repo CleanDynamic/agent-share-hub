@@ -18,6 +18,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from "react-dom";
 
 import { BottomSheet } from "@/components/shell/BottomSheet";
+import type { ColourSwatches } from "@/lib/profile/colourSwatches";
 import {
   hexToHsl,
   hslToHex,
@@ -73,10 +74,8 @@ const PAD = "14px";
 export const WHEEL_SIZE = 168;
 const SWATCH = 22;
 
-export interface Swatches {
-  recent: string[];
-  favourites: string[];
-}
+/** Recent and Favourites, as the maker's profile keeps them (CA-06 P6). */
+export type Swatches = ColourSwatches;
 
 export interface ColourPickerProps {
   open: boolean;

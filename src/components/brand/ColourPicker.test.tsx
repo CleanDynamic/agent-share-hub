@@ -24,7 +24,7 @@ import {
 import { useColourPicking } from "@/pages/site/compose/useColourPicking";
 
 import { COLOUR_PICKER_COPY, ColourPicker, recentAfterDone, type ColourPickerProps } from "./ColourPicker";
-import { setSwatchStore } from "./useColourSwatches";
+import { configureSwatchSaving } from "./useColourSwatches";
 
 vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener: () => undefined, removeEventListener: () => undefined }));
 
@@ -33,7 +33,7 @@ const putImageData = vi.fn();
 beforeEach(() => {
   putImageData.mockReset();
   HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }), putImageData })) as never;
-  setSwatchStore({ recent: [], favourites: [] });
+  configureSwatchSaving(null);
 });
 afterEach(cleanup);
 

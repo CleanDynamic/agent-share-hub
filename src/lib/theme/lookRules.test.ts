@@ -7,7 +7,8 @@
 // WHAT IS READ. Comments are blanked first (line breaks kept, so line numbers hold): a comment that says "no
 // gradients" is not a gradient. Strings, JSX text and code are read as they are.
 //
-// THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids.
+// THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids. Nor is compliance.test.ts (CA-06 P5
+// and P6 add two capped entries to it), for the same reason: its allowlist quotes the values it allows.
 //
 // CA-06, THE ONE EXCEPTION TO "NO COLOURED CARD EDGES": a tile or a session may carry the colour its maker chose
 // (`payload.colour`, `sessions_meta[key].colour`), drawn only through `borderFor` and `outlineFor` in
@@ -199,6 +200,9 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/colourPreview.ts",
   "src/lib/theme/colourWheel.ts",
   "src/pages/site/compose/useColourPicking.tsx",
+  // CA-06 P6
+  "src/lib/profile/colourSwatches.test.tsx",
+  "src/lib/profile/colourSwatches.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

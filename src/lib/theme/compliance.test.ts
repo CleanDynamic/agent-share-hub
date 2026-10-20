@@ -129,10 +129,11 @@ const CAPPED: Record<string, { max: number; why: string }> = {
       "the same in both themes, so it cannot be a token. None is ever applied for the maker.",
   },
   "src/dev/fixtures/postLinks.ts": {
-    max: 3,
+    max: 16,
     why:
       "CA-06 P7: the three colours the maker chose in the \"A post with links\" fixture, written as a build stores " +
-      "them (payload.colour and sessions_meta[key].colour are \"#RRGGBB\"). Sample data, not paint.",
+      "them (payload.colour and sessions_meta[key].colour are \"#RRGGBB\"), and the 13 Recent and Favourites a maker " +
+      "keeps on their profile (profiles.colour_swatches). Sample data, not paint.",
   },
   "src/components/auth/OAuthButtons.tsx": {
     max: 4,
