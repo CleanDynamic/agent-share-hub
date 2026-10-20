@@ -61,6 +61,7 @@ import {
   setAgentSetup,
   setRuns,
   setStepSession,
+  setCheckRuns,
   setStepTitle,
   nestStep,
   NEST_COPY,
@@ -74,6 +75,7 @@ import {
   type CheckInput,
   type Runs,
   type Step,
+  type CheckRun,
   type Use,
 } from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
@@ -163,6 +165,8 @@ export interface ComposePrompts {
   addNow: (input: { text: string; tool: string | null; model: string | null; session?: string | null }) => Promise<boolean>;
   /** UI-P65: name a step ("" puts its default name back). */
   rename: (id: string, title: string) => void;
+  /** CA-05 P7: the runs of a check. */
+  setCheckRuns: (id: string, runs: readonly CheckRun[]) => void;
   /** CA-05 P1: say which words of a prompt a reader changes. */
   setChanges: (id: string, ranges: readonly ChangeRange[]) => void;
   /** UI-P65: take a suggested input. */
@@ -539,6 +543,8 @@ export function useComposePrompts({
   const rename = (id: string, title: string) => void writeStep(id, "Couldn't rename that. Try again.", (node) => setStepTitle(node, title));
   const setChanges = (id: string, ranges: readonly ChangeRange[]) =>
     void writeStep(id, "Couldn't save those words. Try again.", (node) => setPromptChanges(node, ranges));
+  const setCheckRunsOf = (id: string, runs: readonly CheckRun[]) =>
+    void writeStep(id, "Couldn't save those runs. Try again.", (node) => setCheckRuns(node, runs));
   const accept = (id: string, use: Use, steps: readonly Step[]) =>
     void writeStep(id, "Couldn't add that input. Try again.", (node) => addUse(node, use, steps, madeFilesOf(nodes.current()), madeFileNamesOf(nodes.current())));
   const dismiss = (id: string, key: string) =>
@@ -828,5 +834,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, setChanges, setCheckRuns: setCheckRunsOf, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith, setConnection };
 }

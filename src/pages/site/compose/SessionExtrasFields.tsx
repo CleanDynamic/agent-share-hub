@@ -6,7 +6,10 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState, type KeyboardEvent } from "react";
 
+import { X } from "lucide-react";
+
 import { Checkbox } from "@/components/brand/Checkbox";
+import { IconButton } from "@/components/brand/IconButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { MenuButton } from "@/components/brand/MenuButton";
 import { ring } from "@/lib/theme/controls";
@@ -16,8 +19,10 @@ import { COST_MAX, costField, OWN_COPY_MAX, STARTED_WITH_MAX, type SessionExtras
 import { settingLines, worktreeOf } from "@/lib/build/startedWith";
 import { DM_MONO } from "@/lib/theme/type";
 
+import { checkRunsOf, checkRunsRefusal, CHECK_RUNS_KEPT, type CheckRun } from "@/lib/build/graph";
+
 import { ChoiceRows } from "./ChoiceRows";
-import { Field } from "./composeControls";
+import { Field, TextButton } from "./composeControls";
 import { menuItem, menuSurface, text, typedArea, typedField } from "./refinedStyles";
 import { FLOATING_Z } from "./ToolPicker";
 
@@ -41,7 +46,7 @@ export const EXTRAS_COPY = {
   ownCopyHint: "fix-totals",
 } as const;
 
-function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal"; onCommit: (value: string) => void }) {
+function ExtrasInput({ label, value, placeholder, max, phone, inputMode, onCommit }: { label: string; value: string; placeholder?: string; max: number; phone: boolean; inputMode?: "decimal" | "numeric"; onCommit: (value: string) => void }) {
   const [draft, setDraft] = useState(value);
   const commit = () => {
     if (draft.trim() !== value.trim()) onCommit(draft);
@@ -219,5 +224,99 @@ export function TogetherFields({ id, extras, others, phone, onTogether, onChange
         />
       </Field>
     </>
+  );
+}
+
+/* ── CA-05 P7: the runs of a check ── */
+
+export const RUNS_FIELD_COPY = {
+  title: "Runs",
+  optional: "Optional",
+  add: "Add a run",
+  date: "Date",
+  passed: "Passed",
+  total: "Out of",
+  of: "of",
+  remove: (n: number) => `Remove run ${n}`,
+  more: (n: number) => `Showing the newest ${n}. A check keeps 20 runs at most.`,
+  bad: "Each run needs a date written as 2026-10-12, and whole numbers with passed no more than the total.",
+} as const;
+
+/** One run as the three wells hold it. */
+interface RunDraft {
+  at: string;
+  passed: string;
+  total: string;
+}
+
+const draftOf = (run: CheckRun): RunDraft => ({ at: run.at, passed: String(run.passed), total: String(run.total) });
+
+/** The runs the drafts spell, newest first, or null when any row is not a whole run. An empty row is left out. */
+function runsFromDrafts(drafts: readonly RunDraft[]): CheckRun[] | null {
+  const runs: CheckRun[] = [];
+  for (const draft of drafts) {
+    if (!draft.at.trim() && !draft.passed.trim() && !draft.total.trim()) continue;
+    if (!/^\d+$/.test(draft.passed.trim()) || !/^\d+$/.test(draft.total.trim())) return null;
+    const run = { at: draft.at.trim(), passed: Number(draft.passed), total: Number(draft.total) };
+    if (checkRunsRefusal([run])) return null;
+    runs.push(run);
+  }
+  return checkRunsOf(runs);
+}
+
+/** P7: Runs, Optional, on a Check: rows of date and "{passed} of {total}", newest first, up to 20. A row is saved when it is whole. */
+export function CheckRunsField({ id, runs, phone, onChange }: { id: string; runs: readonly CheckRun[]; phone: boolean; onChange: (runs: CheckRun[]) => void }) {
+  const [drafts, setDrafts] = useState<RunDraft[]>(() => runs.map(draftOf));
+  const [wrong, setWrong] = useState(false);
+  const commit = (next: RunDraft[]) => {
+    const whole = runsFromDrafts(next);
+    setWrong(whole === null);
+    if (whole === null) return;
+    // Only a change in the runs is written; a half-typed new row waits.
+    if (JSON.stringify(whole) !== JSON.stringify(runs)) onChange(whole);
+  };
+  const edit = (index: number, change: Partial<RunDraft>) => setDrafts((rows) => rows.map((row, at) => (at === index ? { ...row, ...change } : row)));
+  const full = drafts.length >= CHECK_RUNS_KEPT;
+  return (
+    <Field id={`${id}-runs`} label={RUNS_FIELD_COPY.title} hint={RUNS_FIELD_COPY.optional} group>
+      <div data-testid="check-runs" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {drafts.map((row, index) => (
+          <div key={index} data-testid="check-run" style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <div style={{ width: 112, flexShrink: 0 }}>
+              <ExtrasInput label={`${RUNS_FIELD_COPY.date} of run ${index + 1}`} value={row.at} placeholder="2026-10-12" max={10} phone={phone} onCommit={(at) => { const next = drafts.map((d, i) => (i === index ? { ...d, at } : d)); setDrafts(next); commit(next); }} />
+            </div>
+            <div style={{ width: 56, flexShrink: 0 }}>
+              <ExtrasInput label={`${RUNS_FIELD_COPY.passed} in run ${index + 1}`} value={row.passed} max={5} phone={phone} inputMode="numeric" onCommit={(passed) => { const next = drafts.map((d, i) => (i === index ? { ...d, passed } : d)); setDrafts(next); commit(next); }} />
+            </div>
+            <span style={text(12.5, 400, t.text2)}>{RUNS_FIELD_COPY.of}</span>
+            <div style={{ width: 56, flexShrink: 0 }}>
+              <ExtrasInput label={`${RUNS_FIELD_COPY.total} in run ${index + 1}`} value={row.total} max={5} phone={phone} inputMode="numeric" onCommit={(total) => { const next = drafts.map((d, i) => (i === index ? { ...d, total } : d)); setDrafts(next); commit(next); }} />
+            </div>
+            <IconButton
+              icon={X}
+              glyph="x"
+              boxed={false}
+              label={RUNS_FIELD_COPY.remove(index + 1)}
+              size={26}
+              onClick={() => {
+                const next = drafts.filter((_, at) => at !== index);
+                setDrafts(next);
+                commit(next);
+              }}
+            />
+          </div>
+        ))}
+        {wrong ? <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.bad}</span> : null}
+        {full ? (
+          <span style={text(12, 400, t.text2)}>{RUNS_FIELD_COPY.more(CHECK_RUNS_KEPT)}</span>
+        ) : (
+          <span>
+            <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => setDrafts((rows) => [{ at: "", passed: "", total: "" }, ...rows])}>
+              {RUNS_FIELD_COPY.add}
+            </TextButton>
+          </span>
+        )}
+      </div>
+    </Field>
   );
 }

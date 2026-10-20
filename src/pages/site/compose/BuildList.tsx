@@ -77,7 +77,7 @@ import { CODE_COPY, firstLines, lineCount, looksLikeCode } from "./codeModel";
 import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
-import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
+import { CHECK_COPY, CheckExtraLines, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
 import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { DragHandle, NestGap, NestList, TAKES, useNestSession, useNestTile, type NestTarget } from "./listNest";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
@@ -1243,6 +1243,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           <span style={tnum}>{status.line}</span>
         </DotLine>
       ) : null}
+      {step.check ? <CheckExtraLines check={step.check} style={{ paddingLeft: INDENT }} /> : null}
       <SentWithList step={step} props={props} />
       <div style={footRow(INDENT)}>
         <UsesRow step={step} props={props} />

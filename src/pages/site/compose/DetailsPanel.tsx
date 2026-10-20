@@ -55,12 +55,12 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
 import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
-import { SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
+import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
 
@@ -268,6 +268,8 @@ export interface DetailsHandlers {
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
   onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P7: the runs of a check, newest first. Absent: Runs is not shown. */
+  onCheckRuns?: (id: string, runs: CheckRun[]) => void;
   /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
   onSessionTogether?: (key: string, keys: string[]) => void;
   /** CA-04 P5: say how a tool was connected and where an MCP server ran. Absent: the choice rows are not shown. */
@@ -939,6 +941,7 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
       </Head>
       <CheckBlock check={view.check} />
+      {h.onCheckRuns ? <CheckRunsField key={`${view.id}:${(view.check.runs ?? []).map((run) => `${run.at}${run.passed}${run.total}`).join(",")}`} id={view.id} runs={view.check.runs ?? []} phone={phone} onChange={(runs) => h.onCheckRuns?.(view.id, runs)} /> : null}
       <UseList id={view.id} rows={view.uses} options={view.options} phone={phone} onAddUse={h.onAddUse} onAttach={h.onAttach} onRemoveUse={h.onRemoveUse} />
       <RowList title="Goes into" rows={view.goesInto} phone={phone} onSelect={h.onSelect} />
     </>

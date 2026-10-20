@@ -106,6 +106,8 @@ export interface Step {
   toolRefs?: string[];
   /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
   memory?: string;
+  /** CA-05 P7, a file tile only: the cases in it, when it is a test file and they were counted exactly. */
+  rows?: number;
   /** CA-05 P1, a prompt only: the words a reader changes (`payload.changes`), as character ranges of `text`. Absent when none. */
   changes?: ChangeRange[];
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
@@ -129,6 +131,17 @@ export interface CheckFacts {
   total: number | null;
   /** The last run, as saved ("2026-10-12"). */
   runAt: string | null;
+  /** CA-05 P7: every run it kept, newest first. Absent when it kept none. */
+  runs?: CheckRun[];
+  /** CA-05 P7: how many cases the test files sent with it hold, when every file could be counted exactly. */
+  cases?: number;
+}
+
+/** CA-05 P7: one run of a check: the day and how many passed of how many. */
+export interface CheckRun {
+  at: string;
+  passed: number;
+  total: number;
 }
 
 export interface SessionGroup {
@@ -353,8 +366,38 @@ const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): bool
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
+/** The most runs a check keeps, and the most its line shows. */
+export const CHECK_RUNS_KEPT = 20;
+export const CHECK_RUNS_SHOWN = 5;
+
+/** A check's runs, read defensively and newest first; an entry that is not a real day and two whole numbers is left out. */
+export function checkRunsOf(value: unknown): CheckRun[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((entry) => {
+      if (!isRecord(entry) || typeof entry.at !== "string" || !isIsoDay(entry.at)) return [];
+      const { passed, total } = entry;
+      if (typeof passed !== "number" || typeof total !== "number" || !Number.isInteger(passed) || !Number.isInteger(total)) return [];
+      if (passed < 0 || total < 0 || total > CHECK_RUNS_MAX || passed > total) return [];
+      return [{ at: entry.at, passed, total }];
+    })
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+    .slice(0, CHECK_RUNS_KEPT);
+}
+
+/** CA-05 P7: "31 of 40 → 37 of 40 → 40 of 40", the latest five runs oldest first; null for fewer than two. */
+export function checkHistoryLine(runs: readonly CheckRun[] | undefined): string | null {
+  if (!runs || runs.length < 2) return null;
+  return [...runs]
+    .slice(0, CHECK_RUNS_SHOWN)
+    .reverse()
+    .map((run) => `${run.passed} of ${run.total}`)
+    .join(" → ");
+}
+
 /** A check's facts, read defensively. */
 function checkFacts(payload: Payload): CheckFacts {
+  const runs = checkRunsOf(payload.runs);
   return {
     tested: stringOf(payload.tested)?.trim() ?? "",
     passing: stringOf(payload.passing)?.trim() ?? "",
@@ -362,6 +405,7 @@ function checkFacts(payload: Payload): CheckFacts {
     passed: numberOf(payload.passed),
     total: numberOf(payload.total),
     runAt: stringOf(payload.run_at)?.trim() || null,
+    ...(runs.length > 0 ? { runs } : null),
   };
 }
 
@@ -450,6 +494,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
     ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
+    ...(kind === "file" && typeof payload.rows === "number" && Number.isInteger(payload.rows) && payload.rows > 0 ? { rows: payload.rows } : null),
   };
 }
 
@@ -514,7 +559,11 @@ function readStep(node: NodeTree, number: string, kind: StepKind, depth: number,
     ...readStep(child, "", child.type === FILE_TYPE ? "file" : KIND_OF_TYPE[child.type], depth + 1),
     inside: { id: step.id, label },
   }));
-  return sent.length > 0 ? { ...step, sentWith: sent } : step;
+  if (sent.length === 0) return step;
+  // CA-05 P7: a check's cases are the rows of the test files sent with it, counted only when every one of them was.
+  const files = sent.filter((tile) => tile.kind === "file" && /\.(csv|json|jsonl)$/i.test(tile.filename ?? ""));
+  const cases = files.length > 0 && files.every((tile) => tile.rows) ? files.reduce((sum, tile) => sum + (tile.rows ?? 0), 0) : 0;
+  return { ...step, sentWith: sent, ...(step.kind === "check" && step.check && cases > 0 ? { check: { ...step.check, cases } } : null) };
 }
 
 /**
@@ -1145,6 +1194,40 @@ export function checkRefusal(input: Omit<CheckInput, "testedStep">): string | nu
   return null;
 }
 
+/** Why a check's runs cannot be kept, or null. Pure, so the composer can say it before anything is written. */
+export function checkRunsRefusal(runs: readonly CheckRun[]): string | null {
+  if (runs.length > CHECK_RUNS_KEPT) return `A check keeps ${CHECK_RUNS_KEPT} runs at most.`;
+  for (const run of runs) {
+    if (!isIsoDay(run.at)) return "A run's date is written as 2026-10-12.";
+    for (const n of [run.passed, run.total]) {
+      if (typeof n !== "number" || !Number.isInteger(n) || n < 0 || n > CHECK_RUNS_MAX) return "Runs are whole numbers from 0 to 10,000.";
+    }
+    if (run.passed > run.total) return "Passed can't be more than the total.";
+  }
+  return null;
+}
+
+/**
+ * CA-05 P7: the runs of a check (`payload.runs`, newest first, up to 20). The newest run is also the check's last run,
+ * so its passed, total and date are written to `passed`, `total` and `run_at` and the status line says the same. No
+ * runs takes the key off and leaves the last run as it was.
+ */
+export async function setCheckRuns(node: BuildNode, runs: readonly CheckRun[]): Promise<BuildNode> {
+  if (node.type !== CHECK_TYPE) throw refuse("setCheckRuns", "Only a check has runs.");
+  const why = checkRunsRefusal(runs);
+  if (why) throw refuse("setCheckRuns", why);
+  const payload = { ...payloadOf(node) };
+  const sorted = checkRunsOf(runs);
+  if (sorted.length === 0) delete payload.runs;
+  else {
+    payload.runs = sorted as unknown as Json;
+    payload.passed = sorted[0].passed;
+    payload.total = sorted[0].total;
+    payload.run_at = sorted[0].at;
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "12 Oct", from a saved day; the day as saved when it is not one. */
@@ -1356,10 +1439,12 @@ export async function nestStep(buildId: string, tree: readonly NodeTree[], id: s
 export async function addFile(
   buildId: string,
   tree: readonly NodeTree[],
-  { title, url, summary, media_id, parentId }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null },
+  { title, url, summary, media_id, parentId, rows }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null; rows?: number | null },
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
-  const node = { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) };
+  // CA-05 P7: a test file kept with the cases it holds, when they were counted exactly.
+  const counted = typeof rows === "number" && Number.isInteger(rows) && rows > 0 ? { rows } : null;
+  const node = { type: FILE_TYPE, title: null, payload: { ...(compact({ title: title.trim(), url, summary, media_id }) as Record<string, Json>), ...counted } as Json };
   if (parentId) {
     const why = nestHomeRefusal(tree, parentId);
     if (why) throw refuse("addFile", why);

@@ -38,6 +38,7 @@ import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
 import { goalRefusal, type SessionGoal } from "@/lib/build/making";
+import { countCases, isTestFileName, TEST_FILE_MAX_BYTES } from "@/lib/build/testCases";
 import { extrasOf, extrasRefusal, readResultFile, togetherChanges, withExtras, type SessionExtras } from "@/lib/build/sessionFacts";
 import { claudePromptOf, runsWhenLine, type WorkflowEvent } from "@/lib/build/runsFrom";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
@@ -765,7 +766,7 @@ export function SandboxPage() {
 
   /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null): Promise<BuildNode | null> => {
+    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null, rows: number | null = null): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -780,7 +781,7 @@ export function SandboxPage() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId });
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId, rows });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -813,9 +814,14 @@ export function SandboxPage() {
         return;
       }
       // CA-04 P2: a file dropped on a step is sent with it: a tile inside that step.
-      for (const file of files) await addOneFile(file, "attach", stepId);
+      // CA-05 P7: on a Check, a .csv, .json or .jsonl file is its test cases, with their number when it can be counted exactly.
+      const onCheck = steps.some((step) => step.id === stepId && step.kind === "check");
+      for (const file of files) {
+        const cases = onCheck && isTestFileName(file.name) && file.size <= TEST_FILE_MAX_BYTES ? countCases(file.name, await file.text().catch(() => "")) : null;
+        await addOneFile(file, "attach", stepId, cases);
+      }
     },
-    [addOneFile, navigate],
+    [addOneFile, navigate, steps],
   );
 
   /* ── the session setup (CA-04 P4) ── */
@@ -1147,6 +1153,7 @@ export function SandboxPage() {
             onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
+            onCheckRuns={prompts.setCheckRuns}
             onSessionTogether={(key, keys) => void onSessionTogether(key, keys)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}

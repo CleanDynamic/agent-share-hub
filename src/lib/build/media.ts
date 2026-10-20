@@ -146,6 +146,8 @@ const CODE_EXTENSIONS: readonly string[] = [
   ".mdc", ".yaml", ".yml", ".toml", ".xml", ".html", ".htm", ".css",
   ".js", ".jsx", ".ts", ".tsx", ".py", ".sh", ".sql",
   ".env.example", ".env.sample",
+  // CA-05 P7: test cases for a check, one JSON value a line.
+  ".jsonl",
 ];
 
 /** Text files browsers often report with no type at all. */
