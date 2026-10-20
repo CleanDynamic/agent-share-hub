@@ -83,3 +83,6 @@ export function highlightFor(hex: string, theme: ThemeKey): Highlight {
 
 /** The six muted colours the picker suggests. None is ever applied for the maker. */
 export const SUGGESTED_COLOURS = ["#C9A86B", "#7FB88A", "#7FA7D9", "#B79AD6", "#D98C8C", "#8FBFB8"] as const;
+
+/** What a code that is not a colour is told: "Use a code like #7FA7D9", the third suggestion. */
+export const HEX_HINT = `Use a code like ${SUGGESTED_COLOURS[2]}`;

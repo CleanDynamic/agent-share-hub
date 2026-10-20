@@ -59,7 +59,7 @@ import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
-import { BuildList, type AddAsAgentInput } from "./BuildList";
+import { BuildList, partName, type AddAsAgentInput } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
@@ -73,7 +73,8 @@ import { isChatExport, librarySources, projectFileReminders, sourceFiles, source
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
 import { refGroups } from "@/lib/build/postRefs";
 import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
-import { PartWindow } from "@/components/build/PartWindow";
+import { allParts, PartWindow } from "@/components/build/PartWindow";
+import { parseRefTo, refTo } from "@/lib/build/thread";
 import { usePostLinks } from "./usePostLinks";
 
 /** builds.making.sessions, read defensively: it is a json column. */
@@ -536,6 +537,24 @@ export function SandboxPage() {
     [claim, ensureBuild, groups, made, refreshRecord],
   );
 
+  /** CA-06 P4: a session's colour, or none; an old build's run of typed prompts has no colour button, so is never here. */
+  const onSessionColour = useCallback(
+    async (key: string, colour: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+        const { colour: _old, ...rest } = before;
+        await setSessionMeta(id, key, colour ? { ...rest, colour } : rest);
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] session colour not saved", cause);
+        toast.error("Couldn't save that colour. Try again.");
+      }
+    },
+    [ensureBuild, groups, made, refreshRecord],
+  );
+
   const onAddPrompt = useCallback(
     async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
     [prompts, sessionToWrite],
@@ -591,6 +610,40 @@ export function SandboxPage() {
       if (build?.id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build.id) });
     });
   }, [nodes, build?.id, queryClient]);
+
+  /* ── colour (CA-06 P4) ── */
+
+  /** The part whose colour button was pressed, and the button: the colour picker opens on it (P5). */
+  const [colourFor, setColourFor] = useState<{ to: string; anchor: HTMLElement; what: string; colour: string | null } | null>(null);
+  const onColour = useCallback((to: string, anchor: HTMLElement, what: string, colour: string | null) => setColourFor({ to, anchor, what, colour }), []);
+  /** Writes a part's colour, or takes it off: a tile's `payload.colour`, a session's `sessions_meta[key].colour`. */
+  const writeColour = useCallback(
+    (to: string, colour: string | null) => {
+      const target = parseRefTo(to);
+      if (!target) return;
+      if (target.kind === "session") void onSessionColour(target.id, colour);
+      else {
+        prompts.setColour(target.id, colour);
+        afterWrite();
+      }
+    },
+    [onSessionColour, prompts, afterWrite],
+  );
+  /** Details' colour: the selected tile's or session's, with its button. */
+  const detailsColour = useMemo(() => {
+    if (!selectedId) return null;
+    const group = shown.find((candidate) => groupKey(candidate) === selectedId && groupKind(candidate) !== "legacy");
+    if (group) {
+      const what = `Session ${group.number}`;
+      const to = refTo({ kind: "session", id: selectedId });
+      return { what, colour: group.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, group.colour ?? null) };
+    }
+    const step = allParts(steps).find((candidate) => candidate.id === selectedId);
+    if (!step) return null;
+    const what = partName(step);
+    const to = refTo({ kind: "node", id: step.id });
+    return { what, colour: step.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, step.colour ?? null) };
+  }, [selectedId, shown, steps, onColour]);
 
   /* ── tiles inside tiles (CA-04 P2) ── */
 
@@ -1204,6 +1257,7 @@ export function SandboxPage() {
             onToolConnection={prompts.setConnection}
             onNotShared={onNotShared}
             focusSetup={focusSetup}
+            colour={detailsColour}
           />
         }
         list={
@@ -1239,6 +1293,7 @@ export function SandboxPage() {
             mentioned={links.mentioned}
             onBackToPost={links.backToMention}
             reveal={links.reveal}
+            onColour={onColour}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}

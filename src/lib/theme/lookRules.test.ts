@@ -9,6 +9,11 @@
 //
 // THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids.
 //
+// CA-06, THE ONE EXCEPTION TO "NO COLOURED CARD EDGES": a tile or a session may carry the colour its maker chose
+// (`payload.colour`, `sessions_meta[key].colour`), drawn only through `borderFor` and `outlineFor` in
+// src/lib/theme/partColour.ts. Nothing is coloured by default and no colour is chosen for the maker. The rule below
+// lets a border's colour come from those helpers, or a token, and from nothing else.
+//
 // Two readings, said once here:
 //   - `outline: "none"` (or 0) is the absence of an outline, which is what keeps the browser's own ring off; any
 //     other outline value must come from `ring()`.
@@ -180,6 +185,13 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/build/BuildPage.tsx",
   "src/pages/site/build/useReaderPostLinks.ts",
   "src/pages/site/compose/usePostLinks.ts",
+  // CA-06 P4
+  "src/components/brand/ColourButton.tsx",
+  "src/components/brand/IconButton.tsx",
+  "src/lib/build/colour.test.ts",
+  "src/lib/theme/partColour.test.ts",
+  "src/pages/site/compose/SourcesPanel.tsx",
+  "src/pages/site/compose/colour.ui.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -382,6 +394,15 @@ function componentFindings(code: string, file: string): Finding[] {
   // An opacity in a hover style.
   for (const match of every(/hover[^\n]*opacity|opacity[^\n]*hover/i, code)) out.push(found("opacity on hover", code, match.index ?? 0));
 
+  // CA-06: a border's colour is a token, or a maker's colour through partColour.ts and nothing else. A raw colour, or a
+  // value read from anything named colour or hex, in a border anywhere else is a coloured card edge.
+  // The helper, and its own test, which says what it returns.
+  if (!/src\/lib\/theme\/partColour(\.test)?\.ts$/.test(file)) {
+    for (const match of every(/\bborder(?:Top|Right|Bottom|Left|Block|Inline)?(?:Color)?\s*:\s*([^,}\n]+)/, code)) {
+      if (/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\bcolou?r\b|\bhex\b/i.test(match[1])) out.push(found("a border colour not from a token or partColour", code, match.index ?? 0));
+    }
+  }
+
   // An outline that is not ring()'s: only `none` or 0 may be written by hand.
   for (const match of every(/\boutline(?:Offset|Color|Width|Style)?\s*:\s*([^,}\n]+)/, code)) {
     const value = match[1].trim();
@@ -415,6 +436,11 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "an outline other than ring()",
     text: "outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3",
     why: "A selected row of pictures in the post editor (PT-06), drawn by a ProseMirror decoration with the selected recipe's edge. It was there before CA-06, which only adds the reference mark to the file.",
+  },
+  {
+    rule: "spacing 22 is not in SPACE_REFINED",
+    text: 'marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4',
+    why: "Sources' prompts under a session (UI-P64), lined up under the session's name past its 22px chevron. There before CA-06, which only adds a session's colour dot to the file.",
   },
   {
     rule: "no fade-in on scroll",
@@ -552,6 +578,15 @@ describe("the look rules, on snippets", () => {
     expect(rules("const s = state.hovered ? { opacity: 0.8 } : {};")).toEqual(["opacity on hover"]);
     expect(rules("const s = { outline: \"2px solid red\" };")).toEqual(["an outline other than ring()"]);
     expect(rules("const s = { outline: \"none\", ...ring(focus) };")).toEqual([]);
+  });
+
+  it("lets a border take a maker's colour only through partColour.ts (CA-06)", () => {
+    expect(rules("const s = { border: `1px solid ${t.hairline}`, borderColor: selected ? t.selectedEdge : t.tileBorder };")).toEqual([]);
+    expect(rules("const s = { ...(step.colour ? borderFor(step.colour) : null) };")).toEqual([]);
+    expect(rules("const s = { borderColor: step.colour };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { border: `1px solid ${colour}` };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { borderLeft: \"2px solid #7FA7D9\" };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { borderColor: hex };", "src/lib/theme/partColour.ts")).toEqual([]);
   });
 
   it("lets the map well's dot grid stay, and no other gradient", () => {

@@ -83,6 +83,8 @@ export type ReaderChat =
       startedWith?: { command: string; settings: string[] };
       /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals". */
       together?: string;
+      /** CA-06 P4: the maker's colour for the session. */
+      colour?: string;
     }
   | {
       kind: "same";
@@ -497,6 +499,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     detail,
     setup: context.setup.get(groupKey(group)) ?? [],
     ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
+    ...(group.colour ? { colour: group.colour } : null),
     ...runsWhenOf(context.setup.get(groupKey(group)) ?? []),
     ...factsOfGroup(group),
     ...togetherOfGroup(group, context.groups),

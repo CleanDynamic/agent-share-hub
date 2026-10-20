@@ -173,3 +173,16 @@ export function refMatches(entry: Pick<RefEntry, "title" | "kind" | "number">, q
 export function filterRefGroups(groups: readonly RefGroup[], query: string): RefGroup[] {
   return groups.map((group) => ({ ...group, entries: group.entries.filter((entry) => refMatches(entry, query)) })).filter((group) => group.entries.length > 0);
 }
+
+/** CA-06 P4: every tile's colour by its id, inside agents, teams and steps too. */
+export function partColours(steps: readonly Step[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const walk = (list: readonly Step[]) => {
+    for (const step of list) {
+      if (step.colour) out.set(step.id, step.colour);
+      walk(insideOf(step));
+    }
+  };
+  walk(steps);
+  return out;
+}

@@ -22,7 +22,7 @@ import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
-import { normaliseHex } from "@/lib/theme/partColour";
+import { HEX_HINT, normaliseHex } from "@/lib/theme/partColour";
 import { changesOf, type ChangeRange } from "./changes";
 import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
@@ -1739,6 +1739,21 @@ export async function setNodeFields(node: BuildNode, fields: Record<string, stri
       if (node.type === RESULT_TYPE && key === "method" && /\n/.test(trimmed)) throw refuse("setNodeFields", "How it was trained is one line.");
       payload[key] = trimmed;
     }
+  }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-06 P4: give a tile its colour ("#RRGGBB", any case or the short form, as `normaliseHex` reads it), or take it
+ * off (null). Only `payload.colour` changes; the rest of the payload is written back as it was read.
+ */
+export async function setNodeColour(node: BuildNode, colour: string | null): Promise<BuildNode> {
+  const payload = { ...payloadOf(node) };
+  if (colour === null) delete payload.colour;
+  else {
+    const hex = normaliseHex(colour);
+    if (!hex) throw refuse("setNodeColour", `${HEX_HINT}.`);
+    payload.colour = hex;
   }
   return upsertNode(withPayload(node, payload));
 }

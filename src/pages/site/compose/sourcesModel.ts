@@ -49,6 +49,8 @@ export interface SourceSession {
   facts?: string;
   /** CA-05 P5: "At the same time as Session 3 · own copy: fix-totals"; absent when the session says neither. */
   together?: string;
+  /** CA-06 P4: the maker's colour for the session, "#RRGGBB"; absent when it has none. */
+  colour?: string;
 }
 
 export interface SourceFile {
@@ -121,6 +123,7 @@ export function sourceSessions(
       ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       ...(group.goal ? { goal: { line: goalLine(group.goal), reached: group.goal.reached === "reached" } } : null),
       ...(runsWhen[key] ? { runsWhen: runsWhen[key] } : null),
+      ...(group.colour ? { colour: group.colour } : null),
       ...(factsOf(group, "maker") ? { facts: factsOf(group, "maker") as string } : null),
       ...(togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) ? { together: togetherLine(group.extras, (other) => groups.find((candidate) => groupKey(candidate) === other)?.number) as string } : null),
       prompts: mine.map((step) => ({

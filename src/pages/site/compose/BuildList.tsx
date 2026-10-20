@@ -42,6 +42,9 @@ import {
 import { Button } from "@/components/brand/Button";
 import { bothRefs, usePartRef } from "@/components/build/partNav";
 import { REF_COPY } from "@/components/post/RefLinks";
+import { ColourButton } from "@/components/brand/ColourButton";
+import { REF_KIND } from "@/lib/build/postRefs";
+import { borderFor, outlineFor } from "@/lib/theme/partColour";
 import { refTo } from "@/lib/build/thread";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
@@ -183,6 +186,11 @@ export interface BuildListProps {
   onBackToPost?: (to: string) => void;
   /** CA-06 P3: a part a link brought in: a team opens the agent that holds it. `n` changes on every visit. */
   reveal?: { id: string; n: number } | null;
+  /**
+   * CA-06 P4: the colour button on a tile and a session's head (in a tile's menu on a phone) opens the colour picker.
+   * `to` is the part, `what` names it ("Prompt 3"), `anchor` is the button. Absent: no button.
+   */
+  onColour?: (to: string, anchor: HTMLElement, what: string, colour: string | null) => void;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -220,6 +228,7 @@ interface ListRefs {
   mentioned: ReadonlySet<string>;
   onBack?: (to: string) => void;
   reveal: { id: string; n: number } | null;
+  onColour?: BuildListProps["onColour"];
 }
 
 const ListRefsContext = createContext<ListRefs>({ mentioned: new Set(), reveal: null });
@@ -227,6 +236,37 @@ const ListRefsContext = createContext<ListRefs>({ mentioned: new Set(), reveal: 
 /** A tile's element, registered for the post's links as well as for moving tiles. */
 function useCardRef(id: string, nestRef: (el: HTMLDivElement | null) => void) {
   return bothRefs<HTMLDivElement>(nestRef, usePartRef(refTo({ kind: "node", id })));
+}
+
+/** How a tile is named for its colour button: "Prompt 3", or by its title when it has no number ("Code order-form.tsx"). */
+export const partName = (step: Pick<Step, "kind" | "number" | "title" | "defaultTitle">): string =>
+  `${REF_KIND[step.kind] ?? "Prompt"} ${step.number || stepTitle(step)}`;
+
+/** CA-06 P4: a coloured tile's edge, through the one helper. */
+const colourEdge = (colour: string | undefined): CSSProperties | null => (colour ? borderFor(colour) : null);
+
+/** The colour button at the right of a tile's top row: on a desktop, or wherever the tile has no menu to put it in. */
+function CardColour({ step, phone, inMenu = false }: { step: Step; phone: boolean; inMenu?: boolean }) {
+  const { onColour } = useContext(ListRefsContext);
+  if (!onColour || (phone && inMenu)) return null;
+  return <ColourButton what={partName(step)} colour={step.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "node", id: step.id }), anchor, partName(step), step.colour ?? null)} />;
+}
+
+/** "Colour…" in a tile's menu, on a phone. The picker opens as a sheet there, so it needs no anchor but the menu's button. */
+function ColourMenuRow({ step, phone, anchor }: { step: Step; phone: boolean; anchor: () => HTMLElement | null }) {
+  const { onColour } = useContext(ListRefsContext);
+  if (!onColour || !phone) return null;
+  return (
+    <MenuRow
+      phone={phone}
+      onSelect={() => {
+        const at = anchor();
+        if (at) onColour(refTo({ kind: "node", id: step.id }), at, partName(step), step.colour ?? null);
+      }}
+    >
+      Colour…
+    </MenuRow>
+  );
 }
 
 /** "Mentioned in the post · Back to the post", under a part the post links to. */
@@ -358,12 +398,14 @@ function SentWithTile({ step, props }: { step: Step; props: BuildListProps }) {
         outline: "none",
         cursor: "pointer",
         ...(selected ? { background: t.selectedFill, borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
+        ...colourEdge(step.colour),
         ...(nest.takes ? TAKES : null),
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
-        <Quiet style={{ ...ellipsis, minWidth: 0 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
+        <Quiet style={{ ...ellipsis, minWidth: 0, flexGrow: 1 }}>{NEST_LIST_COPY.sentWith(step.inside?.label ?? "the step above")}</Quiet>
+        <CardColour step={step} phone={props.phone} />
       </div>
       <span style={{ ...text(13, 500, step.title ? t.text : t.text2), overflowWrap: "anywhere" }}>
         {[kind === "Prompt" ? null : kind, step.title ?? (kind === "Prompt" ? stepTitle(step) : named ?? (step.kind === "file" ? step.filename : null))].filter(Boolean).join(" · ")}
@@ -465,6 +507,7 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
       </span>
       <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
+      <SessionColour session={session} phone={phone} />
       {session.setupCount && onOpenSetup ? (
         <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
           {`Setup ${session.setupCount}`}
@@ -484,6 +527,14 @@ function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; 
     {session.together ? <DotLine testId="together-line">{session.together}</DotLine> : null}
     </>
   );
+}
+
+/** CA-06 P4: the colour button at the end of a session's head. Not for an old build's typed prompts: they are not saved as a session. */
+function SessionColour({ session, phone }: { session: SourceSession; phone: boolean }) {
+  const { onColour } = useContext(ListRefsContext);
+  if (!onColour || session.key.startsWith("typed-legacy-")) return null;
+  const what = `Session ${session.number}`;
+  return <ColourButton what={what} colour={session.colour} size={phone ? 30 : 22} onPick={(anchor) => onColour(refTo({ kind: "session", id: session.key }), anchor, what, session.colour ?? null)} />;
 }
 
 /* ── the uses row ── */
@@ -712,7 +763,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) props.onDropOnStep?.(step.id, files);
       } : undefined}
-      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected || over), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
@@ -722,6 +773,7 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
         ) : (
           <StepTitle title={title} isDefault={isDefault} />
         )}
+        <CardColour step={step} phone={phone} inMenu={editable} />
         {editable ? (
           <Menu.Root>
             <Menu.Trigger asChild>
@@ -748,7 +800,8 @@ function StepCard({ step, index, last, props }: { step: Step; index: number; las
                 {props.onNameMade ? <MenuRow phone={phone} onSelect={() => props.onNameMade?.(step.id)}>Name a file it makes</MenuRow> : null}
                 <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
                 <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
-                <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
+                <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
+              <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
               </Menu.Content>
             </Menu.Portal>
           </Menu.Root>
@@ -805,11 +858,12 @@ function InnerCard({ step, eyebrow, runs, nested, made, outside = [], phone = fa
   const to = step.id.endsWith(":instructions") ? null : refTo({ kind: "node", id: step.id });
   const part = usePartRef(to);
   return (
-    <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+    <div ref={part} data-testid={nested ? "inner-prompt" : "inner-card"} style={{ ...tileStyle, padding: 12, display: "flex", flexDirection: "column", gap: 6, ...colourEdge(to ? step.colour : undefined) }}>
       {eyebrow ? <Quiet>{eyebrow}</Quiet> : null}
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <span style={{ fontFamily: DM_MONO, fontSize: 10.5, color: t.label, ...tnum, flexShrink: 0 }}>{step.number}</span>
         <span style={{ ...text(13, 500, step.title ? t.text : t.text2), flexGrow: 1, minWidth: 0, ...ellipsis }}>{stepTitle(step)}</span>
+        {to ? <CardColour step={step} phone={phone} /> : null}
       </div>
       {runs ? <DotLine testId="runs-line">{runs}</DotLine> : null}
       {step.kind === "agent" && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
@@ -939,7 +993,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
       data-testid="step-card"
       tabIndex={0}
       onClick={() => props.onSelect(step.id)}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 12, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
@@ -951,6 +1005,7 @@ function ContainerCard({ step, props }: { step: Step; props: BuildListProps }) {
           {!isTeam && step.memory ? <DotLine testId="memory-line">{LIST_COPY.remembers(step.memory)}</DotLine> : null}
           {!isTeam && step.memoryTidy ? <DotLine testId="memory-tidy-line">{LIST_COPY.tidies(step.memoryTidy)}</DotLine> : null}
         </div>
+        <CardColour step={step} phone={props.phone} />
       </div>
       {isTeam ? null : <OutsideWarning names={outsideOf(step, props.names)} style={{ marginLeft: INDENT }} />}
       <div style={{ marginLeft: INDENT, paddingLeft: 16, borderLeft: `1px solid ${t.hairlineModule}`, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1060,7 +1115,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
@@ -1089,6 +1144,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
             </h3>
           )}
         </div>
+        <CardColour step={step} phone={phone} inMenu />
         <Menu.Root>
           <Menu.Trigger asChild>
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Manual step ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
@@ -1111,6 +1167,7 @@ function ManualCard({ step, index, last, props }: { step: Step; index: number; l
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </Menu.Content>
           </Menu.Portal>
@@ -1166,7 +1223,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
@@ -1183,6 +1240,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
             </h3>
           )}
         </div>
+        <CardColour step={step} phone={phone} inMenu />
         <Menu.Root>
           <Menu.Trigger asChild>
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Code ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
@@ -1205,6 +1263,7 @@ function CodeCard({ step, index, last, props }: { step: Step; index: number; las
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </Menu.Content>
           </Menu.Portal>
@@ -1270,7 +1329,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
           props.onSelect(step.id);
         }
       }}
-      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...(nest.takes ? TAKES : null) }}
+      style={{ ...moduleStyle(selected), display: "flex", flexDirection: "column", gap: 8, outline: "none", cursor: "pointer", ...colourEdge(step.colour), ...(nest.takes ? TAKES : null) }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
         <DragHandle label={`Move ${tileName(step)}`} nest={nest} />
@@ -1287,6 +1346,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
             </h3>
           )}
         </div>
+        <CardColour step={step} phone={phone} inMenu />
         <Menu.Root>
           <Menu.Trigger asChild>
             <IconButton icon={MoreHorizontal} glyph="more" boxed={false} label={`Check ${step.number} options`} size={26} onClick={(event) => event.stopPropagation()} />
@@ -1309,6 +1369,7 @@ function CheckCard({ step, index, last, props }: { step: Step; index: number; la
               <CopyTogetherRow step={step} phone={phone} />
               <MenuRow phone={phone} disabled={index === 0} onSelect={() => props.onMove(step.id, -1)}>Move up</MenuRow>
               <MenuRow phone={phone} disabled={last} onSelect={() => props.onMove(step.id, 1)}>Move down</MenuRow>
+              <ColourMenuRow step={step} phone={phone} anchor={() => document.activeElement as HTMLElement | null} />
               <MenuRow phone={phone} onSelect={() => props.onRemove(step.id)}>Remove</MenuRow>
             </Menu.Content>
           </Menu.Portal>
@@ -1592,8 +1653,10 @@ interface Run {
 /** A session's head and its tiles, registered for the post's links by the session's key. */
 function SessionRun({ head, phone: _phone, children }: { head: SourceSession | null; phone: boolean; children: ReactNode }) {
   const part = usePartRef(head && !head.key.startsWith("typed-legacy-") ? refTo({ kind: "session", id: head.key }) : null);
+  // CA-06 P4: a coloured session has a thin line round its head and its tiles, and room inside it only then.
+  const colour = head?.colour;
   return (
-    <div ref={part} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+    <div ref={part} data-session-colour={colour} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0, ...(colour ? { ...outlineFor(colour), padding: 12 } : null) }}>
       {children}
     </div>
   );
@@ -1724,7 +1787,7 @@ export function BuildList(props: BuildListProps) {
       />
     </div>
   );
-  const refs: ListRefs = { mentioned: props.mentioned ?? NO_MENTIONS, onBack: props.onBackToPost, reveal: props.reveal ?? null };
+  const refs: ListRefs = { mentioned: props.mentioned ?? NO_MENTIONS, onBack: props.onBackToPost, reveal: props.reveal ?? null, onColour: props.onColour };
   if (!nest) return <ListRefsContext.Provider value={refs}>{body}</ListRefsContext.Provider>;
   return (
     <ListRefsContext.Provider value={refs}>
