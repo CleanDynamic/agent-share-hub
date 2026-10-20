@@ -1,9 +1,9 @@
-// BlockHandle: the grip in the left margin that moves a block (PT-06).
+// BlockHandle: the grip in the left margin that moves a block of words (PT-06, CA-07).
 //
 // One handle for the whole editor, drawn beside the block under the pointer, or beside the block the caret is in while
-// the editor or the handle has focus. It is a real button: dragged, it carries the block (a text block, a picture or a
-// row) to a new place; focused, Alt with the up and down arrows move the block one place. Both go through
-// moveBlock, so a picture dropped beside another makes a row whichever way it got there.
+// the editor or the handle has focus. It is a real button: dragged, it carries the block to a new place; focused, Alt
+// with the up and down arrows move it one place (moveTextBlock). CA-07: a post's pictures are its grid, its last block,
+// so the handle offers no grid and no picture, and a block of words never goes below its post's pictures.
 //
 // The grip is the PT-02 glyph in t.label, 24px left of the block. A phone has no margin and no pointer to hover with,
 // so it has no handle; the arrow keys are for a keyboard, which a phone seldom has.

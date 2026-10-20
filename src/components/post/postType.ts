@@ -23,8 +23,6 @@ export const POST_GAP = 24;
 /** A list's left indent, and the space between its items. */
 export const LIST_INDENT = 20;
 export const LIST_ITEM_GAP = 4;
-/** The picture row's gap, and a row's widest count. */
-export const ROW_GAP = 8;
 
 export interface PostTypeScale {
   title: CSSProperties;
