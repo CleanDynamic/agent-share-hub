@@ -98,6 +98,17 @@ const OLD_POST = doc(
   { type: "postMediaRow", content: [pic("square"), pic("portrait", { caption: "A loaf on the counter" }), pic("pano")] },
 );
 
+const COMPOSER_THREE = doc(
+  para("We planned the page in one sitting."),
+  grid(null, pic("wide")),
+  brk,
+  para("Then the agents took over: the build agent wrote it."),
+  grid(STEP.to, pic("portrait"), pic("wide"), pic("square")),
+  brk,
+  para("And it works on a phone."),
+  grid(null, pic("wide"), pic("portrait"), pic("square", { alt: "The menu." }), pic("pano")),
+);
+
 const STATES: { id: string; label: string; doc: ThreadDoc }[] = [
   { id: "one", label: "One picture", doc: doc(para("One picture, shown whole."), grid(null, pic("wide"))) },
   { id: "tall", label: "One tall picture: held at 3:4, cut from the top", doc: doc(para("A phone screenshot."), grid(null, pic("tall"))) },
@@ -121,6 +132,7 @@ const STATES: { id: string; label: string; doc: ThreadDoc }[] = [
     ),
   },
   { id: "old", label: "Saved before CA-07, read as a grid", doc: OLD_POST },
+  { id: "thread", label: "The composer's thread below, as readers see it", doc: COMPOSER_THREE },
 ];
 
 const WIDTHS = [
@@ -174,16 +186,6 @@ function demoThread(initial: ThreadDoc): ComposeThread {
   } as unknown as ComposeThread;
 }
 
-const COMPOSER_THREE = doc(
-  para("We planned the page in one sitting."),
-  grid(null, pic("wide")),
-  brk,
-  para("Then the agents took over: the build agent wrote it."),
-  grid(STEP.to, pic("portrait"), pic("wide"), pic("square")),
-  brk,
-  para("And it works on a phone."),
-  grid(null, pic("wide"), pic("portrait"), pic("square", { alt: "The menu." }), pic("pano")),
-);
 const UPLOADING = doc(
   para("Uploading, and one that did not upload."),
   grid(null, pic("wide"), { type: "postMedia", attrs: { ...pic("square").attrs, mediaId: "", uploadId: "demo-uploading" } as never }, { type: "postMedia", attrs: { ...pic("portrait").attrs, mediaId: "", uploadId: "demo-failed", failed: true } as never }),

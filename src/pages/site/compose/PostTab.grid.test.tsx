@@ -339,6 +339,8 @@ describe("reordering", () => {
     const [first, , only] = tiles();
     expect(first.getAttribute("aria-roledescription")).toBe("sortable picture");
     expect(only.getAttribute("aria-roledescription")).toBeNull();
+    // A single picture's tile is not disabled: its Edit and Remove stay usable for assistive tech.
+    expect(only.getAttribute("aria-disabled")).toBeNull();
   });
 });
 
@@ -362,5 +364,28 @@ describe("on a phone, while writing", () => {
     await drawn(1);
     expect(document.querySelector("[data-post-media-strip]")).toBeNull();
     expect(document.querySelector("[data-grid-view] [data-post-media-grid]")).not.toBeNull();
+  });
+});
+
+describe("a thread saved before CA-07", () => {
+  it("opens as grids, saves nothing on opening, and is saved in the new shape, captions kept, after an edit", async () => {
+    const old = doc(
+      p("One"),
+      { ...pic("a"), attrs: { ...pic("a").attrs, caption: "Launch day" } } as unknown as ThreadBlock,
+      p("Two"),
+      { type: "postMediaRow", content: [pic("b"), { ...pic("c"), attrs: { ...pic("c").attrs, caption: "A loaf" } }, pic("d")] } as ThreadBlock,
+    );
+    const { editor, thread } = mount(old);
+    await drawn(4);
+    expect(json(editor).content.map((block) => block.type)).toEqual(["paragraph", "paragraph", "postMediaGrid"]);
+    expect(thread.onDoc).not.toHaveBeenCalled();
+    act(() => {
+      editor.commands.insertContentAt(1, "Now ");
+    });
+    const saved = tidyThread((thread.onDoc as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0] as ThreadDoc);
+    expect(saved.content.map((block) => block.type)).toEqual(["paragraph", "paragraph", "postMediaGrid"]);
+    const pictures = (saved.content[2] as { content: ThreadPostMedia[] }).content;
+    expect(pictures.map((one) => one.attrs.mediaId)).toEqual(["a", "b", "c", "d"]);
+    expect(pictures.map((one) => one.attrs.caption)).toEqual(["Launch day", "", "A loaf", ""]);
   });
 });

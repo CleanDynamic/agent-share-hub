@@ -247,6 +247,8 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/postMedia.ts",
   "src/lib/build/postMedia.test.ts",
   "src/pages/dev/PostThreadDemo.tsx",
+  // CA-07 P9
+  "e2e/tier1/post-thread.spec.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

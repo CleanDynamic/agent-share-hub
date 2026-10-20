@@ -177,6 +177,8 @@ function SortableTile({
       {...attributes}
       {...listeners}
       aria-roledescription={sortable ? "sortable picture" : undefined}
+      // dnd-kit marks a tile it cannot sort aria-disabled, which would disable its Edit and Remove for assistive tech.
+      aria-disabled={undefined}
       aria-label={tileLabel(attrs.alt, kind, index, count)}
       tabIndex={0}
       onKeyDown={(event) => {
@@ -389,11 +391,14 @@ const LinkRowButton = forwardRef<HTMLButtonElement, { glyph: GlyphName; phone: b
           fontFamily: FIGTREE,
           fontSize: 13,
           fontWeight: 400,
+          textAlign: "left",
           color: strong || state.hovered ? t.text : t.text2,
           ...ring(state.focusVisible),
         }}
       >
-        <Glyph name={glyph} size={16} />
+        <span style={{ display: "inline-flex", flex: "none" }}>
+          <Glyph name={glyph} size={16} />
+        </span>
         {children}
       </button>
     );

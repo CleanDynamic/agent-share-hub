@@ -8,7 +8,7 @@ for (const spec of pairs) {
   for (const theme of ["noon", "dusk"]) {
     for (const width of [1280, 390]) {
       const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
-      const url = `${base}${path}${path.includes("?") ? "&" : "?"}theme=${theme}`;
+      const url = `${base}${path}${path.includes("?") ? "&" : "?"}theme=${theme}${width < 768 ? "&viewport=mobile" : ""}`;
       await page.goto(url, { waitUntil: "networkidle" }).catch(() => {});
       await page.evaluate((th) => { document.documentElement.setAttribute("data-theme", th); try { localStorage.setItem("theme", th); } catch {} }, theme);
       if (click) { for (const c of click.split(";")) { await page.locator(c).first().click({ timeout: 4000 }).catch(() => {}); await page.waitForTimeout(400); } }

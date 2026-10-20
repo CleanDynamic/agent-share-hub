@@ -108,6 +108,23 @@ export function runSlash(editor: Editor, id: SlashId, at: SlashState, onInsertPi
       const block = state.doc.nodeAt(at.block);
       if (!block) return;
       const { postBreak, paragraph } = state.schema.nodes;
+      const after = state.doc.resolve(at.block + block.nodeSize).nodeAfter;
+      if (after?.type.name === "postMediaGrid") {
+        // CA-07: the last line of a post with pictures. The pictures stay in this post: the break goes after them, and
+        // the line the slash was typed on goes too, unless it is the post's only line.
+        const $at = state.doc.resolve(at.block);
+        const index = $at.index(0);
+        const previous = index > 0 ? state.doc.child(index - 1) : null;
+        const alone = !previous || previous.type.name === "postBreak";
+        const end = at.block + block.nodeSize + after.nodeSize;
+        const tr = state.tr.insert(end, [postBreak.create(), paragraph.create()]);
+        tr.setSelection(TextSelection.create(tr.doc, end + 2));
+        if (alone) tr.delete(at.from, at.to);
+        else tr.delete(at.block, at.block + block.nodeSize);
+        view.dispatch(tr.scrollIntoView());
+        view.focus();
+        return;
+      }
       const tr = state.tr.replaceWith(at.block, at.block + block.nodeSize, [postBreak.create(), paragraph.create()]);
       // The caret goes to the empty paragraph after the break.
       tr.setSelection(TextSelection.create(tr.doc, at.block + 2));

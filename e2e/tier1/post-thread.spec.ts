@@ -1,6 +1,6 @@
 // Tier 1 — PT-09, a post thread from the composer to the build page.
 //
-// ONE MAKER WRITES A THREAD and the readers find it: two posts, a picture in the first and a row of two in the second,
+// ONE MAKER WRITES A THREAD and the readers find it: two posts, a picture in the first and two in the second (CA-07: one grid per post),
 // written in the composer's Post tab, published, read as post 1 in the Gallery with the tool marks after the handle,
 // opened with Show more, and read in full on the build page.
 //
@@ -30,7 +30,7 @@ async function insertPictures(page: Page, command: string, files: string[], tota
   const chooser = page.waitForEvent("filechooser");
   await page.keyboard.press("Enter");
   await (await chooser).setFiles(files.map(picture));
-  await expect(page.locator(".ProseMirror").first().getByRole("img", { name: "A picture in this post" })).toHaveCount(total);
+  await expect(page.locator(".ProseMirror").first().locator("[data-grid-tile]")).toHaveCount(total);
 }
 
 async function writeThread(page: Page, backend: ThreadBackend) {
@@ -43,16 +43,15 @@ async function writeThread(page: Page, backend: ThreadBackend) {
   await page.keyboard.press("Enter");
   await insertPictures(page, "/picture", ["bakery.png"], 1);
 
-  // Typing over a selected picture would replace it: step down into the paragraph after it.
-  await page.keyboard.press("ArrowDown");
+  // The caret stays on the line above the post's pictures; New post starts the next post after them.
   await page.keyboard.type("/new post");
   await page.keyboard.press("Enter");
   await page.keyboard.type(SECOND);
   await page.keyboard.press("Enter");
-  await insertPictures(page, "/row", ["orders-a.png", "orders-b.png"], 3);
+  await insertPictures(page, "/picture", ["orders-a.png", "orders-b.png"], 3);
 
   // The thread is saved on the composer's debounce: wait for it to land.
-  await expect.poll(() => JSON.stringify(backend.build()?.post_doc ?? null)).toContain("postMediaRow");
+  await expect.poll(() => JSON.stringify(backend.build()?.post_doc ?? null)).toContain("postMediaGrid");
 }
 
 async function describeAndPublish(page: Page) {
@@ -110,7 +109,7 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(item.getByText(SECOND)).toBeVisible();
-  await expect(item.getByRole("img", { name: "A picture in this post" })).toHaveCount(3);
+  await expect(item.getByRole("img", { name: /^Picture/ })).toHaveCount(3);
 
   // Show more costs one read of the thread's pictures, and the signing of the pictures that read brought in.
   await expect.poll(() => backend.count("/rest/v1/build_media", "GET") - mediaBefore).toBe(1);
@@ -125,7 +124,7 @@ test("writes a two-post thread, publishes it, and it reads in the Gallery and on
   await expect(page.getByRole("heading", { level: 1, name: "Weekend bakery site" })).toBeVisible();
   await expect(hero.getByText(FIRST)).toBeVisible();
   await expect(hero.getByText(SECOND)).toBeVisible();
-  await expect(hero.getByRole("img", { name: "A picture in this post" })).toHaveCount(3);
+  await expect(hero.getByRole("img", { name: /^Picture/ })).toHaveCount(3);
   await expect(hero.locator("[data-post-toggle]")).toHaveCount(0);
   await expect(page.getByTestId("build-author-row")).toContainText("@audit");
   // Your own build offers no Follow.

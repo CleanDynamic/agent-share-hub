@@ -62,3 +62,18 @@ describe("the grid in the editor", () => {
     expect(types(editor)).toEqual(["paragraph", "postMediaGrid"]);
   });
 });
+
+describe("New post on the last line of a post with pictures", () => {
+  it("keeps the pictures in their post and starts the next one after them", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    const { editor, dom } = mount(doc(p("one"), p(""), grid(pic("a"))));
+    act(() => {
+      editor.commands.setTextSelection(editor.state.doc.child(0).nodeSize + 1);
+      editor.commands.insertContent("/new post");
+    });
+    fireEvent.keyDown(dom, { key: "Enter" });
+    expect(types(editor)).toEqual(["paragraph", "postMediaGrid", "postBreak", "paragraph"]);
+    expect(editor.state.selection.$from.index(0)).toBe(3);
+    expect(editor.getText()).not.toContain("/");
+  });
+});

@@ -140,8 +140,13 @@ function AddPostRow({ avatar, maker, phone, onAdd }: { avatar: number; maker: Pr
         ...ring(state.focusVisible),
       }}
     >
-      <span aria-hidden="true" style={{ display: "inline-flex", opacity: DIMMED_OPACITY, flex: "none" }}>
-        <Avatar size={avatar} userId={maker?.id ?? ""} name={maker?.name ?? "You"} src={maker?.avatar ?? null} />
+      {/* Decorative: the maker's picture at half strength, or a plain circle, never initials too faint to read. */}
+      <span aria-hidden="true" data-ghost-avatar="" style={{ display: "inline-flex", opacity: DIMMED_OPACITY, flex: "none" }}>
+        {maker?.avatar ? (
+          <Avatar size={avatar} userId={maker.id ?? ""} name={maker.name ?? "You"} src={maker.avatar} />
+        ) : (
+          <span style={{ width: avatar, height: avatar, borderRadius: 999, background: t.avatarFill, display: "block" }} />
+        )}
       </span>
       <span data-ink={state.hovered ? "text2" : "label"} style={{ ...postType(phone).composer, color: state.hovered ? t.text2 : t.label }}>{NEXT_PLACEHOLDER}</span>
     </button>
