@@ -47,6 +47,7 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { copyTogether } from "@/lib/build/copyTogether";
 import { scrollBehavior } from "@/lib/theme/motion";
 import type { BuildStepsView } from "./buildModel";
 
@@ -87,8 +88,8 @@ export function teamText(entry: ReaderStep): string {
   return parts.join("\n\n");
 }
 
-/** The words a copy puts on the clipboard for a step. */
-export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.text);
+/** The words a copy puts on the clipboard for a step: CA-04 P2, a step and what is sent with it, together. */
+export const copyTextOf = (entry: ReaderStep): string => (isContainer(entry) ? teamText(entry) : entry.step.sentWith?.length ? copyTogether(entry.step) : entry.step.text);
 
 export function useConfirmed(): [boolean, () => void] {
   const [on, setOn] = useState(false);
@@ -532,6 +533,52 @@ function SaveLines({ files, indent = INDENT }: { files: readonly ReaderFile[]; i
   );
 }
 
+/* ── tiles sent with a step (CA-04 P2) ── */
+
+/** A tile's kind as its row says it. */
+const TILE_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team" };
+
+/** What is sent with a step, indented 36 under its text as the paste-ins are, each able to hold more, indented again. */
+function SentWith({ entries, ctx }: { entries: readonly ReaderStep[]; ctx: Ctx }) {
+  if (entries.length === 0) return null;
+  return (
+    <div data-testid="sent-with" style={{ marginLeft: INDENT, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {entries.map((entry) => (
+        <SentWithTile key={entry.step.id} entry={entry} ctx={ctx} />
+      ))}
+    </div>
+  );
+}
+
+function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
+  const { step } = entry;
+  const file = entry.file ?? null;
+  const name = step.kind === "file" || step.kind === "code" ? (step.filename ?? step.title ?? step.language ?? null) : step.title;
+  return (
+    <div id={stepDomId(step.id)} data-testid="sent-with-tile" data-kind={step.kind} style={{ ...tileStyle, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <Eyebrow style={{ padding: "4px 0" }}>{`Sent with ${step.inside?.label ?? "this step"}`}</Eyebrow>
+      {step.kind === "file" ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
+          <span style={text(12.5, 400, t.text2)}>attach</span>
+          <Chip>{file?.name ?? name ?? "a file"}</Chip>
+          <span style={{ flexGrow: 1 }} />
+          {file ? <AttachDownload file={file} /> : null}
+        </div>
+      ) : (
+        <>
+          <span style={{ ...text(12.5, 500, t.text), overflowWrap: "anywhere" }}>{[TILE_KIND[step.kind] ?? step.kind, name].filter(Boolean).join(" · ")}</span>
+          {step.kind === "code" ? (
+            <pre style={{ margin: 0, ...mono(12), color: t.text, whiteSpace: "pre", overflowX: "auto" }}>{step.text}</pre>
+          ) : step.text ? (
+            <StepText step={step} indent={0} onRead={() => ctx.read(step.id)} />
+          ) : null}
+        </>
+      )}
+      <SentWith entries={entry.sentWith} ctx={ctx} />
+    </div>
+  );
+}
+
 /* ── the heads ── */
 
 /** A group's head: the tool's mark (or a 6px square where there is none), the heading, its meta and a hairline. */
@@ -601,6 +648,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
       </article>
     );
   }
@@ -625,6 +673,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         </div>
         <p style={{ ...text(13.5, 400, t.text), margin: 0, paddingLeft: INDENT, lineHeight: "22px" }}>{entry.manual.line}</p>
         <SaveLines files={entry.makes} />
+        <SentWith entries={entry.sentWith} ctx={ctx} />
         {entry.manual.mediaId ? (
           <div style={{ paddingLeft: INDENT }}>
             <MediaFigure reference={entry.manual.mediaId} resolveMedia={view.resolveMedia} width={480} alt={entry.manual.line} />
@@ -636,9 +685,10 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
 
   return (
     <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
-      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={step.text} onCopy={view.onCopy} announce={announce} phone={phone} />} />
+      <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       <SaveLines files={entry.makes} />
+      <SentWith entries={entry.sentWith} ctx={ctx} />
       <Inputs entry={entry} phone={phone} go={ctx.go} />
       {entry.chat?.kind === "same" ? <p style={{ ...text(12, 400, t.label), margin: 0, paddingLeft: INDENT }}>{entry.chat.text}</p> : null}
     </article>

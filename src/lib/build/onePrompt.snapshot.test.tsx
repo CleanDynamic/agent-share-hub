@@ -23,6 +23,7 @@ const html = (element: Parameters<typeof renderToStaticMarkup>[0]) =>
   renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ["/dev/kit/pages/sandbox"] }, element))
     // React's generated ids differ from run to run; nothing else does.
     .replace(/(id|for|aria-labelledby|aria-controls|aria-describedby)="[^"]*:[^"]*"/g, '$1="(id)"')
+    .replace(/_R_[A-Za-z0-9]+_/g, "(id)")
     .replace(/></g, ">\n<");
 
 describe("the one-prompt build", () => {

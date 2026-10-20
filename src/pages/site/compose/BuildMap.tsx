@@ -217,6 +217,16 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
+  /* CA-04 P2: the tiles sent with a step are rows inside its box: kind and name, 12 `--text2`. */
+  const sentRows = box.sentWith?.length ? (
+    <span data-testid={`map-sent-with-${box.id}`} style={{ display: "flex", flexDirection: "column", flexShrink: 0, padding: "0 12px" }}>
+      {box.sentWith.map((tile) => (
+        <span key={tile.id} data-testid="map-sent-row" style={{ height: MAP_SIZES.sentRow, display: "block", ...geist(12, 400, t.text2), lineHeight: `${MAP_SIZES.sentRow}px`, ...ellipsis }}>
+          {[tile.kind, tile.name].filter(Boolean).join(" · ")}
+        </span>
+      ))}
+    </span>
+  ) : null;
   const inputRows = (
     <span style={{ display: "flex", flexDirection: "column", gap: MAP_SIZES.row - row, paddingTop: 1, flexShrink: 0 }}>
       {box.inputs.map((input, at) => (
@@ -317,6 +327,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
             <>
               {/* The reader's box says its inputs in its name alone, as the board draws it. */}
               {box.text ? <span style={{ marginTop: 4, padding: "0 12px", flexShrink: 0, ...geist(11, 400, t.text2), ...ellipsis }}>{box.text}</span> : null}
+              {sentRows}
               {box.kind === "step" && !manual ? (
                 <span style={{ marginTop: 4, padding: "0 12px 8px", flexShrink: 0, ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums" }}>{check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`}</span>
               ) : null}
@@ -349,6 +360,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
               >
                 {box.text}
               </span>
+              {sentRows}
               <span style={{ height: 20, flexShrink: 0, padding: "0 12px", display: "block", lineHeight: "20px", ...geist(10.5, 400, t.label), fontVariantNumeric: "tabular-nums", ...ellipsis }}>
                 {box.kind === "step" && !manual ? (check ? (box.status?.line ?? "") : code ? linesOf(box.text) : `${box.words} words`) : ""}
               </span>

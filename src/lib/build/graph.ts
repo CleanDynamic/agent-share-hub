@@ -37,7 +37,8 @@ export const CODE_TYPE = "code";
  */
 export const CHECK_TYPE = "eval_run";
 
-export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check";
+/** CA-04 P2: "file" is a file sent with a step; a file at the top level is the build's, not a step. */
+export type StepKind = "prompt" | "agent" | "team" | "manual" | "code" | "check" | "file";
 
 export type UseKind = "output" | "file" | "tool";
 
@@ -104,6 +105,14 @@ export interface Step {
   memory?: string;
   /** CA-03 P5, a check only: what it tested, what counts as passing, when it failed, and its runs. */
   check?: CheckFacts;
+  /**
+   * CA-04 P2: the tiles sent with this step, at the same time, in the same message: the nodes whose `parent_id` is
+   * this step (not an agent or a team, whose children keep their meaning), in position order. Each can hold more.
+   * Absent when it holds none.
+   */
+  sentWith?: Step[];
+  /** CA-04 P2, a tile inside another: the step it is sent with, as its eyebrow names it ("prompt 2", "order-form.tsx"). */
+  inside?: { id: string; label: string };
 }
 
 /** CA-03 P5: what a check says, read from its payload. */
@@ -312,6 +321,7 @@ const KIND_NAME: Record<StepKind, string> = {
   manual: "Manual step",
   code: "Code",
   check: "Check",
+  file: "File",
 };
 
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
@@ -383,7 +393,18 @@ const dismissedOf = (payload: Payload): string[] =>
 function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[] = []): Step {
   const payload = payloadOf(node);
   const text =
-    kind === "agent" ? (stringOf(payload.system_prompt) ?? "") : kind === "code" ? (stringOf(payload.source) ?? "") : kind === "check" ? (stringOf(payload.tested) ?? "") : (stringOf(payload.text) ?? "");
+    kind === "agent"
+      ? (stringOf(payload.system_prompt) ?? "")
+      : kind === "code"
+        ? (stringOf(payload.source) ?? "")
+        : kind === "check"
+          ? (stringOf(payload.tested) ?? "")
+          : kind === "file"
+            ? (stringOf(payload.summary) ?? "")
+            : (stringOf(payload.text) ?? "");
+  // CA-04 P2: a tile inside another has no number; it is named by its kind, or by its file name.
+  const named = kind === "file" ? stringOf(payload.title)?.trim() : kind === "code" ? stringOf(payload.filename)?.trim() : null;
+  const defaultTitle = number ? `${KIND_NAME[kind]} ${number}` : (named || KIND_NAME[kind]);
   const import_ = isRecord(node.source_ref) ? node.source_ref.import_session_id : undefined;
   const tool = stringOf(payload.tool);
   return {
@@ -391,7 +412,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     kind,
     number,
     title: stringOf(node.title)?.trim() || null,
-    defaultTitle: `${KIND_NAME[kind]} ${number}`,
+    defaultTitle,
     text,
     words: wordCount(text),
     model: stringOf(payload.model),
@@ -406,6 +427,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
     ...(kind === "check" ? { check: checkFacts(payload) } : null),
+    ...(kind === "file" ? { filename: stringOf(payload.title)?.trim() || null, mediaId: stringOf(payload.media_id) } : null),
   };
 }
 
@@ -432,41 +454,63 @@ function instructionsOf(agent: NodeTree, number: string): Step {
   };
 }
 
+/** CA-04 P2: how deep tiles go inside tiles. The design sets no limit; this is the technical one. */
+export const NEST_DEPTH_MAX = 50;
+
+/** CA-04 P2: what can be sent with a step: any step, and a file. */
+const isSentWithNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean => node.type === FILE_TYPE || isStepNode(node);
+
+const sub = (number: string, at: number): string => (number ? `${number}.${at}` : "");
+
+/** How a tile's eyebrow names the step it is sent with: "prompt 2", "order-form.tsx". */
+export function sentWithLabel(step: Pick<Step, "kind" | "number" | "title" | "filename">): string {
+  if ((step.kind === "code" || step.kind === "file") && step.filename) return step.filename;
+  if (step.number) return `${KIND_NAME[step.kind].toLowerCase()} ${step.number}`;
+  return step.title ?? KIND_NAME[step.kind].toLowerCase();
+}
+
+/**
+ * One node read as a step, with what it holds. An agent's children are its instructions then its prompts; a team's
+ * are its agents (an agent in a team has children only when it has prompts of its own, numbered one level further,
+ * "3.1.2"). Any other step's children are the tiles sent with it (CA-04 P2), unnumbered, read the same way, to
+ * `NEST_DEPTH_MAX` levels.
+ */
+function readStep(node: NodeTree, number: string, kind: StepKind, depth: number, inTeam = false): Step {
+  if (kind === "agent") {
+    const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
+    if (inTeam && prompts.length === 0) return stepFor(node, number, kind, []);
+    return stepFor(node, number, kind, [instructionsOf(node, sub(number, 1)), ...prompts.map((child, i) => stepFor(child, sub(number, i + 2), "prompt"))]);
+  }
+  if (kind === "team") {
+    const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
+    return stepFor(node, number, kind, agents.map((child, i) => readStep(child, sub(number, i + 1), "agent", depth, true)));
+  }
+  const step = stepFor(node, number, kind);
+  if (depth >= NEST_DEPTH_MAX) return step;
+  const label = sentWithLabel(step);
+  const sent = byPosition((node.children ?? []).filter(isSentWithNode)).map((child) => ({
+    ...readStep(child, "", child.type === FILE_TYPE ? "file" : KIND_OF_TYPE[child.type], depth + 1),
+    inside: { id: step.id, label },
+  }));
+  return sent.length > 0 ? { ...step, sentWith: sent } : step;
+}
+
 /**
  * The steps in order, numbered (DATA §1). `tree` is the nested placed tree.
  * An agent's children are its instructions then its prompts; a team's are its
  * agents. An agent in a team has children only when it has prompts of its own
  * (its instructions, then those prompts, numbered one level further, "3.1.2"),
- * which show when it is opened.
+ * which show when it is opened. CA-04 P2: any other step carries the tiles sent
+ * with it in `sentWith`, recursively; only top-level steps take numbers.
  */
 export function buildSteps(tree: readonly NodeTree[]): Step[] {
   const top = byPosition(tree.filter((node) => node.parent_id === null && isStepNode(node)));
-  return top.map((node, index) => {
-    const number = String(index + 1);
-    const kind = KIND_OF_TYPE[node.type];
-    if (kind === "agent") {
-      const prompts = byPosition((node.children ?? []).filter((child) => child.type === PROMPT_TYPE));
-      return stepFor(node, number, kind, [
-        instructionsOf(node, `${number}.1`),
-        ...prompts.map((child, i) => stepFor(child, `${number}.${i + 2}`, "prompt")),
-      ]);
-    }
-    if (kind === "team") {
-      const agents = byPosition((node.children ?? []).filter((child) => child.type === AGENT_TYPE));
-      return stepFor(
-        node,
-        number,
-        kind,
-        agents.map((child, i) => {
-          const inner = `${number}.${i + 1}`;
-          // An agent in a team shows its instructions in its own row; any prompts of its own show when it is opened.
-          const own = byPosition((child.children ?? []).filter((grand) => grand.type === PROMPT_TYPE));
-          return stepFor(child, inner, "agent", own.length === 0 ? [] : [instructionsOf(child, `${inner}.1`), ...own.map((grand, k) => stepFor(grand, `${inner}.${k + 2}`, "prompt"))]);
-        }),
-      );
-    }
-    return stepFor(node, number, kind);
-  });
+  return top.map((node, index) => readStep(node, String(index + 1), KIND_OF_TYPE[node.type], 0));
+}
+
+/** CA-04 P2: a step and every tile sent with it, depth first, in order. */
+export function withSentWith(step: Step): Step[] {
+  return [step, ...(step.sentWith ?? []).flatMap(withSentWith)];
 }
 
 /** The title the maker typed, else the default. */
@@ -734,6 +778,14 @@ export async function dismissSuggestion(node: BuildNode, key: string): Promise<B
   return upsertNode(withPayload(node, { ...payloadOf(node), dismissed: [...dismissed, key] }));
 }
 
+/** CA-04 P2: keep a block sent with an imported prompt from being offered again. `key` is "sent:<n>". */
+export async function dismissSentWith(node: BuildNode, key: string): Promise<BuildNode> {
+  if (!/^sent:\d+$/.test(key)) throw refuse("dismissSentWith", "That is not a suggestion.");
+  const dismissed = dismissedOf(payloadOf(node));
+  if (dismissed.includes(key)) return node;
+  return upsertNode(withPayload(node, { ...payloadOf(node), dismissed: [...dismissed, key] }));
+}
+
 /**
  * How an agent or a team runs (CONCEPT §3). "When I asked" (once) is no `runs` at all.
  * Several at the same time needs a count of 2 to 20; the others take one short line.
@@ -959,7 +1011,16 @@ const CODE_TOOL_MAX = 40;
 export async function addCode(
   buildId: string,
   tree: readonly NodeTree[],
-  { source, language, filename, tool, model, entrypoint, session }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean; session?: string | null },
+  {
+    source,
+    language,
+    filename,
+    tool,
+    model,
+    entrypoint,
+    session,
+    parentId,
+  }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean; session?: string | null; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
   if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
@@ -977,6 +1038,12 @@ export async function addCode(
   }
   if (model?.trim()) payload.model = model.trim();
   if (entrypoint) payload.entrypoint = true;
+  // CA-04 P2: with `parentId`, the code is sent with that step: a tile inside it, after what it holds.
+  if (parentId) {
+    const why = nestHomeRefusal(tree, parentId);
+    if (why) throw refuse("addCode", why);
+    return placeChildNode(buildId, tree as NodeTree[], parentId, { type: CODE_TYPE, title: null, payload });
+  }
   if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
@@ -1135,14 +1202,130 @@ export async function moveStep(
   return moves;
 }
 
-/** A file the AI read. `title` is the file name. */
+// --- tiles inside tiles (CA-04 P2) ---------------------------------------------
+
+interface Located {
+  node: NodeTree;
+  /** 0 at the top level, 1 inside a top-level step, and so on. */
+  depth: number;
+}
+
+function locate(tree: readonly NodeTree[], id: string, depth = 0): Located | null {
+  for (const node of tree) {
+    if (node.id === id) return { node, depth };
+    const inner = node.children?.length ? locate(node.children, id, depth + 1) : null;
+    if (inner) return inner;
+  }
+  return null;
+}
+
+/** The levels a node and what it holds take up: 1 for a tile that holds nothing. */
+function heightOf(node: NodeTree): number {
+  return 1 + Math.max(0, ...(node.children ?? []).map(heightOf));
+}
+
+const holds = (node: NodeTree, id: string): boolean => (node.children ?? []).some((child) => child.id === id || holds(child, id));
+
+export const NEST_COPY = {
+  missing: "That tile is not in this build.",
+  notATile: "Only a step or a file moves like that.",
+  noParent: "That step is not in this build.",
+  cycle: "A tile can't go inside itself or anything it holds.",
+  result: "Nothing goes inside a result.",
+  file: "Nothing goes inside a file.",
+  agent: "An agent holds its own prompts only.",
+  team: "A team holds its own agents only.",
+  depth: `Tiles go ${NEST_DEPTH_MAX} deep at most. Make one of them its own step first.`,
+} as const;
+
+/**
+ * Why a tile cannot go inside `parentId` (null: its own step at the top level), or null when it can. Pure, so the
+ * List can say no to a drop before anything is written. A tile never goes inside itself or anything it holds; a
+ * result holds nothing; an agent and a team keep their meaning (an agent's prompts, a team's agents); and nothing
+ * goes more than `NEST_DEPTH_MAX` deep.
+ */
+export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: string | null): string | null {
+  const found = locate(tree, id);
+  if (!found) return NEST_COPY.missing;
+  if (!isSentWithNode(found.node)) return NEST_COPY.notATile;
+  if (parentId === null) return null;
+  const target = locate(tree, parentId);
+  if (!target) return NEST_COPY.noParent;
+  if (parentId === id || holds(found.node, parentId)) return NEST_COPY.cycle;
+  const type = target.node.type;
+  if (type === RESULT_TYPE) return NEST_COPY.result;
+  if (type === FILE_TYPE) return NEST_COPY.file;
+  if (!isStepNode(target.node)) return NEST_COPY.noParent;
+  if (type === AGENT_TYPE && found.node.type !== PROMPT_TYPE) return NEST_COPY.agent;
+  if (type === TEAM_TYPE && found.node.type !== AGENT_TYPE) return NEST_COPY.team;
+  if (target.depth + heightOf(found.node) > NEST_DEPTH_MAX) return NEST_COPY.depth;
+  return null;
+}
+
+/** Why a new file or code tile cannot be made inside `parentId`, or null when it can: a step that is not an agent or a team, not too deep. */
+function nestHomeRefusal(tree: readonly NodeTree[], parentId: string): string | null {
+  const target = locate(tree, parentId);
+  if (!target || !isStepNode(target.node)) return NEST_COPY.noParent;
+  if (target.node.type === AGENT_TYPE) return NEST_COPY.agent;
+  if (target.node.type === TEAM_TYPE) return NEST_COPY.team;
+  if (target.depth + 1 > NEST_DEPTH_MAX) return NEST_COPY.depth;
+  return null;
+}
+
+/**
+ * The moves that put tile `id` inside `parentId` at `index` among what it holds, or, with `parentId` null, make it its
+ * own step at `index` among the top-level steps. Inside a step its tiles are numbered 1, 2, 3 by position again; at
+ * the top level the steps hand their own positions out again in order (a new slot after everything else for a tile
+ * coming out), so files, tools and results keep theirs. Only the rows that change are moved. Pure.
+ */
+export function nestMoves(tree: readonly NodeTree[], id: string, parentId: string | null, index: number): NodeMove[] {
+  const found = locate(tree, id);
+  if (!found) return [];
+  const clampAt = (length: number) => Math.max(0, Math.min(Number.isFinite(index) ? Math.floor(index) : length, length));
+  if (parentId !== null) {
+    const target = locate(tree, parentId);
+    if (!target) return [];
+    const siblings = byPosition((target.node.children ?? []).filter((child) => child.id !== id));
+    siblings.splice(clampAt(siblings.length), 0, found.node);
+    return siblings.flatMap((node, i) => (node.parent_id === parentId && node.position === i + 1 ? [] : [{ id: node.id, parent_id: parentId, position: i + 1 }]));
+  }
+  const next = Math.max(0, ...tree.filter((node) => node.parent_id === null && typeof node.position === "number").map((node) => node.position as number)) + 1;
+  if (!isStepNode(found.node)) return found.node.parent_id === null ? [] : [{ id, parent_id: null, position: next }];
+  const steps = topSteps(tree);
+  const slots = steps.map((step) => step.position as number);
+  if (found.node.parent_id !== null) slots.push(next);
+  slots.sort((a, b) => a - b);
+  const order = steps.filter((step) => step.id !== id);
+  order.splice(clampAt(order.length), 0, found.node);
+  return order.flatMap((node, i) => (node.parent_id === null && node.position === slots[i] ? [] : [{ id: node.id, parent_id: null, position: slots[i] }]));
+}
+
+/**
+ * Put a tile inside another step, sent with it, or make it its own step (CA-04 P2): one `reorderNodes` write, refused
+ * by `nestRefusal` (the cycle and depth guards among them) before anything is written. Resolves with the moves.
+ */
+export async function nestStep(buildId: string, tree: readonly NodeTree[], id: string, parentId: string | null, index: number): Promise<NodeMove[]> {
+  const why = nestRefusal(tree, id, parentId);
+  if (why) throw refuse("nestStep", why);
+  const moves = nestMoves(tree, id, parentId, index);
+  if (moves.length > 0) await reorderNodes(buildId, moves);
+  return moves;
+}
+
+/** A file the AI read. `title` is the file name. CA-04 P2: with `parentId`, a file sent with that step, after what it holds. */
 export async function addFile(
   buildId: string,
   tree: readonly NodeTree[],
-  { title, url, summary, media_id }: { title: string; url?: string; summary?: string; media_id?: string },
+  { title, url, summary, media_id, parentId }: { title: string; url?: string; summary?: string; media_id?: string; parentId?: string | null },
 ): Promise<BuildNode> {
   if (!title.trim()) throw refuse("addFile", "A file needs its name.");
-  return placeTopNode(buildId, tree, { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) });
+  const node = { type: FILE_TYPE, title: null, payload: compact({ title: title.trim(), url, summary, media_id }) };
+  if (parentId) {
+    const why = nestHomeRefusal(tree, parentId);
+    if (why) throw refuse("addFile", why);
+    return placeChildNode(buildId, tree as NodeTree[], parentId, node);
+  }
+  return placeTopNode(buildId, tree, node);
 }
 
 export const MADE_FILE_NAME_MAX = 120;

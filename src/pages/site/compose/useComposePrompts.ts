@@ -61,6 +61,9 @@ import {
   setRuns,
   setStepSession,
   setStepTitle,
+  nestStep,
+  NEST_COPY,
+  dismissSentWith,
   toolNodeFor,
   usesOf,
   type AgentModel,
@@ -70,6 +73,7 @@ import {
   type Use,
 } from "@/lib/build/graph";
 import type { SessionPrompt, SessionSummary } from "@/lib/build/sessions";
+import type { CodeSuggestion } from "@/lib/build/sentWithSuggest";
 
 import { addedToast, parsePromptDragData, promptSourceLine } from "./composeModel";
 import type { ComposePromptRow, PromptFocus } from "./PromptsPanel";
@@ -202,6 +206,15 @@ export interface ComposePrompts {
   claimSession: (stepIds: readonly string[], meta: SessionMeta) => Promise<string | null>;
   /** CA-04 P1: put a top-level step into a session (null: none). */
   setSessionOf: (id: string, session: string | null) => void;
+  /**
+   * CA-04 P2: put a tile inside a step, sent with it, at `index` among what it holds (`parentId`), or make it its own
+   * step at `index` among the top-level steps (null). Resolves true once it is written; a refusal is said as written.
+   */
+  nest: (id: string, parentId: string | null, index: number) => Promise<boolean>;
+  /** CA-04 P2: Accept on a block sent with an imported prompt: a code tile inside it. */
+  keepSentWith: (suggestion: CodeSuggestion) => void;
+  /** CA-04 P2: Ignore on one: it is not offered again. */
+  ignoreSentWith: (stepId: string, key: string) => void;
 }
 
 export function useComposePrompts({
@@ -739,6 +752,35 @@ export function useComposePrompts({
   const setSessionOf = (id: string, session: string | null) =>
     void writeStep(id, "Couldn't move that to the session. Try again.", (node) => setStepSession(node, session));
 
+  const nest = (id: string, parentId: string | null, index: number) =>
+    nodes
+      .run(async () => {
+        const build = latest.current.buildId;
+        if (!build) return false;
+        for (const move of await nestStep(build, nodes.current(), id, parentId, index)) {
+          const node = findNode(nodes.current(), move.id);
+          if (node) nodes.record(node.id, { ...rowOf(node), parent_id: move.parent_id, position: move.position });
+        }
+        return true;
+      })
+      .catch((cause) => {
+        // A refusal is one of the guards' own sentences; anything else is said once.
+        const said = cause instanceof Error ? Object.values(NEST_COPY).find((line) => cause.message.includes(line)) : undefined;
+        failed(said ?? "Couldn't move that. Try again.")(cause);
+        return false;
+      });
+
+  const keepSentWith = ({ stepId, source, language, filename }: CodeSuggestion) =>
+    void nodes
+      .run(async () => {
+        const build = latest.current.buildId;
+        if (!build) return;
+        const created = await addCode(build, nodes.current(), { source, language, filename, parentId: stepId });
+        nodes.record(created.id, created);
+      })
+      .catch(failed("Couldn't keep that inside. Try again."));
+  const ignoreSentWith = (stepId: string, key: string) => void writeStep(stepId, "Couldn't ignore that. Try again.", (node) => dismissSentWith(node, key));
+
   const setManual = (id: string, fields: { tool?: string; text?: string; media_id?: string | null }) =>
     void writeStep(id, "Couldn't save that. Try again.", async (node) => {
       const saved = await setManualFields(node, fields);
@@ -772,5 +814,5 @@ export function useComposePrompts({
     return [...saved, ...local];
   }, [nodes.tree, hidden, texts, drafts, sessions]);
 
-  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf };
+  return { rows, focus, setText, move, remove, write, add, drop, isAdded, relabel, flush, addNow, rename, accept, dismiss, removeUse: removeUseFrom, setRuns: setRunsOf, setModel: setModelOf, setFields, removeInside, addMadeFile, removeMadeFile, addPiece, addAgentOrTeam, setAgent, addAgentTo, addPromptTo, setInstructions: setInstructionsOf, addManual, setManual, setManualPicture, addCodeSteps, addCheckStep, claimSession, setSessionOf, nest, keepSentWith, ignoreSentWith };
 }

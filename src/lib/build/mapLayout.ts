@@ -62,6 +62,8 @@ export const MAP_SIZES = {
   outerRise: 24,
   /** CA-03 P4: room above a column of agents side by side, for its label. */
   sideLabel: 20,
+  /** CA-04 P2: one row inside a step's box for each tile sent with it. */
+  sentRow: 18,
 } as const;
 
 export interface MapPiece {
@@ -130,6 +132,8 @@ export interface MapBox {
   stack: number | null;
   /** CA-03 P5, a check only: "Passed 14 of 14 runs", and whether every run passed. */
   status?: { line: string; allPassed: boolean } | null;
+  /** CA-04 P2: the tiles sent with this step, depth first, drawn as small rows inside its box, never as boxes. */
+  sentWith?: { id: string; kind: string; name: string }[];
 }
 
 export interface MapLane {
@@ -224,6 +228,20 @@ interface Placed {
  * Lay the build out. `steps` are the top-level steps in order (an agent or a
  * team is one box; what is inside it shows when it is opened, CONCEPT §2.5).
  */
+const SENT_KIND: Record<string, string> = { prompt: "Prompt", code: "Code", file: "File", manual: "Manual step", check: "Check", agent: "Agent", team: "Team" };
+
+/** CA-04 P2: a step's tiles as the rows its box draws: kind and name, depth first. */
+export function sentRows(step: Step): { id: string; kind: string; name: string }[] {
+  return (step.sentWith ?? []).flatMap((tile) => {
+    const words = tile.text.replace(/\s+/g, " ").trim();
+    const name =
+      tile.kind === "file" || tile.kind === "code"
+        ? (tile.filename ?? tile.title ?? tile.language ?? "")
+        : (tile.title ?? (words ? (words.length > 40 ? `${words.slice(0, 39)}…` : words) : ""));
+    return [{ id: tile.id, kind: SENT_KIND[tile.kind] ?? tile.kind, name }, ...sentRows(tile)];
+  });
+}
+
 export function layoutMap(
   steps: readonly Step[],
   allGroups: readonly SessionGroup[],
@@ -310,6 +328,7 @@ export function layoutMap(
   const note = (step: Step, at: number) => {
     topOf.set(step.id, at);
     step.children.forEach((child) => note(child, at));
+    (step.sentWith ?? []).forEach((tile) => note(tile, at));
   };
   steps.forEach(note);
   const makerOf = new Map<string, number>();
@@ -380,9 +399,12 @@ export function layoutMap(
   steps.forEach((step, at) => {
     const inputs = inputsOf(step.id, step.uses);
     const container = isContainer(step);
-    const { w, h } = container
+    const sent = sentRows(step);
+    const size = container
       ? { w: 2 * S.column + S.gap, h: Math.max(S.agentHeight, S.head + S.row * inputs.length + S.lanePad) }
       : sizeOf(inputs.length);
+    const { w } = size;
+    const h = size.h + S.sentRow * sent.length;
     add({
       id: step.id,
       kind: "step",
@@ -409,6 +431,7 @@ export function layoutMap(
       runs: container ? runsLabel(step.runs) : null,
       stack: null,
       ...(step.kind === "check" ? { text: step.check?.passing ?? "", status: step.check ? checkStatus(step.check) : null } : null),
+      ...(sent.length > 0 ? { sentWith: sent } : null),
     });
   });
 

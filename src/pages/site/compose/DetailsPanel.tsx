@@ -59,6 +59,8 @@ import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from 
 import { ModelPicker } from "./ModelPicker";
 
 export interface InputsView {
+  /** CA-04 P2, a tile inside another: "Sent with prompt 2", which its eyebrow says in place of its number. */
+  sentWithLine?: string;
   uses: readonly UseRow[];
   options: readonly InputOption[];
   goesInto: readonly GoesRow[];
@@ -124,6 +126,8 @@ export interface SessionView {
 export interface FileView {
   kind: "file";
   id: string;
+  /** CA-04 P2, a file sent with a step: "Sent with prompt 2". */
+  sentWithLine?: string;
   name: string;
   from: string;
   size: string | null;
@@ -728,7 +732,7 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
   const [openModel, setOpenModel] = useState(0);
   return (
     <>
-      <Head eyebrow={`Prompt ${view.number}`}>
+      <Head eyebrow={view.sentWithLine ?? `Prompt ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable={view.editable} label={`Title of prompt ${view.number}`} phone={phone} onRename={h.onRename} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <ToolMark tool={toolOf(view.sessionLine)} model={view.model} size={24} />
@@ -780,7 +784,7 @@ function ManualDetails({ view, phone, inBuild = [], focus, ...h }: { view: Manua
   };
   return (
     <>
-      <Head eyebrow={`Manual step ${view.number}`}>
+      <Head eyebrow={view.sentWithLine ?? `Manual step ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of manual step ${view.number}`} phone={phone} onRename={h.onRename} />
         <span style={text(12, 400, t.text2)}>{MANUAL_DETAILS_COPY.never}</span>
       </Head>
@@ -845,7 +849,7 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
   const written = [view.tool, view.model].filter(Boolean).join(" · ");
   return (
     <>
-      <Head eyebrow={`Code ${view.number}`}>
+      <Head eyebrow={view.sentWithLine ?? `Code ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of code ${view.number}`} phone={phone} onRename={h.onRename} />
         <span style={text(12, 400, t.text2)}>{[view.filename, view.language, `${view.lines} ${view.lines === 1 ? "line" : "lines"}`].filter(Boolean).join(" · ")}</span>
       </Head>
@@ -880,7 +884,7 @@ function CodeDetails({ view, phone, focus, ...h }: { view: CodeView; phone: bool
 function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean } & DetailsHandlers) {
   return (
     <>
-      <Head eyebrow={`Check ${view.number}`}>
+      <Head eyebrow={view.sentWithLine ?? `Check ${view.number}`}>
         <Title id={view.id} title={view.title} fallback={view.defaultTitle} editable label={`Title of check ${view.number}`} phone={phone} onRename={h.onRename} />
       </Head>
       <CheckBlock check={view.check} />
@@ -995,7 +999,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
 function FileDetails({ view, phone, onDownload, onSelect }: { view: FileView; phone: boolean } & Pick<DetailsHandlers, "onDownload" | "onSelect">) {
   return (
     <>
-      <Head eyebrow="File">
+      <Head eyebrow={view.sentWithLine ?? "File"}>
         <h3 style={titleStyle(false)}>{view.name}</h3>
       </Head>
       <div>
@@ -1301,7 +1305,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
   const lead = view.kind === "agent" && view.parent !== null && view.number.endsWith(".1");
   return (
     <>
-      <Head eyebrow={`${lead ? "Lead agent" : word} ${view.number}`}>
+      <Head eyebrow={view.sentWithLine ?? `${lead ? "Lead agent" : word} ${view.number}`}>
         <Title id={view.id} title={view.name} fallback={view.defaultName} editable={false} label={`${word} name`} phone={phone} onRename={h.onRename} />
       </Head>
       <OutsideWarning names={view.outside ?? []} />

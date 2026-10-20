@@ -62,7 +62,21 @@ export interface ViewContext {
   media: (mediaId: string) => MediaFacts | undefined;
 }
 
-const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children)]);
+/** Every step, and (CA-04 P2) every tile sent with one, parents first. */
+const flatten = (steps: readonly Step[]): Step[] => steps.flatMap((step) => [step, ...flatten(step.children), ...flatten(step.sentWith ?? [])]);
+
+/** CA-04 P2: what a tile inside another says in its eyebrow. */
+const insideOf = (step: Step) => (step.inside ? { sentWithLine: `Sent with ${step.inside.label}` } : null);
+
+/** A node at any depth. */
+const findNode = (tree: readonly NodeTree[], id: string): NodeTree | null => {
+  for (const node of tree) {
+    if (node.id === id) return node;
+    const inner = node.children?.length ? findNode(node.children, id) : null;
+    if (inner) return inner;
+  }
+  return null;
+};
 
 const payloadOf = (node: Pick<NodeTree, "payload">): Record<string, unknown> =>
   node.payload && typeof node.payload === "object" && !Array.isArray(node.payload) ? (node.payload as Record<string, unknown>) : {};
@@ -98,6 +112,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   const place = promptPlace(step, ctx.steps);
   return {
     kind: "prompt",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -128,6 +143,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
   const facts = step.mediaId ? ctx.media(step.mediaId) : undefined;
   return {
     kind: "manual",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -145,6 +161,7 @@ function manualView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
 function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CodeView {
   return {
     kind: "code",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -166,6 +183,7 @@ function codeView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>):
 function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): CheckView {
   return {
     kind: "check",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     title: step.title,
@@ -180,6 +198,7 @@ function checkView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): AgentView {
   return {
     kind: step.kind === "team" ? "team" : "agent",
+    ...insideOf(step),
     id: step.id,
     number: step.number,
     name: step.title,
@@ -306,6 +325,10 @@ export function resolveView(ctx: ViewContext): DetailsView | null {
   const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
 
   const step = flatten(ctx.steps).find((candidate) => candidate.id === id);
+  if (step?.kind === "file") {
+    const node = findNode(ctx.tree, id);
+    return node ? { ...fileView(node, ctx), ...insideOf(step) } : null;
+  }
   if (step) {
     if (step.kind === "prompt") return promptView(step, ctx, all);
     if (step.kind === "agent" || step.kind === "team") return agentView(step, ctx, all);

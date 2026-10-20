@@ -59,7 +59,7 @@ describe("ComposeView", () => {
 
   it("reads each save state, with a retry on a failure", () => {
     view({ save: "error" });
-    expect(screen.getByTestId("compose-status").textContent).toContain("not saved — Try again");
+    expect(screen.getByTestId("compose-status").textContent).toContain("not saved · Try again");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   });
 

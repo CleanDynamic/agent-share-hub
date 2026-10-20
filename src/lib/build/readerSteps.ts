@@ -33,6 +33,7 @@ import {
   type SessionGroup,
   type Step,
 } from "./graph";
+import { copyTogether } from "./copyTogether";
 import { sessionsMetaOf, type Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
@@ -128,6 +129,10 @@ export interface ReaderStep {
   /** "3.3, until every claim has a source", then "then the result". Only for a step that repeats until a condition is met. */
   goesInto: string[];
   children: ReaderStep[];
+  /** CA-04 P2: the tiles sent with this step, in order, each as a step a reader reads; a file tile carries its file. */
+  sentWith: ReaderStep[];
+  /** CA-04 P2, a file tile: the file to attach. */
+  file?: ReaderFile | null;
 }
 
 export interface NeedRow {
@@ -399,7 +404,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
 /** The step as readers get it: a suggestion the maker dismissed is the maker's, never published. */
 function publicStep(step: Step): Step {
   const { dismissed: _dismissed, ...rest } = step;
-  return { ...rest, children: step.children.map(publicStep) };
+  return { ...rest, children: step.children.map(publicStep), ...(step.sentWith ? { sentWith: step.sentWith.map(publicStep) } : null) };
 }
 
 function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
@@ -477,6 +482,8 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
     outside: readsOutsideContent(step, context.tree),
     goesInto: loop,
     children: step.children.map((child) => readerStep(child, context, container)),
+    sentWith: (step.sentWith ?? []).map((tile) => readerStep(tile, context, container)),
+    ...(step.kind === "file" ? { file: context.files.get(step.id) ?? null } : null),
   };
 }
 
@@ -811,7 +818,9 @@ export function stepsMarkdown(
     if (entry.chat) lines.push(chatSentence(entry.chat), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
-    if (step.text) lines.push(fenced(step.text), "");
+    // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.
+    const message = step.sentWith?.length ? copyTogether(step) : step.text;
+    if (message) lines.push(fenced(message), "");
     if (saves.length > 0) lines.push(...saves, "");
   }
 

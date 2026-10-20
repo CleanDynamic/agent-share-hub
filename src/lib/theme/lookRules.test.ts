@@ -96,6 +96,13 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/AddSessionDialog.test.tsx",
   "src/pages/site/compose/AddSessionDialog.tsx",
   "src/pages/site/compose/sourcesModel.ts",
+  // CA-04 P2
+  "src/lib/build/copyTogether.ts",
+  "src/lib/build/nest.test.ts",
+  "src/lib/build/sentWithSuggest.ts",
+  "src/pages/site/compose/BuildList.nest.test.tsx",
+  "src/pages/site/compose/composeModel.ts",
+  "src/pages/site/compose/listNest.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

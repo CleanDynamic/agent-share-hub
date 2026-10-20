@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
@@ -475,6 +475,34 @@ export function SandboxPage() {
     });
   }, [nodes, build?.id, queryClient]);
 
+  /* ── tiles inside tiles (CA-04 P2) ── */
+
+  const canNest = useCallback((id: string, parentId: string) => nestRefusal(tree, id, parentId) === null, [tree]);
+  const onNest = useCallback(
+    async (id: string, parentId: string | null, index: number) => {
+      const done = await prompts.nest(id, parentId, index);
+      if (done) afterWrite();
+      return done;
+    },
+    [prompts, afterWrite],
+  );
+  /** A tile dropped on a session's head: placed after that session's last step, then put in it. */
+  const onMoveToSession = useCallback(
+    async (id: string, key: string) => {
+      const group = groups.find((candidate) => groupKey(candidate) === key);
+      const last = group?.stepNumbers[group.stepNumbers.length - 1];
+      const end = last ? steps.findIndex((step) => step.number === last) + 1 : steps.length;
+      const from = steps.findIndex((step) => step.id === id);
+      const stable = isLegacySession(key) ? await claim(key) : key;
+      if (!stable) return false;
+      if (!(await prompts.nest(id, null, from >= 0 && from < end ? end - 1 : end))) return false;
+      prompts.setSessionOf(id, stable);
+      afterWrite();
+      return true;
+    },
+    [groups, steps, claim, prompts, afterWrite],
+  );
+
   const onAddAgentOrTeam = useCallback(
     async (input: AddAgentInput) => {
       savingSeed.current = true;
@@ -640,9 +668,9 @@ export function SandboxPage() {
     [ensureBuild, queryClient],
   );
 
-  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. */
+  /** One file of the build: stored through the media path, then recorded as a file node, behind the other node writes. CA-04 P2: with `parentId`, sent with that step. */
   const addOneFile = useCallback(
-    async (file: File, verb: "add" | "attach" = "add"): Promise<BuildNode | null> => {
+    async (file: File, verb: "add" | "attach" = "add", parentId: string | null = null): Promise<BuildNode | null> => {
       const decided = fileKindFor(file);
       if ("refused" in decided) {
         toast.error(decided.refused);
@@ -657,7 +685,7 @@ export function SandboxPage() {
         const added: { node: BuildNode | null } = { node: null };
         await nodes.run(async () => {
           const media = await uploadMedia({ buildId: id, file });
-          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id });
+          const node = await addFile(id, nodes.current(), { title: file.name, media_id: media.id, parentId });
           nodes.record(node.id, node);
           added.node = node;
         });
@@ -682,16 +710,17 @@ export function SandboxPage() {
     [addOneFile, prompts, steps, afterWrite],
   );
 
-  /** A drop on a prompt's card: a chat export goes to the intake and nothing is attached. */
+  /** A drop on a step's card: a chat export goes to the intake and nothing is attached. */
   const onDropOnStep = useCallback(
     async (stepId: string, files: File[]) => {
       if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
         navigate("/compose/start");
         return;
       }
-      await attach(stepId, files);
+      // CA-04 P2: a file dropped on a step is sent with it: a tile inside that step.
+      for (const file of files) await addOneFile(file, "attach", stepId);
     },
-    [attach, navigate],
+    [addOneFile, navigate],
   );
 
   /** A drop sorts its files: a chat export goes to the intake, the rest are files of the build. */
@@ -868,6 +897,14 @@ export function SandboxPage() {
             onNameMade={onNameMade}
             madeNames={madeByStep}
             onDropOnStep={(id, files) => void onDropOnStep(id, files)}
+            onNest={onNest}
+            canNest={canNest}
+            onMoveToSession={onMoveToSession}
+            onKeepSentWith={(suggestion) => {
+              prompts.keepSentWith(suggestion);
+              afterWrite();
+            }}
+            onIgnoreSentWith={prompts.ignoreSentWith}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
