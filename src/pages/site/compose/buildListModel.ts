@@ -40,11 +40,12 @@ export const suggestionKey = (use: Use): string => `${use.kind}:${use.node_id}`;
  * CA-04 P1: a build with exactly one session shows no head, and an old build's
  * implicit group (its steps before any session) never has one.
  */
-export function dividers(steps: readonly Step[], groups: readonly SessionGroup[]): Map<string, SourceSession> {
+export function dividers(steps: readonly Step[], groups: readonly SessionGroup[], setupCounts: Readonly<Record<string, number>> = {}): Map<string, SourceSession> {
   const out = new Map<string, SourceSession>();
   const shown = shownGroups(groups);
-  if (shown.length <= 1) return out;
-  const sessions = new Map(sourceSessions(groups, steps).map((session) => [session.key, session]));
+  // CA-04 P4: a lone session with a setup keeps its head, where Setup {n} is.
+  if (shown.length === 0 || (shown.length === 1 && !setupCounts[groupKey(shown[0])])) return out;
+  const sessions = new Map(sourceSessions(groups, steps, [], {}, setupCounts).map((session) => [session.key, session]));
   for (const group of shown) {
     const first = group.stepNumbers[0];
     const session = sessions.get(groupKey(group));

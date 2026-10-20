@@ -14,6 +14,7 @@ import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
 import { matchesProjectFile, toolFor, toolName } from "@/lib/tools/registry";
+import { isSetupPayload } from "@/lib/build/setup";
 import type { BuildNode } from "@/lib/build/types";
 import { sessionDate, sessionSource } from "@/pages/site/drafts/draftsModel";
 
@@ -37,6 +38,8 @@ export interface SourceSession {
   prompts: SourcePrompt[];
   /** TF-13: set for a session whose client names no tool. `value` is the tool the maker gave it, or null. */
   pickTool?: { value: string | null };
+  /** CA-04 P4: how many items its setup holds; absent for none. */
+  setupCount?: number;
 }
 
 export interface SourceFile {
@@ -82,6 +85,7 @@ export function sourceSessions(
   steps: readonly Step[],
   inBuild: readonly SessionSummary[] = [],
   sessionTools: Readonly<Record<string, string>> = {},
+  setupCounts: Readonly<Record<string, number>> = {},
 ): SourceSession[] {
   const clients = new Map(inBuild.map((session) => [session.id, session.client]));
   const pickTool = (id: string): SourceSession["pickTool"] =>
@@ -101,6 +105,7 @@ export function sourceSessions(
       tool: group.tool ?? (kind === "typed" ? "Typed here" : "Unknown tool"),
       detail: [model, when].filter(Boolean).join(" · "),
       ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
+      ...(setupCounts[key] ? { setupCount: setupCounts[key] } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,
@@ -127,7 +132,8 @@ export function sourceSessions(
 export function sourceFiles(tree: readonly BuildNode[], groups: readonly SessionGroup[], steps: readonly Step[] = []): SourceFile[] {
   const numbers = new Map(flatten(steps).map((step) => [step.id, step.number]));
   return tree
-    .filter((node) => node.type === FILE_TYPE && node.parent_id === null)
+    // CA-04 P4: a session's setup is not a file of the build.
+    .filter((node) => node.type === FILE_TYPE && node.parent_id === null && !isSetupPayload(node.payload))
     .map((node) => {
       const payload = (node.payload ?? {}) as Record<string, unknown>;
       const name = typeof payload.title === "string" && payload.title.trim() ? payload.title : "Untitled file";

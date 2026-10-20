@@ -35,6 +35,7 @@ import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
 import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
+import { addSetupFile, addSetupRule, addSetupServer, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
 import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
@@ -125,7 +126,7 @@ export function SandboxPage() {
     const next: SandboxCounts = {
       sessions: shownGroups(groups).length,
       prompts: all.filter((step) => step.kind === "prompt").length,
-      files: tree.filter((node) => node.type === FILE_TYPE).length,
+      files: tree.filter((node) => node.type === FILE_TYPE && !isSetupPayload(node.payload)).length,
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made]);
@@ -283,7 +284,7 @@ export function SandboxPage() {
       suggestUses(
         steps,
         Object.entries(listFacts.names)
-          .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE))
+          .filter(([id]) => tree.some((node) => node.id === id && node.type === FILE_TYPE && !isSetupPayload(node.payload)))
           .map(([id, name]) => ({ id, name })),
         madeFiles,
       ).map((suggestion) => ({ ...suggestion, label: listFacts.names[suggestion.use.node_id] ?? "File" })),
@@ -304,7 +305,13 @@ export function SandboxPage() {
         }),
     [tree],
   );
-  const dividerRows = useMemo(() => dividers(steps, groups), [steps, groups]);
+  /** CA-04 P4: each session's setup, and how many items it holds. */
+  const setupCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const item of setupItemsOf(tree)) out[item.session] = (out[item.session] ?? 0) + 1;
+    return out;
+  }, [tree]);
+  const dividerRows = useMemo(() => dividers(steps, groups, setupCounts), [steps, groups, setupCounts]);
 
   /* ── Sources ── */
 
@@ -332,7 +339,7 @@ export function SandboxPage() {
     picker.current?.click();
   }, []);
 
-  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools), [groups, steps, sessions.sessions, sessionTools]);
+  const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts), [groups, steps, sessions.sessions, sessionTools, setupCounts]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
 
   /* ── sessions (CA-04 P1) ── */
@@ -723,24 +730,150 @@ export function SandboxPage() {
     [addOneFile, navigate],
   );
 
-  /** A drop sorts its files: a chat export goes to the intake, the rest are files of the build. */
+  /* ── the session setup (CA-04 P4) ── */
+
+  /** The session a setup goes to: the one given, else the current one, saved first when it is an old build's run. */
+  const sessionForSetup = useCallback(
+    async (key: string | null): Promise<string | null> => {
+      const wanted = key ?? currentSession;
+      if (wanted && !isLegacySession(wanted)) return wanted;
+      if (wanted) return claim(wanted);
+      // A build with no session yet starts one, typed here, for its setup.
+      const id = await ensureBuild();
+      const made = newSessionKey();
+      await setSessionMeta(id, made, { tool: null, date: todayDay() });
+      setChosenSession(made);
+      return made;
+    },
+    [currentSession, claim, ensureBuild],
+  );
+
+  /** A file stored for the setup, or null when it was refused (the maker has been told). */
+  const storeSetupFile = useCallback(async (buildId: string, file: File): Promise<string | null> => {
+    const decided = fileKindFor(file);
+    if ("refused" in decided) {
+      toast.error(decided.refused);
+      return null;
+    }
+    if (file.size > MEDIA_MAX_BYTES) {
+      toast.error(`${file.name} is too big. The limit is ${Math.round(MEDIA_MAX_BYTES / (1024 * 1024))} MB.`);
+      return null;
+    }
+    return (await uploadMedia({ buildId, file })).id;
+  }, []);
+
+  /**
+   * Files routed to a session's setup when their names say what they are (`routeSetupFiles`); with `all`, every file
+   * goes to the setup, the ones no name places as instructions. Resolves with the files that stay the build's own.
+   * An .mcp.json and a .claude/settings.json are read, never stored, and a server's secrets never leave this page.
+   */
+  const addSetup = useCallback(
+    async (files: File[], paths: readonly string[] | undefined, { session = null, all = false }: { session?: string | null; all?: boolean } = {}): Promise<File[]> => {
+      const dropped: DroppedFile[] = await Promise.all(
+        files.map(async (file, at) => {
+          const path = paths?.[at] || file.name;
+          return { name: file.name, path, text: needsText(path) ? await file.text().catch(() => "") : undefined };
+        }),
+      );
+      const { drafts, rest } = routeSetupFiles(dropped);
+      const plan: SetupDraft[] = all ? [...drafts, ...rest.map((at): SetupDraft => ({ kind: "instructions", file: at }))] : drafts;
+      const left = all ? [] : rest.map((at) => files[at]);
+      if (plan.length === 0) return left;
+      try {
+        const id = await ensureBuild();
+        const key = await sessionForSetup(session);
+        if (!key) return left;
+        await nodes.run(async () => {
+          for (const draft of plan) {
+            if (draft.kind === "server") {
+              const node = await addSetupServer(id, nodes.current(), key, draft.server);
+              nodes.record(node.id, node);
+            } else if (draft.kind === "rule") {
+              const node = await addSetupRule(id, nodes.current(), key, draft.rule);
+              nodes.record(node.id, node);
+            } else {
+              const file = files[draft.file];
+              const media = await storeSetupFile(id, file);
+              if (!media) continue;
+              const node = await addSetupFile(id, nodes.current(), {
+                session: key,
+                kind: draft.kind,
+                title: file.name,
+                path: dropped[draft.file].path,
+                media_id: media,
+                ...(draft.kind === "skill" ? { skill: { name: draft.name, description: draft.description } } : null),
+              });
+              nodes.record(node.id, node);
+              if (draft.kind === "skill") {
+                for (const at of draft.files) {
+                  const inner = await storeSetupFile(id, files[at]);
+                  if (!inner) continue;
+                  const child = await addSetupFile(id, nodes.current(), { session: key, kind: "skill", title: files[at].name, path: dropped[at].path, media_id: inner, parentId: node.id });
+                  nodes.record(child.id, child);
+                }
+              }
+            }
+          }
+        });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] setup not added", cause);
+        toast.error("Couldn't add that to the setup. Try again.");
+      }
+      return left;
+    },
+    [ensureBuild, sessionForSetup, nodes, storeSetupFile, refreshRecord],
+  );
+
+  /** "Add to setup": the picker's next files go to that session's setup. */
+  const setupFor = useRef<string | null>(null);
+  const pickForSetup = useCallback((key: string) => {
+    pickFor.current = null;
+    setupFor.current = key;
+    picker.current?.click();
+  }, []);
+
+  const onNotShared = useCallback(
+    (id: string) =>
+      void nodes
+        .run(async () => {
+          const node = tree.find((candidate) => candidate.id === id);
+          if (!node) return;
+          const { children: _children, ...row } = node;
+          nodes.record(id, await setNotShared(row, true));
+        })
+        .catch((cause) => {
+          console.error("[Sandbox] not marked", cause);
+          toast.error("Couldn't change that. Try again.");
+        }),
+    [nodes, tree],
+  );
+
+  /** "Setup 2" on a session's head: the session in Details, scrolled to its Setup. */
+  const [focusSetup, setFocusSetup] = useState<{ key: string; at: number } | null>(null);
+  const onOpenSetup = useCallback((key: string) => {
+    setSelectedId(key);
+    setFocusSetup({ key, at: Date.now() });
+  }, []);
+
+  /** A drop sorts its files: a chat export goes to the intake, a setup file to the current session's setup, the rest are files of the build. */
   const onDropFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], paths?: string[]) => {
       if ((await Promise.all(files.map(isChatExport))).some(Boolean)) {
         navigate("/compose/start");
         return;
       }
-      for (const file of files) void addOneFile(file);
+      for (const file of await addSetup(files, paths)) void addOneFile(file);
     },
-    [addOneFile, navigate],
+    [addOneFile, addSetup, navigate],
   );
 
-  /** The picker is an explicit choice of files, so nothing is taken for an export. */
+  /** The picker is an explicit choice of files, so nothing is taken for an export; setup files still go to the setup. */
   const onPicked = useCallback(
-    (files: File[]) => {
-      for (const file of files) void addOneFile(file);
+    async (files: File[]) => {
+      for (const file of await addSetup(files, undefined)) void addOneFile(file);
     },
-    [addOneFile],
+    [addOneFile, addSetup],
   );
 
   return (
@@ -756,10 +889,13 @@ export function SandboxPage() {
           const files = Array.from(event.target.files ?? []);
           event.target.value = "";
           const stepId = pickFor.current;
+          const setupKey = setupFor.current;
           pickFor.current = null;
+          setupFor.current = null;
           if (files.length === 0) return;
-          if (stepId) void attach(stepId, files);
-          else onPicked(files);
+          if (setupKey) void addSetup(files, undefined, { session: setupKey, all: true });
+          else if (stepId) void attach(stepId, files);
+          else void onPicked(files);
         }}
       />
       <SandboxView
@@ -874,6 +1010,9 @@ export function SandboxPage() {
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}
             onUseAsCover={(mediaId) => void setAsCover(mediaId)}
+            onAddToSetup={pickForSetup}
+            onNotShared={onNotShared}
+            focusSetup={focusSetup}
           />
         }
         list={
@@ -905,6 +1044,7 @@ export function SandboxPage() {
               afterWrite();
             }}
             onIgnoreSentWith={prompts.ignoreSentWith}
+            onOpenSetup={onOpenSetup}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}

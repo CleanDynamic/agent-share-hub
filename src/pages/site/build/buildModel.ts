@@ -144,6 +144,8 @@ export interface BuildActionsView {
   /** Puts the build on the clipboard as markdown. Resolves true when it landed. */
   onCopyForAI: () => Promise<boolean>;
   onDownload: () => void;
+  /** CA-04 P4: the build's session setup as a folder. Absent while the build has none: Download stays one button. */
+  onDownloadSetup?: () => void;
   onRebuild: () => void;
   lineageTo: string;
 }

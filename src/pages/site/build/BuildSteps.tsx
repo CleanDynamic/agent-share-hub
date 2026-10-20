@@ -357,13 +357,14 @@ function CopyButton({ label = "Copy", what, text: words, onCopy, announce, phone
 }
 
 /** An underlined text button: "Read all of it", "See the team in Map". */
-function ReadAll({ onRead, label = "Read all of it" }: { onRead: () => void; label?: string }) {
+function ReadAll({ onRead, label = "Read all of it", expanded }: { onRead: () => void; label?: string; expanded?: boolean }) {
   const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
     <button
       type="button"
       data-hit=""
       onClick={onRead}
+      aria-expanded={expanded}
       {...handlers}
       style={{
         ...bareButton,
@@ -599,6 +600,55 @@ function Head({ children, detail, tool, model }: { children: ReactNode; detail?:
       ) : null}
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
     </div>
+  );
+}
+
+/* ── a session's setup (CA-04 P4) ── */
+
+/** How far a session's setup sits in under its head. */
+const SETUP_INDENT = 28;
+
+/** A chat's head, with Setup at its end when the session has one: closed until asked, then its rows under the head. */
+function ChatHead({ chat }: { chat: Extract<NonNullable<ReaderStep["chat"]>, { kind: "new" }> }) {
+  const [open, setOpen] = useState(false);
+  const setup = chat.setup;
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
+          <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
+            {chat.headline}
+          </Head>
+        </div>
+        {setup.length > 0 ? (
+          <span style={{ paddingTop: 8, flexShrink: 0 }}>
+            <ReadAll label="Setup" onRead={() => setOpen((value) => !value)} expanded={open} />
+          </span>
+        ) : null}
+      </div>
+      {open ? (
+        <div data-testid="session-setup" style={{ marginLeft: SETUP_INDENT, paddingLeft: 12, borderLeft: `1px solid ${t.hairline}`, display: "flex", flexDirection: "column" }}>
+          {setup.map((item) => (
+            <div key={item.id} data-testid="setup-row" data-not-shared={item.notShared ? "true" : undefined} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "8px 0", borderBottom: `1px solid ${t.hairline}`, minWidth: 0, ...(item.notShared ? { borderBottom: `1px dashed ${t.line}` } : null) }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+                  <span style={text(12, 400, t.label)}>{item.notShared ? `${item.kindLabel} · not shared` : item.kindLabel}</span>
+                  <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{item.rule ? `${item.rule.when}${item.rule.filter ? ` · ${item.rule.filter}` : ""}: ${item.name}` : item.name}</span>
+                  {item.description ? <span style={{ ...text(11.5, 400, t.label), overflowWrap: "anywhere" }}>{item.description}</span> : null}
+                </div>
+                {item.download ? <DownloadButton href={item.download} name={item.name} /> : null}
+              </div>
+              {item.files.map((file) => (
+                <div key={file.id} style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, minWidth: 0 }}>
+                  <span style={{ ...text(12, 400, t.text2), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>{file.name}</span>
+                  {file.download ? <DownloadButton href={file.download} name={file.name} /> : null}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -854,7 +904,8 @@ function groupsOf(steps: readonly ReaderStep[]): Group[] {
     if (chat) {
       groups.push({
         key: `chat:${entry.step.id}`,
-        head: (
+        // CA-04 P4: Setup at the head's end, when the session has one.
+        head: chat.setup?.length ? <ChatHead chat={chat} /> : (
           <Head detail={chat.detail} tool={chat.tool} model={chat.model}>
             {chat.headline}
           </Head>

@@ -21,6 +21,7 @@ import {
   TOOL_TYPE,
   buildSteps,
   goesInto,
+  groupKey,
   groupKind,
   groupOfStep,
   madeByOf,
@@ -34,6 +35,7 @@ import {
   type Step,
 } from "./graph";
 import { copyTogether } from "./copyTogether";
+import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, type SetupKind, type SetupRule, type SetupServer } from "./setup";
 import { sessionsMetaOf, type Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
@@ -61,6 +63,8 @@ export type ReaderChat =
       headline: string;
       /** "GPT-6 Astra · session 1 · 3 Oct". */
       detail: string;
+      /** CA-04 P4: what the AI was given before this session's first prompt. Empty for none. */
+      setup: ReaderSetupItem[];
     }
   | {
       kind: "same";
@@ -69,6 +73,25 @@ export type ReaderChat =
       /** "Send in the same chat as step 4". */
       text: string;
     };
+
+/** CA-04 P4: one item of a session's setup, as a reader gets it. */
+export interface ReaderSetupItem {
+  id: string;
+  kind: SetupKind;
+  /** "Instructions", "Skill", "MCP server", "Rule". */
+  kindLabel: string;
+  name: string;
+  description: string | null;
+  notShared: boolean;
+  /** The file's download; null for a server, a rule, and anything not shared. */
+  download: string | null;
+  /** A skill's other files, each with its download. */
+  files: { id: string; name: string; path: string | null; download: string | null }[];
+  server: SetupServer | null;
+  rule: SetupRule | null;
+  /** Where it sat ("docs/CLAUDE.md"), when known. */
+  path: string | null;
+}
 
 export interface ReaderPasteIn {
   /** The step it came from. */
@@ -263,6 +286,8 @@ interface Context {
   toolIds: string[];
   /** The placed tree, for what a step's references point at. */
   tree: readonly NodeTree[];
+  /** CA-04 P4: each session's setup, by its key. */
+  setup: Map<string, ReaderSetupItem[]>;
 }
 
 const walk = (steps: readonly Step[], out: Step[] = []): Step[] => {
@@ -281,6 +306,8 @@ function readFiles(
   const files = new Map<string, ReaderFile>();
   const visit = (nodes: readonly NodeTree[]) => {
     for (const node of nodes) {
+      // CA-04 P4: a session's setup is read by `setupItemsOf`, and lists under its session, not in Files.
+      if (isSetupPayload(node.payload)) continue;
       if (node.type === FILE_TYPE) {
         const mediaId = text(node, "media_id");
         const found = mediaId ? media.get(mediaId) : undefined;
@@ -353,7 +380,35 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     resultFrom,
     toolIds,
     tree,
+    setup: readSetup(tree, media),
   };
+}
+
+/** CA-04 P4: each session's setup, by its key; what is not shared has no download. */
+function readSetup(tree: readonly NodeTree[], media: ReadonlyMap<string, ReaderMedia>): Map<string, ReaderSetupItem[]> {
+  const out = new Map<string, ReaderSetupItem[]>();
+  const download = (mediaId: string | null, url: string | null, notShared: boolean): string | null => {
+    if (notShared) return null;
+    const found = mediaId ? media.get(mediaId) : undefined;
+    return found ? mediaUrl(found, { width: "original" }) : url;
+  };
+  for (const item of setupItemsOf(tree)) {
+    const entry: ReaderSetupItem = {
+      id: item.id,
+      kind: item.kind,
+      kindLabel: SETUP_KIND_LABEL[item.kind],
+      name: item.name,
+      description: item.description,
+      notShared: item.notShared,
+      download: item.kind === "instructions" || item.kind === "skill" ? download(item.mediaId, item.url, item.notShared) : null,
+      files: item.notShared ? [] : item.files.map((file) => ({ id: file.id, name: file.name, path: file.path, download: download(file.mediaId, null, false) })),
+      server: item.notShared && item.server ? { ...item.server, url: null, command: null, args: [] } : item.server,
+      rule: item.rule,
+      path: item.path,
+    };
+    out.set(item.session, [...(out.get(item.session) ?? []), entry]);
+  }
+  return out;
 }
 
 /** What an attached file is for: a project file of a coding tool the build uses, or a .json file used by a step whose tool imports it. A file a step makes is neither. */
@@ -396,6 +451,7 @@ function chatFor(step: Step, context: Context): ReaderChat | null {
     typed,
     headline: group.tool ? `New chat in ${group.tool}` : "New chat",
     detail,
+    setup: context.setup.get(groupKey(group)) ?? [],
   };
 }
 
@@ -677,7 +733,7 @@ export function whatYouNeed(
   /* Other parts */
   const handled = new Set<string>([PROMPT_TYPE, AGENT_TYPE, TEAM_TYPE, MANUAL_STEP_TYPE, FILE_TYPE, TOOL_TYPE, RESULT_TYPE, PREREQUISITE_TYPE]);
   const other: NeedRow[] = tree
-    .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type))
+    .filter((node) => node.parent_id === null && !handled.has(node.type) && !EVIDENCE_NODE_TYPES.has(node.type) && !isSetupPayload(node.payload))
     .map((node) => ({ id: node.id, title: (node.title ?? "").trim() || node.type, detail: node.type }));
   if (other.length > 0) groups.push({ key: "other", label: "Other parts", rows: other });
 
@@ -744,6 +800,25 @@ function chatSentence(chat: ReaderChat): string {
   if (chat.kind === "same") return `${chat.text}.`;
   const where = chat.tool ? `New chat in ${chat.tool}` : "New chat";
   return chat.model ? `${where} (${chat.model}).` : `${where}.`;
+}
+
+/**
+ * CA-04 P4: what a session starts with: its instruction files, then the names of its skills, servers and rules.
+ * Nothing that is not shared is linked; its name is still said.
+ */
+export function setupSentences(setup: readonly ReaderSetupItem[]): string[] {
+  const out: string[] = [];
+  for (const item of setup.filter((entry) => entry.kind === "instructions")) {
+    out.push(item.download ? `Before you start, put ${item.name} in your project folder: ${item.download}.` : `Before you start, put ${item.name} in your project folder.`);
+  }
+  const names = (kind: SetupKind) => setup.filter((entry) => entry.kind === kind).map((entry) => (kind === "rule" && entry.rule ? `${entry.rule.when}${entry.rule.filter ? ` (${entry.rule.filter})` : ""}: ${entry.name}` : entry.name));
+  const skills = names("skill");
+  const servers = names("server");
+  const rules = names("rule");
+  if (skills.length > 0) out.push(`Skills: ${join(skills)}.`);
+  if (servers.length > 0) out.push(`MCP servers: ${join(servers)}.`);
+  if (rules.length > 0) out.push(`Rules: ${rules.join("; ")}.`);
+  return out;
 }
 
 function inputSentences(entry: ReaderStep): string[] {
@@ -816,6 +891,7 @@ export function stepsMarkdown(
       continue;
     }
     if (entry.chat) lines.push(chatSentence(entry.chat), "");
+    if (entry.chat?.kind === "new" && entry.chat.setup.length > 0) lines.push(...setupSentences(entry.chat.setup), "");
     const inputs = inputSentences(entry);
     if (inputs.length > 0) lines.push(...inputs, "");
     // CA-04 P2: a step and the tiles sent with it are one message: Copy together's.

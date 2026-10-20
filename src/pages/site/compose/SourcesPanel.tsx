@@ -24,6 +24,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { TextButton } from "./composeControls";
+import { holdsFolder, readDrop } from "./dropFolders";
 import { ToolMark } from "./refinedPieces";
 import { bareButton, ellipsis, text, tnum } from "./refinedStyles";
 import { REMINDER_ROWS, type SourceFile, type SourceLibraryItem, type SourceReminder, type SourceSession } from "./sourcesModel";
@@ -55,8 +56,8 @@ export interface SourcesPanelProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onAddSession: (id: string) => void;
-  /** Files dropped on the zone. */
-  onDropFiles: (files: File[]) => void;
+  /** Files dropped on the zone; CA-04 P4: with where each sat when a folder was dropped. */
+  onDropFiles: (files: File[], paths?: string[]) => void;
   /** Opens the page's file picker. */
   onPick: () => void;
   /** Where "Connect a tool" goes. */
@@ -305,6 +306,13 @@ function DropZone({ fine, onDropFiles, onPick }: Pick<SourcesPanelProps, "fine" 
         if (!carriesFiles(event)) return;
         event.preventDefault();
         setOver(false);
+        // CA-04 P4: a folder is walked, so a skill's files keep their places.
+        if (holdsFolder(event.dataTransfer)) {
+          void readDrop(event.dataTransfer).then(({ files, paths }) => {
+            if (files.length > 0) onDropFiles(files, paths);
+          });
+          return;
+        }
         const files = Array.from(event.dataTransfer.files);
         if (files.length > 0) onDropFiles(files);
       }}

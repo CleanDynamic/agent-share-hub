@@ -20,6 +20,7 @@
 
 import { useRef, useState, type CSSProperties, type ReactNode, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
+import * as Menu from "@radix-ui/react-dropdown-menu";
 
 import { Avatar } from "@/components/brand/Avatar";
 import { Button } from "@/components/brand/Button";
@@ -62,6 +63,7 @@ import type {
   CompletenessView,
 } from "./buildModel";
 import { NeedPanel, StepsList } from "./BuildSteps";
+import { menuItem, menuSurface } from "../compose/refinedStyles";
 import { buildSummary } from "@/lib/build/buildSummary";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize2, Play, X } from "lucide-react";
@@ -619,7 +621,24 @@ function DockItem({
   testId: string;
 }) {
   const { state, handlers } = useInteractive<HTMLButtonElement & HTMLAnchorElement>();
-  const style: CSSProperties = {
+  const style = dockItemStyle(first, phone, height, state);
+  if (to) {
+    return (
+      <Link to={to} data-testid={testId} {...handlers} style={style}>
+        {label}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" data-testid={testId} onClick={onClick} {...handlers} style={style}>
+      {label}
+    </button>
+  );
+}
+
+/** A dock item's paint: 28 high (30 inline, 44 on a phone), text only, a control border between items. */
+function dockItemStyle(first: boolean, phone: boolean, height: number, state: { hovered?: boolean; focusVisible?: boolean }): CSSProperties {
+  return {
     appearance: "none",
     boxSizing: "border-box",
     height: phone ? 44 : height,
@@ -638,17 +657,34 @@ function DockItem({
     minWidth: 0,
     ...ring(state.focusVisible),
   };
-  if (to) {
-    return (
-      <Link to={to} data-testid={testId} {...handlers} style={style}>
-        {label}
-      </Link>
-    );
-  }
+}
+
+export const DOWNLOAD_COPY = {
+  build: "The build",
+  setup: "The setup, as a folder",
+} as const;
+
+/** CA-04 P4: Download as a menu once the build has a session setup: the build as before, or the setup as a folder. */
+function DownloadMenu({ phone, height, onBuild, onSetup }: { phone: boolean; height: number; onBuild: () => void; onSetup: () => void }) {
+  const { state, handlers } = useInteractive<HTMLButtonElement>();
   return (
-    <button type="button" data-testid={testId} onClick={onClick} {...handlers} style={style}>
-      {label}
-    </button>
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <button type="button" data-testid="build-download" aria-haspopup="menu" {...handlers} style={dockItemStyle(false, phone, height, state)}>
+          Download
+        </button>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="end" sideOffset={4} style={menuSurface()}>
+          <Menu.Item onSelect={onBuild} style={menuItem(true, phone)}>
+            {DOWNLOAD_COPY.build}
+          </Menu.Item>
+          <Menu.Item onSelect={onSetup} style={menuItem(true, phone)}>
+            {DOWNLOAD_COPY.setup}
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
@@ -686,7 +722,11 @@ function ActionDock({
       style={{ ...frame, ...CONTROL, borderRadius: 6, overflow: "hidden", boxSizing: "border-box" }}
     >
       <DockItem label="Copy for AI" first phone={phone} height={height} onClick={() => void copy()} testId="build-copy-for-ai" />
-      <DockItem label="Download" first={false} phone={phone} height={height} onClick={actions.onDownload} testId="build-download" />
+      {actions.onDownloadSetup ? (
+        <DownloadMenu phone={phone} height={height} onBuild={actions.onDownload} onSetup={actions.onDownloadSetup} />
+      ) : (
+        <DockItem label="Download" first={false} phone={phone} height={height} onClick={actions.onDownload} testId="build-download" />
+      )}
       <DockItem label="Rebuild" first={false} phone={phone} height={height} onClick={actions.onRebuild} testId="build-rebuild" />
       <DockItem label="Lineage" first={false} phone={phone} height={height} to={actions.lineageTo} testId="build-lineage" />
     </div>

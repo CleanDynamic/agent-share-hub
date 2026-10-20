@@ -170,6 +170,8 @@ export interface BuildListProps {
   /** CA-04 P2: Accept and Ignore on code sent with an imported prompt. Absent: nothing is offered. */
   onKeepSentWith?: (suggestion: CodeSuggestion) => void;
   onIgnoreSentWith?: (stepId: string, key: string) => void;
+  /** CA-04 P4: "Setup {n}" on a session's head selects the session and scrolls Details to its Setup. */
+  onOpenSetup?: (sessionKey: string) => void;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -383,7 +385,7 @@ const wordsOf = (n: number) => `${n} ${n === 1 ? "word" : "words"}`;
 
 /* ── a session's head ── */
 
-function SessionHead({ session }: { session: SourceSession }) {
+function SessionHead({ session, phone, onOpenSetup }: { session: SourceSession; phone: boolean; onOpenSetup?: (key: string) => void }) {
   /* CA-04 P2: a tile dropped on a session's head goes into that session. */
   const drop = useNestSession(session.key);
   return (
@@ -407,6 +409,11 @@ function SessionHead({ session }: { session: SourceSession }) {
       </span>
       <span style={{ ...text(12, 400, t.label), ...ellipsis, minWidth: 0 }}>{session.detail}</span>
       <span aria-hidden="true" style={{ flexGrow: 1, height: 1, background: t.hairline, minWidth: 12 }} />
+      {session.setupCount && onOpenSetup ? (
+        <TextButton target={phone} style={{ ...text(12, 500, t.text2), flexShrink: 0 }} aria-label={`Setup of session ${session.number}: ${session.setupCount}`} onClick={() => onOpenSetup(session.key)}>
+          {`Setup ${session.setupCount}`}
+        </TextButton>
+      ) : null}
     </div>
   );
 }
@@ -1587,7 +1594,7 @@ export function BuildList(props: BuildListProps) {
       <p style={{ ...text(12, 400, t.label), margin: 0 }}>{LIST_COPY.hint}</p>
       {runsOf(steps, props.dividers).map((run) => (
         <div key={run.key} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-          {run.head ? <SessionHead session={run.head} /> : null}
+          {run.head ? <SessionHead session={run.head} phone={props.phone} onOpenSetup={props.onOpenSetup} /> : null}
           {run.steps.map(placed)}
         </div>
       ))}

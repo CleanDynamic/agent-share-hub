@@ -39,6 +39,7 @@ import {
   type NamedPiece,
 } from "./detailsModel";
 import { readsOutsideContent } from "@/lib/build/outsideContent";
+import { isSetupPayload, SETUP_KIND_LABEL, setupItemsOf, setupOfNode } from "@/lib/build/setup";
 import type { AgentView, CheckView, CodeView, DetailsView, FileView, ManualView, PromptView, ResultView, SessionView, ToolView } from "./DetailsPanel";
 import { lineCount } from "./codeModel";
 import { shortDate, type SourceFile, type SourceSession } from "./sourcesModel";
@@ -89,7 +90,8 @@ export function pieces(tree: readonly NodeTree[], files: readonly SourceFile[]):
   const fileRows: NamedPiece[] = [];
   const toolRows: NamedPiece[] = [];
   for (const node of tree) {
-    if (node.parent_id !== null) continue;
+    // CA-04 P4: a session's setup is not a file or a tool a step uses.
+    if (node.parent_id !== null || isSetupPayload(node.payload)) continue;
     const payload = payloadOf(node);
     if (node.type === FILE_TYPE) fileRows.push({ id: node.id, name: text(payload.title) || "Untitled file", note: `File · ${notes.get(node.id) ?? "added by you"}` });
     if (node.type === TOOL_TYPE) toolRows.push({ id: node.id, name: text(payload.service) || "Untitled tool", note: "Tool" });
@@ -268,6 +270,8 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     total,
     status,
     checklist,
+    // CA-04 P4: its setup, in the order it was added.
+    setup: setupItemsOf(ctx.tree, source.key).map((item) => ({ id: item.id, kind: SETUP_KIND_LABEL[item.kind], name: item.name, description: item.description, notShared: item.notShared })),
     // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
     ...(group && !real
       ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }
@@ -318,11 +322,43 @@ function resultView(node: NodeTree, ctx: ViewContext): ResultView {
   };
 }
 
+/** CA-04 P4: a setup item: its file, its server as a tool, or its rule as the code it runs, named in its eyebrow. */
+function setupView(node: NodeTree, ctx: ViewContext): DetailsView | null {
+  const [item] = setupItemsOf([node]);
+  if (!item) return null;
+  const eyebrow = `Setup · ${SETUP_KIND_LABEL[item.kind]}`;
+  if (node.type === FILE_TYPE) return { ...fileView(node, ctx), name: item.name === "Skill" ? fileView(node, ctx).name : item.name, sentWithLine: eyebrow };
+  if (node.type === TOOL_TYPE) return toolView(node, ctx);
+  if (!item.rule) return null;
+  return {
+    kind: "code",
+    id: node.id,
+    number: "",
+    title: node.title,
+    defaultTitle: item.rule.when || "Rule",
+    sentWithLine: [eyebrow, item.rule.when, item.rule.filter].filter(Boolean).join(" · "),
+    language: "bash",
+    filename: null,
+    source: item.rule.command,
+    lines: lineCount(item.rule.command),
+    tool: null,
+    model: null,
+    uses: [],
+    options: [],
+    goesInto: [],
+    makes: [],
+  };
+}
+
 /** The view of what is selected, or null when nothing is, or what was selected is gone. */
 export function resolveView(ctx: ViewContext): DetailsView | null {
   const id = ctx.selectedId;
   if (!id) return null;
   const all = pieces(ctx.tree, ctx.sourceFiles as SourceFile[]);
+
+  // CA-04 P4: a setup item opens as a file, a tool or its rule does.
+  const setupNode = ctx.tree.find((candidate) => candidate.id === id && candidate.parent_id === null && setupOfNode(candidate));
+  if (setupNode) return setupView(setupNode, ctx);
 
   const step = flatten(ctx.steps).find((candidate) => candidate.id === id);
   if (step?.kind === "file") {

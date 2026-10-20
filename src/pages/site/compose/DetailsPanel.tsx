@@ -121,6 +121,19 @@ export interface SessionView {
    * `tool` is a tool id or a typed name, or null for "Typed here"; `date` is "2026-10-12", or "" when it has none yet.
    */
   editable?: { tool: string | null; date: string };
+  /** CA-04 P4: what the AI was given before the first prompt. Absent or empty: no Setup section. */
+  setup?: readonly SetupRow[];
+}
+
+/** CA-04 P4: one row of a session's setup. */
+export interface SetupRow {
+  id: string;
+  /** "Instructions", "Skill", "MCP server", "Rule". */
+  kind: string;
+  name: string;
+  /** A skill's description, word for word. */
+  description: string | null;
+  notShared: boolean;
 }
 
 export interface FileView {
@@ -228,6 +241,10 @@ export interface DetailsHandlers {
   onSessionTool?: (sessionId: string, tool: string | null) => void;
   /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
   onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
+  /** CA-04 P4: "Add to setup" opens the file picker for this session's setup. Absent: the button is not shown. */
+  onAddToSetup?: (sessionKey: string) => void;
+  /** CA-04 P4: mark a setup item Not shared. Absent: the button is not shown. */
+  onNotShared?: (id: string) => void;
   onDownload: (id: string) => void;
   onFields: (id: string, fields: Record<string, string | null>) => void;
   onAddPicture: (id: string, file: File) => void;
@@ -236,6 +253,8 @@ export interface DetailsHandlers {
 }
 
 export interface DetailsPanelProps extends DetailsHandlers {
+  /** CA-04 P4: "Setup 2" on a session's head asks this session's Setup to scroll into view; `at` changes each time. */
+  focusSetup?: { key: string; at: number } | null;
   phone: boolean;
   view: DetailsView | null;
   /** The tools the build already uses, first in a manual step's tool picker. */
@@ -928,7 +947,85 @@ function SessionDate({ id, value, phone, onCommit }: { id: string; value: string
   );
 }
 
-function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool, onSessionMeta }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta">) {
+export const SETUP_COPY = {
+  title: "Setup",
+  add: "Add to setup",
+  notShared: "Not shared",
+  keepToMyself: "Don't share it",
+} as const;
+
+/**
+ * CA-04 P4: Setup, under Date. Rows: the kind 12 `--label`, the name 12.5 `--text`, hairlines between. A row marked
+ * Not shared is dashed, its name (and a skill's description) kept. Add to setup opens the file picker.
+ */
+function SetupSection({ view, phone, focus, onSelect, onAddToSetup, onNotShared }: { view: SessionView; phone: boolean; focus: DetailsPanelProps["focusSetup"] } & Pick<DetailsHandlers, "onSelect" | "onAddToSetup" | "onNotShared">) {
+  const ref = useRef<HTMLElement>(null);
+  const at = focus && focus.key === view.key ? focus.at : null;
+  useEffect(() => {
+    if (at !== null) ref.current?.scrollIntoView?.({ block: "start" });
+  }, [at]);
+  const rows = view.setup ?? [];
+  // Shown only once the session has a setup: a drop on Sources starts one.
+  if (rows.length === 0) return null;
+  return (
+    <section ref={ref} aria-label={SETUP_COPY.title} data-testid="session-setup" style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, paddingBottom: 8, borderBottom: line }}>
+        <h3 style={{ ...text(12.5, 500, t.text), margin: 0 }}>{SETUP_COPY.title}</h3>
+        <span style={{ ...quiet(), ...tnum }}>{rows.length}</span>
+      </div>
+      {rows.map((row) => (
+        <div
+          key={row.id}
+          data-testid="setup-row"
+          data-not-shared={row.notShared ? "true" : undefined}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            minHeight: phone ? 44 : 40,
+            padding: "6px 8px",
+            boxSizing: "border-box",
+            borderBottom: line,
+            ...(row.notShared ? { border: `1px dashed ${t.line}`, borderRadius: 6, marginTop: 4 } : null),
+          }}
+        >
+          <button type="button" onClick={() => onSelect?.(row.id)} style={{ ...bareButton, display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
+            <span style={text(12, 400, t.label)}>{row.kind}</span>
+            <span style={{ ...text(12.5, 400, t.text), overflowWrap: "anywhere" }}>{row.name}</span>
+            {row.description ? <span style={{ ...quiet(), overflowWrap: "anywhere" }}>{row.description}</span> : null}
+          </button>
+          {row.notShared ? (
+            <span style={quiet()}>{SETUP_COPY.notShared}</span>
+          ) : onNotShared ? (
+            <TextButton target={phone} style={text(12, 500, t.text2)} onClick={() => onNotShared(row.id)}>
+              {SETUP_COPY.keepToMyself}
+            </TextButton>
+          ) : null}
+        </div>
+      ))}
+      {onAddToSetup ? (
+        <div style={{ paddingTop: 8 }}>
+          <TextButton target={phone} style={text(12.5, 500, t.text2)} onClick={() => onAddToSetup(view.key)}>
+            {SETUP_COPY.add}
+          </TextButton>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function SessionDetails({
+  view,
+  phone,
+  inBuild,
+  focusSetup,
+  onToggleSessionPrompt,
+  onSessionTool,
+  onSessionMeta,
+  onSelect,
+  onAddToSetup,
+  onNotShared,
+}: { view: SessionView; phone: boolean; inBuild: readonly string[]; focusSetup?: DetailsPanelProps["focusSetup"] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta" | "onSelect" | "onAddToSetup" | "onNotShared">) {
   const [all, setAll] = useState(false);
   const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
   return (
@@ -976,6 +1073,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
       </div>
       )}
+      <SetupSection view={view} phone={phone} focus={focusSetup ?? null} onSelect={onSelect} onAddToSetup={onAddToSetup} onNotShared={onNotShared} />
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
         {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
@@ -1396,7 +1494,7 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { 
 /* ── the panel ── */
 
 /* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
-export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: DetailsPanelProps) {
+export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSetup = null, ...h }: DetailsPanelProps) {
   if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
   return (
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
@@ -1404,7 +1502,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} onSelect={h.onSelect} onAddToSetup={h.onAddToSetup} onNotShared={h.onNotShared} focusSetup={focusSetup} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}

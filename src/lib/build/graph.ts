@@ -327,8 +327,11 @@ const KIND_NAME: Record<StepKind, string> = {
 /** CA-03 P5: an eval run is a check, and a step, only when it says what it tested. */
 const isCheckPayload = (payload: unknown): boolean => isRecord(payload) && typeof payload.tested === "string" && payload.tested.trim().length > 0;
 
+/** CA-04 P4: part of a session's setup (setup.ts): never a step, though a rule is code. */
+const isSetupNode = (payload: unknown): boolean => isRecord(payload) && isRecord(payload.setup);
+
 const isStepNode = (node: Pick<BuildNode, "type"> & { payload?: unknown }): boolean =>
-  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload));
+  node.type in KIND_OF_TYPE && (node.type !== CHECK_TYPE || isCheckPayload(node.payload)) && !isSetupNode(node.payload);
 
 const numberOf = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
