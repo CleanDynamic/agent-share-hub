@@ -1472,7 +1472,11 @@ export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: str
   if (!target) return NEST_COPY.noParent;
   if (parentId === id || holds(found.node, parentId)) return NEST_COPY.cycle;
   const type = target.node.type;
-  if (type === RESULT_TYPE) return NEST_COPY.result;
+  // CA-05 P10: a result that is a trained model holds one thing: the file it was trained on.
+  if (type === RESULT_TYPE) {
+    if (!(isTrainedModel(target.node) && found.node.type === FILE_TYPE)) return NEST_COPY.result;
+    return target.depth + heightOf(found.node) > NEST_DEPTH_MAX ? NEST_COPY.depth : null;
+  }
   if (type === FILE_TYPE) return NEST_COPY.file;
   if (!isStepNode(target.node)) return NEST_COPY.noParent;
   if (type === AGENT_TYPE && found.node.type !== PROMPT_TYPE) return NEST_COPY.agent;
@@ -1484,6 +1488,8 @@ export function nestRefusal(tree: readonly NodeTree[], id: string, parentId: str
 /** Why a new file or code tile cannot be made inside `parentId`, or null when it can: a step that is not an agent or a team, not too deep. */
 function nestHomeRefusal(tree: readonly NodeTree[], parentId: string): string | null {
   const target = locate(tree, parentId);
+  // CA-05 P10: the file a trained model was trained on goes inside its result.
+  if (target && isTrainedModel(target.node)) return null;
   if (!target || !isStepNode(target.node)) return NEST_COPY.noParent;
   if (target.node.type === AGENT_TYPE) return NEST_COPY.agent;
   if (target.node.type === TEAM_TYPE) return NEST_COPY.team;
@@ -1650,8 +1656,59 @@ export async function setToolConnection(node: BuildNode, connection: ToolConnect
 const FIELDS: Record<string, { keys: readonly string[]; required: string }> = {
   [FILE_TYPE]: { keys: ["title", "summary", "url"], required: "title" },
   [TOOL_TYPE]: { keys: ["service", "scopes", "notes"], required: "service" },
-  [RESULT_TYPE]: { keys: ["summary", "url", "media_id"], required: "summary" },
+  // CA-05 P10: a result can be a trained model: `kind`, the model it is based on, and how it was trained.
+  [RESULT_TYPE]: { keys: ["summary", "url", "media_id", "kind", "base_model", "method"], required: "summary" },
 };
+
+/** CA-05 P10: the one kind a result states outright; a link, a picture and a file are read from what the result holds. */
+export const TRAINED_MODEL = "trained-model";
+export const BASE_MODEL_MAX = 80;
+export const TRAINED_METHOD_MAX = 200;
+
+/** The longest each result key may be, for the keys that are not free text. */
+const RESULT_LIMITS: Record<string, number> = { base_model: BASE_MODEL_MAX, method: TRAINED_METHOD_MAX };
+
+export interface TrainedModel {
+  /** The model it is based on, as saved; empty while not chosen. */
+  baseModel: string;
+  /** How it was trained: one line. */
+  method: string;
+  /** The file sent with it: the ratings or the examples. */
+  trainedOn: { id: string; name: string; rows: number | null } | null;
+}
+
+/** Whether a result is a trained model. */
+export const isTrainedModel = (node: Pick<BuildNode, "type" | "payload">): boolean => node.type === RESULT_TYPE && payloadOf(node).kind === TRAINED_MODEL;
+
+/** A trained-model result's facts, read from the node and the file sent with it; null for any other node. */
+export function trainedModelOf(node: Pick<NodeTree, "type" | "payload"> & { children?: readonly NodeTree[] }): TrainedModel | null {
+  if (!isTrainedModel(node)) return null;
+  const payload = payloadOf(node);
+  const file = (node.children ?? []).find((child) => child.type === FILE_TYPE);
+  const filePayload = file ? payloadOf(file) : {};
+  return {
+    baseModel: stringOf(payload.base_model)?.trim() ?? "",
+    method: stringOf(payload.method)?.trim() ?? "",
+    trainedOn: file
+      ? {
+          id: file.id,
+          name: stringOf(filePayload.title)?.trim() ?? "Untitled file",
+          rows: typeof filePayload.rows === "number" && Number.isInteger(filePayload.rows) && filePayload.rows > 0 ? filePayload.rows : null,
+        }
+      : null,
+  };
+}
+
+/**
+ * "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv": the parts that exist. The file's
+ * rows are said only when they were counted exactly; the model is said as `modelName` gives it.
+ */
+export function trainedModelLine(trained: TrainedModel, modelName: (raw: string) => string = (raw) => raw): string {
+  const parts = ["A trained model"];
+  if (trained.baseModel) parts.push(`based on ${modelName(trained.baseModel)}`);
+  if (trained.trainedOn) parts.push(`trained on ${trained.trainedOn.rows ? `${trained.trainedOn.rows.toLocaleString("en-GB")} rows of ` : ""}${trained.trainedOn.name}`);
+  return parts.join(", ");
+}
 
 /**
  * Change the text fields of a file, a tool or a result (DATA §2). A blank value
@@ -1667,7 +1724,13 @@ export async function setNodeFields(node: BuildNode, fields: Record<string, stri
     if (!trimmed) {
       if (key === allowed.required) throw refuse("setNodeFields", "That field cannot be empty.");
       delete payload[key];
-    } else payload[key] = trimmed;
+    } else {
+      if (node.type === RESULT_TYPE && key === "kind" && trimmed !== TRAINED_MODEL) throw refuse("setNodeFields", "That is not a kind of result.");
+      const limit = node.type === RESULT_TYPE ? RESULT_LIMITS[key] : undefined;
+      if (limit && trimmed.length > limit) throw refuse("setNodeFields", `That field is at most ${limit} characters.`);
+      if (node.type === RESULT_TYPE && key === "method" && /\n/.test(trimmed)) throw refuse("setNodeFields", "How it was trained is one line.");
+      payload[key] = trimmed;
+    }
   }
   return upsertNode(withPayload(node, payload));
 }

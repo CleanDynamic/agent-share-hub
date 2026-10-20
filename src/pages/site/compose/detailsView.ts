@@ -19,6 +19,7 @@ import {
   TOOL_TYPE,
   toolConnectionOf,
   toolsUsedOf,
+  trainedModelOf,
   type SessionGroup,
   type Step,
 } from "@/lib/build/graph";
@@ -335,12 +336,17 @@ function resultView(node: NodeTree, ctx: ViewContext): ResultView {
   const payload = payloadOf(node);
   const mediaId = text(payload.media_id);
   const facts = mediaId ? ctx.media(mediaId) : undefined;
+  // CA-05 P10: only a trained model is stated; a link, a picture and a file are read from what the result holds.
+  const trained = trainedModelOf(node);
+  const isPicture = Boolean(mediaId) && (!facts?.name || /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(facts.name));
   return {
     kind: "result",
     id: node.id,
     summary: text(payload.summary),
     url: text(payload.url),
     pictures: mediaId ? [{ id: mediaId, name: facts?.name ?? "Picture" }] : [],
+    what: trained ? "trained-model" : mediaId ? (isPicture ? "picture" : "file") : "link",
+    ...(trained ? { trained } : null),
   };
 }
 

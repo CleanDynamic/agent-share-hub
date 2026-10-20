@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { addFile, buildSteps, canCheck, TRAINED_MODEL, FILE_TYPE, groupKey, nestRefusal, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
 import { toolFor } from "@/lib/tools/registry";
 import { addWrittenPrompt } from "@/lib/build/composePrompts";
 import { addSetupFile, addSetupRule, addSetupServer, addSetupWorkflow, isSetupPayload, needsText, routeSetupFiles, setNotShared, setupItemsOf, type DroppedFile, type SetupDraft } from "@/lib/build/setup";
@@ -262,7 +262,7 @@ export function SandboxPage() {
         results.push({
           id: node.id,
           title: str("summary") ?? str("url") ?? "Result",
-          holds: payload.media_id ? "a picture" : payload.url ? "a link" : "text",
+          holds: payload.kind === TRAINED_MODEL ? "a trained model" : payload.media_id ? "a picture" : payload.url ? "a link" : "text",
           from: from ? (numberOf.get(from.node_id) ?? null) : null,
         });
       }
@@ -806,6 +806,21 @@ export function SandboxPage() {
     [addOneFile, prompts, steps, afterWrite],
   );
 
+  /**
+   * CA-05 P10: the file a trained model was trained on, sent with its result: the ratings or the examples. A file that
+   * was there goes; a .csv, .json or .jsonl file keeps the number of rows it holds when they can be counted exactly.
+   */
+  const onTrainedOn = useCallback(
+    async (resultId: string, file: File) => {
+      const rows = isTestFileName(file.name) && file.size <= TEST_FILE_MAX_BYTES ? countCases(file.name, await file.text().catch(() => "")) : null;
+      const added = await addOneFile(file, "attach", resultId, rows);
+      if (!added) return;
+      const before = (tree.find((candidate) => candidate.id === resultId)?.children ?? []).filter((child) => child.type === FILE_TYPE && child.id !== added.id);
+      for (const old of before) prompts.removeInside(old.id);
+    },
+    [addOneFile, prompts, tree],
+  );
+
   /** A drop on a step's card: a chat export goes to the intake and nothing is attached. */
   const onDropOnStep = useCallback(
     async (stepId: string, files: File[]) => {
@@ -1155,6 +1170,7 @@ export function SandboxPage() {
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
             onCheckRuns={prompts.setCheckRuns}
             onModelRun={prompts.setModelRun}
+            onTrainedOn={(id, file) => void onTrainedOn(id, file)}
             onAgentNotes={prompts.setAgentNotes}
             onSessionTogether={(key, keys) => void onSessionTogether(key, keys)}
             onDownload={(id) => void download(id)}

@@ -34,7 +34,7 @@ import { t } from "@/lib/theme/tokens";
 import { DM_MONO } from "@/lib/theme/type";
 
 import { ChoiceRows } from "./ChoiceRows";
-import { FIELD_LABEL, TextButton } from "./composeControls";
+import { Field, FIELD_LABEL, TextButton } from "./composeControls";
 import {
   atOnce,
   firstRows,
@@ -55,7 +55,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, chipStyle, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, TRAINED_METHOD_MAX, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type ToolRunsAt, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, type CheckRun, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -217,7 +217,14 @@ export interface ResultView {
   url: string;
   /** Pictures kept with the result. */
   pictures: readonly { id: string; name: string }[];
+  /** CA-05 P10: what it is, as What it is shows it. Absent in older fixtures: a link, or a picture when it holds one. */
+  what?: ResultWhat;
+  /** CA-05 P10: a trained model's facts. Present only when `what` is "trained-model". */
+  trained?: { baseModel: string; method: string; trainedOn: { id: string; name: string; rows: number | null } | null };
 }
+
+/** CA-05 P10: A link, A picture, A file, A trained model. Only the last is stored (`payload.kind`). */
+export type ResultWhat = "link" | "picture" | "file" | "trained-model";
 
 /** CA-02 P7: lines of code. Shown in full, with Copy; never run. */
 export interface CodeView extends InputsView {
@@ -278,6 +285,8 @@ export interface DetailsHandlers {
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
   onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P10: the file a trained model was trained on: sent with its result. Absent: the picker is not shown. */
+  onTrainedOn?: (resultId: string, file: File) => void;
   /** CA-05 P9: how an agent tidies its notes and what it changes each round; an empty string takes a line off. Absent: the wells are not shown. */
   onAgentNotes?: (id: string, notes: { memoryTidy?: string; changesEachRound?: string }) => void;
   /** CA-05 P8: say how a model was run (null takes it off). Absent: How it was run and Where are not shown. */
@@ -1704,14 +1713,97 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
 
 /* ── a result ── */
 
-function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover }: { view: ResultView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover">) {
+export const RESULT_COPY = {
+  what: "What it is",
+  link: "A link",
+  picture: "A picture",
+  file: "A file",
+  trained: "A trained model",
+  basedOn: "Based on",
+  trainedOn: "Trained on",
+  trainedOnLine: "The ratings or examples it learned from.",
+  addFile: "Add the file",
+  replaceFile: "Replace the file",
+  removeFile: "Remove the file",
+  how: "How it was trained",
+  howHint: "Rated answers, ranked by me",
+  optional: "Optional",
+} as const;
+
+const WHAT_ROWS: readonly { value: ResultWhat; label: string }[] = [
+  { value: "link", label: RESULT_COPY.link },
+  { value: "picture", label: RESULT_COPY.picture },
+  { value: "file", label: RESULT_COPY.file },
+  { value: "trained-model", label: RESULT_COPY.trained },
+];
+
+function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTrainedOn, onRemoveInside }: { view: ResultView; phone: boolean } & Pick<DetailsHandlers, "onFields" | "onAddPicture" | "onUseAsCover" | "onTrainedOn" | "onRemoveInside">) {
   const picker = useRef<HTMLInputElement>(null);
+  const trainedPicker = useRef<HTMLInputElement>(null);
+  const what: ResultWhat = view.what ?? (view.pictures.length > 0 ? "picture" : "link");
+  const trained = what === "trained-model" ? view.trained : undefined;
   return (
     <>
       <Head eyebrow="Result" />
       <FieldBlock label="Summary">
         <CommitField key={`${view.id}:summary`} label="Summary" value={view.summary} phone={phone} multiline max={200} onCommit={(value) => onFields(view.id, { summary: value })} />
       </FieldBlock>
+      {/* CA-05 P10: rare, so it is one choice here; the first three are read from what the result holds. */}
+      <Field id={`${view.id}-what`} label={RESULT_COPY.what} group>
+        <ChoiceRows<ResultWhat>
+          label={RESULT_COPY.what}
+          name={`what-${view.id}`}
+          phone={phone}
+          value={what}
+          onChange={(next) => onFields(view.id, { kind: next === "trained-model" ? "trained-model" : null })}
+          rows={WHAT_ROWS}
+        />
+      </Field>
+      {trained ? (
+        <>
+          <Field id={`${view.id}-based`} label={RESULT_COPY.basedOn} group>
+            <ModelPicker tool={null} value={trained.baseModel || null} onChange={(model) => onFields(view.id, { base_model: model ?? null })} phone={phone} name="Based on" anyWithoutTool />
+          </Field>
+          <Field id={`${view.id}-trained-on`} label={RESULT_COPY.trainedOn} group>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {trained.trainedOn ? (
+                <div data-testid="trained-on" style={listRow(44)}>
+                  <span style={{ ...text(12.5, 500, t.text), flexGrow: 1, minWidth: 0, overflowWrap: "anywhere" }}>
+                    {trained.trainedOn.name}
+                    {trained.trainedOn.rows ? ` · ${trained.trainedOn.rows.toLocaleString("en-GB")} rows` : ""}
+                  </span>
+                  {onRemoveInside ? <RemoveButton label={RESULT_COPY.removeFile} phone={phone} onClick={() => onRemoveInside(trained.trainedOn?.id ?? "")} /> : null}
+                </div>
+              ) : (
+                <span style={quiet()}>{RESULT_COPY.trainedOnLine}</span>
+              )}
+              {onTrainedOn ? (
+                <>
+                  <input
+                    ref={trainedPicker}
+                    type="file"
+                    hidden
+                    data-testid="details-trained-on"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) onTrainedOn(view.id, file);
+                    }}
+                  />
+                  <span>
+                    <Button variant="secondary" size={phone ? 44 : 28} fontSize={12} onClick={() => trainedPicker.current?.click()}>
+                      {trained.trainedOn ? RESULT_COPY.replaceFile : RESULT_COPY.addFile}
+                    </Button>
+                  </span>
+                </>
+              ) : null}
+            </div>
+          </Field>
+          <Field id={`${view.id}-method`} label={RESULT_COPY.how} hint={RESULT_COPY.optional}>
+            <CommitField key={`${view.id}:method`} label={RESULT_COPY.how} value={trained.method} placeholder={RESULT_COPY.howHint} max={TRAINED_METHOD_MAX} phone={phone} onCommit={(value) => onFields(view.id, { method: value })} />
+          </Field>
+        </>
+      ) : null}
       <FieldBlock label="Link">
         <CommitField key={`${view.id}:url`} label="Link" value={view.url} placeholder="https://" phone={phone} max={300} onCommit={(value) => onFields(view.id, { url: value })} />
       </FieldBlock>
@@ -1761,7 +1853,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} onToolConnection={h.onToolConnection} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
-      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} /> : null}
+      {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} /> : null}
     </div>
   );
 }

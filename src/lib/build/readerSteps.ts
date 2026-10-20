@@ -32,6 +32,8 @@ import {
   sessionGroups,
   stepTitle,
   toolConnectionOf,
+  trainedModelLine,
+  trainedModelOf,
   type SessionGroup,
   type Step,
 } from "./graph";
@@ -208,6 +210,8 @@ export interface ReaderResult {
   mediaId: string | null;
   /** The step it came from, as a number, when known. */
   from: string | null;
+  /** CA-05 P10: a trained model: "A trained model, based on Muse Spark Open, trained on 1,200 rows of ratings.csv", how it was trained, and the file with its Download. */
+  trained?: { line: string; method: string; file: { id: string; name: string; size: string | null; download: string | null } | null };
 }
 
 /* ── words ── */
@@ -632,12 +636,25 @@ export function readerResults(tree: readonly NodeTree[], media: ReadonlyMap<stri
       );
       const mediaId = text(node, "media_id");
       const found = mediaId ? media.get(mediaId) : undefined;
+      const trained = trainedModelOf(node);
+      const fileMedia = trained?.trainedOn ? media.get(text(node.children?.find((child) => child.id === trained.trainedOn?.id) ?? { payload: null }, "media_id") ?? "") : undefined;
       return {
         id: node.id,
         title: text(node, "summary") ?? text(node, "url") ?? "Result",
         url: text(node, "url") ?? (found ? mediaUrl(found, { width: "original" }) : null),
         mediaId,
         from: from ? (numberOf.get(from.node_id) ?? null) : null,
+        ...(trained
+          ? {
+              trained: {
+                line: trainedModelLine(trained, modelName),
+                method: trained.method,
+                file: trained.trainedOn
+                  ? { id: trained.trainedOn.id, name: trained.trainedOn.name, size: formatSize(fileMedia?.bytes ?? null), download: fileMedia ? mediaUrl(fileMedia, { width: "original" }) : null }
+                  : null,
+              },
+            }
+          : null),
       };
     });
 }
@@ -1005,6 +1022,8 @@ export function stepsMarkdown(
   if (results.length === 0) lines.push(build.live_url ?? "No result is listed.", "");
   for (const result of results) {
     lines.push(`${result.url ?? result.title}${result.from ? ` (from step ${result.from})` : ""}`, "");
+    // CA-05 P10: a trained model says what it is based on and what it learned from.
+    if (result.trained) lines.push(`${result.trained.line}${result.trained.method ? `. ${result.trained.method}` : ""}.`.replace(/\.\.$/, "."), "");
   }
   return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd()}\n`;
 }

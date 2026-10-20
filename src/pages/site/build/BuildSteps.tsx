@@ -923,7 +923,15 @@ function ResultCard({ result, ctx }: { result: ReaderResult; ctx: Ctx }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flexGrow: 1, minWidth: 0 }}>
           <span style={text(11.5, 400, t.label)}>Result</span>
           {name}
+          {/* CA-05 P10: a trained model, said in one line, with the file it learned from. */}
+          {result.trained ? (
+            <span data-testid="trained-model-line" style={{ ...text(12.5, 400, t.text2), overflowWrap: "anywhere" }}>
+              {result.trained.line}
+            </span>
+          ) : null}
+          {result.trained?.method ? <span style={{ ...text(12, 400, t.label), overflowWrap: "anywhere" }}>{result.trained.method}</span> : null}
         </div>
+        {result.trained?.file?.download ? <DownloadButton href={result.trained.file.download} name={result.trained.file.name} /> : null}
         {result.from ? <span style={{ ...text(12, 400, t.label), whiteSpace: "nowrap" }}>from step {result.from}</span> : null}
       </div>
       {result.mediaId ? <MediaFigure reference={result.mediaId} resolveMedia={view.resolveMedia} width={640} alt={result.title} /> : null}
