@@ -109,6 +109,8 @@ export interface Tool {
    * it reads can steer an agent that uses it.
    */
   readsOutside?: true;
+  /** CA-05 P8: the tool runs models on the maker's own computer, so how it was run (size, where) is worth saying. */
+  local?: true;
 }
 
 /** Google AI Studio offers every current Google model, whatever it makes (Appendix B). */
@@ -193,6 +195,28 @@ export const TOOLS: readonly Tool[] = [
     status: "current",
     source: "https://www.perplexity.ai/help-center/en/articles/10354919-what-advanced-ai-models-are-included-in-my-subscription",
     checked: "2026-10-19",
+  },
+  {
+    id: "ollama", name: "Ollama", group: "chat", logo: null, aliases: ["ollama.com", "ollama.ai"],
+    kind: "chat",
+    models: { mode: "any", suggested: [] },
+    steps: ["prompt", "session", "agent", "result", "manual"],
+    local: true,
+    status: "current",
+    source: null,
+    checked: null,
+    unverified: true,
+  },
+  {
+    id: "lm-studio", name: "LM Studio", group: "chat", logo: null, aliases: ["lmstudio", "lm studio.ai", "lmstudio.ai"],
+    kind: "chat",
+    models: { mode: "any", suggested: [] },
+    steps: ["prompt", "session", "agent", "result", "manual"],
+    local: true,
+    status: "current",
+    source: null,
+    checked: null,
+    unverified: true,
   },
   {
     id: "character-ai", name: "Character.AI", group: "chat", logo: null, aliases: ["character ai", "c.ai"],

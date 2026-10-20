@@ -25,6 +25,7 @@ import {
 import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
+import { asksHowRun, modelRunLine } from "@/lib/build/modelRun";
 import { toolFor } from "@/lib/tools/registry";
 
 import {
@@ -124,7 +125,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     defaultTitle: step.defaultTitle,
     editable: !instructions,
     sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
-    detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
+    detailLine: instructions ? "" : [model ? modelRunLine(model, step.modelRun) : null, when, place].filter(Boolean).join(" · "),
     typed,
     model,
     // CA-02 P8: the tool a typed prompt names, as saved, for its model menu and the note on a pair that breaks the rules.
@@ -132,6 +133,8 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     text: step.text,
     words: step.words,
     ...(step.changes ? { changes: step.changes } : null),
+    // CA-05 P8: asked of a prompt whose model runs on the maker's computer or has open weights.
+    ...(!instructions && asksHowRun(tool, step.model) ? { modelRun: { run: step.modelRun ?? null } } : null),
     uses: instructions ? [] : inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: instructions ? [] : inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),
     goesInto: instructions ? [] : goesIntoRows(ctx.steps, step.id, ctx.intoResult),
@@ -210,6 +213,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
     name: step.title,
     defaultName: step.defaultTitle,
     model: step.model ? modelLabel(step.model) : null,
+    ...(step.modelRun ? { modelRun: step.modelRun } : null),
     runs: step.runs,
     uses: inputRows(step, ctx.steps, ctx.groups, all.byId),
     options: inputOptions(step, ctx.steps, ctx.groups, all.files, all.tools, madeFilesOf(ctx.tree)),

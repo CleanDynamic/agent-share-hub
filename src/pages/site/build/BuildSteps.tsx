@@ -48,6 +48,7 @@ import { CHECK_COPY, CheckBlock, DotLine } from "../compose/refinedPieces";
 import { hasBeforeYouSend, BeforeYouSend } from "./BeforeYouSend";
 import { modelLabel } from "@/lib/models/registry";
 import { stepList } from "@/lib/build/readerSteps";
+import { modelRunLine } from "@/lib/build/modelRun";
 import { groupByLoaded } from "@/lib/build/setup";
 import { bracketed, changesLine } from "@/lib/build/changes";
 import { copyTogether } from "@/lib/build/copyTogether";
@@ -106,7 +107,7 @@ export function useConfirmed(): [boolean, () => void] {
   return [on, confirm];
 }
 
-export const modelOf = (step: Step): string => (step.model ? modelLabel(step.model) || step.model : "");
+export const modelOf = (step: Step): string => (step.model ? modelRunLine(modelLabel(step.model) || step.model, step.modelRun) : "");
 
 /** The names the full prompt window shows on its Uses chips. */
 export function namesIn(steps: readonly ReaderStep[]): Record<string, string> {

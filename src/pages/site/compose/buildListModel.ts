@@ -4,6 +4,7 @@
    the parts that need more than one step to decide: where the session dividers
    fall, what an input chip says, and which steps go into a result. */
 
+import { modelRunLine } from "@/lib/build/modelRun";
 import { sessionFactsLine, togetherLine } from "@/lib/build/sessionFacts";
 import { groupKey, shownGroups, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { modelLabel } from "@/lib/models/registry";
@@ -71,7 +72,7 @@ export function inputLabel(use: Use, steps: readonly Step[], names: Readonly<Rec
 }
 
 /** The model as the card names it. */
-export const stepModel = (step: Pick<Step, "model">): string | null => (step.model ? modelLabel(step.model) : null);
+export const stepModel = (step: Pick<Step, "model"> & Partial<Pick<Step, "modelRun">>): string | null => (step.model ? modelRunLine(modelLabel(step.model), step.modelRun) : null);
 
 /** Whether text set in a clamped box is cut off: it needs more height than the box shows. */
 export function isClamped(box: { scrollHeight: number; clientHeight: number }): boolean {

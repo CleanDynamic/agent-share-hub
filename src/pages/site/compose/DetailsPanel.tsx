@@ -60,6 +60,8 @@ import { isIsoDay, TOOL_CONNECTIONS, TOOL_RUNS_AT, type ToolConnection, type Too
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
 import { groupByLoaded, type SetupLoaded } from "@/lib/build/setup";
+import { ModelRunFields } from "./ModelRunFields";
+import { asksHowRun, type ModelRun } from "@/lib/build/modelRun";
 import { CheckRunsField, SessionFactsFields, StartedWithField, TogetherFields, type OtherSession } from "./SessionExtrasFields";
 import type { SessionExtras } from "@/lib/build/sessionFacts";
 import { GOAL_CONDITION_MAX, GOAL_TURNS_MAX, GOAL_TURNS_MIN, goalLine, type SessionGoal } from "@/lib/build/making";
@@ -93,6 +95,8 @@ export interface PromptView extends InputsView {
   words: number;
   /** CA-05 P1: the words a reader changes, when the maker marked any. */
   changes?: readonly ChangeRange[];
+  /** CA-05 P8: the model runs on the maker's own computer or has open weights: How it was run and Where are asked, with what is said so far. */
+  modelRun?: { run: ModelRun | null };
   /** The files it makes; empty for an agent's instructions. */
   makes: readonly MakesRow[];
 }
@@ -198,6 +202,8 @@ export interface AgentView extends InputsView {
   outside?: readonly string[];
   /** CA-04 P6: its session worked until a goal: "Until a goal was reached" is chosen for it until it says otherwise. */
   sessionGoal?: boolean;
+  /** CA-05 P8, an agent only: how its main model was run, when the maker said. */
+  modelRun?: ModelRun | null;
 }
 
 export interface ResultView {
@@ -268,6 +274,8 @@ export interface DetailsHandlers {
   onSessionGoal?: (key: string, goal: SessionGoal | null) => void;
   /** CA-05: change what a session carries beyond its steps: its extras are written whole (a key left out goes). Absent: they are shown, not edited. */
   onSessionExtras?: (key: string, extras: SessionExtras) => void;
+  /** CA-05 P8: say how a model was run (null takes it off). Absent: How it was run and Where are not shown. */
+  onModelRun?: (id: string, run: ModelRun | null) => void;
   /** CA-05 P7: the runs of a check, newest first. Absent: Runs is not shown. */
   onCheckRuns?: (id: string, runs: CheckRun[]) => void;
   /** CA-05 P5: the sessions this one ran at the same time as; the pairing is written both ways. Absent: the menu is not shown. */
@@ -808,6 +816,7 @@ function PromptDetails({ view, phone, focus, ...h }: { view: PromptView; phone: 
           <PairNote tool={view.tool} model={view.model} phone={phone} onChange={() => setOpenModel((n) => n + 1)} onRemove={() => h.onModel(view.id, null)} />
         </div>
       ) : null}
+      {view.modelRun && h.onModelRun ? <ModelRunFields id={view.id} run={view.modelRun.run} phone={phone} onChange={(run) => h.onModelRun?.(view.id, run)} /> : null}
       <div style={{ ...wellField, padding: 12 }}>
         <p style={{ ...text(13, 400, t.text), lineHeight: "21px", margin: 0, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           <ChangedText text={view.text} changes={view.changes} />
@@ -1590,7 +1599,7 @@ function RunsGroup({ view, phone, onRuns }: { view: AgentView; phone: boolean } 
 }
 
 /** CA-02 P5: an agent's Runs in, Models and Tools, written as they change once every model is named. */
-function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]> }) {
+function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup, modelRun, onModelRun }: { id: string; initial: AgentSetupValue; phone: boolean; inBuild: readonly string[]; onAgentSetup: NonNullable<DetailsHandlers["onAgentSetup"]>; modelRun?: ModelRun | null; onModelRun?: DetailsHandlers["onModelRun"] }) {
   const [value, setValue] = useState(initial);
   const [openModel, setOpenModel] = useState(0);
   const change = (next: AgentSetupValue) => {
@@ -1613,6 +1622,8 @@ function AgentSetupBlock({ id, initial, phone, inBuild, onAgentSetup }: { id: st
         }}
       />
       <AgentSetupFields value={value} phone={phone} inBuild={inBuild} onChange={change} openMainModel={openModel} />
+      {/* CA-05 P8: a model on the maker's own computer, or with open weights, says how it was run. */}
+      {onModelRun && asksHowRun(value.harness, main) ? <ModelRunFields id={id} run={modelRun ?? null} phone={phone} onChange={(run) => onModelRun(id, run)} /> : null}
     </>
   );
 }
@@ -1652,7 +1663,7 @@ function AgentDetails({ view, phone, inBuild = [], ...h }: { view: AgentView; ph
       ) : null}
       {view.setup ? (
         h.onAgentSetup ? (
-          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} />
+          <AgentSetupBlock key={view.id} id={view.id} initial={view.setup} phone={phone} inBuild={inBuild} onAgentSetup={h.onAgentSetup} modelRun={view.modelRun} onModelRun={h.onModelRun} />
         ) : (
           <AgentSetupLines setup={view.setup} />
         )

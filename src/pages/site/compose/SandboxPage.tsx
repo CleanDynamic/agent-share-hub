@@ -1154,6 +1154,7 @@ export function SandboxPage() {
             onSessionGoal={(key, goal) => void onSessionGoal(key, goal)}
             onSessionExtras={(key, extras) => void onSessionExtras(key, extras)}
             onCheckRuns={prompts.setCheckRuns}
+            onModelRun={prompts.setModelRun}
             onSessionTogether={(key, keys) => void onSessionTogether(key, keys)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}

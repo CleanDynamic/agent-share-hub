@@ -139,6 +139,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/build/testCases.test.ts",
   "src/lib/build/testCases.ts",
   "src/pages/site/compose/checkRuns.ui.test.tsx",
+  // CA-05 P8
+  "src/lib/build/modelRun.test.ts",
+  "src/lib/build/modelRun.ts",
+  "src/pages/site/compose/ModelRunFields.tsx",
+  "src/pages/site/compose/modelRun.ui.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

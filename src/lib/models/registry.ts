@@ -82,6 +82,8 @@ export interface ModelVersion {
   isNew: boolean;
   /** Other spellings clients send. Matched after the normalisation below. */
   aliases: string[];
+  /** CA-05 P8: the weights are published, so anyone can run it on their own computer, at a smaller size if they choose. */
+  openWeights?: true;
 }
 
 export const MODEL_VERSIONS: readonly ModelVersion[] = [
@@ -191,7 +193,7 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
   { id: "gpt-5-4-nano", name: "GPT-5.4 nano", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-5-mini", name: "GPT-5 mini", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
   { id: "gpt-5-3-codex", name: "GPT-5.3-Codex", lab: "OpenAI", modality: "text", status: "legacy", isNew: false, aliases: [] },
-  { id: "gpt-oss-120b", name: "GPT-OSS-120b", lab: "OpenAI", modality: "text", status: "current", isNew: false, aliases: [] },
+  { id: "gpt-oss-120b", name: "GPT-OSS-120b", lab: "OpenAI", modality: "text", status: "current", isNew: false, aliases: [], openWeights: true },
   { id: "gpt-image-2-5-sunburst", name: "GPT Image 2.5 Sunburst", lab: "OpenAI", modality: "image", status: "current", isNew: false, aliases: ["gpt-image-2.5-sunburst"] },
   { id: "gpt-image-2-5-flare", name: "GPT Image 2.5 Flare", lab: "OpenAI", modality: "image", status: "current", isNew: false, aliases: ["gpt-image-2.5-flare"] },
   { id: "gpt-image-2", name: "GPT Image 2", lab: "OpenAI", modality: "image", status: "legacy", isNew: false, aliases: [] },
@@ -274,7 +276,7 @@ export const MODEL_VERSIONS: readonly ModelVersion[] = [
     aliases: ["muse-spark-1.3", "muse spark 1.3", "muse spark"],
   },
   { id: "muse-spark-1-2", name: "Muse Spark 1.2", lab: "Meta", modality: "text", status: "current", isNew: false, aliases: ["muse-spark-1.2"] },
-  { id: "muse-spark-open", name: "Muse Spark Open", lab: "Meta", modality: "text", status: "current", isNew: false, aliases: [] },
+  { id: "muse-spark-open", name: "Muse Spark Open", lab: "Meta", modality: "text", status: "current", isNew: false, aliases: [], openWeights: true },
   { id: "muse-image", name: "Muse Image", lab: "Meta", modality: "image", status: "current", isNew: false, aliases: ["muse-image-1.0"] },
   {
     id: "jev",

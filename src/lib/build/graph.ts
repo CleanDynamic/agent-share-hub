@@ -23,6 +23,7 @@ import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
 import { modelLabel } from "@/lib/models/registry";
 import { changesOf, type ChangeRange } from "./changes";
+import { modelRunOf, modelRunRefusal, type ModelRun } from "./modelRun";
 import { extrasOf, LONG_SESSION_WORDS, type SessionExtras } from "./sessionFacts";
 
 export const AGENT_TYPE = "agent_config";
@@ -106,6 +107,8 @@ export interface Step {
   toolRefs?: string[];
   /** CA-03 P6, an agent only: what it remembers between runs (`payload.memory`), when it says. */
   memory?: string;
+  /** CA-05 P8: how its model was run (size, where), when the maker said; for a prompt, an agent or code. */
+  modelRun?: ModelRun;
   /** CA-05 P7, a file tile only: the cases in it, when it is a test file and they were counted exactly. */
   rows?: number;
   /** CA-05 P1, a prompt only: the words a reader changes (`payload.changes`), as character ranges of `text`. Absent when none. */
@@ -489,6 +492,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     dismissed: dismissedOf(payload),
     children,
     ...(kind === "manual" ? { mediaId: stringOf(payload.media_id) } : null),
+    ...((kind === "prompt" || kind === "agent" || kind === "code") && modelRunOf(payload.modelRun) ? { modelRun: modelRunOf(payload.modelRun) as ModelRun } : null),
     ...(kind === "prompt" && changesOf(payload, text).length > 0 ? { changes: changesOf(payload, text) } : null),
     ...(kind === "agent" ? agentFacts(payload) : null),
     ...(kind === "code" ? { language: stringOf(payload.language), filename: stringOf(payload.filename)?.trim() || null, entrypoint: payload.entrypoint === true } : null),
@@ -518,6 +522,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     models: undefined,
     toolRefs: undefined,
     memory: undefined,
+    modelRun: undefined,
   };
 }
 
@@ -1016,6 +1021,23 @@ export async function setAgentSetup(node: BuildNode, { model, ...setup }: { mode
     if (keys.memory) payload.memory = keys.memory;
     else delete payload.memory;
   }
+  return upsertNode(withPayload(node, payload));
+}
+
+/**
+ * CA-05 P8: how a model was run (`payload.modelRun = { precision, where }`), beside the model it belongs to. Null, or a
+ * run with neither key, takes it off. For a prompt, an agent (its main model) or code.
+ */
+export async function setModelRun(node: BuildNode, run: ModelRun | null): Promise<BuildNode> {
+  if (node.type !== PROMPT_TYPE && node.type !== AGENT_TYPE && node.type !== CODE_TYPE) throw refuse("setModelRun", "Only a prompt, an agent or code has a model that was run.");
+  const payload = { ...payloadOf(node) };
+  const kept = run ? modelRunOf(run) : null;
+  if (run && kept) {
+    const why = modelRunRefusal(kept);
+    if (why) throw refuse("setModelRun", why);
+  }
+  if (kept) payload.modelRun = kept as unknown as Json;
+  else delete payload.modelRun;
   return upsertNode(withPayload(node, payload));
 }
 

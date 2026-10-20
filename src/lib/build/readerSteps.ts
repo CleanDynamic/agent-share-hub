@@ -39,6 +39,7 @@ import { bracketed } from "./changes";
 import { copyTogether } from "./copyTogether";
 import { isSetupPayload, setupOfNode, SETUP_KIND_LABEL, setupItemsOf, type SetupItem, type SetupKind, type SetupLoaded, type SetupRule, type SetupServer } from "./setup";
 import { goalLine, sessionsMetaOf, type Making } from "./making";
+import { modelRunLine } from "./modelRun";
 import { runsWhenLine } from "./runsFrom";
 import { sessionFactsLine, togetherLine } from "./sessionFacts";
 import { settingLines } from "./startedWith";
@@ -732,7 +733,8 @@ export function whatYouNeed(
   const byModel = new Map<string, string[]>();
   for (const step of context.all) {
     if (step.kind !== "agent" || !step.model) continue;
-    const label = modelName(step.model);
+    // CA-05 P8: an agent whose model was run on the maker's computer says how, so it is a row of its own.
+    const label = modelRunLine(modelName(step.model), step.modelRun);
     byModel.set(label, [...(byModel.get(label) ?? []), step.number]);
   }
   for (const [model, numbers] of byModel) tools.push({ title: model, detail: stepList(numbers) });
@@ -934,7 +936,7 @@ function subSteps(entry: ReaderStep, lines: string[]): void {
   const children = entry.children;
   for (const child of children) {
     const instructions = child.step.id.endsWith(":instructions");
-    const model = !instructions && child.step.model ? ` · ${modelName(child.step.model)}` : "";
+    const model = !instructions && child.step.model ? ` · ${modelRunLine(modelName(child.step.model), child.step.modelRun)}` : "";
     lines.push(`### ${child.step.number} ${child.title}${model}`, "");
     if (child.runs && child.step.runs) lines.push(`${child.runs}.`, "");
     if (child.uses.length > 0) lines.push(`Uses ${join(child.uses)}.`, "");
@@ -981,6 +983,8 @@ export function stepsMarkdown(
     if (step.kind === "agent" || step.kind === "team") {
       const how = [entry.runs, entry.madeIn].filter(Boolean).join(" · ");
       if (how) lines.push(`${how}.`, "");
+      // CA-05 P8: a model run on the maker's own computer says how, because the same model answers differently at a smaller size.
+      if (step.kind === "agent" && step.model && step.modelRun) lines.push(`Model: ${modelRunLine(modelName(step.model), step.modelRun)}.`, "");
       if (entry.uses.length > 0) lines.push(`Uses ${join(entry.uses)}.`, "");
       if (saves.length > 0) lines.push(...saves, "");
       subSteps(entry, lines);
