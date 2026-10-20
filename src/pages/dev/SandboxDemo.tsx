@@ -9,6 +9,7 @@
    `?build=manual` is the manual step build (D2 option B): add `&lens=map` for its Map (UI-P70).
    `?details=prompt|session|agent|file|tool|result` picks what Details shows (UI-P66).
    `?post=thread` writes a two-post thread in the post above the build; the default is an empty post (PT-05).
+   `?build=shape-everything` is CA-05's Everything at once; `&open=e-p1` opens its first prompt in the full window.
    `?build=shape-alone|shape-retrieval|shape-agent|shape-team|shape-code|shape-team-checks` draws one of CA-02's five
    shapes of AI use, or CA-03's sixth; `&check=failed` draws its check with one run failed
    (src/dev/fixtures/shapes.ts) in the List, the Map (`&lens=map`) and Details (`&select=<node id>`).
@@ -100,7 +101,8 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
   const asked = params.get("details");
   const details: SandboxDetails = (["session", "agent", "file", "tool", "result"] as const).find((kind) => kind === asked) ?? "prompt";
   const [dialog, setDialog] = useState<"agent" | "manual" | "tool" | "code" | "check" | null>(null);
-  const [open, setOpen] = useState<string | null>(params.get("open") ? (which === "fox" ? "p1" : "p3") : null);
+  // CA-05 P11: `&open=<step id>` opens the full prompt window on that prompt of a shape.
+  const [open, setOpen] = useState<string | null>(params.get("open") ? (params.get("open") !== "1" ? params.get("open") : which === "fox" ? "p1" : "p3") : null);
   const phone = useIsPhone();
   const fine = useFinePointer();
   const shape = SHAPE_KEYS.find((key) => asBuild === `shape-${key}`) ?? null;
@@ -144,7 +146,7 @@ export default function SandboxDemo({ fit = "board", state = "populated" }: Desi
       <AddToolDialog open={dialog === "tool"} onOpenChange={(next) => setDialog(next ? "tool" : null)} onAdd={() => undefined} />
       <AddCodeDialog open={dialog === "code"} onOpenChange={(next) => setDialog(next ? "code" : null)} onAdd={() => undefined} />
       <AddCheckDialog open={dialog === "check"} onOpenChange={(next) => setDialog(next ? "check" : null)} onAdd={() => undefined} />
-      <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
+      <FullPromptWindow steps={list.steps} names={list.names} openId={open} mode="maker" onTitle={() => undefined} onChanges={() => undefined} onNavigate={setOpen} onClose={() => setOpen(null)} />
     </>
   );
 }
