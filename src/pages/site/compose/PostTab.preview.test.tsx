@@ -244,14 +244,16 @@ describe("the toolbar", () => {
   const mountDesk = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, {}, { draft: DRAFT, ...extra });
   const mountPhone = (content = doc(p("hello world"), p("")), extra: Parameters<typeof mountPostTab>[2] = {}) => mountPostTab(content, { phone: true }, { draft: DRAFT, ...extra });
 
-  it("is X's row of buttons, in order, each named and 34 square on a desktop", () => {
+  it("is X's row of buttons, in order, each named and 36 square on a desktop", () => {
     mountDesk();
     expect(tools().map((button) => button.getAttribute("aria-label"))).toEqual(["Picture or video", "Row of pictures", "Bulleted list", "Numbered list", "Text size", "Preview", "Add another post"]);
     for (const button of tools()) {
-      expect([button.style.width, button.style.height]).toEqual([`${DESKTOP_TOOL_SIZE}px`, `${DESKTOP_TOOL_SIZE}px`]);
+      // CA-07: the + is round and 32; every other tool is 36.
+      const side = button.getAttribute("aria-label") === "Add another post" ? 32 : DESKTOP_TOOL_SIZE;
+      expect([button.style.width, button.style.height]).toEqual([`${side}px`, `${side}px`]);
       expect(button.getAttribute("title")).toBe(button.getAttribute("aria-label"));
     }
-    expect(DESKTOP_TOOL_SIZE).toBe(34);
+    expect(DESKTOP_TOOL_SIZE).toBe(36);
     expect(within(toolbar()).getByRole("button", { name: "Text size" }).textContent).toBe("Aa");
   });
 
@@ -327,10 +329,10 @@ describe("the toolbar", () => {
       expect(within(row).getByText("Small").style.fontSize).toBe("13px");
     });
 
-    it("is 34 high on a desktop, with no Bold, Italic or Link: the bar over a selection has those", () => {
+    it("is 36 high on a desktop, with no Bold, Italic or Link: the bar over a selection has those", () => {
       mountDesk();
       press("Text size");
-      for (const button of within(screen.getByRole("group", { name: "Text size" })).getAllByRole("button")) expect(button.style.height).toBe("34px");
+      for (const button of within(screen.getByRole("group", { name: "Text size" })).getAllByRole("button")) expect(button.style.height).toBe("36px");
       expect(screen.queryByRole("group", { name: "Format" })).toBeNull();
     });
 

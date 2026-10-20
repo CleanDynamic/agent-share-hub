@@ -30,10 +30,12 @@ export interface PostTypeScale {
   title: CSSProperties;
   heading: CSSProperties;
   body: CSSProperties;
+  /** CA-07: the post's words in the composer only, larger and tighter as X sets them. Readers keep `body`. */
+  composer: CSSProperties;
   small: CSSProperties;
   code: CSSProperties;
   /** The height of a block's first line in px, for lining a counter up with it. */
-  firstLine: { title: number; heading: number; body: number; small: number };
+  firstLine: { title: number; heading: number; body: number; small: number; composer: number };
 }
 
 const text = (size: number, weight: number, leading: number, tracking: string): CSSProperties => ({
@@ -54,6 +56,7 @@ export function postType(phone: boolean): PostTypeScale {
     title: { ...text(titleSize, 500, 1.1, "-0.03em"), textWrap: "balance" },
     heading: { ...text(headingSize, 500, 1.2, "-0.02em"), textWrap: "balance" },
     body: { ...text(16, 400, 1.55, "0"), textWrap: "pretty" },
+    composer: { ...text(phone ? 18 : 20, 400, 1.25, "0"), textWrap: "pretty" },
     small: { ...text(13, 400, 1.5, "0"), color: t.text2, textWrap: "pretty" },
     code: {
       fontFamily: DM_MONO,
@@ -74,6 +77,7 @@ export function postType(phone: boolean): PostTypeScale {
       heading: headingSize * 1.2,
       body: 16 * 1.55,
       small: 13 * 1.5,
+      composer: (phone ? 18 : 20) * 1.25,
     },
   };
 }

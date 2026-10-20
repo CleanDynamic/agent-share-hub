@@ -205,6 +205,11 @@ export const CA03_FILES: readonly string[] = [
   "src/lib/profile/colourSwatches.ts",
   // CA-06 P7
   "e2e/audit/support/harness.ts",
+  // CA-07 P1
+  "src/components/post/postType.ts",
+  "src/pages/site/compose/PostTab.proportions.test.tsx",
+  "src/pages/site/compose/PostTab.test.tsx",
+  "src/pages/site/compose/PostTab.preview.test.tsx",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

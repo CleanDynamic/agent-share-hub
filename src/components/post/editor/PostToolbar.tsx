@@ -19,8 +19,9 @@ import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { Button } from "@/components/brand/Button";
 import { Icon } from "@/components/brand/Icon";
 import { postType } from "@/components/post/postType";
-import { linkAllowed, type ThreadDoc } from "@/lib/build/thread";
-import { canStartPost, POST_LIMIT_SENTENCE } from "@/lib/build/threadEditor";
+import { linkAllowed, POST_BODY_MAX, type ThreadDoc } from "@/lib/build/thread";
+import { canStartPost, POST_LIMIT_SENTENCE, postRuns, runLength } from "@/lib/build/threadEditor";
+import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { ring } from "@/lib/theme/controls";
 import { useInteractive } from "@/lib/theme/interactive";
 import { CONTROL, CONTROL_HOVER, PRESSED, SELECTED } from "@/lib/theme/refinedControl";
@@ -35,8 +36,16 @@ import type { InsertPicture } from "./SlashMenu";
 
 /** A phone's button is 44 square: the touch size. */
 export const TOOL_SIZE = 44;
-/** A desktop's button is 34 square. */
-export const DESKTOP_TOOL_SIZE = 34;
+/** A desktop's button is 36 square, its glyph 18 (CA-07). */
+export const DESKTOP_TOOL_SIZE = 36;
+/** The glyph in a toolbar button. */
+export const TOOL_GLYPH = 18;
+/** CA-07: the round + on a desktop. */
+export const ADD_SIZE = 32;
+/** CA-07: the character ring. */
+export const RING_SIZE = 20;
+/** The ring shows its number from this many left. */
+export const RING_NUMBER_FROM = 20;
 /** The text-size row's buttons are 52 high. */
 export const STYLE_HEIGHT = 52;
 
@@ -51,9 +60,11 @@ interface Tools {
   href: string;
   /** The post the caret is in has something in it, so another can follow it. */
   canAdd: boolean;
+  /** CA-07: characters left in the post the caret is in, counted as POST_BODY_MAX is. */
+  left: number;
 }
 
-const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false };
+const NONE: Tools = { style: "Body", bold: false, italic: false, underline: false, bullet: false, ordered: false, link: false, href: "", canAdd: false, left: POST_BODY_MAX };
 
 function readTools(editor: Editor | null): Tools {
   if (!editor || !editor.isEditable) return NONE;
@@ -67,6 +78,7 @@ function readTools(editor: Editor | null): Tools {
     link: editor.isActive("link"),
     href: (editor.getAttributes("link").href as string | undefined) ?? "",
     canAdd: !postIsEmpty(editor),
+    left: charactersLeft(editor),
   };
 }
 
@@ -123,6 +135,105 @@ export function addPostAfter(editor: Editor, notice: (sentence: string) => void)
   view.focus();
 }
 
+/** Characters left in the post the caret is in: POST_BODY_MAX less its body text, pictures not counted. */
+export function charactersLeft(editor: Editor): number {
+  const { doc } = editor.state;
+  const index = Math.min(caretIndex(editor), doc.childCount - 1);
+  let post = 0;
+  doc.forEach((node, _offset, at) => {
+    if (at < index && node.type.name === "postBreak") post += 1;
+  });
+  const run = postRuns(editor.getJSON() as ThreadDoc)[post];
+  return POST_BODY_MAX - (run ? runLength(run) : 0);
+}
+
+/** CA-07: the row after the last post. The empty last post takes the caret; otherwise a post is added after the last. */
+export function addPostAtEnd(editor: Editor, notice: (sentence: string) => void): void {
+  const { state, view } = editor;
+  const last = state.doc.lastChild;
+  let first = state.doc.childCount - 1;
+  while (first > 0 && state.doc.child(first - 1).type.name !== "postBreak") first -= 1;
+  view.dispatch(state.tr.setSelection(TextSelection.atEnd(state.doc)));
+  if (first === state.doc.childCount - 1 && isEmptyParagraph(last)) {
+    view.focus();
+    return;
+  }
+  addPostAfter(editor, notice);
+}
+
+/**
+ * CA-07: the post at `index` (counting breaks) taken out with the break before it (the break after it, for the first
+ * post), in one transaction so Undo puts it back. The caret goes to the end of the post before, or the start of the
+ * one that is now first.
+ */
+export function removePost(editor: Editor, index: number): void {
+  const { state, view } = editor;
+  const { doc } = state;
+  const breaks: number[] = [];
+  doc.forEach((node, offset) => {
+    if (node.type.name === "postBreak") breaks.push(offset);
+  });
+  if (breaks.length === 0 || index < 0 || index > breaks.length) return;
+  const breakSize = doc.nodeAt(breaks[0])?.nodeSize ?? 1;
+  const from = index === 0 ? 0 : breaks[index - 1];
+  const to = index === 0 ? breaks[0] + breakSize : index < breaks.length ? breaks[index] : doc.content.size;
+  const tr = state.tr.delete(from, to);
+  const $at = tr.doc.resolve(Math.min(from, tr.doc.content.size));
+  tr.setSelection(index === 0 ? TextSelection.near($at, 1) : TextSelection.near($at, -1));
+  view.dispatch(tr.scrollIntoView());
+  view.focus();
+}
+
+/** CA-07: a 20px ring of the characters left in the post, as X draws it. The number shows from 20 left. */
+export function CharacterRing({ left }: { left: number }) {
+  const [said, setSaid] = useState("");
+  useEffect(() => {
+    // Spoken only at 20, 10 and 0, so a screen reader is not read every keystroke.
+    if (left === 20 || left === 10 || left === 0) setSaid(`${left} characters left. Pictures do not count.`);
+  }, [left]);
+  const over = left < 0;
+  const stroke = 2;
+  const radius = (RING_SIZE - stroke) / 2;
+  const around = 2 * Math.PI * radius;
+  const used = Math.min(1, Math.max(0, (POST_BODY_MAX - left) / POST_BODY_MAX));
+  const ink = over ? t.breakage : t.text2;
+  return (
+    <>
+    <span
+      data-testid="character-ring"
+      data-left={left}
+      data-ink={over ? "breakage" : "text2"}
+      role="img"
+      aria-label={`${left} characters left. Pictures do not count.`}
+      style={{ position: "relative", width: RING_SIZE, height: RING_SIZE, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+    >
+      <svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} aria-hidden="true" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)" }}>
+        <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={radius} fill="none" strokeWidth={stroke} style={{ stroke: t.hairline }} />
+        <circle
+          data-ring-fill=""
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={radius}
+          fill="none"
+          strokeWidth={stroke}
+          strokeDasharray={around}
+          strokeDashoffset={around * (1 - (over ? 1 : used))}
+          style={{ stroke: ink }}
+        />
+      </svg>
+      {left <= RING_NUMBER_FROM ? (
+        <span aria-hidden="true" data-ring-number="" style={{ position: "relative", fontFamily: FIGTREE, fontSize: 10, fontWeight: 500, lineHeight: 1, color: ink, fontVariantNumeric: "tabular-nums" }}>
+          {left}
+        </span>
+      ) : null}
+    </span>
+    <span role="status" aria-live="polite" data-testid="character-ring-said">
+      <VisuallyHidden>{said}</VisuallyHidden>
+    </span>
+    </>
+  );
+}
+
 // --- the buttons -------------------------------------------------------------------------
 
 function ToolButton({
@@ -140,7 +251,7 @@ function ToolButton({
   /** A toggle (Bold, a list): says so in aria-pressed. Absent: an action. */
   pressed?: boolean;
   expanded?: boolean;
-  /** The control fill and its border: Add another post. */
+  /** The control fill and its border, round: Add another post (CA-07). */
   boxed?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -174,7 +285,7 @@ function ToolButton({
         color: disabled ? t.label : t.text2,
         border: "1px solid transparent",
         background: "transparent",
-        ...(boxed ? CONTROL : null),
+        ...(boxed ? { ...CONTROL, borderRadius: 999 } : null),
         // Hover is a step in colour, never an opacity; pressed sinks to the well.
         ...(state.hovered && !disabled ? CONTROL_HOVER : null),
         ...(sunk ? { ...PRESSED, color: t.text } : null),
@@ -189,7 +300,7 @@ function ToolButton({
 const letter: CSSProperties = { fontFamily: FIGTREE, fontSize: 15, lineHeight: 1, color: "inherit" };
 
 function Tool({ glyph }: { glyph: GlyphName }) {
-  return <Glyph name={glyph} size={16} />;
+  return <Glyph name={glyph} size={TOOL_GLYPH} />;
 }
 
 // --- the rows above the buttons -------------------------------------------------------------
@@ -405,7 +516,7 @@ export function PostToolbar({
             <Tool glyph="image" />
           </ToolButton>
           <ToolButton label="Row of pictures" size={size} onClick={run(() => onInsertPicture("row", editor))}>
-            <Icon lucide={GalleryHorizontal} size={16} />
+            <Icon lucide={GalleryHorizontal} size={TOOL_GLYPH} />
           </ToolButton>
           <ToolButton label="Bulleted list" size={size} pressed={tools.bullet} onClick={run(() => editor.chain().focus().toggleBulletList().run())}>
             <Tool glyph="listBullet" />
@@ -424,11 +535,12 @@ export function PostToolbar({
         </div>
         {onPreview ? (
           <ToolButton label="Preview" size={size} onClick={onPreview}>
-            <Icon lucide={Eye} size={16} />
+            <Icon lucide={Eye} size={TOOL_GLYPH} />
           </ToolButton>
         ) : null}
+        <CharacterRing left={tools.left} />
         <span aria-hidden="true" style={{ width: 1, height: phone ? 28 : 24, background: t.hairline, flex: "none" }} />
-        <ToolButton label="Add another post" size={size} boxed disabled={!tools.canAdd} onClick={run(() => addPostAfter(editor, notice))}>
+        <ToolButton label="Add another post" size={phone ? TOOL_SIZE : ADD_SIZE} boxed disabled={!tools.canAdd} onClick={run(() => addPostAfter(editor, notice))}>
           <Tool glyph="plus" />
         </ToolButton>
       </div>

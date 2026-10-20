@@ -20,7 +20,7 @@ import { Extension, Mark, mergeAttributes, Node as TipNode, ReactNodeViewRendere
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
-import { NodeSelection, Plugin, PluginKey } from "@tiptap/pm/state";
+import { NodeSelection, Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 
 import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, ROW_GAP, postType } from "@/components/post/postType";
@@ -29,6 +29,7 @@ import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
 import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
+import { prefersReducedMotion, STANDARD } from "@/lib/theme/motion";
 
 import { PictureView, type PictureOptions } from "./PictureView";
 import { picturePlugin, type PictureHost } from "./pictures";
@@ -43,9 +44,6 @@ export const PLACEHOLDER = "What did you build?";
 
 /** The words in an empty post after the first. */
 export const NEXT_PLACEHOLDER = "Add another post";
-
-/** What a break reads after "Post 2", for the first break only. */
-export const FIRST_BREAK_NOTE = "readers reach this with Show more";
 
 /** Handles the React side hands the extensions. */
 export interface PostEditorControls {
@@ -107,10 +105,11 @@ export function removeBreakBefore(editor: Editor): boolean {
     .run();
 }
 
-// A quiet line between posts, as X's thread composer has: no rule, just the post's number in --label. The avatar and the
+// CA-07: no words between posts, as X's thread composer has none. The break keeps its name for a screen reader ("Post 2
+// starts here") and draws nothing: 0 high, pulled up 4 so the next post's avatar sits 12 under the post before it (the
+// editor's 12 gap above and below, less the 4, less the 8 the words sit below the avatar's top). The avatar and the
 // thread line beside the next post are drawn by the composer's rail (ThreadRail), which reads where each break ends.
-const breakRow = { display: "flex", alignItems: "center", minHeight: 20, paddingTop: 4, userSelect: "none" } as const;
-const breakLabel = { fontFamily: FIGTREE, fontSize: 11.5, fontWeight: 400, lineHeight: "normal", color: t.label, whiteSpace: "nowrap", borderRadius: 4, padding: "2px 6px", marginLeft: -6 } as const;
+const breakRow = { display: "block", height: 0, marginTop: -4, userSelect: "none" } as const;
 
 /** The number a break's decoration carries, or 0. */
 function numberOf(decorations: readonly { spec?: { postNumber?: number } }[]): number {
@@ -125,21 +124,12 @@ function breakView(initial: readonly { spec?: { postNumber?: number } }[]) {
   dom.contentEditable = "false";
   applyStyle(dom, breakRow);
 
-  const label = document.createElement("span");
-  applyStyle(label, breakLabel);
-  dom.append(label);
-
   let shown = -1;
   const show = (number: number) => {
     if (number === shown) return;
     shown = number;
     dom.setAttribute("data-post-number", String(number));
     dom.setAttribute("aria-label", `Post ${number} starts here`);
-    const name = document.createElement("span");
-    name.textContent = `Post ${number}`;
-    applyStyle(name, { fontWeight: 500, color: t.text2 });
-    label.replaceChildren(name);
-    if (number === 2) label.append(` · ${FIRST_BREAK_NOTE}`);
   };
   show(numberOf(initial));
 
@@ -149,12 +139,6 @@ function breakView(initial: readonly { spec?: { postNumber?: number } }[]) {
       if (node.type.name !== "postBreak") return false;
       show(numberOf(decorations));
       return true;
-    },
-    selectNode() {
-      applyStyle(label, { background: t.well });
-    },
-    deselectNode() {
-      label.style.removeProperty("background");
     },
     ignoreMutation: () => true,
   };
@@ -189,6 +173,89 @@ export const PostBreak = TipNode.create({
               if (node.type.name !== "postBreak") return;
               number += 1;
               found.push(Decoration.node(offset, offset + node.nodeSize, {}, { postNumber: number }));
+            });
+            return DecorationSet.create(state.doc, found);
+          },
+        },
+      }),
+    ];
+  },
+});
+
+// --- the post being written (CA-07) -------------------------------------------------
+
+/** Posts the writer is not in fade back to this, as X's thread composer does. */
+export const DIMMED_OPACITY = 0.5;
+/** How long the fade takes; none under reduced motion. */
+export const DIM_MS = 150;
+
+export const postFocusKey = new PluginKey<{ focused: boolean }>("postFocus");
+
+/** The post (counting from 0, breaks included) that holds the top-level block at `index`. */
+export function postOfIndex(doc: { forEach: (fn: (node: { type: { name: string } }, offset: number, index: number) => void) => void }, index: number): number {
+  let post = 0;
+  let found = 0;
+  doc.forEach((node, _offset, at) => {
+    if (at > index) return;
+    if (node.type.name === "postBreak" && at < index) post += 1;
+    if (at === index) found = node.type.name === "postBreak" ? post + 1 : post;
+  });
+  return found;
+}
+
+/** The post the selection is in, or -1 while the editor does not have focus. */
+export function focusedPost(state: EditorState): number {
+  if (!postFocusKey.getState(state)?.focused) return -1;
+  const { selection, doc } = state;
+  const index = selection.$from.depth > 0 || selection instanceof NodeSelection ? selection.$from.index(0) : doc.childCount - 1;
+  return postOfIndex(doc, Math.max(0, Math.min(index, doc.childCount - 1)));
+}
+
+/** The transition the fading parts take: 150ms, or none when the reader asked for less motion. */
+export function dimTransition(): string {
+  return prefersReducedMotion() ? "none" : `opacity ${DIM_MS}ms ${STANDARD}`;
+}
+
+/**
+ * Every top-level block outside the post holding the selection is drawn at half strength, while the editor has focus.
+ * A decoration, so nothing in the document changes; `data-dimmed` marks it (the editor has no stylesheet for a class).
+ */
+const PostFocus = Extension.create({
+  name: "postFocus",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin<{ focused: boolean }>({
+        key: postFocusKey,
+        state: {
+          init: () => ({ focused: false }),
+          apply: (tr, value) => {
+            const meta = tr.getMeta(postFocusKey) as { focused: boolean } | undefined;
+            return meta ?? value;
+          },
+        },
+        props: {
+          handleDOMEvents: {
+            focus: (view) => {
+              view.dispatch(view.state.tr.setMeta(postFocusKey, { focused: true }).setMeta("addToHistory", false));
+              return false;
+            },
+            blur: (view) => {
+              view.dispatch(view.state.tr.setMeta(postFocusKey, { focused: false }).setMeta("addToHistory", false));
+              return false;
+            },
+          },
+          decorations: (state) => {
+            const current = focusedPost(state);
+            if (current < 0) return null;
+            const found: Decoration[] = [];
+            const style = styleString({ opacity: DIMMED_OPACITY, transition: dimTransition() });
+            let post = 0;
+            state.doc.forEach((node, offset) => {
+              if (node.type.name === "postBreak") {
+                post += 1;
+                return;
+              }
+              if (post !== current) found.push(Decoration.node(offset, offset + node.nodeSize, { "data-dimmed": "", style }));
             });
             return DecorationSet.create(state.doc, found);
           },
@@ -308,7 +375,7 @@ function paragraphSize(phone: boolean) {
               parseHTML: (element: HTMLElement) => (element.getAttribute("data-size") === "small" ? "small" : "body"),
               renderHTML: (attributes: Record<string, unknown>) => ({
                 "data-size": attributes.size === "small" ? "small" : "body",
-                style: styleString(attributes.size === "small" ? scale.small : scale.body),
+                style: styleString(attributes.size === "small" ? scale.small : scale.composer),
               }),
             },
           },
@@ -653,7 +720,7 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
   const scale = postType(phone);
   const list = (ordered: boolean) =>
     styleString({
-      ...scale.body,
+      ...scale.composer,
       margin: 0,
       paddingLeft: LIST_INDENT,
       listStyleType: ordered ? "decimal" : "disc",
@@ -685,6 +752,7 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     PostMediaRowNode,
     postPictures(controls),
     PostChrome,
+    PostFocus,
     postKeys(controls),
     postRefLook(controls),
   ];
