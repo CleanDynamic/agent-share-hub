@@ -267,6 +267,11 @@ export function PostRefsProvider({ value, children }: { value: PostRefsValue; ch
   );
 }
 
+/** CA-07 P6: the post's parts, inside a PostRefsProvider (the build page); null anywhere else (a Gallery card). */
+export function usePostRefs(): PostRefsValue | null {
+  return useContext(PostRefsContext);
+}
+
 /** PostBody's link: the words and the number, or plain words without a provider. */
 export function RefLink({ to, children }: { to: string; children: ReactNode }) {
   const context = useContext(PostRefsContext);

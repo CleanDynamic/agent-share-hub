@@ -23,6 +23,7 @@ import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import { mediaKindFor, probeFile } from "@/lib/build/media";
 import { newPicture, pictureRejection, POST_FULL_SENTENCE, signPostMedia, THREAD_FULL_SENTENCE, uploadPostPicture } from "@/lib/build/postMedia";
 import type { GalleryMedia } from "@/lib/build";
+import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import { MAX_POST_PICTURES, MAX_THREAD_MEDIA, type PostMediaAttrs, type ThreadPostMedia } from "@/lib/build/thread";
 import type { BuildMedia, MediaKind } from "@/lib/build/types";
 
@@ -45,6 +46,8 @@ export interface PictureSnapshot {
   progress: ReadonlyMap<string, number>;
   /** uploadId -> the file's own preview, from the moment it is accepted. */
   previews: ReadonlyMap<string, UploadPreview>;
+  /** CA-07 P6: the build's steps a grid can link to, as the build page numbers them. Null: no Link a step. */
+  steps: StepRefs | null;
 }
 
 export interface PictureStore {
@@ -58,6 +61,7 @@ export interface PictureStore {
   setPreview(uploadId: string, preview: UploadPreview | null): void;
   /** An upload landed as `mediaId`: its preview is kept under the file's id until the real file is signed. */
   handOff(uploadId: string, mediaId: string): void;
+  setSteps(steps: StepRefs | null): void;
 }
 
 /** Where a landed upload's preview waits for its signed file. */
@@ -72,7 +76,7 @@ const objectUrls = {
 };
 
 export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promise<Map<string, string>> = signPostMedia): PictureStore {
-  let snapshot: PictureSnapshot = { rows: new Map(), src: new Map(), progress: new Map(), previews: new Map() };
+  let snapshot: PictureSnapshot = { rows: new Map(), src: new Map(), progress: new Map(), previews: new Map(), steps: null };
   const listeners = new Set<() => void>();
   const set = (next: Partial<PictureSnapshot>) => {
     snapshot = { ...snapshot, ...next };
@@ -117,6 +121,9 @@ export function createPictureStore(sign: (rows: readonly BuildMedia[]) => Promis
       else previews.delete(uploadId);
       set({ previews });
     },
+    setSteps(steps) {
+      if (steps !== snapshot.steps) set({ steps });
+    },
     handOff(uploadId, mediaId) {
       const preview = snapshot.previews.get(uploadId);
       if (!preview) return;
@@ -144,6 +151,12 @@ export interface PictureHost {
   files: Map<string, { file: File; stopped: boolean }>;
   /** CA-07 P5: the Edit dialog, opened on a grid at a picture. Null while nothing can open it. */
   openEdit: { current: ((request: EditRequest) => void) | null };
+}
+
+/** The build's tiles, grouped as the reference picker lists them, and each by its `node:<id>`. */
+export interface StepRefs {
+  groups: readonly RefGroup[];
+  lookup: ReadonlyMap<string, RefEntry>;
 }
 
 /** What opens Crop media (Part 5). */

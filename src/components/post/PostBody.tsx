@@ -24,7 +24,14 @@ import type { GalleryMedia } from "@/lib/build";
 import { linkAllowed, parseRefTo, toGrids, type Post } from "@/lib/build/thread";
 
 import { PostMediaGrid } from "./media/PostMediaGrid";
-import { RefLink } from "./RefLinks";
+import { Glyph } from "@/components/brand/Glyph";
+import { GRID_LINKS_COPY, linkedStep } from "@/lib/build/gridSteps";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
+import { t } from "@/lib/theme/tokens";
+import { FIGTREE } from "@/lib/theme/type";
+
+import { RefLink, usePostRefs } from "./RefLinks";
 import { BLOCK_GAP, LIST_INDENT, LIST_ITEM_GAP, postType, type PostTypeScale } from "./postType";
 
 export interface PostBodyProps {
@@ -191,11 +198,56 @@ function renderBlock(node: Loose, ctx: Ctx, key: number, inset: number): ReactNo
       return renderList(node, ctx, key, false);
     case "postMediaGrid":
       // CA-07: a post's pictures, one grid after its words. Captions stay in the saved data and are not drawn.
-      return <PostMediaGrid key={key} pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />;
+      return (
+        <div key={key} data-post-pictures="" style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          <PostMediaGrid pictures={childrenOf(node).filter((child) => child.type === "postMedia")} mediaById={props.mediaById} srcByPath={props.srcByPath} phone={props.phone} />
+          <StepLine step={attrsOf(node).step} phone={Boolean(props.phone)} />
+        </div>
+      );
     default:
       // Unknown, or a postBreak that splitThread should have taken out.
       return null;
   }
+}
+
+/**
+ * CA-07 P6: "From step 4.2 Build agent" under a grid whose pictures come from a step, linked to it through the build
+ * page's #node- address. Only on the build page (inside its PostRefsProvider), and only while the step is in the build.
+ */
+function StepLine({ step, phone }: { step: unknown; phone: boolean }) {
+  const refs = usePostRefs();
+  const { state, handlers } = useInteractive<HTMLAnchorElement>();
+  const entry = linkedStep(step, refs?.lookup);
+  const target = entry ? parseRefTo(entry.to) : null;
+  if (!refs || !entry || !target) return null;
+  return (
+    <a
+      href={`#node-${target.id}`}
+      data-post-step=""
+      onClick={(event) => {
+        event.preventDefault();
+        refs.onGo(entry.to, event.currentTarget);
+      }}
+      {...handlers}
+      style={{
+        alignSelf: "flex-start",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        minHeight: phone ? 44 : 20,
+        fontFamily: FIGTREE,
+        fontSize: 13,
+        lineHeight: 1.4,
+        color: state.hovered ? t.text : t.text2,
+        textDecoration: "none",
+        borderRadius: 4,
+        ...ring(state.focusVisible),
+      }}
+    >
+      <Glyph name="step" size={15} />
+      {GRID_LINKS_COPY.from(entry)}
+    </a>
+  );
 }
 
 const TEXT_BLOCKS = new Set(["paragraph", "heading"]);

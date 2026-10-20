@@ -20,6 +20,7 @@ import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
 import { addPictures, postAtCaret, type EditRequest } from "@/components/post/editor/pictures";
 import { EditMediaDialog } from "@/components/post/media/EditMediaDialog";
+import { withoutGoneSteps } from "@/lib/build/gridSteps";
 import { addPostAtEnd, PostToolbar, removePost } from "@/components/post/editor/PostToolbar";
 import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
 import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
@@ -242,7 +243,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       // An edit clears the last sentence; an upload landing is not an edit.
       if (!quiet) setNotice(null);
       setLiveDoc(doc);
-      thread.onDoc(doc);
+      thread.onDoc(references?.lookup ? withoutGoneSteps(doc, references.lookup) : doc);
       mentionsRef.current?.(threadRefs(doc));
     },
   });
@@ -251,6 +252,12 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   // Read at the moment an upload needs them, so a render never holds a stale one.
   host.ensureBuild.current = thread.ensureBuild;
   host.notice.current = setNotice;
+  // CA-07 P6: the build's tiles, for Link a step; a step since deleted is cleared from what is saved.
+  const stepLookup = references?.lookup;
+  const stepGroups = references?.groups;
+  useEffect(() => {
+    host.store.setSteps(stepLookup && stepGroups ? { groups: stepGroups, lookup: stepLookup } : null);
+  }, [host, stepLookup, stepGroups]);
   // CA-07 P5: Edit on a picture opens Crop media.
   const [editRequest, setEditRequest] = useState<EditRequest | null>(null);
   host.openEdit.current = setEditRequest;

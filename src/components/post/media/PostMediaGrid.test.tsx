@@ -154,7 +154,7 @@ describe("PostBody", () => {
     ] as PostBlock[];
     const { container } = render(<PostBody post={{ content }} mediaById={MEDIA} srcByPath={SIGNED} />);
     const body = container.querySelector("[data-post-body]") as HTMLElement;
-    expect(Array.from(body.children).map((child) => child.tagName + (child.hasAttribute("data-post-media-grid") ? ":grid" : ""))).toEqual(["P", "P", "DIV:grid"]);
+    expect(Array.from(body.children).map((child) => child.tagName + (child.querySelector("[data-post-media-grid]") ? ":grid" : ""))).toEqual(["P", "P", "DIV:grid"]);
     expect(body.querySelector("[data-post-media-grid]")?.getAttribute("data-count")).toBe("4");
     expect(container.textContent).not.toContain("A caption");
     expect(container.querySelector("figcaption")).toBeNull();

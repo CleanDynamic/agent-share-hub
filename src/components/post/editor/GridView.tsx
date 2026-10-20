@@ -16,21 +16,25 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, TouchSensor, 
 import { horizontalListSortingStrategy, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/brand/Button";
-import { Glyph } from "@/components/brand/Glyph";
+import { Glyph, type GlyphName } from "@/components/brand/Glyph";
 import { VisuallyHidden } from "@/components/brand/VisuallyHidden";
 import { GridTile, tileKind, tileLabel } from "@/components/post/media/GridTile";
 import { croppedRatio } from "@/components/post/media/cropStyle";
 import { GridFrame, gridLayout, GRID_RADIUS, sourcesOf, type GridCell } from "@/components/post/media/PostMediaGrid";
 import { PICTURE_INK, PICTURE_SHADE, PROGRESS_TRACK } from "@/components/post/media/shade";
 import { focusVisible } from "@/components/post/RefLinks";
+import { descriptionLabel, firstUndescribed, GRID_LINKS_COPY, linkedStep, stepGroupsOf } from "@/lib/build/gridSteps";
 import { mediaAttrsOf, type PostMediaAttrs } from "@/lib/build/thread";
+import { ring } from "@/lib/theme/controls";
+import { useInteractive } from "@/lib/theme/interactive";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
-import { landedKey, movePicture, removePicture, retryUpload, stopUpload, type PictureHost } from "./pictures";
+import { landedKey, movePicture, removePicture, retryUpload, setGridStep, stopUpload, type PictureHost } from "./pictures";
+import { ReferencePicker } from "./ReferencePicker";
 
 /** What the extension hands its views. */
 export interface PictureOptions {
@@ -288,6 +292,111 @@ function SortableTile({
   );
 }
 
+/** CA-07 P6: Link a step and Add description, 8 under the grid, 16 apart, in --text2 at 13 with a 16 glyph. */
+function GridLinks({ host, phone, step, pictures, gridPos }: { host: PictureHost; phone: boolean; step: string | null; pictures: readonly Picture[]; gridPos: () => number | null }) {
+  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [open, setOpen] = useState(false);
+  const linkButton = useRef<HTMLButtonElement>(null);
+  const steps = useSyncExternalStore(host.store.subscribe, host.store.getSnapshot).steps;
+  const linked = linkedStep(step, steps?.lookup);
+  const editor = host.editor.current;
+  const done = pictures.filter((picture) => !picture.uploadId);
+  const alts = done.map((picture) => picture.attrs.alt);
+
+  const close = () => {
+    setOpen(false);
+    linkButton.current?.focus();
+  };
+  const choose = (to: string | null) => {
+    const at = gridPos();
+    if (editor && at !== null) setGridStep(editor, at, to);
+    close();
+  };
+
+  return (
+    <div data-grid-links="" style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 8 }}>
+      {steps ? (
+        <LinkRowButton
+          ref={linkButton}
+          glyph="step"
+          phone={phone}
+          strong={Boolean(linked)}
+          expanded={open}
+          onPress={(el) => {
+            const rect = el.getBoundingClientRect();
+            setAnchor({ top: rect.bottom, left: rect.left });
+            setOpen(true);
+          }}
+        >
+          {linked ? GRID_LINKS_COPY.linked(linked) : GRID_LINKS_COPY.link}
+        </LinkRowButton>
+      ) : null}
+      {done.length > 0 ? (
+        <LinkRowButton
+          glyph="pencil"
+          phone={phone}
+          onPress={(el) => {
+            const at = gridPos();
+            if (at === null) return;
+            const index = pictures.indexOf(done[firstUndescribed(alts)]);
+            host.openEdit.current?.({ gridPos: at, index, tab: "alt", returnTo: el });
+          }}
+        >
+          {descriptionLabel(alts)}
+        </LinkRowButton>
+      ) : null}
+      {steps ? (
+        <ReferencePicker
+          open={open}
+          groups={stepGroupsOf(steps.groups)}
+          current={linked?.to ?? null}
+          anchor={anchor}
+          phone={phone}
+          removeLabel={GRID_LINKS_COPY.notLinked}
+          onChoose={(entry) => choose(entry.to)}
+          onRemove={() => choose(null)}
+          onClose={close}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const LinkRowButton = forwardRef<HTMLButtonElement, { glyph: GlyphName; phone: boolean; strong?: boolean; expanded?: boolean; onPress: (el: HTMLElement) => void; children: ReactNode }>(
+  function LinkRowButton({ glyph, phone, strong = false, expanded, onPress, children }, ref) {
+    const { state, handlers } = useInteractive<HTMLButtonElement>();
+    return (
+      <button
+        ref={ref}
+        type="button"
+        aria-expanded={expanded}
+        aria-haspopup={expanded === undefined ? "dialog" : "listbox"}
+        onClick={(event) => onPress(event.currentTarget)}
+        {...handlers}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          minHeight: phone ? 44 : 24,
+          padding: 0,
+          border: 0,
+          borderRadius: 4,
+          background: "transparent",
+          cursor: "pointer",
+          fontFamily: FIGTREE,
+          fontSize: 13,
+          fontWeight: 400,
+          color: strong || state.hovered ? t.text : t.text2,
+          ...ring(state.focusVisible),
+        }}
+      >
+        <Glyph name={glyph} size={16} />
+        {children}
+      </button>
+    );
+  },
+);
+
 export function GridView(props: NodeViewProps) {
   const { node, getPos } = props;
   const { host, phone } = props.extension.options as PictureOptions;
@@ -413,6 +522,7 @@ export function GridView(props: NodeViewProps) {
           )}
         </SortableContext>
       </DndContext>
+      <GridLinks host={host} phone={phone} step={(node.attrs.step as string | null) ?? null} pictures={pictures} gridPos={gridPos} />
       <span role="status" aria-live="polite">
         <VisuallyHidden>{said}</VisuallyHidden>
       </span>

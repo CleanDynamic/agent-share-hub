@@ -40,6 +40,8 @@ export interface ReferencePickerProps {
   phone: boolean;
   onChoose: (entry: RefEntry) => void;
   onRemove: () => void;
+  /** CA-07 P6: what the remove row reads ("Not linked" for a picture's step). Absent: Remove the link. */
+  removeLabel?: string;
   /** Escape, or a click outside: nothing changes. */
   onClose: () => void;
 }
@@ -93,7 +95,7 @@ function EntryRow({ entry, active, chosen, id, phone, onPick, onHover }: { entry
   );
 }
 
-function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field }: Omit<ReferencePickerProps, "open" | "anchor"> & { field: React.RefObject<HTMLInputElement> }) {
+function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field, removeLabel }: Omit<ReferencePickerProps, "open" | "anchor"> & { field: React.RefObject<HTMLInputElement> }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const listId = useId();
@@ -197,7 +199,7 @@ function PickerBody({ groups, current, phone, onChoose, onRemove, onClose, field
                 ...text(13, 400, t.text),
               }}
             >
-              {REFERENCE_COPY.remove}
+              {removeLabel ?? REFERENCE_COPY.remove}
             </div>
           ) : (
             <div key={row.entry.to} style={{ display: "contents" }}>
