@@ -17,7 +17,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { nodeRow, placeChildNode, placeTopNode } from "./composeCover";
 import { PROMPT_TYPE, swapMoves } from "./composePrompts";
 import { toolFor, toolName } from "@/lib/tools/registry";
-import { toolLabel, type MakingSession } from "./making";
+import { LEGACY_SESSION_PREFIX, TYPED_SESSION_PREFIX, toolLabel, type MakingSession, type SessionMeta } from "./making";
 import { getNodeType } from "./nodeTypes";
 import { reorderNodes, upsertNode, type NodeMove } from "./nodes";
 import { buildLayerError, type BuildNode, type BuildNodeInsert, type NodeTree } from "./types";
@@ -74,6 +74,12 @@ export interface Step {
   model: string | null;
   /** The import session a prompt came from; null for one written by hand. */
   sessionId: string | null;
+  /**
+   * CA-04 P1: the session a top-level step was recorded in: `payload.session` (a session made here, or an imported one
+   * a typed prompt was added to), else the import it came from. Null for a step saved before CA-04 with neither:
+   * `sessionGroups` reads those into the session they sit in.
+   */
+  session?: string | null;
   /** The tool a prompt written by hand, or a manual step, names. */
   tool: string | null;
   runs: Runs | null;
@@ -112,6 +118,19 @@ export interface CheckFacts {
 }
 
 export interface SessionGroup {
+  /**
+   * CA-04 P1: the session's key: its import id, `typed-<uuid>` for one made here, or `typed-legacy-<n>` for a run of an
+   * old build's typed prompts (read, never stored). `sessionGroups` always sets it; read it through `groupKey`, which
+   * gives a group written by hand (a fixture) the key it had before.
+   */
+  key?: string;
+  /** CA-04 P1: imported, made here, or an old build's run of typed prompts. Read it through `groupKind`. */
+  kind?: "import" | "typed" | "legacy";
+  /**
+   * CA-04 P1: an old build's steps that are not prompts and come before any session. They sit in a group so every
+   * step has one, but no head, no number and no lane is drawn for it.
+   */
+  implicit?: boolean;
   /** null for prompts typed here. */
   sessionId: string | null;
   number: number;
@@ -119,6 +138,7 @@ export interface SessionGroup {
   model: string | null;
   /** The session's date, or "typed here" for prompts with no session. */
   startedAt: string | null;
+  /** CA-04 P1: every top-level step in the session, not only its prompts. */
   stepNumbers: string[];
 }
 
@@ -376,6 +396,7 @@ function stepFor(node: NodeTree, number: string, kind: StepKind, children: Step[
     words: wordCount(text),
     model: stringOf(payload.model),
     sessionId: typeof import_ === "string" && import_ ? import_ : null,
+    session: stringOf(payload.session) ?? (typeof import_ === "string" && import_ ? import_ : null),
     tool: tool ? (toolName(tool) ?? tool) : null,
     runs: kind === "agent" || kind === "team" ? parseRuns(payload.runs) : null,
     uses: usesOf(node),
@@ -401,6 +422,7 @@ function instructionsOf(agent: NodeTree, number: string): Step {
     uses: [],
     dismissed: [],
     sessionId: null,
+    session: null,
     tool: null,
     children: [],
     harness: undefined,
@@ -459,68 +481,118 @@ function chosenTool(raw: string | undefined): string | null {
 }
 
 /**
- * The sessions and runs of typed prompts that make up the top-level steps, in
- * order of first step (DATA §5). A session is one group wherever its prompts
- * sit; prompts with no session form one group per run of consecutive steps.
- * `sessions` is builds.making.sessions; an entry without an id cannot be
- * matched, and its prompts keep the model they name.
+ * The sessions that make up the top-level steps, in order of first step (DATA §5; CA-04 P1). Every top-level step is
+ * in one group, not only the prompts: a session is one group wherever its steps sit.
  *
- * `sessionTools` is builds.making.session_tools (TF-13): a session whose client
- * names no tool takes the tool the maker gave it, by `toolName` or as typed. A
- * client's own tool always wins.
+ * A step's session is the one it recorded (`step.session`: `payload.session`, else its import). A step saved before
+ * CA-04 with neither is read, never written: a prompt typed by hand joins the unbroken run of typed prompts it is in,
+ * one session per run as before, keyed `typed-legacy-<n>`, its tool the first tool those prompts name; any other step
+ * sits in the session of the step before it. An old build's steps that come before any session are one `implicit`
+ * group, which has no number and no head.
+ *
+ * `sessions` is builds.making.sessions; an entry without an id cannot be matched, and its prompts keep the model they
+ * name. `sessionTools` is builds.making.session_tools (TF-13): a session whose client names no tool takes the tool the
+ * maker gave it, by `toolName` or as typed. A client's own tool always wins. `meta` is builds.making.sessions_meta: a
+ * session made here takes its tool, model and day from it, and one with no steps yet follows the others.
  */
 export function sessionGroups(
   steps: readonly Step[],
   sessions: readonly MakingSession[],
   sessionTools: Readonly<Record<string, string>>,
+  meta: Readonly<Record<string, SessionMeta>> = {},
 ): SessionGroup[] {
   const known = new Map<string, MakingSession>();
   for (const session of sessions) if (session.id) known.set(session.id, session);
 
   const groups: SessionGroup[] = [];
-  const bySession = new Map<string, SessionGroup>();
-  let typed: SessionGroup | null = null;
+  const byKey = new Map<string, SessionGroup>();
+  let numbered = 0;
+  let legacy = 0;
+  /** The run of typed prompts the last step was in, while it is unbroken. */
+  let run: SessionGroup | null = null;
+  let previous: SessionGroup | null = null;
+
+  const open = (group: Omit<SessionGroup, "number" | "stepNumbers"> & { key: string }): SessionGroup => {
+    const made: SessionGroup = { ...group, number: group.implicit ? 0 : ++numbered, stepNumbers: [] };
+    groups.push(made);
+    byKey.set(group.key, made);
+    return made;
+  };
+
+  const recorded = (key: string, step: Step): SessionGroup => {
+    const found = byKey.get(key);
+    if (found) return found;
+    const session = known.get(key);
+    const own = meta[key];
+    if (session || !own || !key.startsWith(TYPED_SESSION_PREFIX)) {
+      // An import (or a key nothing else names, read as one).
+      const model = session?.model ?? own?.model ?? (step.kind === "prompt" ? step.model : null);
+      return open({
+        key,
+        kind: "import",
+        sessionId: key,
+        tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[key]) ?? chosenTool(own?.tool ?? undefined),
+        model: model ? modelLabel(model) : null,
+        startedAt: session?.started_at ?? null,
+      });
+    }
+    return open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
+  };
 
   for (const step of steps) {
-    if (step.kind !== "prompt") {
-      typed = null;
-      continue;
-    }
-    if (step.sessionId) {
-      typed = null;
-      let group = bySession.get(step.sessionId);
-      if (!group) {
-        const session = known.get(step.sessionId);
-        const model = session?.model ?? step.model;
-        group = {
-          sessionId: step.sessionId,
-          number: groups.length + 1,
-          tool: (session ? toolLabel(session.client) : null) ?? chosenTool(sessionTools[step.sessionId]),
-          model: model ? modelLabel(model) : null,
-          startedAt: session?.started_at ?? null,
-          stepNumbers: [],
-        };
-        bySession.set(step.sessionId, group);
-        groups.push(group);
+    let group: SessionGroup;
+    if (step.session) {
+      group = recorded(step.session, step);
+      run = null;
+    } else if (step.kind === "prompt") {
+      if (!run) {
+        run = open({
+          key: `${LEGACY_SESSION_PREFIX}${++legacy}`,
+          kind: "legacy",
+          sessionId: null,
+          tool: step.tool,
+          model: step.model ? modelLabel(step.model) : null,
+          startedAt: TYPED_HERE,
+        });
       }
-      group.stepNumbers.push(step.number);
-      continue;
+      run.tool ??= step.tool;
+      group = run;
+    } else {
+      run = null;
+      group =
+        previous ??
+        open({ key: `${LEGACY_SESSION_PREFIX}0`, kind: "legacy", implicit: true, sessionId: null, tool: step.tool ?? step.harness ?? null, model: null, startedAt: TYPED_HERE });
     }
-    if (!typed) {
-      typed = {
-        sessionId: null,
-        number: groups.length + 1,
-        tool: step.tool,
-        model: step.model ? modelLabel(step.model) : null,
-        startedAt: TYPED_HERE,
-        stepNumbers: [],
-      };
-      groups.push(typed);
-    }
-    typed.stepNumbers.push(step.number);
+    group.stepNumbers.push(step.number);
+    previous = group;
+  }
+
+  // Sessions made here that have no step yet, in the order they were made.
+  for (const [key, own] of Object.entries(meta)) {
+    if (byKey.has(key) || !key.startsWith(TYPED_SESSION_PREFIX) || key.startsWith(LEGACY_SESSION_PREFIX) || !own.date) continue;
+    open({ key, kind: "typed", sessionId: null, tool: chosenTool(own.tool ?? undefined), model: own.model ? modelLabel(own.model) : null, startedAt: own.date });
   }
   return groups;
 }
+
+/** CA-04 P1: a group's key: its own, else the import's id, else "typed-{n}" as before. */
+export const groupKey = (group: Pick<SessionGroup, "key" | "sessionId" | "number">): string => group.key ?? group.sessionId ?? `typed-${group.number}`;
+
+/** CA-04 P1: a group's kind: its own, else imported when it has an import and typed by hand when not. */
+export const groupKind = (group: Pick<SessionGroup, "kind" | "sessionId">): "import" | "typed" | "legacy" => group.kind ?? (group.sessionId ? "import" : "legacy");
+
+/** CA-04 P1: the session groups a reader is shown: every one but an old build's implicit one. */
+export const shownGroups = (groups: readonly SessionGroup[]): SessionGroup[] => groups.filter((group) => !group.implicit);
+
+/** CA-04 P1: the group a top-level step is in, read by its number, else by its import; never an implicit group. */
+export function groupOfStep(groups: readonly SessionGroup[], step: Pick<Step, "number"> & Partial<Pick<Step, "sessionId">>): SessionGroup | undefined {
+  const found = groups.find((group) => group.stepNumbers.includes(step.number)) ?? (step.sessionId ? groups.find((group) => group.sessionId === step.sessionId) : undefined);
+  return found?.implicit ? undefined : found;
+}
+
+/** CA-04 P1: the numbers of a group's prompts, in order: a group now holds every kind of step. */
+export const promptNumbersOf = (group: Pick<SessionGroup, "stepNumbers">, steps: readonly Pick<Step, "number" | "kind">[]): string[] =>
+  group.stepNumbers.filter((number) => steps.find((step) => step.number === number)?.kind === "prompt");
 
 /** Every step, parents before their children. */
 function flattenSteps(steps: readonly Step[]): Step[] {
@@ -556,6 +628,18 @@ export async function setStepTitle(node: BuildNode, title: string): Promise<Buil
   const trimmed = title.trim();
   if (trimmed.length > TITLE_MAX) throw refuse("setStepTitle", `A title is at most ${TITLE_MAX} characters.`);
   return upsertNode({ ...nodeRow(node), title: trimmed || null });
+}
+
+/**
+ * CA-04 P1: the session a top-level step sits in (`payload.session`), or none (null), which an old build's step reads
+ * as the session it sits in. A key that is only read, never stored (`typed-legacy-<n>`), is refused.
+ */
+export async function setStepSession(node: BuildNode, session: string | null): Promise<BuildNode> {
+  if (session && session.startsWith(LEGACY_SESSION_PREFIX)) throw refuse("setStepSession", "That session is not saved yet.");
+  const payload = { ...payloadOf(node) };
+  if (session) payload.session = session;
+  else delete payload.session;
+  return upsertNode(withPayload(node, payload));
 }
 
 const useKey = (use: Use): string => `${use.kind}:${use.node_id}`;
@@ -742,12 +826,12 @@ function setupPayload(operation: string, model: string, { harness, models, toolR
 export async function addAgent(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, parentId, instructions, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string } & AgentSetup,
+  { name, model, parentId, instructions, session, ...setup }: { name?: string | null; model: string; parentId?: string | null; instructions?: string; session?: string | null } & AgentSetup,
 ): Promise<BuildNode> {
   const keys = setupPayload("addAgent", model, setup);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addAgent", `A title is at most ${TITLE_MAX} characters.`);
-  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys } as Json };
+  const node = { type: AGENT_TYPE, title, payload: { system_prompt: instructions ?? "", ...keys, ...(session && !parentId ? { session } : null) } as Json };
   return parentId ? placeChildNode(buildId, tree, parentId, node) : placeTopNode(buildId, tree, node);
 }
 
@@ -755,13 +839,13 @@ export async function addAgent(
 export async function addTeam(
   buildId: string,
   tree: readonly NodeTree[],
-  { name, model, instructions, ...setup }: { name?: string | null; model: string; instructions?: string } & AgentSetup,
+  { name, model, instructions, session, ...setup }: { name?: string | null; model: string; instructions?: string; session?: string | null } & AgentSetup,
 ): Promise<{ team: BuildNode; agent: BuildNode }> {
   await requireLiveType("addTeam", TEAM_TYPE);
   const title = titleOrNull(name);
   if (title && title.length > TITLE_MAX) throw refuse("addTeam", `A title is at most ${TITLE_MAX} characters.`);
   const keys = setupPayload("addTeam", model, setup);
-  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: {} });
+  const team = await placeTopNode(buildId, tree, { type: TEAM_TYPE, title, payload: session ? { session } : {} });
   const agent = await placeChildNode(buildId, [], team.id, { type: AGENT_TYPE, title: null, payload: { system_prompt: instructions ?? "", ...keys } as Json });
   return { team, agent };
 }
@@ -824,7 +908,7 @@ export async function addAgentPrompt(agent: BuildNode, tree: readonly NodeTree[]
 export async function addManualStep(
   buildId: string,
   tree: readonly NodeTree[],
-  { tool, text, media_id }: { tool: string; text: string; media_id?: string | null },
+  { tool, text, media_id, session }: { tool: string; text: string; media_id?: string | null; session?: string | null },
 ): Promise<BuildNode> {
   await requireLiveType("addManualStep", MANUAL_STEP_TYPE);
   const name = tool.trim();
@@ -833,6 +917,7 @@ export async function addManualStep(
   if (!line || line.length > MANUAL_TEXT_MAX) throw refuse("addManualStep", `A manual step is 1 to ${MANUAL_TEXT_MAX} characters.`);
   const payload: Record<string, string> = { tool: name, text: line };
   if (media_id) payload.media_id = media_id;
+  if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: MANUAL_STEP_TYPE, title: null, payload });
 }
 
@@ -874,7 +959,7 @@ const CODE_TOOL_MAX = 40;
 export async function addCode(
   buildId: string,
   tree: readonly NodeTree[],
-  { source, language, filename, tool, model, entrypoint }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean },
+  { source, language, filename, tool, model, entrypoint, session }: { source: string; language: string; filename?: string | null; tool?: string | null; model?: string | null; entrypoint?: boolean; session?: string | null },
 ): Promise<BuildNode> {
   if (!source.trim()) throw refuse("addCode", "Code needs its lines.");
   if (source.length > CODE_MAX) throw refuse("addCode", "Code is at most 100,000 characters. Upload it as a file instead.");
@@ -892,6 +977,7 @@ export async function addCode(
   }
   if (model?.trim()) payload.model = model.trim();
   if (entrypoint) payload.entrypoint = true;
+  if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: CODE_TYPE, title: null, payload });
 }
 
@@ -917,6 +1003,8 @@ export interface CheckInput {
   runAt?: string | null;
   /** The step it tested: the check uses its output. */
   testedStep?: string | null;
+  /** CA-04 P1: the session it was added to. */
+  session?: string | null;
 }
 
 /**
@@ -991,6 +1079,7 @@ function checkPayload(operation: string, input: CheckInput, tree: readonly NodeT
     if (!isStep) throw refuse(operation, "That is not a step of this build.");
     out.uses = [{ kind: "output", node_id: input.testedStep }] as unknown as Json;
   }
+  if (input.session) out.session = input.session;
   return out as Json;
 }
 

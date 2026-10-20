@@ -136,12 +136,15 @@ export async function addWrittenPrompt({
   text,
   tool,
   model,
+  session,
 }: {
   buildId: string;
   tree: readonly NodeTree[];
   text: string;
   tool?: string | null;
   model?: string | null;
+  /** CA-04 P1: the session it was typed into, when the maker chose one. */
+  session?: string | null;
 }): Promise<BuildNode> {
   if (!text.trim()) throw buildLayerError("addWrittenPrompt", new Error("A prompt needs its text."));
   const payload: Record<string, string> = { text };
@@ -151,6 +154,7 @@ export async function addWrittenPrompt({
     payload.tool = toolFor(named)?.id ?? named;
   }
   if (model?.trim()) payload.model = model.trim();
+  if (session) payload.session = session;
   return placeTopNode(buildId, tree, { type: PROMPT_TYPE, title: null, payload, source_ref: null });
 }
 

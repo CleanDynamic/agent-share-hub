@@ -765,3 +765,37 @@ describe("an agent that reads content it doesn't control, in Details (CA-03 P7)"
     expect(screen.queryByTestId("outside-warning")).toBeNull();
   });
 });
+
+describe("a session made here (CA-04 P1)", () => {
+  it("is read with its tool and day editable, and an imported one is not", async () => {
+    const { buildSteps, sessionGroups } = await import("@/lib/build/graph");
+    const { resolveView } = await import("./detailsView");
+    const { sourceSessions } = await import("./sourcesModel");
+    const node = (id: string, position: number, payload: Record<string, unknown>, source_ref: unknown = null) =>
+      ({ id, build_id: "b", parent_id: null, position, type: "prompt", title: null, note: null, payload, source_ref, event_id: null, is_gap: false, created_at: "", children: [] }) as never;
+    const tree = [node("p1", 1, { text: "a", session: "typed-a" }), node("p2", 2, { text: "b" }, { source: "x", session_id: "e", index: 0, import_session_id: "imp" })];
+    const steps = buildSteps(tree);
+    const groups = sessionGroups(steps, [], {}, { "typed-a": { tool: "claude-code", date: "2026-10-12" } });
+    const ctx = { steps, groups, tree, sources: sourceSessions(groups, steps), sourceFiles: [], promptsState: () => ({ prompts: [], error: false }), intoResult: new Set<string>(), media: () => undefined };
+    const typed = resolveView({ ...ctx, selectedId: "typed-a" }) as SessionView;
+    expect(typed.editable).toEqual({ tool: "claude-code", date: "2026-10-12" });
+    const imported = resolveView({ ...ctx, selectedId: "imp" }) as SessionView;
+    expect(imported.editable).toBeUndefined();
+  });
+
+  it("changes its tool with the tool picker and its day as 2026-10-12, refusing anything else", () => {
+    const onSessionMeta = vi.fn();
+    const view: SessionView = { kind: "session", key: "typed-a", number: 2, tool: "Claude Code", model: "", date: "12 Oct", inBuild: 1, total: 1, status: "ready", checklist: [], editable: { tool: "claude-code", date: "2026-10-12" } };
+    panel("session", "bakery", { view, onSessionMeta });
+    expect(screen.getByRole("button", { name: "Tool" }).textContent).toBe("Claude Code");
+    const date = screen.getByRole("textbox", { name: "Date" }) as HTMLInputElement;
+    expect(date.value).toBe("2026-10-12");
+    fireEvent.change(date, { target: { value: "13 Oct" } });
+    fireEvent.keyDown(date, { key: "Enter" });
+    expect(onSessionMeta).not.toHaveBeenCalled();
+    expect(screen.getByText("Write the day as 2026-10-12.")).toBeTruthy();
+    fireEvent.change(date, { target: { value: "2026-10-13" } });
+    fireEvent.keyDown(date, { key: "Enter" });
+    expect(onSessionMeta).toHaveBeenCalledWith("typed-a", { date: "2026-10-13" });
+  });
+});

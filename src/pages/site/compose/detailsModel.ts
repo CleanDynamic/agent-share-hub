@@ -7,6 +7,7 @@
 
 import {
   goesInto,
+  groupOfStep,
   inputRefusal,
   madeFileNamesOf,
   madeFilesOf,
@@ -126,10 +127,7 @@ function parentOf(steps: readonly Step[], id: string): Step | undefined {
 
 /** The session number a step belongs to, when it has one. */
 export function sessionNumberOf(step: Step, groups: readonly SessionGroup[]): number | null {
-  const group = step.sessionId
-    ? groups.find((candidate) => candidate.sessionId === step.sessionId)
-    : groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
-  return group?.number ?? null;
+  return groupOfStep(groups, step)?.number ?? null;
 }
 
 /** An input a step has, as a row: "Output of 1" over "Homepage copy · Session 2". */

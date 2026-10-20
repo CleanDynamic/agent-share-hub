@@ -45,7 +45,7 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CS
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
-import { inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
+import { groupKey, inputRefusal, runsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
 import { joinedTo, layoutMap, layoutOpened, MAP_SIZES, type MapBox, type MapPiece, type MapResult, type MapSuggestion, type MapWire } from "@/lib/build/mapLayout";
 import { CONTROL } from "@/lib/theme/refinedControl";
 import { t } from "@/lib/theme/tokens";
@@ -692,7 +692,7 @@ export function BuildMap(props: BuildMapProps) {
   const count: CSSProperties = { fontVariantNumeric: "tabular-nums" };
   const Box = RefinedBoxView;
   /** The session each lane is led by the real mark of (its tool's, else its model's), from the groups `layoutMap` made the first lanes from. */
-  const laneMark = new Map(groups.map((group) => [group.sessionId ?? `typed-${group.number}`, group]));
+  const laneMark = new Map(groups.map((group) => [groupKey(group), group]));
 
   return (
     <div onKeyDown={onKeyDown} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>

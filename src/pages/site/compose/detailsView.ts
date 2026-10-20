@@ -8,6 +8,9 @@
 import { promptNodes, promptOrigin } from "@/lib/build/composePrompts";
 import {
   FILE_TYPE,
+  groupKey,
+  groupKind,
+  groupOfStep,
   madeByOf,
   madeFilesOf,
   RESULT_TYPE,
@@ -19,6 +22,7 @@ import {
 import type { SessionPrompt } from "@/lib/build/sessions";
 import type { NodeTree } from "@/lib/build/types";
 import { modelLabel } from "@/lib/models/registry";
+import { toolFor } from "@/lib/tools/registry";
 
 import {
   fileSize,
@@ -83,14 +87,14 @@ export function pieces(tree: readonly NodeTree[], files: readonly SourceFile[]):
 
 function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>): PromptView {
   const instructions = step.id.endsWith(":instructions");
-  const group = step.sessionId
-    ? ctx.groups.find((candidate) => candidate.sessionId === step.sessionId)
-    : ctx.groups.find((candidate) => candidate.sessionId === null && candidate.stepNumbers.includes(step.number));
+  const group = groupOfStep(ctx.groups, step);
   const number = sessionNumberOf(step, ctx.groups);
   const tool = group?.tool ?? step.tool;
   const typed = !step.sessionId && !instructions;
+  // CA-04 P1: a prompt typed into a session (one made here, or an imported one) reads as that session's.
+  const inSession = Boolean(group) && groupKind(group as SessionGroup) !== "legacy";
   const model = step.model ? modelLabel(step.model) : null;
-  const when = group?.sessionId ? shortDate(group.startedAt) : "";
+  const when = inSession && group ? shortDate(group.startedAt) : "";
   const place = promptPlace(step, ctx.steps);
   return {
     kind: "prompt",
@@ -99,7 +103,7 @@ function promptView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>
     title: step.title,
     defaultTitle: step.defaultTitle,
     editable: !instructions,
-    sessionLine: instructions ? "Instructions" : typed ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
+    sessionLine: instructions ? "Instructions" : typed && !inSession ? `Typed here${tool ? ` · ${tool}` : ""}` : [number ? `Session ${number}` : "Session", tool].filter(Boolean).join(" · "),
     detailLine: instructions ? "" : [model, when, place].filter(Boolean).join(" · "),
     typed,
     model,
@@ -207,7 +211,7 @@ function agentView(step: Step, ctx: ViewContext, all: ReturnType<typeof pieces>)
 }
 
 function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
-  const group = ctx.groups.find((candidate) => (candidate.sessionId ?? `typed-${candidate.number}`) === source.key);
+  const group = ctx.groups.find((candidate) => groupKey(candidate) === source.key);
   const real = !source.key.startsWith("typed-");
   const mine = flatten(ctx.steps).filter((step) => step.kind === "prompt" && !step.id.endsWith(":instructions") && (real ? step.sessionId === source.key : source.prompts.some((p) => p.id === step.id)));
 
@@ -240,11 +244,15 @@ function sessionView(source: SourceSession, ctx: ViewContext): SessionView {
     tool: group?.tool ?? source.tool,
     ...(source.pickTool ? { pickTool: source.pickTool } : null),
     model: model || "",
-    date: group ? (group.sessionId ? shortDate(group.startedAt) : "") : rest.join(" · "),
+    date: group ? (groupKind(group) !== "legacy" ? shortDate(group.startedAt) : "") : rest.join(" · "),
     inBuild: checklist.filter((row) => row.stepId !== null).length,
     total,
     status,
     checklist,
+    // CA-04 P1: a session made here, or an old build's typed prompts, can have its tool and day changed.
+    ...(group && !real
+      ? { editable: { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: groupKind(group) === "typed" ? (group.startedAt ?? "") : "" } }
+      : null),
   };
 }
 

@@ -40,6 +40,7 @@ import {
 import { Button } from "@/components/brand/Button";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
+import { MenuButton } from "@/components/brand/MenuButton";
 import { Pill } from "@/components/brand/Pill";
 import type { Step } from "@/lib/build/graph";
 import { checkStatus, runsLabel, stepTitle, TOOL_TYPE } from "@/lib/build/graph";
@@ -72,7 +73,7 @@ import { ManualThumb } from "./ManualThumb";
 import { OutsideWarning } from "./OutsideWarning";
 import { MODEL_CLEARED_MS, MODEL_PICKER_COPY, ModelPicker } from "./ModelPicker";
 import { CHECK_COPY, DotLine, NumberTile, Quiet, ToolMark } from "./refinedPieces";
-import { ToolPicker } from "./ToolPicker";
+import { FLOATING_Z, ToolPicker } from "./ToolPicker";
 import { TOOL_PICKER_COPY, runsItself } from "./toolPickerModel";
 import {
   INDENT,
@@ -142,6 +143,16 @@ export interface BuildListProps {
   onNameMade?: (id: string) => void;
   /** TF-08: the names of the files each step makes, by step id. */
   madeNames?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * CA-04 P1: the sessions a new prompt can go into, "Session 2 · Claude Code", in order. Absent while the build has
+   * only the one session its typed prompts make: the field then reads as it always did.
+   */
+  sessionChoices?: readonly SessionChoice[];
+  /** CA-04 P1: the key of the session a new prompt goes into. */
+  currentSession?: string | null;
+  onCurrentSession?: (key: string) => void;
+  /** CA-04 P1: "New session" at the end of the menu: asks for its tool, then it is the current session. */
+  onNewSession?: () => void;
 }
 
 /** Whether `ref`'s text is cut off by its line clamp; read after layout and on resize. Shared with the refined fork (UI-P93). */
@@ -1035,7 +1046,72 @@ export interface AddAsAgentInput {
   instructions: string;
 }
 
-function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, inBuild = [] }: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild">) {
+/** CA-04 P1: a session a new prompt can go into, and the tool its prompts are typed in. */
+export interface SessionChoice {
+  key: string;
+  label: string;
+  tool?: string | null;
+}
+
+export const SESSION_MENU_COPY = {
+  adding: "Adding to",
+  newSession: "New session",
+} as const;
+
+/** CA-04 P1: "Adding to Session 2 · Claude Code": where a new prompt goes. The menu lists the sessions, then New session. */
+function SessionMenu({ phone, choices, current, onCurrent, onNew }: { phone: boolean; choices: readonly SessionChoice[]; current: string | null; onCurrent?: (key: string) => void; onNew?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const chosen = choices.find((choice) => choice.key === current);
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <MenuButton
+          data-testid="adding-to"
+          aria-label={`${SESSION_MENU_COPY.adding} ${chosen?.label ?? SESSION_MENU_COPY.newSession}`}
+          label={SESSION_MENU_COPY.adding}
+          value={chosen?.label ?? ""}
+          open={open}
+          style={{ maxWidth: "100%", ...(phone ? { height: 44 } : null) }}
+        />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content align="start" sideOffset={4} collisionPadding={16} style={{ ...menuSurface(), zIndex: FLOATING_Z, maxHeight: "min(360px, var(--radix-dropdown-menu-content-available-height))", overflowY: "auto" }}>
+          <Menu.RadioGroup value={current ?? ""} onValueChange={(key) => onCurrent?.(key)}>
+            {choices.map((choice) => (
+              <Menu.RadioItem key={choice.key} value={choice.key} style={{ ...menuItem(true, phone), gap: 6 }}>
+                <span style={{ width: 14, display: "inline-flex" }}>
+                  <Menu.ItemIndicator>
+                    <Glyph name="check" size={14} />
+                  </Menu.ItemIndicator>
+                </span>
+                {choice.label}
+              </Menu.RadioItem>
+            ))}
+          </Menu.RadioGroup>
+          <Menu.Item disabled={!onNew} onSelect={onNew} style={{ ...menuItem(Boolean(onNew), phone), gap: 6 }}>
+            <span style={{ width: 14, display: "inline-flex" }}>
+              <Glyph name="plus" size={14} />
+            </span>
+            {SESSION_MENU_COPY.newSession}
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+function AddPrompt({
+  phone,
+  onAddPrompt,
+  onAddAsAgent,
+  onKeepAsCode,
+  focusAdd,
+  inBuild = [],
+  sessionChoices,
+  currentSession = null,
+  onCurrentSession,
+  onNewSession,
+}: Pick<BuildListProps, "phone" | "onAddPrompt" | "onAddAsAgent" | "onKeepAsCode" | "focusAdd" | "inBuild" | "sessionChoices" | "currentSession" | "onCurrentSession" | "onNewSession">) {
   const [value, setValue] = useState("");
   /** CA-02 P7: true once text was pasted in, until the field is emptied. Only pasted text is offered as code. */
   const [pasted, setPasted] = useState(false);
@@ -1048,6 +1124,15 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
   useEffect(() => {
     if (focusAdd > 0) field.current?.focus();
   }, [focusAdd]);
+
+  /* CA-04 P1: choosing a session puts its tool in the field; the maker can still change it. */
+  const sessionTool = sessionChoices?.find((choice) => choice.key === currentSession)?.tool ?? null;
+  const chosenSession = sessionChoices ? currentSession : null;
+  useEffect(() => {
+    if (chosenSession === null) return;
+    setTool(sessionTool ? (toolFor(sessionTool)?.id ?? sessionTool) : null);
+    setModel(null);
+  }, [chosenSession, sessionTool]);
 
   useEffect(() => {
     if (!cleared) return;
@@ -1102,6 +1187,11 @@ function AddPrompt({ phone, onAddPrompt, onAddAsAgent, onKeepAsCode, focusAdd, i
 
   return (
     <div data-testid="add-prompt" style={{ ...moduleStyle(false, 12), display: "flex", flexDirection: "column", gap: 12, fontSize: 13.5 }}>
+      {sessionChoices && sessionChoices.length > 0 ? (
+        <div>
+          <SessionMenu phone={phone} choices={sessionChoices} current={currentSession} onCurrent={onCurrentSession} onNew={onNewSession} />
+        </div>
+      ) : null}
       <textarea
         ref={field}
         aria-label="Add a prompt"
@@ -1202,7 +1292,18 @@ export function BuildList(props: BuildListProps) {
       {props.results.map((result) => (
         <ResultCard key={result.id} result={result} selected={props.selectedId === result.id} onSelect={props.onSelect} />
       ))}
-      <AddPrompt phone={props.phone} onAddPrompt={props.onAddPrompt} onAddAsAgent={props.onAddAsAgent} onKeepAsCode={props.onKeepAsCode} focusAdd={props.focusAdd} inBuild={props.inBuild} />
+      <AddPrompt
+        phone={props.phone}
+        onAddPrompt={props.onAddPrompt}
+        onAddAsAgent={props.onAddAsAgent}
+        onKeepAsCode={props.onKeepAsCode}
+        focusAdd={props.focusAdd}
+        inBuild={props.inBuild}
+        sessionChoices={props.sessionChoices}
+        currentSession={props.currentSession}
+        onCurrentSession={props.onCurrentSession}
+        onNewSession={props.onNewSession}
+      />
     </div>
   );
 }

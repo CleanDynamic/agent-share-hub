@@ -10,7 +10,7 @@
 // and the one extra read goes through a narrow cast, as provenance.ts does.
 
 import { supabase } from "@/integrations/supabase/client";
-import { TOOLS, toolName } from "@/lib/tools/registry";
+import { TOOLS, toolFor, toolName } from "@/lib/tools/registry";
 import { updateBuild } from "./builds";
 import { listBuildSessions, type SessionSummary } from "./sessions";
 import { buildLayerError, type BuildPatch } from "./types";
@@ -43,12 +43,72 @@ export interface MakingSession {
   turns: number;
 }
 
-/** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13). */
+/**
+ * CA-04 P1: what a session carries beyond its steps. A session made in the composer is keyed `typed-<uuid>` and has
+ * its tool and its day here; an imported one is keyed by its `import_sessions` id and keeps its own tool and day, so
+ * its entry carries only what the maker adds to it (P6's goal).
+ */
+export interface SessionMeta {
+  /** A tool id or a typed name; null for a session typed here with no tool. */
+  tool: string | null;
+  model?: string | null;
+  /** "2026-10-20"; "" on an imported session's entry, whose day is its own. */
+  date: string;
+  goal?: unknown;
+  runs?: unknown;
+}
+
+/** builds.making. `excluded_models` is the maker's to change (UI-P48); so is `session_tools` (TF-13), and so is `sessions_meta` (CA-04). */
 export interface Making {
   sessions: MakingSession[];
   excluded_models: string[];
   /** Import session id to the tool the maker gave a session whose client names none: a tool id or a typed name. */
   session_tools?: Record<string, string>;
+  /** CA-04 P1: a session's key to what it carries. */
+  sessions_meta?: Record<string, SessionMeta>;
+}
+
+/** The key of a session made in the composer starts with this. */
+export const TYPED_SESSION_PREFIX = "typed-";
+/** An old build's prompts typed by hand, read as one session per unbroken run, are keyed with this and a number. Never stored. */
+export const LEGACY_SESSION_PREFIX = "typed-legacy-";
+
+export const isLegacySession = (key: string | null | undefined): boolean => Boolean(key?.startsWith(LEGACY_SESSION_PREFIX));
+/** A session made in the composer and saved: its key is stable. */
+export const isTypedSession = (key: string | null | undefined): boolean => Boolean(key?.startsWith(TYPED_SESSION_PREFIX)) && !isLegacySession(key);
+
+/** A new session's key. */
+export function newSessionKey(): string {
+  const uuid =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  return `${TYPED_SESSION_PREFIX}${uuid}`;
+}
+
+/** Today, as a session's day is saved. */
+export const todayDay = (now: Date = new Date()): string => now.toISOString().slice(0, 10);
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** builds.making.sessions_meta, read defensively: entries without a day are skipped, and only the known keys are kept. */
+export function sessionsMetaOf(making: unknown): Record<string, SessionMeta> {
+  const raw = asObject(asObject(making).sessions_meta);
+  const out: Record<string, SessionMeta> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    const entry = asObject(value);
+    const date = typeof entry.date === "string" && ISO_DAY.test(entry.date) ? entry.date : "";
+    // A session made here has a day; an imported one keeps its own, and its entry may have none.
+    if (!date && isTypedSession(key)) continue;
+    const tool = typeof entry.tool === "string" && entry.tool.trim() ? entry.tool.trim() : null;
+    const meta: SessionMeta = { tool, date };
+    if (typeof entry.model === "string" && entry.model.trim()) meta.model = entry.model.trim();
+    if (entry.goal !== undefined) meta.goal = entry.goal;
+    if (entry.runs !== undefined) meta.runs = entry.runs;
+    out[key] = meta;
+  }
+  return out;
 }
 
 interface MakingRow {
@@ -293,6 +353,40 @@ export async function setSessionTool(buildId: string, sessionId: string, tool: s
   else delete tools[sessionId];
   await updateBuild(buildId, { making: { ...asObject(making), session_tools: tools } } as unknown as BuildPatch);
   return value ? addMadeWithTools(buildId, [toolName(value) ?? value]) : state;
+}
+
+/**
+ * CA-04 P1: what a session carries, checked. A session made here needs its day; its tool, when given, is a tool id
+ * or a typed name of at most 40 characters, and is kept as `toolFor` knows it. Pure, so the composer can say no first.
+ */
+export function sessionMetaRefusal(key: string, meta: SessionMeta): string | null {
+  if (!key || isLegacySession(key)) return "That session is not saved yet.";
+  if (isTypedSession(key) && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
+  if (meta.date && !ISO_DAY.test(meta.date)) return "A session's day is written as 2026-10-12.";
+  if (meta.tool && meta.tool.trim().length > SESSION_TOOL_MAX) return `A tool name is at most ${SESSION_TOOL_MAX} characters.`;
+  return null;
+}
+
+/**
+ * Write what one session carries (`making.sessions_meta[key]`), or take it away (null). Only that key changes; the
+ * rest of `making` is kept as it is. A named tool joins Made with, as a session's tool does. Resolves with the
+ * session's entries as they stand.
+ */
+export async function setSessionMeta(buildId: string, key: string, meta: SessionMeta | null): Promise<Record<string, SessionMeta>> {
+  if (meta) {
+    const why = sessionMetaRefusal(key, meta);
+    if (why) throw buildLayerError("setSessionMeta", new Error(why));
+  } else if (!key) throw buildLayerError("setSessionMeta", new Error("That session is not saved yet."));
+  const { making } = await readMadeWith("setSessionMeta", buildId);
+  const entries = { ...sessionsMetaOf(making) };
+  if (meta) {
+    const tool = meta.tool?.trim() || null;
+    entries[key] = { ...meta, tool: tool ? (toolFor(tool)?.id ?? tool) : null };
+  } else delete entries[key];
+  await updateBuild(buildId, { making: { ...asObject(making), sessions_meta: entries } } as unknown as BuildPatch);
+  const tool = meta?.tool?.trim();
+  if (tool) await addMadeWithTools(buildId, [toolName(tool) ?? tool]).catch(() => console.warn("[setSessionMeta] Made with not updated", { buildId }));
+  return entries;
 }
 
 /** A code for the log, and only a code. */

@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
 
 import { SPACE_REFINED } from "./space";
 
-/** Every source file CA-03 adds or changes, from the repository root. */
+/** Every source file CA-03 and CA-04 add or change, from the repository root. */
 export const CA03_FILES: readonly string[] = [
   // P2
   "src/components/brand/Segmented.tsx",
@@ -87,6 +87,15 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/build/BuildView.tsx",
   // P9
   "src/dev/fixtures/shapes.ts",
+  // CA-04 P1
+  "src/components/build/FullPromptWindow.tsx",
+  "src/lib/build/composePrompts.ts",
+  "src/lib/build/making.test.ts",
+  "src/lib/build/making.ts",
+  "src/lib/build/onePrompt.snapshot.test.tsx",
+  "src/pages/site/compose/AddSessionDialog.test.tsx",
+  "src/pages/site/compose/AddSessionDialog.tsx",
+  "src/pages/site/compose/sourcesModel.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");

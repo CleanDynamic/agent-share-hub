@@ -89,6 +89,8 @@ export interface SandboxViewProps extends CardProps {
   /** Puts the cursor in the Build panel's add field: Add › Prompt, and the "a prompt" missing item. */
   onAddPromptFocus?: () => void;
 
+  /** CA-04 P1: Add › New session asks for its tool. Absent, the item stays disabled. */
+  onNewSession?: () => void;
   /** Add › File: opens the page's file picker. Absent, the item stays disabled. */
   onAddFile?: () => void;
   /** Add › Session: the library's sessions that are in no build. Absent, the item stays disabled. */
@@ -129,7 +131,7 @@ export interface SandboxViewProps extends CardProps {
   selection?: ReactNode;
 }
 
-export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
+export type AddKey = "newSession" | "prompt" | "session" | "agent" | "file" | "tool" | "manual" | "code" | "check" | "result";
 
 /**
  * CONCEPT §5's seven, in order, with their one line each, and Code after Manual step (CA-02 P7). `ready` is false
@@ -137,6 +139,8 @@ export type AddKey = "prompt" | "session" | "agent" | "file" | "tool" | "manual"
  * disabled. UI-P76 turns the switch on only once they are all true.
  */
 export const ADD_ITEMS: readonly { key: AddKey; name: string; line: string; ready: boolean }[] = [
+  /* CA-04 P1: first, because what is added next goes into it. */
+  { key: "newSession", name: "New session", line: "One sitting with one tool", ready: true },
   { key: "prompt", name: "Prompt", line: "A message you sent", ready: true },
   { key: "session", name: "Session", line: "A chat from your sources", ready: true },
   { key: "agent", name: "Agent or team", line: "Prompts that run by themselves", ready: true },
@@ -167,7 +171,7 @@ export function countsLine(counts: SandboxCounts): string {
   return parts.join(" · ");
 }
 
-export type AddMenuProps = Pick<SandboxViewProps, "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
+export type AddMenuProps = Pick<SandboxViewProps, "onNewSession" | "onAddFile" | "addableSessions" | "onAddSession" | "onAddPromptFocus" | "onAddTool" | "onAddResult" | "onAddAgent" | "onAddManual" | "onAddCode" | "onAddCheck" | "checkable">;
 
 /** One item of the Add menu, wired: what it calls, whether it is enabled. Session carries its submenu's rows. Shared with the refined fork (UI-P93). */
 export interface AddEntry {
@@ -180,7 +184,7 @@ export interface AddEntry {
   sessions?: readonly { id: string; label: string; line: string; onSelect: () => void }[];
 }
 
-export function addEntries({ onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
+export function addEntries({ onNewSession, onAddFile, addableSessions, onAddSession, onAddPromptFocus, onAddTool, onAddResult, onAddAgent, onAddManual, onAddCode, onAddCheck, checkable = false }: AddMenuProps): AddEntry[] {
   return ADD_ITEMS.map((item) => {
     if (item.key === "check") {
       // Listed always; offered once the build has an agent, a team or code to check.
@@ -194,6 +198,7 @@ export function addEntries({ onAddFile, addableSessions, onAddSession, onAddProm
       };
     }
     const handlers: Partial<Record<AddKey, (() => void) | undefined>> = {
+      newSession: onNewSession,
       file: onAddFile,
       prompt: onAddPromptFocus,
       tool: onAddTool,
@@ -613,6 +618,7 @@ export function SandboxView(props: SandboxViewProps) {
   const addMenu = (
     <AddMenu
       phone={phone}
+      onNewSession={props.onNewSession}
       onAddFile={props.onAddFile}
       addableSessions={props.addableSessions}
       onAddSession={props.onAddSession}

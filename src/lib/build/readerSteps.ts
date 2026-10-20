@@ -21,7 +21,11 @@ import {
   TOOL_TYPE,
   buildSteps,
   goesInto,
+  groupKind,
+  groupOfStep,
   madeByOf,
+  promptNumbersOf,
+  shownGroups,
   runsLabel,
   untilClause,
   sessionGroups,
@@ -29,7 +33,7 @@ import {
   type SessionGroup,
   type Step,
 } from "./graph";
-import type { Making } from "./making";
+import { sessionsMetaOf, type Making } from "./making";
 import { mediaUrl, type MediaRef } from "./media";
 import { PROMPT_TYPE } from "./composePrompts";
 import type { MapPiece, MapResult } from "./mapLayout";
@@ -322,7 +326,7 @@ function contextFor(tree: readonly NodeTree[], making: Making | null | undefined
     }
   }
   const byId = new Map(all.map((step) => [step.id, step]));
-  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {});
+  const groups = sessionGroups(topSteps, sessions, making?.session_tools ?? {}, sessionsMetaOf(making));
   const tools = readTools(tree);
   const toolIds = [
     ...new Set(
@@ -361,14 +365,17 @@ function setupOf(file: ReaderFile, context: Context, stepToolIds: readonly strin
 
 function chatFor(step: Step, context: Context): ReaderChat | null {
   if (step.kind !== "prompt" || !isTop(step)) return null;
-  const group = context.groups.find((candidate) => candidate.stepNumbers.includes(step.number));
+  const group = groupOfStep(context.groups, step);
   if (!group) return null;
-  const at = group.stepNumbers.indexOf(step.number);
+  // CA-04 P1: a session holds every kind of step; the chat is its prompts'.
+  const prompts = promptNumbersOf(group, context.topSteps);
+  const at = prompts.indexOf(step.number);
   if (at > 0) {
-    const previous = group.stepNumbers[at - 1];
+    const previous = prompts[at - 1];
     return { kind: "same", step: previous, text: `Send in the same chat as step ${previous}` };
   }
-  const typed = group.sessionId === null;
+  // A session made in the composer reads as an imported one does: its number and its day.
+  const typed = groupKind(group) === "legacy";
   const startedAt = typed ? null : group.startedAt;
   const date = shortDate(startedAt);
   const detail = typed
@@ -428,9 +435,10 @@ function readerStep(step: Step, context: Context, inside: boolean): ReaderStep {
   }
 
   // The tools this step is done in: the session it belongs to, the tool it names, and the tools it uses.
+  // CA-04 P1: the step's own tool first; a session now holds every kind of step, and a manual step names its own.
   const stepToolIds = [
-    context.groups.find((group) => group.stepNumbers.includes(step.number))?.tool,
     step.tool,
+    context.groups.find((group) => group.stepNumbers.includes(step.number))?.tool,
     ...tools.map((tool) => tool.name),
   ].flatMap((name) => {
     const found = toolFor(name);
@@ -575,13 +583,17 @@ export function whatYouNeed(
   /* Tools and models */
   const tools: NeedRow[] = [];
   const byTool = new Map<string, { models: string[]; steps: string[]; named: boolean }>();
-  for (const group of context.groups) {
+  for (const group of shownGroups(context.groups)) {
     const key = group.tool ?? group.model ?? "";
     if (!key) continue;
+    // CA-04 P1: the steps a tool row names are the session's prompts; a session made here with none names them all.
+    const prompts = promptNumbersOf(group, context.topSteps);
+    const numbers = prompts.length > 0 || groupKind(group) !== "typed" ? prompts : group.stepNumbers;
+    if (numbers.length === 0) continue;
     const entry = byTool.get(key) ?? { models: [], steps: [], named: Boolean(group.tool) };
     const model = group.tool ? group.model : null;
     if (model && !entry.models.includes(model)) entry.models.push(model);
-    entry.steps.push(...group.stepNumbers);
+    entry.steps.push(...numbers);
     byTool.set(key, entry);
   }
   for (const [tool, entry] of byTool) {

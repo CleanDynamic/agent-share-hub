@@ -33,8 +33,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFinePointer, useIsPhone } from "@/components/shell/useMinWidth";
 import { composeBuildQueryKey } from "@/hooks/useComposeBuild";
 import type { BuildNode } from "@/lib/build/types";
-import { addFile, buildSteps, canCheck, FILE_TYPE, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
-import { sessionToolsOf, type MakingSession } from "@/lib/build/making";
+import { addFile, buildSteps, canCheck, FILE_TYPE, groupKey, groupKind, madeFileNamesOf, madeFilesOf, RESULT_TYPE, sessionGroups, shownGroups, testedStepOf, TOOL_TYPE, usesOf, type Step } from "@/lib/build/graph";
+import { toolFor } from "@/lib/tools/registry";
+import { isLegacySession, sessionsMetaOf, sessionToolsOf, setSessionMeta, todayDay, newSessionKey, type MakingSession, type SessionMeta } from "@/lib/build/making";
 import { fileKindFor, getMediaById, MEDIA_MAX_BYTES, mediaKindFor, signedMediaUrl, uploadMedia } from "@/lib/build/media";
 import { attachSession } from "@/lib/build/sessions";
 import { getNodeType } from "@/lib/build/nodeTypes";
@@ -47,6 +48,7 @@ import { useComposeThread } from "./useComposeThread";
 import { SandboxView, type SandboxCounts, type SandboxLens } from "./SandboxView";
 import { AddManualStepDialog, type AddManualStepInput } from "./AddManualStepDialog";
 import { AddToolDialog } from "./AddToolDialog";
+import { AddSessionDialog } from "./AddSessionDialog";
 import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
@@ -117,14 +119,15 @@ export function SandboxPage() {
   const made = (build as { making?: unknown } | null)?.making;
   const { counts, hasAgent, sessionCount, steps, groups } = useMemo(() => {
     const steps = buildSteps(tree);
-    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made));
+    // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
+    const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
     const all = flatten(steps);
     const next: SandboxCounts = {
-      sessions: groups.length,
+      sessions: shownGroups(groups).length,
       prompts: all.filter((step) => step.kind === "prompt").length,
       files: tree.filter((node) => node.type === FILE_TYPE).length,
     };
-    return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: groups.length, steps, groups };
+    return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
@@ -331,6 +334,95 @@ export function SandboxPage() {
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools), [groups, steps, sessions.sessions, sessionTools]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
+
+  /* ── sessions (CA-04 P1) ── */
+
+  /** The session the maker chose for what they add next; the build's last session while they have chosen none. */
+  const [chosenSession, setChosenSession] = useState<string | null>(null);
+  const shown = useMemo(() => shownGroups(groups), [groups]);
+  const currentSession = useMemo(() => {
+    if (chosenSession && sourceSessionRows.some((row) => row.key === chosenSession)) return chosenSession;
+    const last = shown[shown.length - 1];
+    return last ? groupKey(last) : null;
+  }, [chosenSession, sourceSessionRows, shown]);
+  /* The add field names its session once the build has more than the one session its typed prompts make. */
+  const sessionChoices = useMemo(
+    () =>
+      shown.length > 1 || shown.some((group) => groupKind(group) !== "legacy")
+        ? sourceSessionRows.map((row) => ({ key: row.key, label: `Session ${row.number} · ${row.tool}`, tool: row.tool === "Typed here" || row.tool === "Unknown tool" ? null : row.tool }))
+        : undefined,
+    [shown, sourceSessionRows],
+  );
+  const [addSessionOpen, setAddSessionOpen] = useState(false);
+  const refreshRecord = useCallback(async (id: string) => queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(id) }), [queryClient]);
+
+  /** An old build's run of typed prompts, saved as a session made here so it can change. Resolves its new key. */
+  const claim = useCallback(
+    async (key: string, change: Partial<SessionMeta> = {}): Promise<string | null> => {
+      const group = groups.find((candidate) => groupKey(candidate) === key);
+      if (!group) return null;
+      const ids = steps.filter((step) => group.stepNumbers.includes(step.number)).map((step) => step.id);
+      const meta: SessionMeta = { tool: group.tool ? (toolFor(group.tool)?.id ?? group.tool) : null, date: todayDay(), ...change };
+      const next = await prompts.claimSession(ids, meta);
+      if (next) setChosenSession(next);
+      return next;
+    },
+    [groups, steps, prompts],
+  );
+
+  /**
+   * The session a new step records. None while it is an old build's last run of typed prompts, which a step added at
+   * the end joins by itself; an earlier run is saved first, so the step can name it.
+   */
+  const sessionToWrite = useCallback(async (): Promise<string | null> => {
+    const key = currentSession;
+    if (!key) return null;
+    if (!isLegacySession(key)) return key;
+    const last = shown[shown.length - 1];
+    if (last && groupKey(last) === key) return null;
+    return claim(key);
+  }, [currentSession, shown, claim]);
+
+  const onNewSession = useCallback(
+    async (tool: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const key = newSessionKey();
+        await setSessionMeta(id, key, { tool, date: todayDay() });
+        await refreshRecord(id);
+        setChosenSession(key);
+      } catch (cause) {
+        console.error("[Sandbox] session not made", cause);
+        toast.error("Couldn't make that session. Try again.");
+      }
+    },
+    [ensureBuild, refreshRecord],
+  );
+
+  const onSessionMeta = useCallback(
+    async (key: string, change: { tool?: string | null; date?: string }) => {
+      try {
+        if (isLegacySession(key)) {
+          await claim(key, change);
+          return;
+        }
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before = sessionsMetaOf(made)[key] ?? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() };
+        await setSessionMeta(id, key, { ...before, ...change });
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] session not saved", cause);
+        toast.error("Couldn't save that session. Try again.");
+      }
+    },
+    [claim, ensureBuild, groups, made, refreshRecord],
+  );
+
+  const onAddPrompt = useCallback(
+    async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
+    [prompts, sessionToWrite],
+  );
   const reminderRows = useMemo(() => projectFileReminders(sourceSessionRows, sourceFileRows), [sourceSessionRows, sourceFileRows]);
   const libraryRows = useMemo(() => librarySources(sessions.library, adding, Date.now()), [sessions.library, adding]);
 
@@ -386,7 +478,8 @@ export function SandboxPage() {
   const onAddAgentOrTeam = useCallback(
     async (input: AddAgentInput) => {
       savingSeed.current = true;
-      const id = await prompts.addAgentOrTeam(input).finally(() => {
+      const session = await sessionToWrite();
+      const id = await prompts.addAgentOrTeam({ ...input, session }).finally(() => {
         savingSeed.current = false;
       });
       settleSeed(Boolean(id));
@@ -394,7 +487,7 @@ export function SandboxPage() {
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, afterWrite, settleSeed],
+    [prompts, afterWrite, settleSeed, sessionToWrite],
   );
 
   const onAddAgentTo = useCallback(
@@ -418,35 +511,36 @@ export function SandboxPage() {
 
   const onAddManual = useCallback(
     async (input: AddManualStepInput) => {
-      const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null });
+      const id = await prompts.addManual({ ...input, afterId: afterStep?.id ?? null, session: await sessionToWrite() });
       if (!id) return;
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, afterStep, afterWrite],
+    [prompts, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCheck = useCallback(
     async (input: AddCheckInput) => {
       // A check uses the step it tested: the selected one, else the last agent, team or code.
-      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null) });
+      const id = await prompts.addCheckStep({ ...input, testedStep: testedStepOf(steps, afterStep?.id ?? null), session: await sessionToWrite() });
       if (!id) return;
       setSelectedId(id);
       afterWrite();
     },
-    [prompts, steps, afterStep, afterWrite],
+    [prompts, steps, afterStep, afterWrite, sessionToWrite],
   );
 
   const onAddCode = useCallback(
     async (input: AddCodeInput) => {
       savingCode.current = true;
-      const id = await prompts.addCodeSteps(input).finally(() => {
+      const session = await sessionToWrite();
+      const id = await prompts.addCodeSteps({ ...input, session }).finally(() => {
         savingCode.current = false;
       });
       settleCode(Boolean(id));
       if (id) setSelectedId(id);
     },
-    [prompts, settleCode],
+    [prompts, settleCode, sessionToWrite],
   );
 
   const onAddAgentPrompt = useCallback(
@@ -652,6 +746,7 @@ export function SandboxPage() {
           />
         }
         threadNote={thread.hold}
+        onNewSession={() => setAddSessionOpen(true)}
         onAddFile={pick}
         onAddPromptFocus={onAddPromptFocus}
         onAddTool={() => setAddToolOpen(true)}
@@ -745,6 +840,7 @@ export function SandboxPage() {
               } else if (row.stepId) prompts.remove(row.stepId);
             }}
             onSessionTool={(sessionId, tool) => void sessions.setTool(sessionId, tool)}
+            onSessionMeta={(key, change) => void onSessionMeta(key, change)}
             onDownload={(id) => void download(id)}
             onFields={prompts.setFields}
             onAddPicture={(id, file) => void addPicture(id, file)}
@@ -775,7 +871,11 @@ export function SandboxPage() {
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
-            onAddPrompt={prompts.addNow}
+            onAddPrompt={onAddPrompt}
+            sessionChoices={sessionChoices}
+            currentSession={currentSession}
+            onCurrentSession={setChosenSession}
+            onNewSession={() => setAddSessionOpen(true)}
             onAddAsAgent={onAddAsAgent}
             onKeepAsCode={onKeepAsCode}
             inBuild={inBuild}
@@ -828,6 +928,7 @@ export function SandboxPage() {
       />
       <AddCheckDialog open={addCheckOpen} onOpenChange={setAddCheckOpen} onAdd={(input) => void onAddCheck(input)} />
       <AddCodeDialog open={addCodeOpen} onOpenChange={onCodeDialog} inBuild={inBuild} seed={codeSeed} onAdd={(input) => void onAddCode(input)} />
+      <AddSessionDialog open={addSessionOpen} onOpenChange={setAddSessionOpen} inBuild={inBuild} onAdd={(tool) => void onNewSession(tool)} />
       <AddToolDialog open={addToolOpen} onOpenChange={setAddToolOpen} inBuild={inBuild} onAdd={(service) => void addPiece("tool", service)} />
       <FullPromptWindow
         steps={steps}

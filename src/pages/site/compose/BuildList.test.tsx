@@ -749,3 +749,49 @@ describe("an agent that reads content it doesn't control (CA-03 P7)", () => {
     expect(screen.queryByTestId("outside-warning")).toBeNull();
   });
 });
+
+describe("sessions are sittings (CA-04 P1)", () => {
+  const choices = [
+    { key: "typed-legacy-1", label: "Session 1 · Claude", tool: "Claude" },
+    { key: "typed-b", label: "Session 2 · Claude Code", tool: "Claude Code" },
+  ];
+
+  it("says where a new prompt goes, and its menu lists the sessions and New session", async () => {
+    const onCurrentSession = vi.fn();
+    const onNewSession = vi.fn();
+    list({ sessionChoices: choices, currentSession: "typed-b", onCurrentSession, onNewSession });
+    const trigger = screen.getByTestId("adding-to");
+    expect(trigger.textContent).toContain("Adding to");
+    expect(trigger.textContent).toContain("Session 2 · Claude Code");
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    const radios = await screen.findAllByRole("menuitemradio");
+    expect(radios.map((item) => item.textContent)).toEqual(["Session 1 · Claude", "Session 2 · Claude Code"]);
+    expect(radios[1].getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(radios[0]);
+    expect(onCurrentSession).toHaveBeenCalledWith("typed-legacy-1");
+    fireEvent.keyDown(screen.getByTestId("adding-to"), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "New session" }));
+    expect(onNewSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("puts the current session's tool in the field", () => {
+    list({ sessionChoices: choices, currentSession: "typed-b" });
+    expect(within(screen.getByTestId("add-prompt")).getByRole("button", { name: /Typed here · Claude Code/ })).toBeTruthy();
+  });
+
+  it("says nothing about sessions while the build has only the one its typed prompts make", () => {
+    list();
+    expect(screen.queryByTestId("adding-to")).toBeNull();
+  });
+
+  it("draws no session head for a build with exactly one session, and one for each when there are two", () => {
+    const one = shapeListProps("alone");
+    expect(one.dividers.size).toBe(0);
+    render(
+      <MemoryRouter>
+        <BuildList {...one} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryAllByRole("separator")).toHaveLength(0);
+  });
+});

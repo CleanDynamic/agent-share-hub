@@ -46,6 +46,7 @@ import {
   untilDetail,
   untilParts,
   sessionGroups,
+  shownGroups,
   setNodeFields,
   setRuns,
   setStepTitle,
@@ -176,9 +177,9 @@ describe("sessionGroups", () => {
       fromSession("s2", { position: 4 }),
     ]);
     expect(sessionGroups(steps, sessions, {})).toEqual([
-      { sessionId: "s1", number: 1, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-10-04T09:00:00Z", stepNumbers: ["1", "2"] },
-      { sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["3"] },
-      { sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"] },
+      { key: "s1", kind: "import", sessionId: "s1", number: 1, tool: "Claude Code", model: "Sonnet 5.5", startedAt: "2026-10-04T09:00:00Z", stepNumbers: ["1", "2"] },
+      { key: "typed-legacy-1", kind: "legacy", sessionId: null, number: 2, tool: "Claude Code", model: null, startedAt: "typed here", stepNumbers: ["3"] },
+      { key: "s2", kind: "import", sessionId: "s2", number: 3, tool: "ChatGPT", model: "GPT-6 Luna", startedAt: "2026-10-05T09:00:00Z", stepNumbers: ["4"] },
     ]);
   });
 
@@ -201,13 +202,79 @@ describe("sessionGroups", () => {
     expect(sessionGroups(steps, sessions, { s1: "perplexity" })[0].tool).toBe("Claude Code");
   });
 
-  it("splits typed prompts at an agent", () => {
+  it("splits typed prompts at an agent, which sits in the session before it (CA-04 P1)", () => {
     const steps = buildSteps([
       node({ position: 1 }),
       node({ position: 2, type: "agent_config", payload: { system_prompt: "x", model: "m" } }),
       node({ position: 3 }),
     ]);
-    expect(sessionGroups(steps, [], {}).map((g) => g.stepNumbers)).toEqual([["1"], ["3"]]);
+    expect(sessionGroups(steps, [], {}).map((g) => [g.key, g.stepNumbers])).toEqual([
+      ["typed-legacy-1", ["1", "2"]],
+      ["typed-legacy-2", ["3"]],
+    ]);
+  });
+});
+
+describe("sessions are sittings (CA-04 P1)", () => {
+  const meta = {
+    "typed-a": { tool: "claude", model: "Opus 5.5", date: "2026-10-12" },
+    "typed-b": { tool: "claude-code", date: "2026-10-14" },
+  };
+
+  it("puts every top-level step in the session it was added to, whatever its kind", () => {
+    const steps = buildSteps([
+      node({ position: 1, payload: { text: "a", session: "typed-a" } }),
+      node({ position: 2, type: "code", payload: { source: "x", language: "ts", session: "typed-a" } }),
+      node({ position: 3, type: "agent_config", payload: { system_prompt: "x", model: "m", session: "typed-b" } }),
+      node({ position: 4, type: "manual_step", payload: { tool: "Figma", text: "Laid it out", session: "typed-b" } }),
+      node({ position: 5, payload: { text: "b", session: "typed-a" } }),
+    ]);
+    const groups = sessionGroups(steps, [], {}, meta);
+    expect(groups.map((g) => [g.key, g.kind, g.number, g.tool, g.model, g.startedAt, g.stepNumbers])).toEqual([
+      ["typed-a", "typed", 1, "Claude", "Opus 5.5", "2026-10-12", ["1", "2", "5"]],
+      ["typed-b", "typed", 2, "Claude Code", null, "2026-10-14", ["3", "4"]],
+    ]);
+  });
+
+  it("reads an old build's typed prompts as one session per unbroken run, keyed typed-legacy, the tool the first one names", () => {
+    const steps = buildSteps([
+      node({ position: 1, payload: { text: "a" } }),
+      node({ position: 2, payload: { text: "b", tool: "chatgpt" } }),
+      node({ position: 3, type: "code", payload: { source: "x", language: "ts" } }),
+      fromSession("s1", { position: 4 }),
+      node({ position: 5, payload: { text: "c", tool: "cursor" } }),
+    ]);
+    const groups = sessionGroups(steps, [], {});
+    expect(groups.map((g) => [g.key, g.kind, g.tool, g.stepNumbers])).toEqual([
+      ["typed-legacy-1", "legacy", "ChatGPT", ["1", "2", "3"]],
+      ["s1", "import", null, ["4"]],
+      ["typed-legacy-2", "legacy", "Cursor", ["5"]],
+    ]);
+  });
+
+  it("gives an old build's steps before any session a group with no number and no head", () => {
+    const steps = buildSteps([node({ position: 1, type: "agent_config", payload: { system_prompt: "x", model: "m" } }), node({ position: 2 })]);
+    const groups = sessionGroups(steps, [], {});
+    expect(groups.map((g) => [g.implicit ?? false, g.number, g.stepNumbers])).toEqual([
+      [true, 0, ["1"]],
+      [false, 1, ["2"]],
+    ]);
+    expect(shownGroups(groups).map((g) => g.number)).toEqual([1]);
+  });
+
+  it("lists a session made here with no step yet after the others, so it can be added to", () => {
+    const steps = buildSteps([node({ position: 1, payload: { text: "a", session: "typed-a" } })]);
+    expect(sessionGroups(steps, [], {}, meta).map((g) => [g.key, g.number, g.stepNumbers])).toEqual([
+      ["typed-a", 1, ["1"]],
+      ["typed-b", 2, []],
+    ]);
+  });
+
+  it("groups a prompt typed into an imported session with that session", () => {
+    const steps = buildSteps([fromSession("s1", { position: 1 }), node({ position: 2, payload: { text: "more", session: "s1" } })]);
+    const groups = sessionGroups(steps, [], {});
+    expect(groups.map((g) => [g.key, g.stepNumbers])).toEqual([["s1", ["1", "2"]]]);
+    expect(steps[1].sessionId).toBeNull();
   });
 });
 
@@ -861,5 +928,21 @@ describe("what an agent remembers (CA-03 P6)", () => {
     ] as NodeTree[]);
     expect(withMemory.memory).toBe("the dishes it featured");
     expect("memory" in without).toBe(false);
+  });
+});
+
+describe("an old build is read, never written (CA-04 P1)", () => {
+  it("reads typed prompts with legacy keys without changing the tree", () => {
+    const tree = [node({ position: 1, payload: { text: "a", tool: "claude" } }), node({ position: 2, payload: { text: "b" } })];
+    const before = JSON.stringify(tree);
+    const groups = sessionGroups(buildSteps(tree), [], {});
+    expect(groups.map((g) => [g.key, g.kind, g.tool])).toEqual([["typed-legacy-1", "legacy", "Claude"]]);
+    expect(JSON.stringify(tree)).toBe(before);
+  });
+
+  it("refuses to store a legacy key on a step", async () => {
+    const { setStepSession } = await import("./graph");
+    const row = node({ position: 1 });
+    await expect(setStepSession(row, "typed-legacy-1")).rejects.toThrow(/not saved yet/);
   });
 });

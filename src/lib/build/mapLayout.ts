@@ -28,7 +28,7 @@
 //
 // Units are px in the map's own space; the view adds its frame padding.
 
-import { checkStatus, runsLabel, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
+import { checkStatus, groupKey, groupKind, groupOfStep, runsLabel, shownGroups, untilClause, type SessionGroup, type Step, type StepKind, type Use } from "./graph";
 
 export const MAP_SIZES = {
   label: 100,
@@ -226,7 +226,7 @@ interface Placed {
  */
 export function layoutMap(
   steps: readonly Step[],
-  groups: readonly SessionGroup[],
+  allGroups: readonly SessionGroup[],
   files: readonly MapPiece[],
   tools: readonly MapPiece[],
   results: readonly MapResult[],
@@ -235,10 +235,13 @@ export function layoutMap(
   const S = MAP_SIZES;
 
   /* ── lanes ── */
+  /* CA-04 P1: an old build's implicit group (its steps before any session) draws no lane; a session made here is a
+     session lane like an imported one. */
+  const groups = shownGroups(allGroups);
   const lanes: MapLane[] = groups.map((group) => ({
-    key: group.sessionId ?? `typed-${group.number}`,
-    kind: group.sessionId ? "session" : "typed",
-    label: group.sessionId ? `Session ${group.number}` : "Typed here",
+    key: groupKey(group),
+    kind: groupKind(group) === "legacy" ? "typed" : "session",
+    label: groupKind(group) === "legacy" ? "Typed here" : `Session ${group.number}`,
     sub: [group.tool, group.model].filter(Boolean).join(" · "),
     dashed: false,
     y: 0,
@@ -287,9 +290,7 @@ export function layoutMap(
   }
   const sortedDays = [...days].sort();
   const dayOfStep = (step: Step): string | null => {
-    const group = step.sessionId
-      ? groups.find((candidate) => candidate.sessionId === step.sessionId)
-      : groups.find((candidate) => candidate.stepNumbers.includes(step.number));
+    const group = groupOfStep(groups, step);
     return group ? dayOf(group.startedAt) : null;
   };
   const stepDay: (string | null)[] = steps.map(dayOfStep);

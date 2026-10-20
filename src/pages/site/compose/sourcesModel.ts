@@ -9,7 +9,7 @@
    is in the build, and "added by you" otherwise. A file a step makes is noted
    "made in step {n}". */
 
-import { FILE_TYPE, madeByOf, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
+import { FILE_TYPE, groupKey, groupKind, madeByOf, shownGroups, stepTitle, TYPED_HERE, type SessionGroup, type Step } from "@/lib/build/graph";
 import { detectExportSource } from "@/lib/build/lovable";
 import { toolLabel } from "@/lib/build/making";
 import type { SessionSummary } from "@/lib/build/sessions";
@@ -28,7 +28,7 @@ export interface SourcePrompt {
 }
 
 export interface SourceSession {
-  /** The import session's id, or "typed-{n}" for prompts written here. */
+  /** The import session's id, `typed-<uuid>` for a session made here, or `typed-legacy-{n}` for an old build's typed prompts. */
   key: string;
   number: number;
   tool: string;
@@ -87,19 +87,20 @@ export function sourceSessions(
   const pickTool = (id: string): SourceSession["pickTool"] =>
     toolLabel(clients.get(id)) ? undefined : { value: sessionTools[id] ?? null };
   const prompts = flatten(steps).filter((step) => step.kind === "prompt");
-  const grouped = groups.map((group) => {
-    const mine = group.sessionId
-      ? prompts.filter((step) => step.sessionId === group.sessionId)
-      : prompts.filter((step) => group.stepNumbers.includes(step.number));
+  // CA-04 P1: an old build's implicit group (its steps before any session) has no row.
+  const grouped = shownGroups(groups).map((group) => {
+    const key = groupKey(group);
+    const kind = groupKind(group);
+    const mine = prompts.filter((step) => group.stepNumbers.includes(step.number) || (kind === "import" && step.sessionId === group.sessionId));
     // `sessionGroups` has already turned the client and the model into their labels.
     const model = group.model;
-    const when = group.sessionId ? shortDate(group.startedAt) : TYPED_HERE;
+    const when = kind === "legacy" ? TYPED_HERE : shortDate(group.startedAt);
     return {
-      key: group.sessionId ?? `typed-${group.number}`,
+      key,
       number: group.number,
-      tool: group.tool ?? "Unknown tool",
+      tool: group.tool ?? (kind === "typed" ? "Typed here" : "Unknown tool"),
       detail: [model, when].filter(Boolean).join(" · "),
-      ...(group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
+      ...(kind === "import" && group.sessionId ? { pickTool: pickTool(group.sessionId) } : null),
       prompts: mine.map((step) => ({
         id: step.id,
         number: step.number,
@@ -108,12 +109,12 @@ export function sourceSessions(
       })),
     };
   });
-  const seen = new Set(groups.map((group) => group.sessionId));
+  const seen = new Set(groups.map(groupKey));
   const waiting = inBuild
     .filter((session) => !seen.has(session.id))
     .map((session, at): SourceSession => ({
       key: session.id,
-      number: groups.length + at + 1,
+      number: grouped.length + at + 1,
       tool: toolLabel(session.client) ?? (sessionTools[session.id] ? (toolName(sessionTools[session.id]) ?? sessionTools[session.id]) : "Unknown tool"),
       detail: [session.modelName, shortDate(session.createdAt)].filter(Boolean).join(" · "),
       pickTool: pickTool(session.id),

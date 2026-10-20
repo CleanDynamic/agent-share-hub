@@ -53,7 +53,7 @@ import { OutsideWarning } from "./OutsideWarning";
 import { CheckBlock, ToolMark } from "./refinedPieces";
 import { ToolPicker } from "./ToolPicker";
 import { bareButton, EYEBROW, menuItem, menuSurface, text, tnum, typedArea, typedField, wellField } from "./refinedStyles";
-import { AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
+import { isIsoDay, AT_MOST_MAX, AT_MOST_MIN, MADE_FILE_NAME_MAX, type CheckFacts, UNTIL_DETAIL_MAX, untilDetail, untilParts, type AgentModel, type Runs, type Use } from "@/lib/build/graph";
 
 import { AgentSetupFields, savedModels, setupReady, type AgentSetupValue } from "./AgentSetupFields";
 import { ModelPicker } from "./ModelPicker";
@@ -114,6 +114,11 @@ export interface SessionView {
   total: number | null;
   status: "loading" | "error" | "ready";
   checklist: readonly ChecklistRow[];
+  /**
+   * CA-04 P1: a session made here (or an old build's typed prompts, read as one): its Tool and Date can be changed.
+   * `tool` is a tool id or a typed name, or null for "Typed here"; `date` is "2026-10-12", or "" when it has none yet.
+   */
+  editable?: { tool: string | null; date: string };
 }
 
 export interface FileView {
@@ -217,6 +222,8 @@ export interface DetailsHandlers {
   onToggleSessionPrompt: (view: SessionView, row: ChecklistRow, on: boolean) => void;
   /** TF-13: give a session whose client names no tool its tool (null: none). Absent: the picker is not shown. */
   onSessionTool?: (sessionId: string, tool: string | null) => void;
+  /** CA-04 P1: change a session made here: its tool (null: "Typed here") or its day. Absent: they are shown, not edited. */
+  onSessionMeta?: (key: string, change: { tool?: string | null; date?: string }) => void;
   onDownload: (id: string) => void;
   onFields: (id: string, fields: Record<string, string | null>) => void;
   onAddPicture: (id: string, file: File) => void;
@@ -885,7 +892,39 @@ function CheckDetails({ view, phone, ...h }: { view: CheckView; phone: boolean }
 
 /* ── a session ── */
 
-function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool">) {
+export const SESSION_DETAILS_COPY = {
+  tool: "Tool",
+  date: "Date",
+  typedHere: "Typed here",
+  dateHint: "2026-10-12",
+  badDate: "Write the day as 2026-10-12.",
+} as const;
+
+/** CA-04 P1: a session's day, typed as "2026-10-12"; anything else is said and not saved. */
+function SessionDate({ id, value, phone, onCommit }: { id: string; value: string; phone: boolean; onCommit: (date: string) => void }) {
+  const [wrong, setWrong] = useState(false);
+  return (
+    <FieldBlock label={SESSION_DETAILS_COPY.date}>
+      <CommitField
+        key={`${id}:date`}
+        label={SESSION_DETAILS_COPY.date}
+        value={value}
+        placeholder={SESSION_DETAILS_COPY.dateHint}
+        max={10}
+        phone={phone}
+        onCommit={(next) => {
+          const day = next.trim();
+          const ok = isIsoDay(day);
+          setWrong(!ok);
+          if (ok) onCommit(day);
+        }}
+      />
+      {wrong ? <span style={quiet()}>{SESSION_DETAILS_COPY.badDate}</span> : null}
+    </FieldBlock>
+  );
+}
+
+function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSessionTool, onSessionMeta }: { view: SessionView; phone: boolean; inBuild: readonly string[] } & Pick<DetailsHandlers, "onToggleSessionPrompt" | "onSessionTool" | "onSessionMeta">) {
   const [all, setAll] = useState(false);
   const shown = all ? { visible: [...view.checklist], hidden: 0 } : firstRows(view.checklist);
   return (
@@ -896,6 +935,32 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
           <h3 style={titleStyle(false)}>Session {view.number}</h3>
         </div>
       </Head>
+      {view.editable && onSessionMeta ? (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <GroupLabel id={`${view.key}-tool`}>{SESSION_DETAILS_COPY.tool}</GroupLabel>
+            <div role="group" aria-labelledby={`${view.key}-tool`}>
+              <ToolPicker
+                key={`${view.key}:tool`}
+                label={SESSION_DETAILS_COPY.tool}
+                value={view.editable.tool}
+                inBuild={inBuild}
+                allowNone
+                noneLabel={SESSION_DETAILS_COPY.typedHere}
+                phone={phone}
+                step="session"
+                onChange={(tool) => onSessionMeta(view.key, { tool })}
+              />
+            </div>
+          </div>
+          <SessionDate id={view.key} value={view.editable.date} phone={phone} onCommit={(date) => onSessionMeta(view.key, { date })} />
+          {view.model ? (
+            <div>
+              <KeyValue label="Model">{view.model}</KeyValue>
+            </div>
+          ) : null}
+        </>
+      ) : (
       <div>
         <KeyValue label="Tool">{view.tool}</KeyValue>
         {view.pickTool && onSessionTool ? (
@@ -906,6 +971,7 @@ function SessionDetails({ view, phone, inBuild, onToggleSessionPrompt, onSession
         <KeyValue label="Model">{view.model || "Not named"}</KeyValue>
         <KeyValue label="Date">{view.date || "Typed here"}</KeyValue>
       </div>
+      )}
       <Section title="Prompts in the build">
         <span style={{ ...quiet(), ...tnum, paddingTop: 8 }}>{view.total === null ? `${view.inBuild}` : `${view.inBuild} of ${view.total}`}</span>
         {view.status === "loading" ? <p style={{ ...quiet(), margin: "8px 0 0" }}>Loading this session's prompts…</p> : null}
@@ -1334,7 +1400,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, ...h }: 
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
       {view.kind === "code" ? <CodeDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "check" ? <CheckDetails key={view.id} view={view} phone={phone} {...h} /> : null}
-      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} /> : null}
+      {view.kind === "session" ? <SessionDetails key={view.key} view={view} phone={phone} inBuild={inBuild ?? []} onToggleSessionPrompt={h.onToggleSessionPrompt} onSessionTool={h.onSessionTool} onSessionMeta={h.onSessionMeta} /> : null}
       {view.kind === "file" ? <FileDetails key={view.id} view={view} phone={phone} onDownload={h.onDownload} onSelect={h.onSelect} /> : null}
       {view.kind === "tool" ? <ToolDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onSelect={h.onSelect} /> : null}
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
