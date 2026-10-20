@@ -17,7 +17,9 @@
 
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Pencil, X } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+
+import { ColourButton, ColourDot } from "@/components/brand/ColourButton";
 
 import { Button } from "@/components/brand/Button";
 import { ChangedText } from "@/components/build/ChangedText";
@@ -308,7 +310,19 @@ export interface DetailsHandlers {
   onSelect?: (id: string) => void;
 }
 
+/** CA-06 P4: the selected part's colour: a dot before the eyebrow, and the colour button beside the title. */
+export interface DetailsColour {
+  /** "Prompt 3", "Session 2". */
+  what: string;
+  colour: string | null;
+  onPick: (anchor: HTMLElement) => void;
+}
+
+const DetailsColourContext = createContext<DetailsColour | null>(null);
+
 export interface DetailsPanelProps extends DetailsHandlers {
+  /** CA-06 P4: absent for a part that takes no colour (a tool, a result), and where nothing can change it. */
+  colour?: DetailsColour | null;
   /** CA-04 P4: "Setup 2" on a session's head asks this session's Setup to scroll into view; `at` changes each time. */
   focusSetup?: { key: string; at: number } | null;
   phone: boolean;
@@ -444,6 +458,21 @@ function FieldBlock({ label, children }: { label: string; children: ReactNode })
 
 /** The eyebrow, the title 18/500 and the ghost `pencil` that renames it in place (Enter saves, Esc cancels). */
 function Head({ eyebrow, children }: { eyebrow: ReactNode; children?: ReactNode }) {
+  const colour = useContext(DetailsColourContext);
+  if (colour) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+        <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+          {colour.colour ? <ColourDot colour={colour.colour} size={8} /> : null}
+          {eyebrow}
+        </p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, flexGrow: 1, minWidth: 0 }}>{children}</div>
+          <ColourButton what={colour.what} colour={colour.colour} onPick={colour.onPick} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
       <p data-testid="details-eyebrow" style={{ ...EYEBROW, margin: 0, whiteSpace: "nowrap" }}>
@@ -1841,9 +1870,10 @@ function ResultDetails({ view, phone, onFields, onAddPicture, onUseAsCover, onTr
 /* ── the panel ── */
 
 /* The global field rule makes a field inherit its size on a desktop, so the panel sets the fields' 13 here. */
-export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSetup = null, ...h }: DetailsPanelProps) {
+export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSetup = null, colour = null, ...h }: DetailsPanelProps) {
   if (!view) return <p style={{ ...text(13, 400, t.text2), margin: 0 }}>{DETAILS_COPY.empty}</p>;
   return (
+    <DetailsColourContext.Provider value={colour}>
     <div data-testid="details-panel" data-kind={view.kind} style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0, fontSize: 13 }}>
       {view.kind === "prompt" ? <PromptDetails key={view.id} view={view} phone={phone} focus={focusMakes} {...h} /> : null}
       {view.kind === "manual" ? <ManualDetails key={view.id} view={view} phone={phone} inBuild={inBuild} focus={focusMakes} {...h} /> : null}
@@ -1855,6 +1885,7 @@ export function DetailsPanel({ view, phone, inBuild, focusMakes = null, focusSet
       {view.kind === "agent" || view.kind === "team" ? <AgentDetails key={view.id} view={view} phone={phone} inBuild={inBuild} {...h} /> : null}
       {view.kind === "result" ? <ResultDetails key={view.id} view={view} phone={phone} onFields={h.onFields} onAddPicture={h.onAddPicture} onUseAsCover={h.onUseAsCover} onTrainedOn={h.onTrainedOn} onRemoveInside={h.onRemoveInside} /> : null}
     </div>
+    </DetailsColourContext.Provider>
   );
 }
 

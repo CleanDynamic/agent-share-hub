@@ -33,7 +33,13 @@ import { ModelMark } from "@/components/brand/ModelMark";
 import { Segmented } from "@/components/brand/Segmented";
 import { MediaFigure } from "@/components/build/MediaFigure";
 import { ChangedText } from "@/components/build/ChangedText";
-import { FullPromptWindow } from "@/components/build/FullPromptWindow";
+import { FullPromptWindow, windowPrompts } from "@/components/build/FullPromptWindow";
+import { PartWindow } from "@/components/build/PartWindow";
+import { focusable } from "@/components/build/partNav";
+import { flashOutline } from "@/components/post/RefLinks";
+import { borderFor, outlineFor } from "@/lib/theme/partColour";
+import { groupKey } from "@/lib/build/graph";
+import { parseRefTo } from "@/lib/build/thread";
 import type { Step } from "@/lib/build/graph";
 import type { NeedGroup, NeedRow, ReaderFile, ReaderResult, ReaderStep } from "@/lib/build/readerSteps";
 import { markFor } from "@/lib/models/marks";
@@ -565,7 +571,7 @@ function SentWithTile({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const file = entry.file ?? null;
   const name = step.kind === "file" || step.kind === "code" ? (step.filename ?? step.title ?? step.language ?? null) : step.title;
   return (
-    <div id={stepDomId(step.id)} data-testid="sent-with-tile" data-kind={step.kind} style={{ ...tileStyle, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+    <div id={stepDomId(step.id)} data-testid="sent-with-tile" data-kind={step.kind} style={{ ...tileStyle, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0, ...colourEdge(step.colour, false) }}>
       <span style={{ ...text(12, 400, t.label), padding: "4px 0" }}>{`Sent with ${step.inside?.label ?? "this step"}`}</span>
       {step.kind === "file" ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 32, minWidth: 0 }}>
@@ -737,7 +743,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
     /* CA-03 P5: how the build checked its work. Its answers and one status line; never the lamp, a reproduction
        count or the word for one. */
     return (
-      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={moduleStyle(ringed)}>
+      <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} data-kind="check" style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>{CHECK_COPY.eyebrow}</div>
         <CheckBlock check={step.check} style={{ paddingLeft: INDENT }} />
@@ -753,7 +759,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
         id={stepDomId(step.id)}
         data-testid="step-card"
         data-step={step.number}
-        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder }}
+        style={{ ...moduleStyle(ringed), background: t.tile, borderColor: ringed ? t.selectedEdge : t.tileBorder, ...colourEdge(step.colour, ringed) }}
       >
         <Title entry={entry} right={null} />
         <div style={{ ...text(12, 400, t.label), paddingLeft: INDENT }}>
@@ -777,7 +783,7 @@ function StepCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   }
 
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ringed)}>
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ringed), ...colourEdge(step.colour, ringed) }}>
       <Title entry={entry} right={<CopyButton what={`step ${step.number}`} text={copyTextOf(entry)} onCopy={view.onCopy} announce={announce} phone={phone} />} />
       <StepText step={step} alone={view.steps.length === 1} onRead={() => ctx.read(step.id)} />
       <SaveLines files={entry.makes} />
@@ -808,6 +814,7 @@ function InnerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
           display: "flex",
           flexDirection: "column",
           gap: 8,
+          ...colourEdge(instructions ? undefined : step.colour, ringed),
           ...(ringed ? { borderColor: t.selectedEdge, boxShadow: t.selectedRing } : null),
         }}
       >
@@ -866,7 +873,7 @@ function ContainerCard({ entry, ctx }: { entry: ReaderStep; ctx: Ctx }) {
   const agents = entry.children.filter((child) => child.step.kind === "agent").length;
   const line = [team ? `Team · ${agents} ${agents === 1 ? "agent" : "agents"}, in this order` : "Agent", entry.madeIn].filter(Boolean).join(" · ");
   return (
-    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={moduleStyle(ctx.ringed === step.id)}>
+    <article id={stepDomId(step.id)} data-testid="step-card" data-step={step.number} style={{ ...moduleStyle(ctx.ringed === step.id), ...colourEdge(step.colour, ctx.ringed === step.id) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
         <NumberTile>{step.number}</NumberTile>
         <h3 style={{ ...text(14, 500, entry.isDefaultTitle ? t.text2 : t.text), margin: 0, letterSpacing: "-0.005em" }}>{entry.title}</h3>
@@ -946,14 +953,24 @@ interface Group {
   key: string;
   head: ReactNode;
   entries: ReaderStep[];
+  /** CA-06 P4: the session the group is in (its first step's id), and the maker's colour for it. */
+  session?: string;
+  colour?: string;
 }
+
+/** CA-06 P4: a coloured tile's edge, through the one helper; the ring wins while a link or an address names it. */
+const colourEdge = (colour: string | undefined, ringed: boolean): CSSProperties | null => (colour && !ringed ? borderFor(colour) : null);
 
 function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) => Promise<boolean>; announce: (text: string) => void; phone: boolean }): Group[] {
   const groups: Group[] = [];
+  let session: { key: string; colour?: string } | null = null;
   for (const entry of steps) {
     const chat = entry.chat?.kind === "new" ? entry.chat : null;
+    if (chat) session = { key: entry.step.id, colour: chat.colour };
+    const inSession = session ? { session: session.key, ...(session.colour ? { colour: session.colour } : null) } : null;
     if (chat) {
       groups.push({
+        ...inSession,
         key: `chat:${entry.step.id}`,
         // CA-04 P4: Setup at the head's end, when the session has one.
         head: chat.setup?.length || chat.goal || chat.runsWhen || chat.facts || chat.together || chat.startedWith ? <ChatHead chat={chat} copy={copy} /> : (
@@ -966,13 +983,14 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
     }
     if (isContainer(entry)) {
       groups.push({
+        ...inSession,
         key: `made:${entry.step.id}`,
         head: <Head detail={entry.runsByItself}>{entry.step.kind === "team" ? "The team these made" : "The agent these made"}</Head>,
         entries: [entry],
       });
       continue;
     }
-    if (groups.length === 0) groups.push({ key: `steps:${entry.step.id}`, head: null, entries: [] });
+    if (groups.length === 0) groups.push({ ...inSession, key: `steps:${entry.step.id}`, head: null, entries: [] });
     groups[groups.length - 1].entries.push(entry);
   }
   return groups;
@@ -980,10 +998,78 @@ function groupsOf(steps: readonly ReaderStep[], copy?: { onCopy: (text: string) 
 
 const column = (gap: number): CSSProperties => ({ display: "flex", flexDirection: "column", gap, minWidth: 0 });
 
+/** CA-06 P4: the groups of one session, side by side, so a coloured session can be drawn inside one line. */
+function sessionRuns(groups: readonly Group[]): { key: string; colour?: string; groups: Group[] }[] {
+  const runs: { key: string; colour?: string; groups: Group[] }[] = [];
+  for (const group of groups) {
+    const last = runs[runs.length - 1];
+    if (last && group.session && last.groups[0].session === group.session) last.groups.push(group);
+    else runs.push({ key: `run:${group.key}`, colour: group.colour, groups: [group] });
+  }
+  return runs;
+}
+
 export function StepsList({ view, phone, announce }: StepsListProps) {
   const { steps, results } = view;
   const { lens, setLens, ringed, open, setOpen, start, setStart, go, raw, names, seeMap, toolOf, flat, map } = useStepsList(view, phone);
   const ctx: Ctx = { view, phone, announce, ringed, go, read: setOpen, seeMap };
+
+  /* CA-06 P3: a link in the post opens its part's window once the part is in view: a prompt the full prompt
+     window, anything else the part window. */
+  const [part, setPart] = useState<string | null>(null);
+  const [fromPost, setFromPost] = useState(false);
+  const shown = useRef<string | null>(null);
+  const backing = useRef(false);
+  /** Back to the post was pressed: the post takes focus as the window lets it go. */
+  const backTo = view.onBackToPost;
+  const openKey = view.focus?.open ? `${view.focus.open}:${view.focus.n}` : null;
+  useEffect(() => {
+    const asked = view.focus;
+    if (!asked?.open) return;
+    const target = parseRefTo(asked.open);
+    if (!target) return;
+    shown.current = asked.id;
+    setFromPost(Boolean(asked.fromPost));
+    if (target.kind === "node" && windowPrompts(raw).some((step) => step.id === target.id)) setOpen(target.id);
+    else setPart(asked.open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+  const back = () => {
+    backing.current = true;
+    setOpen(null);
+    setPart(null);
+    setFromPost(false);
+  };
+  /** A window a link opened, closed some other way: focus on the part, outlined again. */
+  const onCloseAutoFocus = (event: Event) => {
+    const id = shown.current;
+    shown.current = null;
+    if (backing.current) {
+      event.preventDefault();
+      backing.current = false;
+      backTo?.();
+      return;
+    }
+    if (!id) return;
+    event.preventDefault();
+    const el = document.getElementById(stepDomId(id));
+    if (!el) return;
+    focusable(el).focus({ preventScroll: true });
+    flashOutline(el);
+  };
+  /** A row in a team's or a session's window: that part, in view and open. */
+  const goPart = (to: string) => {
+    const target = parseRefTo(to);
+    if (!target) return;
+    const group = target.kind === "session" ? view.groups?.find((candidate) => groupKey(candidate) === target.id) : undefined;
+    const id = group ? steps.find((entry) => group.stepNumbers.includes(entry.step.number))?.step.id : target.id;
+    if (!id) return;
+    setPart(null);
+    go(id);
+    shown.current = id;
+    if (target.kind === "node" && windowPrompts(raw).some((step) => step.id === id)) setOpen(id);
+    else setPart(to);
+  };
 
   return (
     <div data-testid="build-steps" style={column(16)}>
@@ -1017,14 +1103,24 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           <ReaderMap key={start?.opened ?? "map"} view={view} announce={announce} onRead={setOpen} start={start} />
         </Suspense>
       ) : (
-        groupsOf(steps, { onCopy: view.onCopy, announce, phone }).map((group) => (
-          <div key={group.key} style={column(8)}>
-            {group.head}
-            {group.entries.map((entry) =>
-              isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
-            )}
-          </div>
-        ))
+        sessionRuns(groupsOf(steps, { onCopy: view.onCopy, announce, phone })).map((run) => {
+          const drawn = run.groups.map((group) => (
+            <div key={group.key} style={column(8)}>
+              {group.head}
+              {group.entries.map((entry) =>
+                isContainer(entry) ? <ContainerCard key={entry.step.id} entry={entry} ctx={ctx} /> : <StepCard key={entry.step.id} entry={entry} ctx={ctx} />,
+              )}
+            </div>
+          ));
+          // CA-06 P4: a coloured session's head and tiles sit inside its line; any other is drawn as it always was.
+          return run.colour ? (
+            <div key={run.key} data-session-colour={run.colour} style={{ ...column(16), ...outlineFor(run.colour), padding: 12 }}>
+              {drawn}
+            </div>
+          ) : (
+            drawn
+          );
+        })
       )}
       {map || results.length === 0 ? null : (
         <div style={column(8)}>
@@ -1043,8 +1139,28 @@ export function StepsList({ view, phone, announce }: StepsListProps) {
           const entry = flat.get(step.id);
           return entry && hasBeforeYouSend(entry) ? <BeforeYouSend entry={entry} toolOf={toolOf} onSelect={setOpen} /> : null;
         }}
-        onClose={() => setOpen(null)}
+        onClose={() => {
+          setOpen(null);
+          setFromPost(false);
+        }}
         onNavigate={setOpen}
+        fromPost={fromPost}
+        onBackToPost={back}
+        onCloseAutoFocus={onCloseAutoFocus}
+      />
+      <PartWindow
+        steps={raw}
+        groups={view.groups ?? []}
+        names={names}
+        open={part}
+        fromPost={fromPost}
+        onBackToPost={back}
+        onClose={() => {
+          setPart(null);
+          setFromPost(false);
+        }}
+        onGo={goPart}
+        onCloseAutoFocus={onCloseAutoFocus}
       />
     </div>
   );

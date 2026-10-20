@@ -19,13 +19,19 @@ import { BlockHandle } from "@/components/post/editor/BlockHandle";
 import { FormatBar } from "@/components/post/editor/FormatBar";
 import { addPictures } from "@/components/post/editor/pictures";
 import { PostToolbar } from "@/components/post/editor/PostToolbar";
+import { ReferencePicker } from "@/components/post/editor/ReferencePicker";
+import { applyRef, readRefSpot, removeRef, restoreTypedAt, type RefSpot } from "@/components/post/editor/references";
 import { SlashMenu, type InsertPicture } from "@/components/post/editor/SlashMenu";
 import { usePostEditor } from "@/components/post/editor/usePostEditor";
 import { PostPreview, type PreviewMaker } from "@/components/post/PostPreview";
 import { BLOCK_GAP } from "@/components/post/postType";
 import { BottomSheet } from "@/components/shell/BottomSheet";
 import { PICTURE_ACCEPT } from "@/lib/build/postMedia";
-import { getThreadMedia, type ThreadDoc } from "@/lib/build/thread";
+import { getThreadMedia, threadRefs, type ThreadDoc } from "@/lib/build/thread";
+import { repaintRefs } from "@/components/post/editor/extensions";
+import { RefCard, refPaint, useRefCard } from "@/components/post/RefLinks";
+import { useResolvedTheme } from "@/contexts/ThemeContext";
+import type { RefEntry, RefGroup } from "@/lib/build/postRefs";
 import type { Build } from "@/lib/build/types";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
@@ -43,6 +49,19 @@ export interface PostTabProps {
   /** The preview sheet, opened by the toolbar's Preview. Absent: the tab holds it. */
   previewOpen?: boolean;
   onPreviewOpenChange?: (open: boolean) => void;
+  /** CA-06: what the post's words can link to. Absent: no @, and a typed @ is only an @. */
+  references?: PostReferences;
+}
+
+/** CA-06: the build's tiles and sessions, as @ lists them. */
+export interface PostReferences {
+  groups: readonly RefGroup[];
+  /** Every part by its `to`, for painting links (P3). A link whose part is missing is drawn as plain words. */
+  lookup?: ReadonlyMap<string, RefEntry>;
+  /** A link was clicked: bring its part in. `el` is the words, for Back to the post. */
+  onGo?: (to: string, el: HTMLElement) => void;
+  /** The parts the post links to, every time the post changes. */
+  onMentions?: (tos: string[]) => void;
 }
 
 /** The parts of the draft that are not the thread. */
@@ -125,11 +144,18 @@ function ThreadRail({ editor, maker, size }: { editor: Editor | null; maker: Pre
   );
 }
 
-function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange }: PostTabProps) {
+function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, onPreviewOpenChange, references }: PostTabProps) {
   const [notice, setNotice] = useState<string | null>(null);
   // The preview draws the document as the editor has it, on every change, not as it was last saved.
   const [liveDoc, setLiveDoc] = useState<ThreadDoc>(() => thread.readDoc());
   const [ownPreview, setOwnPreview] = useState(false);
+  const mentionsRef = useRef(references?.onMentions);
+  mentionsRef.current = references?.onMentions;
+  useEffect(() => {
+    mentionsRef.current?.(threadRefs(thread.readDoc()));
+    // Once, as the tab opens on the thread: every change after is onDoc's.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const showPreview = previewOpen ?? ownPreview;
   const setPreview = (open: boolean) => (onPreviewOpenChange ? onPreviewOpenChange(open) : setOwnPreview(open));
 
@@ -140,6 +166,7 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
       setNotice(null);
       setLiveDoc(doc);
       thread.onDoc(doc);
+      mentionsRef.current?.(threadRefs(doc));
     },
   });
   const host = controls.pictures;
@@ -179,6 +206,81 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
   }, []);
 
   const insertPicture = onInsertPicture ?? chooseFiles;
+
+  /* CA-06 P2: @. The spot is read as it opens; the picker's field takes focus and the editor keeps the selection. */
+  const [refSpot, setRefSpot] = useState<{ spot: RefSpot; anchor: { top: number; left: number } | null } | null>(null);
+  const openRefs = useCallback(
+    (typed = false) => {
+      if (!editor || editor.isDestroyed) return false;
+      const spot = readRefSpot(editor, typed);
+      let anchor: { top: number; left: number } | null = null;
+      try {
+        const at = editor.view.coordsAtPos(spot.from);
+        anchor = { top: at.bottom, left: at.left };
+      } catch {
+        anchor = null;
+      }
+      setRefSpot({ spot, anchor });
+      return true;
+    },
+    [editor],
+  );
+  controls.openRefs ??= { current: null };
+  controls.openRefs.current = references ? openRefs : null;
+  const closeRefs = useCallback(() => setRefSpot(null), []);
+  const chooseRef = (entry: RefEntry) => {
+    if (editor && refSpot) applyRef(editor, refSpot.spot, entry);
+    closeRefs();
+  };
+  const removeRefHere = () => {
+    if (editor && refSpot) removeRef(editor, refSpot.spot);
+    closeRefs();
+  };
+  /* CA-06 P3: the links' paint, what clicking one does, and the card over one. */
+  const theme = useResolvedTheme();
+  const { open: cardOpen, control: card, keep: keepCard } = useRefCard();
+  const lookup = references?.lookup;
+  const onGo = references?.onGo;
+  controls.refs ??= { current: null };
+  controls.refs.current = references
+    ? {
+        paint: (to) => refPaint(lookup?.get(to), theme),
+        onGo: (to, el) => {
+          card.close();
+          onGo?.(to, el);
+        },
+        onHover: (to, el) => (el ? card.enter(to, el) : card.leave()),
+      }
+    : null;
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    try {
+      repaintRefs(editor.view.dom as HTMLElement, controls);
+    } catch {
+      // A phone width rebuilds the editor; the new one paints as it mounts.
+    }
+  }, [editor, lookup, theme, controls]);
+  /** The spot of a link the card is over: its words, for Change and Remove the link. */
+  const spotOf = (to: string, el: HTMLElement): RefSpot | null => {
+    if (!editor || editor.isDestroyed) return null;
+    try {
+      const at = editor.view.posAtDOM(el.firstElementChild ?? el, 0);
+      return { from: at + 1, to: at + 1, current: to, typed: false };
+    } catch {
+      return null;
+    }
+  };
+  const cardEntry = cardOpen ? lookup?.get(cardOpen.to) : undefined;
+
+  const escapeRefs = useCallback(() => {
+    setRefSpot((open) => {
+      if (open && editor && !editor.isDestroyed) {
+        if (open.spot.typed) restoreTypedAt(editor, open.spot);
+        else editor.commands.focus();
+      }
+      return null;
+    });
+  }, [editor]);
   const avatar = phone ? RAIL_AVATAR.phone : RAIL_AVATAR.desktop;
 
   return (
@@ -212,10 +314,53 @@ function Body({ thread, phone, onInsertPicture, draft = NO_DRAFT, previewOpen, o
             {notice}
           </p>
         ) : null}
-        <PostToolbar editor={editor} phone={phone} onInsertPicture={insertPicture} notice={setNotice} onPreview={() => setPreview(true)} />
+        <PostToolbar
+          editor={editor}
+          phone={phone}
+          onInsertPicture={insertPicture}
+          notice={setNotice}
+          onPreview={() => setPreview(true)}
+          onReference={references ? () => void openRefs(false) : undefined}
+        />
       </div>
       <FormatBar editor={editor} controls={controls} phone={phone} />
       <SlashMenu editor={editor} controls={controls} onInsertPicture={insertPicture} notice={setNotice} phone={phone} />
+      {cardOpen && cardEntry ? (
+        <RefCard
+          entry={cardEntry}
+          anchor={cardOpen.el}
+          onGo={() => {
+            card.close();
+            onGo?.(cardOpen.to, cardOpen.el);
+          }}
+          onChange={() => {
+            card.close();
+            const spot = spotOf(cardOpen.to, cardOpen.el);
+            if (!spot || !editor) return;
+            editor.commands.setTextSelection(spot.from);
+            openRefs(false);
+          }}
+          onRemove={() => {
+            card.close();
+            const spot = spotOf(cardOpen.to, cardOpen.el);
+            if (spot && editor) removeRef(editor, spot);
+          }}
+          onEnter={keepCard}
+          onLeave={card.leave}
+        />
+      ) : null}
+      {references ? (
+        <ReferencePicker
+          open={Boolean(refSpot)}
+          groups={references.groups}
+          current={refSpot?.spot.current ?? null}
+          anchor={refSpot?.anchor ?? null}
+          phone={phone}
+          onChoose={chooseRef}
+          onRemove={removeRefHere}
+          onClose={escapeRefs}
+        />
+      ) : null}
       <BottomSheet open={showPreview} onOpenChange={setPreview} title="Preview">
         {showPreview ? (
           <PostPreview doc={liveDoc} build={draft.build} title={draft.title} maker={draft.maker} media={pictures.rows} src={pictures.src} variant="sheet" />

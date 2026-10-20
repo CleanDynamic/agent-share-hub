@@ -44,7 +44,9 @@ export type ThreadMark =
   | { type: "bold" }
   | { type: "italic" }
   | { type: "underline" }
-  | { type: "link"; attrs: { href: string } };
+  | { type: "link"; attrs: { href: string } }
+  /** CA-06 P1: words that point at a tile or a session of this build. `to` is `refTo`'s: `node:<id>` or `session:<key>`. */
+  | { type: "ref"; attrs: { to: string } };
 
 export interface ThreadText {
   type: "text";
@@ -165,7 +167,53 @@ export const THREAD_NODE_TYPES: ReadonlySet<string> = new Set([
   "postBreak",
 ]);
 
-export const THREAD_MARK_TYPES: ReadonlySet<string> = new Set(["bold", "italic", "underline", "link"]);
+export const THREAD_MARK_TYPES: ReadonlySet<string> = new Set(["bold", "italic", "underline", "link", "ref"]);
+
+// --- references (CA-06 P1) ----------------------------------------------------
+
+/** What a reference points at: a node of the build (a tile), or a session by the key CA-04 gives it. */
+export interface RefTarget {
+  kind: "node" | "session";
+  /** A build_nodes id, or a session key (an import_sessions id, or `typed-<uuid>`). */
+  id: string;
+}
+
+/** An id or a key, as the build stores them: letters, digits, "-" and "_", at most 80. */
+const REF_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
+/** An old build's run of typed prompts is read as a session but never stored, so nothing can point at it. */
+const UNSTORED_SESSION = "typed-legacy-";
+
+/** The `to` of a reference: `node:<id>` or `session:<key>`. */
+export function refTo(target: RefTarget): string {
+  return `${target.kind}:${target.id}`;
+}
+
+/** A reference's `to`, read; null for any other shape. Whether the part is still in the build is not asked here. */
+export function parseRefTo(to: unknown): RefTarget | null {
+  if (typeof to !== "string") return null;
+  const at = to.indexOf(":");
+  const kind = to.slice(0, at);
+  const id = to.slice(at + 1);
+  if ((kind !== "node" && kind !== "session") || !REF_ID.test(id)) return null;
+  if (kind === "session" && id.startsWith(UNSTORED_SESSION)) return null;
+  return { kind, id };
+}
+
+/** Every `to` the thread's references hold, in document order, each once. */
+export function threadRefs(doc: unknown): string[] {
+  const seen = new Set<string>();
+  const walk = (node: unknown) => {
+    if (!isRecord(node)) return;
+    if (Array.isArray(node.marks)) {
+      for (const mark of node.marks) {
+        if (isRecord(mark) && mark.type === "ref" && isRecord(mark.attrs) && parseRefTo(mark.attrs.to)) seen.add(mark.attrs.to as string);
+      }
+    }
+    for (const child of childrenOf(node)) walk(child);
+  };
+  walk(doc);
+  return [...seen];
+}
 
 /** Schemes a link may use. */
 const LINK_PROTOCOLS: ReadonlySet<string> = new Set(["http:", "https:", "mailto:"]);
@@ -293,6 +341,8 @@ export type ThreadProblemCode =
   | "unknown_node"
   | "unknown_mark"
   | "bad_link"
+  /** CA-06 P1: a reference whose `to` is not `node:<id>` or `session:<key>`, or one that is also a web link. */
+  | "bad_ref"
   /** A picture with no mediaId, a width outside 25 to 100, or a row of other than 2 or 3. */
   | "bad_picture"
   | "caption_too_long"
@@ -338,6 +388,10 @@ function nodeProblems(node: unknown, post: number | null, out: ThreadProblem[]):
   }
 
   if (Array.isArray(node.marks)) {
+    const markTypes = node.marks.map((mark) => (isRecord(mark) ? mark.type : null));
+    if (markTypes.includes("ref") && markTypes.includes("link")) {
+      out.push({ code: "bad_ref", post, message: `${postLabel(post)} has words that are both a web link and a link to a part. Remove one of them.` });
+    }
     for (const mark of node.marks) {
       const markType = isRecord(mark) && typeof mark.type === "string" ? mark.type : "";
       if (!THREAD_MARK_TYPES.has(markType)) {
@@ -352,6 +406,8 @@ function nodeProblems(node: unknown, post: number | null, out: ThreadProblem[]):
           post,
           message: `${postLabel(post)} has a link that does not start with http, https or mailto. Fix the address or remove the link.`,
         });
+      } else if (markType === "ref" && !parseRefTo(isRecord(mark) && isRecord(mark.attrs) ? mark.attrs.to : null)) {
+        out.push({ code: "bad_ref", post, message: `A link in ${postLabel(post).toLowerCase()} points at something that isn't in this build.` });
       }
     }
   }

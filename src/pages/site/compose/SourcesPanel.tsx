@@ -15,6 +15,7 @@ import { useState, type CSSProperties, type DragEvent, type ReactNode } from "re
 import { Link } from "react-router-dom";
 
 import { ErrorState } from "@/components/brand/ErrorState";
+import { ColourDot } from "@/components/brand/ColourButton";
 import { Glyph } from "@/components/brand/Glyph";
 import { IconButton } from "@/components/brand/IconButton";
 import { LoadingRegion, Skeleton } from "@/components/brand/Skeleton";
@@ -201,6 +202,8 @@ function SessionRow({
           <ToolMark tool={session.tool} size={20} />
           <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
             <span style={{ ...text(13, 500, t.text), overflowWrap: "anywhere" }}>
+              {/* CA-06 P4: a coloured session's 7px dot before its name. */}
+              {session.colour ? <ColourDot colour={session.colour} size={7} style={{ marginRight: 6, verticalAlign: "middle" }} /> : null}
               Session {session.number} · {session.tool}
             </span>
             <span style={{ ...text(11.5, 400, t.label), ...ellipsis }}>{session.detail}</span>

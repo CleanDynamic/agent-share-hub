@@ -43,6 +43,9 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 import { LiveRegion, useAnnouncer } from "@/components/brand/LiveRegion";
+import { usePartRef, usePartRegister } from "@/components/build/partNav";
+import { partColours } from "@/lib/build/postRefs";
+import { borderFor } from "@/lib/theme/partColour";
 import { ModelMark } from "@/components/brand/ModelMark";
 import { useResolvedTheme } from "@/contexts/ThemeContext";
 import { groupKey, inputRefusal, stepRunsLabel, stepTitle, type SessionGroup, type Step, type Use } from "@/lib/build/graph";
@@ -191,12 +194,14 @@ interface BoxViewProps {
   reader?: boolean;
   /** UI-P91: the room whose artwork a refined box is painted with. */
   room?: MapRoom;
+  /** CA-06 P4: the maker's colour for the part: the box's border. */
+  colour?: string;
 }
 
 const isContainerBox = (box: Pick<MapBox, "kind" | "stepKind">): boolean => box.kind === "step" && (box.stepKind === "agent" || box.stepKind === "team");
 
 /** UI-P91: the same box in the refined look. Same button, name, handlers and words; only the paint and type differ. */
-const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer, reader, room = "dusk" }: BoxViewProps) {
+const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onPath, target, onSelect, onOpen, onOpenContainer, reader, room = "dusk", colour }: BoxViewProps) {
   const container = isContainerBox(box);
   const openable = box.kind === "step" && (container ? Boolean(onOpenContainer) : box.stepKind === "prompt" && onOpen);
   const open = () => (container ? onOpenContainer?.(box.id) : onOpen?.(box.id));
@@ -217,6 +222,8 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   /* The reader's rows are 18 high, 4 apart; the maker's (UI-P94) 20 high, 2 apart. Both keep the 22 pitch `layoutMap`
      puts each wire end on, from 1 under the head. */
   const row = reader ? 18 : 20;
+  /* CA-06 P3: a link in the post finds this box. */
+  const part = usePartRef(box.kind === "step" || box.kind === "file" ? `node:${box.id}` : null);
   /* CA-04 P2: the tiles sent with a step are rows inside its box: kind and name, 12 `--text2`. */
   const sentRows = box.sentWith?.length ? (
     <span data-testid={`map-sent-with-${box.id}`} style={{ display: "flex", flexDirection: "column", flexShrink: 0, padding: "0 12px" }}>
@@ -243,6 +250,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
   );
   return (
     <button
+      ref={part}
       type="button"
       data-testid={`map-box-${box.id}`}
       data-kind={box.kind}
@@ -266,6 +274,7 @@ const RefinedBoxView = memo(function RefinedBoxView({ box, selected, dimmed, onP
         textAlign: "left",
         borderRadius: 6,
         ...refinedBoxPaint(room, manual, selected, target),
+        ...(colour ? borderFor(colour) : null),
         color: t.text,
         cursor: "pointer",
         overflow: "hidden",
@@ -426,6 +435,7 @@ const flat = (list: readonly Step[]): Step[] => list.flatMap((step) => [step, ..
 function OpenedMap({ container, steps, files, tools, results, selectedId, onSelect, onOpenContainer, onBack, onLeave }: OpenedMapProps) {
   const layout = useMemo(() => layoutOpened(container, steps, files, tools, results), [container, steps, files, tools, results]);
   const room = useResolvedTheme();
+  const colours = useMemo(() => partColours(steps), [steps]);
   const uid = useId().replace(/:/g, "");
   const marker = `arrow-${uid}`;
   const markerStrong = `arrow-strong-${uid}`;
@@ -570,6 +580,7 @@ function OpenedMap({ container, steps, files, tools, results, selectedId, onSele
               dimmed={outsideIds.has(box.id) || (selecting && !joined.boxes.has(box.id))}
               onPath={selecting && joined.boxes.has(box.id)}
               target={false}
+              colour={colours.get(box.id)}
               onSelect={select}
               onOpenContainer={insideAgents.has(box.id) ? onOpenContainer : undefined}
             />
@@ -604,6 +615,8 @@ export function BuildMap(props: BuildMapProps) {
   const { mode = "maker", steps, groups, files, tools, results, suggestions: asked, made, madeNames, selectedId, onSelect, onClear, onOpenPrompt, onConnect, opened, onOpenContainer, onBack, onLeave } = props;
   const reader = mode === "reader";
   const room = useResolvedTheme();
+  const register = usePartRegister();
+  const colours = useMemo(() => partColours(steps), [steps]);
   // Readers never see a suggestion: only the uses the maker accepted are published.
   const suggestions = useMemo(() => (reader ? [] : asked), [reader, asked]);
   const layout = useMemo(() => layoutMap(steps, groups, files, tools, results, suggestions), [steps, groups, files, tools, results, suggestions]);
@@ -737,6 +750,7 @@ export function BuildMap(props: BuildMapProps) {
           {layout.lanes.map((lane) =>
             <div
               key={lane.key}
+              ref={(el) => register(`session:${lane.key}`, el)}
               data-testid="map-lane"
               data-dashed={lane.dashed ? "true" : undefined}
               style={{
@@ -795,6 +809,7 @@ export function BuildMap(props: BuildMapProps) {
               dimmed={selecting && !joined.boxes.has(box.id)}
               onPath={selecting && joined.boxes.has(box.id)}
               target={drag?.over === box.id}
+              colour={colours.get(box.id)}
               onSelect={onSelect}
               onOpen={onOpenPrompt ? open : undefined}
               onOpenContainer={onOpenContainer}

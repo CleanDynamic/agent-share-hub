@@ -6,7 +6,7 @@
 // through the density table at 25, 28 or 31 (UI-P54); radius 12, a glass fill
 // and a `--line` hairline, the icon in `--text2` at 16px and stroke 1.6.
 
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { useInteractive } from "@/lib/theme/interactive";
@@ -18,8 +18,8 @@ import { t } from "@/lib/theme/tokens";
 import { Icon as AnyIcon } from "./Icon";
 import type { GlyphName } from "./Glyph";
 
-/** 26, 28 and 30 are the refined look's; 34 and 38 are the current look's and draw as 30 under the refined one. */
-export type IconButtonSize = 26 | 28 | 30 | 34 | 38;
+/** 22 (CA-06's colour button), 26, 28 and 30 are the refined look's; 34 and 38 are the current look's and draw as 30. */
+export type IconButtonSize = 22 | 26 | 28 | 30 | 34 | 38;
 
 export interface IconButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "aria-label"> {
@@ -31,6 +31,8 @@ export interface IconButtonProps
   glyph?: GlyphName;
   /** Refined only: the control recipe (default), or none, for a ghost icon button. */
   boxed?: boolean;
+  /** CA-06: drawn in place of the icon, for a mark that is not a glyph (the colour button's circle). */
+  drawn?: ReactNode;
 }
 
 export function IconButton({
@@ -39,6 +41,7 @@ export function IconButton({
   size = 34,
   glyph,
   boxed = true,
+  drawn,
   type = "button",
   disabled,
   style,
@@ -85,7 +88,7 @@ export function IconButton({
         ...style,
       }}
     >
-      <AnyIcon lucide={Icon} glyph={glyph} size={16} />
+      {drawn ?? <AnyIcon lucide={Icon} glyph={glyph} size={16} />}
     </button>
   );
 }

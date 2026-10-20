@@ -59,7 +59,7 @@ import { buildSummary } from "@/lib/build/buildSummary";
 import { AddCheckDialog, type AddCheckInput } from "./AddCheckDialog";
 import { AddCodeDialog, type AddCodeInput } from "./AddCodeDialog";
 import { AddAgentDialog, DEFAULT_AGENT_MODEL, type AddAgentInput, type AgentSeed } from "./AddAgentDialog";
-import { BuildList, type AddAsAgentInput } from "./BuildList";
+import { BuildList, partName, type AddAsAgentInput } from "./BuildList";
 import { dividers, suggestionKey, type ListResult, type ListSuggestion } from "./buildListModel";
 import { FullPromptWindow } from "@/components/build/FullPromptWindow";
 import { BuildMap } from "./BuildMap";
@@ -71,6 +71,13 @@ import { suggestUses } from "@/lib/build/suggest";
 import { SourcesPanel } from "./SourcesPanel";
 import { isChatExport, librarySources, projectFileReminders, sourceFiles, sourceSessions } from "./sourcesModel";
 import { librarySessionsKey } from "@/hooks/useLibrarySessions";
+import { refGroups } from "@/lib/build/postRefs";
+import { PartRegistryProvider, type PartRegistry } from "@/components/build/partNav";
+import { allParts, PartWindow } from "@/components/build/PartWindow";
+import { parseRefTo, refTo } from "@/lib/build/thread";
+import { usePostLinks } from "./usePostLinks";
+import { useColourPicking } from "./useColourPicking";
+import { previewColours, type ColourPreview } from "@/lib/build/colourPreview";
 
 /** builds.making.sessions, read defensively: it is a json column. */
 function makingSessions(making: unknown): MakingSession[] {
@@ -123,7 +130,9 @@ export function SandboxPage() {
   }, []);
 
   const made = (build as { making?: unknown } | null)?.making;
-  const { counts, hasAgent, sessionCount, steps, groups } = useMemo(() => {
+  /** CA-06 P5: the colour the picker shows before it is saved, laid over the build everywhere it is drawn. */
+  const [colourPreview, setColourPreview] = useState<ColourPreview | null>(null);
+  const { counts, hasAgent, sessionCount, steps: savedSteps, groups: savedGroups } = useMemo(() => {
     const steps = buildSteps(tree);
     // CA-04 P1: every step sits in a session; a session made here carries its tool and day in `making.sessions_meta`.
     const groups = sessionGroups(steps, makingSessions(made), sessionToolsOf(made), sessionsMetaOf(made));
@@ -135,6 +144,7 @@ export function SandboxPage() {
     };
     return { counts: next, hasAgent: all.some((step) => step.kind === "agent" || step.kind === "team"), sessionCount: shownGroups(groups).length, steps, groups };
   }, [tree, made]);
+  const { steps, groups } = useMemo(() => previewColours(savedSteps, savedGroups, colourPreview), [savedSteps, savedGroups, colourPreview]);
   const sessionTools = useMemo(() => sessionToolsOf(made), [made]);
 
   /* The tools this build uses, read once: its steps' own and its sessions' (TF-02). The tool picker lists them first. */
@@ -323,6 +333,8 @@ export function SandboxPage() {
     return Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)]));
   }, [tree]);
   const dividerRows = useMemo(() => dividers(steps, groups, setupCounts, runsWhen), [steps, groups, setupCounts, runsWhen]);
+  /** CA-06 P2: what the post's words can link to: each session, then its tiles. */
+  const postRefGroups = useMemo(() => refGroups({ steps, groups }), [steps, groups]);
 
   /* ── Sources ── */
 
@@ -352,6 +364,21 @@ export function SandboxPage() {
 
   const sourceSessionRows = useMemo(() => sourceSessions(groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen), [groups, steps, sessions.sessions, sessionTools, setupCounts, runsWhen]);
   const sourceFileRows = useMemo(() => sourceFiles(tree, groups, steps), [tree, groups, steps]);
+
+  /* ── links in the post (CA-06 P3) ── */
+
+  const registry = useRef<PartRegistry>(new Map()).current;
+  const links = usePostLinks({
+    steps,
+    groups,
+    refGroups: postRefGroups,
+    registry,
+    lens: phone ? "list" : lens,
+    phone,
+    setSelectedId,
+    setOpenPromptId,
+    setTrail,
+  });
 
   /* ── sessions (CA-04 P1) ── */
 
@@ -515,6 +542,24 @@ export function SandboxPage() {
     [claim, ensureBuild, groups, made, refreshRecord],
   );
 
+  /** CA-06 P4: a session's colour, or none; an old build's run of typed prompts has no colour button, so is never here. */
+  const onSessionColour = useCallback(
+    async (key: string, colour: string | null) => {
+      try {
+        const id = await ensureBuild();
+        const group = groups.find((candidate) => groupKey(candidate) === key);
+        const before: SessionMeta = sessionsMetaOf(made)[key] ?? (groupKind(group ?? { sessionId: key }) === "typed" ? { tool: group?.tool ?? null, date: group?.startedAt ?? todayDay() } : { tool: null, date: "" });
+        const { colour: _old, ...rest } = before;
+        await setSessionMeta(id, key, colour ? { ...rest, colour } : rest);
+        await refreshRecord(id);
+      } catch (cause) {
+        console.error("[Sandbox] session colour not saved", cause);
+        toast.error("Couldn't save that colour. Try again.");
+      }
+    },
+    [ensureBuild, groups, made, refreshRecord],
+  );
+
   const onAddPrompt = useCallback(
     async (input: { text: string; tool: string | null; model: string | null }) => prompts.addNow({ ...input, session: await sessionToWrite() }),
     [prompts, sessionToWrite],
@@ -570,6 +615,39 @@ export function SandboxPage() {
       if (build?.id) void queryClient.invalidateQueries({ queryKey: composeBuildQueryKey(build.id) });
     });
   }, [nodes, build?.id, queryClient]);
+
+  /* ── colour (CA-06 P4) ── */
+
+  /** Writes a part's colour, or takes it off: a tile's `payload.colour`, a session's `sessions_meta[key].colour`. */
+  const writeColour = useCallback(
+    (to: string, colour: string | null) => {
+      const target = parseRefTo(to);
+      if (!target) return;
+      if (target.kind === "session") void onSessionColour(target.id, colour);
+      else {
+        prompts.setColour(target.id, colour);
+        afterWrite();
+      }
+    },
+    [onSessionColour, prompts, afterWrite],
+  );
+  /* CA-06 P5: the picker the colour buttons open. */
+  const { onColour, picker: colourPicker } = useColourPicking({ preview: colourPreview, setPreview: setColourPreview, savedSteps, savedGroups, write: writeColour, phone });
+  /** Details' colour: the selected tile's or session's, with its button. */
+  const detailsColour = useMemo(() => {
+    if (!selectedId) return null;
+    const group = shown.find((candidate) => groupKey(candidate) === selectedId && groupKind(candidate) !== "legacy");
+    if (group) {
+      const what = `Session ${group.number}`;
+      const to = refTo({ kind: "session", id: selectedId });
+      return { what, colour: group.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, group.colour ?? null) };
+    }
+    const step = allParts(steps).find((candidate) => candidate.id === selectedId);
+    if (!step) return null;
+    const what = partName(step);
+    const to = refTo({ kind: "node", id: step.id });
+    return { what, colour: step.colour ?? null, onPick: (anchor: HTMLElement) => onColour(to, anchor, what, step.colour ?? null) };
+  }, [selectedId, shown, steps, onColour]);
 
   /* ── tiles inside tiles (CA-04 P2) ── */
 
@@ -1050,6 +1128,7 @@ export function SandboxPage() {
           else void onPicked(files);
         }}
       />
+      <PartRegistryProvider registry={registry}>
       <SandboxView
         {...viewProps}
         save={mergeSave(viewProps.save, thread.save)}
@@ -1060,6 +1139,7 @@ export function SandboxPage() {
             thread={thread}
             phone={phone}
             draft={{ build, title: viewProps.title, maker }}
+            references={{ groups: postRefGroups, lookup: links.lookup, onGo: links.goTo, onMentions: links.onMentions }}
           />
         }
         threadNote={thread.hold}
@@ -1181,6 +1261,7 @@ export function SandboxPage() {
             onToolConnection={prompts.setConnection}
             onNotShared={onNotShared}
             focusSetup={focusSetup}
+            colour={detailsColour}
           />
         }
         list={
@@ -1213,6 +1294,10 @@ export function SandboxPage() {
             }}
             onIgnoreSentWith={prompts.ignoreSentWith}
             onOpenSetup={onOpenSetup}
+            mentioned={links.mentioned}
+            onBackToPost={links.backToMention}
+            reveal={links.reveal}
+            onColour={onColour}
             fine={fine}
             onAccept={(suggestion) => prompts.accept(suggestion.stepId, suggestion.use, steps)}
             onDismiss={(suggestion) => prompts.dismiss(suggestion.stepId, suggestionKey(suggestion.use))}
@@ -1254,6 +1339,7 @@ export function SandboxPage() {
         mapAvailable={mapAvailable}
         mapHint={mapAvailable && !switched}
       />
+      </PartRegistryProvider>
       <AddAgentDialog
         open={addAgentOpen}
         onOpenChange={onAgentDialog}
@@ -1284,7 +1370,27 @@ export function SandboxPage() {
         onTitle={prompts.rename}
         onChanges={prompts.setChanges}
         onNavigate={setOpenPromptId}
-        onClose={() => setOpenPromptId(null)}
+        onClose={() => {
+          setOpenPromptId(null);
+          links.closeWindows();
+        }}
+        fromPost={links.fromPost}
+        onBackToPost={links.backToPost}
+        onCloseAutoFocus={links.onCloseAutoFocus}
+      />
+      {colourPicker}
+      <PartWindow
+        steps={steps}
+        groups={groups}
+        names={listFacts.names}
+        open={links.openPart}
+        fromPost={links.fromPost}
+        onBackToPost={links.backToPost}
+        onClose={links.closeWindows}
+        onGo={links.goFromWindow}
+        onDownload={(id) => void download(id)}
+        setupCounts={setupCounts}
+        onCloseAutoFocus={links.onCloseAutoFocus}
       />
     </>
   );

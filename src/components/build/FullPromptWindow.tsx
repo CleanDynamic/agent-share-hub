@@ -44,6 +44,8 @@ import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 import { EYEBROW } from "@/pages/site/compose/refinedStyles";
 
+import { FromPostNote } from "./PartWindow";
+
 export type FullPromptMode = "maker" | "reader";
 
 export interface FullPromptWindowProps {
@@ -64,6 +66,11 @@ export interface FullPromptWindowProps {
   onChanges?: (id: string, ranges: ChangeRange[]) => void;
   /** Reader mode (UI-P74): the "Before you send it" panel for a step, under the text, in place of the plain lines. */
   renderBefore?: (step: Step) => ReactNode;
+  /** CA-06 P3: opened from a link in the post; the footer offers Back to the post. */
+  fromPost?: boolean;
+  onBackToPost?: () => void;
+  /** CA-06 P3: called as the window closes, instead of putting focus back where it was. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export const FULL_PROMPT_COPY = {
@@ -417,6 +424,7 @@ function RefinedBody({ props, step, prompts, phone }: { props: FullPromptWindowP
           ...(phone ? { position: "sticky", bottom: 0, background: t.window, paddingBottom: "calc(12px + env(safe-area-inset-bottom))", marginTop: "auto" } : null),
         }}
       >
+        {props.fromPost && props.onBackToPost ? <FromPostNote onBack={props.onBackToPost} phone={phone} /> : null}
         {onNavigate && previous ? (
           <Button {...navButton} onClick={() => onNavigate(previous.id)} aria-label={`Previous prompt: ${stepTitle(previous)}`}>
             <span style={navLabel}>← {stepTitle(previous)}</span>
@@ -463,6 +471,7 @@ export function FullPromptWindow(props: FullPromptWindowProps) {
           aria-describedby={undefined}
           // Focus goes to the text box (Body does it), not the first control.
           onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={props.onCloseAutoFocus}
           onKeyDown={onKeyDown}
           data-look={"refined"}
           style={{

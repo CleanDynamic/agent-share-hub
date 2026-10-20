@@ -121,6 +121,20 @@ const CATEGORIES: Category[] = [
 ];
 
 const CAPPED: Record<string, { max: number; why: string }> = {
+  "src/lib/theme/partColour.ts": {
+    max: 6,
+    why:
+      "CA-06 P5: THE SIX SUGGESTED COLOURS a maker can give a tile or a session, as the Post References page names " +
+      "them. They are data the maker picks, not the page's paint: a chosen colour is stored as its hex and must read " +
+      "the same in both themes, so it cannot be a token. None is ever applied for the maker.",
+  },
+  "src/dev/fixtures/postLinks.ts": {
+    max: 16,
+    why:
+      "CA-06 P7: the three colours the maker chose in the \"A post with links\" fixture, written as a build stores " +
+      "them (payload.colour and sessions_meta[key].colour are \"#RRGGBB\"), and the 13 Recent and Favourites a maker " +
+      "keeps on their profile (profiles.colour_swatches). Sample data, not paint.",
+  },
   "src/components/auth/OAuthButtons.tsx": {
     max: 4,
     why:

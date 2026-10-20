@@ -4,7 +4,7 @@
 // (levels 1 and 2: a Title and a Heading), codeBlock, bulletList, orderedList,
 // listItem, hardBreak, postBreak, and postMedia and postMediaRow, which PT-06
 // draws as the published post draws them, with a size control, a caption and
-// a row of buttons. The marks are bold, italic, underline and link.
+// a row of buttons. The marks are bold, italic, underline, link and ref (CA-06: words that point at a part).
 // Blockquote, horizontal rule, strike, inline code and the other heading levels
 // are switched off, so a table, an image or a quote pasted in arrives as plain
 // paragraphs: the schema has nowhere else to put it.
@@ -16,7 +16,7 @@
 // for them, so styles go on as style attributes and node views build their
 // elements by hand. No class names.
 
-import { Extension, mergeAttributes, Node as TipNode, ReactNodeViewRenderer, type Editor } from "@tiptap/react";
+import { Extension, Mark, mergeAttributes, Node as TipNode, ReactNodeViewRenderer, type Editor } from "@tiptap/react";
 import Heading from "@tiptap/extension-heading";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
@@ -26,12 +26,16 @@ import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import { LIST_INDENT, LIST_ITEM_GAP, BLOCK_GAP, ROW_GAP, postType } from "@/components/post/postType";
 import { stepWidth } from "@/lib/build/postMedia";
 import { countLabel, COUNT_SHOWN_FROM } from "@/lib/build/threadEditor";
-import { linkAllowed, POST_BODY_MAX } from "@/lib/build/thread";
+import { linkAllowed, parseRefTo, POST_BODY_MAX } from "@/lib/build/thread";
 import { t } from "@/lib/theme/tokens";
 import { FIGTREE } from "@/lib/theme/type";
 
 import { PictureView, type PictureOptions } from "./PictureView";
 import { picturePlugin, type PictureHost } from "./pictures";
+import { focusRing } from "@/lib/theme/focus";
+import { REF_COPY, refNumberStyle, refPaint, refWordsStyle, type RefPaint } from "@/components/post/RefLinks";
+
+import { opensOnAt } from "./references";
 import { applyStyle, styleString } from "./styleString";
 
 /** The words in an empty first post, as X's composer asks "What's happening?". */
@@ -51,6 +55,19 @@ export interface PostEditorControls {
   openLink: { current: (() => boolean) | null };
   /** The pictures: the store the node views read, and what the editor's uploads call back into (PT-06). */
   pictures: PictureHost;
+  /** CA-06 P2: a typed @ opens the reference picker: true when it did. Null while the post links to nothing. */
+  openRefs?: { current: ((typed: true) => boolean) | null };
+  /** CA-06 P3: how each link is painted, and what pointing at one or clicking it does. Null: plain fills, no card. */
+  refs?: { current: RefHandlers | null };
+}
+
+/** CA-06 P3: what the editor's links ask of the composer. */
+export interface RefHandlers {
+  paint: (to: string) => RefPaint;
+  /** The words were clicked, or Enter pressed on them: bring the part in. */
+  onGo: (to: string, el: HTMLElement) => void;
+  /** The pointer came onto a link (el) or left it (null). */
+  onHover: (to: string, el: HTMLElement | null) => void;
 }
 
 // --- breaks -------------------------------------------------------------------
@@ -348,6 +365,144 @@ const PostLink = Link.extend({
   },
 });
 
+/**
+ * CA-06 P1: words that point at a tile or a session. Only `to` is stored. Not inclusive, so typing at either edge
+ * writes plain words; it excludes a web link, so a word is never both. Drawn as a span the keyboard can reach; the
+ * fill and the target's number are decorations (PostRefLook, P3), so they follow the target without touching the text.
+ */
+export const PostRef = Mark.create({
+  name: "ref",
+  // Outermost, so bold words inside a link do not split it in two.
+  priority: 1001,
+  inclusive: false,
+  // Itself too: words point at one part, so a second ref replaces the first.
+  excludes: "ref link",
+  spanning: true,
+
+  addAttributes() {
+    return {
+      to: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-ref"),
+        renderHTML: (attributes: Record<string, unknown>) => (attributes.to ? { "data-ref": attributes.to as string } : {}),
+      },
+    };
+  },
+
+  parseHTML: () => [{ tag: "span[data-ref]", getAttrs: (element) => (parseRefTo((element as HTMLElement).getAttribute("data-ref")) ? null : false) }],
+  renderHTML: ({ HTMLAttributes }) => ["span", mergeAttributes(HTMLAttributes, { role: "link", tabindex: "0" }), 0],
+});
+
+/** The plain paint, until the composer says what a link points at. */
+const PLAIN_PAINT = refPaint({ colour: null, number: "" }, "noon");
+
+/** Paints one link's words and number from the composer's handlers. Its attributes are its own (ignoreMutation). */
+function paintRef(dom: HTMLElement, controls: PostEditorControls, strong = false) {
+  const to = dom.getAttribute("data-ref") ?? "";
+  const paint = controls.refs?.current?.paint(to) ?? PLAIN_PAINT;
+  const words = dom.firstElementChild as HTMLElement | null;
+  const number = dom.lastElementChild as HTMLElement | null;
+  if (!words || !number) return;
+  words.setAttribute("style", styleString(refWordsStyle(paint, strong && !paint.gone)));
+  number.textContent = paint.number;
+  number.setAttribute("style", styleString(refNumberStyle));
+  if (paint.gone) {
+    dom.removeAttribute("tabindex");
+    dom.removeAttribute("role");
+    dom.setAttribute("title", REF_COPY.gone);
+    dom.setAttribute("data-ref-gone", "");
+  } else {
+    dom.setAttribute("tabindex", "0");
+    dom.setAttribute("role", "link");
+    dom.removeAttribute("title");
+    dom.removeAttribute("data-ref-gone");
+  }
+}
+
+/** A link in the editor: the words (ProseMirror's) on their fill, then the number (the composer's). */
+function refMarkView(to: string, controls: PostEditorControls) {
+  const dom = document.createElement("span");
+  dom.setAttribute("data-ref", to);
+  const words = document.createElement("span");
+  const number = document.createElement("span");
+  number.contentEditable = "false";
+  number.setAttribute("aria-hidden", "true");
+  number.setAttribute("data-ref-number", "");
+  dom.append(words, number);
+  paintRef(dom, controls);
+
+  const gone = () => dom.hasAttribute("data-ref-gone");
+  const go = () => {
+    if (!gone()) controls.refs?.current?.onGo(to, dom);
+  };
+  const ring = (on: boolean) => {
+    for (const [key, value] of Object.entries(focusRing)) dom.style.setProperty(key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`), on ? `${value}${typeof value === "number" ? "px" : ""}` : "");
+  };
+  dom.addEventListener("click", () => {
+    // A drag that ends on the words selects them; only a plain click goes.
+    if (window.getSelection()?.isCollapsed ?? true) go();
+  });
+  dom.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.target !== dom) return;
+    event.preventDefault();
+    event.stopPropagation();
+    go();
+  });
+  dom.addEventListener("mouseenter", () => {
+    paintRef(dom, controls, true);
+    if (!gone()) controls.refs?.current?.onHover(to, dom);
+  });
+  dom.addEventListener("mouseleave", () => {
+    paintRef(dom, controls);
+    controls.refs?.current?.onHover(to, null);
+  });
+  dom.addEventListener("focus", () => {
+    paintRef(dom, controls, true);
+    ring(true);
+  });
+  dom.addEventListener("blur", () => {
+    paintRef(dom, controls);
+    ring(false);
+  });
+
+  return {
+    dom,
+    contentDOM: words,
+    ignoreMutation: (mutation: MutationRecord | { type: "selection"; target: Node }) =>
+      mutation.type === "attributes" || (mutation.type !== "selection" && (mutation.target === number || number.contains(mutation.target))),
+  };
+}
+
+/** Draws every link through refMarkView, and paints them again whenever the editor or the composer changes. */
+function postRefLook(controls: PostEditorControls) {
+  return Extension.create({
+    name: "postRefLook",
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: new PluginKey("postRefLook"),
+          props: {
+            markViews: {
+              ref: (mark) => refMarkView(String(mark.attrs.to ?? ""), controls),
+            },
+          },
+          view: () => ({
+            update: (view) => repaintRefs(view.dom, controls),
+          }),
+        }),
+      ];
+    },
+  });
+}
+
+/**
+ * Every link painted again: a colour, a name or a part changed. Straight on the DOM, with no transaction, so nothing
+ * in the document moves (a transaction would let the trailing paragraph rule add a block to an untouched post).
+ */
+export function repaintRefs(root: HTMLElement, controls: PostEditorControls): void {
+  root.querySelectorAll<HTMLElement>("span[data-ref]").forEach((dom) => paintRef(dom, controls, dom === document.activeElement));
+}
+
 // --- what is drawn around the text ---------------------------------------------
 
 function counterElement(length: number): HTMLElement {
@@ -458,6 +613,12 @@ function postKeys(controls: PostEditorControls) {
           key: new PluginKey("postSlashKeys"),
           props: {
             handleKeyDown: (_view: EditorView, event: KeyboardEvent) => controls.slashKey.current?.(event) ?? false,
+            // CA-06 P2: @ at the start of a block or after a space opens the reference picker in its place.
+            handleTextInput: (view: EditorView, from: number, to: number, typed: string) => {
+              if (typed !== "@" || from !== to || !controls.openRefs?.current) return false;
+              if (!opensOnAt({ state: view.state } as Pick<Editor, "state">, from)) return false;
+              return controls.openRefs.current(true);
+            },
           },
         }),
       ];
@@ -518,12 +679,14 @@ export function postExtensions(phone: boolean, controls: PostEditorControls) {
     postHeading(phone),
     paragraphSize(phone),
     PostLink,
+    PostRef,
     PostBreak,
     PostMediaNode.configure({ host: controls.pictures, phone }),
     PostMediaRowNode,
     postPictures(controls),
     PostChrome,
     postKeys(controls),
+    postRefLook(controls),
   ];
 }
 

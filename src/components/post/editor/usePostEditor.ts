@@ -28,7 +28,7 @@ export interface UsePostEditorOptions {
 }
 
 export function usePostEditor({ readDoc, phone, onDoc }: UsePostEditorOptions): { editor: Editor | null; controls: PostEditorControls } {
-  const controls = useRef<PostEditorControls>({ slashKey: { current: null }, openLink: { current: null }, pictures: createPictureHost() }).current;
+  const controls = useRef<PostEditorControls>({ slashKey: { current: null }, openLink: { current: null }, pictures: createPictureHost(), openRefs: { current: null } }).current;
   const onDocRef = useRef(onDoc);
   onDocRef.current = onDoc;
 

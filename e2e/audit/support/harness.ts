@@ -815,6 +815,12 @@ export interface AuditRoute {
 }
 
 export const ROUTES: AuditRoute[] = [
+  /* CA-06 P7: "A post with links" with every suggested colour on a linked part, in the composer and on the build
+     page. Dev pages pick their room from the address, not from storage, so each room is its own entry. */
+  ...(["noon", "dusk"] as const).flatMap((room) => [
+    { id: `links-composer-${room}`, path: `/dev/kit/pages/sandbox?build=links&fit=content&presets=1&theme=${room}` },
+    { id: `links-reader-${room}`, path: `/dev/kit/pages/build-steps?build=links&presets=1&theme=${room}` },
+  ]),
   { id: "home", path: "/" },
   { id: "gallery", path: "/gallery" },
   { id: "build", path: `/b2/${BUILD_SLUG}` },

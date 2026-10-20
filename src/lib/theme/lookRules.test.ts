@@ -7,7 +7,13 @@
 // WHAT IS READ. Comments are blanked first (line breaks kept, so line numbers hold): a comment that says "no
 // gradients" is not a gradient. Strings, JSX text and code are read as they are.
 //
-// THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids.
+// THIS FILE IS NOT IN THE LIST. It has to spell out every pattern it forbids. Nor is compliance.test.ts (CA-06 P5
+// and P6 add two capped entries to it), for the same reason: its allowlist quotes the values it allows.
+//
+// CA-06, THE ONE EXCEPTION TO "NO COLOURED CARD EDGES": a tile or a session may carry the colour its maker chose
+// (`payload.colour`, `sessions_meta[key].colour`), drawn only through `borderFor` and `outlineFor` in
+// src/lib/theme/partColour.ts. Nothing is coloured by default and no colour is chosen for the maker. The rule below
+// lets a border's colour come from those helpers, or a token, and from nothing else.
 //
 // Two readings, said once here:
 //   - `outline: "none"` (or 0) is the absence of an outline, which is what keeps the browser's own ring off; any
@@ -151,6 +157,54 @@ export const CA03_FILES: readonly string[] = [
   "src/pages/site/compose/trainedModel.ui.test.tsx",
   // CA-05 P11
   "src/lib/build/everything.test.ts",
+  // CA-06 P1
+  "src/components/post/editor/extensions.ts",
+  "src/lib/build/onePrompt.composer.snapshot.test.tsx",
+  "src/lib/build/thread.ts",
+  "src/lib/build/threadRefs.test.tsx",
+  // CA-06 P2
+  "src/components/brand/glyphs.test.tsx",
+  "src/components/brand/glyphs.ts",
+  "src/components/post/editor/PostToolbar.tsx",
+  "src/components/post/editor/ReferencePicker.tsx",
+  "src/components/post/editor/references.test.tsx",
+  "src/components/post/editor/references.ts",
+  "src/components/post/editor/usePostEditor.ts",
+  "src/lib/build/postRefs.ts",
+  "src/pages/site/compose/PostTab.tsx",
+  // CA-06 P3
+  "e2e/tier3/post-links.spec.ts",
+  "src/components/build/PartWindow.tsx",
+  "src/components/build/partNav.tsx",
+  "src/components/post/PostBody.tsx",
+  "src/components/post/RefLinks.test.tsx",
+  "src/components/post/RefLinks.tsx",
+  "src/dev/fixtures/postLinks.ts",
+  "src/lib/theme/luminance.ts",
+  "src/lib/theme/partColour.ts",
+  "src/pages/dev/LinksDemo.tsx",
+  "src/pages/site/build/BuildPage.tsx",
+  "src/pages/site/build/useReaderPostLinks.ts",
+  "src/pages/site/compose/usePostLinks.ts",
+  // CA-06 P4
+  "src/components/brand/ColourButton.tsx",
+  "src/components/brand/IconButton.tsx",
+  "src/lib/build/colour.test.ts",
+  "src/lib/theme/partColour.test.ts",
+  "src/pages/site/compose/SourcesPanel.tsx",
+  "src/pages/site/compose/colour.ui.test.tsx",
+  // CA-06 P5
+  "src/components/brand/ColourPicker.test.tsx",
+  "src/components/brand/ColourPicker.tsx",
+  "src/components/brand/useColourSwatches.ts",
+  "src/lib/build/colourPreview.ts",
+  "src/lib/theme/colourWheel.ts",
+  "src/pages/site/compose/useColourPicking.tsx",
+  // CA-06 P6
+  "src/lib/profile/colourSwatches.test.tsx",
+  "src/lib/profile/colourSwatches.ts",
+  // CA-06 P7
+  "e2e/audit/support/harness.ts",
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
@@ -353,6 +407,15 @@ function componentFindings(code: string, file: string): Finding[] {
   // An opacity in a hover style.
   for (const match of every(/hover[^\n]*opacity|opacity[^\n]*hover/i, code)) out.push(found("opacity on hover", code, match.index ?? 0));
 
+  // CA-06: a border's colour is a token, or a maker's colour through partColour.ts and nothing else. A raw colour, or a
+  // value read from anything named colour or hex, in a border anywhere else is a coloured card edge.
+  // The helper, and its own test, which says what it returns.
+  if (!/src\/lib\/theme\/partColour(\.test)?\.ts$/.test(file)) {
+    for (const match of every(/\bborder(?:Top|Right|Bottom|Left|Block|Inline)?(?:Color)?\s*:\s*([^,}\n]+)/, code)) {
+      if (/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\bcolou?r\b|\bhex\b/i.test(match[1])) out.push(found("a border colour not from a token or partColour", code, match.index ?? 0));
+    }
+  }
+
   // An outline that is not ring()'s: only `none` or 0 may be written by hand.
   for (const match of every(/\boutline(?:Offset|Color|Width|Style)?\s*:\s*([^,}\n]+)/, code)) {
     const value = match[1].trim();
@@ -381,6 +444,66 @@ export const ALLOWED: readonly { rule: string; text: string; why: string }[] = [
     rule: "no em dash in copy",
     text: 'export const MISSING = "—";',
     why: "The build page's mark for a fact the maker left empty, there before CA-03 and drawn site-wide; CA-03 only adds a field to the file that holds it.",
+  },
+  {
+    rule: "an outline other than ring()",
+    text: "outline: `1px solid ${t.selectedEdge}`, outlineOffset: 3",
+    why: "A selected row of pictures in the post editor (PT-06), drawn by a ProseMirror decoration with the selected recipe's edge. It was there before CA-06, which only adds the reference mark to the file.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "the audit cannot",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "Not yet — it is the open gap on the overnight build.",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
+  },
+  {
+    rule: "no em dash in copy",
+    text: "React throws on the",
+    why: "The audit harness's own messages and sample rows, there before CA-06, which only adds its four link routes to the file. Not shown on any page.",
+  },
+  {
+    rule: "spacing 22 is not in SPACE_REFINED",
+    text: 'marginLeft: 22, display: "flex", flexDirection: "column", gap: 2, paddingTop: 4',
+    why: "Sources' prompts under a session (UI-P64), lined up under the session's name past its 22px chevron. There before CA-06, which only adds a session's colour dot to the file.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "const observer = useRef<IntersectionObserver | null>(null);",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "if (typeof IntersectionObserver === \"undefined\") {",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "no fade-in on scroll",
+    text: "const watch = new IntersectionObserver(",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "flexDirection: \"column\", gap: 7 }}>",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 7 is not in SPACE_REFINED",
+    text: "flexDirection: \"column\", gap: 7, minWidth: 0 }} data-node-id={node.id}>",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 17 is not in SPACE_REFINED",
+    text: "padding: \"12px 17px\", marginBottom: 9",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
+  },
+  {
+    rule: "spacing 9 is not in SPACE_REFINED",
+    text: "padding: \"12px 17px\", marginBottom: 9",
+    why: "The build page, before CA-06, which only adds the post's links to the file (useReaderPostLinks). Not new, and not CA-06's to restyle.",
   },
 ];
 
@@ -483,6 +606,15 @@ describe("the look rules, on snippets", () => {
     expect(rules("const s = state.hovered ? { opacity: 0.8 } : {};")).toEqual(["opacity on hover"]);
     expect(rules("const s = { outline: \"2px solid red\" };")).toEqual(["an outline other than ring()"]);
     expect(rules("const s = { outline: \"none\", ...ring(focus) };")).toEqual([]);
+  });
+
+  it("lets a border take a maker's colour only through partColour.ts (CA-06)", () => {
+    expect(rules("const s = { border: `1px solid ${t.hairline}`, borderColor: selected ? t.selectedEdge : t.tileBorder };")).toEqual([]);
+    expect(rules("const s = { ...(step.colour ? borderFor(step.colour) : null) };")).toEqual([]);
+    expect(rules("const s = { borderColor: step.colour };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { border: `1px solid ${colour}` };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { borderLeft: \"2px solid #7FA7D9\" };")).toEqual(["a border colour not from a token or partColour"]);
+    expect(rules("const s = { borderColor: hex };", "src/lib/theme/partColour.ts")).toEqual([]);
   });
 
   it("lets the map well's dot grid stay, and no other gradient", () => {

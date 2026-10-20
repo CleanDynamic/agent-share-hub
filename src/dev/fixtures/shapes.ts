@@ -589,8 +589,11 @@ function listFacts(tree: readonly NodeTree[], steps: readonly Step[]) {
   return { names, intoResult, results };
 }
 
-const stepsOf = (key: ShapeKey) => {
-  const { tree, making } = SHAPES[key];
+/** CA-06 P7: a shape's tree, its making and its selection; another fixture (postLinks.ts) can hand its own. */
+export type ShapeSource = Pick<Shape, "tree" | "making" | "selected">;
+
+const stepsOf = (key: ShapeKey, source: ShapeSource = SHAPES[key]) => {
+  const { tree, making } = source;
   const steps = buildSteps(tree);
   return { tree, steps, groups: sessionGroups(steps, making?.sessions ?? [], making?.session_tools ?? {}, sessionsMetaOf(making)) };
 };
@@ -606,8 +609,8 @@ export function sessionFacts(tree: readonly NodeTree[]) {
   return { counts, runsWhen: Object.fromEntries([...events].map(([key, list]) => [key, runsWhenLine(list)])) };
 }
 
-export function shapeListProps(key: ShapeKey): BuildListProps {
-  const { tree, steps, groups } = stepsOf(key);
+export function shapeListProps(key: ShapeKey, source: ShapeSource = SHAPES[key]): BuildListProps {
+  const { tree, steps, groups } = stepsOf(key, source);
   const facts = listFacts(tree, steps);
   const { counts, runsWhen } = sessionFacts(tree);
   return {
@@ -618,7 +621,7 @@ export function shapeListProps(key: ShapeKey): BuildListProps {
     suggestions: [],
     intoResult: facts.intoResult,
     results: facts.results,
-    selectedId: SHAPES[key].selected,
+    selectedId: source.selected,
     onSelect: noop,
     onRename: noop,
     onMove: noop,
@@ -636,20 +639,20 @@ export function shapeListProps(key: ShapeKey): BuildListProps {
   };
 }
 
-export function shapeMapProps(key: ShapeKey): BuildMapProps {
-  const { tree, steps, groups } = stepsOf(key);
+export function shapeMapProps(key: ShapeKey, source: ShapeSource = SHAPES[key]): BuildMapProps {
+  const { tree, steps, groups } = stepsOf(key, source);
   const all = pieces(tree, []);
   const made = madeFilesOf(tree);
   const files: MapPiece[] = all.files.map((entry) => ({ id: entry.id, name: entry.name, madeBy: made.get(entry.id) ?? null }));
   const results: MapResult[] = tree
     .filter((entry) => entry.type === RESULT_TYPE && entry.parent_id === null)
     .map((entry) => ({ id: entry.id, title: strOf(entry.payload, "summary") ?? "Result", fromId: usesOf(entry).find((use) => use.kind === "output")?.node_id ?? null }));
-  return { steps, groups, files, tools: all.tools, results, suggestions: [], made, selectedId: SHAPES[key].selected, onSelect: noop, onClear: noop, onConnect: noop };
+  return { steps, groups, files, tools: all.tools, results, suggestions: [], made, selectedId: source.selected, onSelect: noop, onClear: noop, onConnect: noop };
 }
 
 /** Details for the shape's selected node, or for `selectedId`. */
-export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key].selected): DetailsPanelProps {
-  const { tree, steps, groups } = stepsOf(key);
+export function shapeDetailsProps(key: ShapeKey, selectedId: string = SHAPES[key].selected, source: ShapeSource = SHAPES[key]): DetailsPanelProps {
+  const { tree, steps, groups } = stepsOf(key, source);
   const facts = listFacts(tree, steps);
   const { counts, runsWhen } = sessionFacts(tree);
   const view = resolveView({

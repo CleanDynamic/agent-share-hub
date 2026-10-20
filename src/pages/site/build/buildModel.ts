@@ -20,6 +20,8 @@ import type { MediaSrcMap } from "@/components/gallery/cardMedia";
 import type { RowEngagement } from "@/components/social/EngagementRow";
 import type { BuildBounty } from "@/lib/bounty";
 import type { Post } from "@/lib/build/thread";
+import type { PostRefsValue } from "@/components/post/RefLinks";
+import type { SessionGroup } from "@/lib/build/graph";
 import {
   LAYER_ATTRIBUTION,
   collectGaps,
@@ -138,6 +140,8 @@ export interface BuildThreadView {
   engagement: RowEngagement;
   /** Absent on the reader's own build. */
   follow?: { following: boolean; busy: boolean; onToggle: () => void };
+  /** CA-06 P3: what the post's links point at, and what clicking one does. Absent: the words are plain. */
+  refs?: PostRefsValue;
 }
 
 export interface BuildActionsView {
@@ -246,8 +250,16 @@ export interface BuildStepsView {
   resolveMedia: ResolveMedia;
   /** An "Other parts" row, opened as the page's own body for that part. */
   otherBody: (id: string) => ReactNode;
-  /** The part a `#node-` address named: a step to scroll to and ring, or a row in What you need. `n` changes on every visit. */
-  focus: { id: string; n: number } | null;
+  /**
+   * The part a `#node-` (or, CA-06, `#session-`) address named: a step to scroll to and ring, or a row in What you need.
+   * `n` changes on every visit. CA-06 P3: a link in the post also opens the part's window (`open`, its `to`), and
+   * `fromPost` has the window offer Back to the post.
+   */
+  focus: { id: string; n: number; open?: string; fromPost?: boolean } | null;
+  /** CA-06 P3: Back to the post, from a window a link opened. */
+  onBackToPost?: () => void;
+  /** CA-06 P3: the build's sessions, for the session window. */
+  groups?: readonly SessionGroup[];
 }
 
 /** builds.making is jsonb the maker can write: keep only what has the shape. */
